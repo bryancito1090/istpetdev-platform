@@ -4,7 +4,6 @@ Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
 
 - GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
 - Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026 (repositorio privado)
-- Carpeta local: `/home/bryan/Projects/ISTPETDEV`.
 - Rama base de desarrollo: `develop`.
 
 ---
