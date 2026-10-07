@@ -1,0 +1,51 @@
+# Configuración privada; publicar solo ejemplos sin credenciales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+
+# Dependencias y resultados de compilación
+node_modules/
+bin/
+obj/
+dist/
+coverage/
+.angular/
+.vs/
+TestResults/
+*.log
+*.tsbuildinfo
+
+# Terraform: versionar .terraform.lock.hcl, excluir state/planes privados
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.hcl.example
+
+# Datos locales, backups y credenciales auxiliares
+backups/
+*.sql.gz
+*.dump
+*.db
+*.sqlite*
+known_hosts.local
+
+# Sistema operativo y editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Copias de autenticación AWS y archivos privados auxiliares
+.aws/
+.private/
+credentials.local.*
+secrets.local.*

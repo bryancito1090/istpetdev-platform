@@ -1,0 +1,27 @@
+{
+  "name": "istpetdev-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "IstpetDev - Plataforma logística integral (Expo Clean Ecuador 2026)",
+  "workspaces": [
+    "libs/shared-core",
+    "apps/web",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:api": "dotnet run --project src/Api",
+    "dev:web": "npm run start --workspace=apps/web",
+    "dev:mobile": "npm run start --workspace=apps/mobile",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:mobile": "npm run build --workspace=apps/mobile",
+    "build:shared": "npm run build --workspace=libs/shared-core",
+    "check": "npm run check:api && npm run check:shared && npm run check:web && npm run check:mobile",
+    "check:api": "dotnet build",
+    "check:shared": "npm run build:shared",
+    "check:web": "npm run build:web",
+    "check:mobile": "npm run build:mobile"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

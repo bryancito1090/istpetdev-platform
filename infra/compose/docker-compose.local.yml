@@ -1,0 +1,40 @@
+# ==============================================================================
+# docker-compose.local.yml
+# Dependencias locales para desarrollo y pruebas desconectadas de AWS.
+# El compañero implementará el Compose de despliegue principal en compose/;
+# este archivo se mantiene separado exclusivamente para dependencias locales.
+# ==============================================================================
+
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: istpetdev-local-db
+    restart: unless-stopped
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev_password_local
+      POSTGRES_DB: postgres
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: istpetdev-local-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  local_pgdata:

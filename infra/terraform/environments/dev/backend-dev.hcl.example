@@ -1,0 +1,10 @@
+# Ejemplo de configuración para backend S3 de Terraform (entorno Dev).
+# Copiar este archivo a $HOME/.config/istpetdev/private/backend-dev.hcl y reemplazar valores reales.
+# NUNCA guardar este archivo con identificadores de cuenta reales dentro del repositorio Git.
+
+bucket       = "istpetdev-tfstate-<ACCOUNT_ID>-us-east-1"
+key          = "dev/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+kms_key_id   = "arn:aws:kms:us-east-1:<ACCOUNT_ID>:key/<KMS_KEY_ID>"
+use_lockfile = true

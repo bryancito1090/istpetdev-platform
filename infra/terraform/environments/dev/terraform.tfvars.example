@@ -1,0 +1,12 @@
+# Ejemplo de variables para el entorno Dev de Terraform.
+# Copiar este archivo si se desea personalizar valores por defecto.
+# NO contiene credenciales ni secretos.
+
+aws_region        = "us-east-1"
+environment       = "dev"
+vpc_cidr          = "10.42.0.0/16"
+public_subnets    = ["10.42.0.0/24", "10.42.1.0/24"]
+private_data_subnets = ["10.42.20.0/24", "10.42.21.0/24"]
+availability_zones = ["us-east-1a", "us-east-1b"]
+ec2_instance_type = "t3.micro"
+rds_instance_class = "db.t4g.medium"

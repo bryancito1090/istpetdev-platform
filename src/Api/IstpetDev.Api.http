@@ -1,0 +1,6 @@
+@IstpetDev.Api_HostAddress = http://localhost:5053
+
+GET {{IstpetDev.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
