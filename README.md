@@ -2,8 +2,8 @@
 
 Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
 
-- GitHub: https://github.com/bryancito1090/istpetdev-platform
-- Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026
+- GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
+- Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026 (repositorio privado)
 - Carpeta local: `/home/bryan/Projects/ISTPETDEV`.
 - Rama base de desarrollo: `develop`.
 
@@ -96,11 +96,9 @@ npm run dev:mobile  # Móvil PWA en http://localhost:8100
 
 ---
 
-## Trabajo Pendiente del Equipo
+## Trabajos Pendientes
 
-- **Compañero responsable de DevOps**: Implementación de workflows de CI/CD en `.github/workflows/` (build, push GHCR, deploy demo con OIDC) y Compose de despliegue en `infra/compose/`.
-- **Bryan (Administrador)**:
-  - Crear usuarios y grupos en IAM Identity Center.
-  - Crear el bucket KMS/S3 de state persistente por consola según `docs/aws-dev.md`.
-  - Ejecutar `terraform plan/apply` para dev y el script `bootstrap-dev.sh`.
-- **Servidor n8n**: Servidor existente `https://n8n.bryan-bano.com/` (las credenciales de n8n y DeepSeek permanecen exclusivamente en ese servidor).
+- **Responsable de DevOps**:
+  - Implementación de pipelines de CI/CD en `.github/workflows/` (compilación, pruebas, empaquetado de imágenes en GHCR y despliegue a entorno demo mediante autenticación OIDC).
+  - Configuración de Docker Compose de despliegue en `infra/compose/`.
+  - Integración de escaneo de seguridad y validaciones automáticas en Pull Requests hacia `develop`.
