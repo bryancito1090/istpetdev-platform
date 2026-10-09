@@ -60,16 +60,20 @@ Si desea trabajar de manera completamente local y desconectada de AWS:
 
 ### Modo B: Desarrollo Colaborativo con AWS Dev (RDS por Túnel SSM)
 
-Cada integrante cuenta con una identidad individual en **AWS IAM Identity Center** con MFA obligatorio y su propio conjunto de permisos (`IstpetDevDev01` .. `IstpetDevDev05`).
+Cada integrante cuenta con un usuario IAM individual con MFA obligatorio y su política de acceso personal (`IstpetDevIndividualDevAccess`).
 
-#### Paso 1: Configurar AWS SSO
+#### Paso 1: Autenticación con AWS CLI (v2.32+)
+Configure el perfil de inicio de sesión con su usuario IAM asignado:
 ```bash
-aws configure sso --profile istpetdev-dev
-aws sso login --profile istpetdev-dev
+aws login --profile istpetdev-dev-console --region us-east-1
+aws configure set region us-east-1 --profile istpetdev-dev-console
+aws configure set region us-east-1 --profile istpetdev-dev
+aws configure set credential_process 'aws configure export-credentials --profile istpetdev-dev-console --region us-east-1 --format process' --profile istpetdev-dev
+export AWS_PROFILE=istpetdev-dev AWS_REGION=us-east-1 AWS_PAGER=''
+aws sts get-caller-identity
 ```
-- Seleccione la URL del portal SSO provista por Bryan.
-- Elija su Permission Set asignado (`IstpetDevDev01`, etc.).
-- Región predeterminada de la CLI: `us-east-1`.
+- Inicie sesión en la consola del navegador con su usuario IAM, contraseña y código MFA.
+- La sesión temporal queda habilitada localmente mediante `credential_process`.
 
 #### Paso 2: Recibir Configuración de Acceso
 Bryan le compartirá por canal privado el archivo `dev-access.json` (metadata pública sin contraseñas). Guárdelo en su carpeta privada:
@@ -118,6 +122,9 @@ scripts/ops/load-dev-secrets.sh \
   --config "$HOME/.config/istpetdev/private/dev-access.json"
 ```
 *(Reemplace `dev_01` por su identificador asignado)*. Este comando construye la conexión segura con TLS VerifyFull y la almacena en `dotnet user-secrets` sin imprimir contraseñas ni escribir archivos de configuración en el repositorio.
+
+> [!TIP]
+> Para el flujo completo de creación de tablas, migraciones con Entity Framework Core, uso del rol migrador y resolución de conflictos en Git, consulte la guía dedicada: [docs/database-workflow.md](file:///home/bryan/Projects/ISTPETDEV/docs/database-workflow.md).
 
 ---
 

@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.50"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.3"
+    }
   }
 
   backend "s3" {
@@ -23,6 +27,7 @@ provider "aws" {
       Project     = "IstpetDev"
       Environment = var.environment
       ManagedBy   = "Terraform"
+      ExpiresAt   = var.expires_at
     }
   }
 }
@@ -34,6 +39,7 @@ locals {
     Project     = "IstpetDev"
     Environment = var.environment
     ManagedBy   = "Terraform"
+    ExpiresAt   = var.expires_at
   }
   evidence_bucket_name = "istpetdev-evidence-${var.environment}-${try(data.aws_caller_identity.current.account_id, "account")}-${var.aws_region}"
 }
@@ -74,11 +80,14 @@ module "ec2_access" {
 module "rds" {
   source = "../../modules/rds_postgres"
 
-  subnet_ids        = module.vpc.private_data_subnet_ids
-  security_group_id = module.security_groups.rds_security_group_id
-  instance_class    = var.rds_instance_class
-  environment       = var.environment
-  tags              = local.common_tags
+  subnet_ids              = module.vpc.private_data_subnet_ids
+  security_group_id       = module.security_groups.rds_security_group_id
+  instance_class          = var.rds_instance_class
+  deletion_protection     = !var.hackathon_closed
+  skip_final_snapshot     = var.hackathon_closed
+  backup_retention_period = var.free_plan_backup_workaround ? 1 : 7
+  environment             = var.environment
+  tags                    = local.common_tags
 }
 
 # 5. S3 Evidence Storage Module (Private, versioned, AES256, TLS policy)

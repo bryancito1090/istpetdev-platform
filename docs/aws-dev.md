@@ -1,182 +1,173 @@
-# Guía de Aprovisionamiento y Operación AWS Dev — IstpetDev
+# AWS dev temporal — IstpetDev
 
-Esta guía documenta los pasos para que el **Administrador de Infraestructura (Bryan)** configure el bootstrap persistente de Terraform, ejecute el aprovisionamiento de la nube y realice el bootstrap de las bases de datos y permisos del equipo.
+El trabajo usa `develop`, AWS `us-east-1` y la cuenta existente. No crea Organizations, otro n8n, ni los perfiles demo/producción. El estado real y las pruebas están en [deployment-status.md](deployment-status.md); una configuración versionada no demuestra que se haya desplegado.
 
----
+## Acceso y archivos privados
 
-## 1. Arquitectura del Entorno Dev en AWS
-
-El entorno dev (`infra/terraform/environments/dev`) declara los siguientes recursos en la región `us-east-1`:
-
-| Recurso | Tipo / Tamaño | Configuración y Seguridad |
-|---|---|---|
-| **VPC** | `10.42.0.0/16` | Dedicada, 2 AZs (`us-east-1a`, `us-east-1b`), IGW. **Sin NAT Gateway**. |
-| **Subredes Públicas** | 2x `/24` (`10.42.0.0/24`, `10.42.1.0/24`) | Alojan el nodo EC2 de acceso con IP pública para egress. |
-| **Subredes de Datos** | 2x `/24` (`10.42.20.0/24`, `10.42.21.0/24`) | DB Subnet Group privado de Amazon RDS. |
-| **Nodo EC2 de Acceso** | `t3.micro` Ubuntu 24.04 LTS | **Sin reglas inbound** (Strict Default Deny). Egress HTTPS a SSM. Rol SSM e IMDSv2 obligado. |
-| **Amazon RDS** | PostgreSQL 16 Single-AZ (`db.t4g.medium`) | Privado (`publicly_accessible=false`), gp3 20 GiB (auto-escalable a 100 GiB), cifrado en reposo, `rds.force_ssl=1`, retención de backups 7 días, deletion protection. |
-| **Master Password RDS** | AWS Secrets Manager | Administrado nativamente por RDS (`manage_master_user_password=true`). Sin contraseñas en código Terraform. |
-| **Security Group RDS** | TCP 5432 | **Permitido exclusivamente** desde el SG del nodo EC2 de acceso. |
-| **S3 Evidencias** | `istpetdev-evidence-dev-<ACCOUNT_ID>-us-east-1` | Privado, Block Public Access total, versionado habilitado, cifrado SSE-S3 y política que deniega transporte no TLS. |
-
----
-
-## 2. Paso Previo: Bootstrap Persistente del Backend State (Por Consola AWS)
-
-Para desacoplar el estado de Terraform de los ciclos de vida y posibles `destroy` del stack de aplicaciones, el bucket de estado y su clave KMS se crean **una única vez** manualmente en la consola de AWS:
-
-### 2.1 Crear Clave Simétrica KMS
-1. En [AWS KMS (us-east-1)](https://console.aws.amazon.com/kms/):
-   - **Create key** -> **Symmetric** -> **Encrypt and decrypt**.
-   - Alias: `istpetdev-tfstate`.
-   - Administrador y usuario de la clave: seleccionar el rol administrativo SSO de Bryan (`IstpetDevInfraAdmin`).
-   - Guardar el ARN resultante (ej. `arn:aws:kms:us-east-1:<ACCOUNT_ID>:key/<KEY_ID>`).
-
-### 2.2 Crear Bucket S3 para Terraform State
-1. En [Amazon S3](https://console.aws.amazon.com/s3/):
-   - **Create bucket**: Nombre `istpetdev-tfstate-<ACCOUNT_ID>-us-east-1` en región `us-east-1`.
-   - **Object Ownership**: Bucket owner enforced (ACLs disabled).
-   - **Block Public Access**: Activado al 100%.
-   - **Bucket Versioning**: **Enable** (obligatorio).
-   - **Default encryption**: SSE-KMS con la clave `istpetdev-tfstate` creada en el paso anterior.
-   - **Create bucket**.
-
-### 2.3 Aplicar Política de Enlace Seguro (TLS) al Bucket de State
-En **Permissions -> Bucket policy -> Edit**, pegue la siguiente política oficial sustituyendo `<BUCKET_NAME>`:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "EnforceTLSRequestsOnly",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:*",
-      "Resource": [
-        "arn:aws:s3:::<BUCKET_NAME>",
-        "arn:aws:s3:::<BUCKET_NAME>/*"
-      ],
-      "Condition": {
-        "Bool": {
-          "aws:SecureTransport": "false"
-        }
-      }
-    }
-  ]
-}
-```
-
-### 2.4 Crear Archivo Privado de Configuración Backend
-En la máquina del Administrador, cree el archivo privado fuera del repositorio Git:
+Cada integrante conserva su usuario IAM, contraseña y MFA. AWS CLI >=2.32 y Session Manager plugin. No crear access keys humanas. Después del primer acceso/cambio de contraseña, registrar MFA en **Security credentials → Assign MFA device → Authenticator app**. El nombre permitido por la política existente es exactamente `<usuario-IAM>-mfa`. Escanear el QR privadamente e introducir dos códigos consecutivos; salir y entrar de nuevo. Nunca enviar QR, claves o códigos al equipo.
 
 ```bash
-mkdir -p "$HOME/.config/istpetdev/private"
-chmod 700 "$HOME/.config/istpetdev/private"
-cat << 'EOF' > "$HOME/.config/istpetdev/private/backend-dev.hcl"
-bucket       = "istpetdev-tfstate-<ACCOUNT_ID>-us-east-1"
-key          = "dev/terraform.tfstate"
-region       = "us-east-1"
-encrypt      = true
-kms_key_id   = "arn:aws:kms:us-east-1:<ACCOUNT_ID>:key/<KEY_ID>"
-use_lockfile = true
-EOF
-chmod 600 "$HOME/.config/istpetdev/private/backend-dev.hcl"
+aws login --profile istpetdev-dev-console --region us-east-1
+aws configure set region us-east-1 --profile istpetdev-dev-console
+aws configure set region us-east-1 --profile istpetdev-dev
+aws configure set credential_process 'aws configure export-credentials --profile istpetdev-dev-console --region us-east-1 --format process' --profile istpetdev-dev
+export AWS_PROFILE=istpetdev-dev AWS_REGION=us-east-1 AWS_DEFAULT_REGION=us-east-1 AWS_PAGER=''
+aws sts get-caller-identity --no-cli-pager
 ```
 
----
+La identidad administrativa usa los perfiles existentes `istpetdev-admin-console` y `istpetdev-admin`. No ejecutar el proceso de credenciales para mostrar su salida. Usar `umask 077` y `~/.config/istpetdev/private` (0700) para state inicial, planes, tfvars, outputs, respaldos y configuración; los archivos son 0600. .NET user-secrets mantiene valores fuera de Git pero no los cifra. Evitar `set -x`, `TF_LOG`, `aws --debug`, listar user-secrets o imprimir respuestas con passwords.
 
-## 3. Aprovisionamiento con Terraform Dev
+## Infraestructura declarada
 
-Una vez autenticado con el perfil administrativo de AWS (`aws sso login --profile istpetdev-admin`):
+- VPC dedicada `10.42.0.0/16`, dos subredes públicas y dos privadas de datos, dos AZ, IGW, sin NAT. Antes de una cuenta nueva revisar colisiones de CIDR.
+- Ubuntu 24.04 `t3.micro`: salida a SSM, IMDSv2, disco gp3 cifrado, ninguna entrada SSH/HTTP. No sirve aplicaciones.
+- PostgreSQL 16 Single-AZ `db.t4g.medium`: gp3 20 GiB, máximo 100, privado, cifrado, `rds.force_ssl=1`, protección de borrado. TCP 5432 exclusivamente desde el SG del nodo. Password master gestionado por RDS.
+- S3 separados: state SSE-KMS con la clave **existente** `alias/istpetdev-tfstate`; evidencias y dumps SSE-S3. Todos privados, versionados, ownership enforced y TLS obligatorio.
+- Secretos: cinco app personales, cinco migradores, cinco usuarios de integración, migrador y backup de integración. Terraform solo administra contenedores/ARN; `bootstrap-dev.sh` crea valores fuera del state.
+- Cognito dev: registro administrativo, TOTP obligatorio, web y PWA públicas sin client secret, flujo code, tokens 15 min, refresh siete días con rotación/revocación. Callbacks localhost exactos 4200/8100. El cliente debe usar PKCE S256; la UI de login y el RBAC de negocio continúan siendo trabajo de aplicación.
+- Logs PostgreSQL/upgrade 14 días; alarmas RDS CPU/memoria/almacenamiento/conexiones, estado EC2, eventos RDS. SNS requiere confirmar el correo.
+- Dos presupuestos sobre el mismo gasto bruto mensual de la **cuenta** (real y previsto), sin descontar créditos/reembolsos, umbrales 50/80/100%. No suman dos gastos ni constituyen un tope o apagado. El importe y correo se cargan en tfvars privados.
+
+`ExpiresAt` es inventario, no un programador de borrado. Cierre previsto el 18 de octubre de 2026; límite operativo el 20. No esperar la expiración del plan gratuito del 21.
+
+## Bootstrap del estado
+
+La KMS es una fuente de datos, no se crea ni se cambia su política. Inventariar antes: STS, alias/estado/policy de KMS, buckets de la cuenta, VPC/RDS/EC2, usuarios/grupos/políticas/MFA y OIDC. Ante un bucket ya existente, detener la creación, inspeccionar su policy y state e importar sus recursos; conservar declaraciones de seguridad preexistentes. El script rechaza adoptar a ciegas.
 
 ```bash
-cd /home/bryan/Projects/ISTPETDEV
-export AWS_PROFILE=istpetdev-admin
-export AWS_REGION=us-east-1
-
-# 1. Inicializar Terraform con el backend S3 persistente
-terraform -chdir=infra/terraform/environments/dev init \
-  -backend-config="$HOME/.config/istpetdev/private/backend-dev.hcl"
-
-# 2. Generar y revisar el plan de ejecución
-terraform -chdir=infra/terraform/environments/dev plan \
-  -out="$HOME/.config/istpetdev/private/dev.tfplan"
-
-# 3. Aplicar los cambios en AWS
-terraform -chdir=infra/terraform/environments/dev apply \
-  "$HOME/.config/istpetdev/private/dev.tfplan"
-
-# 4. Exportar los outputs en formato JSON
-terraform -chdir=infra/terraform/environments/dev output -json \
-  > "$HOME/.config/istpetdev/private/dev-outputs.json"
-chmod 600 "$HOME/.config/istpetdev/private/dev-outputs.json"
-
-# 5. Generar la configuración pública dev-access.json para el equipo
-scripts/ops/export-dev-config.sh \
-  --outputs "$HOME/.config/istpetdev/private/dev-outputs.json" \
-  --output-dir "$HOME/.config/istpetdev/private"
+export AWS_PROFILE=istpetdev-admin AWS_REGION=us-east-1 AWS_DEFAULT_REGION=us-east-1 AWS_PAGER=''
+export EXPIRES_AT=2026-10-20
+umask 077
+bash scripts/ops/bootstrap-state.sh prepare
+# Revisar el plan: seis recursos S3, ninguna clave nueva ni borrado.
+TF_DATA_DIR="$HOME/.config/istpetdev/private/terraform-bootstrap" \
+  terraform -chdir=infra/terraform/bootstrap show "$HOME/.config/istpetdev/private/bootstrap.tfplan"
+bash scripts/ops/bootstrap-state.sh apply
+bash scripts/ops/bootstrap-state.sh migrate
 ```
 
----
+Solo el primer arranque usa `backend_override.tf` ignorado: backend local apuntando a `private/bootstrap.tfstate`. `migrate` retira ese override, migra al backend S3 y compara recursos/outputs con la copia local. Terraform puede asignar nueva lineage/serial al backend destino; comprobar también un plan sin cambios. No volver a preparar como stack vacío. El bootstrap tiene `prevent_destroy`; se retira únicamente al cierre autorizado, después del stack dev y exportación privada.
 
-## 4. Inicialización de Bases de Datos y Secretos (Bootstrap)
+## Plan y despliegue dev
 
-La base RDS PostgreSQL se crea limpia. Para aprovisionar las 5 bases personales y la base de integración:
+Copiar `terraform.tfvars.example` a un archivo privado y cargar presupuesto/correo, expiración, subject OIDC verificado y asignaciones MFA aprobadas. Nunca incluir contraseñas en tfvars. El bloqueo nativo usa objetos `.tflock`; los permisos de desarrolladores no dan acceso al bucket state ni a KMS.
 
-### Terminal A: Abrir el Túnel de Administrador
 ```bash
-scripts/ops/dev-tunnel.sh \
-  --profile istpetdev-admin \
-  --config "$HOME/.config/istpetdev/private/dev-access.json"
+umask 077
+export AWS_PROFILE=istpetdev-admin AWS_REGION=us-east-1 AWS_DEFAULT_REGION=us-east-1 AWS_PAGER=''
+private_dir="$HOME/.config/istpetdev/private"
+export TF_DATA_DIR="$private_dir/terraform-dev"
+terraform -chdir=infra/terraform/environments/dev init -backend-config="$private_dir/backend-dev.hcl"
+terraform -chdir=infra/terraform/environments/dev plan -var-file="$private_dir/dev.tfvars.json" -out="$private_dir/dev.tfplan"
+terraform -chdir=infra/terraform/environments/dev show "$private_dir/dev.tfplan"
+terraform -chdir=infra/terraform/environments/dev apply "$private_dir/dev.tfplan"
+terraform -chdir=infra/terraform/environments/dev output -json > "$private_dir/dev-outputs.json"
+bash scripts/ops/export-dev-config.sh --outputs "$private_dir/dev-outputs.json" --output-dir "$private_dir"
 ```
 
-### Terminal B: Ejecutar el Bootstrap
+Ante un apply parcial, conservar state, corregir el bloqueo, generar/revisar **un plan nuevo**. No reutilizar un plan aplicado, crear duplicados a mano ni borrar state. Un `FreeTierRestrictionError` no se resuelve con más privilegios IAM.
+
+El diseño original usa siete días de backups continuos RDS. La cuenta Free rechazó ese valor. La alternativa `free_plan_backup_workaround=true`, solo tras aceptación explícita, usa **un día PITR + snapshots diarios siete días** con AWS Backup (08:00 UTC / 03:00 Ecuador), sin continuidad de siete días. AWS Backup selecciona exclusivamente este RDS y avisa de jobs fallidos/expirados/abortados. El almacenamiento de snapshots consume créditos; verificar el primer job y una restauración. Ver el estado de aceptación/aplicación en el registro de despliegue.
+
+## Bases, túnel y backend local
+
 ```bash
-scripts/base_datos/bootstrap-dev.sh \
-  --profile istpetdev-admin \
+# Terminal A: túnel; no necesita editar DNS para psql.
+bash scripts/ops/dev-tunnel.sh --profile istpetdev-admin --config "$HOME/.config/istpetdev/private/dev-access.json"
+# Terminal B: bootstrap administrativo; SQL por stdin y passwords en archivos temporales 0600.
+bash scripts/base_datos/bootstrap-dev.sh --profile istpetdev-admin \
   --config "$HOME/.config/istpetdev/private/dev-access.json" \
   --outputs "$HOME/.config/istpetdev/private/dev-outputs.json"
 ```
 
-El script realiza de manera **idempotente y segura**:
-1. Conecta con el usuario `istpetadmin` obteniendo su contraseña desde AWS Secrets Manager.
-2. Crea `istpetdev_dev_01` a `istpetdev_dev_05` y `istpetdev_integration`.
-3. Revoca `CONNECT` de `PUBLIC` en todas las bases para aislamiento estricto.
-4. Genera contraseñas criptográficas en memoria y las almacena en Secrets Manager:
-   - `/istpetdev/dev/db/dev_01` .. `dev_05` (roles de aplicación `user_dev_XX`)
-   - `/istpetdev/dev/db/dev_01/migrator` .. `dev_05/migrator` (roles migradores `migrator_dev_XX`)
-   - `/istpetdev/dev/db/integration/dev_01` .. `dev_05` (usuarios de integración)
-   - `/istpetdev/dev/db/integration/migrator` (migrador de integración)
-5. Activa la extensión **PostGIS** (`CREATE EXTENSION IF NOT EXISTS postgis;`) en todas las bases.
+El documento SSM del proyecto fija el endpoint RDS/5432; solo permite elegir puerto local. No autorizar `AWS-StartPortForwardingSessionToRemoteHost` genérico a compañeros: permitiría otros destinos. El nodo resuelve el endpoint en AWS; la CA oficial RDS se descarga por HTTPS y se valida. Si falta o es inválida, los scripts fallan: no reducen TLS.
 
----
+`psql` usa host real + `PGHOSTADDR=127.0.0.1` y `verify-full`, sin modificar hosts. **Npgsql requiere** que el endpoint DNS real se resuelva a `127.0.0.1` localmente: añadir una línea `127.0.0.1 <endpoint-real-RDS>` a `/etc/hosts` mediante el editor del sistema, conservar el resto y retirar solo esa línea al finalizar. No publicar el endpoint como localhost en el secreto ni modificar DNS AWS. En contenedores, definir una ruta explícita al túnel del host y validarla; el loopback interno pertenece al contenedor.
 
-## 5. Renderizar Políticas de Mínimo Privilegio (IAM Identity Center)
-
-Ejecute el renderizador para materializar las políticas inline con los ARNs reales generados:
+El administrador distribuye `dev-access.json` y la asignación dev_XX por canal privado; no distribuye `dev-outputs.json`, state ni credenciales. Cada integrante abre su propio túnel con su perfil y ejecuta:
 
 ```bash
-scripts/ops/render-dev-policies.sh \
-  --profile istpetdev-admin \
-  --config "$HOME/.config/istpetdev/private/dev-access.json" \
-  --output-dir "$HOME/.config/istpetdev/private/dev-policies"
+bash scripts/ops/load-dev-secrets.sh --profile istpetdev-dev --member dev_02 --database personal \
+  --config "$HOME/.config/istpetdev/private/dev-access.json"
+npm run dev:api
 ```
 
-### Configuración en la Consola AWS IAM Identity Center:
-1. En **Permission sets -> Create permission set -> Custom permission set -> Inline policy**:
-   - Pegue el contenido de `$HOME/.config/istpetdev/private/dev-policies/dev_01.json`.
-   - Nombre: `IstpetDevDev01` (sesión: 1 hora).
-2. Asigne el permission set `IstpetDevDev01` exclusivamente al usuario `dev_01`.
-3. Repita para `Dev02` a `Dev05` con sus respectivos archivos JSON.
+Sustituir dev_02 por la asignación. `--database integration` carga la identidad individual para la base compartida; `--mode file` escribe `~/.config/istpetdev/private/dev-env.sh` 0600 para `source` explícito. Las conexiones usan VerifyFull y pool máximo diez. El script verifica acceso antes de guardar y pasa JSON a user-secrets por stdin. No modificar Angular para cargar secretos. `--migrator` es solo para la tarea de migración; luego volver a cargar app. No ejecutar API con master/migrador.
 
----
+`bootstrap` conserva bases/datos/passwords al repetirse; reusa secretos y valida que coincidan con host/rol/base. Un rol sin secreto o una contraseña desincronizada detiene el proceso; recuperar la versión correcta o rotar de forma coordinada, no generar una sustitución silenciosa. App tiene DML, migrador DDL en su base; backup de integración solo lectura; PUBLIC no puede conectar a bases personales/integración ni crear en schema public. Revoca acceso a las bases de mantenimiento del RDS dedicado.
 
-## 6. Monitoreo y Control de Costos (AWS Budgets)
+## Habilitar integrantes después de MFA
 
-1. En **AWS Billing -> Budgets -> Create budget -> Cost budget**:
-   - Tipo: Mensual.
-   - Umbral de alertas: Avisos automáticos por correo al 50%, 80% y 100% del presupuesto acordado.
-2. **Apagado operativo**:
-   - Cuando el equipo no esté desarrollando activamente, detenga el nodo EC2 de acceso desde la consola o CLI para ahorrar horas de cómputo.
-   - La instancia RDS dev se puede detener de forma coordinada (recordar que AWS reinicia instancias RDS detenidas automáticamente tras 7 días).
+`team-roster.json` privado relaciona dev_01..05 con usuarios IAM existentes. Bryan conserva administración; no se presenta esa identidad como usuario dev aislado.
+
+```bash
+python3 scripts/ops/prepare-team.py --profile istpetdev-admin \
+  --roster "$private_dir/team-roster.json" --vars "$private_dir/dev.tfvars.json"
+# Plan/apply dev de nuevo. Cada usuario propuesto se comprueba otra vez por API.
+bash scripts/ops/render-dev-policies.sh --outputs "$private_dir/dev-outputs.json" --output-dir "$private_dir/dev-policies"
+```
+
+Solo se añade la política individual a quienes tienen MFA. Se conservan los usuarios/grupos/políticas existentes; auditar permisos heredados para detectar concesiones más amplias. El acceso a secretos/S3/túnel requiere contexto de sesión MFA, ARN exactos de sus tres secretos y prefijo de evidencia propio; Resume/Terminate solo `${aws:username}-*`. Nada de master, integración migrador/backup, state, otros integrantes o producción. Si una sesión vieja no satisface MFA, cerrar y autenticar de nuevo; no retirar la condición para evitar un 403.
+
+Comprobación **con la sesión real de cada integrante**, nunca con el administrador:
+
+```bash
+python3 scripts/ops/verify-member.py --profile istpetdev-dev --member dev_02 \
+  --config "$HOME/.config/istpetdev/private/dev-access.json"
+```
+
+Repetir con dos identidades distintas y registrar solo resultados. El simulador IAM ayuda a revisar policies, pero no sustituye este ensayo. Al retirar a alguien: quitar acceso IAM, terminar sus sesiones SSM, deshabilitar sus roles PostgreSQL/terminar conexiones activas y rotar credenciales compartidas que pudo conocer. Retirar GetSecretValue no invalida passwords previamente copiados.
+
+## Migraciones, backups y recuperación
+
+```bash
+dotnet tool restore
+dotnet build
+python3 scripts/base_datos/database-task.py migrate --profile istpetdev-admin \
+  --config "$private_dir/dev-access.json" --outputs "$private_dir/dev-outputs.json" --member integration
+```
+
+El script genera primero `pg_dump -Fc` con cliente **PostgreSQL 16**, comprueba catálogo/checksum, sube a S3 con SHA-256 y verifica la versión remota antes de DDL. Usa Docker `postgres:16-alpine` para evitar generar un dump de versión mayor incompatible. El migrador ejecuta SQL EF idempotente bajo advisory lock; no hay `EnsureCreated`, migraciones al arrancar ni downgrade automático. Aplicar también en las bases personales con `--member dev_XX` durante el bootstrap inicial. La integración recibe solo migraciones coordinadas desde develop.
+
+```bash
+python3 scripts/base_datos/database-task.py backup --profile istpetdev-admin \
+  --config "$private_dir/dev-access.json" --outputs "$private_dir/dev-outputs.json"
+python3 scripts/base_datos/database-task.py restore-check --profile istpetdev-admin \
+  --config "$private_dir/dev-access.json" --outputs "$private_dir/dev-outputs.json" \
+  --backup "$private_dir/backups/<archivo>.dump"
+```
+
+Coordinar una ventana sin escrituras para el ensayo: se comparan hashes/conteos de las tablas antes/después del dump. Restore-check crea una base aleatoria `istpetdev_restorecheck_*`, importa, compara todas las tablas/PostGIS y elimina **solo su base de prueba**. Guarda tiempos en `.restore.json`; no restaura sobre integración. El dump portable no guarda propietarios/ACL: una recuperación promovida requiere reaplicar los roles/grants canónicos antes de conceder tráfico. PITR/snapshot de instancia se restaura a **otra instancia privada** y se valida antes de cambiar endpoint/secretos; incluye roles de instancia. Nunca rebobinar operaciones aceptadas sin reconciliación.
+
+Dumps S3: prefijos daily siete días/weekly 28 días, incluidas versiones no actuales. El script carga weekly los domingos. No hay un servicio demo encendido: su ejecución nocturna debe integrarse en el host/CI de demo del compañero cuando exista. Dev tiene backups RDS y, si fue aceptado, snapshots AWS Backup programados independientes del portátil. Antes de cada cambio destructivo realizar además snapshot o dump restaurado.
+
+## Verificación reproducible
+
+```bash
+terraform fmt -check -recursive infra/terraform
+terraform -chdir=infra/terraform/bootstrap init -backend=false
+terraform -chdir=infra/terraform/bootstrap validate
+terraform -chdir=infra/terraform/environments/dev init -backend=false
+terraform -chdir=infra/terraform/environments/dev validate
+dotnet build
+dotnet list package --vulnerable --include-transitive
+python3 scripts/base_datos/test-bootstrap.py
+python3 scripts/ops/verify-storage.py --profile istpetdev-admin --outputs "$private_dir/dev-outputs.json"
+```
+
+Para validar offline usar un TF_DATA_DIR temporal distinto del usado para operar el backend. El ensayo Docker usa certificados/secretos efímeros, dos bootstraps, TLS/hostname, aislamiento, DML/DDL, EF dos veces, API readiness/401, dump/restauración y hashes. Elimina únicamente su contenedor/volumen y su base temporal. Los ensayos locales no acreditan conectividad RDS ni sesiones del equipo.
+
+`verify-storage.py` revisa TLS, cifrado, ownership, bloqueo público y versionado; recupera una versión de un objeto sintético tras sobrescritura/borrado y limpia exclusivamente esas versiones. Recupera privadamente una versión identificada del state, sin modificar el state activo. Readiness de API exige conexión y migraciones; liveness permanece independiente de AWS.
+
+## OIDC y despliegue del compañero
+
+El proveedor GitHub se reutiliza si existe. Consultar `gh api repos/bryancito1090/istpetdev-platform/actions/oidc/customization/sub` antes de construir trust: el repositorio usa IDs inmutables. La configuración exige subject exacto y `aud=sts.amazonaws.com`, sin wildcard. El rol demo está **preparado sin permisos operativos** hasta que exista su SG/host; no concede Terraform ni secretos al runner.
+
+El compañero conserva workflows/Compose/GHCR/SSH-SCP y el dominio institucional. Consultar [demo-release-contract.md](demo-release-contract.md). No se publica un deploy automático ni se enciende Perfil A/B por un push. No hay claves AWS estáticas ni secretos de integraciones en GitHub. `https://n8n.bryan-bano.com/` permanece externo y sin modificaciones; Bryan carga sus credenciales por el mecanismo seguro.
+
+## Referencias
+
+- [Login CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html), [MFA](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_virtual.html).
+- [Backend S3](https://developer.hashicorp.com/terraform/language/backend/s3), [override del backend](https://developer.hashicorp.com/terraform/language/files/override).
+- [Retención RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.BackupRetention.html), [snapshots AWS Backup](https://docs.aws.amazon.com/aws-backup/latest/devguide/rds-backup.html).
+- [TLS Npgsql](https://www.npgsql.org/doc/security.html), [RDS trust store](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).

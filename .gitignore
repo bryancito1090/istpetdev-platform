@@ -49,3 +49,8 @@ Thumbs.db
 .private/
 credentials.local.*
 secrets.local.*
+backend_override.tf
+backend-*.hcl
+dev-access.json
+dev-outputs.json
+__pycache__/

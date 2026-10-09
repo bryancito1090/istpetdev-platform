@@ -56,6 +56,13 @@ resource "aws_instance" "access_node" {
   iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
   associate_public_ip_address = true
 
+  user_data                   = <<-SCRIPT
+    #!/bin/bash
+    set -euo pipefail
+    systemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service
+  SCRIPT
+  user_data_replace_on_change = true
+
   # Enforce IMDSv2 strictly
   metadata_options {
     http_endpoint               = "enabled"

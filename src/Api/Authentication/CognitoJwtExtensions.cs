@@ -40,6 +40,8 @@ public static class CognitoJwtExtensions
                     // Cognito access tokens do not include audience claim 'aud', client_id is used instead
                     ValidateAudience = false,
                     ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidAlgorithms = new[] { SecurityAlgorithms.RsaSha256 },
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
 
@@ -68,13 +70,16 @@ public static class CognitoJwtExtensions
 
                         // ADR-10 Rule: Validate client_id against allowed list
                         var clientIdClaim = principal.FindFirst("client_id")?.Value;
-                        if (allowedClientIds.Length > 0 && !allowedClientIds.Contains(clientIdClaim))
+                        if (!allowedClientIds.Contains(clientIdClaim))
                         {
                             logger.LogWarning("Rejected token: client_id '{ClientId}' not in allowed list", clientIdClaim);
                             context.Fail("Unauthorized client_id.");
                             return Task.CompletedTask;
                         }
 
+                        var scopes = principal.FindFirst("scope")?.Value.Split(' ') ?? Array.Empty<string>();
+                        if (!scopes.Contains("istpetdev-api/access"))
+                            context.Fail("Required human API scope is missing.");
                         return Task.CompletedTask;
                     },
                     OnAuthenticationFailed = context =>
@@ -92,12 +97,13 @@ public static class CognitoJwtExtensions
             // If Authority is not yet configured, configure fallback JwtBearer so DI does not fail
             authBuilder.AddJwtBearer(options =>
             {
-                options.TokenValidationParameters = new TokenValidationParameters
+                options.Events = new JwtBearerEvents
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
-                    ValidateIssuerSigningKey = false
+                    OnMessageReceived = context =>
+                    {
+                        context.Fail("Authentication is not configured.");
+                        return Task.CompletedTask;
+                    }
                 };
             });
         }

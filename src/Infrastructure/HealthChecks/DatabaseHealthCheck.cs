@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using IstpetDev.Infrastructure.Persistence;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace IstpetDev.Infrastructure.HealthChecks;
 
@@ -22,13 +24,16 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
-            // Test connection with timeout
+            // Test connection with timeout (10s to accommodate cloud tunnel latency)
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(3));
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
 
             bool canConnect = await _dbContext.Database.CanConnectAsync(cts.Token);
             if (canConnect)
             {
+                var pending = await _dbContext.Database.GetPendingMigrationsAsync(cts.Token);
+                if (pending.Any())
+                    return HealthCheckResult.Unhealthy("Database migrations are pending.");
                 return HealthCheckResult.Healthy("PostgreSQL database is available.");
             }
 
@@ -36,7 +41,7 @@ public class DatabaseHealthCheck : IHealthCheck
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Database health check failed: {Message}", ex.Message);
+            _logger.LogWarning("Database health check failed: {ErrorType}", ex.GetType().Name);
             return HealthCheckResult.Unhealthy("PostgreSQL connection check failed.", ex);
         }
     }

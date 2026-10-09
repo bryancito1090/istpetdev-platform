@@ -11,7 +11,7 @@ variable "security_group_id" {
 variable "instance_class" {
   type        = string
   description = "The database instance class"
-  default     = "db.t4g.medium"
+  default     = "db.t3.micro"
 }
 
 variable "allocated_storage" {
@@ -36,4 +36,22 @@ variable "tags" {
   type        = map(string)
   description = "Common tags"
   default     = {}
+}
+variable "deletion_protection" {
+  type    = bool
+  default = true
+}
+
+variable "skip_final_snapshot" {
+  type    = bool
+  default = false
+}
+
+variable "backup_retention_period" {
+  type    = number
+  default = 7
+  validation {
+    condition     = contains([1, 7], var.backup_retention_period)
+    error_message = "Backups cannot be disabled; select the reviewed one- or seven-day strategy."
+  }
 }

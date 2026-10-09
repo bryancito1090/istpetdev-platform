@@ -11,7 +11,7 @@ Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
 ## Documentación Principal
 
 - 📘 [**Guía de Incorporación del Equipo (Onboarding)**](docs/onboarding.md): Configuración de máquina local, arranque de aplicaciones, túnel SSM y carga de secretos.
-- ☁️ [**Guía de Aprovisionamiento y Operación AWS Dev**](docs/aws-dev.md): Bootstrap manual de state KMS/S3, Terraform Dev, bootstrap de PostgreSQL en RDS y políticas IAM.
+- ☁️ [**Guía de Aprovisionamiento y Operación AWS Dev**](docs/aws-dev.md): Bootstrap Terraform con KMS existente, AWS dev, PostgreSQL/roles, MFA, TLS, backups y cierre.
 
 ---
 
