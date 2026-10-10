@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Run the real EF/Npgsql/filter/controller in disposable PostgreSQL; never starts the API."""
+"""Disposable EF runtime checks; --http explicitly runs the loopback-only HTTP fixture."""
+import argparse
 import hashlib
 import json
 import os
@@ -15,6 +16,10 @@ import dev
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--http', action='store_true', help='Run the synthetic JWT/HTTP and concurrent pool fixture')
+    args = parser.parse_args()
+    check = 'http' if args.http else 'runtime'
     os.umask(0o077)
     name = 'istpetdev-schema95-runtime-' + secrets.token_hex(5)
     report = {'image': 'postgis/postgis:16-3.4-alpine', 'api_started': False, 'rds_tested': False}
@@ -60,20 +65,32 @@ ALTER DEFAULT PRIVILEGES FOR ROLE migrator_dev_01 IN SCHEMA public GRANT USAGE,S
 """, 'istpetdev_dev_01')
             report['server'] = dev.sql(master, config, ca, "SELECT current_setting('server_version'),postgis_lib_version();", 'istpetdev_dev_01')
             env = {**os.environ, 'SCHEMA95_APP_CONNECTION': dev.npgsql(app, config, ca), 'SCHEMA95_MIGRATOR_CONNECTION': dev.npgsql(migrator, config, ca)}
-            result = subprocess.run(['dotnet', 'run', '--project', str(dev.ROOT / 'tools/Schema95RuntimeCheck'), '--no-launch-profile'], env=env, cwd=dev.ROOT, text=True, capture_output=True)
-            log = result.stdout + result.stderr
+            if args.http:
+                env['SCHEMA95_ADMIN_CONNECTION'] = dev.npgsql({**master, 'dbname': 'istpetdev_dev_01'}, config, ca)
+            project = 'Schema95HttpCheck' if args.http else 'Schema95RuntimeCheck'
+            # The deadline kills this process group, including its embedded API, on timeout.
+            process = subprocess.Popen(['dotnet', 'run', '--project', str(dev.ROOT / 'tools' / project), '--no-launch-profile'], env=env, cwd=dev.ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+            try:
+                stdout, stderr = process.communicate(timeout=180)
+            except BaseException:
+                import signal
+                os.killpg(process.pid, signal.SIGKILL)
+                process.communicate()
+                raise
+            log = stdout + stderr
             assert not any(value['password'] in log for value in [master, migrator, app]), 'Test output contained a credential'
-            dev.write_private(dev.PRIVATE / 'schema95-runtime.log', log)
-            report['exit_code'] = result.returncode
-            assert result.returncode == 0, 'Runtime checks failed; inspect private schema95-runtime.log'
-            runtime = next(json.loads(line) for line in result.stdout.splitlines() if line.startswith('{"result":"schema95_runtime_checks_passed"'))
+            dev.write_private(dev.PRIVATE / f'schema95-{check}.log', log)
+            report['exit_code'] = process.returncode
+            assert process.returncode == 0, f'Checks failed; inspect private schema95-{check}.log'
+            runtime = next(json.loads(line) for line in stdout.splitlines() if line.startswith(f'{{"result":"schema95_{check}_checks_passed"'))
             report.update(runtime)
-            report['source_hashes'] = {str(file.relative_to(dev.ROOT)): hashlib.sha256(file.read_bytes()).hexdigest() for file in [Path(__file__).resolve(), dev.ROOT / 'tools/Schema95RuntimeCheck/Program.cs', dev.ROOT / 'src/Api/Authentication/OrganizationContextFilter.cs', dev.ROOT / 'src/Api/Controllers/ServicePointsController.cs']}
+            files = [Path(__file__).resolve(), *(dev.ROOT / 'tools' / project).glob('*.cs'), dev.ROOT / 'src/Api/Program.cs', dev.ROOT / 'src/Api/Authentication/CognitoJwtExtensions.cs', dev.ROOT / 'src/Api/Authentication/OrganizationContextFilter.cs', dev.ROOT / 'src/Api/Controllers/ServicePointsController.cs']
+            report['source_hashes'] = {str(file.relative_to(dev.ROOT)): hashlib.sha256(file.read_bytes()).hexdigest() for file in files}
             print(json.dumps(runtime))
         finally:
             cleanup = subprocess.run(['docker', 'rm', '-f', '-v', name], capture_output=True)
             report['container_removed'] = cleanup.returncode == 0
-            dev.write_private(dev.PRIVATE / 'schema95-runtime-verification.json', json.dumps(report, indent=2))
+            dev.write_private(dev.PRIVATE / f'schema95-{check}-verification.json', json.dumps(report, indent=2))
             print('Disposable container removed:', report['container_removed'])
             if cleanup.returncode:
                 raise RuntimeError('Disposable container cleanup failed')
