@@ -93,8 +93,21 @@ Resultados de la aplicación personal y preparación del PR, con la revisión de
 | Integridad en motor descartable | También pasó `schema95-integrity-check.sql`. Ambos scripts conservaron las huellas de las 95 tablas de dominio y del historial tras el rollback de sus datos sintéticos. |
 | SQL EF idempotente y catálogo físico | SQL generado sin modificar las migraciones, aplicado dos veces en ese contenedor: dos entradas EF sin duplicación. Las 604 columnas del catálogo coincidieron en tipo y nulabilidad con el catálogo físico PostgreSQL/PostGIS. |
 | PostGIS por SQL | En ese contenedor: inserción/lectura de geography(Point,4326), SRID, coordenadas X/Y y ST_DWithin comprobados dentro de una transacción revertida. |
+| Pool Npgsql y filtro real | `python3 scripts/db/check-schema95-runtime.py`: código 0, `schema95_runtime_checks_passed`. En PostgreSQL 16.4/PostGIS 3.4.3 descartable con VerifyFull, 16 aperturas de la conexión API reutilizaron el mismo PID de backend entre cuentas/organizaciones. Contexto vacío antes y después del filtro, incluso antes de cerrar la conexión. Commit conservó una escritura; respuesta 400, excepción SQL y cancelación activa de pg_sleep revirtieron las escrituras. El pool mantuvo su reset normal. |
+| EF/Npgsql/NTS y controlador real | En ese ensayo: escritura/materialización geography(Point,4326) y null mediante EF; Npgsql rechazó SRID 3857 y LineString para geography(Point,4326). ST_Distance se tradujo y ejecutó en PostgreSQL respetando el ámbito. ServicePoints devolvió solo puntos asignados del tenant, Type del catálogo, coordenadas correctas y nulls, enumerando el DTO después de terminar el filtro/transacción. |
+| Denegaciones con cliente .NET | En ese ensayo: sesión SQL de user_dev_01 sin SUPERUSER/BYPASSRLS; UPDATE de una cuenta sin permiso afectó cero filas. El filtro rechazó tenant ajeno, cuenta sin membresía, cuenta sin permiso, cuenta inactiva, claims ausentes y header ausente sin ejecutar la acción. Contexto vacío denegó lecturas incluso en la conexión todavía abierta. Se comprobaron resultados MVC directos; no respuestas del pipeline HTTP. |
 
 El contenedor usó red deshabilitada, sin puertos publicados, y se eliminó junto con sus datos al terminar. El primer intento coincidió con el reinicio del servidor temporal de inicialización de la imagen; se corrigió la espera para comprobar el servidor TCP final y el ensayo completo pasó. No se inició la API ni se ejecutó el instalador del parche o el bootstrap del proyecto.
+
+El ensayo .NET posterior usa un contenedor distinto con un puerto PostgreSQL dinámico publicado exclusivamente en 127.0.0.1, certificado y passwords efímeros, VerifyFull y roles limitados. Su launcher elimina el contenedor y los datos al terminar, incluso si una prueba falla. Solo crea la base personal simulada; no consulta AWS ni carga user-secrets. Rechaza el puerto 15432 y destinos distintos de localhost. Invoca `AddInfrastructureServices`, `OrganizationContextFilter` y `ServicePointsController` reales sin arrancar la API. El primer pase se detuvo por una aserción del verificador que trataba ForbidResult como IStatusCodeActionResult; se corrigió únicamente el verificador y el pase completo terminó con código 0.
+
+Para reproducir el ensayo .NET, con Docker, openssl, psql y el SDK .NET del repositorio disponibles:
+
+```bash
+python3 scripts/db/check-schema95-runtime.py
+```
+
+El resumen y el log del launcher se guardan en la carpeta privada de ISTPETDEV, fuera de Git. Las cuentas/claims, roles y permisos de negocio de este ensayo son sintéticos y se destruyen con el contenedor; no son identidades Cognito ni autorizan un bootstrap real.
 
 **Impedimento específico en RDS:** el migrador no puede asumir `user_dev_01`; la sesión administrativa disponible tampoco tiene autorización existente para asumir los dos roles de la prueba. Por eso `schema95-check.sql` pasó en el entorno descartable, no en RDS. No se concedieron membresías ni se ampliaron permisos en RDS. El PASS de integridad con migrador no demuestra por sí solo aislamiento de la conexión API en RDS.
 
@@ -102,10 +115,10 @@ Los ensayos anteriores documentados en PostgreSQL 18.6 standalone incluyeron rec
 
 ### Casos todavía pendientes
 
-- **Pool Npgsql:** reutilización de una conexión física entre cuentas/organizaciones; ausencia de contexto tras commit, rollback, excepción y cancelación; restauración de la conexión al pool. Las pruebas SQL de una misma sesión no sustituyen este ensayo del cliente .NET.
+- **Pool Npgsql en condiciones reales:** el ensayo .NET secuencial con MaxPoolSize=1 y reset normal pasó en el motor descartable. Quedan RDS, concurrencia/tamaño de pool de la configuración habitual, conexión rota y cancelación/fallo durante commit o devolución al pool. El ensayo no ejecuta middleware HTTP ni usuarios JWT reales.
 - **Cognito/JWT:** tokens reales con firma, issuer, caducidad, token_use, client_id y scope; resolución de issuer/subject a Account y rechazo de cuentas inactivas o sin membresía vigente. No se crearon cuentas Cognito ni un bootstrap de identidad ficticio.
-- **HTTP:** 401 sin token, 400 con X-Organization-Id inválido, 403 sin acceso/permiso y respuesta autorizada del endpoint ServicePoints; ámbitos visibles/ocultos, coordenadas anulables y transacción del filtro de organización. No hay autorización para levantar la API en este encargo.
-- **PostGIS mediante Npgsql/EF:** materialización y escritura de NTS Point, SRID/tipos rechazados, traducción de consultas espaciales y respuesta del endpoint contra RDS. La presencia de PostGIS en RDS y el round-trip SQL local no validan esta ruta del cliente.
+- **HTTP:** matriz preparada en [schema95-jwt-http-checks.md](schema95-jwt-http-checks.md), con 401/400/403/éxito, ámbitos y nulls. Los resultados del filtro/controlador directo con claims sintéticos no validan autenticación, routing ni serialización del pipeline HTTP. No hay autorización para levantar la API en este encargo.
+- **PostGIS mediante Npgsql/EF en RDS:** materialización/escritura NTS, rechazos de SRID/tipo, ST_Distance y recorrido del controlador ya pasaron con el cliente real en el motor descartable. Queda repetir la ruta autorizada contra RDS y comprobar el pipeline HTTP; motor/extensión locales 16.4/3.4.3 difieren de RDS 16.13/3.4.6. No se acredita esta prueba en RDS por el PASS local.
 - **Seguridad por caso de uso:** denegaciones con roles autorizados en RDS, rutas/flota, campos sensibles y comandos privilegiados acotados para RBAC/outbox/auditoría/sync; reglas agregadas de stock/recepciones/capacidad y validaciones JSON/cifrado/retención siguen requiriendo handlers y pruebas.
 
 El PR hacia develop debe permanecer como borrador mientras falten las comprobaciones necesarias para aprobarlo. No declarar listo el sistema completo por contar tablas. Antes de pruebas futuras que levanten o expongan la app, aplicar la skill prelaunch y obtener el alcance de ejecución correspondiente; esta sesión mantiene la API detenida.
