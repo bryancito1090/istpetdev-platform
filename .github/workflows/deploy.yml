@@ -87,10 +87,57 @@ jobs:
               - 'infra/compose/docker-compose.prod.yml'
               - '.github/workflows/deploy.yml'
 
-  build-backend:
-    name: "Compilar y Publicar Backend (GHCR)"
+  backend-qa:
+    name: "QA Backend (.NET 8)"
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar .NET SDK 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: "Restaurar dependencias NuGet"
+        run: dotnet restore IstpetDev.sln
+
+      - name: "Compilar solución en Release"
+        run: dotnet build IstpetDev.sln -c Release --no-restore
+
+  frontend-qa:
+    name: "QA Frontend (Angular 22)"
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Node.js 22 LTS"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: "Instalar dependencias npm"
+        run: npm ci
+
+      - name: "Compilar librería compartida"
+        run: npm run build:shared
+
+      - name: "Verificar linteo de frontend"
+        run: npm run lint:web
+
+      - name: "Compilar aplicación Web en Producción"
+        run: npm run build:web
+
+  build-backend:
+    name: "Compilar y Publicar Backend (GHCR)"
+    needs: [detect-changes, backend-qa]
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -129,8 +176,8 @@ jobs:
 
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    needs: [detect-changes, frontend-qa]
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -169,7 +216,7 @@ jobs:
 
   deploy-ec2:
     name: "Despliegue Inmutable en Servidor EC2"
-    needs: [detect-changes, build-backend, build-frontend]
+    needs: [detect-changes, backend-qa, frontend-qa, build-backend, build-frontend]
     if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:
