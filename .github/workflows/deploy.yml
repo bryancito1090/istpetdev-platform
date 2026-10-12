@@ -2,7 +2,7 @@ name: "CD - Despliegue en Producción"
 
 on:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
     paths:
       - "src/**"
       - "apps/web/**"
@@ -90,7 +90,7 @@ jobs:
   backend-qa:
     name: "QA Backend (.NET 8)"
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código"
@@ -110,7 +110,7 @@ jobs:
   frontend-qa:
     name: "QA Frontend (Angular 22)"
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código"
@@ -137,7 +137,7 @@ jobs:
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
     needs: [detect-changes, backend-qa]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') }}
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -177,7 +177,7 @@ jobs:
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
     needs: [detect-changes, frontend-qa]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') }}
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
