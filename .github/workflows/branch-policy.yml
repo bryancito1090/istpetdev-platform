@@ -1,0 +1,64 @@
+name: "Política de Ramas"
+
+# Aplica el flujo de ramas de CONTRIBUTING.md (lógica en .github/scripts/branch-policy.sh):
+#   main    ← develop | hotfix/*
+#   develop ← feature/* | feat/* | fix/* | chore/* | docs/* | hotfix/*
+#
+# - pull_request: valida la rama de origen antes del merge.
+# - push: detecta pushes directos o merges desde ramas no permitidas en main/develop.
+#   GitHub Actions no puede revertir un push; lo marca en rojo. El bloqueo real lo da
+#   el ruleset de GitHub con el check "Validar rama de origen" como obligatorio.
+# Sin filtro de rutas: un check obligatorio debe ejecutarse en todos los PR.
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+    types: [opened, reopened, synchronize, edited]
+  push:
+    branches: ["main", "develop"]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  branch-policy:
+    name: "Validar rama de origen"
+    runs-on: ubuntu-latest
+    steps:
+      # Se usa el script de la rama destino, no el del PR, para que un PR no pueda relajar su propia validación.
+      - name: "Checkout del script de política (rama destino)"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.base_ref || github.sha }}
+          path: policy
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      # Arranque: solo si la rama destino aún no tiene el script (el PR que lo introduce).
+      - name: "Checkout del script de política (PR, arranque)"
+        if: ${{ github.event_name == 'pull_request' && hashFiles('policy/.github/scripts/branch-policy.sh') == '' }}
+        uses: actions/checkout@v4
+        with:
+          path: policy
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: "Validar Pull Request"
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          # Variables de entorno: el nombre de la rama lo controla quien abre el PR.
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: bash policy/.github/scripts/branch-policy.sh pr "$HEAD_REF" "$BASE_REF" "$HEAD_REPO" "$BASE_REPO"
+
+      - name: "Validar push"
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: bash policy/.github/scripts/branch-policy.sh push "$BRANCH" "$SHA" "$REPO"
