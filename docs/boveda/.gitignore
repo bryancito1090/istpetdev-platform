@@ -1,0 +1,60 @@
+# Estado personal y archivos temporales de Obsidian
+.obsidian/workspace*.json
+.obsidian/graph.json
+.obsidian/cache/
+.obsidian/.cache/
+.obsidian/logs/
+.trash/
+
+# Logs generados por aplicaciones y plugins
+*.log
+*.log.*
+
+# Archivos locales del sistema
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*~
+
+# Configuración privada
+.env
+.env.*
+!.env.example
+
+# Credenciales y copias privadas: aplica también a la bóveda documental
+.aws/
+.private/
+secrets/
+credentials.local.*
+secrets.local.*
+*.pem
+*.key
+*.pfx
+*.p12
+known_hosts.local
+
+# State y planes Terraform pueden contener secretos
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+*.tfvars
+*.tfvars.json
+
+# Configuración local de asistentes de IA
+.claude/settings.local.json
+
+# Skills y configuración de asistentes de IA: locales, no se versionan
+.agents/
+.claude/
+.local-skills/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+
+# Paquetes locales preparados para el repositorio de software
+/.migration-artifacts/
