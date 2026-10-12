@@ -29,6 +29,9 @@ tags: [hackathon, istpetdev]
 | R-16 | 2,5 días para construir el P0 completo | Demo incompleta o sin ensayar | Congelamiento el 15-oct 14:00, hitos H1–H5 y plan B por componente (D8) |
 | R-17 | El incidente predefinido no produce «uno solo, uno escalado» con las rutas reales | Se pierde el momento central de la demo | Calibración tras implementar el planificador y prueba E2E que fija el resultado (spec 002) |
 | R-18 | LLM lento, caído o manipulado por texto de los datos importados | Agente que falla o actúa fuera de la política en escena | Política determinista en el backend, fallback por plantilla en ≤ 10 s y datos delimitados (ADR-22) |
+| R-20 | DeepSeek no cumple los umbrales de aceptación (latencia desde Ecuador o uso de herramientas en el nodo de n8n) | Agente que no responde a tiempo en la demo | Prueba de aceptación en H1; fallback determinista a los 10 s; nodo compatible con OpenAI como alternativa de conexión |
+| R-21 | Credenciales filtradas en workflows de n8n exportados al repositorio | Exposición de claves de DeepSeek o Cognito | Prueba de CI de secretos y credenciales solo en el almacén de n8n |
+| R-22 | El cliente técnico de Cognito no existe y depende de un `terraform apply` | n8n no puede autenticarse contra la API | Recurso definido en el spec 003; coordinar el apply antes de H3 |
 | R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM |
 
 ## Decisiones pendientes
@@ -46,7 +49,7 @@ tags: [hackathon, istpetdev]
 | Modelo/prompt/cuotas IA | Antes de configurar n8n |
 | Costos reales y tamaño del piloto | Con información empresarial |
 | Quién decide D1–D8 y ADR-21 a ADR-23 ([[Definiciones de producto y plan hasta el pitch]]) | Antes de implementar el spec 001 |
-| Modelo del agente (prueba de selección de D4) | Hito H1, 13-oct 13:00 |
+| Resultado de la prueba de aceptación de DeepSeek (D4) | Hito H1, 13-oct 13:00 |
 
 No faltan nombres ni especialidades del equipo: IstpetDev ya confirmó cinco integrantes con experiencia transversal.
 

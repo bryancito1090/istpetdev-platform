@@ -177,3 +177,9 @@ Fuente: sesión de definición de un integrante del equipo con asistencia de Cla
 
 Verificación de la actualización: **75 notas Markdown**, **643 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
 
+## Spec 003 del agente logístico — 12 de octubre de 2026
+
+Fuente: brainstorming del spec 003 en la sesión de definición. Se actualiza D4 en [[Definiciones de producto y plan hasta el pitch]] (DeepSeek con prueba de aceptación, sin comparación de modelos) y se añaden las decisiones de diseño del agente; complemento de ADR-22 y nota en la fila de ADR-08; fila de IA, nombre `AgentRun` y contradicción de scopes en Hechos canónicos; complementos en n8n e IA e Identidad OIDC y sesiones; riesgos R-20 a R-22; criterio de B-44. Actualización documental: no ejecuta workflows, Terraform ni código.
+
+Verificación de la actualización: **75 notas Markdown**, **648 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+

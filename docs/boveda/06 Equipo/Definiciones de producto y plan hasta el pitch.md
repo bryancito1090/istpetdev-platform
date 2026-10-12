@@ -52,7 +52,7 @@ Diagnóstico del 12-oct sobre el repositorio unificado:
 | D1 | Objetivo norte y métricas de esta nota | Un criterio común para decidir qué entra |
 | D2 | **Evidencia del sector solo durante el evento.** Antes del 16 los cinco construyen. Día 1: dos personas entrevistan expositores de la feria en las pausas (11:00–11:30 y 13:00–14:00) con un guion de 5 minutos. Día 2: se vuelve con el prototipo en el bloque de validación (11:00–12:30). No se entrevista a organizaciones con representante en el jurado (manual §11.5). Antes del 16, un **kit previo sin horas del equipo**, preparado con IA: guion y hoja de entrevista, esqueleto del pitch con huecos, modelo de negocio, banco de preguntas e investigación de pliegos de compras públicas (SERCOP) para citar el costo de un quiebre **solo si aparece una fuente** | El equipo no tiene acceso al sector; la hackathon ocurre dentro de la Expo Clean, donde están las empresas |
 | D3 | **Cortes de alcance** (tabla siguiente) | Liberar horas para el recorrido que ve el jurado |
-| D4 | **Agente con niveles.** A — vigía: detecta riesgos y propone reposición y ruta. B — gestor de incidentes: evalúa un cierre de vía, replanifica lo pendiente y avisa al conductor. Ambos obligatorios. C — «qué pasaría si» con el simulador, solo si A y B están terminados. **El LLM orquesta y explica; nunca calcula** rutas, cantidades ni fechas. El modelo se elige con una prueba de 1–2 horas: 3 escenarios (riesgo, incidente, dato con instrucciones inyectadas) y 2 candidatos; gana el que cumple llamadas válidas, latencia p95 ≤ 10 s y costo; se registra en ADR-08 | Innovación defendible ante el jurado técnico; un agente que opera, no un chatbot |
+| D4 | **Agente con niveles.** A — vigía: detecta riesgos y propone reposición y ruta. B — gestor de incidentes: evalúa un cierre de vía, replanifica lo pendiente y avisa al conductor. Ambos obligatorios. C — «qué pasaría si» con el simulador, solo si A y B están terminados. **El LLM orquesta y explica; nunca calcula** rutas, cantidades ni fechas. **Modelo: DeepSeek** (decisión del 12-oct, sin comparación), validado con una **prueba de aceptación** de 3 escenarios (riesgo, incidente, dato con instrucciones inyectadas) × 10 ejecuciones y umbrales fijos: llamadas válidas ≥ 95%, latencia p95 ≤ 10 s, explicaciones con cifras coincidentes ≥ 90% e inyección 10/10. Si no los cumple en H1, el agente opera en fallback determinista y el equipo decide proveedor con la misma prueba | Innovación defendible ante el jurado técnico; un agente que opera, no un chatbot |
 | D5 | **Autonomía con límites.** Un motor de reglas determinista en el backend clasifica cada propuesta en «se ejecuta» o «se escala»; el LLM no puede saltarlo. Se ejecuta sola si no se retira ninguna parada obligatoria, se cumplen todas las ventanas, el costo sube ≤ 15% y ningún retraso supera 60 min. Se escala lo demás, con dos opciones calculadas («atender tarde» y «priorizar críticos»). Interruptor «solo proponer». Toda acción automática se puede deshacer porque crea una nueva revisión | Respuesta a «¿y si la IA se equivoca?»: la IA hace lo rutinario y deja a la persona lo que importa |
 | D6 | **Recorrido en vivo regional:** unos 15 puntos sintéticos de Quito, 1 bodega y 2 vehículos (fixture `demo-region`); el incidente afecta a un vehículo y no al otro. La escala nacional (80 puntos) se muestra en el simulador | Con 6 puntos el mapa parece un juguete; con 80 no se entiende en 3 minutos |
 | D7 | **Doble baseline:** el simulador compara contra reposición reactiva (cuando el punto avisa) y contra calendario fijo (cada N días, cantidad fija). Ambas políticas se escriben antes de la primera simulación y no se ajustan después de ver resultados | Sin datos del sector no sabemos cuál usan; ganar a ambas hace el resultado robusto (ver [[Simulador y metricas]]) |
@@ -96,7 +96,7 @@ La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]
 
 | Hito | Fecha y hora | Condición | Si se retrasa más de 4 h |
 |---|---|---|---|
-| H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de selección del modelo del agente hecha | Se implementa con el spec en borrador; el modelo por defecto es el de menor latencia medida |
+| H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de aceptación de DeepSeek ejecutada | Se implementa con el spec en borrador; si DeepSeek no cumple, el agente queda en fallback determinista y el equipo decide proveedor |
 | H2 | 13-oct 20:00 | Spec 001 integrado en `develop` | Prioridad del equipo entero: bloquea 002–005 |
 | H3 | 14-oct 20:00 | Recorrido sin agente de punta a punta: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado | El nivel B del agente pasa a su plan B |
 | H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y simulador con resultados frente a los dos baselines | Se aplican los planes B |
@@ -142,10 +142,28 @@ Aprobadas en el brainstorming del 12-oct; detalle en el [spec 002](../../specs/0
 | Escalado | Dos opciones calculadas por el planificador: «atender tarde» y «priorizar críticos» | Alternativas propuestas por el LLM |
 | Explicaciones | Plantillas construidas solo con `facts` estructurados; el agente se valida contra los mismos `facts` | Texto libre del LLM sin validación |
 
+## Decisiones de diseño del agente (spec 003)
+
+Aprobadas en el brainstorming del 12-oct; detalle en el [spec 003](../../specs/003-agente-logistico/spec.md) y su [plan](../../specs/003-agente-logistico/plan.md).
+
+| Tema | Decisión | Alternativas descartadas |
+|---|---|---|
+| Dónde corre el agente | Workflow de n8n con nodo AI Agent; herramientas = 5 endpoints del motor (002) | Bucle en el backend .NET; varios agentes |
+| Dónde corre n8n | Servidor existente de Bryan contra la API desplegada; copia local en Docker como plan B | Solo el servidor de Bryan; n8n dentro del EC2 de la demo (memoria insuficiente) |
+| Avisos al conductor | Dentro de la PWA, al detectar una revisión nueva de su ruta | Telegram; ambos |
+| Modelo | DeepSeek con prueba de aceptación y umbrales fijos | Comparación entre Claude (Bedrock) y DeepSeek |
+| Envío del resultado | Paso fijo del workflow tras el nodo AI Agent, con salida JSON validada | Herramienta `submit_result` que debe llamar el modelo |
+| Traza | Medida por la API con la cabecera `X-Agent-Run-Id` | Pasos intermedios informados por n8n |
+| Si el agente falla o tarda | La API responde a los 10 s con el camino determinista de 002 y plantillas, sin repetir replanificaciones | Esperar indefinidamente |
+| Cifras del LLM | Cada número se valida contra los `facts`; si no coincide, se usa la plantilla y se registra el motivo | Confiar en el texto |
+| Seguridad | Sin herramientas para publicar ni aprobar; rol `Automatizacion` con 403 en esos endpoints; datos tratados como datos en el prompt | Solo instrucciones en el prompt |
+| Identidad | Cliente Cognito `client_credentials` con un scope `istpetdev-api/automation` y rol en la API | Cuatro scopes finos de [[Identidad OIDC y sesiones]] |
+
 ## Pendientes de esta sesión
 
 - Confirmar quién decide D1–D8 y ADR-21 a ADR-23.
-- Specs 003, 004, 005 y 006; el `task.md` del 002 lo redacta el equipo.
+- Specs 004, 005 y 006; los `task.md` de 002 y 003 los redacta el equipo.
+- Bryan: credenciales de DeepSeek, OAuth2 de Cognito y secreto HMAC en su n8n; versión exacta de n8n para la copia local.
 - Kit previo de 006 e investigación de pliegos de compras públicas.
 - Confirmación escrita de la organización sobre trabajo previo (O-01).
 - Hallazgo de seguridad reportado al equipo de infraestructura: el grupo de seguridad de Terraform abre SSH a `0.0.0.0/0` por defecto (`infra/terraform/modules/security_groups/variables.tf`); la recomendación fue dejarlo vacío por defecto o desplegar por SSM.

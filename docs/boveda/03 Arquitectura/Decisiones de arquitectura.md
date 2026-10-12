@@ -20,7 +20,7 @@ tags: [arquitectura, contratos]
 | ADR-05 | Mapas | Leaflet + OpenStreetMap | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Leaflet (`leaflet` + `@types/leaflet`) con OpenStreetMap en componente desacoplado `shared/ui/map-view` y orquestación en `widgets/route-map`. Código abierto, sin costo ni cuotas de API keys que arriesguen la demo. |
 | ADR-06 | Offline | SQLite/IndexedDB | **Diseño concretado, 2026-10-07** (be0b127): PWA con IndexedDB primero; Capacitor 8 después. Ver complemento |
 | ADR-07 | Tiempo real | SignalR + autoscaling | Redis backplane al permitir varias réplicas; afinidad probada |
-| ADR-08 | IA | n8n + DeepSeek | Riesgo numérico determinista; LLM solo explicación y recomendaciones acotadas. Hosting: n8n existente de Bryan (2026-10-07) |
+| ADR-08 | IA | n8n + DeepSeek | Riesgo numérico determinista; LLM solo explicación y recomendaciones acotadas. Hosting: n8n existente de Bryan (2026-10-07). 12-oct: ampliación propuesta en ADR-22 (agente con herramientas; DeepSeek con prueba de aceptación) |
 | ADR-09 | Cloud y hosting | Dual: EC2 Hardened (Demo) / ECS Fargate (P2) | **Aceptada, 2026-10-06** (registrada por JorgeDoicela, commit 4c3a9ef; Deciders PENDIENTE): perfil ágil económico para hackathon y elástico para escala nacional; [[AWS y Terraform]]. Ampliada el 2026-10-07: ver complemento |
 | ADR-10 | Identidad | No definida | **Definida, 2026-10-07** (decisión delegada por Bryan, be0b127): Amazon Cognito; [[Identidad OIDC y sesiones]] |
 | ADR-11 | Auditoría | Trazabilidad «inmutable» | Ledger append-only en aplicación; describir garantías reales |
@@ -209,7 +209,7 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 
 **Decisión propuesta:** (b). El LLM elige herramientas, compone y explica; nunca calcula rutas, cantidades ni fechas. Un motor de reglas en el backend ejecuta solo lo que no retira paradas obligatorias, cumple ventanas, sube el costo ≤ 15% y no retrasa más de 60 min; lo demás se escala con dos opciones calculadas. Interruptor «solo proponer» y acciones reversibles. Los datos importados se pasan al modelo como datos delimitados. El modelo se elige midiendo dos candidatos.
 
-**Consecuencias:** el motor de reglas vive en el spec 002 y el agente en el 003; cada decisión se registra en `AgentDecision`. ADR-08 debe actualizar su proveedor tras la prueba de selección.
+**Consecuencias:** el motor de reglas vive en el spec 002 y el agente en el 003; cada decisión se registra en `AgentDecision`. ADR-08 conserva DeepSeek como proveedor, sujeto a la prueba de aceptación del spec 003 (ver complemento).
 
 **Verificación:** tabla completa de la política con pruebas automáticas y recorrido E2E con una decisión ejecutada sola y otra escalada.
 
@@ -227,3 +227,6 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 
 **Verificación:** determinismo, calidad frente a fuerza bruta en instancias pequeñas, rendimiento (≤ 1 s con 15 puntos, ≤ 5 s con 80) y E2E del spec 002.
 
+### Complemento de ADR-22 — diseño del agente (12-oct-2026, propuesta)
+
+Brainstorming del [spec 003](../../specs/003-agente-logistico/spec.md): el agente es un workflow de n8n con nodo AI Agent en el servidor de Bryan (copia local en Docker como plan B); sus herramientas son 5 endpoints del motor de 002; el resultado lo envía un paso fijo del workflow; la API mide la traza, valida cada cifra contra los `facts` y responde a los 10 s con el camino determinista si el agente no entrega. **Proveedor: DeepSeek**, elegido por el equipo sin comparación y sujeto a una prueba de aceptación (llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10). Identidad con un scope `istpetdev-api/automation` y rol `Automatizacion` sin permiso para publicar, aprobar, rechazar, deshacer ni cambiar el modo. Avisos al conductor dentro de la PWA.

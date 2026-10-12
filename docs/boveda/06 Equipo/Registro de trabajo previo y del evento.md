@@ -64,5 +64,6 @@ Bryan confirmó recursos/versiones y delegó recomendaciones. El compañero impl
 | 2026-10-12 | Preparación | Análisis del repositorio unificado y diagnóstico frente a la matriz de evaluación | [[Definiciones de producto y plan hasta el pitch]] | Registrado |
 | 2026-10-12 | Preparación | Plantilla de specs y spec 001 (núcleo delgado e importador) | PR #8 fusionado en `develop` (`docs/specs/`) | Documentado; sin implementar |
 | 2026-10-12 | Preparación | Definiciones D1–D8, spec 002 (motor logístico) y ADR-21 a ADR-23 como propuestas | PR de `docs/definiciones-producto` | Documentado; Deciders pendientes |
+| 2026-10-12 | Preparación | Spec 003 (agente logístico con n8n y DeepSeek) y complemento de ADR-22 | PR de `docs/definiciones-producto` | Documentado; sin implementar |
 
 **Asistencia de IA:** los specs, esta reestructuración y las notas asociadas se redactaron con Claude Code (modelo Opus) a partir de preguntas y decisiones de un integrante del equipo. El código incluido en los specs es un ejemplo no ejecutado hasta que una tarea lo compile y pruebe (ver [[Convenciones y estados]]).

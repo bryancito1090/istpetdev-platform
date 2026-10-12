@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: aceptado
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [arquitectura, identidad, oidc, rbac, seguridad]
 ---
 
@@ -69,3 +69,7 @@ B-29 y V-13/V-14/V-24: login web/PWA, token expirado, ID token rechazado, issuer
 - [Scopes y M2M Cognito](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-define-resource-servers.html).
 
 Ver [[Seguridad y evidencias]], [[Movil offline y sincronizacion]] y [[Entornos y operacion acordados]].
+
+## Cliente de automatización — propuesta del 12 de octubre de 2026
+
+El spec 003 (`docs/specs/003-agente-logistico/`) propone crear en Terraform el cliente confidencial de n8n con un único scope `istpetdev-api/automation`, en lugar de los cuatro scopes finos de la sección «Automatización desde n8n». El límite real lo aplica la API: la identidad con ese scope solo recibe el rol `Automatizacion`, que no puede publicar, aprobar, rechazar, deshacer ni cambiar el modo de autonomía. Contradicción registrada en [[Hechos canonicos]].
