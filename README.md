@@ -4,7 +4,7 @@ Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
 
 - GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
 - Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026 (repositorio privado)
-- Rama base de desarrollo: `develop`.
+- Ramas: `main` es producción (despliega) y `develop` es la base de desarrollo. Flujo de ramas, commits y PR en [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
