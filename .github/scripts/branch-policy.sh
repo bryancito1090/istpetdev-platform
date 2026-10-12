@@ -61,16 +61,18 @@ case "$mode" in
     branch="$1" sha="$2" repo="$3"
     # Un push válido es el merge de un PR: su commit resultante es el merge_commit_sha
     # de un PR ya fusionado hacia esta rama. La asociación puede tardar unos segundos.
+    # Se exige también que la rama de origen sea de este repositorio: un fork puede
+    # llamar "develop" o "hotfix/x" a su rama y pasaría la validación solo por el nombre.
     head=""
     for attempt in 1 2 3 4 5 6; do
       head=$(gh api "repos/$repo/commits/$sha/pulls" --jq \
-        "[.[] | select(.merged_at != null and .base.ref == \"$branch\" and .merge_commit_sha == \"$sha\")][0].head.ref // empty")
+        "[.[] | select(.merged_at != null and .base.ref == \"$branch\" and .merge_commit_sha == \"$sha\" and .head.repo.full_name == \"$repo\")][0].head.ref // empty")
       [ -n "$head" ] && break
       echo "Sin PR asociado al commit todavía (intento $attempt/6)..."
       sleep "${POLICY_RETRY_DELAY:-5}"
     done
     [ -n "$head" ] ||
-      fail "Push directo a \`$branch\` detectado (commit \`${sha:0:7}\` no proviene de un PR fusionado). Todo cambio debe entrar por Pull Request."
+      fail "Push directo a \`$branch\` detectado (commit \`${sha:0:7}\` no proviene de un PR fusionado desde una rama de este repositorio). Todo cambio debe entrar por Pull Request."
     check_source "$head" "$branch"
     pass "Push a \`$branch\` proviene del PR de \`$head\`: permitido."
     ;;
