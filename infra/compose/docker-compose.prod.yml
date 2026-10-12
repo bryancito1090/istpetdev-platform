@@ -1,7 +1,7 @@
 # ==============================================================================
 # docker-compose.prod.yml
 # Despliegue de produccion para IstpetDev Platform (Perfil A Reforzado)
-# Host: AWS EC2 en istpetdev-vpc-dev (10.42.0.0/16) conectado a Amazon RDS
+# Host: AWS EC2 en istpetdev-vpc-dev (10.42.0.0/16) - RDS PostgreSQL 16
 # Dominio: istpetdev.doicela.dev (con Cloudflare)
 # ==============================================================================
 
