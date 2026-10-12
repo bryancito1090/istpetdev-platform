@@ -1,14 +1,16 @@
 # IstpetDev — plataforma logística
 
-Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
+Repositorio de software y documentación para el Reto 1 de Expo Clean Ecuador 2026.
 
 - GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
-- Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026 (repositorio privado)
+- [Bóveda de decisiones y documentación](docs/boveda/README.md): `docs/boveda/`, dentro de este repositorio. Abrir esa carpeta como bóveda en Obsidian.
 - Rama base de desarrollo: `develop`.
 
 ---
 
 ## Documentación Principal
+
+- [Bóveda Obsidian del equipo](docs/boveda/README.md): notas, decisiones, backlog, skills documentadas y manual oficial. Verificar desde la raíz con `python docs/boveda/.github/scripts/check_vault.py`.
 
 - 📘 [**Guía de Incorporación del Equipo (Onboarding)**](docs/onboarding.md): Configuración de máquina local, arranque de aplicaciones, túnel SSM y carga de secretos.
 - 🎨 [**Arquitectura y Decisiones de Frontend**](docs/frontend-architecture.md): Estándares de interfaz, ADRs aprobados (mapas Leaflet, UI Kit, tokens, PWA offline y OIDC Cognito).
