@@ -98,9 +98,12 @@ npm run dev:mobile  # Móvil PWA en http://localhost:8100
 
 ---
 
-## Trabajos Pendientes
+## Despliegue en Producción y CI/CD (Implementado)
 
-- **Responsable de DevOps**:
-  - Implementación de pipelines de CI/CD en `.github/workflows/` (compilación, pruebas, empaquetado de imágenes en GHCR y despliegue a entorno demo mediante autenticación OIDC).
-  - Configuración de Docker Compose de despliegue en `infra/compose/`.
-  - Integración de escaneo de seguridad y validaciones automáticas en Pull Requests hacia `develop`.
+La plataforma opera bajo el modelo **Perfil A Reforzado** en AWS:
+- **Cómputo Stateless (EC2)**: Instancia Debian 13 (`istpetdev-prod-host`) en la VPC del proyecto (`10.42.0.0/16`). Aloja exclusivamente contenedores efímeros (Nginx, Angular 22, .NET 8 y Redis).
+- **Persistencia Gestionada (Amazon RDS)**: PostgreSQL 16 + PostGIS en subred privada interna (`istpetdev-rds-dev`). Esquema completo de 95 tablas y RLS bajo el rol `migrator_integration` en la base `istpetdev_integration`.
+- **Automatización CI/CD (GitHub Actions)**:
+  - `CD - Despliegue en Producción` (`.github/workflows/deploy.yml`): Disparo en push a `main`. Compila imágenes inmutables en GHCR, ejecuta bootstrap idempotente y despliega mediante SSH seguro.
+  - `Rollback Rápido` (`.github/workflows/rollback.yml`): Reversión en caliente en menos de 30 segundos usando las imágenes cacheadas en el host.
+  - `Verificación de Bóveda` (`.github/workflows/check-vault.yml`): Validación continua de documentación técnica Docs-as-Code.
