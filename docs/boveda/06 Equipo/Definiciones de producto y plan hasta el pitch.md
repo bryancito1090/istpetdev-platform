@@ -159,6 +159,22 @@ Aprobadas en el brainstorming del 12-oct; detalle en el [spec 003](../../specs/0
 | Seguridad | Sin herramientas para publicar ni aprobar; rol `Automatizacion` con 403 en esos endpoints; datos tratados como datos en el prompt | Solo instrucciones en el prompt |
 | Identidad | Cliente Cognito `client_credentials` con un scope `istpetdev-api/automation` y rol en la API | Cuatro scopes finos de [[Identidad OIDC y sesiones]] |
 
+## Decisiones de diseño del campo (spec 004)
+
+**Propuesta del 12-oct; Deciders PENDIENTE.** El [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) documenta el recorrido de la caja física y sus criterios de aceptación. Estas decisiones no afirman implementación.
+
+| Tema | Propuesta | Motivo |
+|---|---|---|
+| Preparación QR | Bodega crea y etiqueta la `HandlingUnit` desde una entrega publicada, antes de despachar | La caja física existe al asociar el QR; los lotes ya están elegidos por 002 |
+| Roles del recorrido | Bodega escanea el despacho; conductor asignado captura recepción y el receptor firma voluntariamente en su dispositivo | Dos sesiones iniciadas bastan para el pitch |
+| Recepción y evidencia | La API acepta cantidades/custodia de forma transaccional; foto y firma se suben después a S3 privado con reintento por archivo | Una falla de carga no obliga a repetir el movimiento de inventario |
+| Revisión sin señal | Una revisión nueva no invalida por sí sola la recepción; se validan entrega, asignación y cantidades vigentes | Conserva entregas legítimas y muestra los conflictos reales de S-11 |
+| Parcial o rechazo | Lo no aceptado sigue en el vehículo bajo custodia del conductor hasta devolución física registrada en bodega | Evita incrementar saldos sin transferencia |
+| QR del jurado | URL HTTPS con token aleatorio revocable; resumen de producto/unidad, estado e hitos generales, sin cantidades ni datos personales | Da una comprobación visible y limitada según RF-13 |
+| Aviso al conductor | Consulta de revisiones en la PWA y mensaje de `AgentDecision.DriverMessage` | Cumple el nivel B del agente sin chat ni push |
+
+El marcado provisional de parada completa de 002 queda sustituido por recepción aceptada al integrar 004. La página pública actual y su registro fijo no representan custodia real; el spec pide reemplazarlos. El esquema de 001 conserva su criterio de 27 tablas **antes** de la migración adicional de 004.
+
 ## Pendientes de esta sesión
 
 - Confirmar quién decide D1–D8 y ADR-21 a ADR-23.

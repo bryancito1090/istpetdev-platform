@@ -75,3 +75,9 @@ Usar [[Plan de validacion]] y [[Checklist y contingencias]].
 ## Sesión y versión acordadas — 7 de octubre de 2026
 
 PWA primero con Angular 22/Ionic 8 e IndexedDB; Capacitor 8 recomendado para el empaquetado nativo posterior. Cognito con PKCE; tokens no forman parte de la cola durable. Expiración, logout o rechazo de permisos conserva capturas y archivos aislados por identidad. Subida S3 privada después de reautenticación y autorización vigente. Ver [[Repositorio de software y versiones]], [[Identidad OIDC y sesiones]] y [[Entornos y operacion acordados]]; pruebas reales Android/iOS y HTTPS continúan pendientes.
+
+## Alcance propuesto para el spec 004 — 12 de octubre de 2026
+
+Ver [[Definiciones de producto y plan hasta el pitch]] y el [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md). El conductor asignado descarga ruta, revisión, entregas y unidades conocidas antes de salir. En modo avión captura cantidades, foto y firma voluntaria del receptor; IndexedDB debe confirmar operación y Blobs antes de mostrar «Guardado en el teléfono». El reinicio de la PWA conserva la captura.
+
+La recuperación envía primero el recibo con el mismo `operationId`/`Idempotency-Key`; después sube cada archivo a S3 privado y confirma sus metadatos. Un fallo de archivo deja «Evidencia pendiente» sin repetir el movimiento. La revisión de ruta solo causa conflicto si entrega, asignación o cantidades ya no son válidas. Lo rechazado permanece en vehículo hasta devolución física registrada. Los avisos del agente se consultan por revisión; no se usa chat ni push en esta demo.

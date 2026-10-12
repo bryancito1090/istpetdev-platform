@@ -53,6 +53,8 @@ tags: [arquitectura, contratos]
 
 ## Recepción offline: ejemplo de contrato
 
+**Aplicación propuesta en spec 004:** la recepción real reemplaza el marcado provisional de parada completa de 002. Bodega crea `HandlingUnit` desde una `Delivery` publicada y despacha con transferencia bodega→vehículo. El conductor asignado envía recepción con `operationId` idéntico a `Idempotency-Key`, líneas aceptadas/rechazadas, `expectedDeliveryVersion` y `occurredAtDevice`. Una revisión distinta se valida contra entrega, asignación y cantidades vigentes; la revisión sola no rechaza. El commit de recibo, movimientos y respuesta idempotente es único; las evidencias se suben después a S3 y se confirman por separado. Ver [[Definiciones de producto y plan hasta el pitch]].
+
 ```json
 {
   "operationId": "UUID_UNICO_DEL_DISPOSITIVO",

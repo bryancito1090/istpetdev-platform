@@ -176,6 +176,8 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Papel del LLM | Solo explica (ADR-08) o propone y orquesta con autonomía decidida por reglas deterministas (ADR-22) | Equipo |
 | Scopes de automatización | Cuatro scopes finos ([[Identidad OIDC y sesiones]]) o un scope `istpetdev-api/automation` + rol `Automatizacion` (spec 003) | Equipo |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
+| Cierre de parada y QR público | El marcado provisional de 002 completa sin recibo, y la página actual consulta entregas o un registro fijo sin token; el spec 004 propone recepción real y consulta de `HandlingUnit` con token revocable | Equipo; ver [[Definiciones de producto y plan hasta el pitch]] |
+| Tamaño del esquema de demo | El criterio de 001 cuenta 27 tablas antes de 004; la asociación de caja/entrega y el token público de 004 requieren migración posterior, frente al esquema ampliado de [[Esquema completo de base de datos]] | Equipo |
 
 Cerradas el 7 de octubre por be0b127: versión .NET (8), PostgreSQL (16), Angular (22) y Capacitor (8), móvil (PWA primero), identidad (Cognito), repositorio de código y rutas (`src/**`).
 
