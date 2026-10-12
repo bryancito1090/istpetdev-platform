@@ -1,7 +1,7 @@
 ---
 tipo: preguntas
 estado: pendiente
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [oficial, hackathon]
 ---
 
@@ -39,3 +39,7 @@ Resolver en la capacitación del **8 de octubre** y conservar quién respondió,
 4. Ajustar [[Plan de ejecucion]] y [[Registro de trabajo previo y del evento]].
 
 Avanzamos con contexto, diseño y preparación reproducible. La conformidad del código previo sigue pendiente de confirmación: no presumimos prohibición ni autorización expresa.
+
+## Seguimiento de O-01 — 12 de octubre de 2026
+
+Un integrante informó en la sesión de definición que se puede llevar trabajo hecho al evento. No hay todavía constancia escrita de la organización ni de quién respondió: O-01 sigue pendiente hasta registrar esa fuente. Mientras tanto se aplica el guardarraíl G8 de [[Definiciones de producto y plan hasta el pitch]] (tag `pre-evento` y registro de lo adaptado en el evento).

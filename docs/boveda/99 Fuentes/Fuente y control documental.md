@@ -170,3 +170,21 @@ Verificación de la integración: **73 notas Markdown**, **609 enlaces internos 
 Fuente: implementación y validación en vivo del Perfil A Reforzado acordado por el equipo. Se incorpora [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] en `03 Arquitectura/`, documentando el cómputo stateless en AWS EC2 (`44.204.107.167`) desacoplado de la persistencia gestionada en Amazon RDS (`istpetdev-rds-dev` con PostgreSQL 16 + PostGIS) en la VPC del proyecto (`10.42.0.0/16`). Se audita la migración de las 95 tablas en la base central `istpetdev_integration` bajo el rol `migrator_integration`, las políticas RLS y la operatividad de los endpoints de observabilidad `/health/live` y `/health/ready`.
 
 Verificación de la actualización: **74 notas Markdown**, **611 enlaces internos resueltos**, **0 errores**.
+
+## Reestructuración propuesta y specs — 12 de octubre de 2026
+
+Fuente: sesión de definición de un integrante del equipo con asistencia de Claude Code. Se incorpora [[Definiciones de producto y plan hasta el pitch]] con el objetivo norte, las definiciones D1–D8, los cortes de alcance, los guardarraíles contra el dataset del evento, los hitos y el plan B. Se registran ADR-21 a ADR-23 como propuestas (Deciders pendientes), las contradicciones correspondientes en Hechos canónicos, los riesgos R-14 a R-19, las entregas B-41 a B-46 y complementos fechados en alcance, plan de ejecución, plus y consultas. Los specs implementables viven fuera de la bóveda, en `docs/specs/`. Esta actualización es documental: no ejecuta código, migraciones ni despliegues.
+
+Verificación de la actualización: **75 notas Markdown**, **643 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Spec 003 del agente logístico — 12 de octubre de 2026
+
+Fuente: brainstorming del spec 003 en la sesión de definición. Se actualiza D4 en [[Definiciones de producto y plan hasta el pitch]] (DeepSeek con prueba de aceptación, sin comparación de modelos) y se añaden las decisiones de diseño del agente; complemento de ADR-22 y nota en la fila de ADR-08; fila de IA, nombre `AgentRun` y contradicción de scopes en Hechos canónicos; complementos en n8n e IA e Identidad OIDC y sesiones; riesgos R-20 a R-22; criterio de B-44. Actualización documental: no ejecuta workflows, Terraform ni código.
+
+Verificación de la actualización: **75 notas Markdown**, **648 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Propuesta documental del spec 004 — 12 de octubre de 2026
+
+Fuente: brainstorming de campo con decisiones de preparación QR en bodega, recepción por conductor, conflicto por validez operativa, parciales bajo custodia del conductor y resumen público limitado. Se redactaron spec y plan de 004; se actualizaron las notas de producto, arquitectura, demo, hechos canónicos, backlog y riesgos. No se ejecutó el recorrido ni se registraron Deciders. El equipo redactará `task.md` y `test-e2e.md`.
+
+Verificación de esta actualización: **75 notas Markdown**, **653 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.

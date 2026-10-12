@@ -51,6 +51,8 @@ Tablas, FKs por organización y políticas RLS/FORCE: [[Esquema completo de base
 
 ## QR y consulta del jurado
 
+**Propuesta de demo (spec 004, 12-oct):** bodega emite el QR al preparar la caja desde una entrega publicada. La consulta por HTTPS muestra código de unidad, producto/unidad, estado e hitos generales con hora de servidor; omite cantidades y datos personales. El token aleatorio se guarda como hash, vence y puede revocarse. La implementación actual de `PublicTraceService` aún usa una entrega o un registro fijo sin token; el spec exige reemplazarla antes de presentar el QR como custodia real. Ver [[Definiciones de producto y plan hasta el pitch]].
+
 Cada **unidad logística** tiene ID interno y líneas de lote. UUID v7 puede identificarla; el lote también tiene identidad propia. Si una caja lleva un único lote, la pantalla lo muestra, pero no se asume que caja y lote son siempre lo mismo.
 
 Contenido propuesto del QR: URL de consulta con ID de unidad y token público aleatorio revocable. El UUID no es un secreto. El token público habilita solo el resumen deliberadamente compartido; escanear no autoriza una entrega.
