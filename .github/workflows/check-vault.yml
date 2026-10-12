@@ -1,10 +1,14 @@
-name: Verificar bóveda
+name: "CI - Verificación de Bóveda"
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop]
+    paths:
+      - "docs/boveda/**"
   pull_request:
-    branches: [develop, main]
+    branches: [develop]
+    paths:
+      - "docs/boveda/**"
 
 permissions:
   contents: read
