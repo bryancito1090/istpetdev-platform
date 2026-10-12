@@ -267,8 +267,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DB_HOST: ${{ secrets.DB_HOST || 'istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com' }}
           DB_PORT: ${{ secrets.DB_PORT || '5432' }}
-          DB_NAME: ${{ secrets.DB_NAME || 'postgres' }}
-          DB_USER: ${{ secrets.DB_USER || 'istpetadmin' }}
+          DB_NAME: ${{ secrets.DB_NAME || 'istpetdev_integration' }}
+          DB_USER: ${{ secrets.DB_USER || 'migrator_integration' }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_SSL_MODE: ${{ secrets.DB_SSL_MODE || 'Require' }}
         with:
