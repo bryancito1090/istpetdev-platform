@@ -1,7 +1,7 @@
 # ==============================================================================
 # docker-compose.prod.yml
-# Despliegue de producción para IstpetDev Platform
-# Host: AWS EC2 Debian / VPS
+# Despliegue de produccion para IstpetDev Platform
+# Host: AWS EC2 Debian (Stateless) con base de datos en Amazon RDS PostgreSQL
 # Dominio: istpetdev.doicela.dev (con Cloudflare)
 # ==============================================================================
 
