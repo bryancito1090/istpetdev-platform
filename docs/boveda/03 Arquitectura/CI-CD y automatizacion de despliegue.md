@@ -64,7 +64,6 @@ flowchart TD
 * **Automático:** Push a la rama `main` filtrando rutas (`backend/**`, `apps/web/**`, `scripts/base_datos/**`, `docker-compose.yml`, `.github/workflows/deploy.yml`).
 * **Manual (`workflow_dispatch`):**
   * `restart_only` (booleano): Reinicia los contenedores en el servidor sin recompilar ni descargar imágenes (ideal para resolver bloqueos o caídas en 10 segundos).
-  * `reset_database` (booleano): Opcional para entornos de prueba; genera backup preventivo antes de recrear el esquema limpio.
 
 #### Estructura de Trabajos (Jobs):
 
@@ -102,16 +101,11 @@ export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${{ github.sha }}"
 # 4. Descarga de Imágenes
 docker compose pull --quiet
 
-# 5. Inicialización y Salud de la Base de Datos
-docker compose up -d istpetdev-db
-# Espera de disponibilidad de PostgreSQL
-docker compose exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user --timeout=30
+# 5. Verificación de Conectividad con Amazon RDS (Perfil A Reforzado)
+# La persistencia está gestionada en Amazon RDS PostgreSQL 16 (istpetdev-rds-dev en VPC privada).
+# La API .NET valida el esquema de 95 tablas y la salud en el endpoint /health/ready.
 
-# 6. Respaldo Preventivo antes de aplicar cambios
-mkdir -p backups
-docker compose exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db | gzip > "backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql.gz" || true
-
-# 7. Recreación Atómica de Contenedores de Aplicación
+# 6. Recreación Atómica de Contenedores de Aplicación
 docker compose up -d --force-recreate --remove-orphans istpetdev-backend istpetdev-web
 docker image prune -f
 
@@ -224,7 +218,7 @@ Los componentes y workflows han sido materializados en el repositorio de código
 1. **Workflows en .github/workflows/**:
    - ci.yml: Integración continua para backend .NET 8 y frontend Angular 22 (lint, build, tests).
    - deploy.yml: Despliegue inmutable multi-etapa DAG con Docker Buildx, publicación en GHCR, transferencia SCP/SSH a la instancia EC2, backup preventivo de base de datos y health check con reintentos.
-   - ollback.yml: Rollback rápido <30s a una versión específica empleando las imágenes retenidas en la caché del host.
+   - rollback.yml: Rollback rápido <30s a una versión específica empleando las imágenes retenidas en la caché del host.
 
 2. **Contenedores y Compose en infra/**:
    - infra/docker/backend/Dockerfile: Multi-stage build .NET 8 Alpine, usuario no privilegiado $APP_UID, endpoint /health/live.
@@ -256,7 +250,6 @@ Se elevaron los workflows de GitHub Actions al estándar enterprise basado en pa
    - Política de retención local de las últimas 3 versiones de cada imagen para garantizar rollback local instantáneo sin saturar el disco.
 4. **Respaldo Preventivo y Reseteo Controlado**:
    - Cada despliegue genera un snapshot comprimido de la base de datos PostgreSQL (`backups/pre_deploy_*.sql.gz`) antes de actualizar contenedores.
-   - Parámetro `reset_database` en `workflow_dispatch` con backup preventivo automático para inicializaciones limpias en entornos de prueba.
 5. **Workflow de Rollback Enterprise (<30s)**:
    - Permite revertir de inmediato a cualquier SHA previo sin rebuild ni esperas de CI.
    - Incluye autenticación GHCR, verificación en vivo con reintentos hacia `/health/live` y reporte ejecutivo en GitHub Step Summary.
