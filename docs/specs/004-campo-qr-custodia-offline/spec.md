@@ -5,7 +5,7 @@ estado: borrador
 creado: 2026-10-12
 actualizado: 2026-10-12
 aprobado_por: PENDIENTE
-depende_de: ["001", "002", "003"]
+depende_de: ["001", "002"]
 boveda:
   - 02 Producto/Requisitos y aceptacion.md
   - 03 Arquitectura/Movil offline y sincronizacion.md
@@ -97,7 +97,7 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 | ID | Requisito | Traza a bóveda |
 |---|---|---|
 | FR-01 | Bodega DEBE crear `HandlingUnit` y sus líneas de lote desde una `Delivery` publicada antes del despacho; una entrega admite varias unidades, cada unidad pertenece a una sola entrega activa y sus cantidades no exceden las líneas reservadas. | RF-05, Modelo de datos |
-| FR-02 | La API DEBE emitir una URL QR con ID de unidad y token público aleatorio, almacenado solo como hash, con vencimiento y revocación; la etiqueta se imprime desde el navegador. El QR no autoriza escrituras. | RF-05, RF-13, Seguridad y evidencias |
+| FR-02 | La API DEBE emitir una URL QR con ID de unidad y token público aleatorio, almacenado solo como hash, con vencimiento y revocación; la etiqueta se imprime desde el navegador al crearla. Para reimprimir después se emite otro token y se revoca el anterior. El QR no autoriza escrituras. | RF-05, RF-13, Seguridad y evidencias |
 | FR-03 | Despachar DEBE exigir rol Bodega, unidad preparada y entrega publicada; en una transacción valida lote/cantidad, registra movimientos bodega→vehículo, `CustodyEvent` y estado de entrega. Reintentar la misma operación no duplica efectos. | RF-05, RNF-02 |
 | FR-04 | El conductor DEBE descargar solo rutas, revisiones, unidades y entregas asignadas a `Delivery.AssignedAccountId`, con líneas, unidades y hora de actualización suficientes para operar offline. | RF-06, RNF-01 |
 | FR-05 | La PWA DEBE persistir en IndexedDB operación, líneas, foto y PNG de `signature_pad` en una transacción local antes de mostrar «Guardado en el teléfono»; reiniciar la app conserva todo. | RF-06, RF-09, RNF-04, ADR-17 |
@@ -130,7 +130,6 @@ Usa `Delivery`/`DeliveryLine` y lotes FEFO de 002, `RoutePlan`/`RouteStop`, `Han
 | Método y ruta | Rol | Resultado principal |
 |---|---|---|
 | `POST /api/v1/deliveries/{id}/handling-units` | Bodega | Unidad preparada, líneas y URL/etiqueta QR |
-| `GET /api/v1/handling-units/{id}/label` | Bodega | Etiqueta imprimible |
 | `POST /api/v1/deliveries/{id}/dispatch` | Bodega | Movimientos, custodia y entrega despachada |
 | `GET /api/v1/mobile/assignments` | Conductor | Snapshot asignado y revisión de ruta |
 | `POST /api/v1/deliveries/{id}/receipts` | Conductor asignado | Recepción idempotente y estado de evidencia |

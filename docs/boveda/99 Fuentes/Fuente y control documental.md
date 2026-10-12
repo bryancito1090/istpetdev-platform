@@ -185,6 +185,6 @@ Verificación de la actualización: **75 notas Markdown**, **648 enlaces interno
 
 ## Propuesta documental del spec 004 — 12 de octubre de 2026
 
-Fuente: brainstorming de campo con decisiones de preparación QR en bodega, recepción por conductor, conflicto por validez operativa, parciales bajo custodia del conductor y resumen público limitado. Se redactó el spec 004; se actualizaron las notas de producto, arquitectura, demo, hechos canónicos, backlog y riesgos. No se ejecutó el recorrido ni se registraron Deciders. El plan de implementación queda pendiente de revisión del spec por el equipo.
+Fuente: brainstorming de campo con decisiones de preparación QR en bodega, recepción por conductor, conflicto por validez operativa, parciales bajo custodia del conductor y resumen público limitado. Se redactaron spec y plan de 004; se actualizaron las notas de producto, arquitectura, demo, hechos canónicos, backlog y riesgos. No se ejecutó el recorrido ni se registraron Deciders. El equipo redactará `task.md` y `test-e2e.md`.
 
 Verificación de esta actualización: **75 notas Markdown**, **653 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.

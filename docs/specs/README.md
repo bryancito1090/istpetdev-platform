@@ -78,7 +78,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 | 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | borrador |
 | 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
 | 003 | [Agente logístico con n8n](003-agente-logistico/spec.md) (herramientas sobre 002, autonomía con límites, DeepSeek) | Innovación, demo | 002 | borrador (spec y plan; `task.md` y `test-e2e.md` los redacta el equipo) |
-| 004 | Campo: QR, custodia, despacho/recepción y PWA offline | Demo (momento físico), viabilidad | 001 | por escribir |
+| 004 | [Campo: QR, custodia, despacho/recepción y PWA offline](004-campo-qr-custodia-offline/spec.md) | Demo (momento físico), viabilidad | 001, 002 (avisos de 003 al integrar) | borrador (spec y plan; `task.md` y `test-e2e.md` los redacta el equipo) |
 | 005 | Panel web y simulador comparativo de 90 días con KPIs | Impacto, presentación | 002 | por escribir |
 | 006 | Validación, pitch y paquete de entrega (no es código) | Comprensión, presentación, equipo | 002–005 | por escribir |
 

@@ -161,7 +161,7 @@ Aprobadas en el brainstorming del 12-oct; detalle en el [spec 003](../../specs/0
 
 ## Decisiones de diseño del campo (spec 004)
 
-**Propuesta del 12-oct; Deciders PENDIENTE.** El [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) documenta el recorrido de la caja física y sus criterios de aceptación. Estas decisiones no afirman implementación.
+**Propuesta del 12-oct; Deciders PENDIENTE.** El [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) documenta el recorrido de la caja física y sus criterios de aceptación; su [plan](../../specs/004-campo-qr-custodia-offline/plan.md) detalla los contratos de implementación. Estas decisiones no afirman implementación.
 
 | Tema | Propuesta | Motivo |
 |---|---|---|
