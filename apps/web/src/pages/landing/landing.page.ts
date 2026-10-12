@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SessionStore } from '@entities/session';
 import { CheckApiHealthComponent } from '@features/check-api-health';
-import { StatCardComponent, BadgeComponent, ButtonComponent } from '@shared/ui';
+import { StatCardComponent, BadgeComponent, ButtonComponent, CardComponent } from '@shared/ui';
 
 @Component({
   selector: 'page-landing',
@@ -13,7 +13,8 @@ import { StatCardComponent, BadgeComponent, ButtonComponent } from '@shared/ui';
     RouterLink,
     CheckApiHealthComponent,
     StatCardComponent,
-    BadgeComponent
+    BadgeComponent,
+    CardComponent
   ],
   template: `
     <div class="space-y-12 pb-8">
@@ -140,53 +141,59 @@ import { StatCardComponent, BadgeComponent, ButtonComponent } from '@shared/ui';
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-3">
-            <div class="h-10 w-10 rounded-lg bg-primary-100 text-primary-800 flex items-center justify-center font-bold">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
+          <ui-card [hoverable]="true" [padding]="'md'">
+            <div class="space-y-3">
+              <div class="h-10 w-10 rounded-lg bg-primary-100 text-primary-800 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">Ruteo Dinámico & PostGIS</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Cálculo de trayectorias óptimas con Leaflet y soporte espacial en base de datos.
+                Capacidad de replanificación inmediata ante incidentes viales preservando paradas previas.
+              </p>
+              <div class="pt-2">
+                <span class="text-[11px] font-mono text-primary-700 bg-primary-50 px-2 py-1 rounded">ADR-05 Leaflet OSM</span>
+              </div>
             </div>
-            <h3 class="text-base font-bold text-slate-900">Ruteo Dinámico & PostGIS</h3>
-            <p class="text-xs text-slate-600 leading-relaxed">
-              Cálculo de trayectorias óptimas con Leaflet y soporte espacial en base de datos.
-              Capacidad de replanificación inmediata ante incidentes viales preservando paradas previas.
-            </p>
-            <div class="pt-2">
-              <span class="text-[11px] font-mono text-primary-700 bg-primary-50 px-2 py-1 rounded">ADR-05 Leaflet OSM</span>
-            </div>
-          </div>
+          </ui-card>
 
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-3">
-            <div class="h-10 w-10 rounded-lg bg-secondary-100 text-secondary-900 border border-secondary-300 flex items-center justify-center font-bold">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
+          <ui-card [hoverable]="true" [padding]="'md'">
+            <div class="space-y-3">
+              <div class="h-10 w-10 rounded-lg bg-secondary-100 text-secondary-900 border border-secondary-300 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">Custodia Digital Inmutable</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Transacciones atómicas con libro mayor (ledger) y control de concurrencia optimista.
+                Identificadores universales cronológicos UUID v7 y Outbox pattern para auditoría integral.
+              </p>
+              <div class="pt-2">
+                <span class="text-[11px] font-mono text-secondary-800 bg-secondary-50 px-2 py-1 rounded">Clean Architecture .NET 8</span>
+              </div>
             </div>
-            <h3 class="text-base font-bold text-slate-900">Custodia Digital Inmutable</h3>
-            <p class="text-xs text-slate-600 leading-relaxed">
-              Transacciones atómicas con libro mayor (ledger) y control de concurrencia optimista.
-              Identificadores universales cronológicos UUID v7 y Outbox pattern para auditoría integral.
-            </p>
-            <div class="pt-2">
-              <span class="text-[11px] font-mono text-secondary-800 bg-secondary-50 px-2 py-1 rounded">Clean Architecture .NET 8</span>
-            </div>
-          </div>
+          </ui-card>
 
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-3">
-            <div class="h-10 w-10 rounded-lg bg-accent-100 text-accent-800 flex items-center justify-center font-bold">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
+          <ui-card [hoverable]="true" [padding]="'md'">
+            <div class="space-y-3">
+              <div class="h-10 w-10 rounded-lg bg-accent-100 text-accent-800 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">Operación Offline-First PWA</h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Entregas y recepciones hospitalarias capaces de operar sin conectividad a internet en carretera o sótanos,
+                encolando sincronizaciones idempotentes hacia el servidor central.
+              </p>
+              <div class="pt-2">
+                <span class="text-[11px] font-mono text-accent-800 bg-accent-50 px-2 py-1 rounded">ADR-06 / ADR-17 PWA</span>
+              </div>
             </div>
-            <h3 class="text-base font-bold text-slate-900">Operación Offline-First PWA</h3>
-            <p class="text-xs text-slate-600 leading-relaxed">
-              Entregas y recepciones hospitalarias capaces de operar sin conectividad a internet en carretera o sótanos,
-              encolando sincronizaciones idempotentes hacia el servidor central.
-            </p>
-            <div class="pt-2">
-              <span class="text-[11px] font-mono text-accent-800 bg-accent-50 px-2 py-1 rounded">ADR-06 / ADR-17 PWA</span>
-            </div>
-          </div>
+          </ui-card>
         </div>
       </section>
 
