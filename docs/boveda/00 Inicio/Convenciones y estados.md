@@ -4,7 +4,7 @@ estado: vigente
 actualizado: 2026-10-12
 tags: [hackathon, equipo]
 ---
-
+plus
 # Convenciones y estados
 
 ## Organización
