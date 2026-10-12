@@ -169,8 +169,15 @@ jobs:
             set -e
             cd /var/www/istpetdev
 
-            # 1. Asegurar directorios operativos
-            mkdir -p backups releases infra/compose infra/nginx
+            # 1. Asegurar directorios operativos y certificados SSL
+            mkdir -p backups releases infra/compose infra/nginx/certs
+            if [ ! -f infra/nginx/certs/istpetdev.crt ]; then
+              echo "Generando certificado SSL autofirmado de compatibilidad para Nginx..."
+              openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+                -keyout infra/nginx/certs/istpetdev.key \
+                -out infra/nginx/certs/istpetdev.crt \
+                -subj "/C=EC/ST=Pichincha/L=Quito/O=IstpetDev/CN=istpetdev.doicela.dev" 2>/dev/null || true
+            fi
 
             # 2. Autenticación en GHCR
             echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
