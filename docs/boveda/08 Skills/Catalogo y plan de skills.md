@@ -1,7 +1,7 @@
 ---
 tipo: plan-skills
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [istpetdev, documentacion, ia]
 ---
 
@@ -19,7 +19,7 @@ Esta nota documenta las skills del equipo y de dónde sale cada una; el contenid
 | `.claude/skills/` | Copia de `.agents/skills/` | Claude Code |
 | `.local-skills/<nombre>/SKILL.md` | Copia local generada cuando las rutas habituales están restringidas; AGENTS.md la enlaza | Asistente que lea las instrucciones locales del proyecto |
 
-`.gitignore` excluye estos archivos. Lo que sí se versiona es `.github/scripts/check_vault.py`, el verificador de la bóveda que ejecuta el CI (`.github/workflows/check-vault.yml`).
+`.gitignore` excluye estos archivos. Lo que sí se versiona es `docs/boveda/.github/scripts/check_vault.py`, el verificador de la bóveda (las rutas de notas de las skills son relativas a `docs/boveda/`) que ejecuta el CI (`.github/workflows/check-vault.yml`).
 
 **Pendiente (C-06):** comprobar en cada herramienta que use el equipo que descubre las skills desde esa ruta. Si alguna no lo hace, se agrega su ruta como copia generada por el mismo script, nunca como segunda fuente editable.
 
@@ -98,7 +98,7 @@ Con una tarea pequeña y real, en cada herramienta que use el equipo:
 - [ ] Lee las notas indicadas y [[Hechos canonicos]].
 - [ ] Ante un dato faltante responde PENDIENTE y pregunta, en vez de inventar.
 - [ ] Ante una contradicción la reporta con el formato acordado.
-- [ ] Ejecuta `python .github/scripts/check_vault.py` y no deja errores.
+- [ ] Ejecuta `python docs/boveda/.github/scripts/check_vault.py` y no deja errores.
 
 Registrar el resultado con [[Plantilla evidencia]]. Puertas relacionadas: [[Decisiones de arquitectura]] y [[Plan de ejecucion]].
 

@@ -155,7 +155,7 @@ Una vez que el Pull Request es aprobado y fusionado en `develop`:
 
 ### ¿Qué pasa si dos personas crean tablas o modifican el modelo a la vez?
 1. **Regla de división de tareas**: Cada integrante tiene tareas claras asignadas en el backlog de la hackathon. Dos desarrolladores no deberían estar creando la misma entidad en paralelo.
-2. **Nombres canónicos preestablecidos**: La documentación en `HACKATHON` (`00 Inicio/Hechos canonicos.md` y `04 Datos y algoritmos/Modelo de datos.md`) define de antemano el nombre y campos de cada tabla. No se inventan nombres sobre la marcha.
+2. **Nombres canónicos preestablecidos**: La documentación en `docs/boveda/` (`00 Inicio/Hechos canonicos.md` y `04 Datos y algoritmos/Modelo de datos.md`) define de antemano el nombre y campos de cada tabla. No se inventan nombres sobre la marcha.
 
 ### Conflicto de Snapshot en Git (`ApplicationDbContextModelSnapshot.cs`)
 Si tú y un compañero crearon migraciones distintas al mismo tiempo en ramas separadas, Git mostrará un conflicto al hacer rebase o merge en el archivo `ApplicationDbContextModelSnapshot.cs`.

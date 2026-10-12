@@ -18,4 +18,4 @@ jobs:
         with:
           python-version: "3.12"
       - name: Verificar enlaces, IDs y frontmatter
-        run: python .github/scripts/check_vault.py
+        run: python docs/boveda/.github/scripts/check_vault.py

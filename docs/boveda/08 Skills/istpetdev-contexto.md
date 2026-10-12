@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [istpetdev, ia, skills]
 ---
 
@@ -13,7 +13,7 @@ tags: [istpetdev, ia, skills]
 
 Esta skill fija qué es el proyecto y cómo actuar cuando falta información. Las demás skills del equipo la suponen.
 
-Las rutas de esta skill son relativas a la raíz del repositorio.
+Las rutas de notas de esta skill son relativas a `docs/boveda/`; los comandos se ejecutan desde la raíz del repositorio.
 
 ## Leer primero
 
@@ -26,7 +26,7 @@ Las rutas de esta skill son relativas a la raíz del repositorio.
 ## Hechos que no se cambian
 
 - El reto, los entregables, los pesos de evaluación y las fechas salen del manual (`99 Fuentes/Manual oficial.pdf`). Sus resúmenes están en `01 Oficial/`.
-- No existe todavía software implementado. Ninguna propuesta de arquitectura certifica que algo funcione.
+- El código se consulta en el repositorio unificado, fuera de `docs/boveda/`. Ninguna propuesta de arquitectura ni el traslado de la bóveda certifica que una aplicación funcione.
 - Las cifras del escenario (80 puntos, 90 días, cinco días de cobertura) son propuesta del equipo, no datos de una empresa.
 - No hay resultados medidos. Todo ahorro, porcentaje o mejora es PENDIENTE hasta que exista una ejecución con seed y manifiesto.
 
@@ -75,7 +75,7 @@ Después, registrarla en la tabla «Contradicciones abiertas» de `00 Inicio/Hec
 Después de cambiar documentación o skills:
 
 ```bash
-python .github/scripts/check_vault.py
+python docs/boveda/.github/scripts/check_vault.py
 ```
 
 ## Origen

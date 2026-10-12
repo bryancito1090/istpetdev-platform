@@ -9,10 +9,11 @@ IstpetDev está formado por cinco integrantes con experiencia transversal. El tr
 1. Clona este repositorio con tu cuenta de GitHub autorizada:
 
    ```bash
-   gh repo clone bryancito1090/istpetdev-hackathon-2026
+   gh repo clone bryancito1090/istpetdev-platform
+   cd istpetdev-platform
    ```
 
-2. En Obsidian, selecciona **Abrir carpeta como bóveda** y elige la carpeta clonada.
+2. En Obsidian, selecciona **Abrir carpeta como bóveda** y elige `docs/boveda/` dentro de la carpeta clonada.
 3. Empieza por [Bienvenido.md](Bienvenido.md) y el [mapa de la bóveda](00%20Inicio/Mapa%20de%20la%20boveda.md).
 
 Los enlaces internos de las notas están preparados para Obsidian. El manual oficial se incluye en el repositorio.
@@ -42,23 +43,21 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 
 ## Compartir cambios
 
-Trabajamos los cambios en `develop` y los integramos en `main` cuando están listos. Antes de editar, actualiza tu copia:
+La bóveda y el código comparten `istpetdev-platform`. Ejecuta los comandos Git desde la raíz del repositorio. Crea una rama a partir de `develop` actualizado y publica mediante PR a `develop`:
 
 ```bash
 git fetch origin
 git switch develop
 git pull --ff-only
+git switch -c docs/actualizar-boveda
+# Guarda tus cambios en Obsidian y revisa git status.
+git add docs/boveda
+git commit -m "docs(boveda): actualizar documentacion del equipo"
+git push -u origin docs/actualizar-boveda
+gh pr create --base develop --fill
 ```
 
-Guarda los cambios de Obsidian, revisa `git status` y publica cambios pequeños en `develop`:
-
-```bash
-git add --all
-git commit -m "docs: actualizar documentacion del equipo"
-git push
-```
-
-Si la actualización indica que las ramas divergen, conserva tus cambios y resuelve la integración antes de publicar. Evita editar simultáneamente la misma nota sin coordinarlo.
+`main` recibe releases desde `develop`. Si hay divergencias, integra conservando los cambios antes de publicar. Coordina las ediciones simultáneas de una nota.
 
 La configuración común de Obsidian se versiona. `.gitignore` excluye las sesiones personales (`.obsidian/workspace*.json`), las preferencias del grafo (`.obsidian/graph.json`), los logs, las cachés, la papelera y los temporales. Estos archivos permanecen en el disco de cada integrante.
 
@@ -67,7 +66,7 @@ La configuración común de Obsidian se versiona. `.gitignore` excluye las sesio
 Las skills y los archivos de configuración de asistentes (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.agents/`, `.claude/`) son locales y no se versionan; están documentados en el [catálogo de skills](08%20Skills/Catalogo%20y%20plan%20de%20skills.md). Antes de publicar cambios, verifica la bóveda:
 
 ```bash
-python .github/scripts/check_vault.py
+python docs/boveda/.github/scripts/check_vault.py
 ```
 
 ## Estado del proyecto
@@ -95,3 +94,9 @@ Se ampliaron las exclusiones locales de Git; no sustituyen revisar el contenido 
 La [guía de puesta en marcha](03%20Arquitectura/Puesta%20en%20marcha%20del%20workspace%20y%20AWS%20dev.md) incluye el prompt para preparar/publicar ISTPETDEV y los pasos de consola/terminal para aprovisionar dev. Se propone bootstrap persistente de state por consola y red/RDS desde Terraform; scripts, instalaciones y recursos siguen pendientes de ejecución.
 
 **Escenario posterior vigente:** leer [AWS temporal y cierre](03%20Arquitectura/AWS%20temporal%20para%20la%20hackathon%20y%20cierre.md) antes del prompt/guía anterior. Para aprovechar créditos, se propone IAM individual/MFA con `aws login` en la cuenta independiente, sin crear Organizations, y retiro de la infraestructura del proyecto al terminar la hackathon, incluido bootstrap al final. Configuración y cierre siguen pendientes de ejecución.
+
+## Repositorio unificado — 12 de octubre de 2026
+
+Por instrucción de Bryan, la ubicación vigente de esta bóveda es `docs/boveda/` en [istpetdev-platform](https://github.com/bryancito1090/istpetdev-platform). Se conserva el historial del repositorio documental mediante una importación Git subtree, con archivos ordinarios: no requiere submódulos ni un segundo clon. El repositorio documental anterior queda como referencia histórica; las nuevas ediciones se realizan aquí.
+
+Las rutas de notas, adjuntos y configuración de Obsidian se mantienen relativas a esta carpeta. Los comandos de verificación se ejecutan desde la raíz del monorepo; el workflow activo está en `.github/workflows/check-vault.yml`. La importación conserva los acuerdos fechados anteriores; leer la decisión vigente en [Repositorio de software y versiones](03%20Arquitectura/Repositorio%20de%20software%20y%20versiones.md).

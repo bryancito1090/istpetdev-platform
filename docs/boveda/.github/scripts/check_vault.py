@@ -2,7 +2,7 @@
 """Verificador de la bóveda IstpetDev.
 
 Uso (desde cualquier carpeta):
-    python .github/scripts/check_vault.py
+    python docs/boveda/.github/scripts/check_vault.py
 
 Errores (salida 1): enlaces internos rotos, nombres de nota duplicados, frontmatter
 incompleto, estados no válidos, IDs definidos fuera de su nota dueña o repetidos,

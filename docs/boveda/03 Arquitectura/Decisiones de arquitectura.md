@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [arquitectura, contratos]
 ---
 
@@ -24,13 +24,14 @@ tags: [arquitectura, contratos]
 | ADR-09 | Cloud y hosting | Dual: EC2 Hardened (Demo) / ECS Fargate (P2) | **Aceptada, 2026-10-06** (registrada por JorgeDoicela, commit 4c3a9ef; Deciders PENDIENTE): perfil ágil económico para hackathon y elástico para escala nacional; [[AWS y Terraform]]. Ampliada el 2026-10-07: ver complemento |
 | ADR-10 | Identidad | No definida | **Definida, 2026-10-07** (decisión delegada por Bryan, be0b127): Amazon Cognito; [[Identidad OIDC y sesiones]] |
 | ADR-11 | Auditoría | Trazabilidad «inmutable» | Ledger append-only en aplicación; describir garantías reales |
-| ADR-12 | Repo y colaboración | Bóveda en GitHub personal | Bóveda en bryancito1090/istpetdev-hackathon-2026; software en bryancito1090/istpetdev-platform, creado vacío el 2026-10-07 (be0b127) |
+| ADR-12 | Repo y colaboración | Reemplazada por ADR-20 | Se conserva el acuerdo del 7-oct-2026 como histórico; código y bóveda se unifican por instrucción de Bryan el 12-oct-2026 |
 | ADR-13 | Arquitectura frontend | Feature-Sliced Design (FSD) | **Aceptada por el equipo, 2026-10-06** (registrada por bryancito1090, commit 765c532; Deciders por nombrar): capas y límites en [[Frontend con Feature-Sliced Design]] |
 | ADR-14 | Autorización | Control de acceso basado en roles (RBAC) | **Aceptada, 2026-10-06** (registrada por bryancito1090, commit 5905073, como «instrucción del usuario»; Deciders por nombrar): permisos por rol y ámbito en servidor; [[Seguridad y evidencias]] |
 | ADR-15 | CI/CD y Hardening Host | Pipeline DAG + GHCR + Rollback SHA + Defensa 6 Capas | **Aceptada, 2026-10-06** (registrada por JorgeDoicela, commit 4c3a9ef; Deciders PENDIENTE): compilación en runners, rotación 3 imágenes, rollback con objetivo <30 s y Lynis >80/100; [[CI-CD y automatizacion de despliegue]] y [[Hardening y seguridad de servidores]] |
 | ADR-16 | Configuración desde DB | Roles y concesiones administrables, plantillas/procesos/parámetros versionados y aislamiento RLS | **Aceptada por Bryan, 2026-10-09**, instrucción directa en conversación: amplía ADR-14 y sustituye su límite de roles fijos; diseño en [[RBAC y configuracion del sistema]] y [[Esquema completo de base de datos]], implementación pendiente |
 | ADR-17 | Móvil offline y firma digital | PWA con IndexedDB y `signature_pad` | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Captura de firma táctil en canvas exportada a PNG, persistencia en IndexedDB (`idb`) con UUID v7, y sincronización encolada e idempotente hacia backend/S3. |
 | ADR-18 | Cliente OIDC y Cognito PKCE | Flujo Authorization Code con PKCE S256 en Angular | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Flujo OIDC seguro PKCE S256 contra User Pool dev, sin client secret en cliente web/móvil, e inyección de token JWT mediante `AuthInterceptor` en `shared/api`. |
+| ADR-20 | Repositorio unificado | Código y bóveda en istpetdev-platform | **Aceptada por Bryan, 2026-10-12**, instrucción directa: bóveda en `docs/boveda/`, historial conservado e integración por PR a `develop`; reemplaza ADR-12 |
 
 ## ADR-01 — versión de backend
 
@@ -168,3 +169,15 @@ Se selecciona Cognito administrado para evitar operar otro servidor de identidad
 **Definición:** [[Esquema completo de base de datos]], [[RBAC y configuracion del sistema]], [[Verificacion de seguridad antes del lanzamiento]] y [[istpetdev-prelaunch]]. Migraciones EF preservan esquema/datos previos y la separación migrador/API; [[Conexion PostgreSQL en DBeaver]] prepara las dos conexiones sin crear credenciales duplicadas.
 
 Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicados por Bryan. Mapas continúa en ADR-05 pendiente de prueba/costo/licencia. Cuenta AWS y presupuesto están disponibles; se cargan valores privados sin volver a tratar su disponibilidad como bloqueo. Ver [[Entornos y operacion acordados]].
+
+## ADR-20 — repositorio unificado
+
+**Estado:** aceptado. **Fecha:** 2026-10-12. **Decider:** Bryan. **Origen:** instrucción directa de integrar esta bóveda dentro de `bryancito1090/istpetdev-platform` y resolver los conflictos. **Reemplaza:** ADR-12.
+
+**Contexto:** El código y las decisiones estaban en repositorios separados. Bryan pide trabajar con un solo repositorio.
+
+**Decisión:** Importar la bóveda en `docs/boveda/` de `istpetdev-platform`, conservando el historial Git por subtree y manteniendo los archivos Markdown, el PDF y la configuración común de Obsidian. Los archivos son parte normal del repositorio; no hay submódulo. El repositorio anterior conserva el contexto histórico.
+
+**Consecuencias:** Obsidian abre `docs/boveda/`. Las nuevas ediciones y los PR se realizan en `istpetdev-platform`, hacia `develop`. El workflow de la bóveda se ejecuta desde `.github/workflows/check-vault.yml`, invocando `python docs/boveda/.github/scripts/check_vault.py`. Las sesiones personales y las configuraciones locales de asistentes siguen excluidas de Git. Los acuerdos anteriores fechados se conservan como históricos.
+
+**Verificación:** registro de integración y navegación en [[Fuente y control documental]]. Este traslado documental no acredita ejecución de las aplicaciones ni migraciones de base de datos.

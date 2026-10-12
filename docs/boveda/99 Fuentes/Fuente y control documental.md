@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [istpetdev, documentacion]
 ---
 
@@ -156,3 +156,11 @@ Validación de la documentación tras esta respuesta: **72 notas Markdown**, **5
 Se revisaron la respuesta del agente de software, el commit 8c6791cc6bf5c730b0447d343897fef4fae0e4e7 y el verificador EF/Npgsql/NTS. Las cuatro huellas del registro privado coinciden con las fuentes actuales. Se registran PASS del pool secuencial de tamaño uno, materialización/consulta espacial y denegaciones directas del filtro/controlador, sin presentarlos como autenticación ni transporte HTTP. El ensayo no consultó RDS; no cambió producción ni migraciones. Alcance y pendientes en [[Coordinacion migracion schema95]]. La bóveda no repitió el ensayo ni aprobó el merge.
 
 Validación del estado documental actualizado: **73 notas Markdown**, **607 enlaces internos resueltos**; permanecen los dos avisos previos de lenguaje de propuesta.
+
+## Repositorio unificado — 12 de octubre de 2026
+
+Fuente: instrucción directa de Bryan de integrar esta bóveda en `bryancito1090/istpetdev-platform`. ADR-20 reemplaza ADR-12 y registra `docs/boveda/` como ubicación vigente. Importación mediante Git subtree desde el commit documental `a2fdf1a`; su historial permanece alcanzable desde el historial del monorepo. La base de software utilizada es `2c53e3c` de `develop`.
+
+Se conservan notas, adjuntos y configuración común de Obsidian. Se actualizan instrucciones de clonación, referencias de repositorio, flujo por PR y comandos de verificación. El workflow y la plantilla de PR se trasladan a `.github/` de la plataforma. Los archivos personales y cambios locales se preservan sin publicarlos. Esta verificación corresponde a la estructura y navegación documental; no ejecuta aplicaciones, migraciones ni despliegues.
+
+Verificación de la integración: **73 notas Markdown**, **609 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta presentes en la bóveda original.

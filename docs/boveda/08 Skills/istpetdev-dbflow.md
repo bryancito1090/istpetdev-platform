@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [istpetdev, ia, skills, base-de-datos, postgresql, migraciones]
 ---
 
@@ -78,7 +78,7 @@ Para Bryan, el comando `bash scripts/db/migrate-personal.sh istpetdev-admin dev_
 
 - Con la API autorizada y ejecutándose, `GET http://localhost:5000/health/ready` devuelve `HTTP 200 OK` demostrando conectividad a la base de datos. No acredita autorización, aislamiento RLS ni funciones de negocio.
 - Tipos de datos correctos: identificadores con UUIDv7, fechas en UTC (`DateTime.UtcNow`) y dinero/cantidades en `decimal` con escala explícita.
-- Comprobación de integridad con `python .github/scripts/check_vault.py` antes de fusionar documentación.
+- Comprobación de integridad con `python docs/boveda/.github/scripts/check_vault.py` antes de fusionar documentación.
 
 ## Origen
 

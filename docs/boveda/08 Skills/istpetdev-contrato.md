@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [istpetdev, ia, skills]
 ---
 
@@ -11,7 +11,7 @@ tags: [istpetdev, ia, skills]
 
 > Documentación de la skill `istpetdev-contrato`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-contrato` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].
 
-Rutas relativas a la raíz del repositorio. Leer antes [[istpetdev-contexto]].
+Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación se ejecutan desde la raíz del repositorio. Leer antes [[istpetdev-contexto]].
 
 ## Fuente única
 
@@ -52,7 +52,7 @@ Rutas relativas a la raíz del repositorio. Leer antes [[istpetdev-contexto]].
 ## Verificar
 
 ```bash
-python .github/scripts/check_vault.py
+python docs/boveda/.github/scripts/check_vault.py
 ```
 
 Cuando exista código: generar el OpenAPI desde la API y comprobar los clientes contra él (comando PENDIENTE en `00 Inicio/Hechos canonicos.md`).

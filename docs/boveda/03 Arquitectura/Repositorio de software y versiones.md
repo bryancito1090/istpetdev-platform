@@ -1,11 +1,19 @@
 ---
 tipo: arquitectura
 estado: aceptado
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [arquitectura, repositorio, versiones, acuerdos]
 ---
 
 # Repositorio de software y versiones
+
+## Ubicación vigente — 12 de octubre de 2026
+
+**Decider:** Bryan, por instrucción directa. ADR-20 reemplaza la separación de repositorios de ADR-12: código y documentación viven en [istpetdev-platform](https://github.com/bryancito1090/istpetdev-platform), privado. La bóveda es `docs/boveda/` dentro del repositorio; abrir esa carpeta en Obsidian. La carpeta local del monorepo es `~/Projects/ISTPETDEV`.
+
+El código ya existe en `src/`, `apps/` y las demás carpetas de la plataforma; el estado de esqueleto vacío descrito abajo corresponde al 7 de octubre. El traslado incluye el historial documental por Git subtree y conserva los enlaces internos y el manual. Los cambios entran mediante ramas de trabajo y PR hacia `develop`; las releases van de `develop` a `main`.
+
+Verificar la documentación desde la raíz con `python docs/boveda/.github/scripts/check_vault.py`. El workflow activo vive en `.github/workflows/check-vault.yml`; los archivos locales de asistentes y las sesiones personales de Obsidian permanecen ignorados. El repositorio documental anterior es referencia histórica.
 
 ## Decisiones y alcance del 7 de octubre
 

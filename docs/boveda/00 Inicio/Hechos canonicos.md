@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [hackathon, equipo, ia]
 ---
 
@@ -33,9 +33,9 @@ Certeza: ✅ confirmado con fuente · ⚠️ a validar (propuesta, supuesto o da
 |---|---|---|---|
 | Nombre | IstpetDev | [[Informacion inicial del equipo]] | ✅ |
 | Integrantes | 5, sin asignación fija de especialidades | [[Equipo y acuerdos]] | ✅ |
-| Repositorio de la bóveda | bryancito1090/istpetdev-hackathon-2026 (privado) | README | ✅ |
-| Rama de trabajo | `develop`; se integra en `main` | README | ✅ |
-| Repositorio de código | bryancito1090/istpetdev-platform (privado), creado vacío el 7-oct-2026; esqueleto solo local en el equipo de Bryan | ADR-12; [[Repositorio de software y versiones]] | ✅ |
+| Repositorio de la bóveda | `docs/boveda/` dentro de bryancito1090/istpetdev-platform (privado); repositorio anterior como referencia histórica | ADR-20; [[Repositorio de software y versiones]] | ✅ |
+| Rama de trabajo | Ramas de trabajo mediante PR a `develop`; releases desde `develop` a `main` | ADR-20; README | ✅ |
+| Repositorio de código | bryancito1090/istpetdev-platform (privado), con código y bóveda; carpeta local `~/Projects/ISTPETDEV` | ADR-20; [[Repositorio de software y versiones]] | ✅ |
 | Skills de IA | Documentadas en [[Catalogo y plan de skills]]; los archivos no se versionan en la bóveda. Dónde viven para el código: PENDIENTE | C-01 | ⚠️ |
 
 ## Escenario de demostración
@@ -93,7 +93,8 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Cloud y hosting | ADR-09 | Aceptada | JorgeDoicela (4c3a9ef) | PENDIENTE |
 | Identidad | ADR-10 | Definida (delegada) | bryancito1090 (be0b127) | Delegada por Bryan |
 | Auditoría | ADR-11 | Propuesta | bryancito1090 (765c532) | — |
-| Repositorio | ADR-12 | Repositorio creado vacío | bryancito1090 (765c532, be0b127) | Bryan |
+| Repositorio | ADR-12 | Reemplazada por ADR-20; acuerdo del 7-oct conservado | bryancito1090 (765c532, be0b127) | Bryan |
+| Repositorio unificado | ADR-20 | Aceptada el 12-oct-2026 | Instrucción directa de Bryan | Bryan |
 | Frontend FSD | ADR-13 | Aceptada «por el equipo» | bryancito1090 (765c532) | PENDIENTE confirmar nombres |
 | RBAC | ADR-14 | Aceptada | bryancito1090 (5905073) | PENDIENTE confirmar nombres |
 | CI/CD y hardening | ADR-15 | Aceptada | JorgeDoicela (4c3a9ef) | PENDIENTE |
@@ -144,10 +145,10 @@ Tomados de [[Modelo de datos]] y [[Contratos API y eventos]]. Ningún asistente 
 
 | Dato | Valor | Certeza |
 |---|---|---|
-| Estructura del repositorio de código | `src/` (Api, Application, Domain, Infrastructure), `apps/web`, `apps/mobile`, `libs/shared-core`, `infra/`, `automation/n8n/workflows/`, `scripts/`, `tests/`; árbol completo en [[Repositorio de software y versiones]]. Los filtros de CI usan `src/**`, no `backend/**` | ✅ acordada, sin generar |
+| Estructura del repositorio de código | `src/` (Api, Application, Domain, Infrastructure), `apps/web`, `apps/mobile`, `libs/shared-core`, `infra/`, `automation/n8n/workflows/`, `scripts/`, `tests/`; bóveda en `docs/boveda/`; árbol completo en [[Repositorio de software y versiones]]. Los filtros de CI usan `src/**`, no `backend/**` | ✅ estructura acordada; código en el repositorio unificado |
 | Puertos internos (ejemplo, solo loopback) | API 5000, PostgreSQL 5432, Redis 6379, n8n 5678 | ⚠️ propuesta |
-| Comando de verificación de la bóveda | `python .github/scripts/check_vault.py` | ✅ |
-| Comandos de build, test y despliegue del código | PENDIENTE: el repositorio de código está vacío | ⚠️ |
+| Comando de verificación de la bóveda | `python docs/boveda/.github/scripts/check_vault.py` | ✅ |
+| Comandos de build, test y despliegue del código | Consultar README.md y package.json de la plataforma; ejecución no comprobada durante el traslado documental | ⚠️ validación fuera del alcance del traslado |
 
 ## Contradicciones abiertas
 

@@ -1,7 +1,7 @@
 ---
 tipo: guia
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [hackathon, equipo]
 ---
 
@@ -49,7 +49,7 @@ Las páginas del manual se cuentan desde la portada, que es la página 1. Sus cu
 - **Código en notas.** Todo bloque de código dentro de la bóveda es un **ejemplo no probado** salvo que enlace evidencia de ejecución. No se copia a un repositorio como si estuviera validado.
 - **Lenguaje.** En notas de propuesta no usar «garantiza», «instantáneo», «cero», «imposible» o «absoluto» como hechos. Escribir el objetivo y si está medido.
 - **Una sola fuente.** Antes de repetir una regla en otra nota, enlazar la nota que ya la contiene.
-- **Verificación.** Antes de publicar cambios: `python .github/scripts/check_vault.py`.
+- **Verificación.** Antes de publicar cambios: `python docs/boveda/.github/scripts/check_vault.py`.
 
 ## Trabajo compartido
 
@@ -59,8 +59,8 @@ Las páginas del manual se cuentan desde la portada, que es la página 1. Sus cu
 - Fórmulas oficiales del equipo: [[Simulador y metricas]].
 - Registrar cambios relevantes en [[Fuente y control documental]] y decisiones en [[Decisiones de arquitectura]].
 - Las skills del equipo y las reglas para asistentes de IA se documentan en [[Catalogo y plan de skills]]; sus archivos (`AGENTS.md`, `.agents/`, `.claude/`) son locales y no se suben a esta bóveda.
-- Compartimos la bóveda mediante Git y GitHub en bryancito1090/istpetdev-hackathon-2026. Hacer cambios pequeños y revisar conflictos antes de publicar.
-- Trabajar los cambios en `develop` y actualizarla con `git pull --ff-only` antes de editar. Integrar en `main` cuando estén listos. Si hay divergencia, integrar conservando los cambios; no forzar el push para resolverla.
+- Compartimos la bóveda en `docs/boveda/` mediante Git y GitHub en bryancito1090/istpetdev-platform (ADR-20, instrucción de Bryan del 12-oct-2026). Hacer cambios pequeños y revisar conflictos antes de publicar.
+- Crear ramas de trabajo desde `develop` actualizado con `git pull --ff-only` e integrar mediante PR a `develop`. `main` recibe releases desde `develop`. Si hay divergencia, integrar conservando los cambios; no forzar el push para resolverla.
 - `.obsidian/workspace*.json` guarda sesiones personales y `.obsidian/graph.json` guarda preferencias del grafo. Ambos están excluidos mediante `.gitignore`, junto con logs, cachés, papelera y temporales; la configuración común sí se versiona.
 
 ## Fuentes y evidencia

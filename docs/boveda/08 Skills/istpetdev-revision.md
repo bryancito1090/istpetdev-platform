@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [istpetdev, ia, skills]
 ---
 
@@ -11,7 +11,7 @@ tags: [istpetdev, ia, skills]
 
 > Documentación de la skill `istpetdev-revision`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-revision` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].
 
-Rutas relativas a la raíz del repositorio. Esta skill es la única definición de Conventional Commits del equipo; las demás la enlazan.
+Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación se ejecutan desde la raíz del repositorio. Esta skill es la única definición de Conventional Commits del equipo; las demás la enlazan.
 
 ## Flujo de ramas
 
@@ -53,7 +53,7 @@ No usar mensajes como «fix bug», «cambios», «WIP» o «update file». Alcan
 
 Severidad de cada observación: 🔴 BLOCKER (no se fusiona) · 🟡 WARNING (corregir o registrar como deuda) · 🟢 SUGGESTION · ℹ️ INFO.
 
-- [ ] `python .github/scripts/check_vault.py` termina sin errores.
+- [ ] `python docs/boveda/.github/scripts/check_vault.py` termina sin errores.
 - [ ] Ningún dato inventado: cifras, versiones, rutas y comandos tienen fuente o están en `00 Inicio/Hechos canonicos.md`.
 - [ ] Contradicciones nuevas reportadas y registradas, no corregidas en silencio.
 - [ ] Cada cambio de comportamiento cita su RF/RNF o ADR.

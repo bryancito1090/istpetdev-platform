@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: vigente
-actualizado: 2026-10-06
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -30,8 +30,8 @@ Esta bóveda **no asigna personas a áreas ni reparte especialidades**. Define r
 |---|---|
 | Nombre/cantidad de integrantes | Confirmado por el equipo: IstpetDev, 5 |
 | Reto inscrito | Reto 1 declarado; conservar confirmación oficial |
-| Repositorio de la bóveda | [bryancito1090/istpetdev-hackathon-2026](https://github.com/bryancito1090/istpetdev-hackathon-2026), privado |
-| Repositorio de código | Pendiente |
+| Repositorio de la bóveda | `docs/boveda/` en [bryancito1090/istpetdev-platform](https://github.com/bryancito1090/istpetdev-platform), privado; ADR-20 aceptada por Bryan el 12-oct-2026 |
+| Repositorio de código | istpetdev-platform, compartido con la bóveda (ADR-20) |
 | Método de compartir/sincronizar la bóveda | Git/GitHub; instrucciones en README.md; sesiones personales excluidas |
 | Cuenta AWS y límite de gasto | Pendiente |
 | Región/dominio/certificados | Pendiente |

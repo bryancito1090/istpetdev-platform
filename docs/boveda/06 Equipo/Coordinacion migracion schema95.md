@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: vigente
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [istpetdev, equipo, migraciones, coordinacion]
 ---
 
@@ -75,7 +75,7 @@ Las funciones futuras de rutas/flota, administración RBAC, campos sensibles, fo
 - Actualizar [[Esquema completo de base de datos]], [[Hechos canonicos]] y [[Registro de trabajo previo y del evento]] con el estado personal comprobado en el informe.
 - Corregir [[istpetdev-dbflow]] para no reescribir migraciones aplicadas, incluso antes del merge, y usar el perfil AWS correcto de Bryan.
 - Mantener B-37 en curso y conservar las pruebas pendientes en [[Backlog]].
-- Verificar enlaces y formato con `python3 .github/scripts/check_vault.py`.
+- Verificar enlaces y formato con `python3 docs/boveda/.github/scripts/check_vault.py`.
 - Dejar los cambios de documentación disponibles para revisión, sin commit ni push desde esta sesión.
 
 ## Parte del agente de ISTPETDEV

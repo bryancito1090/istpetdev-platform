@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [istpetdev, ia, skills]
 ---
 
@@ -11,7 +11,7 @@ tags: [istpetdev, ia, skills]
 
 > Documentación de la skill `istpetdev-datos`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-datos` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].
 
-Rutas relativas a la raíz del repositorio. Leer antes [[istpetdev-contexto]].
+Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación se ejecutan desde la raíz del repositorio. Leer antes [[istpetdev-contexto]].
 
 ## Leer primero
 
