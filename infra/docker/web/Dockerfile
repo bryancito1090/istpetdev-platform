@@ -20,6 +20,9 @@ RUN npm ci
 COPY libs/shared-core/ libs/shared-core/
 RUN npm run build:shared
 
+# Copiar archivos de configuración del monorepo (ESLint y Nx)
+COPY eslint.config.mjs nx.json ./
+
 # Copiar y compilar la aplicación Web
 COPY apps/web/ apps/web/
 RUN npm run build:web
