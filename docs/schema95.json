@@ -1,0 +1,3592 @@
+[
+  {
+    "name": "Organization",
+    "scope": "R",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "TimeZone",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "AuthorizationVersion",
+        "sql": "bigint",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Account",
+    "scope": "G",
+    "props": [
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Issuer",
+        "sql": "character varying(512)",
+        "nullable": false
+      },
+      {
+        "name": "Subject",
+        "sql": "character varying(512)",
+        "nullable": true
+      },
+      {
+        "name": "ClientId",
+        "sql": "character varying(512)",
+        "nullable": true
+      },
+      {
+        "name": "DisplayName",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Permission",
+    "scope": "G",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ModuleCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ActionCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ResourceKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsDelegable",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "FieldDefinition",
+    "scope": "G",
+    "props": [
+      {
+        "name": "EntityCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "FieldCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "DataType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsServerControlled",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "Sensitivity",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Role",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "Description",
+        "sql": "character varying(2000)",
+        "nullable": true
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "IsSeed",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "IsTechnical",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RolePermission",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PermissionId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RoleFieldPermission",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "FieldDefinitionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "CanRead",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "CanWrite",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "OrganizationAccess",
+    "scope": "T",
+    "props": [
+      {
+        "name": "AccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "ValidFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ValidToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "GrantedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AccessRole",
+    "scope": "T",
+    "props": [
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RoleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "GrantedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AccessLocation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "GrantedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AccessServicePoint",
+    "scope": "T",
+    "props": [
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "GrantedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AccessDelegation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PermissionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ScopeKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "CanDelegateFurther",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "ValidFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ValidToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "GrantedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RbacChange",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "TargetAccessId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "TargetRoleId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ChangeKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "BeforeJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "AfterJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      },
+      {
+        "name": "CorrelationId",
+        "sql": "character varying(128)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ConfigurationDefinition",
+    "scope": "G",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ModuleCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ValidationSchemaJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "Sensitivity",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "AllowedScopes",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ConfigurationVersion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ConfigurationDefinitionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "ValuesJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "PublishedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ConfigurationActivation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ScopeKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "EffectiveFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "EffectiveToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ChangedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Catalog",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "ValueType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "CatalogOption",
+    "scope": "T",
+    "props": [
+      {
+        "name": "CatalogId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Label",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "OrderNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "MetadataJson",
+        "sql": "jsonb",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "WorkflowDefinition",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ModuleCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "WorkflowVersion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "WorkflowDefinitionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "PublishedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "WorkflowState",
+    "scope": "T",
+    "props": [
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Label",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "IsInitial",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "IsTerminal",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "WorkflowTransition",
+    "scope": "T",
+    "props": [
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "FromStateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ToStateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PermissionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "HandlerCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ConditionJson",
+        "sql": "jsonb",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Template",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ModuleCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "TemplateVersion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "TemplateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ValidationSchemaJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "LayoutJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "ContentJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "PublishedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "TemplateField",
+    "scope": "T",
+    "props": [
+      {
+        "name": "TemplateVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Key",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Label",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "DataType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsRequired",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "OrderNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "ValidationJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "VisibilityConditionJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "Sensitivity",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "CatalogId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "TemplateFieldOption",
+    "scope": "T",
+    "props": [
+      {
+        "name": "TemplateFieldId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Label",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "OrderNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "TemplateFieldAccess",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "TemplateFieldId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "CanRead",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "CanWrite",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "TemplateBinding",
+    "scope": "T",
+    "props": [
+      {
+        "name": "TemplateVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ModuleCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ActionCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ScopeKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "EffectiveFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "EffectiveToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "FormSubmission",
+    "scope": "T",
+    "props": [
+      {
+        "name": "TemplateVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SubmittedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DataJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "SensitiveDataCiphertext",
+        "sql": "bytea",
+        "nullable": true
+      },
+      {
+        "name": "EncryptionKeyVersion",
+        "sql": "character varying(64)",
+        "nullable": true
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SupersedesSubmissionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "InventoryMovementId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "FormAttachment",
+    "scope": "T",
+    "props": [
+      {
+        "name": "FormSubmissionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StoredFileId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "TemplateFieldId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ServicePoint",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "TypeOptionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Position",
+        "sql": "geography(Point,4326)",
+        "nullable": true
+      },
+      {
+        "name": "Criticality",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "ServicePointWindow",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DayOfWeek",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "StartLocalTime",
+        "sql": "time without time zone",
+        "nullable": false
+      },
+      {
+        "name": "EndLocalTime",
+        "sql": "time without time zone",
+        "nullable": false
+      },
+      {
+        "name": "ValidFromDate",
+        "sql": "date",
+        "nullable": false
+      },
+      {
+        "name": "ValidToDate",
+        "sql": "date",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "ServicePointContact",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DisplayNameCiphertext",
+        "sql": "bytea",
+        "nullable": true
+      },
+      {
+        "name": "PhoneCiphertext",
+        "sql": "bytea",
+        "nullable": true
+      },
+      {
+        "name": "EmailCiphertext",
+        "sql": "bytea",
+        "nullable": true
+      },
+      {
+        "name": "EncryptionKeyVersion",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Location",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "VehicleId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Position",
+        "sql": "geography(Point,4326)",
+        "nullable": true
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Vehicle",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RegistrationCiphertext",
+        "sql": "bytea",
+        "nullable": false
+      },
+      {
+        "name": "MaxWeight",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "MaxVolume",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "VehicleAvailability",
+    "scope": "T",
+    "props": [
+      {
+        "name": "VehicleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "AvailableFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "AvailableToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "DepotLocationId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "VehiclePosition",
+    "scope": "T",
+    "props": [
+      {
+        "name": "VehicleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "RecordedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "Position",
+        "sql": "geography(Point,4326)",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Product",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Sku",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "BaseUnit",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "WeightPerBaseUnit",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "VolumePerBaseUnit",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ProductUnitConversion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PackagingCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "BaseQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Lot",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Origin",
+        "sql": "character varying(64)",
+        "nullable": true
+      },
+      {
+        "name": "ExpiresOn",
+        "sql": "date",
+        "nullable": true
+      },
+      {
+        "name": "ConditionOptionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "IsBlocked",
+        "sql": "boolean",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "HandlingUnit",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "SealedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "HandlingUnitLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "HandlingUnitId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Quantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "InventoryMovement",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RecordedSequence",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "FromLocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ToLocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Quantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "DeliveryLineId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptLineId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ConsumptionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "StockBalance",
+    "scope": "T",
+    "props": [
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "QuantityOnHand",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "QuantityReserved",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "LastMovementSequence",
+        "sql": "bigint",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "InventorySnapshot",
+    "scope": "T",
+    "props": [
+      {
+        "name": "CutoffUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "LastMovementSequence",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "InventorySnapshotLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "InventorySnapshotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "QuantityOnHand",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "QuantityReserved",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "BalanceVersion",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "LotConditionCode",
+        "sql": "character varying(64)",
+        "nullable": true
+      },
+      {
+        "name": "WasLotBlocked",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "LotExpiresOn",
+        "sql": "date",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Reservation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryLineId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Quantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "ConsumedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "ReleasedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Consumption",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Quantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "SourceKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "DemandObservation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PeriodFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "PeriodToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RequestedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "ObservedConsumption",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "SourceKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RecordedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ReplenishmentRequest",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RequestedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "NeededByUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ReplenishmentRequestLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ReplenishmentRequestId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RequestedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "AllocatedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RoadMatrix",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ProviderCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "DatasetVersionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "RequestedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RetrievedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RoadMatrixEdge",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoadMatrixId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "FromLocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ToLocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DistanceKm",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "DurationSeconds",
+        "sql": "integer",
+        "nullable": true
+      },
+      {
+        "name": "IsReachable",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "UnreachableReason",
+        "sql": "character varying(2000)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "RoutePlan",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "SupersedesRoutePlanId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "VehicleId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RoadMatrixId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PlannedStartUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "PlannedEndUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "PublishedByAccountId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "RoutePlanningSnapshot",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "InputJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "InputHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "AlgorithmCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "AlgorithmVersion",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "CutoffUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RouteStop",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "LocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SequenceNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "PlannedArrivalUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "PlannedDepartureUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ActualArrivalUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ActualDepartureUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "PendingReason",
+        "sql": "character varying(2000)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Delivery",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RouteStopId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "OriginLocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DestinationLocationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DispatchedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "DeliveryLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ReplenishmentRequestLineId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "LotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "PlannedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "DispatchedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "AcceptedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "RejectedQuantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "PackagingSnapshotJson",
+        "sql": "jsonb",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "DeliveryHandlingUnit",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "HandlingUnitId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ReleasedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "DeliveryHandlingUnitLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryHandlingUnitId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DeliveryLineId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "HandlingUnitLineId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Quantity",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "DeliveryAssignment",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "AssignmentKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "AssignedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "AssignedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Receipt",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "WorkflowVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "AcceptedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "ReceiptLine",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ReceiptId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DeliveryLineId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "QuantityAccepted",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "QuantityRejected",
+        "sql": "numeric(18,4)",
+        "nullable": false
+      },
+      {
+        "name": "RejectionReasonOptionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ReturnLocationId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "StoredFile",
+    "scope": "T",
+    "props": [
+      {
+        "name": "StorageKey",
+        "sql": "character varying(512)",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "DeclaredMimeType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "VerifiedMimeType",
+        "sql": "character varying(64)",
+        "nullable": true
+      },
+      {
+        "name": "ByteSize",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "Sha256",
+        "sql": "character varying(64)",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "EncryptionKeyReference",
+        "sql": "character varying(512)",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ExpiresAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Evidence",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ReceiptId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ReceiptLineId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "StoredFileId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "UploadedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ConfirmedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "CustodyEvent",
+    "scope": "T",
+    "props": [
+      {
+        "name": "HandlingUnitId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "FromLocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ToLocationId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "EventKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "QrAccessToken",
+    "scope": "T",
+    "props": [
+      {
+        "name": "HandlingUnitId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "TokenHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ScopeCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ExpiresAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RiskCalculationRun",
+    "scope": "T",
+    "props": [
+      {
+        "name": "JobExecutionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "InventorySnapshotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "FormulaCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "FormulaVersion",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "CutoffUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "InputHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RiskSnapshot",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RiskCalculationRunId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "CoverageDays",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "LeadTimeDays",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "SafetyMarginDays",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "RiskCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "InputSnapshotJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "UncertaintyJson",
+        "sql": "jsonb",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "RiskExplanation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RiskSnapshotId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "IntegrationRunId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "TemplateVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ExplanationText",
+        "sql": "character varying(2000)",
+        "nullable": false
+      },
+      {
+        "name": "RecommendedAction",
+        "sql": "character varying(2000)",
+        "nullable": true
+      },
+      {
+        "name": "ProviderCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ModelCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AnomalyCase",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RiskSnapshotId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "DetectedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ClosedByAccountId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Resolution",
+        "sql": "character varying(2000)",
+        "nullable": true
+      },
+      {
+        "name": "LossMovementId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Incident",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ServicePointId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ReportedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SeverityOptionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Position",
+        "sql": "geography(Point,4326)",
+        "nullable": true
+      },
+      {
+        "name": "IsSynthetic",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "ScenarioEventId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtDevice",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "IncidentRoadRestriction",
+    "scope": "T",
+    "props": [
+      {
+        "name": "IncidentId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RoadMatrixEdgeId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "EffectiveFromUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "EffectiveToUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "AddedDurationSeconds",
+        "sql": "integer",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "RoutePlanIncident",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "IncidentId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "IntegrationConnection",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ProviderCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "EndpointReference",
+        "sql": "character varying(512)",
+        "nullable": false
+      },
+      {
+        "name": "SecretReference",
+        "sql": "character varying(512)",
+        "nullable": false
+      },
+      {
+        "name": "IsActive",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "JobExecution",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RequestedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RequestedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "StartedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "CompletedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Progress",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "ErrorCode",
+        "sql": "character varying(64)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "IntegrationRun",
+    "scope": "T",
+    "props": [
+      {
+        "name": "IntegrationConnectionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "JobExecutionId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "RunKey",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ProviderExecutionId",
+        "sql": "character varying(512)",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Attempts",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "TokenCount",
+        "sql": "integer",
+        "nullable": true
+      },
+      {
+        "name": "EstimatedCost",
+        "sql": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "sql": "character varying(3)",
+        "nullable": true
+      },
+      {
+        "name": "ErrorCode",
+        "sql": "character varying(64)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Conversation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "DeliveryId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "RoutePlanId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "CreatedByAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ConversationParticipant",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ConversationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OrganizationAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "JoinedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RevokedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "Message",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ConversationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "AuthorAccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "BodyText",
+        "sql": "character varying(4000)",
+        "nullable": false
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "RedactedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "MessageAttachment",
+    "scope": "T",
+    "props": [
+      {
+        "name": "MessageId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StoredFileId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "Notification",
+    "scope": "T",
+    "props": [
+      {
+        "name": "RecipientAccessId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "EventType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "PayloadJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "ReadAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "SourceEventId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "IdempotencyRecord",
+    "scope": "T",
+    "props": [
+      {
+        "name": "AccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ActionCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "RequestHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ResponseStatus",
+        "sql": "integer",
+        "nullable": true
+      },
+      {
+        "name": "ResponseJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "CompletedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "RetainUntilUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "OutboxEvent",
+    "scope": "T",
+    "props": [
+      {
+        "name": "EventType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "SchemaVersion",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "AggregateId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "AggregateType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "AggregateVersion",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "PayloadJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "OccurredAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "PublishedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Attempts",
+        "sql": "integer",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "AuditEvent",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ActorAccountId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ActionCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ResourceType",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ResourceId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "ResultCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Reason",
+        "sql": "character varying(2000)",
+        "nullable": true
+      },
+      {
+        "name": "CorrelationId",
+        "sql": "character varying(128)",
+        "nullable": false
+      },
+      {
+        "name": "BeforeJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "AfterJson",
+        "sql": "jsonb",
+        "nullable": true
+      },
+      {
+        "name": "RecordedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SyncBatch",
+    "scope": "T",
+    "props": [
+      {
+        "name": "AccountId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "DeviceReference",
+        "sql": "character varying(512)",
+        "nullable": false
+      },
+      {
+        "name": "OperationId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ReceivedAtServer",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SyncOperation",
+    "scope": "T",
+    "props": [
+      {
+        "name": "SyncBatchId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "IdempotencyRecordId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ActionCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ClientOccurredAt",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "ResultCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "ScenarioDataset",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Name",
+        "sql": "character varying(200)",
+        "nullable": false
+      },
+      {
+        "name": "IsSynthetic",
+        "sql": "boolean",
+        "nullable": false
+      },
+      {
+        "name": "Description",
+        "sql": "character varying(2000)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "ScenarioDatasetVersion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ScenarioDatasetId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "Seed",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ManifestJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "StoredFileId",
+        "sql": "uuid",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "ScenarioEvent",
+    "scope": "T",
+    "props": [
+      {
+        "name": "ScenarioDatasetVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SequenceNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "SimulationTime",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "EventKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "PayloadJson",
+        "sql": "jsonb",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SimulationPolicyVersion",
+    "scope": "T",
+    "props": [
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "Revision",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "HandlerCode",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ParametersJson",
+        "sql": "jsonb",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ConfigurationVersionId",
+        "sql": "uuid",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SimulationRun",
+    "scope": "T",
+    "props": [
+      {
+        "name": "JobExecutionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "ScenarioDatasetVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SimulationPolicyVersionId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "RoadMatrixId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Seed",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "StartedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": false
+      },
+      {
+        "name": "CompletedAtUtc",
+        "sql": "timestamp with time zone",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "InputHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SimulationEvent",
+    "scope": "T",
+    "props": [
+      {
+        "name": "SimulationRunId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "SequenceNumber",
+        "sql": "integer",
+        "nullable": false
+      },
+      {
+        "name": "SimulationTime",
+        "sql": "bigint",
+        "nullable": false
+      },
+      {
+        "name": "EventKind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "PayloadJson",
+        "sql": "jsonb",
+        "nullable": false
+      }
+    ]
+  },
+  {
+    "name": "SimulationMetric",
+    "scope": "T",
+    "props": [
+      {
+        "name": "SimulationRunId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Code",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "DefinitionVersion",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ProductId",
+        "sql": "uuid",
+        "nullable": true
+      },
+      {
+        "name": "Numerator",
+        "sql": "numeric(18,6)",
+        "nullable": false
+      },
+      {
+        "name": "Denominator",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "Value",
+        "sql": "numeric(18,6)",
+        "nullable": true
+      },
+      {
+        "name": "Unit",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "NotApplicableReason",
+        "sql": "character varying(64)",
+        "nullable": true
+      }
+    ]
+  },
+  {
+    "name": "SimulationArtifact",
+    "scope": "T",
+    "props": [
+      {
+        "name": "SimulationRunId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "StoredFileId",
+        "sql": "uuid",
+        "nullable": false
+      },
+      {
+        "name": "Kind",
+        "sql": "character varying(64)",
+        "nullable": false
+      },
+      {
+        "name": "ContentHash",
+        "sql": "character varying(64)",
+        "nullable": false
+      }
+    ]
+  }
+]

@@ -3,7 +3,7 @@ export interface ServicePoint {
   code: string;
   name: string;
   type: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   isActive: boolean;
 }
