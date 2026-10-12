@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { environment } from '../config/environment';
-import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto } from '@istpetdev/shared-core';
+import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
 
 @Injectable({
   providedIn: 'root'
@@ -50,6 +50,15 @@ export class ApiService {
       catchError(err => {
         console.warn('Public trace query failed', err);
         return of(null);
+      })
+    );
+  }
+
+  getServicePoints(): Observable<ServicePoint[]> {
+    return this.http.get<ServicePoint[]>(`${this.baseUrl}/api/v1/service-points`).pipe(
+      catchError(err => {
+        console.warn('Get service points failed', err);
+        return of([]);
       })
     );
   }

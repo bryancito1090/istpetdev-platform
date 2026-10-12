@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '@shared/api/api.service';
+import { ApiService } from '@shared/api';
 import { PublicTraceResponseDto } from '@istpetdev/shared-core';
 
 @Component({
@@ -22,11 +22,11 @@ import { PublicTraceResponseDto } from '@istpetdev/shared-core';
             [(ngModel)]="unitId"
             name="unitId"
             placeholder="Ingrese código de unidad (ej. HU-EC-001)"
-            class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
           <button
             type="submit"
             [disabled]="loading() || !unitId.trim()"
-            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-50">
+            class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-50">
             {{ loading() ? 'Buscando...' : 'Consultar' }}
           </button>
         </form>
@@ -36,10 +36,10 @@ import { PublicTraceResponseDto } from '@istpetdev/shared-core';
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
           <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <span class="text-xs uppercase font-bold text-blue-600 tracking-wider">Unidad Logística</span>
+              <span class="text-xs uppercase font-bold text-primary-700 tracking-wider">Unidad Logística</span>
               <h2 class="text-xl font-bold text-slate-900">{{ data.unitId }}</h2>
             </div>
-            <span class="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+            <span class="bg-secondary-100 text-secondary-900 border border-secondary-300 text-xs font-semibold px-3 py-1 rounded-full">
               {{ data.status }}
             </span>
           </div>
@@ -51,7 +51,7 @@ import { PublicTraceResponseDto } from '@istpetdev/shared-core';
             <div class="space-y-4">
               @for (event of data.events; track event.timestamp) {
                 <div class="flex items-start gap-4">
-                  <div class="h-2 w-2 rounded-full bg-blue-600 mt-2"></div>
+                  <div class="h-2 w-2 rounded-full bg-primary-600 mt-2"></div>
                   <div class="flex-1">
                     <p class="text-sm font-semibold text-slate-800">{{ event.stage }}</p>
                     <p class="text-xs text-slate-500">{{ event.location }} • {{ event.timestamp | date:'medium' }}</p>
