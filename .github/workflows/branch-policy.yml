@@ -2,7 +2,7 @@ name: "Política de Ramas"
 
 # Aplica el flujo de ramas de CONTRIBUTING.md (lógica en .github/scripts/branch-policy.sh):
 #   main    ← develop | hotfix/*
-#   develop ← feature/* | fix/* | chore/* | docs/* | hotfix/*
+#   develop ← feature/* | feat/* | fix/* | chore/* | docs/* | hotfix/*
 #
 # - pull_request: valida la rama de origen antes del merge.
 # - push: detecta pushes directos o merges desde ramas no permitidas en main/develop.

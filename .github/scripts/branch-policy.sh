@@ -2,7 +2,7 @@
 # Política de ramas de IstpetDev (ver CONTRIBUTING.md).
 #
 #   main    ← develop | hotfix/*
-#   develop ← feature/* | fix/* | chore/* | docs/* | hotfix/*
+#   develop ← feature/* | feat/* | fix/* | chore/* | docs/* | hotfix/*
 #
 # Uso:
 #   branch-policy.sh pr        HEAD_REF BASE_REF HEAD_REPO BASE_REPO
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
-WORK_BRANCH='^(feature|fix|chore|docs|hotfix)/[a-z0-9][a-z0-9._-]*$'
+WORK_BRANCH='^(feature|feat|fix|chore|docs|hotfix)/[a-z0-9][a-z0-9._-]*$'
 HOTFIX_BRANCH='^hotfix/[a-z0-9][a-z0-9._-]*$'
 
 fail() {
@@ -37,7 +37,7 @@ check_source() {
       ;;
     develop)
       [[ "$head" =~ $WORK_BRANCH ]] ||
-        fail "\`$head\` → \`develop\`: develop solo acepta 'feature/', 'fix/', 'chore/', 'docs/' o 'hotfix/' seguidos de una descripción en minúsculas con guiones (ej. feature/planner-rutas)."
+        fail "\`$head\` → \`develop\`: develop solo acepta 'feature/', 'feat/', 'fix/', 'chore/', 'docs/' o 'hotfix/' seguidos de una descripción en minúsculas con guiones (ej. feature/planner-rutas)."
       ;;
     *)
       fail "\`$head\` → \`$base\`: destino no contemplado por la política."

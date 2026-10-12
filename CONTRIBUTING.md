@@ -9,7 +9,7 @@ Flujo de ramas, Pull Requests y commits del repositorio `istpetdev-platform`.
 | Rama | Propósito | Despliega | Acepta PR desde |
 |---|---|---|---|
 | `main` | **Producción** y rama por defecto. Lo que está aquí es lo que ve el jurado. | Sí, cada push ejecuta `deploy.yml` | `develop`, `hotfix/*` |
-| `develop` | Integración del trabajo diario del equipo. | No (solo CI) | `feature/*`, `fix/*`, `chore/*`, `docs/*`, `hotfix/*` |
+| `develop` | Integración del trabajo diario del equipo. | No (solo CI) | `feature/*`, `feat/*`, `fix/*`, `chore/*`, `docs/*`, `hotfix/*` |
 
 Ninguna de las dos acepta push directo: todo cambio entra por Pull Request.
 
@@ -17,7 +17,7 @@ Ninguna de las dos acepta push directo: todo cambio entra por Pull Request.
 
 | Prefijo | Uso | Sale de | Entra a |
 |---|---|---|---|
-| `feature/` | Funcionalidad nueva | `develop` | `develop` |
+| `feature/` o `feat/` | Funcionalidad nueva (ambos prefijos son equivalentes) | `develop` | `develop` |
 | `fix/` | Corrección de un error en desarrollo | `develop` | `develop` |
 | `chore/` | Configuración, dependencias, CI, infraestructura, scripts | `develop` | `develop` |
 | `docs/` | Documentación | `develop` | `develop` |
@@ -26,11 +26,9 @@ Ninguna de las dos acepta push directo: todo cambio entra por Pull Request.
 **Formato del nombre:** `prefijo/descripcion-corta` en minúsculas, con guiones, sin espacios ni tildes.
 
 ```text
-✅ feature/planner-rutas      ✅ fix/cobertura-dias-cero      ✅ hotfix/login-cognito
+✅ feature/planner-rutas      ✅ feat/planner-rutas      ✅ fix/cobertura-dias-cero      ✅ hotfix/login-cognito
 ❌ Feature/Planner            ❌ planner-rutas                ❌ fix/cobertura días
 ```
-
-> El prefijo es `feature/`, no `feat/`. `feat` solo se usa como tipo en el mensaje de commit (sección 5).
 
 ## 2.1 Validación automática
 
