@@ -6,24 +6,6 @@
 # ==============================================================================
 
 services:
-  istpetdev-db:
-    image: postgis/postgis:16-3.4-alpine
-    container_name: istpetdev-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USER:-istpetdev_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secure_pass_2026}
-      POSTGRES_DB: ${DB_NAME:-istpetdev_db}
-    volumes:
-      - istpetdev_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-istpetdev_user} -d ${DB_NAME:-istpetdev_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - istpetdev-net
-
   istpetdev-redis:
     image: redis:7.4-alpine
     container_name: istpetdev-redis
@@ -43,15 +25,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:5000
-      ConnectionStrings__Main: Host=istpetdev-db;Port=5432;Database=${DB_NAME:-istpetdev_db};Username=${DB_USER:-istpetdev_user};Password=${DB_PASSWORD:-postgres_secure_pass_2026};
+      ConnectionStrings__Main: Host=${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com};Port=${DB_PORT:-5432};Database=${DB_NAME:-postgres};Username=${DB_USER:-istpetadmin};Password=${DB_PASSWORD};SSL Mode=${DB_SSL_MODE:-Require};Trust Server Certificate=true;
       Cors__Origins__0: https://istpetdev.doicela.dev
       Cors__Origins__1: https://clean.doicela.dev
       Cors__Origins__2: http://localhost:4200
       ApplyMigrations: "true"
       EnableSwagger: "true"
     depends_on:
-      istpetdev-db:
-        condition: service_healthy
       istpetdev-redis:
         condition: service_healthy
     healthcheck:
@@ -97,6 +77,3 @@ services:
 networks:
   istpetdev-net:
     driver: bridge
-
-volumes:
-  istpetdev_pgdata:
