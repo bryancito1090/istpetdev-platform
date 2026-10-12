@@ -1,0 +1,69 @@
+name: "CI - Integración Continua"
+
+on:
+  push:
+    branches: ["develop"]
+    paths:
+      - "src/**"
+      - "apps/**"
+      - "libs/**"
+      - "package*.json"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: ["main", "develop"]
+    paths:
+      - "src/**"
+      - "apps/**"
+      - "libs/**"
+      - "package*.json"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-qa:
+    name: "QA Backend (.NET 8)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar .NET SDK 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: "Restaurar dependencias NuGet"
+        run: dotnet restore IstpetDev.sln
+
+      - name: "Compilar solución en Release"
+        run: dotnet build IstpetDev.sln -c Release --no-restore
+
+      - name: "Ejecutar pruebas unitarias"
+        run: dotnet test IstpetDev.sln -c Release --no-build --verbosity normal
+
+  frontend-qa:
+    name: "QA Frontend (Angular 22)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Node.js 22 LTS"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: "Instalar dependencias npm"
+        run: npm ci
+
+      - name: "Compilar librería compartida"
+        run: npm run build:shared
+
+      - name: "Verificar linteo de frontend"
+        run: npm run lint:web
+
+      - name: "Compilar aplicación Web en Producción"
+        run: npm run build:web

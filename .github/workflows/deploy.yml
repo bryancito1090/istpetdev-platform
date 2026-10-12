@@ -1,0 +1,249 @@
+name: "CD - Despliegue en Producción"
+
+on:
+  push:
+    branches: ["main", "develop"]
+    paths:
+      - "src/**"
+      - "apps/web/**"
+      - "libs/shared-core/**"
+      - "infra/**"
+      - "package*.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      restart_only:
+        description: "Reiniciar contenedores en el servidor sin recompilar imágenes"
+        required: false
+        type: boolean
+        default: false
+      reset_database:
+        description: "PELIGRO: Recrear esquema limpio de BD (solo entornos de prueba)"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  DEPLOY_DIR: /var/www/istpetdev
+
+jobs:
+  quick-restart:
+    name: "Reinicio Rápido"
+    if: ${{ inputs.restart_only == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Ejecutar reinicio de servicios vía SSH"
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'admin' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.DEPLOY_DIR }}
+            echo "Reiniciando servicios de aplicación..."
+            docker compose -f infra/compose/docker-compose.prod.yml restart istpetdev-backend istpetdev-web
+            sleep 5
+            curl -sf http://localhost:5000/health/live && echo "Servicios reiniciados correctamente"
+
+  build-backend:
+    name: "Compilar y Publicar Backend (GHCR)"
+    if: ${{ inputs.restart_only != true }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Definir variables de tag"
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "owner_lower=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: "Configurar Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Autenticar en GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Compilar y pushear imagen Docker del Backend"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:${{ steps.vars.outputs.sha_short }}
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend:
+    name: "Compilar y Publicar Frontend Web (GHCR)"
+    if: ${{ inputs.restart_only != true }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Definir variables de tag"
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "owner_lower=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: "Configurar Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Autenticar en GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Compilar y pushear imagen Docker del Frontend"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:${{ steps.vars.outputs.sha_short }}
+            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-ec2:
+    name: "Despliegue Inmutable en Servidor EC2"
+    needs: [build-backend, build-frontend]
+    if: ${{ always() && !failure() && !cancelled() && inputs.restart_only != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código para sincronizar configuraciones"
+        uses: actions/checkout@v4
+
+      - name: "Transferir archivos de configuración (Compose y Nginx) al Servidor"
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'admin' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "infra/compose/docker-compose.prod.yml,infra/nginx/istpetdev.conf"
+          target: "${{ env.DEPLOY_DIR }}/"
+          strip_components: 0
+
+      - name: "Ejecutar orquestación de despliegue en el Host"
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          OWNER: ${{ github.repository_owner }}
+          COMMIT_SHA: ${{ github.sha }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'postgres_secure_pass_2026' }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'admin' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_PASSWORD
+          script: |
+            set -e
+            cd /var/www/istpetdev
+
+            # 1. Asegurar directorios operativos
+            mkdir -p backups releases infra/compose infra/nginx
+
+            # 2. Autenticación en GHCR
+            echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+
+            OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+            export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
+            export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
+            export DB_PASSWORD="$DB_PASSWORD"
+
+            # 3. Descarga de nuevas imágenes
+            echo "Descargando imágenes inmutables..."
+            docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
+
+            # 4. Asegurar arranque y salud de PostgreSQL
+            docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-db istpetdev-redis
+            echo "Esperando disponibilidad de PostgreSQL..."
+            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user --timeout=30 || true
+
+            # 5. Snapshot preventivo de base de datos antes de recrear contenedores
+            mkdir -p backups
+            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db 2>/dev/null | gzip > "backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql.gz" || true
+
+            # 6. Recreación atómica de servicios de aplicación y proxy inverso
+            echo "Actualizando servicios de aplicación..."
+            docker compose -f infra/compose/docker-compose.prod.yml up -d --force-recreate --remove-orphans istpetdev-backend istpetdev-web istpetdev-proxy
+
+            # 7. Mantenimiento y rotación de imágenes (Retención de últimas 3 versiones para rollback)
+            docker image prune -f
+            for img in istpetdev-backend istpetdev-web; do
+              docker images --filter "reference=*${img}*" --format "{{.ID}}" | sort -u | tail -n +4 | xargs -r docker rmi -f 2>/dev/null || true
+            done
+
+            # 8. Verificación de salud interna con reintentos
+            echo "Comprobando endpoint de salud de la API..."
+            READY=false
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost:5000/health/live > /dev/null; then
+                READY=true
+                echo "API IstpetDev verificada exitosamente en el intento $i."
+                break
+              fi
+              echo "Esperando inicialización de la API (intento $i/12)..."
+              sleep 5
+            done
+
+            if [ "$READY" != "true" ]; then
+              echo "Error: la API no respondió en el tiempo límite."
+              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=50 istpetdev-backend
+              exit 1
+            fi
+
+  health-check-report:
+    name: "Reporte Ejecutivo Post-Despliegue"
+    needs: [deploy-ec2]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Publicar reporte en GitHub Step Summary"
+        run: |
+          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          # Reporte Ejecutivo de Despliegue CI/CD — IstpetDev
+
+          | Parámetro | Valor |
+          | :--- | :--- |
+          | **Estado** | Despliegue Exitoso en Servidor Cloud |
+          | **Dominio Público** | [https://istpetdev.doicela.dev](https://istpetdev.doicela.dev) |
+          | **Commit SHA** | `${{ github.sha }}` |
+          | **Desplegado por** | @${{ github.actor }} |
+          | **Rama** | `${{ github.ref_name }}` |
+
+          ### Servicios en Ejecución:
+          - **Frontend Web SPA**: `istpetdev-web` servido por Nginx Reverse Proxy.
+          - **Backend API**: `istpetdev-backend` (.NET 8 Web API en puerto 5000 interno).
+          - **Base de Datos**: `istpetdev-db` (PostgreSQL 16 + PostGIS, aislado en red bridge).
+          - **Caché y Mensajería**: `istpetdev-redis` (Redis 7.4).
+          - **CDN / WAF**: Cloudflare SSL Termination hacia `istpetdev.doicela.dev`.
+          EOF
