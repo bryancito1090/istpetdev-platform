@@ -12,8 +12,24 @@ permissions:
   contents: read
 
 jobs:
+  validate-source:
+    name: "Validar Rama de Ejecución"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del script de política"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: "Validar que el rollback se ejecuta sobre main"
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: bash .github/scripts/branch-policy.sh dispatch "$BRANCH"
+
   rollback:
     name: "Ejecutar Rollback en el Host"
+    needs: validate-source
     runs-on: ubuntu-latest
     steps:
       - name: "Ejecutar reversión de versión vía SSH"

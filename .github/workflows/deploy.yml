@@ -36,8 +36,37 @@ env:
   DEPLOY_DIR: /var/www/istpetdev
 
 jobs:
+  validate-source:
+    name: "Validar Origen del Despliegue"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: "Checkout del script de política"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      # Push: solo merges de PR desde develop o hotfix/*. Manual: solo sobre main.
+      - name: "Validar rama de origen (política de ramas)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT" = "push" ]; then
+            bash .github/scripts/branch-policy.sh push "$BRANCH" "$SHA" "$REPO"
+          else
+            bash .github/scripts/branch-policy.sh dispatch "$BRANCH"
+          fi
+
   quick-restart:
     name: "Reinicio Rápido"
+    needs: validate-source
     if: ${{ inputs.restart_only == true }}
     runs-on: ubuntu-latest
     steps:
@@ -57,6 +86,7 @@ jobs:
 
   detect-changes:
     name: "Detección Inteligente de Rutas"
+    needs: validate-source
     runs-on: ubuntu-latest
     if: ${{ inputs.restart_only != true }}
     outputs:
@@ -139,7 +169,7 @@ jobs:
 
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
-    needs: [detect-changes, backend-qa]
+    needs: [validate-source, detect-changes, backend-qa]
     if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     outputs:
@@ -179,7 +209,7 @@ jobs:
 
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
-    needs: [detect-changes, frontend-qa]
+    needs: [validate-source, detect-changes, frontend-qa]
     if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     outputs:
@@ -219,7 +249,7 @@ jobs:
 
   deploy-ec2:
     name: "Despliegue Inmutable en Servidor EC2"
-    needs: [detect-changes, backend-qa, frontend-qa, build-backend, build-frontend]
+    needs: [validate-source, detect-changes, backend-qa, frontend-qa, build-backend, build-frontend]
     if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:

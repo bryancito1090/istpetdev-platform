@@ -1,72 +1,64 @@
 name: "Política de Ramas"
 
-# Valida la rama de origen de cada Pull Request según CONTRIBUTING.md.
-# Para que bloquee el merge, el check "Validar rama de origen" debe estar
-# marcado como obligatorio en la protección (ruleset) de main y develop.
+# Aplica el flujo de ramas de CONTRIBUTING.md (lógica en .github/scripts/branch-policy.sh):
+#   main    ← develop | hotfix/*
+#   develop ← feature/* | fix/* | chore/* | docs/* | hotfix/*
+#
+# - pull_request: valida la rama de origen antes del merge.
+# - push: detecta pushes directos o merges desde ramas no permitidas en main/develop.
+#   GitHub Actions no puede revertir un push; lo marca en rojo. El bloqueo real lo da
+#   el ruleset de GitHub con el check "Validar rama de origen" como obligatorio.
 # Sin filtro de rutas: un check obligatorio debe ejecutarse en todos los PR.
 
 on:
   pull_request:
     branches: ["main", "develop"]
     types: [opened, reopened, synchronize, edited]
+  push:
+    branches: ["main", "develop"]
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   branch-policy:
     name: "Validar rama de origen"
     runs-on: ubuntu-latest
     steps:
-      - name: "Comprobar origen y destino del PR"
+      # Se usa el script de la rama destino, no el del PR, para que un PR no pueda relajar su propia validación.
+      - name: "Checkout del script de política (rama destino)"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.base_ref || github.sha }}
+          path: policy
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      # Arranque: solo si la rama destino aún no tiene el script (el PR que lo introduce).
+      - name: "Checkout del script de política (PR, arranque)"
+        if: ${{ github.event_name == 'pull_request' && hashFiles('policy/.github/scripts/branch-policy.sh') == '' }}
+        uses: actions/checkout@v4
+        with:
+          path: policy
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: "Validar Pull Request"
+        if: ${{ github.event_name == 'pull_request' }}
         env:
-          # Se leen como variables de entorno: el nombre de la rama lo controla quien abre el PR.
+          # Variables de entorno: el nombre de la rama lo controla quien abre el PR.
           HEAD_REF: ${{ github.head_ref }}
           BASE_REF: ${{ github.base_ref }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           BASE_REPO: ${{ github.repository }}
-        run: |
-          set -eu
-          echo "Origen: ${HEAD_REF}  →  Destino: ${BASE_REF}"
+        run: bash policy/.github/scripts/branch-policy.sh pr "$HEAD_REF" "$BASE_REF" "$HEAD_REPO" "$BASE_REPO"
 
-          fail() {
-            echo "::error title=Rama de origen no permitida::$1"
-            {
-              echo "### ❌ Política de ramas"
-              echo ""
-              echo "\`${HEAD_REF}\` → \`${BASE_REF}\`: $1"
-              echo ""
-              echo "Consulta CONTRIBUTING.md para el flujo de ramas."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          }
-
-          if [ "$HEAD_REPO" != "$BASE_REPO" ]; then
-            fail "solo se aceptan PR desde ramas de este repositorio, no desde forks."
-          fi
-
-          case "$BASE_REF" in
-            main)
-              # Producción: solo integraciones desde develop o correcciones urgentes.
-              if [ "$HEAD_REF" = "develop" ]; then
-                :
-              elif echo "$HEAD_REF" | grep -Eq '^hotfix/[a-z0-9][a-z0-9._-]*$'; then
-                :
-              else
-                fail "main solo acepta PR desde 'develop' o 'hotfix/<descripcion>'."
-              fi
-              ;;
-            develop)
-              # Desarrollo: trabajo diario y retorno de hotfix ya publicados en main.
-              if ! echo "$HEAD_REF" | grep -Eq '^(feature|fix|chore|docs|hotfix)/[a-z0-9][a-z0-9._-]*$'; then
-                fail "develop solo acepta PR desde 'feature/', 'fix/', 'chore/', 'docs/' o 'hotfix/' seguidos de una descripción en minúsculas con guiones (ej. feature/planner-rutas)."
-              fi
-              ;;
-            *)
-              fail "destino '${BASE_REF}' no contemplado por la política."
-              ;;
-          esac
-
-          echo "### ✅ Política de ramas" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`${HEAD_REF}\` → \`${BASE_REF}\` permitido." >> "$GITHUB_STEP_SUMMARY"
-          echo "Rama de origen permitida."
+      - name: "Validar push"
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: bash policy/.github/scripts/branch-policy.sh push "$BRANCH" "$SHA" "$REPO"

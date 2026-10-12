@@ -30,7 +30,20 @@ Ninguna de las dos acepta push directo: todo cambio entra por Pull Request.
 ❌ Feature/Planner            ❌ planner-rutas                ❌ fix/cobertura días
 ```
 
-El workflow `.github/workflows/branch-policy.yml` rechaza cualquier PR cuya rama de origen no cumpla estas reglas.
+> El prefijo es `feature/`, no `feat/`. `feat` solo se usa como tipo en el mensaje de commit (sección 5).
+
+## 2.1 Validación automática
+
+Las reglas viven en `.github/scripts/branch-policy.sh` y se aplican desde GitHub Actions:
+
+| Dónde | Qué valida | Si falla |
+|---|---|---|
+| `branch-policy.yml` en cada PR a `main`/`develop` | Rama de origen permitida y que no venga de un fork | El check **Validar rama de origen** queda en rojo |
+| `branch-policy.yml` en cada push a `main`/`develop` | Que el commit sea el merge de un PR desde una rama permitida | Marca el push directo en rojo (Actions no puede revertirlo) |
+| `deploy.yml` → job **Validar Origen del Despliegue** | Push a `main` proveniente de un PR desde `develop` o `hotfix/*`; ejecución manual solo sobre `main` | **No se compila ni se despliega** |
+| `rollback.yml` → job **Validar Rama de Ejecución** | Ejecución manual solo sobre `main` | No se ejecuta el rollback |
+
+En los PR se usa el script de la rama destino, así un PR no puede relajar su propia validación.
 
 ## 3. Flujo diario
 
@@ -129,7 +142,7 @@ Ejemplos: `feat(api): exponer cobertura por punto de servicio`, `fix(mobile): re
 
 ## 7. Configuración del repositorio (administrador)
 
-GitHub Actions **valida** los PR, pero solo la protección de ramas puede **bloquear** un merge o un push directo. Un administrador del repositorio debe configurar una vez:
+GitHub Actions **valida** los PR y **detiene el despliegue** si el origen no es válido, pero solo la protección de ramas puede **impedir** un merge o un push directo. Un administrador del repositorio debe configurar una vez:
 
 1. **Settings → General → Default branch:** cambiar a `main`.
 2. **Settings → Rules → Rulesets → New branch ruleset** para `main`:
