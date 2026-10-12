@@ -7,7 +7,7 @@ Liderado por: **Jefe de Frontend** y validado con **Líder Técnico (Bryan)**.
 
 ## 1. Decisiones Canónicas Registradas (ADR)
 
-Toda decisión técnica proviene de la bóveda de decisiones (`istpetdev-hackathon-2026`):
+Toda decisión técnica proviene de la [bóveda de decisiones](boveda/README.md) (`docs/boveda/`):
 
 | ID ADR | Componente / Decisión | Elección Adoptada | Justificación |
 |---|---|---|---|

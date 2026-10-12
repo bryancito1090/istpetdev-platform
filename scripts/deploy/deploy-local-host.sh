@@ -12,12 +12,8 @@ cd "$DEPLOY_BASE"
 echo "==> 1. Descargando imágenes actualizadas de GHCR..."
 docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
 
-echo "==> 2. Levantando servicios de base de datos y cache..."
-docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-db istpetdev-redis
-
-echo "==> 3. Esperando disponibilidad de PostgreSQL..."
-docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db \
-  pg_isready -h localhost -p 5432 -U istpetdev_user -d istpetdev_db --timeout=30 || true
+echo "==> 2. Levantando servicio de cache (Redis)..."
+docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-redis
 
 echo "==> 4. Actualizando servicios de aplicación (Backend, Web y Proxy)..."
 docker compose -f infra/compose/docker-compose.prod.yml up -d --force-recreate --remove-orphans \

@@ -17,11 +17,6 @@ on:
         required: false
         type: boolean
         default: false
-      reset_database:
-        description: "PELIGRO: Recrear esquema limpio de BD (solo entornos de prueba)"
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: production-deploy
@@ -256,6 +251,28 @@ jobs:
       - name: "Checkout del código para sincronizar configuraciones"
         uses: actions/checkout@v4
 
+      - name: "Preparar Host y Dependencias (Idempotente)"
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'admin' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo mkdir -p /var/www/istpetdev
+            sudo chown -R $USER:$USER /var/www/istpetdev
+            if ! command -v docker &> /dev/null; then
+              echo "Instalando Docker Engine en nuevo host..."
+              sudo apt-get update -y
+              sudo apt-get install -y ca-certificates curl gnupg
+              sudo install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes 2>/dev/null || true
+              sudo chmod a+r /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null || true
+              sudo apt-get update -y || true
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || sudo apt-get install -y docker.io docker-compose
+              sudo usermod -aG docker $USER || true
+            fi
+
       - name: "Transferir archivos de configuración (Compose y Nginx) al Servidor"
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -273,19 +290,23 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           GH_ACTOR: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'postgres_secure_pass_2026' }}
-          RESET_DATABASE: ${{ inputs.reset_database || 'false' }}
+          DB_HOST: ${{ secrets.DB_HOST || 'istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com' }}
+          DB_PORT: ${{ secrets.DB_PORT || '5432' }}
+          DB_NAME: ${{ secrets.DB_NAME || 'istpetdev_integration' }}
+          DB_USER: ${{ secrets.DB_USER || 'migrator_integration' }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSL_MODE: ${{ secrets.DB_SSL_MODE || 'Require' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER || 'admin' }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_PASSWORD,RESET_DATABASE
+          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_HOST,DB_PORT,DB_NAME,DB_USER,DB_PASSWORD,DB_SSL_MODE
           script: |
             set -e
             cd /var/www/istpetdev
 
             # 1. Asegurar directorios operativos y certificados SSL
-            mkdir -p backups releases infra/compose infra/nginx/certs
+            mkdir -p releases infra/compose infra/nginx/certs
             if [ ! -f infra/nginx/certs/istpetdev.crt ]; then
               echo "Generando certificado SSL autofirmado de compatibilidad para Nginx..."
               openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
@@ -313,41 +334,35 @@ jobs:
             else
               export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:latest"
             fi
+            if [ -z "$DB_PASSWORD" ] && [ -f .env ]; then
+              echo "Cargando DB_PASSWORD desde archivo .env persistente en host..."
+              export DB_PASSWORD=$(grep '^DB_PASSWORD=' .env | cut -d '=' -f2-)
+            fi
+            export DB_HOST="${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com}"
+            export DB_PORT="${DB_PORT:-5432}"
+            export DB_NAME="${DB_NAME:-istpetdev_integration}"
+            export DB_USER="${DB_USER:-migrator_integration}"
             export DB_PASSWORD="$DB_PASSWORD"
+            export DB_SSL_MODE="${DB_SSL_MODE:-Require}"
 
             # 4. Descarga de imágenes requeridas
             echo "Descargando imágenes inmutables..."
             docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
 
-            # 5. Reseteo controlado de base de datos si fue solicitado expresamente
-            if [ "$RESET_DATABASE" = "true" ]; then
-              echo "=== Reseteo de Base de Datos solicitado via Workflow Dispatch ==="
-              mkdir -p backups
-              docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db 2>/dev/null | gzip > "backups/pre_reset_$(date +%Y%m%d_%H%M%S).sql.gz" || true
-              docker compose -f infra/compose/docker-compose.prod.yml stop istpetdev-db
-              docker compose -f infra/compose/docker-compose.prod.yml rm -f -v istpetdev-db || true
-            fi
+            # 5. Asegurar arranque y disponibilidad de Redis
+            docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-redis
 
-            # 6. Asegurar arranque y disponibilidad de PostgreSQL y Redis
-            docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-db istpetdev-redis
-            echo "Esperando disponibilidad de PostgreSQL..."
-            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user -d istpetdev_db --timeout=30 || true
-
-            # 7. Snapshot preventivo de base de datos antes de recrear contenedores de aplicación
-            mkdir -p backups
-            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db 2>/dev/null | gzip > "backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql.gz" || true
-
-            # 8. Recreación atómica de servicios de aplicación y proxy inverso
+            # 6. Recreación atómica de servicios de aplicación y proxy inverso
             echo "Actualizando servicios de aplicación..."
             docker compose -f infra/compose/docker-compose.prod.yml up -d --force-recreate --remove-orphans istpetdev-backend istpetdev-web istpetdev-proxy
 
-            # 9. Mantenimiento y rotación de imágenes (Retención de últimas 3 versiones para rollback)
+            # 7. Mantenimiento y rotación de imágenes (Retención de últimas 3 versiones para rollback)
             docker image prune -f
             for img in istpetdev-backend istpetdev-web; do
               docker images --filter "reference=*${img}*" --format "{{.ID}}" | sort -u | tail -n +4 | xargs -r docker rmi -f 2>/dev/null || true
             done
 
-            # 10. Verificación de salud interna con reintentos
+            # 8. Verificación de salud interna con reintentos
             echo "Comprobando endpoint de salud de la API..."
             READY=false
             for i in $(seq 1 12); do
@@ -387,7 +402,7 @@ jobs:
           ### Servicios en Ejecución:
           - **Frontend Web SPA**: `istpetdev-web` servido por Nginx Reverse Proxy.
           - **Backend API**: `istpetdev-backend` (.NET 8 Web API en puerto 5000 interno).
-          - **Base de Datos**: `istpetdev-db` (PostgreSQL 16 + PostGIS, aislado en red bridge).
+          - **Base de Datos**: Amazon RDS PostgreSQL 16 (`istpetdev-rds-dev` desacoplada).
           - **Caché y Mensajería**: `istpetdev-redis` (Redis 7.4).
           - **CDN / WAF**: Cloudflare SSL Termination hacia `istpetdev.doicela.dev`.
           EOF

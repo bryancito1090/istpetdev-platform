@@ -1,14 +1,16 @@
 # IstpetDev — plataforma logística
 
-Repositorio de software para el Reto 1 de Expo Clean Ecuador 2026.
+Repositorio de software y documentación para el Reto 1 de Expo Clean Ecuador 2026.
 
 - GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
-- Bóveda de decisiones: https://github.com/bryancito1090/istpetdev-hackathon-2026 (repositorio privado)
-- Ramas: `main` es producción (despliega) y `develop` es la base de desarrollo. Flujo de ramas, commits y PR en [CONTRIBUTING.md](CONTRIBUTING.md).
+- [Bóveda de decisiones y documentación](docs/boveda/README.md): `docs/boveda/`, dentro de este repositorio. Abrir esa carpeta como bóveda en Obsidian.
+- Rama base de desarrollo: `develop`.
 
 ---
 
 ## Documentación Principal
+
+- [Bóveda Obsidian del equipo](docs/boveda/README.md): notas, decisiones, backlog, skills documentadas y manual oficial. Verificar desde la raíz con `python docs/boveda/.github/scripts/check_vault.py`.
 
 - 📘 [**Guía de Incorporación del Equipo (Onboarding)**](docs/onboarding.md): Configuración de máquina local, arranque de aplicaciones, túnel SSM y carga de secretos.
 - 🎨 [**Arquitectura y Decisiones de Frontend**](docs/frontend-architecture.md): Estándares de interfaz, ADRs aprobados (mapas Leaflet, UI Kit, tokens, PWA offline y OIDC Cognito).
@@ -96,9 +98,12 @@ npm run dev:mobile  # Móvil PWA en http://localhost:8100
 
 ---
 
-## Trabajos Pendientes
+## Despliegue en Producción y CI/CD (Implementado)
 
-- **Responsable de DevOps**:
-  - Implementación de pipelines de CI/CD en `.github/workflows/` (compilación, pruebas, empaquetado de imágenes en GHCR y despliegue a entorno demo mediante autenticación OIDC).
-  - Configuración de Docker Compose de despliegue en `infra/compose/`.
-  - Integración de escaneo de seguridad y validaciones automáticas en Pull Requests hacia `develop`.
+La plataforma opera bajo el modelo **Perfil A Reforzado** en AWS:
+- **Cómputo Stateless (EC2)**: Instancia Debian 13 (`istpetdev-prod-host`) en la VPC del proyecto (`10.42.0.0/16`). Aloja exclusivamente contenedores efímeros (Nginx, Angular 22, .NET 8 y Redis).
+- **Persistencia Gestionada (Amazon RDS)**: PostgreSQL 16 + PostGIS en subred privada interna (`istpetdev-rds-dev`). Esquema completo de 95 tablas y RLS bajo el rol `migrator_integration` en la base `istpetdev_integration`.
+- **Automatización CI/CD (GitHub Actions)**:
+  - `CD - Despliegue en Producción` (`.github/workflows/deploy.yml`): Disparo en push a `main`. Compila imágenes inmutables en GHCR, ejecuta bootstrap idempotente y despliega mediante SSH seguro.
+  - `Rollback Rápido` (`.github/workflows/rollback.yml`): Reversión en caliente en menos de 30 segundos usando las imágenes cacheadas en el host.
+  - `Verificación de Bóveda` (`.github/workflows/check-vault.yml`): Validación continua de documentación técnica Docs-as-Code.

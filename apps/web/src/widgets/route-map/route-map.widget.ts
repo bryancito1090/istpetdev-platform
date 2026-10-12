@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline, ButtonComponent, BadgeComponent } from '@shared/ui';
@@ -80,14 +80,25 @@ import { ServicePoint } from '@istpetdev/shared-core';
 
         <div class="p-3">
           <span class="text-slate-500 block uppercase text-[10px] font-semibold">Hospitales Atendidos</span>
-          <span class="text-base font-bold font-mono text-slate-800">5 / 5 Puntos</span>
-          <span class="text-[10px] text-secondary-700 font-semibold block">100% Cobertura</span>
+          <span class="text-base font-bold font-mono text-slate-800">
+            {{ hospitalCount() }} Hospitales
+          </span>
+          <span class="text-[10px] text-secondary-700 font-semibold block">
+            {{ totalPointsCount() }} nodos en red PostGIS
+          </span>
         </div>
 
         <div class="p-3">
           <span class="text-slate-500 block uppercase text-[10px] font-semibold mb-1">Estado de Custodia</span>
-          <ui-badge variant="success" size="sm" [withDot]="true" label="Verificada"></ui-badge>
-          <span class="text-[10px] text-slate-500 block mt-1">3 Handling Units</span>
+          <ui-badge 
+            [variant]="incidentActive() ? 'warning' : 'success'" 
+            size="sm" 
+            [withDot]="true" 
+            [label]="incidentActive() ? 'En Contingencia' : 'Verificada'">
+          </ui-badge>
+          <span class="text-[10px] text-slate-500 block mt-1 font-mono">
+            {{ incidentActive() ? 'Desvío en monitoreo' : 'Cadena inmutable' }}
+          </span>
         </div>
       </div>
 
@@ -109,6 +120,9 @@ export class RouteMapWidget implements OnInit {
 
   readonly markers = signal<MapMarker[]>([]);
   readonly polylines = signal<MapPolyline[]>([]);
+
+  readonly hospitalCount = computed(() => this.markers().filter(m => m.badge === 'HOSPITAL').length);
+  readonly totalPointsCount = computed(() => this.markers().length);
 
   // Coordenadas canónicas de centros hospitalarios y bodegas en Ecuador
   private readonly defaultPoints: ServicePoint[] = [

@@ -1,12 +1,30 @@
-# 1. Security Group for EC2 Access Node
-# Requirement: STRICT DEFAULT DENY, NO inbound rules allowed
+# 1. Security Group for EC2 Access / Application Host (Perfil A Reforzado)
 resource "aws_security_group" "ec2_access" {
   name        = "istpetdev-ec2-access-sg-${var.environment}"
-  description = "Security group for EC2 access node - no inbound, egress for SSM"
+  description = "Security group for EC2 host - inbound HTTP/HTTPS/SSH for demo and egress for SSM/RDS"
   vpc_id      = var.vpc_id
 
-  # Inbound: Empty (No ingress rules allowed)
-  # All human access is mediated securely via AWS Systems Manager Session Manager
+  dynamic "ingress" {
+    for_each = var.enable_web_ingress ? [80, 443] : []
+    content {
+      description = "Allow inbound web traffic on port ${ingress.value} for reverse proxy and Cloudflare"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = length(var.allowed_ssh_cidrs) > 0 ? [22] : []
+    content {
+      description = "Allow inbound SSH for deployment automation"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_ssh_cidrs
+    }
+  }
 
   # Outbound: HTTPS (443) for Systems Manager agent communication and outbound package verification
   egress {
