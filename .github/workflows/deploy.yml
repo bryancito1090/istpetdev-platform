@@ -55,9 +55,42 @@ jobs:
             sleep 5
             (curl -sf http://127.0.0.1:5000/health/live || curl -sf http://localhost/health/live) && echo "Servicios reiniciados correctamente"
 
+  detect-changes:
+    name: "Detección Inteligente de Rutas"
+    runs-on: ubuntu-latest
+    if: ${{ inputs.restart_only != true }}
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Evaluar rutas modificadas"
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'infra/docker/backend/**'
+              - 'IstpetDev.sln'
+              - 'infra/compose/docker-compose.prod.yml'
+              - '.github/workflows/deploy.yml'
+            frontend:
+              - 'apps/web/**'
+              - 'libs/shared-core/**'
+              - 'infra/docker/web/**'
+              - 'package*.json'
+              - 'infra/compose/docker-compose.prod.yml'
+              - '.github/workflows/deploy.yml'
+
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
-    if: ${{ inputs.restart_only != true }}
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -96,7 +129,8 @@ jobs:
 
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
-    if: ${{ inputs.restart_only != true }}
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -135,8 +169,8 @@ jobs:
 
   deploy-ec2:
     name: "Despliegue Inmutable en Servidor EC2"
-    needs: [build-backend, build-frontend]
-    if: ${{ always() && !failure() && !cancelled() && inputs.restart_only != true }}
+    needs: [detect-changes, build-backend, build-frontend]
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código para sincronizar configuraciones"
@@ -160,11 +194,12 @@ jobs:
           GH_ACTOR: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'postgres_secure_pass_2026' }}
+          RESET_DATABASE: ${{ inputs.reset_database || 'false' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER || 'admin' }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_PASSWORD
+          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_PASSWORD,RESET_DATABASE
           script: |
             set -e
             cd /var/www/istpetdev
@@ -179,38 +214,60 @@ jobs:
                 -subj "/C=EC/ST=Pichincha/L=Quito/O=IstpetDev/CN=istpetdev.doicela.dev" 2>/dev/null || true
             fi
 
-            # 2. Autenticación en GHCR
+            # 2. Mantenimiento preventivo de disco del Host
+            sudo journalctl --vacuum-size=50M 2>/dev/null || true
+            sudo apt-get clean 2>/dev/null || true
+
+            # 3. Autenticación en GHCR
             echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
 
             OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
-            export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
-            export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
+            if docker manifest inspect "ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}" >/dev/null 2>&1; then
+              export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
+            else
+              export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:latest"
+            fi
+
+            if docker manifest inspect "ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}" >/dev/null 2>&1; then
+              export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
+            else
+              export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:latest"
+            fi
             export DB_PASSWORD="$DB_PASSWORD"
 
-            # 3. Descarga de nuevas imágenes
+            # 4. Descarga de imágenes requeridas
             echo "Descargando imágenes inmutables..."
             docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
 
-            # 4. Asegurar arranque y salud de PostgreSQL
+            # 5. Reseteo controlado de base de datos si fue solicitado expresamente
+            if [ "$RESET_DATABASE" = "true" ]; then
+              echo "=== Reseteo de Base de Datos solicitado via Workflow Dispatch ==="
+              mkdir -p backups
+              docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db 2>/dev/null | gzip > "backups/pre_reset_$(date +%Y%m%d_%H%M%S).sql.gz" || true
+              docker compose -f infra/compose/docker-compose.prod.yml stop istpetdev-db
+              docker compose -f infra/compose/docker-compose.prod.yml rm -f -v istpetdev-db || true
+            fi
+
+            # 6. Asegurar arranque y disponibilidad de PostgreSQL y Redis
             docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-db istpetdev-redis
             echo "Esperando disponibilidad de PostgreSQL..."
             docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user -d istpetdev_db --timeout=30 || true
 
-            # 5. Snapshot preventivo de base de datos antes de recrear contenedores
+            # 7. Snapshot preventivo de base de datos antes de recrear contenedores de aplicación
             mkdir -p backups
             docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_dump -U istpetdev_user istpetdev_db 2>/dev/null | gzip > "backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql.gz" || true
 
-            # 6. Recreación atómica de servicios de aplicación y proxy inverso
+            # 8. Recreación atómica de servicios de aplicación y proxy inverso
             echo "Actualizando servicios de aplicación..."
             docker compose -f infra/compose/docker-compose.prod.yml up -d --force-recreate --remove-orphans istpetdev-backend istpetdev-web istpetdev-proxy
 
-            # 7. Mantenimiento y rotación de imágenes (Retención de últimas 3 versiones para rollback)
+            # 9. Mantenimiento y rotación de imágenes (Retención de últimas 3 versiones para rollback)
             docker image prune -f
             for img in istpetdev-backend istpetdev-web; do
               docker images --filter "reference=*${img}*" --format "{{.ID}}" | sort -u | tail -n +4 | xargs -r docker rmi -f 2>/dev/null || true
             done
 
-            # 8. Verificación de salud interna con reintentos
+            # 10. Verificación de salud interna con reintentos
             echo "Comprobando endpoint de salud de la API..."
             READY=false
             for i in $(seq 1 12); do

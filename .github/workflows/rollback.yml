@@ -21,22 +21,65 @@ jobs:
         env:
           TARGET_SHA: ${{ inputs.target_sha }}
           OWNER: ${{ github.repository_owner }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER || 'admin' }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: TARGET_SHA,OWNER
+          envs: TARGET_SHA,OWNER,GH_ACTOR,GH_TOKEN
           script: |
             set -e
             cd /var/www/istpetdev
+
+            # 1. Mantenimiento preventivo de disco
+            docker image prune -f
+            sudo journalctl --vacuum-size=20M 2>/dev/null || true
+
+            # 2. Autenticación en GHCR
+            echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
 
             OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
             export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${TARGET_SHA}"
             export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${TARGET_SHA}"
 
-            echo "Restaurando servicios a la versión $TARGET_SHA..."
-            docker compose -f infra/compose/docker-compose.prod.yml up -d --remove-orphans istpetdev-backend istpetdev-web
+            echo "Descargando imágenes inmutables para la versión ${TARGET_SHA}..."
+            docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
 
+            echo "Restaurando servicios de aplicación a la versión ${TARGET_SHA}..."
+            docker compose -f infra/compose/docker-compose.prod.yml up -d --remove-orphans istpetdev-backend istpetdev-web
+            docker image prune -f
+
+            # 3. Verificación de salud interna
             echo "Verificando disponibilidad inmediata del backend..."
-            sleep 4
-            curl -sf http://localhost:5000/health/live && echo "Rollback completado exitosamente a $TARGET_SHA"
+            READY=false
+            for i in $(seq 1 6); do
+              if curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
+                READY=true
+                echo "Rollback completado y verificado exitosamente en el intento $i."
+                break
+              fi
+              sleep 3
+            done
+
+            if [ "$READY" != "true" ]; then
+              echo "Advertencia: El backend aún no responde tras el rollback."
+              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=30 istpetdev-backend
+              exit 1
+            fi
+
+      - name: "Generar Reporte de Rollback en GitHub Step Summary"
+        run: |
+          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          # Reporte Ejecutivo de Rollback — IstpetDev
+
+          | Parámetro | Valor |
+          | :--- | :--- |
+          | **Estado** | Rollback Ejecutado Exitosamente |
+          | **Dominio Público** | [https://istpetdev.doicela.dev](https://istpetdev.doicela.dev) |
+          | **Target Commit SHA** | `${{ inputs.target_sha }}` |
+          | **Ejecutado por** | @${{ github.actor }} |
+
+          ### Nota Operativa:
+          Se restauraron los contenedores en producción a la imagen inmutable correspondiente a `${{ inputs.target_sha }}` en menos de 30 segundos, sin necesidad de recompilación de código.
+          EOF
