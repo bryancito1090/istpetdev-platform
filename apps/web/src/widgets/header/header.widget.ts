@@ -20,9 +20,7 @@ import { BadgeComponent } from '@shared/ui';
             <div class="flex flex-col">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-slate-900 tracking-tight text-lg">IstpetDev</span>
-                <span class="text-[10px] bg-secondary-100 text-secondary-900 border border-secondary-300 font-bold px-2 py-0.5 rounded tracking-wide">
-                  EXPO CLEAN
-                </span>
+                <ui-badge variant="success" size="sm" label="EXPO CLEAN"></ui-badge>
               </div>
               <span class="text-[10px] text-slate-500 font-medium">Logística Hospitalaria Ecuador</span>
             </div>

@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { BadgeComponent } from '@shared/ui';
 
 @Component({
   selector: 'widget-footer',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, BadgeComponent],
   template: `
     <footer class="bg-white border-t border-slate-200 mt-auto">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -17,7 +18,7 @@ import { RouterLink } from '@angular/router';
                 I
               </div>
               <span class="font-bold text-slate-900 tracking-tight text-base">IstpetDev Platform</span>
-              <span class="text-[10px] bg-secondary-100 text-secondary-900 border border-secondary-300 font-semibold px-2 py-0.5 rounded">Reto 1 • 2026</span>
+              <ui-badge variant="success" size="sm" label="Reto 1 • 2026"></ui-badge>
             </div>
             <p class="text-xs text-slate-500 max-w-md leading-relaxed">
               Optimización y trazabilidad logística para el abastecimiento de insumos a nivel nacional.

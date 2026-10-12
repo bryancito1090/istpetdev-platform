@@ -1,15 +1,15 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@shared/api';
-import { ButtonComponent, BadgeComponent } from '@shared/ui';
+import { ButtonComponent, BadgeComponent, CardComponent } from '@shared/ui';
 import { PingResponseDto } from '@istpetdev/shared-core';
 
 @Component({
   selector: 'feature-check-api-health',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, BadgeComponent],
+  imports: [CommonModule, ButtonComponent, BadgeComponent, CardComponent],
   template: `
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <ui-card [padding]="'md'">
       <div class="flex items-center justify-between mb-4">
         <div>
           <h3 class="text-lg font-semibold text-slate-900">Estado de la API .NET</h3>
@@ -58,7 +58,7 @@ import { PingResponseDto } from '@istpetdev/shared-core';
           </div>
         </div>
       }
-    </div>
+    </ui-card>
   `
 })
 export class CheckApiHealthComponent implements OnInit {
