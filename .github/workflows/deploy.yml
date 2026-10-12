@@ -107,6 +107,9 @@ jobs:
       - name: "Compilar solución en Release"
         run: dotnet build IstpetDev.sln -c Release --no-restore
 
+      - name: "Verificar integridad del modelo relacional (Schema 95 & RLS)"
+        run: dotnet run --project tools/Schema95Check -- "$PWD"
+
   frontend-qa:
     name: "QA Frontend (Angular 22)"
     needs: detect-changes
