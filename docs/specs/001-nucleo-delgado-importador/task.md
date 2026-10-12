@@ -1880,7 +1880,7 @@ public sealed class ImportBatch : OrganizationEntity
     public Guid? CreatedByAccountId { get; set; }
 }
 
-// Propuesta del agente logístico (spec 003). Queda en Proposed hasta que una persona la aprueba.
+// Propuesta del agente logístico (spec 003). El motor de reglas de autonomía (spec 002, D5) decide si se ejecuta sola o espera aprobación.
 public sealed class AgentDecision : OrganizationEntity
 {
     public string Kind { get; set; } = string.Empty;
