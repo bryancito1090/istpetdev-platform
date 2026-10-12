@@ -1,12 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService } from '@shared/api/api.service';
+import { ApiService } from '@shared/api';
+import { ButtonComponent, BadgeComponent } from '@shared/ui';
 import { PingResponseDto } from '@istpetdev/shared-core';
 
 @Component({
   selector: 'feature-check-api-health',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ButtonComponent, BadgeComponent],
   template: `
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center justify-between mb-4">
@@ -14,26 +15,26 @@ import { PingResponseDto } from '@istpetdev/shared-core';
           <h3 class="text-lg font-semibold text-slate-900">Estado de la API .NET</h3>
           <p class="text-sm text-slate-500">Conexión con el backend en http://localhost:5000</p>
         </div>
-        <button
-          (click)="checkNow()"
-          [disabled]="loading()"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-50">
-          {{ loading() ? 'Comprobando...' : 'Comprobar ahora' }}
-        </button>
+        <ui-button
+          variant="primary"
+          size="sm"
+          [loading]="loading()"
+          (buttonClick)="checkNow()"
+          ariaLabel="Comprobar conectividad con la API .NET">
+          Comprobar ahora
+        </ui-button>
       </div>
 
-      <div class="flex items-center gap-3 p-4 rounded-lg" [ngClass]="{
-        'bg-green-50 text-green-700 border border-green-200': status() === 'online',
-        'bg-red-50 text-red-700 border border-red-200': status() === 'offline',
-        'bg-amber-50 text-amber-700 border border-amber-200': status() === 'checking'
-      }">
-        <span class="h-3 w-3 rounded-full" [ngClass]="{
-          'bg-green-500 animate-pulse': status() === 'online',
-          'bg-red-500': status() === 'offline',
-          'bg-amber-500 animate-pulse': status() === 'checking'
-        }"></span>
-        <span class="font-medium text-sm capitalize">
-          {{ status() === 'online' ? 'API Online y Respondiendo' : status() === 'offline' ? 'API Offline (No conectada)' : 'Verificando servicio...' }}
+      <div class="flex items-center gap-3 p-3.5 rounded-lg border bg-slate-50 border-slate-200">
+        <ui-badge
+          [variant]="status() === 'online' ? 'success' : status() === 'offline' ? 'critical' : 'warning'"
+          size="md"
+          [withDot]="true"
+          [pulseDot]="status() === 'online' || status() === 'checking'"
+          [label]="status() === 'online' ? 'API Online y Respondiendo' : status() === 'offline' ? 'API Offline (No conectada)' : 'Verificando servicio...'">
+        </ui-badge>
+        <span class="text-xs text-slate-500 font-mono">
+          Endpoint: /health/live
         </span>
       </div>
 

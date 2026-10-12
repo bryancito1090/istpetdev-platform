@@ -1,10 +1,35 @@
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* 2. Capa Semántica del Sistema de Diseño (ADR-04, Reto 1) */
+  --color-action-primary: #2563eb;   /* blue-600: Botones primarios, enlaces activos */
+  --color-action-hover: #1d4ed8;     /* blue-700: Hover y foco en elementos interactivos */
+  --color-status-critical: #dc2626;  /* red-600: Quiebres de stock inmediatos, alertas graves */
+  --color-status-warning: #d97706;   /* amber-600: Cobertura ajustada (<3 días), desvíos */
+  --color-status-success: #16a34a;   /* emerald-600: Entregas recibidas, custodia validada */
+  --color-status-transit: #3b82f6;   /* blue-500: Camión en ruta, material despachado */
+  --color-surface-bg: #f8fafc;       /* slate-50: Fondo global de la aplicación */
+  --color-surface-card: #ffffff;     /* white: Contenedores modulares */
+  --color-border-card: #e2e8f0;      /* slate-200: Bordes estructurados */
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-surface-bg);
   color: #0f172a;
 }
+
+/* Tipografía monoespaciada obligatoria para KPIs, coordenadas y UUIDs (Sec 1.3) */
+.font-mono,
+code,
+kbd,
+samp {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
