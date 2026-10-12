@@ -54,6 +54,7 @@ Acordadas en la sesión de definición del 12-oct-2026. **Decididas por:** PENDI
 | D5 | **Autonomía con límites.** Un motor de reglas **determinista en el backend** clasifica cada propuesta en «se ejecuta» o «se escala»; el LLM no puede saltarlo. Se ejecuta sola: avisar una nueva hora de llegada (retraso ≤ 60 min sin perder ventanas), reordenar paradas pendientes (ninguna se elimina, todas las ventanas se cumplen, costo +≤ 15%) y reservar una reposición (≤ cantidad sugerida, cabe en el vehículo, la bodega conserva su stock de seguridad). Se escala: paradas que no se pueden cumplir, stock de bodega insuficiente para todos, costo > +15% y datos inciertos. Umbrales en configuración (G5). Interruptor global «solo proponer». Toda acción automática se puede deshacer porque crea una nueva revisión. | 002, 003, 005 |
 | D6 | **Recorrido en vivo regional:** unos 15 puntos de una ciudad y 2 vehículos (fixture `demo-region`, sintético y etiquetado); el incidente afecta a un vehículo y no al otro. El fixture `demo-base` de 001 se mantiene como dato de prueba. La escala nacional (80 puntos) se muestra en el simulador. | 002, 005 |
 | D7 | **Doble baseline.** El simulador compara contra la reposición **reactiva** (cuando el punto avisa) y contra un **calendario fijo** (cada N días, cantidad fija). Ambas políticas se escriben en el spec 005 antes de la primera simulación y no se ajustan después de ver resultados. | 005 |
+| D8 | **Congelamiento de funcionalidades el 15-oct a las 14:00**, con hitos de control y plan B por componente (ver «Plan hasta el pitch»). | Todos |
 
 ### Fuera de alcance hasta el 17-oct (D3)
 
@@ -119,15 +120,69 @@ El riesgo es llegar el 16 de octubre y recibir un dataset o un planteamiento que
 
 **Límite honesto de los guardarraíles.** Cubren cambios de datos y de formato dentro del Reto 1 (puntos, productos, inventario, consumo, flota). No cubren un cambio de problema: si la ficha final del reto pide otra cosa (por ejemplo, cotización del Reto 2), ningún importador lo resuelve; lo que se reutiliza es la plataforma (importador, mapa, agente, móvil) y se replanifica el alcance el mismo día.
 
-## Calendario propuesto
+## Plan hasta el pitch
 
-| Fecha | Trabajo |
+**D8 — Congelamiento de funcionalidades: 15-oct a las 14:00.** Lo que no esté integrado en `develop` a esa hora no entra en la demo: se muestra con su plan B o se menciona como siguiente paso. Después solo se corrigen errores y se pule.
+
+### Hitos de control
+
+Cada hito se comprueba en `develop`, no en la máquina de alguien.
+
+| Hito | Fecha y hora | Condición de cumplimiento | Si se retrasa más de 4 h |
+|---|---|---|---|
+| H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de selección del modelo del agente hecha (D4) | Se implementa con el spec del área en borrador; el modelo se elige por defecto con el de menor latencia medida |
+| H2 | 13-oct 20:00 | Spec 001 en `develop` (esquema, importador, reset de demo) | Prioridad absoluta del equipo: bloquea 002–005 |
+| H3 | 14-oct 20:00 | **Recorrido sin agente de punta a punta**: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado | El nivel B del agente pasa a su plan B |
+| H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y resultados del simulador frente a los dos baselines | Se aplican los planes B de la tabla siguiente |
+| H5 | 15-oct 14:00 | Congelamiento de funcionalidades (D8) | — |
+
+### Plan B por componente
+
+Decidido de antemano para no improvisar bajo presión.
+
+| Componente | Si no llega al congelamiento | Qué se pierde |
+|---|---|---|
+| Agente nivel B (incidentes con LLM) | Botón de incidente con replanificación determinista y tarjeta escalada con explicación por plantilla | Parte de Innovación; el flujo sigue intacto |
+| Agente nivel A (vigía con LLM) | Riesgos calculados con tarjeta de acción manual y explicación por plantilla | Más Innovación; se presenta como «IA en la siguiente versión» solo si es cierto |
+| PWA offline | Recepción en línea desde el móvil; el modo avión se muestra en el video de respaldo | Parte del momento físico |
+| Mapa de ruta | Lista ordenada de paradas con horas y costos | Impacto visual |
+| Despliegue en la nube | Stack local en el portátil con hotspot propio; el QR se escanea con un teléfono del equipo conectado al hotspot | El jurado ya no escanea con su teléfono |
+| Simulador de 90 días | **No hay plan B honesto**: sin simulador no hay cifras de impacto. Es prioridad por encima de los niveles del agente | — |
+
+### Antes del evento
+
+| Momento | Trabajo |
 |---|---|
-| 13-oct mañana | Implementar 001 (bloquea el resto). En paralelo, escribir y aprobar los specs 002–005 con brainstorming; prueba de selección del modelo del agente (D4) |
+| 13-oct mañana | Implementar 001; escribir y aprobar 002–005; prueba del modelo del agente |
+| 13-oct tarde – 15-oct 14:00 | 002 y 004 en paralelo; 003 en cuanto 002 publique sus endpoints; 005 sobre 002 |
 | 13–15-oct | Kit previo de 006 preparado con IA, sin horas del equipo (D2) |
-| 13-oct tarde – 14-oct | 002 y 004 en paralelo; 003 en cuanto 002 publique sus endpoints; 005 sobre 002 |
-| 15-oct | Integración, corridas del simulador, simulacro de dataset sorpresa (G6), ensayo cronometrado, tag `pre-evento` |
-| 16–17-oct | Evento: adaptación a la ficha final, validación con mentores, pitch |
+| 15-oct 14:00–20:00 | Simulacro del dataset sorpresa (G6), 3 ensayos completos, grabación del video de respaldo, tag `pre-evento` y registro en la bóveda (G8) |
+
+### Día 1 — 16 de octubre
+
+Se superpone al [Cronograma oficial](../boveda/01%20Oficial/Cronograma%20oficial.md); no lo reemplaza. **Se participa de verdad en la dinámica oficial** y se entregan los artefactos que pida la organización: «Proceso y equipo» observa la participación.
+
+| Hora | Actividad oficial | Qué hacemos |
+|---|---|---|
+| 09:30–10:00 | Presentación final de retos | Una persona transcribe y fotografía todo. Cada cambio se clasifica: 🟢 sin impacto; 🟡 se resuelve con un perfil de mapeo o parámetros; 🔴 cambia el alcance |
+| 10:00–10:30 | Comprensión | Decisión «seguir o adaptar»: con 🔴, se replanifica el alcance; con 🟡, simulacro G6 en vivo con su dataset |
+| 11:00–11:30 y 13:00–14:00 | Pausas | Dos personas entrevistan en la feria (D2); tres integran |
+| 14:00–16:00 | Diseño | Tres personas adaptan el código; dos trabajan el modelo de negocio y rellenan el esqueleto del pitch |
+| 16:00–16:30 | Mentoría | 3 preguntas preparadas; registrar la mentoría y comprobar si el mentor es jurado |
+| 16:30–18:30 | Prototipado | Integrar el consejo del mentor; ensayo 1 con los datos del evento |
+| 18:30–19:00 | Checkpoint | Demo funcionando ante la organización |
+| Noche | — | 2 ensayos, solo correcciones P0 y descanso |
+
+### Día 2 — 17 de octubre
+
+| Hora | Qué hacemos |
+|---|---|
+| 09:00–10:30 | Últimas correcciones. **10:30: congelamiento del código**; después solo se corrige lo que bloquee |
+| 11:00–12:30 | Dos personas validan con expositores usando el prototipo (D2); tres ejecutan la simulación final (semillas y escenario adverso) y 3 ensayos |
+| 12:30–13:15 | Mentoría final |
+| 14:00–15:00 | Completar los huecos del pitch: citas de la feria, cifras del simulador, precio |
+| 15:00–15:45 | 2 ensayos cronometrados. **15:45: congelamiento de materiales** |
+| Antes de presentar | Lista de verificación: reset de la demo, dispositivos cargados, hotspot encendido, caja con QR, video listo |
 
 ## Reglas de trabajo con specs
 
