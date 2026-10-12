@@ -167,7 +167,12 @@ export class RouteMapWidget implements OnInit {
     this.apiService.getServicePoints().subscribe((pts) => {
       const activePts = pts && pts.length > 0 ? pts : this.defaultPoints;
       
-      const mapMarkers: MapMarker[] = activePts.map(p => ({
+      const validPts = activePts.filter(
+        (p): p is typeof p & { latitude: number; longitude: number } =>
+          p.latitude !== null && p.longitude !== null
+      );
+
+      const mapMarkers: MapMarker[] = validPts.map(p => ({
         id: p.id,
         latitude: p.latitude,
         longitude: p.longitude,
