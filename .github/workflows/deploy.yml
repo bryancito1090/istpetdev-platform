@@ -267,8 +267,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DB_HOST: ${{ secrets.DB_HOST || 'istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com' }}
           DB_PORT: ${{ secrets.DB_PORT || '5432' }}
-          DB_NAME: ${{ secrets.DB_NAME || 'postgres' }}
-          DB_USER: ${{ secrets.DB_USER || 'istpetadmin' }}
+          DB_NAME: ${{ secrets.DB_NAME || 'istpetdev_integration' }}
+          DB_USER: ${{ secrets.DB_USER || 'migrator_integration' }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_SSL_MODE: ${{ secrets.DB_SSL_MODE || 'Require' }}
         with:
@@ -309,12 +309,16 @@ jobs:
             else
               export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:latest"
             fi
-            export DB_HOST="$DB_HOST"
-            export DB_PORT="$DB_PORT"
-            export DB_NAME="$DB_NAME"
-            export DB_USER="$DB_USER"
+            if [ -z "$DB_PASSWORD" ] && [ -f .env ]; then
+              echo "Cargando DB_PASSWORD desde archivo .env persistente en host..."
+              export DB_PASSWORD=$(grep '^DB_PASSWORD=' .env | cut -d '=' -f2-)
+            fi
+            export DB_HOST="${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com}"
+            export DB_PORT="${DB_PORT:-5432}"
+            export DB_NAME="${DB_NAME:-istpetdev_integration}"
+            export DB_USER="${DB_USER:-migrator_integration}"
             export DB_PASSWORD="$DB_PASSWORD"
-            export DB_SSL_MODE="$DB_SSL_MODE"
+            export DB_SSL_MODE="${DB_SSL_MODE:-Require}"
 
             # 4. Descarga de imágenes requeridas
             echo "Descargando imágenes inmutables..."

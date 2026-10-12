@@ -164,3 +164,9 @@ Fuente: instrucción directa de Bryan de integrar esta bóveda en `bryancito1090
 Se conservan notas, adjuntos y configuración común de Obsidian. Se actualizan instrucciones de clonación, referencias de repositorio, flujo por PR y comandos de verificación. El workflow y la plantilla de PR se trasladan a `.github/` de la plataforma. Los archivos personales y cambios locales se preservan sin publicarlos. Esta verificación corresponde a la estructura y navegación documental; no ejecuta aplicaciones, migraciones ni despliegues.
 
 Verificación de la integración: **73 notas Markdown**, **609 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta presentes en la bóveda original.
+
+## Despliegue Perfil A Reforzado y persistencia en Amazon RDS — 12 de octubre de 2026
+
+Fuente: implementación y validación en vivo del Perfil A Reforzado acordado por el equipo. Se incorpora [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] en `03 Arquitectura/`, documentando el cómputo stateless en AWS EC2 (`44.204.107.167`) desacoplado de la persistencia gestionada en Amazon RDS (`istpetdev-rds-dev` con PostgreSQL 16 + PostGIS) en la VPC del proyecto (`10.42.0.0/16`). Se audita la migración de las 95 tablas en la base central `istpetdev_integration` bajo el rol `migrator_integration`, las políticas RLS y la operatividad de los endpoints de observabilidad `/health/live` y `/health/ready`.
+
+Verificación de la actualización: **74 notas Markdown**, **611 enlaces internos resueltos**, **0 errores**.

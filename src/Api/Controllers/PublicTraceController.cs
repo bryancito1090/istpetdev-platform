@@ -1,4 +1,6 @@
-using System;
+using System.Threading;
+using System.Threading.Tasks;
+using IstpetDev.Application.PublicTrace.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,26 +11,27 @@ namespace IstpetDev.Api.Controllers;
 [AllowAnonymous]
 public class PublicTraceController : ControllerBase
 {
+    private readonly IPublicTraceService _traceService;
+
+    public PublicTraceController(IPublicTraceService traceService)
+    {
+        _traceService = traceService;
+    }
+
     [HttpGet("{unitId}")]
-    public IActionResult GetTrace(string unitId)
+    public async Task<IActionResult> GetTrace(string unitId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(unitId))
         {
             return BadRequest(new { error = "Unit ID is required" });
         }
 
-        return Ok(new
+        var trace = await _traceService.GetTraceAsync(unitId, cancellationToken);
+        if (trace is null)
         {
-            unitId,
-            traceType = "HandlingUnit",
-            status = "Verified",
-            generatedAtUtc = DateTime.UtcNow,
-            summary = "Unidad logística registrada y verificada en el sistema IstpetDev.",
-            events = new[]
-            {
-                new { stage = "Created", timestamp = DateTime.UtcNow.AddHours(-12), location = "Centro Logístico Quito" },
-                new { stage = "CustodyTransferred", timestamp = DateTime.UtcNow.AddHours(-4), location = "Transporte Autorizado" }
-            }
-        });
+            return NotFound(new { error = "Unit not found" });
+        }
+
+        return Ok(trace);
     }
 }

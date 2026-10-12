@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using IstpetDev.Api.Authentication;
+using IstpetDev.Application;
 using IstpetDev.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -18,6 +19,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+// Add Application layer services (Use Cases, Queries, Services)
+builder.Services.AddApplicationServices();
 
 // Add Infrastructure services (DbContext, Npgsql, PostGIS, HealthChecks)
 builder.Services.AddInfrastructureServices(builder.Configuration);

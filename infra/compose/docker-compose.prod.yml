@@ -1,7 +1,7 @@
 # ==============================================================================
 # docker-compose.prod.yml
-# Despliegue de producción para IstpetDev Platform
-# Host: AWS EC2 Debian / VPS
+# Despliegue de produccion para IstpetDev Platform (Perfil A Reforzado)
+# Host: AWS EC2 en istpetdev-vpc-dev (10.42.0.0/16) - RDS PostgreSQL 16
 # Dominio: istpetdev.doicela.dev (con Cloudflare)
 # ==============================================================================
 
@@ -25,7 +25,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:5000
-      ConnectionStrings__Main: Host=${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com};Port=${DB_PORT:-5432};Database=${DB_NAME:-postgres};Username=${DB_USER:-istpetadmin};Password=${DB_PASSWORD};SSL Mode=${DB_SSL_MODE:-Require};Trust Server Certificate=true;
+      ConnectionStrings__Main: Host=${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com};Port=${DB_PORT:-5432};Database=${DB_NAME:-istpetdev_integration};Username=${DB_USER:-migrator_integration};Password=${DB_PASSWORD};SSL Mode=${DB_SSL_MODE:-Require};Trust Server Certificate=true;
       Cors__Origins__0: https://istpetdev.doicela.dev
       Cors__Origins__1: https://clean.doicela.dev
       Cors__Origins__2: http://localhost:4200
