@@ -53,7 +53,7 @@ jobs:
             echo "Reiniciando servicios de aplicación..."
             docker compose -f infra/compose/docker-compose.prod.yml restart istpetdev-backend istpetdev-web
             sleep 5
-            curl -sf http://localhost:5000/health/live && echo "Servicios reiniciados correctamente"
+            (curl -sf http://127.0.0.1:5000/health/live || curl -sf http://localhost/health/live) && echo "Servicios reiniciados correctamente"
 
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
@@ -207,7 +207,7 @@ jobs:
             echo "Comprobando endpoint de salud de la API..."
             READY=false
             for i in $(seq 1 12); do
-              if curl -sf http://localhost:5000/health/live > /dev/null; then
+              if curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
                 READY=true
                 echo "API IstpetDev verificada exitosamente en el intento $i."
                 break
