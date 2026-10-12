@@ -1,0 +1,81 @@
+# ==============================================================================
+# Directivas de Exclusión Genérica (.ignore - ripgrep / herramientas de búsqueda)
+# Previene lecturas masivas y saturación innecesaria de la ventana de contexto.
+# ==============================================================================
+
+# Carpetas generadas y dependencias
+dist/
+build/
+bin/
+obj/
+.dart_tool/
+node_modules/
+coverage/
+.angular/
+.vs/
+.cache/
+TestResults/
+out/
+temp/
+tmp/
+
+# Archivos de bloqueo de dependencias (lockfiles extensos)
+package-lock.json
+yarn.lock
+Cargo.lock
+pnpm-lock.yaml
+bun.lockb
+packages.lock.json
+composer.lock
+
+# Datasets, volcados y logs locales
+*.log
+*.csv
+*.tsv
+*.sqlite
+*.sqlite3
+*.sqlite*
+*.db
+*.dump
+*.sql.gz
+*.parquet
+
+# Binarios y artefactos de compilación
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+
+# Source maps y bundles minificados
+*.min.js
+*.min.css
+*.map
+
+# Archivos multimedia y binarios no legibles por LLM
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.svg
+*.mp4
+*.webm
+*.mov
+*.pdf
+
+# Estado de infraestructura y llaves/secretos
+.terraform/
+*.tfstate*
+*.tfplan
+secrets/
+*.pem
+*.key
+*.pfx
+*.p12

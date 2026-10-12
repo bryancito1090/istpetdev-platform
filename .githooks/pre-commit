@@ -1,0 +1,14 @@
+#!/bin/sh
+echo "🔍 Validando arquitectura Feature-Sliced Design (FSD) y límites ESLint..."
+npm run lint:web
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo ""
+  echo "❌ ERROR: Violación de arquitectura Feature-Sliced Design detectada."
+  echo "El commit ha sido bloqueado. Revisa las reglas FSD en docs/frontend-architecture.md y corrige con 'npm run lint:fix' o ajusta los imports."
+  exit 1
+fi
+
+echo " Arquitectura FSD validada con éxito."
+exit 0

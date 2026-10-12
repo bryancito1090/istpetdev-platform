@@ -9,19 +9,33 @@
     "apps/mobile"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "dev:api": "dotnet run --project src/Api",
+    "predev:web": "npm run lint:web",
     "dev:web": "npm run start --workspace=apps/web",
     "dev:mobile": "npm run start --workspace=apps/mobile",
+    "prebuild:web": "npm run lint:web",
     "build:web": "npm run build --workspace=apps/web",
     "build:mobile": "npm run build --workspace=apps/mobile",
     "build:shared": "npm run build --workspace=libs/shared-core",
-    "check": "npm run check:api && npm run check:shared && npm run check:web && npm run check:mobile",
+    "lint": "eslint apps/web/src",
+    "lint:web": "eslint apps/web/src",
+    "lint:fix": "eslint apps/web/src --fix",
+    "check": "npm run check:lint && npm run check:api && npm run check:shared && npm run check:web && npm run check:mobile",
+    "check:lint": "npm run lint",
     "check:api": "dotnet build",
     "check:shared": "npm run build:shared",
     "check:web": "npm run build:web",
     "check:mobile": "npm run build:mobile"
   },
   "devDependencies": {
+    "@nx/eslint-plugin": "^23.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
+    "eslint": "^10.12.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "nx": "^23.3.0",
     "typescript": "6.0.3"
   }
 }

@@ -13,6 +13,8 @@ node_modules/
 bin/
 obj/
 dist/
+build/
+.dart_tool/
 coverage/
 .angular/
 .vs/
@@ -54,3 +56,14 @@ backend-*.hcl
 dev-access.json
 dev-outputs.json
 __pycache__/
+
+# Asistentes de IA y directivas locales (normativa de equipo: no se versionan)
+.agents/
+.claude/
+.local-skills/
+.cursor/
+.cursorrules
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.github/copilot-instructions.md
