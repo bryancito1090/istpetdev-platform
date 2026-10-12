@@ -1,0 +1,151 @@
+---
+tipo: ejecucion
+estado: propuesta
+actualizado: 2026-10-12
+tags: [hackathon, istpetdev, alcance, demo, agente]
+---
+
+# Definiciones de producto y plan hasta el pitch
+
+Registro de la sesión de definición del **12 de octubre de 2026**, en la que un integrante del equipo, con asistencia de Claude Code, reestructuró el alcance para maximizar la nota del jurado a cuatro días del evento. **Decididas por:** PENDIENTE (registrar el nombre del integrante y la confirmación del equipo, según [[Convenciones y estados]]). Mientras no se confirmen, son propuestas y no cambian decisiones aceptadas: las contradicciones con decisiones vigentes están en [[Hechos canonicos]] y como ADR-21 a ADR-23 en [[Decisiones de arquitectura]].
+
+La implementación detallada vive en los specs del repositorio (`docs/specs/`): [índice y guardarraíles](../../specs/README.md), [001 — Núcleo delgado e importador](../../specs/001-nucleo-delgado-importador/spec.md) y [002 — Motor logístico](../../specs/002-motor-logistico/spec.md). Esta nota conserva el **porqué** de cada decisión para no perder el hilo.
+
+## Punto de partida
+
+Diagnóstico del 12-oct sobre el repositorio unificado:
+
+- Todo el P0 de [[Backlog]] (B-01 a B-10) seguía pendiente; el código tenía lectura de puntos, trazabilidad simulada y login de demostración.
+- La infraestructura (95 tablas con RLS, CI/CD, Terraform) iba muy por delante del producto visible.
+- Cinco de los siete jurados no son técnicos ([[Evaluacion y entregables]]): la administración interna (RBAC configurable, plantillas, workflows) no suma nota.
+- El prototipo pesa 20% y es el primer desempate, pero además sostiene Viabilidad, Impacto e Innovación; Comprensión del problema no tenía evidencia del sector.
+- El widget de rutas de la web muestra cifras escritas a mano («418 km», «Ahorro: 24.8%»), contrario a la regla de honestidad de [[Dataset y escenarios]]; el spec 005 debe reemplazarlas por datos del motor.
+
+## Objetivo norte
+
+> En 3 minutos, el jurado ve cómo IstpetDev evita que un hospital se quede sin desinfectante: el agente lo detecta 5 días antes, propone la ruta y una persona la aprueba; el conductor entrega sin señal; el jurado escanea la caja con su propio teléfono; y el tablero muestra qué habría pasado en 90 días.
+
+**Filtro para construir algo antes del 17-oct** (si una respuesta es «no», no se construye):
+
+1. ¿El jurado lo ve en el pitch o en sus preguntas?
+2. ¿Funciona sin la wifi del recinto?
+3. ¿Sus cifras salen de una ejecución reproducible?
+4. ¿Lo entiende un gerente de limpieza sin explicación técnica?
+5. ¿Sobrevive a un dataset distinto (guardarraíles G1–G8)?
+
+### Métricas de «listo para ganar»
+
+| Métrica | Umbral |
+|---|---|
+| Ensayos completos sin fallo | 10 consecutivos; los 2 últimos sin la wifi del recinto |
+| Duración del pitch | Tiempo oficial −20 s; versiones de 3, 5 y 7 min hasta que responda O-04 ([[Consultas para la organizacion]]) |
+| Banco de preguntas del jurado | 20 preguntas difíciles con respuesta ensayada en ≤ 30 s |
+| Evidencia del sector | ≥ 3 conversaciones documentadas antes del 17-oct 12:30, ≥ 1 con reacción al prototipo |
+| Impacto | ≥ 3 semillas + 1 escenario adverso, presentado como rango frente a los dos baselines |
+| Reinicio de la demo | ≤ 10 s con un clic |
+| Propuesta del agente | ≤ 10 s (p95); todas sus cifras coinciden con las de las herramientas |
+
+## Definiciones D1–D8
+
+| # | Definición | Por qué |
+|---|---|---|
+| D1 | Objetivo norte y métricas de esta nota | Un criterio común para decidir qué entra |
+| D2 | **Evidencia del sector solo durante el evento.** Antes del 16 los cinco construyen. Día 1: dos personas entrevistan expositores de la feria en las pausas (11:00–11:30 y 13:00–14:00) con un guion de 5 minutos. Día 2: se vuelve con el prototipo en el bloque de validación (11:00–12:30). No se entrevista a organizaciones con representante en el jurado (manual §11.5). Antes del 16, un **kit previo sin horas del equipo**, preparado con IA: guion y hoja de entrevista, esqueleto del pitch con huecos, modelo de negocio, banco de preguntas e investigación de pliegos de compras públicas (SERCOP) para citar el costo de un quiebre **solo si aparece una fuente** | El equipo no tiene acceso al sector; la hackathon ocurre dentro de la Expo Clean, donde están las empresas |
+| D3 | **Cortes de alcance** (tabla siguiente) | Liberar horas para el recorrido que ve el jurado |
+| D4 | **Agente con niveles.** A — vigía: detecta riesgos y propone reposición y ruta. B — gestor de incidentes: evalúa un cierre de vía, replanifica lo pendiente y avisa al conductor. Ambos obligatorios. C — «qué pasaría si» con el simulador, solo si A y B están terminados. **El LLM orquesta y explica; nunca calcula** rutas, cantidades ni fechas. El modelo se elige con una prueba de 1–2 horas: 3 escenarios (riesgo, incidente, dato con instrucciones inyectadas) y 2 candidatos; gana el que cumple llamadas válidas, latencia p95 ≤ 10 s y costo; se registra en ADR-08 | Innovación defendible ante el jurado técnico; un agente que opera, no un chatbot |
+| D5 | **Autonomía con límites.** Un motor de reglas determinista en el backend clasifica cada propuesta en «se ejecuta» o «se escala»; el LLM no puede saltarlo. Se ejecuta sola si no se retira ninguna parada obligatoria, se cumplen todas las ventanas, el costo sube ≤ 15% y ningún retraso supera 60 min. Se escala lo demás, con dos opciones calculadas («atender tarde» y «priorizar críticos»). Interruptor «solo proponer». Toda acción automática se puede deshacer porque crea una nueva revisión | Respuesta a «¿y si la IA se equivoca?»: la IA hace lo rutinario y deja a la persona lo que importa |
+| D6 | **Recorrido en vivo regional:** unos 15 puntos sintéticos de Quito, 1 bodega y 2 vehículos (fixture `demo-region`); el incidente afecta a un vehículo y no al otro. La escala nacional (80 puntos) se muestra en el simulador | Con 6 puntos el mapa parece un juguete; con 80 no se entiende en 3 minutos |
+| D7 | **Doble baseline:** el simulador compara contra reposición reactiva (cuando el punto avisa) y contra calendario fijo (cada N días, cantidad fija). Ambas políticas se escriben antes de la primera simulación y no se ajustan después de ver resultados | Sin datos del sector no sabemos cuál usan; ganar a ambas hace el resultado robusto (ver [[Simulador y metricas]]) |
+| D8 | **Congelamiento de funcionalidades: 15-oct a las 14:00**, con hitos de control y plan B por componente | Asegura ensayos, simulacro de dataset sorpresa y video de respaldo |
+
+### Cortes de alcance hasta el 17-oct (D3)
+
+| Se corta | Lo reemplaza |
+|---|---|
+| RBAC administrable, plantillas, workflows y configuración desde la base | Roles fijos y configuración en archivos (spec 001) |
+| Chat libre gerencia–conductor | Avisos del agente al conductor (nivel B) |
+| SignalR con varias réplicas, backplane Redis, ECS/Fargate, autoscaling | Una instancia; actualización periódica o SignalR simple |
+| Varias bodegas y más de 2 vehículos en el recorrido en vivo | 1 bodega y 2 vehículos (D6) |
+| Pronóstico con ML entrenado | Media de la ventana declarada ([[Inventario y prediccion]]) |
+| App nativa (build de Capacitor) | PWA instalada |
+| Matriz vial de pago | Fuente abierta o aproximación declarada |
+| Login de Cognito visible en la demo | Sesiones ya iniciadas en los dispositivos de la demo |
+| Más de un caso en el pitch | La historia del hospital; los demás casos, para las preguntas |
+| Blockchain, sensores IoT simulados, varios agentes | — |
+
+## Guardarraíles contra el dataset del evento
+
+La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]]). Para que un dataset distinto no invalide el trabajo previo:
+
+| ID | Regla |
+|---|---|
+| G1 | Nada del escenario en el código: cantidades, nombres, regiones o SKUs vienen de datos o parámetros |
+| G2 | Una sola puerta de entrada de datos: el importador canónico (CSV/XLSX + perfil de mapeo), incluido nuestro dataset de demo |
+| G3 | Lo que falta se declara como supuesto; nunca se inventa precisión |
+| G4 | Unidades explícitas; las conversiones se declaran en el perfil |
+| G5 | Algoritmos parametrizados, con valores por fila desde los datos |
+| G6 | Simulacro de «dataset sorpresa» antes del 16: integrar un formato ajeno en ≤ 60 minutos sin tocar código |
+| G7 | Modelo de dominio genérico: el hospital es un caso dentro de los datos, no una entidad |
+| G8 | Trabajo previo trazable: tag `pre-evento` y registro en [[Registro de trabajo previo y del evento]] |
+
+**Límite:** cubren cambios de datos y de formato dentro del Reto 1. Un cambio de problema (por ejemplo, cotización del Reto 2) obliga a replanificar el alcance el mismo día.
+
+## Plan hasta el pitch (D8)
+
+### Hitos de control
+
+| Hito | Fecha y hora | Condición | Si se retrasa más de 4 h |
+|---|---|---|---|
+| H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de selección del modelo del agente hecha | Se implementa con el spec en borrador; el modelo por defecto es el de menor latencia medida |
+| H2 | 13-oct 20:00 | Spec 001 integrado en `develop` | Prioridad del equipo entero: bloquea 002–005 |
+| H3 | 14-oct 20:00 | Recorrido sin agente de punta a punta: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado | El nivel B del agente pasa a su plan B |
+| H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y simulador con resultados frente a los dos baselines | Se aplican los planes B |
+| H5 | 15-oct 14:00 | Congelamiento de funcionalidades | — |
+
+### Plan B por componente
+
+| Componente | Si no llega al congelamiento |
+|---|---|
+| Agente nivel B | Botón de incidente con replanificación determinista y tarjeta escalada con explicación por plantilla |
+| Agente nivel A | Riesgos calculados con tarjeta de acción manual y explicación por plantilla |
+| PWA offline | Recepción en línea; el modo avión se muestra en el video de respaldo |
+| Mapa de ruta | Lista ordenada de paradas con horas y costos |
+| Despliegue en la nube | Stack local en un portátil con hotspot propio; el QR se escanea con un teléfono del equipo conectado al hotspot |
+| Simulador de 90 días | Sin plan B honesto: es prioridad por encima de los niveles del agente |
+
+### Días del evento
+
+Se superponen al [[Cronograma oficial]] y se **participa de verdad en la dinámica oficial**: «Proceso y equipo» observa la participación.
+
+| Momento | Qué hace el equipo |
+|---|---|
+| 16-oct 09:30–10:30 | Una persona transcribe la ficha final; cada cambio se clasifica en sin impacto, se resuelve con perfil o parámetros, o cambia el alcance. Decisión «seguir o adaptar» |
+| 16-oct pausas | Dos personas entrevistan en la feria; tres integran |
+| 16-oct 14:00–16:00 | Tres adaptan el código; dos trabajan negocio y rellenan el esqueleto del pitch |
+| 16-oct 16:00–16:30 | Mentoría con 3 preguntas preparadas; registrar en [[Registro de mentorias]] y comprobar si el mentor es jurado |
+| 16-oct 16:30–19:00 | Integrar el consejo del mentor; ensayo 1 con los datos del evento; checkpoint |
+| 17-oct 10:30 | Congelamiento del código; después solo se corrige lo que bloquee |
+| 17-oct 11:00–12:30 | Dos validan con expositores usando el prototipo; tres ejecutan la simulación final y 3 ensayos |
+| 17-oct 14:00–15:45 | Completar huecos del pitch (citas, cifras, precio); 2 ensayos cronometrados; 15:45 congelamiento de materiales |
+
+## Decisiones de diseño del motor logístico (spec 002)
+
+Aprobadas en el brainstorming del 12-oct; detalle en el [spec 002](../../specs/002-motor-logistico/spec.md) y su [plan](../../specs/002-motor-logistico/plan.md).
+
+| Tema | Decisión | Alternativas descartadas |
+|---|---|---|
+| Dónde vive el motor | Servicios deterministas en .NET (`Application`) | OR-Tools en un microservicio Python; lógica en n8n |
+| Distancias | Cadena: tramos guardados con el fixture → OSRM con URL configurable → línea recta × 1,3 a 40 km/h etiquetada como aproximación | Solo aproximación; solo OSRM público en vivo |
+| Puntos de una ruta | Obligatorios (críticos y altos) + consolidación de los «en vigilancia» con desvío ≤ 20 min | Solo los en riesgo; todos los puntos del día |
+| Reloj operativo | Por defecto, el día siguiente al último consumo importado | Hora real (con datasets históricos no detectaría riesgos) |
+| Incidentes | Cierre de vía, demora y avería de vehículo | — |
+| Escalado | Dos opciones calculadas por el planificador: «atender tarde» y «priorizar críticos» | Alternativas propuestas por el LLM |
+| Explicaciones | Plantillas construidas solo con `facts` estructurados; el agente se valida contra los mismos `facts` | Texto libre del LLM sin validación |
+
+## Pendientes de esta sesión
+
+- Confirmar quién decide D1–D8 y ADR-21 a ADR-23.
+- Specs 003, 004, 005 y 006; el `task.md` del 002 lo redacta el equipo.
+- Kit previo de 006 e investigación de pliegos de compras públicas.
+- Confirmación escrita de la organización sobre trabajo previo (O-01).
+- Hallazgo de seguridad reportado al equipo de infraestructura: el grupo de seguridad de Terraform abre SSH a `0.0.0.0/0` por defecto (`infra/terraform/modules/security_groups/variables.tf`); la recomendación fue dejarlo vacío por defecto o desplegar por SSM.

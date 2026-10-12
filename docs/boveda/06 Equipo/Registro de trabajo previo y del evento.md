@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -56,3 +56,13 @@ Bryan confirmó recursos/versiones y delegó recomendaciones. El compañero impl
 | 2026-10-09 | Preparación | Reparto de trabajo entre agente de software (pruebas, documentación técnica y PR) y agente de bóveda (estado y guías compartidas) | [[Coordinacion migracion schema95]] | Encargo transmitido por Bryan y respuesta recibida; documentación de la bóveda verificada; envío automático por Orca bloqueado por FUSE |
 | 2026-10-09 | Preparación | Commit bc85792f5ae94eeda79f93482f61cb77ced3b5dd publicado; PR #1 hacia develop como borrador; integridad RDS y aislamiento/integridad/PostGIS SQL descartable aprobados | [PR #1](https://github.com/bryancito1090/istpetdev-platform/pull/1), respuesta del agente de software y evidencias resumidas en [[Coordinacion migracion schema95]] | Revisión y pruebas .NET/HTTP/aislamiento RDS pendientes; no merge ni actualización de integración |
 | 2026-10-10 | Preparación | Commit 8c6791cc6bf5c730b0447d343897fef4fae0e4e7: pool Npgsql secuencial, EF/Npgsql/NTS y filtro/controlador aprobados en PostgreSQL 16/PostGIS descartable; matriz JWT/HTTP preparada | Respuesta y huellas de evidencia privada comprobadas, resumidas en [[Coordinacion migracion schema95]] | API detenida y PR como borrador según informe; HTTP/Cognito, concurrencia y recorrido/aislamiento RDS pendientes; migraciones e integración sin cambios |
+
+## Registro de preparación — 12 de octubre de 2026
+
+| Fecha | Fase | Resultado | Evidencia | Estado |
+|---|---|---|---|---|
+| 2026-10-12 | Preparación | Análisis del repositorio unificado y diagnóstico frente a la matriz de evaluación | [[Definiciones de producto y plan hasta el pitch]] | Registrado |
+| 2026-10-12 | Preparación | Plantilla de specs y spec 001 (núcleo delgado e importador) | PR #8 fusionado en `develop` (`docs/specs/`) | Documentado; sin implementar |
+| 2026-10-12 | Preparación | Definiciones D1–D8, spec 002 (motor logístico) y ADR-21 a ADR-23 como propuestas | PR de `docs/definiciones-producto` | Documentado; Deciders pendientes |
+
+**Asistencia de IA:** los specs, esta reestructuración y las notas asociadas se redactaron con Claude Code (modelo Opus) a partir de preguntas y decisiones de un integrante del equipo. El código incluido en los specs es un ejemplo no ejecutado hasta que una tarea lo compile y pruebe (ver [[Convenciones y estados]]).

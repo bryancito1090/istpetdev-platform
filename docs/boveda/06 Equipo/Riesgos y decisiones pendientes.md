@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -24,6 +24,12 @@ tags: [hackathon, istpetdev]
 | R-11 | QR/evidencias exponen información | Acceso indebido | Vista pública limitada y S3 privado |
 | R-12 | Evento exige restricciones nuevas | Cambios tardíos | Parámetros versionados y fixture adaptable |
 | R-13 | Asistentes de IA reciben datos contradictorios o incompletos | Código y documentos con datos inventados | [[Hechos canonicos]], [[Catalogo y plan de skills]] y `check_vault.py` en CI |
+| R-14 | Sin acceso al sector de limpieza antes del evento | Comprensión del problema e Impacto sin evidencia | Entrevistas en la feria el 16 y validación con el prototipo el 17 (D2); kit previo; decirlo con honestidad si no se logra |
+| R-15 | Cifras fijas en el widget de rutas de la web («418 km», «Ahorro: 24.8%») | Pérdida de credibilidad si el jurado pregunta su origen | El spec 005 las reemplaza por datos del motor (spec 002) |
+| R-16 | 2,5 días para construir el P0 completo | Demo incompleta o sin ensayar | Congelamiento el 15-oct 14:00, hitos H1–H5 y plan B por componente (D8) |
+| R-17 | El incidente predefinido no produce «uno solo, uno escalado» con las rutas reales | Se pierde el momento central de la demo | Calibración tras implementar el planificador y prueba E2E que fija el resultado (spec 002) |
+| R-18 | LLM lento, caído o manipulado por texto de los datos importados | Agente que falla o actúa fuera de la política en escena | Política determinista en el backend, fallback por plantilla en ≤ 10 s y datos delimitados (ADR-22) |
+| R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM |
 
 ## Decisiones pendientes
 
@@ -39,6 +45,8 @@ tags: [hackathon, istpetdev]
 | Repositorio del software | Antes de empezar el código; la bóveda ya usa Git/GitHub |
 | Modelo/prompt/cuotas IA | Antes de configurar n8n |
 | Costos reales y tamaño del piloto | Con información empresarial |
+| Quién decide D1–D8 y ADR-21 a ADR-23 ([[Definiciones de producto y plan hasta el pitch]]) | Antes de implementar el spec 001 |
+| Modelo del agente (prueba de selección de D4) | Hito H1, 13-oct 13:00 |
 
 No faltan nombres ni especialidades del equipo: IstpetDev ya confirmó cinco integrantes con experiencia transversal.
 

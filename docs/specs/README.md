@@ -43,7 +43,7 @@ Toda capacidad que se construya pasa este filtro; si una respuesta es «no», no
 
 ## Definiciones de producto
 
-Acordadas en la sesión de definición del 12-oct-2026. **Decididas por:** PENDIENTE (registrar nombre del integrante y confirmación del equipo, según [Convenciones y estados](../boveda/00%20Inicio/Convenciones%20y%20estados.md)). Mientras no se confirmen, son propuestas del equipo y no cambian decisiones aceptadas de la bóveda.
+Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una está en la bóveda: [Definiciones de producto y plan hasta el pitch](../boveda/06%20Equipo/Definiciones%20de%20producto%20y%20plan%20hasta%20el%20pitch.md) (ADR-21 a ADR-23 en [Decisiones de arquitectura](../boveda/03%20Arquitectura/Decisiones%20de%20arquitectura.md)). **Decididas por:** PENDIENTE (registrar nombre del integrante y confirmación del equipo, según [Convenciones y estados](../boveda/00%20Inicio/Convenciones%20y%20estados.md)). Mientras no se confirmen, son propuestas del equipo y no cambian decisiones aceptadas de la bóveda.
 
 | # | Definición | Specs |
 |---|---|---|
@@ -76,7 +76,7 @@ Acordadas en la sesión de definición del 12-oct-2026. **Decididas por:** PENDI
 | ID | Spec | Criterio de nota que sostiene | Depende de | Estado |
 |---|---|---|---|---|
 | 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | borrador |
-| 002 | Motor logístico determinista: riesgo, ruteo y replanificación | Demo, impacto, innovación | 001 | por escribir |
+| 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | borrador (spec y plan; `task.md` y `test-e2e.md` los redacta el equipo) |
 | 003 | Agente logístico con n8n (herramientas sobre 002, autonomía con límites) | Innovación, demo | 002 | por escribir |
 | 004 | Campo: QR, custodia, despacho/recepción y PWA offline | Demo (momento físico), viabilidad | 001 | por escribir |
 | 005 | Panel web y simulador comparativo de 90 días con KPIs | Impacto, presentación | 002 | por escribir |

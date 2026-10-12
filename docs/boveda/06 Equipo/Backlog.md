@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -109,3 +109,16 @@ B-35 usa ahora la propuesta de [[AWS temporal para la hackathon y cierre]]: IAM 
 | ID | Entrega | Prioridad/dependencia | Criterio de cierre | Estado |
 |---|---|---|---|---|
 | B-36 | Cierre de infraestructura de la hackathon | Preparar antes del ensayo; ejecutar al finalizar | Exportación privada verificada, retiro del stack y residuos de DB/backups/EBS/S3/logs/secrets, backend/KMS al final y V-33; sin afectar n8n ni recursos personales | Pendiente |
+
+## Reestructuración propuesta — 12 de octubre de 2026
+
+Propuesta de la sesión de definición registrada en [[Definiciones de producto y plan hasta el pitch]] (Deciders PENDIENTE). Si se acepta ADR-21, B-29 se cierra con roles fijos y B-37 a B-40 pasan a P2. Los specs del repositorio (`docs/specs/`) detallan cada entrega.
+
+| ID | Entrega | Depende de | Criterio de cierre | Estado |
+|---|---|---|---|---|
+| B-41 | Núcleo delgado, importador canónico y reset de demo (spec 001) | ADR-21 | `dotnet test` y `test-e2e.md` del spec 001; simulacro de dataset sorpresa ≤ 60 min | Pendiente |
+| B-42 | Motor logístico: riesgo, ruta de 2 vehículos, replanificación y política de autonomía (spec 002) | B-41, ADR-22, ADR-23 | Criterios CE-01 a CE-07 del spec 002 | Pendiente |
+| B-43 | Fixture `demo-region` con tramos viales e incidente predefinido calibrado | B-42 | El incidente produce una decisión ejecutada sola y otra escalada | Pendiente |
+| B-44 | Agente niveles A y B con n8n (spec 003) y prueba de selección del modelo | B-42 | Propuesta ≤ 10 s p95; cifras validadas contra `facts`; fallback visible | Pendiente |
+| B-45 | Kit previo de validación y pitch (spec 006), sin horas del equipo | — | Guion de feria, esqueleto del pitch, modelo de negocio, banco de preguntas e investigación de pliegos revisados por el equipo | Pendiente |
+| B-46 | Evidencia del sector en el evento | B-45 | ≥ 3 conversaciones documentadas, ≥ 1 con reacción al prototipo | Pendiente |

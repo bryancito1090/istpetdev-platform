@@ -32,6 +32,9 @@ tags: [arquitectura, contratos]
 | ADR-17 | Móvil offline y firma digital | PWA con IndexedDB y `signature_pad` | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Captura de firma táctil en canvas exportada a PNG, persistencia en IndexedDB (`idb`) con UUID v7, y sincronización encolada e idempotente hacia backend/S3. |
 | ADR-18 | Cliente OIDC y Cognito PKCE | Flujo Authorization Code con PKCE S256 en Angular | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Flujo OIDC seguro PKCE S256 contra User Pool dev, sin client secret en cliente web/móvil, e inyección de token JWT mediante `AuthInterceptor` en `shared/api`. |
 | ADR-20 | Repositorio unificado | Código y bóveda en istpetdev-platform | **Aceptada por Bryan, 2026-10-12**, instrucción directa: bóveda en `docs/boveda/`, historial conservado e integración por PR a `develop`; reemplaza ADR-12 |
+| ADR-21 | Núcleo delgado para la demo | Esquema de 27 tablas, roles fijos e importador canónico | **Propuesta, 2026-10-12** (Deciders PENDIENTE; debe incluir a Bryan como Decider de ADR-16): difiere a P2 RF-17/18/19 y RNF-13; Schema95 se archiva en el tag `schema95-archivo`; [[Definiciones de producto y plan hasta el pitch]] |
+| ADR-22 | Autonomía del agente | Agente con herramientas y motor de reglas determinista | **Propuesta, 2026-10-12** (Deciders PENDIENTE): el LLM orquesta y explica sin calcular; reglas en el backend deciden qué se ejecuta solo y qué se escala; complementa ADR-08 |
+| ADR-23 | Motor logístico y distancias | Heurística determinista en .NET y distancias en cadena | **Propuesta, 2026-10-12** (Deciders PENDIENTE): inserción + 2-opt + consolidación; tramos guardados → OSRM → aproximación declarada; complementa ADR-05 y [[Rutas y sobrecostos]] |
 
 ## ADR-01 — versión de backend
 
@@ -181,3 +184,46 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 **Consecuencias:** Obsidian abre `docs/boveda/`. Las nuevas ediciones y los PR se realizan en `istpetdev-platform`, hacia `develop`. El workflow de la bóveda se ejecuta desde `.github/workflows/check-vault.yml`, invocando `python docs/boveda/.github/scripts/check_vault.py`. Las sesiones personales y las configuraciones locales de asistentes siguen excluidas de Git. Los acuerdos anteriores fechados se conservan como históricos.
 
 **Verificación:** registro de integración y navegación en [[Fuente y control documental]]. Este traslado documental no acredita ejecución de las aplicaciones ni migraciones de base de datos.
+
+## ADR-21 — núcleo delgado para la demo
+
+- **Estado:** propuesta. **Fecha:** 2026-10-12. **Deciders:** PENDIENTE (debe incluir a Bryan, Decider de ADR-16). **Origen:** sesión de definición del 12-oct y [spec 001](../../specs/001-nucleo-delgado-importador/spec.md). **Reemplazaría parcialmente:** ADR-16 para la demo.
+
+**Contexto:** a cuatro días del evento ninguna capacidad P0 del flujo logístico estaba construida, y cada funcionalidad nueva debía atravesar RLS, RBAC administrable y configuración desde la base. El jurado (5 de 7 no técnicos) evalúa el flujo demostrable.
+
+**Opciones:** (a) esquema delgado de 27 tablas sin RLS, con roles fijos; (b) conservar las 95 tablas usando solo el núcleo; (c) mantener todo con RLS y construir sobre RBAC configurable.
+
+**Decisión propuesta:** (a). Una organización fija conserva `OrganizationId` para la versión multiempresa. Los seis roles funcionales de ADR-14 se guardan en `Account.Role` y se leen en el servidor, no del token. Todo dato operativo entra por un importador canónico (CSV/XLSX + perfil de mapeo). Schema95 queda archivado en el tag `schema95-archivo` y su diseño en [[Esquema completo de base de datos]] y [[RBAC y configuracion del sistema]].
+
+**Consecuencias:** RF-17, RF-18, RF-19 y RNF-13 pasan a P2; B-37 a B-40 quedan diferidas; los ámbitos por asignación (conductor, receptor) se implementan con `Delivery.AssignedAccountId`. Nombres nuevos: `ImportBatch` y `AgentDecision`. Las bases de RDS con Schema95 deben recrearse antes de aplicar la migración nueva.
+
+**Verificación:** pruebas y `test-e2e.md` del spec 001.
+
+## ADR-22 — autonomía del agente con límites
+
+- **Estado:** propuesta. **Fecha:** 2026-10-12. **Deciders:** PENDIENTE. **Origen:** definiciones D4 y D5 de [[Definiciones de producto y plan hasta el pitch]]. **Complementa:** ADR-08.
+
+**Contexto:** el plus de innovación es un agente que opera la logística, no un chatbot. ADR-08 limita el LLM a explicar; el jurado preguntará qué pasa si la IA se equivoca.
+
+**Opciones:** (a) aprobación humana para todo; (b) autonomía con límites decidida por reglas deterministas; (c) autonomía total.
+
+**Decisión propuesta:** (b). El LLM elige herramientas, compone y explica; nunca calcula rutas, cantidades ni fechas. Un motor de reglas en el backend ejecuta solo lo que no retira paradas obligatorias, cumple ventanas, sube el costo ≤ 15% y no retrasa más de 60 min; lo demás se escala con dos opciones calculadas. Interruptor «solo proponer» y acciones reversibles. Los datos importados se pasan al modelo como datos delimitados. El modelo se elige midiendo dos candidatos.
+
+**Consecuencias:** el motor de reglas vive en el spec 002 y el agente en el 003; cada decisión se registra en `AgentDecision`. ADR-08 debe actualizar su proveedor tras la prueba de selección.
+
+**Verificación:** tabla completa de la política con pruebas automáticas y recorrido E2E con una decisión ejecutada sola y otra escalada.
+
+## ADR-23 — motor logístico determinista y distancias en cadena
+
+- **Estado:** propuesta. **Fecha:** 2026-10-12. **Deciders:** PENDIENTE. **Origen:** brainstorming del [spec 002](../../specs/002-motor-logistico/spec.md). **Complementa:** ADR-05 y [[Rutas y sobrecostos]].
+
+**Contexto:** el planificador debe funcionar sin la wifi del recinto, ser reproducible para el simulador y explicable para el jurado.
+
+**Opciones:** (a) heurística propia en .NET (inserción + 2-opt + consolidación); (b) OR-Tools en un microservicio Python; (c) lógica en n8n. Para distancias: cadena con caché, solo aproximación o solo OSRM público.
+
+**Decisión propuesta:** (a) con distancias en cadena: tramos guardados (importados como entidad `road_segments`) → OSRM con URL configurable → línea recta × 1,3 a 40 km/h etiquetada como aproximación. Reloj operativo por defecto en la fecha del último dato importado. Ruta por vehículo para que la política decida por vehículo.
+
+**Consecuencias:** una migración con la caché `RoadMatrixEdge` indexada por coordenadas; fixture `demo-region` con tramos precalculados; la heurística se presenta como «optimizada por la política», no como óptima. El simulador no mezcla tramos viales y aproximados en una misma corrida.
+
+**Verificación:** determinismo, calidad frente a fuerza bruta en instancias pequeñas, rendimiento (≤ 1 s con 15 puntos, ≤ 5 s con 80) y E2E del spec 002.
+

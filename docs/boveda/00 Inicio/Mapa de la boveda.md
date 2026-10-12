@@ -1,7 +1,7 @@
 ---
 tipo: indice
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [hackathon, equipo]
 ---
 
@@ -47,6 +47,7 @@ tags: [hackathon, equipo]
 
 - [[Equipo y acuerdos]], [[Plan de ejecucion]], [[Backlog]].
 - [[Riesgos y decisiones pendientes]], [[Registro de trabajo previo y del evento]].
+- [[Definiciones de producto y plan hasta el pitch]] — objetivo norte, definiciones D1–D8, cortes, guardarraíles, hitos y plan B hasta el pitch (12-oct). Specs implementables en `docs/specs/` del repositorio.
 - [[Coordinacion migracion schema95]] — aplicación personal, evidencia y reparto de revisión/documentación entre agentes.
 - [[Registro de mentorias]].
 

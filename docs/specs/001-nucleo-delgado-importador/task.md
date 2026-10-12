@@ -4188,41 +4188,22 @@ git commit -m "test(e2e): recorrido de reset de demo e importación de dataset e
 - Consumes: decisión del equipo de Task 0 (Deciders y fecha).
 - Produces: ADR-21 registrada; contradicciones visibles en Hechos canonicos.
 
-- [ ] **Step 1: Añadir ADR-21 al final de `Decisiones de arquitectura.md`**
+- [ ] **Step 1: Actualizar ADR-21 en `Decisiones de arquitectura.md`**
 
-Sustituir `<Deciders>` y `<fecha>` por los datos reales de Task 0. Si el equipo aún no decidió, dejar «Estado: propuesta» y «Deciders: PENDIENTE».
+ADR-21 ya está registrada como **propuesta** desde el 12-oct (fila de la tabla y sección «ADR-21 — núcleo delgado para la demo»). Con la decisión de Task 0:
 
-```markdown
-## ADR-21 — Núcleo delgado para la demo
+- En la fila `| ADR-21 |`, reemplazar «**Propuesta, 2026-10-12** (Deciders PENDIENTE; …)» por «**Aceptada por <Deciders>, <fecha>**» y conservar el resto del texto.
+- En la sección, cambiar `**Estado:** propuesta` por `**Estado:** aceptado` y `**Deciders:** PENDIENTE (…)` por los nombres reales.
+- Si el equipo no la acepta, marcarla `reemplazado` o dejarla como propuesta con el motivo, y **no** ejecutar este spec.
 
-**Estado:** <aceptado | propuesta>. **Fecha:** <fecha>. **Deciders:** <Deciders>. **Origen:** spec [001 — Núcleo delgado e importador genérico](../../specs/001-nucleo-delgado-importador/spec.md). **Reemplaza parcialmente:** ADR-16 (para la demo).
+- [ ] **Step 2: Cerrar las contradicciones en `Hechos canonicos.md`**
 
-**Contexto:** a cuatro días del evento, ninguna capacidad P0 del flujo logístico estaba construida, y cada funcionalidad nueva debía atravesar RLS, RBAC administrable y configuración desde DB. El jurado (5 de 7 no técnicos) evalúa el flujo demostrable, no la administración interna.
+Las filas ya existen desde el 12-oct. Con la decisión tomada:
 
-**Decisión:** la demo usa un esquema de 27 tablas sin RLS ni configuración dinámica, con una organización fija y seis roles funcionales fijos guardados en `Account.Role`. Todo dato operativo entra por un importador canónico (CSV/XLSX + perfil de mapeo). Schema95 queda archivado en el tag `schema95-archivo` y su diseño documentado en [[Esquema completo de base de datos]] y [[RBAC y configuracion del sistema]] como base de la versión multiempresa.
-
-**Consecuencias:** RF-17, RF-18, RF-19 y RNF-13 pasan a P2. B-29 se cierra con roles fijos; B-37 a B-40 quedan diferidas. Los ámbitos por asignación (conductor y receptor) se implementan en el spec 004 con `Delivery.AssignedAccountId`. Nombres nuevos: `ImportBatch` y `AgentDecision`.
-
-**Verificación:** pruebas del spec 001 (`dotnet test`) y [test-e2e del spec 001](../../specs/001-nucleo-delgado-importador/test-e2e.md).
-```
-
-- [ ] **Step 2: Registrar las contradicciones en `Hechos canonicos.md`**
-
-En la tabla «Contradicciones abiertas», añadir:
-
-```markdown
-| Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21, spec 001) | Equipo, con Bryan como Decider de ADR-16 |
-| Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
-```
-
-En la tabla «Nombres en código», añadir:
-
-```markdown
-| Lote de importación | `ImportBatch` | Spec 001 (⚠️ hasta aceptar ADR-21) |
-| Decisión del agente logístico | `AgentDecision` | Spec 001/003 (⚠️ hasta aceptar ADR-21) |
-```
-
-Actualizar `actualizado:` en la cabecera a la fecha del cambio.
+- En «Estado de las decisiones (ADR)», actualizar la fila `Núcleo delgado para la demo | ADR-21` con el estado y los Deciders.
+- En «Contradicciones abiertas», quitar la fila «Alcance de RBAC/configuración para la demo» y anotar la resolución al final de la sección («Cerrada el <fecha> por ADR-21»), como se hizo con las del 7 de octubre.
+- En «Nombres en código», quitar «⚠️ propuesta» de `ImportBatch` y `AgentDecision`.
+- Actualizar `actualizado:` en la cabecera.
 
 - [ ] **Step 3: Registrar el trabajo en `Registro de trabajo previo y del evento.md`**
 
