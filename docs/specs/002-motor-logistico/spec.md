@@ -68,7 +68,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 
 1. **Dado** una ruta con 2 paradas completadas, **cuando** se registra un cierre de vía que cruza un tramo pendiente, **entonces** la nueva revisión conserva las 2 paradas completadas y no usa el tramo cerrado.
 2. **Dado** una avería del vehículo 1, **cuando** se replanifica, **entonces** sus paradas pendientes se intentan atender con el vehículo 2 tras volver al depósito a cargar; las que no caben en la jornada quedan como no atendidas.
-3. **Dado** una revisión publicada por error, **cuando** la deshago, **entonces** se publica de nuevo la revisión anterior como una revisión nueva y el historial conserva las tres.
+3. **Dado** una revisión publicada por error, **cuando** la deshago antes del despacho de sus entregas pendientes, **entonces** se liberan solo sus reservas activas, se publica la revisión anterior como una revisión nueva y el historial conserva las tres. Si alguna entrega pendiente ya se despachó, el sistema conserva su movimiento y exige conciliación en vez de liberar stock físico.
 
 ### H4 — Reglas visibles que deciden qué se ejecuta solo (P1)
 
@@ -107,7 +107,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | FR-09 | DEBE devolver los obligatorios no atendidos con motivo: `capacity`, `time_window`, `warehouse_stock`, `unreachable`, `workday`. | RF-04 |
 | FR-10 | DEBE ser determinista: misma base, misma configuración y mismo reloj → misma respuesta; los empates se resuelven por código. | Simulador y metricas (reproducibilidad) |
 | FR-11 | DEBE calcular costo = km × costo/km (del vehículo o global) + horas × `CostPerHour`, con el mismo modelo que usará el simulador. | Rutas y sobrecostos (costos) |
-| FR-12 | Publicar una propuesta DEBE crear `Delivery` y `DeliveryLine` por parada con lotes FEFO no bloqueados ni vencidos, sumar la reserva en el saldo de bodega y ser idempotente. | RF-02, RNF-02, RNF-03 |
+| FR-12 | Publicar una propuesta DEBE crear `Delivery` y `DeliveryLine` por parada con lotes FEFO no bloqueados ni vencidos, registrar cada reserva por revisión/línea/lote, sumar la reserva en el saldo de bodega y ser idempotente. Deshacer una revisión libera solo sus reservas activas no despachadas en la misma transacción que publica la revisión restaurada; las consumidas se conservan. | RF-02, RNF-02, RNF-03 |
 | FR-13 | DEBE registrar incidentes `ROAD_CLOSURE` (zona circular), `DELAY` (zona y factor) y `VEHICLE_BREAKDOWN` (vehículo) y devolver las rutas y paradas afectadas. | RF-11 |
 | FR-14 | Replanificar DEBE crear una nueva revisión que conserve las paradas completadas, parta de la última parada completada (o del depósito) y devuelva la diferencia con la revisión anterior. | RF-11, Rutas y sobrecostos (incidente) |
 | FR-15 | Un cierre DEBE inutilizar los tramos cuyo trazado cruza la zona; una demora DEBE multiplicar su tiempo; una avería DEBE reasignar las paradas pendientes al otro vehículo tras volver al depósito, si la jornada lo permite. | RF-11 |
@@ -132,7 +132,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 
 ## Entidades y contratos
 
-**Esquema:** usa las tablas de 001 (`RiskSnapshot`, `RoutePlan`, `RouteStop`, `Incident`, `Delivery`, `DeliveryLine`, `StockBalance`, `AgentDecision`). Añade **una** migración con la tabla `RoadMatrixEdge` (nombre ya presente en el diseño de la bóveda) como caché de tramos, indexada por coordenadas redondeadas para sobrevivir al reset de demo, que cambia los identificadores.
+**Esquema:** usa las tablas de 001 (`RiskSnapshot`, `RoutePlan`, `RouteStop`, `Incident`, `Delivery`, `DeliveryLine`, `StockBalance`, `AgentDecision`). Añade **una** migración con dos tablas: `RoadMatrixEdge` (nombre ya presente en el diseño de la bóveda) como caché de tramos, indexada por coordenadas redondeadas para sobrevivir al reset de demo, y `RouteStockReservation` para atribuir a cada revisión, entrega, línea y lote su cantidad reservada y su estado (`Active`, `Released`, `Consumed`). El saldo reservado de bodega es el agregado de reservas activas. El despacho de 004 marca la reserva consumida al mover el stock físico.
 
 **Endpoints** (prefijo `/api/v1`; detalle de cuerpos y respuestas en `plan.md`):
 

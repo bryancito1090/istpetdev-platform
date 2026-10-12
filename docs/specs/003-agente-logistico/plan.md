@@ -14,7 +14,7 @@
 
 - Todo lo de los Global Constraints de [001](../001-nucleo-delgado-importador/plan.md#global-constraints) y [002](../002-motor-logistico/plan.md#global-constraints) sigue vigente.
 - El LLM nunca calcula, publica ni aprueba. Las únicas herramientas son 5 endpoints de 002; el rol `Automatizacion` recibe 403 en publicar, aprobar, rechazar, deshacer y cambiar el modo.
-- Respuesta de `POST /agent/runs` ≤ `Agent:TimeoutSeconds` + 1 s en cualquier caso.
+- Respuesta de `POST /agent/runs` ≤ `Agent:TimeoutSeconds` + 1 s en cualquier caso. El plazo de 10 s empieza al crear `AgentRun` y cubre HTTP, modelo, espera y reintentos; la política general de HTTP externo (15 s × 3 intentos) no aplica a `vigia` ni `incidente`.
 - Ningún secreto en el repositorio ni en los workflows exportados; las credenciales de n8n viven en su almacén.
 - La versión de la imagen de n8n local es **la misma** que la del servidor de Bryan y se fija con la etiqueta exacta (nunca `latest`).
 - Prompt en español, versionado; un cambio de prompt exige repetir la prueba de aceptación.
@@ -163,7 +163,7 @@ public interface IExplanationValidator
 
 (`model` muestra el identificador que informe n8n; el nombre exacto del modelo de chat de DeepSeek se fija en la prueba de aceptación.)
 
-**Webhook a n8n** — `POST {Agent:N8n:WebhookUrl}`, cabeceras `X-IstpetDev-Timestamp: <unix s>` y `X-IstpetDev-Signature: sha256=<hex(HMAC_SHA256(secret, timestamp + "." + body))>`, cuerpo `{ "runId": "…", "kind": "Watch|Incident", "incidentId": null, "apiBaseUrl": "https://…/api/v1" }`.
+**Webhook a n8n** — `POST {Agent:N8n:WebhookUrl}`, cabeceras `X-IstpetDev-Timestamp: <unix s>` y `X-IstpetDev-Signature: sha256=<hex(HMAC_SHA256(secret, timestamp + "." + body))>`, cuerpo `{ "runId": "…", "kind": "Watch|Incident", "incidentId": null, "apiBaseUrl": "https://…/api/v1", "deadlineUtc": "<StartedAtUtc + 10 s>" }`.
 
 **`POST /api/v1/agent/runs/{id}/result`** (enviado por el workflow):
 
@@ -234,6 +234,8 @@ Dos workflows con la misma estructura; la diferencia es el disparador y la instr
 | Enviar resultado (HTTP Request) | `POST {apiBaseUrl}/agent/runs/{runId}/result` con el JSON + `model`, `promptVersion`, `$execution.id` |
 | Rama de error | Ante error del agente o del parser: `POST …/result` con `agentError` |
 | Schedule (solo `vigia`) | Desactivado por defecto (FR-13) |
+
+El webhook recibe `deadlineUtc` calculado por la API a partir de `AgentRun.StartedAtUtc + Agent:TimeoutSeconds`. Antes de cada llamada a herramienta o al modelo, el workflow comprueba el tiempo restante y limita el timeout a ese resto; si no queda tiempo para una llamada completa, salta a la rama de error. Los reintentos por 429/5xx/transporte solo se hacen dentro del mismo plazo, con espera acotada; nunca heredan los 15 s y tres intentos del HTTP externo general. Limitar la ejecución del AI Agent a menos de 10 s. Aunque n8n continúe tras el plazo por un proveedor lento, la actualización condicional en la API conserva el resultado del fallback y su callback recibe 409.
 
 **Fuente única del prompt:** `automation/n8n/prompts/agente-logistico-v1.md`. `scripts/agent/build-workflows.py` (biblioteca estándar, `python3 -I`) inserta el texto del prompt y su versión en las plantillas `automation/n8n/templates/*.json` y escribe `automation/n8n/workflows/*.json`. Así el prompt del repositorio y el del workflow no divergen.
 

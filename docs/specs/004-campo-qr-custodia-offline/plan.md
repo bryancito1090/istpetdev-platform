@@ -71,7 +71,7 @@ sequenceDiagram
 | Componente | Responsabilidad | Depende de |
 |---|---|---|
 | `HandlingUnitPreparation` (Application) | Validar composición por `DeliveryLine`/lote y emitir token; no mueve stock | Entregas de 002, repositorios EF |
-| `DispatchService` (Application) | Validar rol, unidad y reserva; mover bodega→vehículo; escribir custodia y respuesta idempotente | `InventoryMovement`, `IdempotencyRecord` |
+| `DispatchService` (Application) | Validar rol, unidad y reserva activa por línea/lote de 002; marcarla consumida al mover bodega→vehículo; escribir custodia y respuesta idempotente | `RouteStockReservation`, `InventoryMovement`, `IdempotencyRecord` |
 | `ReceiptService` (Application) | Autorizar asignación, bloquear líneas, validar cantidades, aceptar recibo y mover vehículo→punto | `Delivery.AssignedAccountId`, 002, transacción EF |
 | `EvidenceService` (Application + Infrastructure) | Autorizar carga/lectura, crear objeto esperado, confirmar S3 y metadatos | S3 y recepción aceptada |
 | `PublicTraceService` (Application) | Resolver token y proyectar únicamente campos públicos | `QrAccessToken`, `HandlingUnit`, `CustodyEvent` |
@@ -93,6 +93,8 @@ Crear **una migración de 004 después de integrar 001 y 002**, sin modificar mi
 | `IdempotencyRecord` | actor, acción, operación, huella, código/cuerpo de respuesta y `RetainUntilUtc` | UNIQUE por organización, actor, acción y operación |
 
 El bloqueo de `DeliveryLine` y `StockBalance` se hace dentro de transacción PostgreSQL; ordenar bloqueos por ID para reducir interbloqueos. El hash idempotente usa una serialización canónica del método, ruta y cuerpo, sin token ni cabeceras volátiles. La restricción de duplicado de negocio se valida incluso con clave nueva. Una recepción aceptada puede ser parcial: el punto recibe solo `QuantityAccepted`; `QuantityRejected` permanece en vehículo. Una devolución posterior desde vehículo a bodega es operación separada de Bodega con su propio movimiento y `CustodyEvent`.
+
+El despacho bloquea también `RouteStockReservation.Active` de 002 por entrega/línea/lote; en el mismo commit la marca `Consumed`, resta su importe de `StockBalance.QuantityReserved` y mueve el stock físico al vehículo. Una revisión posterior nunca libera esa reserva consumida ni revierte el movimiento físico por sí sola.
 
 ## Contratos HTTP y estados
 

@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Todo lo de [001 — Global Constraints](../001-nucleo-delgado-importador/plan.md#global-constraints) sigue vigente (SDK 8.0.424, nombres canónicos, `/api/v1`, roles fijos, sin ICU, sin datos del escenario en código, `numeric(18,3)`, mensajes en español).
-- Una sola migración nueva en este spec (`RoadMatrixEdge`), creada sobre `develop` actualizado y terminada con `migrationBuilder.Sql(DemoGrants.Sql)`.
+- Una sola migración nueva en este spec (`RoadMatrixEdge` y `RouteStockReservation`), creada sobre `develop` actualizado y terminada con `migrationBuilder.Sql(DemoGrants.Sql)`.
 - Determinismo: ninguna función del motor usa `DateTime.UtcNow`, `Guid.NewGuid` para ordenar, `Random` sin semilla ni el orden de enumeración de un `HashSet`/`Dictionary`. El tiempo sale de `IOperationalClock`; los empates se rompen por código.
 - El motor no lee texto libre del LLM: la política recibe solo objetos calculados.
 - Toda cifra mostrada o explicada sale de `facts`.
@@ -235,6 +235,10 @@ Tabla `RoadMatrixEdge` (nombre del diseño de la bóveda):
 
 Índice único `(OrganizationId, FromLat, FromLon, ToLat, ToLon)`. No se borra en el reset de demo (la tabla no está en la lista de `DemoResetService`).
 
+La misma migración crea `RouteStockReservation` con `OrganizationId`, `RoutePlanId`, `DeliveryId`, `DeliveryLineId`, `LotId`, `StockBalanceId`, `Quantity numeric(18,3)`, `Status` (`Active`, `Released`, `Consumed`), `CreatedAtUtc` y `ClosedAtUtc` nullable. Índice único por `(OrganizationId, RoutePlanId, DeliveryLineId, LotId)` e índice para reservas activas por saldo. El saldo `StockBalance.QuantityReserved` equivale a la suma activa: publicar inserta registros y aumenta el agregado en una transacción; repetir no duplica. Al despachar en 004, la reserva correspondiente pasa a `Consumed` mientras se mueve stock físico. El reset borra estas reservas con las entregas, pero conserva `RoadMatrixEdge`.
+
+**Reversión de una revisión publicada:** bloquear reservas y saldos de la revisión saliente. Las entregas pendientes aún no despachadas se cancelan, sus reservas `Active` pasan a `Released` y se resta exactamente su cantidad del agregado. Las reservas `Consumed` y paradas completadas permanecen históricas; nunca se liberan ni se deshace un movimiento físico. Revalidar stock y seguridad de bodega, crear entregas/reservas para la nueva revisión restaurada y publicarla en el **mismo commit**. Si una entrega pendiente está despachada o el stock ya no permite restaurar, responder 409 con motivo de conciliación sin cambiar revisión ni reservas. Una clave de idempotencia evita repetir la compensación.
+
 ### Extensión del importador de 001
 
 | Cambio | Archivo de 001 |
@@ -389,10 +393,10 @@ SKUs: `DES-01` desinfectante (L, 1,05 kg/L, 0,001 m³/L), `PAP-01` papel higién
 | Crear | `src/Application/Logistics/ExplanationTemplates.cs` | Plantillas en español |
 | Crear | `src/Application/Logistics/LogisticsOptions.cs` | `Logistics:*` y `Agent:Policy:*` |
 | Crear | `src/Infrastructure/Logistics/OsrmDistanceProvider.cs` | Cliente HTTP con timeout |
-| Crear | `src/Infrastructure/Persistence/Migrations/*_RoadMatrixCache.cs` | Migración |
+| Crear | `src/Infrastructure/Persistence/Migrations/*_RoadMatrixCache.cs` | Migración de caché y reservas por revisión |
 | Crear | `src/Api/Controllers/{Risks,RoutePlans,Incidents,AgentDecisions,Autonomy}Controller.cs` | Endpoints |
 | Modificar | `src/Api/Controllers/DemoController.cs` | `POST /demo/incidents` |
-| Modificar | `src/Domain/Entities/LogisticsEntities.cs` | Entidad `RoadMatrixEdge` |
+| Modificar | `src/Domain/Entities/LogisticsEntities.cs` | Entidades `RoadMatrixEdge` y `RouteStockReservation` |
 | Modificar | `src/Infrastructure/Persistence/{LeanSchema,ApplicationDbContext}.cs`, `IApplicationDbContext.cs` | Tabla y `DbSet` |
 | Modificar | `src/Application/Imports/{ImportEntity,CanonicalSchema,CanonicalWriter,ImportContext}.cs` | `road_segments` |
 | Modificar | `src/Api/appsettings*.json` | Secciones `Logistics` y `Agent` |
@@ -433,7 +437,7 @@ Plan B el día del evento (opcional, en un portátil con ≥ 4 GB libres): OSRM 
 | Nivel | Qué cubre |
 |---|---|
 | Unitarias | Reloj (`Dataset` con históricos), prorrateo de demanda, niveles en sus límites exactos (5,0 → `Alto`), `SinDatos`, cantidades y tope de bodega, polilínea, haversine, intersección tramo–zona, inserción con ventanas/espera/capacidad/jornada, dimensión de capacidad no evaluada, 2-opt, determinismo, fuerza bruta ≤ 8 puntos (≤ 110%), política (tabla completa), plantillas sin cifras fuera de `facts` |
-| Integración | Importación de `road_segments`; cadena de distancias con OSRM simulado (servidor HTTP falso) y sin red; publicación idempotente con FEFO y reservas; replan que conserva completadas; endpoints con roles |
+| Integración | Importación de `road_segments`; cadena de distancias con OSRM simulado (servidor HTTP falso) y sin red; publicación idempotente con FEFO y reservas atribuidas; reversión que compensa solo reservas activas; replan que conserva completadas; endpoints con roles |
 | E2E | `LogisticsJourneyTests`: reset `demo-region` → riesgos (CE-01) → propuesta (CE-02, CE-03) → publicación → completar 2 paradas → `cierre-norte` → replan → `AutoExecuted` + `Escalated` con 2 opciones (CE-04) → aprobar `late_service` → revertir |
 | Rendimiento | Generador sintético de 80 puntos con semilla; propuesta ≤ 5 s (CE-06), en CI |
 
@@ -457,5 +461,5 @@ Las tareas 2 y 3, y luego 5 y 6, permiten trabajar de a dos personas sin tocar l
 ## Reversión
 
 - Código: revertir el merge del PR; 001 sigue funcionando (el importador ignora `road_segments` si se revierte su extensión junto con la migración).
-- Base: `dotnet ef database update <migración anterior>` elimina `RoadMatrixEdge`; no afecta datos operativos.
+- Base: antes de usar 002, `dotnet ef database update <migración anterior>` elimina `RoadMatrixEdge` y `RouteStockReservation`; con entregas o reservas reales, no hacer `down` destructivo: aplicar migración compensatoria que conserve el historial operativo.
 - Demo: si el motor falla el día del evento, rige el plan B de D8 (lista ordenada de paradas sin replanificación automática).
