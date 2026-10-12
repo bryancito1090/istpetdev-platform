@@ -1,16 +1,16 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '@shared/api';
-import { MapViewComponent, MapMarker, MapPolyline, ButtonComponent, BadgeComponent } from '@shared/ui';
+import { MapViewComponent, MapMarker, MapPolyline, ButtonComponent, BadgeComponent, CardComponent } from '@shared/ui';
 import { LucideTriangleAlert, LucideZap } from '@lucide/angular';
 import { ServicePoint } from '@istpetdev/shared-core';
 
 @Component({
   selector: 'widget-route-map',
   standalone: true,
-  imports: [CommonModule, MapViewComponent, ButtonComponent, BadgeComponent, LucideTriangleAlert, LucideZap],
+  imports: [CommonModule, MapViewComponent, ButtonComponent, BadgeComponent, CardComponent, LucideTriangleAlert, LucideZap],
   template: `
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <ui-card [padding]="'none'">
       <!-- Encabezado de control del mapa -->
       <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -109,7 +109,7 @@ import { ServicePoint } from '@istpetdev/shared-core';
           [polylines]="polylines()">
         </ui-map-view>
       </div>
-    </div>
+    </ui-card>
   `
 })
 export class RouteMapWidget implements OnInit {

@@ -5,16 +5,24 @@
 @tailwind utilities;
 
 :root {
-  /* 2. Capa Semántica del Sistema de Diseño (ADR-04, Reto 1) */
-  --color-action-primary: #2563eb;   /* blue-600: Botones primarios, enlaces activos */
-  --color-action-hover: #1d4ed8;     /* blue-700: Hover y foco en elementos interactivos */
-  --color-status-critical: #dc2626;  /* red-600: Quiebres de stock inmediatos, alertas graves */
-  --color-status-warning: #d97706;   /* amber-600: Cobertura ajustada (<3 días), desvíos */
-  --color-status-success: #16a34a;   /* emerald-600: Entregas recibidas, custodia validada */
-  --color-status-transit: #3b82f6;   /* blue-500: Camión en ruta, material despachado */
-  --color-surface-bg: #f8fafc;       /* slate-50: Fondo global de la aplicación */
-  --color-surface-card: #ffffff;     /* white: Contenedores modulares */
-  --color-border-card: #e2e8f0;      /* slate-200: Bordes estructurados */
+  /* Design Tokens Oficiales - Expo Clean Ecuador 2026 (Ref: 03 Arquitectura/Sistema de diseno y colores.md) */
+  --color-primary-cyan: #00A7C4;      /* Clean Cyan oficial: Marca primaria, higiene, trazabilidad */
+  --color-primary-hover: #008CA5;     /* Clean Cyan 600: Hover en elementos interactivos */
+  --color-secondary-lime: #9EC200;    /* Expo Lime oficial: Sostenibilidad, stock óptimo */
+  --color-accent-orange: #EA601F;     /* Energy Orange oficial: Llamada a la acción (CTA), despacho, alerta */
+  --color-charcoal-slate: #2D3748;    /* Charcoal Slate oficial: Tipografía principal con contraste AAA */
+  
+  /* Capa Semántica de Estados y Superficies */
+  --color-action-primary: var(--color-primary-cyan);
+  --color-action-hover: var(--color-primary-hover);
+  --color-action-cta: var(--color-accent-orange);
+  --color-status-critical: #DC2626;  /* Red 600: Quiebres de stock inmediatos, alertas graves */
+  --color-status-warning: #D97706;   /* Amber 600: Cobertura ajustada (<3 días), desvíos */
+  --color-status-success: #16A34A;   /* Emerald 600 / Expo Lime: Entregas recibidas, custodia validada */
+  --color-status-transit: #00A7C4;   /* Clean Cyan: Camión en ruta, material despachado */
+  --color-surface-bg: #F8FAFC;       /* Slate 50 / Ice Mist: Fondo global de la aplicación */
+  --color-surface-card: #FFFFFF;     /* White: Contenedores modulares */
+  --color-border-card: #E2E8F0;      /* Slate 200: Bordes estructurados */
 }
 
 body {

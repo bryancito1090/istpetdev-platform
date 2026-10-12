@@ -1,21 +1,21 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { SessionStore } from '@entities/session';
 import { CheckApiHealthComponent } from '@features/check-api-health/check-api-health.component';
 import { RouteMapWidget } from '@widgets/route-map';
-import { StatCardComponent, BadgeComponent } from '@shared/ui';
+import { StatCardComponent, BadgeComponent, ButtonComponent } from '@shared/ui';
 
 @Component({
   selector: 'page-operations-dashboard',
   standalone: true,
   imports: [
     CommonModule, 
-    RouterLink,
     CheckApiHealthComponent, 
     RouteMapWidget, 
     StatCardComponent,
-    BadgeComponent
+    BadgeComponent,
+    ButtonComponent
   ],
   template: `
     <div class="space-y-6">
@@ -42,14 +42,16 @@ import { StatCardComponent, BadgeComponent } from '@shared/ui';
         </div>
 
         <div class="flex items-center gap-2">
-          <a
-            routerLink="/public-trace"
-            class="px-3 py-1.5 text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg shadow-xs transition-colors flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <ui-button
+            variant="secondary"
+            size="sm"
+            (buttonClick)="navigateToTrace()"
+            ariaLabel="Consultar trazabilidad de handling units">
+            <svg class="w-3.5 h-3.5 mr-1.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <span>Ver Trazabilidad HU</span>
-          </a>
+          </ui-button>
         </div>
       </div>
 
@@ -96,4 +98,9 @@ import { StatCardComponent, BadgeComponent } from '@shared/ui';
 })
 export class OperationsDashboardPage {
   readonly sessionStore = inject(SessionStore);
+  private readonly router = inject(Router);
+
+  navigateToTrace(): void {
+    this.router.navigate(['/public-trace']);
+  }
 }
