@@ -194,7 +194,7 @@ jobs:
             # 4. Asegurar arranque y salud de PostgreSQL
             docker compose -f infra/compose/docker-compose.prod.yml up -d istpetdev-db istpetdev-redis
             echo "Esperando disponibilidad de PostgreSQL..."
-            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user --timeout=30 || true
+            docker compose -f infra/compose/docker-compose.prod.yml exec -T istpetdev-db pg_isready -h localhost -p 5432 -U istpetdev_user -d istpetdev_db --timeout=30 || true
 
             # 5. Snapshot preventivo de base de datos antes de recrear contenedores
             mkdir -p backups
@@ -214,7 +214,7 @@ jobs:
             echo "Comprobando endpoint de salud de la API..."
             READY=false
             for i in $(seq 1 12); do
-              if curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
+              if curl -sf http://127.0.0.1:5000/health/ready > /dev/null || curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
                 READY=true
                 echo "API IstpetDev verificada exitosamente en el intento $i."
                 break

@@ -5,6 +5,7 @@ using IstpetDev.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -46,7 +47,25 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Aplicar migraciones pendientes de EF Core si está configurado (ej. ApplyMigrations=true en Compose)
+if (app.Configuration.GetValue<bool>("ApplyMigrations", false) || args.Contains("--migrate"))
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IstpetDev.Infrastructure.Persistence.ApplicationDbContext>();
+        app.Logger.LogInformation("Verificando y aplicando migraciones pendientes de EF Core...");
+        db.Database.Migrate();
+        app.Logger.LogInformation("Migraciones de base de datos aplicadas exitosamente.");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Error al aplicar migraciones de base de datos en arranque.");
+        if (args.Contains("--migrate")) throw;
+    }
+}
+
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", true))
 {
     app.UseSwagger();
     app.UseSwaggerUI();

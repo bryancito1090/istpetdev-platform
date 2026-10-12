@@ -47,6 +47,8 @@ services:
       Cors__Origins__0: https://istpetdev.doicela.dev
       Cors__Origins__1: https://clean.doicela.dev
       Cors__Origins__2: http://localhost:4200
+      ApplyMigrations: "true"
+      EnableSwagger: "true"
     depends_on:
       istpetdev-db:
         condition: service_healthy
