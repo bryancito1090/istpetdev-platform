@@ -25,7 +25,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 |---|---:|---|
 | Impacto potencial | 15 % | Rango de resultados de al menos tres semillas más un escenario adverso; dos baselines congelados, numeradores, denominadores y costos comparables. |
 | Prototipo, demo o simulación práctica | 20 % | Panel conectado a API, mapa de ruta/incidente, decisiones aprobables y simulación ejecutada/exportable. |
-| Presentación | Según matriz oficial | Cuatro indicadores en lenguaje cotidiano y detalle auditable para preguntas. |
+| Calidad de la presentación | 10 % | Cuatro indicadores en lenguaje cotidiano y detalle auditable para preguntas. |
 
 ## Historias de usuario
 
@@ -82,7 +82,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 | FR-06 | El generador DEBE emitir los archivos canónicos de 001 y `road_segments` de 002, además de manifiesto con seed, versión, parámetros y hash. DEBE cargarlos mediante el importador de 001 en un entorno de simulación aislado de `demo-region`; no se permite escritura directa de datos operativos desde el generador. | G1, G2, Dataset y escenarios |
 | FR-07 | Antes de evaluar una política, la API DEBE precalcular por seed y escenario un calendario exógeno común de demanda solicitada, incidentes y tiempos. Cada política ve solo registros conocidos hasta la hora simulada. El flujo diario ordena observación → riesgo → plan/reserva → viajes/entregas → demanda → faltantes/conciliación; una entrega tardía no borra un faltante anterior. | RF-08, Simulador y metricas |
 | FR-08 | La política IstpetDev DEBE reutilizar el cálculo determinista de riesgo, asignación, planificador y costo de 002 mediante servicios de aplicación, sin HTTP interno, LLM ni n8n. Para una corrida se elige **solo matriz vial completa** o **solo aproximación declarada**; nunca tramos mezclados. | D4, ADR-23, G5 |
-| FR-09 | Los dos baselines de la tabla «Políticas congeladas» DEBEN ejecutarse con igual calendario, stock inicial, bodega, flota, capacidad, ventanas, matriz y costo. La configuración se versiona antes de la primera corrida; cualquier cambio crea nueva `policyVersion` y no reemplaza resultados previos. | D7, R-04 |
+| FR-09 | Los dos baselines de la tabla «Políticas congeladas» DEBEN ejecutarse con igual calendario, stock inicial, bodega, flota, capacidad, ventanas, matriz y costo, y **secuenciar sus paradas con el mismo planificador de 002** (inserción + 2-opt con las mismas restricciones): las políticas difieren en qué puntos, cuánto y cuándo reponen, no en el algoritmo de ruteo. Así la comparación mide la política de reabastecimiento que pide el reto y un baseline no pierde km por un orden ingenuo. La configuración se versiona antes de la primera corrida; cualquier cambio crea nueva `policyVersion` y no reemplaza resultados previos. | D7, R-04 |
 | FR-10 | `POST /api/v1/simulations/comparisons` DEBE iniciar trabajo asíncrono y devolver `202 {comparisonId,status}`. `GET /api/v1/simulations/comparisons/{id}` DEBE devolver progreso por seed, escenario y política, estado terminal, supuestos y métricas; un fallo conserva causa y permite nueva ejecución sin corromper el resultado previo. | RF-14 |
 | FR-11 | `GET /api/v1/simulations/comparisons` DEBE listar corridas recientes y `GET /api/v1/simulations/comparisons/{id}/export` DEBE descargar ZIP con `manifest.json`, `metrics.json`, `resumen.csv`, `eventos.csv` y el calendario exógeno; el manifiesto incluye SHA-256 de cada archivo de datos (no de sí mismo) y su propia huella va en `ETag`. | RF-14, Simulador y metricas |
 | FR-12 | La vista `/simulation` DEBE ofrecer comparación por baseline, rango mínimo–máximo y mediana de ≥3 seeds, escenario adverso separado, numerador/denominador, unidades, supuestos y enlaces a exportación. Debe distinguir «simulado» de «observado». | Plus 4, D7 |
@@ -94,6 +94,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 | FR-18 | El panel DEBE permitir a Planificación iniciar `POST /api/v1/agent/runs` (`watch`) y disparar el incidente de demo mediante `POST /api/v1/demo/incidents`; tras el avance de 004, debe mostrar la nueva revisión y las decisiones correlacionadas con el `AgentRun`. El botón se deshabilita mientras la petición está activa para evitar dobles disparos. | D4, S-04, H4 |
 | FR-19 | El dataset nacional DEBE agrupar los ≈80 puntos en regiones operables con una bodega por grupo y vehículos locales; cada planificación región/día usa el planificador de 002 con su límite de una bodega y sin pernocta ni transferencias entre regiones. El número de regiones y vehículos es parámetro del dataset; el escenario adverso retira un vehículo identificado previamente en el manifiesto. | D6, Rutas y sobrecostos |
 | FR-20 | Cada política DEBE validar al cierre diario balance de stock por lote/ubicación, capacidad/jornada/ventanas, demanda solicitada frente a satisfecha y pendientes; una violación marca la corrida `Failed` con evento y no publica KPI comparativos de esa seed. | Simulador y metricas, G4 |
+| FR-21 | La corrida oficial de comparación NO DEBE ejecutarse en la instancia que sirve la demo (plantilla Terraform: `t3.micro`, 1 GB y CPU por créditos): corre en una máquina dedicada (portátil del equipo o instancia temporal mayor) con el mismo commit, dataset y manifiesto. `POST /api/v1/simulations/comparisons/import` (Gerencia, Planificación) DEBE aceptar el ZIP exportado, recalcular los SHA-256 contra el manifiesto, rechazarlo si no coinciden y guardar runs, métricas y eventos marcados con origen `imported`, host y commit; el panel muestra «calculada en <host> el <fecha>». | NFR-01, H4, Simulador y metricas |
 
 ### Políticas congeladas antes de la primera simulación
 
@@ -101,9 +102,11 @@ Estas reglas son **propuesta de equipo del 12-oct-2026**, pendiente de Deciders.
 
 | Política | Disparador, cantidad y orden | Información permitida |
 |---|---|---|
-| Reactiva (`reactive-v1`) | El punto avisa cuando el saldo disponible cae por debajo de la demanda histórica conocida de `leadTimeDays` días. Se pide cantidad para volver a 14 días de esa media, descontando saldo y tránsito conocidos, limitada por stock/capacidad; urgencias siguen orden de aviso, criticidad y código. Si no hay historial, declara supuesto y usa el consumo base del dataset. | Solo saldo, avisos y consumo revelado hasta el instante; mismo lead time y ventanas. |
-| Calendario fijo (`fixed7-v1`) | Visita cada 7 días desde el inicio; la cantidad por punto–SKU es **fija**: 7 × media diaria del histórico previo al horizonte, redondeada a unidad base. No se cambia por resultado, saldo observado ni urgencias; stock/capacidad insuficiente deja pendiente explícito. Orden estable por región y código; misma flota y ventanas. | Calendario, histórico previo y stock disponible al cargar; no mira demanda futura. |
+| Reactiva (`reactive-v1`) | El punto avisa cuando el saldo disponible cae por debajo de la demanda histórica conocida de `leadTimeDays` días. Se pide cantidad para volver a 14 días de esa media, descontando saldo y tránsito conocidos, limitada por stock/capacidad; la prioridad ante capacidad o stock insuficiente sigue orden de aviso, criticidad y código; la secuencia de visitas del día la arma el planificador de 002 (FR-09). Si no hay historial, declara supuesto y usa el consumo base del dataset. | Solo saldo, avisos y consumo revelado hasta el instante; mismo lead time y ventanas. |
+| Calendario fijo (`fixed7-v1`) | Cada punto tiene un **día fijo de visita** en la semana laborable: dentro de su región, los puntos ordenados por código se reparten en 5 grupos (índice mod 5 → lunes a viernes) y cada punto se visita cada 7 días en su día, como hace una empresa que escalona su ruta semanal; la cantidad por punto–SKU es **fija**: 7 × media diaria del histórico previo al horizonte, redondeada a unidad base. No se cambia por resultado, saldo observado ni urgencias; stock/capacidad insuficiente deja pendiente explícito. La secuencia de visitas del día la arma el planificador de 002 (FR-09); misma flota y ventanas. | Calendario, histórico previo y stock disponible al cargar; no mira demanda futura. |
 | IstpetDev (`istpetdev-v1`) | Riesgo, cantidad y ruta de 002 cada día con datos revelados, media móvil declarada y restricciones de stock, vehículo y ventanas. | Datos conocidos hasta el instante; sin oráculo de calendario ni LLM. |
+
+**Corrección previa a la primera corrida (revisión del 12-oct):** la versión inicial visitaba todos los puntos el mismo día y ordenaba por código, lo que saturaba la flota ese día y alargaba los recorridos del baseline sin relación con la política de reposición; ambos efectos inflarían el ahorro de IstpetDev. Se corrige **antes** de cualquier corrida, como permite esta sección, y las versiones siguen siendo `reactive-v1` y `fixed7-v1` porque ninguna corrida usó la versión anterior.
 
 **Costo común:** por viaje completado, km de ida, tramos y regreso × costo/km del vehículo, más horas de conducción/servicio × `CostPerHour` de 002; recargo de urgencia solo si se define y aplica igual a las tres políticas antes de correr. No se suma personal dos veces si costo/km ya lo incluye. Costo de plataforma, si se estima, se muestra separado del ahorro de transporte. Ninguna política recibe viajes imposibles ni stock negativo gratis.
 
@@ -127,6 +130,7 @@ Estas reglas son **propuesta de equipo del 12-oct-2026**, pendiente de Deciders.
 | `GET /api/v1/simulations/comparisons` | Gerencia, Planificación | Lista paginada de comparaciones y estados |
 | `GET /api/v1/simulations/comparisons/{id}` | Gerencia, Planificación | Corridas, progreso, supuestos, métricas y errores |
 | `GET /api/v1/simulations/comparisons/{id}/export` | Gerencia, Planificación | ZIP reproducible, solo si terminó; `409` si sigue calculando |
+| `POST /api/v1/simulations/comparisons/import` | Gerencia, Planificación | Carga un ZIP exportado en otra máquina; `422` si algún hash no coincide con el manifiesto; guarda origen `imported`, host y commit |
 
 El generador produce datos canónicos y el importador de 001 los carga **en un contexto aislado**. El dueño de esta adaptación es 005; no se modifica el endpoint ni el contrato de importación de 001. El plan debe probar que el mismo escritor/validador canónico opera sobre ese contexto y que el reset no toca resultados archivados salvo selección explícita de limpieza de demo.
 
@@ -178,6 +182,8 @@ El generador produce datos canónicos y el importador de 001 los carga **en un c
 - CE-06: exportación y pantalla coinciden por `comparisonId`, hashes, seeds y versiones; repetición da mismas métricas/eventos.
 - CE-07: corrida completa con matriz local termina en ≤60 min en entorno de demo o queda registrado un bloqueo medido que debe resolverse antes de H4 (15-oct 11:00); una corrida verificada se inicia tan pronto esté integrado 002 y se conserva para el pitch.
 - CE-08: reset/avance de la demo en vivo no altera el ledger de simulación ni viceversa; `advance` de 004 concilia stock, custodia y paradas.
+- CE-09: la corrida oficial se ejecuta fuera de la instancia de la demo; su ZIP se importa con verificación de hashes, un ZIP alterado se rechaza con 422 y el panel muestra host, commit y fecha de cálculo.
+- CE-10: con una red de prueba, `fixed7-v1` visita cada punto exactamente una vez por semana en su día asignado y los tres planes de un mismo día y región se secuencian con el planificador de 002 (mismas restricciones y costo).
 
 ## Matriz de bloqueos cruzados (005 consume / 005 produce)
 
@@ -194,3 +200,4 @@ El generador produce datos canónicos y el importador de 001 los carga **en un c
 
 - PA-01: ¿quiénes son los Deciders que aprueban baselines, demanda sintética y este spec? Equipo, antes de pasar de `borrador` a `aprobado`.
 - PA-02: ¿qué consumo base, regiones/flota y matriz vial permitida se documentarán para el dataset nacional? Equipo de datos antes de generar la primera corrida; sin fuente permitida, ejecutar solo aproximación **como escenario separado y etiquetado**.
+- PA-03: ¿qué máquina ejecuta la corrida oficial (portátil del equipo o instancia temporal) y quién la custodia hasta el pitch? Decide: equipo antes de H4.

@@ -93,7 +93,7 @@ El [spec 005](../../specs/005-panel-simulador/spec.md) concreta D7 **antes de la
 | Política | Regla propuesta congelada | Límite de información |
 |---|---|---|
 | `reactive-v1` | Aviso si saldo disponible cae bajo `leadTimeDays × media histórica conocida`; pedir hasta catorce días de cobertura, sujeto a stock, flota y ventanas | Saldo y consumo ya revelado; ningún evento futuro |
-| `fixed7-v1` | Visita cada siete días desde el inicio; cantidad por punto/SKU igual a siete veces la media diaria del histórico previo al horizonte, fijada una vez | Calendario y media previa; no adapta cantidades según resultados |
+| `fixed7-v1` | Cada punto tiene un día fijo de visita en la semana laborable (dentro de su región, puntos ordenados por código repartidos en 5 grupos, índice mod 5) y se visita cada siete días en ese día; cantidad por punto/SKU igual a siete veces la media diaria del histórico previo al horizonte, fijada una vez | Calendario y media previa; no adapta cantidades según resultados |
 | `istpetdev-v1` | Riesgo, cantidades y rutas del motor 002 cada día | Solo observaciones conocidas a la hora simulada |
 
 Modelo propuesto de demanda: media previa por punto/SKU, factor de día laborable 1,0 y fin de semana 0,8, ruido determinista por seed de ±15 % y picos etiquetados en 5 % de claves punto–SKU–día. El calendario exógeno se crea una vez por seed y se revela por hora a las tres políticas; no equivale a consumo observado cuando hay quiebre. El escenario adverso aplica demanda ×1,20, un vehículo menos y lead time +1 día a **las tres** políticas. Sus resultados se muestran aparte de las tres seeds base.
@@ -102,4 +102,13 @@ La red nacional se particiona en grupos regionales con una bodega y flota local 
 
 Costo de transporte común: km con regreso × costo/km del vehículo + conducción/servicio × costo/hora; recargos solo si se definen para todas las políticas antes de correr. El costo de plataforma se muestra separado. Para un jurado no técnico, el panel prioriza cuatro tarjetas: quiebres evitados **y nuevos**, demanda no atendida por SKU/unidad, costo total de transporte y puntualidad de obligaciones comunes; km, servicio completo y trazabilidad se abren en detalle. Cada tasa presenta numerador, denominador, unidad, rango y seed. La exportación incluye manifiesto, calendario, métricas y eventos con versiones/hashes.
 
-El objetivo de rendimiento de la corrida completa (1080 jornadas de política con tres seeds base y una adversa, cada una particionada por región) es ≤60 minutos en el entorno de demo, sujeto a medición. Con seis regiones de ≤15 puntos habría hasta 6480 oportunidades de planificación; a 1 s por propuesta de 15 puntos/2 vehículos de 002 serían 108 minutos solo para planificar. Por eso la cota por llamada no acredita H4. El trabajo es asíncrono en la API y sus estados se guardan; el simulador no tiene sustituto de cifras defendibles si falla. Esta propuesta no afirma una medición empresarial ni una corrida ejecutada.
+El objetivo de rendimiento de la corrida completa (1080 jornadas de política con tres seeds base y una adversa, cada una particionada por región) es ≤60 minutos en una **máquina dedicada**, sujeto a medición (no en la instancia que sirve la demo; ver el complemento siguiente). Con seis regiones de ≤15 puntos habría hasta 6480 oportunidades de planificación; a 1 s por propuesta de 15 puntos/2 vehículos de 002 serían 108 minutos solo para planificar. Por eso la cota por llamada no acredita H4. El trabajo es asíncrono en la API y sus estados se guardan; el simulador no tiene sustituto de cifras defendibles si falla. Esta propuesta no afirma una medición empresarial ni una corrida ejecutada.
+
+## Corrección previa a la primera corrida — revisión del 12 de octubre de 2026
+
+La revisión del spec 005 corrigió dos aspectos **antes de ejecutar ninguna simulación**, por lo que no constituyen un ajuste según resultados:
+
+- **Ruteo común:** las tres políticas secuencian sus paradas del día con el mismo planificador de 002 (inserción + 2-opt, mismas restricciones y costo). La comparación mide la política de reposición (qué puntos, cuánto y cuándo), no el algoritmo de ruteo; un baseline ordenado por código habría sumado km sin relación con la reposición.
+- **Calendario escalonado:** `fixed7-v1` reparte los puntos en días laborables fijos en lugar de visitarlos todos el mismo día, lo que habría saturado la flota ese día y debilitado artificialmente el baseline.
+
+Además, la corrida oficial se ejecuta en una máquina dedicada y su exportación se importa en la demo con verificación de los SHA-256 del manifiesto: la plantilla de Terraform define la instancia de la demo como `t3.micro`, con CPU por créditos, lo que hace incierto el plazo y degradaría la API del pitch.

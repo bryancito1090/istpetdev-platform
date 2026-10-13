@@ -206,3 +206,15 @@ Verificación de esta actualización: **75 notas Markdown**, **664 enlaces inter
 Fuente: petición posterior del usuario de completar `task.md` y `test-e2e.md` del 005. Se redactan doce tareas T0–T11 con pruebas rojas/verdes, contratos, comandos y dependencias, más diez escenarios de punta a punta y una tabla vacía para registrar ejecuciones. Se actualizan [plan 005](../../specs/005-panel-simulador/plan.md), [tareas 005](../../specs/005-panel-simulador/task.md), [E2E 005](../../specs/005-panel-simulador/test-e2e.md), el índice de specs y el registro de preparación. La revisión E2E detectó que el reset de la tarea T7 de 001 borraba resultados de simulación; se corrigieron documentalmente FR-15, el plan y la tarea de 001, y se anotó la contradicción. No se implementó el sistema ni se ejecutaron esas pruebas; las reglas y resultados siguen como propuesta hasta aprobación y evidencia.
 
 Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos.
+
+## Revisión del spec 005 — 12 de octubre de 2026
+
+Fuente: revisión del spec 005 tras su integración. Correcciones previas a cualquier corrida: las tres políticas secuencian paradas con el planificador de 002 y `fixed7-v1` escalona sus visitas por día laborable; la corrida oficial se ejecuta en una máquina dedicada y su ZIP se importa en la demo con verificación de hashes (FR-21); las lecturas de rutas y entregas quedan en las tareas de 002 y 004. Se actualizan [[Simulador y metricas]], [[Definiciones de producto y plan hasta el pitch]], el riesgo R-28 y el registro de trabajo previo. Documental: no ejecuta código.
+
+Verificación de la actualización: **75 notas Markdown**, **666 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Propuesta documental del spec 006 — 12 de octubre de 2026
+
+Fuente: brainstorming con el equipo sobre validación, pitch y paquete. Se redactaron los cuatro archivos del [spec 006](../../specs/006-validacion-pitch-entrega/spec.md), guion 3/5/7, hoja de entrevista consentida, banco de veinte preguntas, ficha de piloto, matriz de afirmaciones y contingencias. La investigación [SERCOP](SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) consultada el 12-oct encuentra obligaciones y sanciones en fichas oficiales, pero no un costo observado de quiebre ni ahorro atribuible al proyecto. Son propuestas con Deciders pendientes; no hay entrevistas, ensayos, aprobación de CE de 001–005 ni materiales entregados.
+
+Verificación de esta actualización: **76 notas Markdown**, **676 enlaces internos resueltos**, **0 errores**. El aviso previo de lenguaje en el guion fue corregido; permanecen dos avisos anteriores en notas no editadas por este spec.

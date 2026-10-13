@@ -38,7 +38,7 @@ Para la corrida de aceptación usar tres seeds base fijadas **antes** de observa
 | E2E-06 | KPI, rango y denominadores | H3, FR-12/15, CE-05 | API + web | sí |
 | E2E-07 | Exportación y replay | H4, FR-10–11, NFR-02, CE-06 | HTTP + archivos | sí |
 | E2E-08 | Escenario adverso y límites de recursos | H3, FR-13/19–20, CE-04 | integración | sí |
-| E2E-09 | Corrida completa antes de H4 | NFR-01, CE-07 | benchmark | sí |
+| E2E-09 | Corrida completa antes de H4, en máquina dedicada, e importación verificada | NFR-01, FR-21, CE-07, CE-09 | benchmark | sí |
 | E2E-10 | Error/red/permisos/responsive | FR-02/04–05/10/12/16, NFR-03–05 | navegador + HTTP | sí |
 
 ### E2E-01 — Panel regional conectado
@@ -112,6 +112,9 @@ Para la corrida de aceptación usar tres seeds base fijadas **antes** de observa
 3. Insertar un evento exógeno a las 10:00 con entrega a las 12:00: quiebre a las 10:00 permanece; entrega a las 09:00 en ensayo nuevo lo evita. Un incidente conocido a las 11:00 no modifica decisión de las 09:00. En el adverso, aplicar igual calendario base transformado, vehículo retirado y lead time a las tres políticas.
 4. Revisar balance de lote/ubicación, capacidad/jornada/ventanas y `requested = satisfied + unmet` por día. Provocar violación deliberada: run `Failed`, sin KPI comparativo de esa seed.
 
+
+**Paridad de ruteo y calendario escalonado (CE-10):** con una red de prueba, comprobar que `fixed7-v1` visita cada punto una vez por semana en su día laborable asignado, y que para un mismo conjunto de paradas de un día y región las tres políticas obtienen la misma secuencia del planificador de 002.
+
 **Resultado esperado:** las políticas comparten demanda y recursos por seed/escenario, no revelan futuro ni mezclan fuentes viales/aproximadas dentro de un run; una regla cambiada exige nueva versión y nueva corrida de las tres políticas.
 
 **Evidencia:** tres manifest/runs, hashes de calendario/recursos, eventos horarios y reporte de invariantes.
@@ -165,9 +168,9 @@ Para la corrida de aceptación usar tres seeds base fijadas **antes** de observa
 
 **Pasos:**
 
-1. Con matriz precargada y red externa deshabilitada, ejecutar `bash scripts/simulation/benchmark.sh` para tres seeds base y una adversa; guardar commit/CPU/memoria y hora de inicio/fin. Verificar 12 runs (4 seeds/escenarios ×3 políticas), 1080 jornadas de política y número real de llamadas regionales.
+1. En la **máquina dedicada** de la corrida oficial (FR-21; nunca en la instancia que sirve la demo), con matriz precargada y red externa deshabilitada, ejecutar `bash scripts/simulation/benchmark.sh` para tres seeds base y una adversa; guardar commit/CPU/memoria y hora de inicio/fin. Verificar 12 runs (4 seeds/escenarios ×3 políticas), 1080 jornadas de política y número real de llamadas regionales.
 2. Registrar p50/p95 por llamada, tiempo por importación, planificación, persistencia y exportación, y total. La cota de 002 por llamada no sustituye este resultado. Si supera 60 min o falla, perfilar y repetir tras corregir; conservar tanto el fallo como el nuevo intento.
-3. Confirmar exportación y vista listas antes de H4 (15-oct 11:00). Conservar un run verificado para el pitch sin afirmar que se acaba de ejecutar en escenario; cualquier cambio de política/dataset/código después exige nueva corrida y manifest.
+3. Importar el ZIP en el entorno de demo con `POST /api/v1/simulations/comparisons/import`: se acepta y el panel muestra host, commit y fecha de cálculo. Repetir con una copia alterada (un byte cambiado en `metrics.json`): 422 sin escribir nada (CE-09). Confirmar exportación y vista listas antes de H4 (15-oct 11:00). Conservar un run verificado para el pitch sin afirmar que se acaba de ejecutar en escenario; cualquier cambio de política/dataset/código después exige nueva corrida y manifest.
 
 **Resultado esperado:** CE-07 solo si total medido ≤60 min, doce runs completos y evidencia antes de H4. Si no, registrar bloqueo real; el simulador no tiene plan B de cifras.
 
