@@ -306,6 +306,13 @@ Verificación documental de esta actualización: **84 notas Markdown**, **813 en
 Fuente: solicitud de Alexander Martínez de actualizar la Bóveda con la finalización del Spec 004 y los avances de la rama `test` / `feature/004-campo-qr-custodia-offline`:
 - Cierre formal de todas las tareas pendientes de Spec 004 (T0 a T10): migración `FieldOperations` en EF Core (`20261013202540_FieldOperations`), endpoints en controladores C# (`DeliveriesController`, `HandlingUnitsController`, `EvidenceController`, `MobileAssignmentsController`, `PublicTraceController`, `DemoController`), adaptador `HttpFieldApiService` conectando Web y Mobile a la API local (`http://localhost:5000`), outbox atómico hospitalario con acta formal, sanitización de token QR en `#t=` y limitador de tasa `PublicTraceRateLimiter`.
 - Enriquecimiento del panel web de rutas (`rutas.page.ts`) y motor logístico (`RoutePlansController.cs`): cálculo dinámico de revisiones de planes de ruta, conteo real de paradas (`stopsCount`), detalle de paradas con nombres legibles de puntos de servicio y banner reactivo de retroalimentación.
-- Formalización de **ADR-26** (Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas), cierre de contradicciones en [[Hechos canonicos]], actualización de [[Plan de trabajo specs 004 y 005]], mitigación de riesgos en [[Riesgos y decisiones pendientes]], cierre de hallazgos SEG-03/04/05 en [[Registro de seguimiento y hallazgos]], y actualización de entregas B-06, B-07, B-08, B-11 y B-12 en [[Backlog]].
+- Formalización de **ADR-27** (Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas), cierre de contradicciones en [[Hechos canonicos]], actualización de [[Plan de trabajo specs 004 y 005]], mitigación de riesgos en [[Riesgos y decisiones pendientes]], cierre de hallazgos SEG-03/04/05 en [[Registro de seguimiento y hallazgos]], y actualización de entregas B-06, B-07, B-08, B-11 y B-12 en [[Backlog]].
 
 
+
+
+## Rol Auditor (ADR-26) y spec 013 de login — 13 de octubre de 2026
+
+Fuente: sesión de definición del spec 013 (login real y gestión de cuentas por Gerencia) con Joseph Baño. Se agrega ADR-26 (rol Auditor de solo lectura, aceptada por Joseph Baño) en [[Decisiones de arquitectura]] y en [[Hechos canonicos]]. Fuera de la bóveda se actualizan los specs 004 (FR-17) y 005 (FR-05) para que el login dependa de 013, y la fila D3 del índice de specs.
+
+Verificación documental de esta actualización: **84 notas Markdown**, **818 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
