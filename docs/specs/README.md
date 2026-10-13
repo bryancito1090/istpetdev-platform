@@ -77,14 +77,15 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 
 | ID | Spec | Criterio de nota que sostiene | Depende de | Estado |
 |---|---|---|---|---|
-| 000 | [Gestión de dependencias, remediación de vulnerabilidades y evaluación pnpm](000-gestion-dependencias-seguridad-monorepo/spec.md) | Seguridad, viabilidad, estabilidad CI/CD | — | borrador (spec y plan redactados) |
+| 000 | [Gestión verificable de dependencias y vulnerabilidades del monorepo Node](000-gestion-dependencias-seguridad-monorepo/spec.md) | Seguridad, viabilidad, estabilidad CI/CD | — | borrador (spec, plan, tareas y E2E redactados; auditoría vigente y ejecución pendientes) |
 | 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | borrador |
 | 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
 | 003 | [Agente logístico con n8n](003-agente-logistico/spec.md) (herramientas sobre 002, autonomía con límites, DeepSeek) | Innovación, demo | 002 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
 | 004 | [Campo: QR, custodia, despacho/recepción y PWA offline](004-campo-qr-custodia-offline/spec.md) | Demo (momento físico), viabilidad | 001, 002 (avisos de 003 al integrar), 013 parcial (H1–H3, solo la PWA) | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
 | 005 | [Panel web y simulador comparativo de 90 días con KPIs](005-panel-simulador/spec.md) | Impacto, presentación, demo | 001–004, 013 parcial (H1–H3, solo el panel) | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
 | 006 | [Validación, pitch y paquete de entrega](006-validacion-pitch-entrega/spec.md) (no es código) | Comprensión, presentación, equipo, demo e impacto trazables | 001–005 | borrador (cuatro archivos redactados; Deciders, revisión, ensayos y entrega pendientes) |
-| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) | Viabilidad, demo (desbloquea 004/005) | 001 | borrador (spec redactado; plan, tareas y E2E pendientes) |
+| 007 | [Inventario cotidiano y conciliación para un piloto](007-inventario-cotidiano-conciliacion/spec.md) | Operación diaria, saldos auditables y riesgo con consumos reales | 001, 002, 004; pase técnico | borrador (spec, plan, tareas y E2E redactados; reglas del piloto, aprobación y ejecución pendientes) |
+| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) | Viabilidad, demo (desbloquea 004/005) | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
 
 ```mermaid
 flowchart LR
@@ -95,10 +96,10 @@ flowchart LR
   S003 --> S006["006 Validación y pitch"]
   S004 --> S006
   S005 --> S006
-```
   S001 --> S013["013 Login y cuentas"]
   S013 -. "parcial: H1–H3" .-> S004
   S013 -. "parcial: H1–H3" .-> S005
+```
 
 ### Alcance previsto de los specs por escribir
 
