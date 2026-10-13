@@ -49,6 +49,8 @@ flowchart LR
 
 El worker reclama un `comparisonId` pendiente en la BD principal y escribe avance por unidad seed/escenario/política. Una sola comparación activa por instancia evita que las corridas contiendan con la demo. Si la API reinicia, marca `Interrupted` la unidad en curso y permite reencolarla desde el inicio con el mismo manifiesto; nunca combina métricas parciales de intentos distintos. La respuesta HTTP `202` no espera las 1080 jornadas ni sus planificaciones regionales.
 
+**Dónde se ejecuta la corrida oficial (FR-21):** no en la instancia que sirve la demo. La plantilla de Terraform la define como `t3.micro` (1 GB, CPU por créditos): una corrida de decenas de minutos agota los créditos, la CPU baja a su línea base y además ralentiza la API del pitch. La corrida oficial se ejecuta en una máquina dedicada (portátil del equipo o instancia temporal mayor) con el mismo commit, dataset y manifiesto, y su ZIP se carga en la demo con `POST /simulations/comparisons/import`, que recalcula los SHA-256 contra el manifiesto. El panel muestra host, commit y fecha de cálculo, y no afirma que se ejecutó en vivo.
+
 **Aislamiento:** configurar `ConnectionStrings:Simulation` a una base distinta de la operativa y ejecutar allí las mismas migraciones necesarias de 001/002/005. Antes de cada política se recrea el estado inicial en esa base **mediante el importador de 001**; la demanda futura permanece en calendario/ledger, no como `Consumption` visible desde el día 0. El modo de simulación inyecta reloj y repositorios de esa conexión en los servicios de 002. En despliegue, comprobar que la cadena no apunta a la misma base; si coincide, `POST /simulations/comparisons` responde error y no inicia. Datos de corrida completada y exportación quedan en la BD principal hasta una limpieza explícita de resultados de simulación.
 
 El reset operativo de 001 conserva `SimulationRun`/`SimulationMetric` completados (FR-15 y T7 corregidos al redactar las pruebas del 005); el 005 conserva también `SimulationEvent` y ZIP asociados. E2E-04 y E2E-07 verifican que reiniciar `demo-region` no borra evidencia de impacto.
@@ -72,7 +74,7 @@ Rutas objetivo, sujetas al árbol implementado por 001–004; si su PR materiali
 | Crear | `src/Application/Simulation/MetricCalculator.cs` | Fórmulas de la bóveda, numerador/denominador, N/A y agregación de rango/mediana. |
 | Crear | `src/Application/Simulation/ExportBuilder.cs` | ZIP reproducible con manifest, calendario, métricas, resumen y eventos; hashes de datos en manifest y hash del manifest en ETag. |
 | Crear | `src/Infrastructure/Simulation/SimulationWorker.cs` | Claim, progreso, interrupción/reintento y conexión aislada. |
-| Crear | `src/Api/Controllers/SimulationsController.cs` | Los cuatro endpoints `comparisons` del spec y permisos. |
+| Crear | `src/Api/Controllers/SimulationsController.cs` | Los cinco endpoints `comparisons` del spec (crear, listar, consultar, exportar e importar verificado, FR-21) y sus permisos. |
 | Modificar | `src/Infrastructure/Persistence/ApplicationDbContext.cs` y `src/Infrastructure/Persistence/Migrations/` | Una migración 005 para metadatos de `SimulationRun` y `SimulationEvent`, grants al final. |
 | Crear | `data/fixtures/simulation-national/` | Parámetros versionados, CSV canónicos, procedencia de matriz y seeds de ensayo; generado, sin resultados precargados de ahorro. |
 | Crear | `apps/web/src/pages/simulation/simulation.page.ts` | Comparador, estados, rango, detalle, exportación y etiqueta «simulado». |
@@ -88,6 +90,8 @@ Rutas objetivo, sujetas al árbol implementado por 001–004; si su PR materiali
 
 | Decisión | Alternativas consideradas | Motivo |
 |---|---|---|
+| Corrida oficial en máquina dedicada + importación verificada del ZIP | Ejecutarla en el EC2 de la demo | Plantilla `t3.micro` con CPU por créditos: plazo incierto y degrada la API del pitch |
+| Mismo planificador de 002 para secuenciar las tres políticas; calendario fijo escalonado por día laborable | Orden por código; todos los puntos el mismo día | Aísla el efecto de la política de reposición y evita un baseline debilitado artificialmente (corrección previa a la primera corrida) |
 | Trabajo asíncrono en API con progreso en `SimulationRun` | HTTP síncrono; proceso separado | Evita timeout y otro despliegue; seleccionado por el usuario en brainstorming. |
 | Base de simulación separada, mismo importador y motor | Esquema compartido con filtros; mutar `demo-region` y restaurar | Fallos/cancelación no alteran la demo; comprueba G2 con una entrada única. |
 | Calendario exógeno antes de políticas y RNG independiente por seed | Muestrear al ejecutar cada política | Evita que decisiones cambien la demanda aleatoria. |
