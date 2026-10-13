@@ -1,6 +1,6 @@
 ---
 tipo: plan-ejecucion
-estado: en-curso
+estado: propuesta
 actualizado: 2026-10-13
 tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 ---
@@ -66,7 +66,7 @@ tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 | [**ALK-29**](https://linear.app/alkuy/issue/ALK-29) | **T5** — Adaptador IstpetDev y ciclo horario regional | 🔴 Urgente (`Urgent`) | Conectar motor logístico determinista (002) para ejecutar la política proactiva IstpetDev frente al mismo calendario exógeno. |
 | [**ALK-30**](https://linear.app/alkuy/issue/ALK-30) | **T6** — Cálculo de métricas e invariantes de 90 días | 🔴 Urgente (`Urgent`) | Cálculo de los 4 KPIs clave: 1) Quiebres de stock evitados, 2) Demanda no satisfecha, 3) Costo y km recorridos, 4) Nivel de servicio en obligaciones comunes. |
 | [**ALK-31**](https://linear.app/alkuy/issue/ALK-31) | **T7** — Worker asíncrono, API y exportador ZIP | 🟠 Alta (`High`) | Procesamiento en segundo plano de 90 días x 3 políticas x 4 escenarios. API de progreso y empaquetado ZIP con manifiesto, hashes y CSVs reproducibles. |
-| [**ALK-32**](https://linear.app/alkuy/issue/ALK-32) | **T8** — Benchmark de corrida completa (<60 min) | 🟠 Alta (`High`) | Ejecución en máquina dedicada garantizando tiempo total ≤ 60 minutos y determinismo exacto de hashes por seed. |
+| [**ALK-32**](https://linear.app/alkuy/issue/ALK-32) | **T8** — Benchmark de corrida completa (<60 min) | 🟠 Alta (`High`) | Ejecución en máquina dedicada con tiempo objetivo total ≤ 60 minutos y determinismo exacto de hashes por seed. |
 | [**ALK-33**](https://linear.app/alkuy/issue/ALK-33) | **T9** — Panel web en vivo (Angular FSD, mapa y agente) | 🔴 Urgente (`Urgent`) | Interfaz en `apps/web`: mapa de rutas interactivas, columna de decisiones del agente (ejecutadas vs escaladas) y control `ProposeOnly`. |
 | [**ALK-34**](https://linear.app/alkuy/issue/ALK-34) | **T10** — Vista de simulación comparativa y gráficas | 🟠 Alta (`High`) | Visualización comparativa de impacto con gráficos de barras/líneas (IstpetDev vs Reactivo vs Fijo) y botón para exportar ZIP reproducible. |
 | [**ALK-35**](https://linear.app/alkuy/issue/ALK-35) | **T11** — Recorrido E2E completo, evidencia y cierre | 🟠 Alta (`High`) | Ejecución y acreditación de los 10 escenarios de [test-e2e.md](../../specs/005-panel-simulador/test-e2e.md). |

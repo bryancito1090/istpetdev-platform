@@ -282,3 +282,10 @@ Fuente: instrucción directa de Bryan de subir los cambios a `develop`. Se prepa
 
 Verificación previa al PR: `npm run check` aprobado (lint y compilación de API, contratos, web y móvil), con avisos existentes de dependencias frontend; **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores** y dos avisos documentales previos. La publicación es documental y no incluye cambios de aplicación ni preparación de una release en `main`.
 
+## Asignación de specs 004 y 005 a Alexander Martínez — 13 de octubre de 2026
+
+Fuente: solicitud de Alexander Martínez de asumir la implementación de los specs 004 (Campo, QR y PWA Offline) y 005 (Panel Web y Simulador 90 Días), sincronización con Linear (tareas ALK-12 a ALK-35) y formalización del plan de trabajo en la bóveda. Se crea [[Plan de trabajo specs 004 y 005]], se actualiza el mapa de la bóveda, el registro de seguimiento y los metadatos de los specs 004 y 005.
+
+Verificación documental de esta actualización: **82 notas Markdown**, **797 enlaces internos resueltos**, **0 errores**.
+
+
