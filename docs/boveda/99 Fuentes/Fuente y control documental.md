@@ -280,6 +280,6 @@ Verificación documental de esta actualización: **81 notas Markdown**, **793 en
 
 Fuente: instrucción directa de Jorge/Bryan de formalizar la estrategia de tres entornos de persistencia (Casa / Standalone, Laboratorio / On-Premise en red local `192.168.7.50:15432`, y Producción / AWS RDS `istpetdev_integration`) para eliminar la fricción operativa durante el desarrollo del hackathon. Se crea [[Estrategia de tres entornos y base de datos]] y se enlaza desde [[Entornos y operacion acordados]] y [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]].
 
-Verificación documental de esta actualización: **82 notas Markdown**, **804 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+Verificación documental de esta actualización: **82 notas Markdown**, **808 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
 
 

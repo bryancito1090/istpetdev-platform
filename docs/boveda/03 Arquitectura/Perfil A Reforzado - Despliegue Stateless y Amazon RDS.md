@@ -88,8 +88,8 @@ La instancia compartida de Amazon RDS implementa aislamiento lógico mediante ba
 
 | Base de Datos | Usuario Principal | Propósito |
 |---|---|---|
-| `istpetdev_integration` | `migrator_integration` | **Entorno Desplegado en la Nube (EC2)**. Base central de integración y demostración. |
-| `istpetdev_dev_01` a `05` | `user_dev_01` a `05` | Bases personales aisladas de cada desarrollador para trabajo local vía túnel SSM. |
+| `istpetdev_integration` | `migrator_integration` | **Entorno Desplegado en la Nube (EC2)**. Base central de integración y demostración en producción. |
+| `istpetdev_dev_01` a `05` | `user_dev_01` a `05` | *(Archivadas para desarrollo)* Creadas inicialmente en RDS; su uso diario fue sustituido por el Servidor de Laboratorio (LAN) y Docker local para eliminar túneles SSM. Ver [[Estrategia de tres entornos y base de datos]]. |
 
 ### Guarda de Seguridad de Migración (`Schema95Preflight.sql`) — se retira con el spec 001
 Vigente hasta que se integre `DemoCore`; después queda solo en el tag `schema95-archivo`. La migración de EF Core (`CompleteSystemSchema95`) impone una regla estricta de seguridad en PL/pgSQL:

@@ -31,7 +31,7 @@ Esta nota documenta las skills del equipo y de dónde sale cada una; el contenid
 | [[istpetdev-docs]] | Editar la bóveda, ADR, mentorías, evidencias, hechos canónicos | `tech-writer` + `product-manager` + `continuidad-narrativa` |
 | [[istpetdev-contrato]] | Endpoints, eventos, DTOs, errores, idempotencia, OpenAPI | `tech-writer` (OpenAPI) |
 | [[istpetdev-backend]] | Código C#/.NET, inventario, custodia, RBAC, tiempo real | `backend-lead-cqrs` + `arquitecto-clean-architecture` |
-| [[istpetdev-dbflow]] | Bases aisladas personales (dev_01 a dev_05), base de integración, conexión túnel SSM, roles DML vs DDL, migraciones EF Core y resolución de conflictos de esquema | Nueva para la colaboración del equipo en AWS RDS + `data-architect-dba` + `istpet-gitflow` |
+| [[istpetdev-dbflow]] | Persistencia en tres entornos (Laboratorio LAN, Docker local y Producción RDS), roles migrador vs aplicación, migraciones EF Core y resolución de conflictos de esquema | Nueva para la colaboración del equipo + `data-architect-dba` + `istpet-gitflow` |
 | [[istpetdev-datos]] | Modelo de datos, migraciones, riesgo, rutas, simulador, KPIs | `data-architect-dba` + `qa-testing-engineer` |
 | [[istpetdev-frontend]] | Angular web, PWA o app móvil, QR público, estados de UI, accesibilidad | `frontend-lead-personalidad` + `design-tokens-a11y` + `identidad-visual-brand` |
 | [[istpetdev-revision]] | Commits, PR, checklist, pruebas, seguridad | `code-review-assistant` + `qa-testing-engineer` + `devsecops-github-guardian` + `gitlab-workflow-istpet` + `tech-writer` (+ `infra-devops-cloud` y `observability-performance` como referencias) |
