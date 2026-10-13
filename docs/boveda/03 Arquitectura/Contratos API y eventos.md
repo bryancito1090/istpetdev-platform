@@ -7,7 +7,7 @@ tags: [arquitectura, contratos]
 
 # Contratos API y eventos
 
-**Versión inicial propuesta:** REST /api/v1 y hub /hubs/operations. Será la fuente compartida para web, móvil, n8n y backend. No son endpoints ya implementados.
+**Versión inicial propuesta:** REST /api/v1 y hub /hubs/operations. Será la fuente compartida para web, móvil, n8n y backend. El catálogo operativo de endpoints implementados con ejemplos de invocación local se encuentra en [Guía de Desarrollo Local y Endpoints API](../../api-guide.md).
 
 ## Convenciones
 
