@@ -7,6 +7,9 @@ tags: [istpetdev, equipo, migraciones, coordinacion]
 
 # Coordinacion migracion schema95
 
+> [!warning] Complemento — 12 de octubre de 2026
+> Nota **histórica**. Registra cómo se aplicó y verificó Schema95 entre el 9 y el 12 de octubre. Con ADR-21 (propuesta) y el spec 001, las bases se vacían con `reset-to-demo-core.sql`, con respaldo previo, y pasan al núcleo `DemoCore` sin RLS. La regla «no cambiar ni regenerar InitialSchema ni CompleteSystemSchema95» se sustituye por la transición documentada en [[Runbook de DevOps y base de datos para la demo]].
+
 Bryan pidió que el agente de la bóveda y el agente de `~/Projects/ISTPETDEV` trabajen juntos para preparar la incorporación del esquema a `develop`. Este archivo contiene la distribución de trabajo y el estado compartido. El envío automático por Orca falló por falta de FUSE; Bryan transmitió el encargo y el agente de software devolvió `/tmp/istpetdev-schema95-respuesta.md`. El agente de la bóveda leyó esa respuesta y revisó el commit local y las evidencias indicadas. Las operaciones remotas del PR se registran según el informe del agente de software.
 
 ## Estado y evidencia disponible

@@ -1,7 +1,7 @@
 ---
 tipo: automatizacion
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -87,3 +87,7 @@ Ver [[Contratos API y eventos]] y [[Catalogo y plan de skills]].
 Bryan ya tiene servidor **https://n8n.bryan-bano.com/** y cargará las credenciales. Esta integración usa ese servidor y no añade una segunda instancia obligatoria al host demo. Workflows exportados sin credenciales en `automation/n8n/workflows/`; la DB/clave de cifrado del servidor permanece administrada por Bryan.
 
 API técnica autenticada con Cognito M2M/rol Automatización, cron `America/Guayaquil`, límites/reintentos y pausa cuando AWS esté apagado: [[Identidad OIDC y sesiones]] y [[Entornos y operacion acordados]], sección 7. Un n8n externo no alcanza el localhost del portátil: integración contra API demo HTTPS o túnel temporal autenticado; el cálculo/fallback local funciona sin n8n. Modelo/prompt/credenciales se cargan por Bryan; no se ha accedido ni modificado el servidor en esta entrega.
+
+## Agente con herramientas — propuesta del 12 de octubre de 2026
+
+La sesión de definición propone que WF-01 y WF-02 evolucionen a dos workflows de agente, `vigia` e `incidente`, con un nodo AI Agent cuyas herramientas son endpoints del motor logístico (ADR-22, [[Definiciones de producto y plan hasta el pitch]]). Se conservan los principios de esta nota: la API calcula y conserva el estado; n8n coordina; el LLM no cambia stock, prioridades ni fechas; una caída del LLM no detiene la operación (la API responde a los 10 s con el camino determinista). Cambian tres cosas: el LLM elige qué herramientas llamar; la política determinista del motor decide qué se publica solo; y cada cifra del texto se valida contra los datos calculados. Proveedor: DeepSeek, con prueba de aceptación. Workflows y prompt versionados en `automation/n8n/`; detalle en el spec 003 del repositorio (`docs/specs/003-agente-logistico/`).

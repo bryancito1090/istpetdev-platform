@@ -102,7 +102,7 @@ npm run dev:mobile  # Móvil PWA en http://localhost:8100
 
 La plataforma opera bajo el modelo **Perfil A Reforzado** en AWS:
 - **Cómputo Stateless (EC2)**: Instancia Debian 13 (`istpetdev-prod-host`) en la VPC del proyecto (`10.42.0.0/16`). Aloja exclusivamente contenedores efímeros (Nginx, Angular 22, .NET 8 y Redis).
-- **Persistencia Gestionada (Amazon RDS)**: PostgreSQL 16 + PostGIS en subred privada interna (`istpetdev-rds-dev`). Esquema completo de 95 tablas y RLS bajo el rol `migrator_integration` en la base `istpetdev_integration`.
+- **Persistencia Gestionada (Amazon RDS)**: PostgreSQL 16 + PostGIS en subred privada interna (`istpetdev-rds-dev`). Hoy, esquema de 95 tablas con RLS (Schema95) en `istpetdev_integration`. El spec 001 lo reemplaza por el núcleo `DemoCore` de 27 tablas sin RLS (ADR-21); ver `docs/boveda/03 Arquitectura/Runbook de DevOps y base de datos para la demo.md`.
 - **Automatización CI/CD (GitHub Actions)**:
   - `CD - Despliegue en Producción` (`.github/workflows/deploy.yml`): Disparo en push a `main`. Compila imágenes inmutables en GHCR, ejecuta bootstrap idempotente y despliega mediante SSH seguro.
   - `Rollback Rápido` (`.github/workflows/rollback.yml`): Reversión en caliente en menos de 30 segundos usando las imágenes cacheadas en el host.

@@ -1,7 +1,7 @@
 ---
 tipo: estrategia
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [istpetdev, demo, diferenciacion]
 ---
 
@@ -99,3 +99,9 @@ Blockchain, múltiples agentes IA, interfaces decorativas o modelos propios sin 
 Una mejora entra al pitch si funciona, cabe en el tiempo confirmado y su evidencia está disponible. La demo del flujo integrado tiene prioridad sobre mostrar todos los extras.
 
 Próximas notas: [[Guion del pitch]], [[Plan de validacion]] y [[Checklist y contingencias]].
+
+## Complemento — 12 de octubre de 2026
+
+El plus 2 (modo crisis con replanificación) se concreta como un agente con autonomía limitada (ADR-22): ante un incidente, el cambio rutinario se aplica solo y el que afecta a un compromiso se escala con dos opciones calculadas. El orden de prioridad de los plus y los cortes están en [[Definiciones de producto y plan hasta el pitch]].
+
+El plus 3 se concreta en el [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md): caja preparada por bodega, despacho escaneado, captura offline por el conductor con firma voluntaria del receptor, reinicio de PWA, sincronización de recibo antes de archivos y consulta pública limitada desde el teléfono del jurado. Es una propuesta; requiere ensayo real con HTTPS y dos teléfonos antes del pitch.

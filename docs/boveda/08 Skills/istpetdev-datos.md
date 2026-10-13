@@ -7,6 +7,9 @@ tags: [istpetdev, ia, skills]
 
 # IstpetDev — datos, algoritmos y simulación
 
+> [!warning] Complemento — 12 de octubre de 2026
+> Para la demo, la fuente de esquema es el núcleo `DemoCore` del spec 001, de 27 tablas sin RLS (ADR-21, propuesta). [[Esquema completo de base de datos]] queda como diseño P2. Ver [[Runbook de DevOps y base de datos para la demo]].
+
 **Cuándo usarla:** Datos y algoritmos de IstpetDev. Usar al diseñar tablas o migraciones de PostgreSQL/PostGIS, cambiar el modelo de datos, implementar cobertura y riesgo de reabastecimiento, rutas y costos, generar el dataset sintético, ejecutar el simulador de políticas o calcular KPIs para el pitch.
 
 > Documentación de la skill `istpetdev-datos`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-datos` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].

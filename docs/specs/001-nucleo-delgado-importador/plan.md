@@ -180,13 +180,12 @@ Usar un límite transaccional en Infrastructure expuesto con el mínimo contrato
 Reutilizar los archivos del plan previo y de `task.md`; nombres indicados como directorio agrupan las piezas allí enumeradas. Crear únicamente lo necesario para las responsabilidades anteriores.
 
 | Acción | Ruta | Responsabilidad |
-|---|---|---|
 | Crear | `tests/IstpetDev.Tests/IstpetDev.Tests.csproj` | Pruebas unitarias, integración y E2E con categorías |
 | Crear | `tests/IstpetDev.Tests/Support/` | PostGIS efímero, rol migrador limitado, base aislada, ApiFactory/JWT de prueba, fixtures |
 | Crear | `src/Application/Imports/` | Esquema, normalizador, perfil, lector abstracto, filas, reporte, resolver, parser, contexto, escritor y servicio de importación |
 | Crear | `src/Infrastructure/Imports/` | Lectores CSV/XLSX y transacción/persistencia de importación |
 | Crear | `src/Application/Demo/DemoOptions.cs` | Configuración validada y contrato de reset con actor autenticado |
-| Crear | `src/Infrastructure/Demo/DemoResetService.cs` | Reset por organización; borrado ordenado y misma importación |
+| Crear | `src/Infrastructure/Demo/DemoResetService.cs` | Reset por organización; borrado ordenado y misma importación; conservar historial completado de simulación para 005 |
 | Crear | `src/Infrastructure/Persistence/LeanSchema.cs` | Mapeo final de las 27 entidades, índices y restricciones |
 | Crear | `src/Infrastructure/Persistence/AccountSeeder.cs` | Bootstrap de cuentas de demo configuradas, idempotente |
 | Crear | `src/Infrastructure/Persistence/Migrations/*_DemoCore.cs` | Migración posterior generada; conserva historia aplicada |

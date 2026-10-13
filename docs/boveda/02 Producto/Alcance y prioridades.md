@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-producto
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [producto, reto-1]
 ---
 
@@ -59,3 +59,7 @@ Cada cambio de alcance se refleja en [[Backlog]] y [[Decisiones de arquitectura]
 ## Ampliación solicitada — 9 de octubre
 
 Bryan incorpora como dirección P0 roles/permisos administrables, plantillas y parámetros/catálogos/workflows gestionados desde DB, con aislamiento RLS y verificación previa al lanzamiento. ADR-16 sustituye el límite de roles fijos sin editor. RF-17/18/19 y RNF-13/14 trazan aceptación; [[Esquema completo de base de datos]] cubre el sistema objetivo y [[RBAC y configuracion del sistema]] define la configuración admitida. No se amplía a ERP/cotizador ni a ejecución arbitraria de scripts; cada entrega funcional mantiene garantías de inventario y seguridad.
+
+## Ajuste propuesto — 12 de octubre de 2026
+
+La sesión de definición propone recortar el alcance hasta el 17-oct (D3) y diferir la ampliación del 9 de octubre (RF-17/18/19) a P2 mediante ADR-21. El P0 se concentra en el recorrido que ve el jurado: riesgo → ruta → QR y custodia → recepción offline → simulador. Detalle, cortes y plan B en [[Definiciones de producto y plan hasta el pitch]]. Hasta que se confirmen los Deciders, esta sección es una propuesta y no reemplaza el texto anterior.

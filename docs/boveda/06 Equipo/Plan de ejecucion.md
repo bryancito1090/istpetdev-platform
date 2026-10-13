@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -67,3 +67,7 @@ Demanda, puntos, lead time, capacidades, costo/km, ventanas, criterios de critic
 - No congelar cifras antes de validar el run que se mostrará.
 
 Consultar [[Backlog]], [[Plan de validacion]] y [[Checklist y contingencias]].
+
+## Plan vigente propuesto — 12 de octubre de 2026
+
+El calendario anterior suponía el flujo vertical construido el 9-oct, lo que no ocurrió. El plan propuesto desde el 12-oct, con hitos H1–H5, congelamiento de funcionalidades el 15-oct a las 14:00 y plan B por componente, está en [[Definiciones de producto y plan hasta el pitch]].

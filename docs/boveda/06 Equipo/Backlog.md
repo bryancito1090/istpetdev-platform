@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-10
+actualizado: 2026-10-12
 tags: [hackathon, istpetdev]
 ---
 
@@ -88,7 +88,7 @@ Se conservan B-20 y B-21 del compañero. Cuenta/presupuesto, .NET 8/Angular 22, 
 |---|---|---|---|---|
 | B-30 | Prueba de dos API y backplane | Al habilitar varias réplicas; B-13/20; RNF-07 se conserva | V-15 con eventos/reconexión y afinidad; ALB probado en Perfil B antes de declarar escalado AWS | Pendiente |
 | B-31 | RDS compartido y acceso dev | Antes de trabajo conjunto contra DB | SSM/TLS verificados, bases/credenciales aisladas y migraciones de integración controladas; V-30 | Pendiente |
-| B-32 | Backup externo y restauración | Antes de depender de demo; B-20 | RPO/RTO medidos, backup obligatorio y V-26 aprobado | Pendiente |
+| B-32 | Backup externo y restauración | Antes de depender de demo; B-20 | RPO/RTO medidos, backup obligatorio y V-26 aprobado. Desde el 12-oct es obligatorio **antes** de `reset-to-demo-core.sql` ([issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15), [[Runbook de DevOps y base de datos para la demo]]) | Pendiente |
 | B-33 | Dominio institucional y HTTPS | Antes de demo en teléfono; gestión por compañero | DNS/TLS/renovación, orígenes y CDN si aplica probados | Pendiente |
 | B-34 | Configurar n8n existente | B-15/16 y API accesible | Workflows exportados, credenciales cargadas por Bryan, M2M y fallback; sin nueva instancia obligatoria | Pendiente |
 
@@ -109,3 +109,19 @@ B-35 usa ahora la propuesta de [[AWS temporal para la hackathon y cierre]]: IAM 
 | ID | Entrega | Prioridad/dependencia | Criterio de cierre | Estado |
 |---|---|---|---|---|
 | B-36 | Cierre de infraestructura de la hackathon | Preparar antes del ensayo; ejecutar al finalizar | Exportación privada verificada, retiro del stack y residuos de DB/backups/EBS/S3/logs/secrets, backend/KMS al final y V-33; sin afectar n8n ni recursos personales | Pendiente |
+
+## Reestructuración propuesta — 12 de octubre de 2026
+
+Propuesta de la sesión de definición registrada en [[Definiciones de producto y plan hasta el pitch]] (Deciders PENDIENTE). Si se acepta ADR-21, B-29 se cierra con roles fijos y B-37 a B-40 pasan a P2. Los specs del repositorio (`docs/specs/`) detallan cada entrega.
+
+| ID | Entrega | Depende de | Criterio de cierre | Estado |
+|---|---|---|---|---|
+| B-41 | Núcleo delgado, importador canónico y reset de demo (spec 001) | ADR-21 | `dotnet test` y `test-e2e.md` del spec 001; simulacro de dataset sorpresa ≤ 60 min | Pendiente |
+| B-42 | Motor logístico: riesgo, ruta de 2 vehículos, replanificación y política de autonomía (spec 002) | B-41, ADR-22, ADR-23 | Criterios CE-01 a CE-07 del spec 002 | Pendiente |
+| B-43 | Fixture `demo-region` con tramos viales e incidente predefinido calibrado | B-42 | El incidente produce una decisión ejecutada sola y otra escalada | Pendiente |
+| B-44 | Agente niveles A y B con n8n (spec 003) y prueba de aceptación de DeepSeek | B-42 | Informe de aceptación: llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10; fallback visible | Pendiente |
+| B-45 | Kit previo de validación y pitch (spec 006), preparado con IA sin horas de construcción del equipo | — | Guion y hoja consentida de feria, esqueleto 3/5/7, modelo de negocio con precio pendiente, veinte respuestas ≤30 s e investigación SERCOP; revisión humana de unos 15 min registrada; CE-01 del 006 | Propuesta documentada; revisión pendiente |
+| B-46 | Evidencia del sector, ensayos y paquete en el evento (spec 006) | B-45, B-41 a B-44 y 005 | ≥3 conversaciones antes del 17-oct 12:30, ≥1 con reacción al prototipo; diez ensayos consecutivos, dos sin wifi; siete entregables y tag previo; V-40 a V-43 | Pendiente de evento y de CE ejecutados |
+| B-47 | Campo: QR, despacho, custodia, recepción offline, evidencia y consulta pública (spec 004) | B-41, B-42; avisos de B-44 | Criterios CE-01 a CE-10 del [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) (incluye login PKCE, PWA por HTTPS y `advance`); teléfono real en modo avión, reinicio y reintento | Pendiente |
+| B-48 | Panel web conectado a riesgos, rutas, decisiones y entregas (spec 005) | B-41, B-42, B-44, B-47; lecturas de 002/004 | CE-01 a CE-03 del [spec 005](../../specs/005-panel-simulador/spec.md); sin cifras/puntos fijos y acciones confirmadas por API antes de H4 | Pendiente |
+| B-49 | Simulador nacional de 90 días y comparación reproducible (spec 005) | B-41, B-42; importador y matriz homogénea | CE-04 a CE-08 del spec 005: tres seeds base, una adversa, dos baselines, exportación/hash y benchmark regional completo ≤60 min antes de H4 | Pendiente |
