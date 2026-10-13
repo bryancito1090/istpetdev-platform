@@ -287,6 +287,12 @@ Verificación documental de esta actualización: **82 notas Markdown**, **808 en
 
 Fuente: solicitud de Alexander Martínez de asumir la implementación de los specs 004 (Campo, QR y PWA Offline) y 005 (Panel Web y Simulador 90 Días), sincronización con Linear (tareas ALK-12 a ALK-35) y formalización del plan de trabajo en la bóveda. Se crea [[Plan de trabajo specs 004 y 005]], se actualiza el mapa de la bóveda, el registro de seguimiento y los metadatos de los specs 004 y 005.
 
-Verificación documental de esta actualización: **82 notas Markdown**, **797 enlaces internos resueltos**, **0 errores**.
+## Integración de estrategia de tres entornos en develop — 13 de octubre de 2026
+
+Fuente: integración de la rama `fix/ci-despliegue-inmutable` en `develop` con la estrategia de persistencia en tres entornos, conmutador `switch-db.mjs` y actualización de configuración predeterminada de base de datos para el equipo.
+
+Verificación documental de esta actualización: **83 notas Markdown**, **812 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
+
 
 
