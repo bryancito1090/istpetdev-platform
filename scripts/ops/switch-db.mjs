@@ -64,11 +64,17 @@ async function showStatus() {
   const currentSecret = getUserSecrets();
   console.log('\n--- Estado Actual de Base de Datos ---');
   if (currentSecret) {
-    console.log('Modo: LABORATORIO / SERVIDOR (Configurado en user-secrets)');
-    console.log(`Cadena activa: ${currentSecret}`);
+    if (currentSecret.includes('192.168.7.50')) {
+      console.log('Modo Activo: LABORATORIO (Servidor On-Premise 192.168.7.50:15432)');
+    } else if (currentSecret.includes('localhost') || currentSecret.includes('127.0.0.1')) {
+      console.log('Modo Activo: CASA (Docker Local localhost:15432)');
+    } else {
+      console.log('Modo Activo: PERSONALIZADO (Configurado en user-secrets)');
+    }
+    console.log(`Cadena de conexión: ${currentSecret}`);
   } else {
-    console.log('Modo: CASA (DOCKER LOCAL - Leyendo appsettings.Development.json)');
-    console.log(`Cadena activa: Host=${DEFAULTS.local.host};Port=${DEFAULTS.local.port};Database=${DEFAULTS.local.database};...`);
+    console.log('Modo Activo: LABORATORIO POR DEFECTO (Leyendo appsettings.Development.json)');
+    console.log(`Cadena de conexión: Host=${DEFAULTS.server.host};Port=${DEFAULTS.server.port};Database=${DEFAULTS.server.database};...`);
   }
   console.log('-------------------------------------\n');
 }
@@ -96,13 +102,11 @@ async function switchToLab(customHost, customPort) {
 }
 
 async function switchToLocal() {
-  try {
-    execSync('dotnet user-secrets remove "ConnectionStrings:Main"', { cwd: apiDir, stdio: ['ignore', 'ignore', 'ignore'] });
-  } catch {
-    // Si no existia la clave en user-secrets, no hay problema
-  }
+  const { host, port, database, user, password } = DEFAULTS.local;
+  const connStr = `Host=${host};Port=${port};Database=${database};Username=${user};Password=${password}`;
+  execSync(`dotnet user-secrets set "ConnectionStrings:Main" "${connStr}"`, { cwd: apiDir, stdio: 'inherit' });
 
-  console.log('\n[EXITO] Backend restaurado al modo CASA (Docker local localhost:15432).');
+  console.log(`\n[EXITO] Backend configurado para conectar en CASA a DOCKER LOCAL (${host}:${port}).`);
   console.log('Recuerda iniciar tus contenedores locales con: npm run docker:up');
   console.log('Para iniciar tu backend: npm run dev:api\n');
 }
