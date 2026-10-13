@@ -57,6 +57,7 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.Receipts.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.InventoryMovements.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.DeliveryLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.RouteStockReservations.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Deliveries.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Incidents.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RouteStops.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);

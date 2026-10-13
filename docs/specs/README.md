@@ -77,6 +77,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 
 | ID | Spec | Criterio de nota que sostiene | Depende de | Estado |
 |---|---|---|---|---|
+| 000 | [Gestión de dependencias, remediación de vulnerabilidades y evaluación pnpm](000-gestion-dependencias-seguridad-monorepo/spec.md) | Seguridad, viabilidad, estabilidad CI/CD | — | borrador (spec y plan redactados) |
 | 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | borrador |
 | 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
 | 003 | [Agente logístico con n8n](003-agente-logistico/spec.md) (herramientas sobre 002, autonomía con límites, DeepSeek) | Innovación, demo | 002 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |

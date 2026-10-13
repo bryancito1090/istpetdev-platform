@@ -33,7 +33,7 @@ Estados operativos para este tablero: pendiente, entregado, integrado, verificad
 | Spec | Responsable / revisor | Estado de esta campaña | Commit/PR | Comando y evidencia | Pendientes |
 |---|---|---|---|---|---|
 | 001 | PENDIENTE / PENDIENTE | Pendiente de revalidación integrada | PENDIENTE | Referencia previa: [verification.md](../../specs/001-nucleo-delgado-importador/verification.md), 115 pruebas locales | Simulacro humano, identidad/entorno reales y cierre documentado |
-| 002 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Entrega y E2E |
+| 002 | AnthonyPilatasig / Bryan | En progreso (T0-T6 completadas) | Issue #24 | `dotnet test` (49/49 pruebas de logística con 0 fallos: política de autonomía, estado en memoria y plantillas de explicación) | T7-T10 (Incidentes, revisiones, endpoints, E2E) |
 | 003 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Workflows, M2M y aceptación real |
 | 004 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Entrega, teléfono/HTTPS y E2E |
 | 005 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Panel, comparación y exportación |
@@ -45,7 +45,10 @@ Una fila por ejecución o conjunto automatizado identificable. Usar referencias 
 
 | Fecha | Caso / requisito | Commit y entorno | Ejecutor / revisor | Esperado → observado | Resultado | Evidencia / hallazgo |
 |---|---|---|---|---|---|---|
-| PENDIENTE | PENDIENTE: primera ejecución | PENDIENTE | PENDIENTE | PENDIENTE | pendiente | PENDIENTE |
+| 2026-10-13 | 001 + 002 (T0 a T6: Núcleo, Importador, Matriz vial, Ruteo determinista, Publicación FEFO, Política de autonomía y Explicaciones) | Issue #24 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | 167 pruebas pasan con 0 fallos (118 núcleo/importador + 49 motor logístico) | Aprobado | AutonomyPolicyTests, ExplanationTemplatesTests, RoutePublisherTests pasan. Números de plantillas derivados estrictamente de Facts. |
+
+
+
 
 Adjuntar resúmenes con [[Plantilla evidencia]]: datos iniciales, pasos, valores/unidades, IDs de operación y archivos anonimizados. Guardar TRX/logs bajo `artifacts/seguimiento/<sha>/`; los registros compartidos enlazan evidencia accesible sin tokens, firmas, fotos privadas ni secretos. Conservar los archivos privados en almacenamiento autorizado.
 

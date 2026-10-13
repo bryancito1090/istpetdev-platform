@@ -17,7 +17,7 @@ public sealed class MigrationSafetyTests(PostgisContainer postgres)
         var connection = await postgres.NewEmptyDatabaseAsync();
         await using (var migrate = await TestDb.CreateMigratedAsync(connection))
         {
-            Assert.Equal(3, (await migrate.Database.GetAppliedMigrationsAsync()).Count());
+            Assert.Equal(4, (await migrate.Database.GetAppliedMigrationsAsync()).Count());
             Assert.False(migrate.Database.HasPendingModelChanges());
             Assert.Equal(0, await migrate.Database.SqlQueryRaw<long>("SELECT count(*) AS \"Value\" FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND (c.relrowsecurity OR c.relforcerowsecurity)").SingleAsync());
         }

@@ -15,6 +15,7 @@ internal sealed class ImportContext
     public Dictionary<(Guid ProductId, string Code), Lot> Lots { get; } = new();
     public Dictionary<(Guid LocationId, Guid LotId), StockBalance> Balances { get; } = new();
     public Dictionary<(Guid ServicePointId, Guid ProductId, DateOnly Date), Consumption> Consumptions { get; } = new();
+    public Dictionary<(decimal FromLat, decimal FromLon, decimal ToLat, decimal ToLon), RoadMatrixEdge> RoadEdges { get; } = new();
 
     public static async Task<ImportContext> LoadAsync(IApplicationDbContext db, CancellationToken cancellationToken)
     {
@@ -26,6 +27,8 @@ internal sealed class ImportContext
         foreach (var x in await db.Lots.Where(x => x.OrganizationId == DemoOrganization.Id).ToListAsync(cancellationToken)) context.Lots[(x.ProductId, x.Code)] = x;
         foreach (var x in await db.StockBalances.Where(x => x.OrganizationId == DemoOrganization.Id).ToListAsync(cancellationToken)) context.Balances[(x.LocationId, x.LotId)] = x;
         foreach (var x in await db.Consumptions.Where(x => x.OrganizationId == DemoOrganization.Id).ToListAsync(cancellationToken)) context.Consumptions[(x.ServicePointId, x.ProductId, x.OccurredOn)] = x;
+        foreach (var x in await db.RoadMatrixEdges.Where(x => x.OrganizationId == DemoOrganization.Id).ToListAsync(cancellationToken))
+            context.RoadEdges[(Math.Round(x.FromLat, 5), Math.Round(x.FromLon, 5), Math.Round(x.ToLat, 5), Math.Round(x.ToLon, 5))] = x;
         return context;
     }
 }

@@ -34,6 +34,8 @@ public interface IApplicationDbContext
     DbSet<AgentDecision> AgentDecisions { get; }
     DbSet<SimulationRun> SimulationRuns { get; }
     DbSet<SimulationMetric> SimulationMetrics { get; }
+    DbSet<RoadMatrixEdge> RoadMatrixEdges { get; }
+    DbSet<RouteStockReservation> RouteStockReservations { get; }
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }
     Task LockOrganizationAsync(CancellationToken cancellationToken = default);

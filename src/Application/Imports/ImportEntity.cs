@@ -1,7 +1,7 @@
 namespace IstpetDev.Application.Imports;
 
 // El orden del enum es el orden de escritura: cada entidad solo referencia entidades anteriores.
-public enum ImportEntity { Warehouses, ServicePoints, Products, Vehicles, Lots, Stock, Consumptions }
+public enum ImportEntity { Warehouses, ServicePoints, Products, Vehicles, Lots, Stock, Consumptions, RoadSegments }
 
 public static class ImportEntityKeys
 {
@@ -14,6 +14,7 @@ public static class ImportEntityKeys
         [ImportEntity.Lots] = "lots",
         [ImportEntity.Stock] = "stock",
         [ImportEntity.Consumptions] = "consumptions",
+        [ImportEntity.RoadSegments] = "road_segments",
     };
 
     private static readonly Dictionary<string, ImportEntity> Aliases = new()
@@ -25,6 +26,7 @@ public static class ImportEntityKeys
         ["lotes"] = ImportEntity.Lots,
         ["inventario"] = ImportEntity.Stock, ["saldos"] = ImportEntity.Stock,
         ["consumos"] = ImportEntity.Consumptions, ["demanda"] = ImportEntity.Consumptions,
+        ["tramos"] = ImportEntity.RoadSegments, ["matriz"] = ImportEntity.RoadSegments, ["distancias"] = ImportEntity.RoadSegments,
     };
 
     public static IReadOnlyCollection<string> All => Keys.Values;
