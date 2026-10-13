@@ -57,11 +57,30 @@ public static class CognitoJwtExtensions
                     var allowed = configuredAllowed.Length > 0 ? configuredAllowed : defaultAllowed;
                     var technical = effective.GetSection("Authentication:TechnicalClientIds").Get<string[]>() ?? [];
                     var scopes = principal?.FindFirst("scope")?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
-                    if (principal?.FindFirst("token_use")?.Value != "access") context.Fail("Only access tokens are authorized.");
-                    else if (client is null || !allowed.Contains(client)) context.Fail("Unauthorized client_id.");
-                    else if (!scopes.Contains(technical.Contains(client)
-                        ? effective["Authentication:TechnicalReadScope"] ?? "automation/risk.read"
-                        : effective["Authentication:HumanApiScope"] ?? "istpetdev-api/access")) context.Fail("Required API scope is missing.");
+                    if (principal?.FindFirst("token_use")?.Value != "access")
+                    {
+                        context.Fail("Only access tokens are authorized.");
+                    }
+                    else if (client is null || !allowed.Contains(client))
+                    {
+                        context.Fail("Unauthorized client_id.");
+                    }
+                    else
+                    {
+                        var isTechnical = technical.Contains(client);
+                        if (isTechnical)
+                        {
+                            var technicalScope = effective["Authentication:TechnicalScope"] ?? effective["Authentication:TechnicalReadScope"] ?? "istpetdev-api/automation";
+                            if (!scopes.Contains(technicalScope) && !scopes.Contains("istpetdev-api/automation") && !scopes.Contains("automation/risk.read"))
+                            {
+                                context.Fail("Required technical API scope is missing.");
+                            }
+                        }
+                        else if (!scopes.Contains(effective["Authentication:HumanApiScope"] ?? "istpetdev-api/access"))
+                        {
+                            context.Fail("Required API scope is missing.");
+                        }
+                    }
                     return Task.CompletedTask;
                 },
                 OnAuthenticationFailed = context =>

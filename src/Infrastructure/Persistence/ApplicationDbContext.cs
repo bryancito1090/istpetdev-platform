@@ -31,6 +31,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
+    public DbSet<AgentRun> AgentRuns => Set<AgentRun>();
     public DbSet<AgentDecision> AgentDecisions => Set<AgentDecision>();
     public DbSet<SimulationRun> SimulationRuns => Set<SimulationRun>();
     public DbSet<SimulationMetric> SimulationMetrics => Set<SimulationMetric>();

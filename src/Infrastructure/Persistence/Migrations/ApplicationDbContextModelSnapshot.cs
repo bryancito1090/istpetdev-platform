@@ -97,8 +97,21 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("DecidedByAccountId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DriverMessage")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
                     b.Property<DateTime?>("ExecutedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExplanationMismatch")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExplanationSource")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("FailureReason")
                         .HasColumnType("text");
@@ -154,6 +167,77 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "Status");
 
                     b.ToTable("AgentDecision");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.AgentRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FallbackReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("LatencyMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("N8nExecutionId")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PromptVersion")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ToolCallsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("TriggerJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OrganizationId", "Id");
+
+                    b.HasIndex("OrganizationId", "StartedAtUtc");
+
+                    b.ToTable("AgentRun");
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.Consumption", b =>
@@ -1836,6 +1920,15 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.AgentDecision", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.AgentRun", b =>
                 {
                     b.HasOne("IstpetDev.Domain.Entities.Organization", null)
                         .WithMany()

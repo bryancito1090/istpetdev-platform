@@ -4,9 +4,9 @@ titulo: Login real y gestión de cuentas por Gerencia
 estado: borrador
 creado: 2026-10-13
 actualizado: 2026-10-13
-responsable: Alexander Martínez
+responsable: Alexander Martínez y Joseph Baño   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # diseño acordado con Joseph Baño en la sesión del 13-oct (Auditor, H4 en P2 y revisor); PA-04 abierta
-revisor: Joseph Baño
+revisor: revisión cruzada (Alexander revisa los PR de Joseph y Joseph los de Alexander; nadie aprueba su propio PR)
 depende_de: ["001"]
 boveda:
   - 03 Arquitectura/Identidad OIDC y sesiones.md

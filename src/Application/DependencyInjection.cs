@@ -1,4 +1,5 @@
 using IstpetDev.Application.PublicTrace.Services;
+using IstpetDev.Application.Agent;
 using IstpetDev.Application.Imports;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Incidents;
@@ -29,6 +30,8 @@ public static class DependencyInjection
         services.AddSingleton<AutonomyState>();
         services.AddScoped<IAutonomyPolicy, AutonomyPolicy>();
         services.AddSingleton<IExplanationTemplates, ExplanationTemplates>();
+        services.AddSingleton<IExplanationValidator, ExplanationValidator>();
+        services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
 
         return services;

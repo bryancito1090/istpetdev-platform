@@ -12,7 +12,7 @@ internal static class LeanSchema
     private const string PointType = "geometry(Point,4326)";
 
     private static readonly HashSet<string> LongText =
-        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason", "EncodedPolyline"];
+        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason", "EncodedPolyline", "ExplanationMismatch"];
 
     public static void Configure(ModelBuilder model)
     {
@@ -163,7 +163,12 @@ internal static class LeanSchema
 
         model.Entity<IdempotencyRecord>(e => { e.HasIndex(r => new { r.OrganizationId, r.AccountId, r.OperationId }).IsUnique(); Fk<IdempotencyRecord, Account>(e, r => r.AccountId); });
         model.Entity<ImportBatch>(e => Fk<ImportBatch, Account>(e, b => b.CreatedByAccountId));
-        model.Entity<AgentDecision>(e => e.HasIndex(d => new { d.OrganizationId, d.Status }));
+        model.Entity<AgentRun>(e => e.HasIndex(r => new { r.OrganizationId, r.StartedAtUtc }));
+        model.Entity<AgentDecision>(e =>
+        {
+            e.HasIndex(d => new { d.OrganizationId, d.Status });
+            e.Property(d => d.DriverMessage).HasMaxLength(160);
+        });
         model.Entity<SimulationRun>();
         model.Entity<SimulationMetric>(e => Fk<SimulationMetric, SimulationRun>(e, m => m.SimulationRunId));
 

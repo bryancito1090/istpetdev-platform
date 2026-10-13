@@ -4,6 +4,8 @@ using IstpetDev.Infrastructure.HealthChecks;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Application.Imports;
 using IstpetDev.Application.Demo;
+using IstpetDev.Application.Agent;
+using IstpetDev.Infrastructure.Agent;
 using IstpetDev.Infrastructure.Imports;
 using IstpetDev.Infrastructure.Demo;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +42,9 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
         services.AddSingleton<ITabularReader, TabularReader>();
         services.AddScoped<IDemoResetService, DemoResetService>();
+
+        services.Configure<N8nOptions>(configuration.GetSection("Agent:N8n"));
+        services.AddHttpClient<IN8nTrigger, N8nTrigger>();
 
         // Register readiness health check
         services.AddHealthChecks()
