@@ -229,8 +229,8 @@ flowchart LR
   T13 -.P2.-> T14
 ```
 
-- **Backend (Alexander o agente):** T1 → T2 → T3 → T4; luego T11 → T12.
-- **Frontend:** T5 tras T2; T6 y T7 en paralelo (archivos separados); T8 tras T7; T9 cuando T6 y T8 estén verdes.
+- **Backend (Joseph Baño):** T1 → T2 → T3 → T4; luego T11 → T12.
+- **Frontend (Alexander Martínez, que en #33 ya toca los mismos archivos de la PWA):** T5 tras T2; T6 y T7 en paralelo (archivos separados); T8 tras T7; T9 cuando T6 y T8 estén verdes. Revisión cruzada: cada uno revisa los PR del otro.
 - **Infra (Jorge):** T10 en paralelo desde el inicio; bloquea solo E2E en el dominio HTTPS y el branding.
 - **Corte de H3 (14-oct 20:00):** T1–T10. **H4:** T11–T13 solo si T1–T10 están en `develop`.
 - **Dependencia parcial de 004 y 005:** solo su frontend conectado a la API espera a T5–T8 (y a T1–T2 para `/me`); la API de campo, el simulador, los KPI y la exportación no esperan a 013, y H4 (T11–T13) no bloquea a nadie.

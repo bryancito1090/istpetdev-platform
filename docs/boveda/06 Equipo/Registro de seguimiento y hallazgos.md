@@ -1,7 +1,7 @@
 ---
 tipo: registro-ejecucion
 estado: pendiente
-actualizado: 2026-10-12
+actualizado: 2026-10-13
 tags: [equipo, seguimiento, pruebas, hallazgos]
 ---
 
@@ -32,12 +32,14 @@ Estados operativos para este tablero: pendiente, entregado, integrado, verificad
 
 | Spec | Responsable / revisor | Estado de esta campaña | Commit/PR | Comando y evidencia | Pendientes |
 |---|---|---|---|---|---|
+| 000 | Anthony Pilatasig / PENDIENTE | Pendiente | PENDIENTE | [spec 000](../../specs/000-gestion-dependencias-seguridad-monorepo/spec.md) | Inventario de dependencias, remediación, CI de auditoría; pnpm es P2 |
 | 001 | PENDIENTE / PENDIENTE | Pendiente de revalidación integrada | PENDIENTE | Referencia previa: [verification.md](../../specs/001-nucleo-delgado-importador/verification.md), 115 pruebas locales | Simulacro humano, identidad/entorno reales y cierre documentado |
 | 002 | AnthonyPilatasig / Bryan | Verificado localmente (T0-T10 completadas) | Issue #24 | `dotnet test` (67/67 pruebas de logística con 0 fallos: suites unitaria, integración, rendimiento y E2E completas) | Ninguno (Listo para PR a develop tras revisión de pares) |
 | 003 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Workflows, M2M y aceptación real |
 | 004 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-12 a ALK-23) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Despacho, PWA offline, S3 y E2E |
-| 005 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-24 a ALK-35) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Panel FSD, simulación 90d y exportador |
-| 006 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Preparación/ensayos; entrevistas y entrega en evento |
+| 005 | Alexander Martínez o Bryan Doicela (cualquiera de los dos) / Por asignar | En ejecución (Linear ALK-24 a ALK-35) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Panel FSD, simulación 90d y exportador |
+| 006 | Todo el equipo (quien la tome) / revisión cruzada | Pendiente | PENDIENTE | [spec 006](../../specs/006-validacion-pitch-entrega/spec.md) | Preparación/ensayos; entrevistas y entrega en evento |
+| 013 | Alexander Martínez y Joseph Baño / revisión cruzada | Pendiente (#42; infraestructura en #43) | PENDIENTE | [spec 013](../../specs/013-login-y-cuentas/spec.md) | H1–H3 antes de H3 (paso previo de #33 y 005); H4 en P2; decisión ADR-25 y PA-04 |
 
 ## Registro de pruebas
 

@@ -4,6 +4,7 @@ titulo: Gestión verificable de dependencias y vulnerabilidades del monorepo Nod
 estado: borrador
 creado: 2026-10-13
 actualizado: 2026-10-13
+responsable: Anthony Pilatasig
 aprobado_por: PENDIENTE
 depende_de: []
 boveda: ["03 Arquitectura/Decisiones de arquitectura", "03 Arquitectura/Verificacion de seguridad antes del lanzamiento", "03 Arquitectura/Frontend y componentes"]

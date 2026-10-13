@@ -4,7 +4,7 @@ titulo: Panel web y simulador comparativo de 90 días con KPIs
 estado: borrador
 creado: 2026-10-12
 actualizado: 2026-10-13
-responsable: Alexander Martínez
+responsable: Alexander Martínez o Bryan Doicela   # cualquiera de los dos puede tomar cada tarea (asignación de Joseph Baño, 13-oct)
 aprobado_por: PENDIENTE
 depende_de: [001, 002, 003, 004, "013 (parcial: H1–H3, solo FR-05)"]   # simulador, KPI y exportación no esperan a 013; solo el panel conectado a la API
 boveda: ["04 Datos y algoritmos/Simulador y metricas", "04 Datos y algoritmos/Dataset y escenarios", "04 Datos y algoritmos/Rutas y sobrecostos", "06 Equipo/Definiciones de producto y plan hasta el pitch"]
