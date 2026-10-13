@@ -288,4 +288,10 @@ Fuente: solicitud de Alexander Martínez de asumir la implementación de los spe
 
 Verificación documental de esta actualización: **82 notas Markdown**, **797 enlaces internos resueltos**, **0 errores**.
 
+## Segregación de roles por plataforma y ADR-24 — 13 de octubre de 2026
+
+Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y Móvil (PWA de Campo), incorporar el rol y flujo ágil de Receptor Hospitalario y retirar accesos públicos prematuros. Se actualiza [[Usuarios y flujos]], [[Decisiones de arquitectura]] con ADR-24 y ADR-25, y se genera [[2026-10-13-informe-segregacion-roles-y-plataformas]].
+
+Verificación documental de esta actualización: **83 notas Markdown**, **798 enlaces internos resueltos**, **0 errores**.
+
 

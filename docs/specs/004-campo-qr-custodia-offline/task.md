@@ -111,6 +111,7 @@
 - [ ] Endpoint `GET /api/v1/mobile/assignments` y generador de eventos en backend C# (bloqueado por backend).
 - [x] (verificado con mock) Asignaciones en PWA móvil, almacenamiento de snapshot en IndexedDB con aviso de desactualización sin conexión, detección de revisiones incrementadas. Commit `648bad8`.
 - [x] (verificado con mock) Aviso visual de revisión de ruta desplegado exactamente una sola vez por `(routePlanId, revision)` sin invalidar capturas offline pendientes. Commit `648bad8`.
+- [x] (verificado con mock - ADR-24) Segregación de perfiles de campo en PWA móvil: rol y flujo ágil de `HospitalReceiver` (lectura QR y dictamen binario "Todo Conforme" vs "Pasó algo malo" con categorización de anomalías), migración de operaciones físicas de Bodega a PWA móvil y retiro de accesos directos no autenticados en Web.
 - [ ] Endpoint `GET /api/v1/deliveries` con paginación para panel 005 en backend C# (bloqueado por backend).
 
 ### T9 — Integración completa y regresiones
