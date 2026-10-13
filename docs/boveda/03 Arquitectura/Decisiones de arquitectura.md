@@ -37,6 +37,7 @@ tags: [arquitectura, contratos]
 | ADR-24 | Segregación de Plataformas y Roles de Campo | Web (Torre de Control) vs Móvil (Campo) y Recepción Hospitalaria QR | **Aceptada, 2026-10-13** (Deciders: Bryan y Equipo de Desarrollo): Bodega, Conductor y Receptor operan exclusivamente en PWA móvil (`apps/mobile`); Planificador, Gerencia y Auditor en Web (`apps/web`); Automatización como daemon sin interfaz. Recepción hospitalaria mediante verificación binaria y reporte ágil de novedades. |
 | ADR-25 | Ergonomía PWA y flujos por rol | Roles segregados, entrega desde ruta, lectura asimétrica QR y cero emojis | **Aceptada por Bryan y equipo, 2026-10-13**: Vistas exclusivas por rol (Chofer, Bodega, Supervisor); chofer simplificado a 3 botones; entrega iniciada desde parada en «Ver Ruta Hoy»; lectura asimétrica de QR (chofer lee caja en bodega, hospital lee al chofer); incidencias en entrega conectadas a alertas de supervisión; prohibición estricta de emojis por SVGs técnicos. |
 | ADR-26 | Rol Auditor de solo lectura | Séptimo rol fijo, humano, con lectura total en la web y ninguna escritura | **Aceptada por Joseph Baño, 2026-10-13** (sesión de definición del spec 013): formaliza el Auditor que ADR-24 ya asigna a la web; amplía los roles fijos de ADR-21 sin migración; [ADR-26](#adr-26--rol-auditor-de-solo-lectura) |
+| ADR-27 | Integración Fullstack de Campo y Revisiones Dinámicas | Adaptadores HTTP reales, outbox hospitalario y cálculo dinámico de revisiones | **Aceptada por Bryan y Alexander Martínez, 2026-10-13**: Migración EF Core FieldOperations aplicada, endpoints C# (Deliveries, HandlingUnits, Evidence, PublicTrace con rate limiter, Demo Advance), adaptadores HttpFieldApiService en móvil/web, outbox hospitalario atómico y cálculo dinámico de revisiones en RoutePlansController. |
 
 ## ADR-01 — versión de backend
 
@@ -357,3 +358,40 @@ Se acepta cuando: (1) `Roles.cs` incluye `Auditor`; (2) una prueba de integraci�
 | A. No agregarlo | Obliga a dar permisos de escritura a quien solo revisa |
 | C. Lectura acotada | Exige pantallas nuevas antes del congelamiento sin ganancia visible para el jurado |
 | Lectura + exportación | La exportación todavía no existe (la planifica 005); se reconsidera después del evento |
+
+## ADR-27 — Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Alexander Martínez. **Origen:** Culminación del Spec 004, integración frontend-backend y preparación del panel 005. **Complementa:** ADR-04, ADR-14, ADR-21, ADR-24, ADR-25 y ADR-26.
+
+### Contexto y requisito
+Tras validar la lógica de interfaces y outbox offline bajo arquitectura frontend-first con simulación in-browser (IndexedDB), se requería completar la integración real con el backend C# .NET:
+1. Conectar adaptadores HTTP en la PWA móvil y consola web a la API real en `http://localhost:5000`.
+2. Habilitar la persistencia durable de operaciones de campo (`FieldOperations` con `HandlingUnit`, `QrAccessToken`, `IdempotencyRecord`).
+3. Conectar la recepción hospitalaria directamente con la contabilidad de inventario en servidor.
+4. Resolver la comunicación fluida del panel web de rutas (`/rutas`) con el motor logístico, proveyendo cálculo dinámico de revisiones de planes y enriquecimiento de nombres de puntos de servicio.
+
+### Decisión
+1. **Migración EF Core `FieldOperations`:**
+   Se aplicó la migración `20261013202540_FieldOperations` incorporando entidades de campo al esquema delgado (`LeanSchema`), preservando el aislamiento y la idempotencia compuesta `(OrganizationId, ActorId, Action, OperationId)`.
+2. **Endpoints de Campo en C#:**
+   Se expusieron e implementaron en controladores dedicados:
+   - `DeliveriesController`: `POST /deliveries/{id}/handling-units`, `POST /deliveries/{id}/dispatch`, `POST /deliveries/{id}/receipts`, `GET /deliveries` paginado.
+   - `EvidenceController`: `POST /receipts/{id}/evidence-uploads`, `POST /receipts/{id}/evidence-confirm`.
+   - `PublicTraceController`: `GET /public/trace/{unitId}` con `PublicTraceRateLimiter` y sanitización del fragmento `#t=`.
+   - `MobileAssignmentsController`: `GET /mobile/assignments`.
+   - `DemoController`: `POST /demo/route-plans/{id}/advance` ejecutando la cadena contable real.
+3. **Adaptadores HTTP y Conexión Real en Móvil y Web:**
+   - En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` está habilitada por defecto a través de `HttpFieldApiService`, conservando el mock simulado solo como plan de contingencia offline con `?mock=true`.
+   - En `apps/mobile` (componente principal `HomePage`), el rol receptor hospitalario genera transacciones atómicas `saveReceiptAtomic` que persisten y transmiten de forma idempotente al backend.
+4. **Cálculo Dinámico de Revisiones y Enriquecimiento de Rutas en `RoutePlansController`:**
+   - La creación de planes en `RoutePlansController.cs` calcula dinámicamente la revisión incrementada (`existingMaxRevision + 1`) para el código base del día.
+   - Las lecturas de ruta devuelven el conteo real de paradas (`stopsCount`) y asocian los códigos y nombres legibles de cada `ServicePoint`, permitiendo que el panel web (`rutas.page.ts`) y su mapa muestren retroalimentación inmediata, alertas de éxito y navegación reactiva.
+
+### Consecuencias
+- Flujo end-to-end 100% operativo sin maquetas obligatorias: desde la propuesta del motor logístico hasta la recepción hospitalaria y la consulta pública por QR.
+- Consistencia contable entre la PWA móvil y el ledger de inventario de PostgreSQL.
+- Eliminación de errores de deserialización y desajustes DTO en el frontend (`PublicTraceResponseDto`, `RoutePlanDetailDto`).
+
+### Verificación
+- Suite unitaria .NET: 116 pruebas aprobadas con 0 fallos (`FieldUnitTests`, `PublicTraceUnitTests`).
+- Verificación frontend (`npm run check`): 0 errores de ESLint, TypeScript y Angular build tanto en `@istpetdev/web` como en `@istpetdev/mobile`.

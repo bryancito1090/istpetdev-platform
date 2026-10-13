@@ -340,23 +340,39 @@ export class LoginPage implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    setTimeout(() => {
-      if (role === 'driver') {
-        this.authService.loginAsDriver();
-      } else if (role === 'warehouse') {
-        this.authService.loginAsWarehouse();
-      } else if (role === 'manager') {
-        this.authService.loginAsManager();
-      } else if (role === 'receiver') {
-        this.authService.loginAsReceiver();
-      }
+    const apiRoleMap: Record<string, string> = {
+      driver: 'Conductor',
+      warehouse: 'Bodega',
+      manager: 'Planificador',
+      receiver: 'Receptor'
+    };
 
-      this.loading.set(false);
-      this.successMessage.set('Acceso concedido. Redirigiendo a operaciones de campo...');
-      setTimeout(() => {
-        this.router.navigate(['/home']);
-      }, 300);
-    }, 350);
+    this.authService.loginViaApi({ role: apiRoleMap[role] }).subscribe({
+      next: (ok) => {
+        if (!ok) {
+          if (role === 'driver') this.authService.loginAsDriver();
+          else if (role === 'warehouse') this.authService.loginAsWarehouse();
+          else if (role === 'manager') this.authService.loginAsManager();
+          else if (role === 'receiver') this.authService.loginAsReceiver();
+        }
+        this.loading.set(false);
+        this.successMessage.set('Acceso concedido. Redirigiendo a operaciones de campo...');
+        setTimeout(() => {
+          this.router.navigate(['/home']);
+        }, 300);
+      },
+      error: () => {
+        if (role === 'driver') this.authService.loginAsDriver();
+        else if (role === 'warehouse') this.authService.loginAsWarehouse();
+        else if (role === 'manager') this.authService.loginAsManager();
+        else if (role === 'receiver') this.authService.loginAsReceiver();
+        this.loading.set(false);
+        this.successMessage.set('Acceso concedido (Modo Local). Redirigiendo...');
+        setTimeout(() => {
+          this.router.navigate(['/home']);
+        }, 300);
+      }
+    });
   }
 
   onSubmit(event: Event): void {
@@ -370,18 +386,39 @@ export class LoginPage implements OnInit {
     }
 
     this.loading.set(true);
-    setTimeout(() => {
-      const res = this.authService.loginWithCredentials(this.email, this.password);
-      this.loading.set(false);
-
-      if (res.success) {
-        this.successMessage.set('Inicio de sesión exitoso. Redirigiendo...');
-        setTimeout(() => {
-          this.router.navigate(['/home']);
-        }, 300);
-      } else {
-        this.errorMessage.set(res.error || 'Credenciales inválidas.');
+    this.authService.loginViaApi({ email: this.email, password: this.password }).subscribe({
+      next: (ok) => {
+        if (ok) {
+          this.loading.set(false);
+          this.successMessage.set('Inicio de sesión exitoso. Redirigiendo...');
+          setTimeout(() => {
+            this.router.navigate(['/home']);
+          }, 300);
+        } else {
+          const res = this.authService.loginWithCredentials(this.email, this.password);
+          this.loading.set(false);
+          if (res.success) {
+            this.successMessage.set('Inicio de sesión exitoso (Modo Local). Redirigiendo...');
+            setTimeout(() => {
+              this.router.navigate(['/home']);
+            }, 300);
+          } else {
+            this.errorMessage.set(res.error || 'Credenciales inválidas.');
+          }
+        }
+      },
+      error: () => {
+        const res = this.authService.loginWithCredentials(this.email, this.password);
+        this.loading.set(false);
+        if (res.success) {
+          this.successMessage.set('Inicio de sesión exitoso (Modo Local). Redirigiendo...');
+          setTimeout(() => {
+            this.router.navigate(['/home']);
+          }, 300);
+        } else {
+          this.errorMessage.set('Error de conexión con el servidor.');
+        }
       }
-    }, 450);
+    });
   }
 }

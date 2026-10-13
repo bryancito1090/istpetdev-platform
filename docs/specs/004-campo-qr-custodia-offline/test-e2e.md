@@ -196,6 +196,10 @@ Una fila por escenario e intento. Resultado: `no ejecutado`, `pasó`, `falló` o
 | 2026-10-13 | 55764c4 | Navegador Web - Mock Public Trace | E2E-07 | pasó (simulado) | QR hash #t= sanitizado con history.replaceState y DTO mínimo | Desarrollador Frontend |
 | 2026-10-13 | 55764c4 | Navegador Web / PWA - Auth Guards | E2E-08 | pasó (simulado) | Guards por rol, cero tokens en IndexedDB persistente | Desarrollador Frontend |
 | 2026-10-13 | 55764c4 | Navegador Web / PWA - OIDC PKCE | E2E-09 | pasó (simulado) | Configuración angular-auth-oidc-client y ngsw listos | Desarrollador Frontend |
-| 2026-10-13 | 55764c4 | Entorno Real Backend C# / DB / S3 | E2E-01 a E2E-10 | bloqueado | Requiere endpoints reales en .NET y AWS S3 físico | Pendiente Backend/Infra |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-01 | pasó (backend real) | Preparación de caja, hash SHA-256 de token QR y despacho atómico transaccional | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-03 | pasó (backend real) | Idempotencia verificada en IdempotencyRecord y respuesta sin duplicar | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-04 | pasó (backend real) | Recepción en punto, inventario conciliado y completitud de RouteStop | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-07 | pasó (backend real) | GET /public/trace/{unitId} con X-Trace-Token y proyección sin datos sensibles | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-10 | pasó (backend real) | POST /demo/route-plans/{id}/advance completando paradas reales | Alexander Martínez |
 
 **Cierre:** CE-01–CE-10 necesitan filas con evidencia. El plan B del pitch (recepción en línea o video) es contingencia, no pase de la prueba offline. Si algún recorrido obligatorio no pasa o el spec sigue sin aprobación, mantener `estado` abierto.

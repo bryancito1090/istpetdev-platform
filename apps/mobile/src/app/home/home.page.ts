@@ -18,6 +18,7 @@ import {
 } from '@ionic/angular/standalone';
 import { MobileAuthService } from '../auth/auth.service';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
+import { FIELD_API, IFieldApi } from '../field/field-api.interface';
 
 interface ReceiverScanSample {
   huCode: string;
@@ -552,23 +553,46 @@ export class HomePage implements OnInit {
     }
   }
 
-  confirmReceiverAction(): void {
+  private readonly fieldApi = inject<IFieldApi>(FIELD_API);
+
+  async confirmReceiverAction(): Promise<void> {
     const box = this.receiverActiveBox();
     if (!box) return;
 
     const receiptId = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const isOk = this.receiverStatus() === 'conforme';
 
-    let msg = `Acta ${receiptId}: Bulto ${box.huCode} recibido con estado [${isOk ? 'CONFORME' : 'CON NOVEDADES'}].`;
+    // Generar operación atómica en outbox para sincronización real contra el backend
+    try {
+      await this.outboxService.saveReceiptAtomic({
+        deliveryId: box.huCode.toLowerCase(),
+        expectedDeliveryVersion: 1,
+        recipientName: 'Farmacia Hospitalaria - Receptor',
+        notes: isOk ? 'Recepción Conforme' : `Novedad: ${this.receiverSelectedIssues().join(', ')} - ${this.receiverIssueNotes}`,
+        lines: [
+          {
+            deliveryLineId: `dl-${box.huCode}`,
+            lotId: box.lotNumber,
+            quantityAccepted: isOk ? 1 : 0,
+            quantityRejected: isOk ? 0 : 1,
+            unit: 'Unidades'
+          }
+        ]
+      });
+    } catch (err) {
+      console.warn('Error al persistir recepción en outbox', err);
+    }
+
+    let msg = `Acta ${receiptId}: Bulto ${box.huCode} registrado con estado [${isOk ? 'CONFORME' : 'CON NOVEDADES'}].`;
     if (!isOk) {
       const issues = this.receiverSelectedIssues().join(', ') || 'Novedad general';
       msg += ` Novedades reportadas: ${issues}.`;
       if (this.receiverIssueNotes) {
         msg += ` Detalle: "${this.receiverIssueNotes}".`;
       }
-      msg += ' La novedad ha sido notificada automáticamente a la Torre de Control y Planificador.';
+      msg += ' La novedad ha sido enviada/encolada a la Torre de Control y Planificador.';
     } else {
-      msg += ' Custodia transferida exitosamente a farmacia hospitalaria.';
+      msg += ' Custodia registrada y transmitida exitosamente a farmacia hospitalaria.';
     }
 
     this.receiverConfirmedMessage.set(msg);

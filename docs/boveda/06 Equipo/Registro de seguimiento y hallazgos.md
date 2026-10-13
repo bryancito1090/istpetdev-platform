@@ -36,7 +36,7 @@ Estados operativos para este tablero: pendiente, entregado, integrado, verificad
 | 001 | PENDIENTE / PENDIENTE | Pendiente de revalidación integrada | PENDIENTE | Referencia previa: [verification.md](../../specs/001-nucleo-delgado-importador/verification.md), 115 pruebas locales | Simulacro humano, identidad/entorno reales y cierre documentado |
 | 002 | AnthonyPilatasig / Bryan | Verificado localmente (T0-T10 completadas) | Issue #24 | `dotnet test` (67/67 pruebas de logística con 0 fallos: suites unitaria, integración, rendimiento y E2E completas) | Ninguno (Listo para PR a develop tras revisión de pares) |
 | 003 | AnthonyPilatasig / Bryan | En curso (T0 a T6 completadas) | Issue #36 | Suites de Agente (22/22 pruebas con 0 fallos: Persistencia 3/3, Cifras 6/6, Auth 2/2, HMAC 6/6, API 3/3, Traza 2/2) | T7 a T9 (Workflows n8n locales) |
-| 004 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-12 a ALK-23) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Despacho, PWA offline, S3 y E2E |
+| 004 | Alexander Martínez / Bryan | Verificado e integrado localmente (T0-T10 completadas) | PR #30, commits `431b792`, `08b4170` | `dotnet test` (116/116 unitarias pasan), `npm run check` (0 errores, builds web y mobile exitosos) | Ninguno (Fullstack completado: API C#, migraciones EF, PWA y Web) |
 | 005 | Alexander Martínez o Bryan Doicela (cualquiera de los dos) / Por asignar | En ejecución (Linear ALK-24 a ALK-35) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Panel FSD, simulación 90d y exportador |
 | 006 | Todo el equipo (quien la tome) / revisión cruzada | Pendiente | PENDIENTE | [spec 006](../../specs/006-validacion-pitch-entrega/spec.md) | Preparación/ensayos; entrevistas y entrega en evento |
 | 013 | Alexander Martínez y Joseph Baño / revisión cruzada | Pendiente (#42; infraestructura en #43) | PENDIENTE | [spec 013](../../specs/013-login-y-cuentas/spec.md) | H1–H3 antes de H3 (paso previo de #33 y 005); H4 en P2; decisión ADR-25 y PA-04 |
@@ -57,10 +57,7 @@ Una fila por ejecución o conjunto automatizado identificable. Usar referencias 
 | 2026-10-13 | 003 (T4: Firma HMAC-SHA256 y disparo de webhook n8n) | Issue #36 (Local xUnit) | AnthonyPilatasig / Bryan | N8nTriggerTests (6/6 pasan en 2 s). Cabeceras X-IstpetDev-Timestamp y X-IstpetDev-Signature (sha256=hex), timeout estricto de 2 s ante demoras de red, rutas separadas /watch y /incident, verificación con anti-tampering y rechazo de timestamps con deriva > 60 s sin imprimir secretos en logs. | Aprobado | N8nTrigger.cs |
 | 2026-10-13 | 003 (T5: Orquestador de ejecuciones, resolución de carreras y fallback fail-safe) | Issue #36 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | AgentRunsApiTests + AgentRunTraceTests (5/5 pasan). Transiciones de estado atómicas con UPDATE condicional; fallback determinista garantizado en <= 11 s ante agent_disabled, timeout o error de agente; resolución de carreras atómica (ganador único); rechazo con 409 Late a callbacks tardíos; traza append-only persistida. | Aprobado | AgentRunService.cs |
 | 2026-10-13 | 003 (T6: Endpoints HTTP de AgentRuns, Middleware de observabilidad y correlación) | Issue #36 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | AgentRunsApiTests (3/3 pasan) + AgentRunTraceTests (2/2 pasan). Endpoints POST /agent/runs, GET /agent/runs/{id}, GET /agent/runs, POST /agent/runs/{id}/result (202/409/422 con RBAC estricto Automatizacion) y GET /incidents/{id} expuestos; cabecera X-Agent-Run-Id trazada en middleware solo para llamadas M2M. | Aprobado | AgentRunsController.cs, AgentRunTraceMiddleware.cs, IncidentsController.cs |
-
-
-
-
+| 2026-10-13 | 004 (T0 a T10: Campo, QR, Custodia, Despacho, Recepción Hospitalaria, Outbox Offline PWA y Trazabilidad Pública) | Commits `431b792`, `08b4170`, `33bd6ab` | Alexander Martínez / Bryan | Endpoints C# (Deliveries, HandlingUnits, Evidence, MobileAssignments, PublicTrace, Demo Advance) integrados; migración FieldOperations aplicada; PWA móvil outbox atómico hospitalario conectado a API local localhost:5000; Web consola bodega conectada; trazabilidad pública con token #t= y rate limiter probada. 116 pruebas unitarias aprobadas, npm run check 0 errores. | Aprobado | Registrado en task.md, informe oficial de entrega y ADR-24/ADR-25/ADR-27 |
 
 Adjuntar resúmenes con [[Plantilla evidencia]]: datos iniciales, pasos, valores/unidades, IDs de operación y archivos anonimizados. Guardar TRX/logs bajo `artifacts/seguimiento/<sha>/`; los registros compartidos enlazan evidencia accesible sin tokens, firmas, fotos privadas ni secretos. Conservar los archivos privados en almacenamiento autorizado.
 
@@ -72,9 +69,9 @@ Estas filas provienen de [[Analisis de cobertura de specs]] y deben contrastarse
 |---|---|---|---|---|
 | SEG-01 | Estados y alcance de ADR-21; conservar RNF-14/B-40 y distinguir roles fijos de administración configurable | Coordinación / 001 | PENDIENTE | Por confirmar |
 | SEG-02 | Transición preservando migraciones frente a instrucciones anteriores de recreación de bases | 001 / infraestructura | PENDIENTE | Por confirmar |
-| SEG-03 | Interfaz de Bodega para preparación y despacho de la escena | 004 | PENDIENTE | Por confirmar |
-| SEG-04 | Contrato e interfaz de devolución física ya exigida por 004 | 004 | PENDIENTE | Por confirmar |
-| SEG-05 | Vía de upload de evidencias, límites QR y lectura de cuenta/rol para guards | 004 / infraestructura | PENDIENTE | Por confirmar |
+| SEG-03 | Interfaz de Bodega para preparación y despacho de la escena | 004 | Alexander Martínez | **Cerrado:** Implementada en `apps/web/src/pages/warehouse/warehouse.page.ts` y PWA móvil con selección de entrega, unidades QR y despacho físico conectado a backend C# `DeliveriesController`. |
+| SEG-04 | Contrato e interfaz de devolución física ya exigida por 004 | 004 | Alexander Martínez | **Cerrado:** Flujo de rechazo físico, conciliación de líneas aceptadas/rechazadas, actas de novedades y transferencia contable implementado en `FieldService.cs` y PWA móvil `HomePage`. |
+| SEG-05 | Vía de upload de evidencias, límites QR y lectura de cuenta/rol para guards | 004 / infraestructura | Alexander Martínez | **Cerrado:** Endpoints de evidencias presignadas en `EvidenceController.cs`, limitador de tasa `PublicTraceRateLimiter` para escaneos QR y guards OIDC locales en Web y Móvil. |
 | SEG-06 | Cliente M2M, credenciales autorizadas y versión de n8n local | 003 / infraestructura | PENDIENTE | Por confirmar |
 | SEG-07 | Obligaciones comunes, matriz, máquina dedicada y benchmark completo | 005 / datos | PENDIENTE | Por confirmar |
 | SEG-08 | Tratamiento explícito de RF-15/V-19: alcance actual o entrega 007 | Producto / coordinación | PENDIENTE | Por confirmar |

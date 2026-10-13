@@ -168,6 +168,14 @@ export class SessionStore {
     }
   }
 
+  setSession(user: UserSession): void {
+    this.saveState({
+      isAuthenticated: true,
+      user,
+      lastLoginAt: new Date().toISOString()
+    });
+  }
+
   logout(): void {
     this.saveState({
       isAuthenticated: false,

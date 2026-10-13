@@ -1,5 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable, catchError, map, of } from 'rxjs';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import {
   FieldUserRole,
@@ -18,6 +20,7 @@ const VOLATILE_SESSION_KEY = 'istpetdev_volatile_mobile_session';
 })
 export class MobileAuthService {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly oidcSecurityService = inject(OidcSecurityService, { optional: true });
 
   /**
@@ -147,6 +150,48 @@ export class MobileAuthService {
   }
 
   /**
+   * Intenta autenticar contra el backend API emitiendo un JWT real.
+   * Si el backend responde, guarda el token real en memoria volátil; si falla, aplica fallback.
+   */
+  loginViaApi(credentials: { email?: string; password?: string; role?: string }): Observable<boolean> {
+    return this.http.post<any>('http://localhost:5000/api/v1/auth/login', credentials).pipe(
+      map(res => {
+        if (res && res.accessToken) {
+          const mappedRole = this.mapBackendToFieldRole(res.user?.role);
+          const profile: MobileUserProfile = {
+            id: res.user?.id || 'usr-mobile',
+            name: res.user?.name || 'Personal Institucional',
+            email: res.user?.email || 'personal@istpetdev.ec',
+            role: mappedRole,
+            roleLabel: res.user?.roleLabel || 'Personal de Campo',
+            vehicleId: mappedRole === 'CarrierDriver' ? 'VH-EC-101' : undefined,
+            warehouseId: mappedRole === 'WarehouseOperator' ? 'WH-CENTRAL-01' : undefined,
+            avatarInitials: (res.user?.name || 'PI').substring(0, 2).toUpperCase()
+          };
+
+          this.persistVolatileSession({
+            isAuthenticated: true,
+            user: profile,
+            accessToken: res.accessToken,
+            expiresAtUtc: new Date(Date.now() + (res.expiresIn || 28800) * 1000).toISOString()
+          });
+          return true;
+        }
+        return false;
+      }),
+      catchError(() => of(false))
+    );
+  }
+
+  private mapBackendToFieldRole(role?: string): FieldUserRole {
+    if (role === 'Bodega') return 'WarehouseOperator';
+    if (role === 'Conductor') return 'CarrierDriver';
+    if (role === 'Receptor') return 'HospitalReceiver';
+    if (role === 'Planificador' || role === 'Gerencia') return 'LogisticsManager';
+    return 'CarrierDriver';
+  }
+
+  /**
    * Autenticación mediante credenciales institucionales (correo y contraseña).
    */
   loginWithCredentials(email: string, password: string): { success: boolean; error?: string } {
@@ -164,6 +209,8 @@ export class MobileAuthService {
       profile = DEMO_WAREHOUSE_PROFILE;
     } else if (trimmed.includes('supervisor') || trimmed.includes('manager') || trimmed.includes('santiago')) {
       profile = DEMO_MANAGER_PROFILE;
+    } else if (trimmed.includes('receptor') || trimmed.includes('marco')) {
+      profile = DEMO_RECEIVER_PROFILE;
     } else {
       profile = {
         ...DEMO_DRIVER_PROFILE,
