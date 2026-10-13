@@ -213,3 +213,8 @@ Fuente: revisión del spec 005 tras su integración. Correcciones previas a cual
 
 Verificación de la actualización: **75 notas Markdown**, **666 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
 
+## Propuesta documental del spec 006 — 12 de octubre de 2026
+
+Fuente: brainstorming con el equipo sobre validación, pitch y paquete. Se redactaron los cuatro archivos del [spec 006](../../specs/006-validacion-pitch-entrega/spec.md), guion 3/5/7, hoja de entrevista consentida, banco de veinte preguntas, ficha de piloto, matriz de afirmaciones y contingencias. La investigación [SERCOP](SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) consultada el 12-oct encuentra obligaciones y sanciones en fichas oficiales, pero no un costo observado de quiebre ni ahorro atribuible al proyecto. Son propuestas con Deciders pendientes; no hay entrevistas, ensayos, aprobación de CE de 001–005 ni materiales entregados.
+
+Verificación de esta actualización: **76 notas Markdown**, **676 enlaces internos resueltos**, **0 errores**. El aviso previo de lenguaje en el guion fue corregido; permanecen dos avisos anteriores en notas no editadas por este spec.

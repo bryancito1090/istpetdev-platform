@@ -193,6 +193,16 @@ El simulador corre como trabajo asíncrono dentro de la API, en base de simulaci
 
 La redacción del E2E detectó otro bloqueo: la tarea T7 de 001 borraba runs/métricas de simulación al ejecutar el reset. El contrato de reset de 001 se corrige en este PR para conservar evidencia completada; el 005 conserva eventos/ZIP y E2E-04/E2E-07 comprueban que la escena puede reiniciarse sin perder el resultado del pitch. Sigue siendo una corrección documental pendiente de implementación.
 
+## Decisiones de validación y pitch (spec 006)
+
+**Propuesta del 12-oct-2026; Deciders PENDIENTE.** El [spec 006](../../specs/006-validacion-pitch-entrega/spec.md) prepara entregables y ensayos, no software. Guion maestro de cinco minutos con cortes a tres y siete, siempre en orden del Anexo 5.7 y con objetivo de tiempo oficial menos 20 s. O-04/O-06 siguen abiertos. Se planean editable y PDF local; antes de crear slides se revisa el flujo Artifacts/Slides del entorno. No hay presentación final creada en esta sesión.
+
+El QR del jurado cierra la demo cerca del minuto 3:10 en la versión de cinco minutos, si 004 CE-07 pasa en un teléfono externo; el fallback ensayado usa teléfono del equipo o captura rotulada. El impacto separa rango de tres seeds base del caso adverso y dice «90 días sintéticos; no ahorro observado», solo con ZIP verificado por FR-21 y CE-04/06/09 de 005. El relato distingue `demo-region` en vivo de la escala nacional simulada. El [guion](../07%20Demo/Guion%20del%20pitch.md) conserva `[CITA DE LA FERIA]`, `[RESULTADO DEL SIMULADOR]` y `[PRECIO]` hasta tener evidencia; un hueco sin sustento se retira del material final.
+
+Dos integrantes harán entrevistas solo durante el evento y volverán con prototipo, según D2. No se asignan personas por suposición: narración, web, móvil, técnica y negocio quedan [PENDIENTE: nombres del equipo]. La ficha de piloto propone cuatro semanas y una bodega, con contraparte, precio, costos y umbrales por validar. La búsqueda [SERCOP](../99%20Fuentes/SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) encontró fichas con sanciones contractuales, no costo observado de un quiebre ni multa evitada. Diez ensayos consecutivos, dos últimos sin wifi del recinto, video del 15-oct después de ensayo funcional, tag `pre-evento` y congelamiento de materiales el 17-oct a las 15:45 siguen como metas, no ejecuciones.
+
+**⚠️ Contradicción detectada** — Hecho nuevo: vivo regional y simulación nacional se nombran por separado. · Hecho establecido: el texto base anterior de [[Guion del pitch]] comienza con 80 puntos sin esa distinción. · Impacto: posible confusión del jurado. · Opciones: aclarar la frase o conservarla. · Propuesta: usar el complemento fechado del 006 y retirar la frase ambigua de las diapositivas.
+
 ## Pendientes de esta sesión
 
 - Confirmar quién decide D1–D8 y ADR-21 a ADR-23.
