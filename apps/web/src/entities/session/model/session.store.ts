@@ -43,6 +43,36 @@ export const DEMO_PROFILES: Record<UserRole, UserSession> = {
     facility: 'IstpetDev DevOps & Cloud Hub',
     avatarInitials: 'BL',
     token: 'jwt-mock-admin-token'
+  },
+  WarehouseOperator: {
+    id: 'usr-wh-ec-002',
+    name: 'Elena Bodega',
+    email: 'elena.bodega@istpetdev.ec',
+    role: 'WarehouseOperator',
+    roleLabel: 'Operador de Bodega y Rotulado',
+    facility: 'Centro Logístico Principal Quito (HUB-UIO)',
+    avatarInitials: 'EB',
+    token: 'jwt-mock-warehouse-token'
+  },
+  CarrierDriver: {
+    id: 'usr-driver-ec-001',
+    name: 'Carlos Chofer',
+    email: 'carlos.chofer@istpetdev.ec',
+    role: 'CarrierDriver',
+    roleLabel: 'Conductor de Custodia en Ruta',
+    facility: 'Ruta Activa Sierra Centro',
+    avatarInitials: 'CC',
+    token: 'jwt-mock-driver-token'
+  },
+  LogisticsManager: {
+    id: 'usr-mgr-ec-003',
+    name: 'Santiago Supervisor',
+    email: 'santiago.supervisor@istpetdev.ec',
+    role: 'LogisticsManager',
+    roleLabel: 'Supervisor de Logística y Despacho',
+    facility: 'Oficina Central de Operaciones',
+    avatarInitials: 'SS',
+    token: 'jwt-mock-manager-token'
   }
 };
 

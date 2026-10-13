@@ -1,16 +1,25 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideIonicAngular } from '@ionic/angular/standalone';
+import { provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
+import { authInterceptor, mobileOidcConfig } from './auth';
+import { FIELD_API } from './field/field-api.interface';
+import { MockFieldApiService } from './field/mock/mock-field-api.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideIonicAngular({
       mode: 'md'
-    })
+    }),
+    provideAuth(mobileOidcConfig),
+    {
+      provide: FIELD_API,
+      useClass: MockFieldApiService
+    }
   ]
 };

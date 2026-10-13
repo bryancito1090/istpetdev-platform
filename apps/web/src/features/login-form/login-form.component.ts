@@ -132,6 +132,7 @@ export class LoginFormComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly demoRoles = [
+    { key: 'WarehouseOperator' as UserRole, name: 'Operador Bodega (Campo)', email: DEMO_PROFILES.WarehouseOperator.email },
     { key: 'OPERADOR' as UserRole, name: 'Operador Logístico', email: DEMO_PROFILES.OPERADOR.email },
     { key: 'SUPERVISOR' as UserRole, name: 'Supervisor Médico', email: DEMO_PROFILES.SUPERVISOR.email },
     { key: 'AUDITOR' as UserRole, name: 'Auditor Custodia', email: DEMO_PROFILES.AUDITOR.email }
