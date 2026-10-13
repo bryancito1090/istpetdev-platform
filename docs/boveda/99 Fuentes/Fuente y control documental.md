@@ -218,3 +218,26 @@ Verificación de la actualización: **75 notas Markdown**, **666 enlaces interno
 Fuente: brainstorming con el equipo sobre validación, pitch y paquete. Se redactaron los cuatro archivos del [spec 006](../../specs/006-validacion-pitch-entrega/spec.md), guion 3/5/7, hoja de entrevista consentida, banco de veinte preguntas, ficha de piloto, matriz de afirmaciones y contingencias. La investigación [SERCOP](SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) consultada el 12-oct encuentra obligaciones y sanciones en fichas oficiales, pero no un costo observado de quiebre ni ahorro atribuible al proyecto. Son propuestas con Deciders pendientes; no hay entrevistas, ensayos, aprobación de CE de 001–005 ni materiales entregados.
 
 Verificación de esta actualización: **76 notas Markdown**, **676 enlaces internos resueltos**, **0 errores**. El aviso previo de lenguaje en el guion fue corregido; permanecen dos avisos anteriores en notas no editadas por este spec.
+
+## Runbook de DevOps y base de datos — 12 de octubre de 2026
+
+Fuente: revisión de `develop` (3cb6861) y `main` (88a2221), de `deploy.yml`, del compose de producción, del Terraform de `dev`, de `scripts/backup/backup-db.sh` y de los specs 001–005, pedida por el usuario.
+
+**Hallazgos**
+- Ningún commit corrige la conexión a RDS (`Trust Server Certificate=true`) ni Swagger público.
+- El host de la app está fuera de Terraform y comparte el security group con el nodo del túnel SSM.
+- El código del SG no refleja la salida real.
+- `backup-db.sh` respalda la base `postgres` en el disco del host.
+
+**Cambios en la bóveda**
+- Se crea [[Runbook de DevOps y base de datos para la demo]], en borrador.
+- Se añaden complementos fechados a las notas que presentaban Schema95 con RLS como vigente, más los riesgos R-32 y R-33 y una nota en B-32, RNF-13 y V-37.
+
+**Issues abiertas**
+- [#14](https://github.com/bryancito1090/istpetdev-platform/issues/14): TLS, Swagger, SSH y desalineación con Terraform. Asignada a Jorge Doicela.
+- [#15](https://github.com/bryancito1090/istpetdev-platform/issues/15): respaldo y restauración antes del reset. Asignada a Bryan Baño.
+- [#16](https://github.com/bryancito1090/istpetdev-platform/issues/16): validar el runbook único. Asignada a Jorge Doicela.
+
+Es una actualización documental: no ejecuta Terraform, ni migraciones, ni respaldos. No se comprobó el estado real de AWS; los identificadores de recursos vienen de la nota Perfil A y del estado de despliegue del 8-oct.
+
+Verificación de esta actualización: **77 notas Markdown**, **714 enlaces internos resueltos**, **0 errores**. Se mantienen dos avisos previos de lenguaje.

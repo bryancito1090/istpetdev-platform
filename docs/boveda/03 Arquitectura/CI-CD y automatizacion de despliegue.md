@@ -103,7 +103,7 @@ docker compose pull --quiet
 
 # 5. Verificación de Conectividad con Amazon RDS (Perfil A Reforzado)
 # La persistencia está gestionada en Amazon RDS PostgreSQL 16 (istpetdev-rds-dev en VPC privada).
-# La API .NET valida el esquema de 95 tablas y la salud en el endpoint /health/ready.
+# La API .NET aplica las migraciones pendientes y expone la salud en /health/ready (con el spec 001: núcleo DemoCore sin RLS).
 
 # 6. Recreación Atómica de Contenedores de Aplicación
 docker compose up -d --force-recreate --remove-orphans istpetdev-backend istpetdev-web
@@ -263,7 +263,8 @@ Se elevaron los workflows de GitHub Actions al estándar enterprise basado en pa
    - `deploy.yml`: Opera exclusivamente sobre la rama `main` (y `workflow_dispatch`), garantizando que solo 1 despliegue a producción se ejecute por ciclo de entrega, evitando ejecuciones duplicadas o concurrencia innecesaria sobre los contenedores del host.
 
 8. **Comprobación de Integridad de Datos en la Compuerta de QA**:
-   - En cada ejecución del pipeline de despliegue, el job `backend-qa` ejecuta `tools/Schema95Check` para verificar que las 95 tablas, el aislamiento tenant RLS, claves foráneas, tipos y snapshots se mantengan conformes antes de proceder a la construcción de contenedores Docker.
+   - Hoy, el job `backend-qa` ejecuta `tools/Schema95Check` para verificar que las 95 tablas, el aislamiento RLS, las claves foráneas, los tipos y los snapshots siguen conformes antes de construir los contenedores Docker.
+   - **Complemento del 12-oct:** el spec 001 (ADR-21) reemplaza ese paso por `dotnet test` (pruebas unitarias y `LeanSchemaTests` del núcleo sin Schema95) y retira las herramientas de Schema95. Plazos, responsables y demás cambios del pipeline por spec: [[Runbook de DevOps y base de datos para la demo]].
 
 ### Estructura y Taxonomía de Scripts Operativos (`scripts/`)
 
@@ -273,8 +274,8 @@ Para desacoplar la ejecución automatizada de GitHub Actions del mantenimiento m
   - `init-debian-host.sh`: Inicialización manual para servidores Debian.
   - `prune-host.sh`: Poda de almacenamiento, vaciado de `journalctl` (50M) y rotación de imágenes locales (últimas 3 versiones).
 - **`scripts/backup/`**:
-  - `backup-db.sh`: Generación manual y segura de snapshots comprimidos de PostgreSQL (`istpetdev_db`).
+  - `backup-db.sh`: volcado comprimido manual de PostgreSQL. ⚠️ Por defecto respalda la base `postgres` con `istpetadmin` y lo guarda en el disco del host stateless; la corrección está pendiente en la [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15).
 - **`scripts/deploy/`**:
   - `deploy-local-host.sh`: Despliegue y levantamiento local desatendido desde el servidor sin pasar por CI.
 - **`scripts/db/`**:
-  - Verificación de aislamiento RLS, migración personal y cheques de runtime de Schema 95.
+  - Migración personal (`migrate-personal.sh`) y, hasta el spec 001, las verificaciones de Schema95 (que se retiran con él). El spec 001 añade `reset-to-demo-core.sql`, que es destructivo y requiere un respaldo previo ([issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15)).

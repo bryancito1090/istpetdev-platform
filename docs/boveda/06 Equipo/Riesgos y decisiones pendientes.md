@@ -41,7 +41,9 @@ tags: [hackathon, istpetdev]
 | R-30 | Entrevista sin consentimiento, relación con jurado o cita fuera de contexto | Pérdida de confianza y conflicto de evaluación | Evitar organizaciones cauteladas, consentimiento separado y nota anonimizada; V-40 del 006 |
 | R-31 | Tiempo/formato oficial se confirma tarde o materiales difieren de lo ensayado | Entrega o pitch fuera de plazo | O-04/O-06, cortes 3/5/7, PDF local, diez ensayos, manifiesto y congelamiento 15:45; V-41/V-43 del 006 |
 | R-23 | IndexedDB, instalación PWA o S3 fallan en el teléfono de demo | Se pierde el momento físico o queda evidencia pendiente | Ensayo en teléfono real antes de H3; recepción en línea y video como plan B de D8; estados separados para recibo y archivos (spec 004) |
-| R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM |
+| R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM; [issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14). El SG lo comparte el nodo del túnel SSM ([[Runbook de DevOps y base de datos para la demo]]) |
+| R-32 | `reset-to-demo-core.sql` se ejecuta sin respaldo verificado o sin congelar despliegues | Pérdida de datos de integración o API caída por migraciones fallidas | Respaldo y restauración de prueba obligatorios ([issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15)) y secuencia de la sección 4 del [[Runbook de DevOps y base de datos para la demo]] |
+| R-33 | Host de la app fuera de Terraform y SG compartido con el nodo del túnel; un `terraform apply` sin revisar el plan quita la salida total del SG | Despliegue roto o nodo del túnel expuesto | No aplicar sin `terraform plan` revisado; importar el host a Terraform con SG propio ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14)) |
 
 ## Decisiones pendientes
 

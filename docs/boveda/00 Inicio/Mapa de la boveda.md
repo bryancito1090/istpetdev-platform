@@ -31,7 +31,7 @@ tags: [hackathon, equipo]
 - [[Arquitectura del sistema]], [[Decisiones de arquitectura]].
 - [[Backend y tiempo real]], [[Contratos API y eventos]].
 - [[Frontend y componentes]], [[Frontend con Feature-Sliced Design]], [[Movil offline y sincronizacion]], [[Sistema de diseno y colores]].
-- [[AWS y Terraform]], [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]], [[CI-CD y automatizacion de despliegue]], [[Hardening y seguridad de servidores]], [[Seguridad y evidencias]].
+- [[AWS y Terraform]], [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]], [[CI-CD y automatizacion de despliegue]], [[Runbook de DevOps y base de datos para la demo]], [[Hardening y seguridad de servidores]], [[Seguridad y evidencias]].
 - [[RBAC y configuracion del sistema]] — roles, permisos, campos, procesos y plantillas administrables desde DB.
 - [[Conexion PostgreSQL en DBeaver]] — conexiones de esquema/datos con los usuarios ya existentes.
 - [[Verificacion de seguridad antes del lanzamiento]] — controles complementarios con evidencia previa a exposición.
@@ -39,7 +39,7 @@ tags: [hackathon, equipo]
 ## Datos y algoritmos
 
 - [[Modelo de datos]], [[Inventario y prediccion]].
-- [[Esquema completo de base de datos]] — catálogo objetivo de tablas, columnas/relaciones, restricciones, RLS y migraciones por módulos.
+- [[Esquema completo de base de datos]] — catálogo de 95 tablas con RLS; diseño P2 desde ADR-21 (la demo usa el núcleo `DemoCore`).
 - [[Rutas y sobrecostos]], [[Simulador y metricas]], [[Dataset y escenarios]].
 - [[n8n e IA]].
 
@@ -48,7 +48,7 @@ tags: [hackathon, equipo]
 - [[Equipo y acuerdos]], [[Plan de ejecucion]], [[Backlog]].
 - [[Riesgos y decisiones pendientes]], [[Registro de trabajo previo y del evento]].
 - [[Definiciones de producto y plan hasta el pitch]] — objetivo norte, definiciones D1–D8, cortes, guardarraíles, hitos y plan B hasta el pitch (12-oct). Specs implementables en `docs/specs/` del repositorio.
-- [[Coordinacion migracion schema95]] — aplicación personal, evidencia y reparto de revisión/documentación entre agentes.
+- [[Coordinacion migracion schema95]] — histórico: aplicación personal y evidencia de Schema95.
 - [[Registro de mentorias]].
 
 ## Validación y presentación

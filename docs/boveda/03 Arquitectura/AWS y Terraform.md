@@ -1,11 +1,14 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [arquitectura, infra, aws, terraform, devops]
 ---
 
 # AWS y Terraform
+
+> [!warning] Complemento — 12 de octubre de 2026
+> El host de la app (`i-0e0a979f8c0885a4f`) se creó fuera de Terraform y comparte el security group `istpetdev-ec2-access-sg-dev` con el nodo del túnel SSM. El código del SG no coincide con las reglas reales de salida. No ejecutar `terraform apply` en `dev` sin revisar antes `terraform plan` ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14), R-33, [[Runbook de DevOps y base de datos para la demo]]).
 
 > [!warning] Ejemplo no probado
 > Los bloques de código de esta nota (configuración, scripts, YAML, HCL, comandos) son ejemplos de diseño: no se han ejecutado ni probado en un repositorio. No copiarlos como si estuvieran validados; cada uno se verifica al implementarlo y se enlaza su evidencia. Versiones, rutas y puertos vigentes: [[Hechos canonicos]].

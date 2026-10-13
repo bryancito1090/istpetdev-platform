@@ -1,11 +1,14 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [datos, algoritmo, validacion]
 ---
 
 # Modelo de datos
+
+> [!warning] Complemento — 12 de octubre de 2026
+> El esquema físico de la demo es el núcleo `DemoCore` del spec 001 (27 tablas sin RLS, ADR-21, propuesta). El catálogo de 95 tablas queda como diseño P2. Ver [[Runbook de DevOps y base de datos para la demo]].
 
 Modelo lógico inicial y reglas de dominio. El catálogo físico objetivo, con columnas, claves, índices, restricciones, RLS y orden de migración, está en [[Esquema completo de base de datos]] desde el 9 de octubre. La bóveda define diseño; la implementación vive en el repositorio de software y su estado no se deduce de estas notas.
 
