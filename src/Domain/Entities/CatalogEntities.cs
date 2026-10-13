@@ -62,6 +62,7 @@ public sealed class Lot : OrganizationEntity
 public sealed class HandlingUnit : OrganizationEntity
 {
     public string Code { get; set; } = string.Empty;
+    public Guid? DeliveryId { get; set; }
     public Guid LocationId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime? SealedAtUtc { get; set; }
@@ -70,6 +71,7 @@ public sealed class HandlingUnit : OrganizationEntity
 public sealed class HandlingUnitLine : OrganizationEntity
 {
     public Guid HandlingUnitId { get; set; }
+    public Guid? DeliveryLineId { get; set; }
     public Guid LotId { get; set; }
     public decimal Quantity { get; set; }
 }

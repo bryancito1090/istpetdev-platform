@@ -11,6 +11,7 @@ public sealed class IdempotencyRecord : OrganizationEntity
     public int? ResponseStatus { get; set; }
     public string? ResponseJson { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
+    public DateTime? RetainUntilUtc { get; set; }
 }
 
 public sealed class ImportBatch : OrganizationEntity

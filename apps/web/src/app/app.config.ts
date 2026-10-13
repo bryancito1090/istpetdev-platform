@@ -1,10 +1,16 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
 import { webOidcConfig } from '@shared/config';
-import { WEB_FIELD_API, MockWebFieldApiService } from '@shared/api';
+import { WEB_FIELD_API, MockWebFieldApiService, HttpWebFieldApiService } from '@shared/api';
+import { authInterceptor } from './providers/auth.interceptor';
+
+const useMockWebFieldApi = typeof window !== 'undefined' && (
+  window.location.search.includes('mock=true') ||
+  window.localStorage?.getItem('istpetdev:use_mock') === 'true'
+);
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,11 +23,11 @@ export const appConfig: ApplicationConfig = {
         scrollPositionRestoration: 'enabled'
       })
     ),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideAuth(webOidcConfig),
     {
       provide: WEB_FIELD_API,
-      useClass: MockWebFieldApiService
+      useClass: useMockWebFieldApi ? MockWebFieldApiService : HttpWebFieldApiService
     }
   ]
 };

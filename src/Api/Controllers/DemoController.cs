@@ -12,7 +12,10 @@ namespace IstpetDev.Api.Controllers;
 [Route("api/v1/demo")]
 [Authorize(Roles = Roles.Planning)]
 [EnableRateLimiting("imports")]
-public sealed class DemoController(IDemoResetService reset, IOptions<DemoOptions> options) : ControllerBase
+public sealed class DemoController(
+    IDemoResetService reset,
+    IstpetDev.Application.Field.IFieldService fieldService,
+    IOptions<DemoOptions> options) : ControllerBase
 {
     [HttpPost("reset")]
     public async Task<IActionResult> Reset([FromQuery] string? fixture = null, [FromBody] ResetRequest? req = null, CancellationToken cancellationToken = default)
@@ -34,6 +37,29 @@ public sealed class DemoController(IDemoResetService reset, IOptions<DemoOptions
             preset = request.Preset,
             status = "Triggered"
         });
+    }
+
+    /// <summary>
+    /// FR-16: Avanza N paradas de forma real (preparación, despacho y recepción). Solo demo y rol Planificación/Gerencia.
+    /// </summary>
+    [HttpPost("route-plans/{id:guid}/advance")]
+    public async Task<IActionResult> Advance(
+        Guid id,
+        [FromBody] IstpetDev.Application.Field.Dtos.DemoAdvanceRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!options.Value.Enabled) return NotFound();
+
+        try
+        {
+            var actorAccountId = User.AccountId() ?? DemoOrganization.Id;
+            var result = await fieldService.AdvanceDemoAsync(id, request, actorAccountId, cancellationToken);
+            return Ok(result);
+        }
+        catch (IstpetDev.Application.Field.FieldException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: ex.StatusCode, title: ex.Code);
+        }
     }
 }
 

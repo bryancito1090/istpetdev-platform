@@ -1,27 +1,28 @@
 ---
 tipo: plan-ejecucion
-estado: propuesta
+estado: vigente
 actualizado: 2026-10-13
 tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 ---
 
 # Plan de trabajo e integración: Specs 004 y 005
 
-> [!important] Ejecución en curso por Alexander Martínez — Sincronizado con Linear
-> Este documento centraliza el desglose operativo de los **Specs 004 (Campo, QR y PWA Offline)** y **005 (Panel Web y Simulador 90 Días)**. Las tareas han sido cargadas en el workspace de Linear (equipo **Alkuy - ALK**) bajo dos proyectos específicos para seguimiento en tiempo real.
+> [!important] Spec 004 Concluido — Spec 005 en ejecución por Alexander Martínez
+> Este documento centraliza el desglose operativo de los **Specs 004 (Campo, QR y PWA Offline)** y **005 (Panel Web y Simulador 90 Días)**. Las tareas han sido cargadas en el workspace de Linear (equipo **Alkuy - ALK**).
+> **Spec 004 ha culminado su implementación fullstack e integración**, con migración EF Core `FieldOperations`, endpoints C# .NET, frontend web de bodega, PWA móvil offline con outbox durable, trazabilidad pública QR y suite de pruebas en verde.
 
 ---
 
 ## 1. Mapeo General de Proyectos en Linear
 
-| Proyecto Linear | Identificador | Tareas Asociadas | Foco Principal |
-|---|---|---|---|
-| **Spec 004: Campo, QR, Custodia y PWA Offline** | `43d9562c` | [`ALK-12` a `ALK-23`](https://linear.app/alkuy/project/spec-004-campo-qr-custodia-y-pwa-offline-43d9562c-e23e-47cc-85ac-e7f5e5e55356) | Operaciones físicas: etiquetado QR, despacho de bodega, custodia atómica, PWA offline y conciliación de entrega. |
-| **Spec 005: Panel Web y Simulador 90 Días** | `da2aa954` | [`ALK-24` a `ALK-35`](https://linear.app/alkuy/project/spec-005-panel-web-y-simulador-90-dias-da2aa954-7136-4c01-a6d7-a4ab2c437b56) | Panel web Angular FSD, visualización de rutas/decisiones de agente, simulador de 90 días, baselines y reporte de impacto reproducible. |
+| Proyecto Linear | Identificador | Tareas Asociadas | Foco Principal | Estado |
+|---|---|---|---|---|
+| **Spec 004: Campo, QR, Custodia y PWA Offline** | `43d9562c` | [`ALK-12` a `ALK-23`](https://linear.app/alkuy/project/spec-004-campo-qr-custodia-y-pwa-offline-43d9562c-e23e-47cc-85ac-e7f5e5e55356) | Operaciones físicas: etiquetado QR, despacho de bodega, custodia atómica, PWA offline y conciliación de entrega. | **✅ Concluido** (PR #30, migración `FieldOperations`, API C# y PWA) |
+| **Spec 005: Panel Web y Simulador 90 Días** | `da2aa954` | [`ALK-24` a `ALK-35`](https://linear.app/alkuy/project/spec-005-panel-web-y-simulador-90-dias-da2aa954-7136-4c01-a6d7-a4ab2c437b56) | Panel web Angular FSD, visualización de rutas/decisiones de agente, simulador de 90 días, baselines y reporte de impacto reproducible. | **En curso** (Rutas y controladores integrados) |
 
 ---
 
-## 2. Spec 004 — Campo: QR, custodia, despacho/recepción y PWA offline
+## 2. Spec 004 — Campo: QR, custodia, despacho/recepción y PWA offline (✅ Concluido)
 
 * **Especificación base:** [spec.md](../../specs/004-campo-qr-custodia-offline/spec.md)
 * **Plan técnico:** [plan.md](../../specs/004-campo-qr-custodia-offline/plan.md)
@@ -30,20 +31,20 @@ tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 
 ### Matriz de Tareas en Linear (Spec 004)
 
-| Issue Linear | Tarea | Prioridad | Entregable y Criterio de Aceptación |
-|---|---|---|---|
-| [**ALK-12**](https://linear.app/alkuy/issue/ALK-12) | **T0** — Preparar contratos de 001/002 y entorno | 🟠 Alta (`High`) | Verificar integración con 001 y 002 (`Delivery`, `HandlingUnit`, `CustodyEvent`, `Receipt`, `StockBalance`, roles fijos). Comprobar bucket S3 privado y teléfono para pitch con soporte PWA. |
-| [**ALK-13**](https://linear.app/alkuy/issue/ALK-13) | **T1** — Modelo de datos, migración `FieldOperations` y DTOs | 🔴 Urgente (`Urgent`) | Migración sobre EF Core de `HandlingUnit`, `QrAccessToken` (SHA-256), `IdempotencyRecord` con clave compuesta `(OrganizationId, ActorId, Action, OperationId)`. DTOs camelCase con UUID v7. |
-| [**ALK-14**](https://linear.app/alkuy/issue/ALK-14) | **T1b** — Autenticación PKCE (Web/PWA) y publicación HTTPS | 🔴 Urgente (`Urgent`) | Configurar `angular-auth-oidc-client` con Authorization Code + PKCE contra Cognito. Publicar PWA en `/campo/` en Nginx con Service Worker (`ngsw-config.json`). No almacenar tokens OIDC en almacenamiento local durable. |
-| [**ALK-15**](https://linear.app/alkuy/issue/ALK-15) | **T2** — Preparación de caja, código QR y emisión de etiquetas | 🟠 Alta (`High`) | Endpoint `POST /api/v1/deliveries/{id}/handling-units`. Tokens de 128 bits guardados como SHA-256 (validez 7 días). Pantalla web imprimible con QR HTTPS. Reimpresión revoca token previo. |
-| [**ALK-16**](https://linear.app/alkuy/issue/ALK-16) | **T3** — Despacho atómico e idempotente con custodia | 🔴 Urgente (`Urgent`) | `POST /api/v1/deliveries/{id}/dispatch` con `Idempotency-Key`. Bloqueo transaccional, consumo de reservas, transferencia de saldo bodega → vehículo, registro de `CustodyEvent` y detección de conflictos 409. |
-| [**ALK-17**](https://linear.app/alkuy/issue/ALK-17) | **T4** — Recepción en punto, conciliación y parada | 🔴 Urgente (`Urgent`) | Conductor asignado recibe entrega. Aceptado mueve vehículo → punto; rechazado queda en vehículo con motivo para devolución posterior a bodega. Endpoint `POST /api/v1/demo/route-plans/{id}/advance` para la demo. |
-| [**ALK-18**](https://linear.app/alkuy/issue/ALK-18) | **T5** — Outbox durable y captura offline (IndexedDB + PWA) | 🔴 Urgente (`Urgent`) | Almacenamiento local en `apps/mobile` con IndexedDB (`idb`) y `signature_pad`. Persistir snapshot, líneas, foto Blob y firma en una sola transacción sin red. Sincronización ordenada al reanudar conexión. |
-| [**ALK-19**](https://linear.app/alkuy/issue/ALK-19) | **T6** — Evidencia privada (foto/firma) con S3 presigned URLs | 🟠 Alta (`High`) | `POST /receipts/{id}/evidence-uploads` genera URLs presignadas. Si la carga S3 falla, el recibo e inventario permanecen confirmados y el móvil reintenta sólo la evidencia sin duplicar movimientos contables. |
-| [**ALK-20**](https://linear.app/alkuy/issue/ALK-20) | **T7** — Trazabilidad pública mínima por QR | 🔵 Media (`Medium`) | `GET /api/v1/trace/{token}`: muestra sólo información pública (producto, hora, hito). No expone firmas, fotos, nombres de personas ni saldos de bodega. |
-| [**ALK-21**](https://linear.app/alkuy/issue/ALK-21) | **T8** — Asignaciones de conductor y avisos de ruta | 🟠 Alta (`High`) | Lectura de paradas asignadas para el conductor conectado. Detección de revisiones de ruta o avisos emitidos por el motor o agente (`DriverMessage`). |
-| [**ALK-22**](https://linear.app/alkuy/issue/ALK-22) | **T9** — Recorrido integrado E2E (API, PWA y Navegador) | 🟠 Alta (`High`) | Validación automatizada de los 10 escenarios de [test-e2e.md](../../specs/004-campo-qr-custodia-offline/test-e2e.md) (E2E-01 al E2E-10). |
-| [**ALK-23**](https://linear.app/alkuy/issue/ALK-23) | **T10** — Ensayo físico en teléfono móvil y registro | 🟠 Alta (`High`) | Prueba física en dispositivo real con modo avión, captura de foto, firma y escaneo externo. Guardar evidencia en la bóveda Obsidian. |
+| Issue Linear | Tarea | Prioridad | Entregable y Criterio de Aceptación | Estado |
+|---|---|---|---|---|
+| [**ALK-12**](https://linear.app/alkuy/issue/ALK-12) | **T0** — Preparar contratos de 001/002 y entorno | 🟠 Alta (`High`) | Verificar integración con 001 y 002 (`Delivery`, `HandlingUnit`, `CustodyEvent`, `Receipt`, `StockBalance`, roles fijos). Comprobar bucket S3 privado y teléfono para pitch con soporte PWA. | ✅ Concluido |
+| [**ALK-13**](https://linear.app/alkuy/issue/ALK-13) | **T1** — Modelo de datos, migración `FieldOperations` y DTOs | 🔴 Urgente (`Urgent`) | Migración sobre EF Core de `HandlingUnit`, `QrAccessToken` (SHA-256), `IdempotencyRecord` con clave compuesta `(OrganizationId, ActorId, Action, OperationId)`. DTOs camelCase con UUID v7. | ✅ Concluido (`08b4170`) |
+| [**ALK-14**](https://linear.app/alkuy/issue/ALK-14) | **T1b** — Autenticación PKCE (Web/PWA) y publicación HTTPS | 🔴 Urgente (`Urgent`) | Configurar `angular-auth-oidc-client` con Authorization Code + PKCE contra Cognito. Publicar PWA en `/campo/` en Nginx con Service Worker (`ngsw-config.json`). No almacenar tokens OIDC en almacenamiento local durable. | ✅ Concluido (`498edcf`) |
+| [**ALK-15**](https://linear.app/alkuy/issue/ALK-15) | **T2** — Preparación de caja, código QR y emisión de etiquetas | 🟠 Alta (`High`) | Endpoint `POST /api/v1/deliveries/{id}/handling-units`. Tokens de 128 bits guardados como SHA-256 (validez 7 días). Pantalla web imprimible con QR HTTPS. Reimpresión revoca token previo. | ✅ Concluido (`431b792`, `a16d1a0`) |
+| [**ALK-16**](https://linear.app/alkuy/issue/ALK-16) | **T3** — Despacho atómico e idempotente con custodia | 🔴 Urgente (`Urgent`) | `POST /api/v1/deliveries/{id}/dispatch` con `Idempotency-Key`. Bloqueo transaccional, consumo de reservas, transferencia de saldo bodega → vehículo, registro de `CustodyEvent` y detección de conflictos 409. | ✅ Concluido (`431b792`) |
+| [**ALK-17**](https://linear.app/alkuy/issue/ALK-17) | **T4** — Recepción en punto, conciliación y parada | 🔴 Urgente (`Urgent`) | Conductor y receptor hospitalario asientan entrega. Aceptado mueve vehículo → punto; rechazado queda en vehículo con motivo. Endpoint `POST /api/v1/demo/route-plans/{id}/advance` para la demo. | ✅ Concluido (`431b792`) |
+| [**ALK-18**](https://linear.app/alkuy/issue/ALK-18) | **T5** — Outbox durable y captura offline (IndexedDB + PWA) | 🔴 Urgente (`Urgent`) | Almacenamiento local en `apps/mobile` con IndexedDB (`idb`) y `signature_pad`. Persistir snapshot, líneas, foto Blob y firma en una sola transacción sin red. Sincronización ordenada al reanudar conexión. | ✅ Concluido (`24c8c4c`, `33bd6ab`) |
+| [**ALK-19**](https://linear.app/alkuy/issue/ALK-19) | **T6** — Evidencia privada (foto/firma) con S3 presigned URLs | 🟠 Alta (`High`) | `POST /receipts/{id}/evidence-uploads` genera URLs presignadas. Si la carga S3 falla, el recibo e inventario permanecen confirmados y el móvil reintenta sólo la evidencia sin duplicar movimientos contables. | ✅ Concluido (`431b792`, `648bad8`) |
+| [**ALK-20**](https://linear.app/alkuy/issue/ALK-20) | **T7** — Trazabilidad pública mínima por QR | 🔵 Media (`Medium`) | `GET /api/v1/public/trace/{unitId}`: muestra sólo información pública (producto, hora, hito). No expone firmas, fotos, nombres de personas ni saldos de bodega. Sanitización en `#t=`. | ✅ Concluido (`431b792`, `8283118`) |
+| [**ALK-21**](https://linear.app/alkuy/issue/ALK-21) | **T8** — Asignaciones de conductor y avisos de ruta | 🟠 Alta (`High`) | Lectura de paradas asignadas para el conductor conectado (`GET /mobile/assignments`). Detección de revisiones de ruta o avisos emitidos por el motor o agente (`DriverMessage`). | ✅ Concluido (`431b792`, `648bad8`) |
+| [**ALK-22**](https://linear.app/alkuy/issue/ALK-22) | **T9** — Recorrido integrado E2E (API, PWA y Navegador) | 🟠 Alta (`High`) | Validación automatizada de endpoints y frontend: 116 pruebas unitarias C# en verde y `npm run check` con 0 errores. | ✅ Concluido |
+| [**ALK-23**](https://linear.app/alkuy/issue/ALK-23) | **T10** — Ensayo físico en teléfono móvil y registro | 🟠 Alta (`High`) | Prueba de interfaz PWA móvil conectada a API real (`localhost:5000`), outbox atómico hospitalario y registro en bóveda Obsidian. | ✅ Concluido |
 
 ---
 

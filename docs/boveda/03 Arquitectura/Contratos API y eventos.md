@@ -146,6 +146,14 @@ Eventos adicionales propuestos: AccessChanged, ConfigurationActivated, TemplateP
 
 La actualización de plantillas requiere texto/rich content del tipo admitido; JSON válido por sí solo no permite propiedades adicionales, expressions ejecutables ni campos de dominio protegidos. Si la versión offline dejó de admitir nueva captura, responder 409 con código TEMPLATE_VERSION_CONFLICT e información suficiente para corrección dentro del ámbito permitido.
 
-## Ajustes propuestos por la revisión de specs — 12 de octubre de 2026
+## Implementación e integración de contratos del spec 004 — 13 de octubre de 2026
 
-Propuestas del spec 004 (`docs/specs/004-campo-qr-custodia-offline/`), sin implementar: la consulta pública pasa a `GET /api/v1/public/trace/{unitId}` con el token en la cabecera `X-Trace-Token`, y la URL del QR lleva el token en el fragmento (`#t=`) para que no quede en logs de acceso; se añade `POST /api/v1/demo/route-plans/{id}/advance`, solo para demo, que completa paradas con preparación, despacho y recepción reales. Contradicción registrada en [[Hechos canonicos]].
+Los contratos del spec 004 (`docs/specs/004-campo-qr-custodia-offline/`) han sido implementados e integrados en el backend C# .NET y consumidos por las aplicaciones Web y Móvil:
+- `POST /api/v1/deliveries/{id}/handling-units`: Creación de unidades de manipulación con generación de token SHA-256 efímero (`DeliveriesController`).
+- `POST /api/v1/deliveries/{id}/dispatch`: Despacho atómico e idempotente con bloqueo transaccional, deducción de reservas y transferencia de custodia de bodega a vehículo (`DeliveriesController`, `FieldService`).
+- `POST /api/v1/deliveries/{id}/receipts`: Recepción física con conciliación de líneas aceptadas/rechazadas y transferencia de inventario a punto de servicio (`DeliveriesController`, `FieldService`).
+- `POST /api/v1/receipts/{id}/evidence-uploads` y `POST /api/v1/receipts/{id}/evidence-confirm`: Generación de URLs presignadas y confirmación desacoplada de evidencias fotográficas y firmas (`EvidenceController`).
+- `GET /api/v1/public/trace/{unitId}`: Consulta pública de trazabilidad sanitaria con token en cabecera `X-Trace-Token` o query string, limitación de tasa (`PublicTraceRateLimiter`), sanitización del fragmento `#t=` en frontend y protección estricta de datos clínicos (`PublicTraceController`, `PublicTraceService`).
+- `GET /api/v1/deliveries`: Consulta paginada de entregas para la torre de control y panel 005 (`DeliveriesController`).
+- `GET /api/v1/mobile/assignments`: Asignaciones de conductor y control de revisiones incrementadas (`MobileAssignmentsController`).
+- `POST /api/v1/demo/route-plans/{id}/advance`: Avance operativo de paradas para la demo que ejecuta la cadena contable real: preparación, despacho y recepción (`DemoController`).

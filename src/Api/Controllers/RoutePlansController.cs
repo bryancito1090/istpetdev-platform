@@ -18,7 +18,8 @@ public sealed class RoutePlansController(
     IRoutePlanner planner,
     IRoutePublisher publisher,
     IReplanner replanner,
-    IExplanationTemplates templates) : ControllerBase
+    IExplanationTemplates templates,
+    IOperationalClock clock) : ControllerBase
 {
     // FR-23: Lectura para el panel 005 (no crea propuestas)
     [HttpGet]
@@ -60,16 +61,29 @@ public sealed class RoutePlansController(
             .Take(limit)
             .ToListAsync(ct);
 
+        var planIds = items.Select(p => p.Id).ToList();
+        var stopsCountDict = await db.RouteStops
+            .Where(s => planIds.Contains(s.RoutePlanId))
+            .GroupBy(s => s.RoutePlanId)
+            .Select(g => new { RoutePlanId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.RoutePlanId, g => g.Count, ct);
+
         var responseItems = items.Select(p => new
         {
             routePlanId = p.Id,
+            id = p.Id,
             code = p.Code,
             revision = p.Revision,
             status = p.Status,
+            vehicleId = p.VehicleId,
             vehicleCode = vehicles.GetValueOrDefault(p.VehicleId, ""),
             km = p.TotalKm ?? 0m,
+            totalDistanceKm = p.TotalKm ?? 0m,
             minutes = p.TotalMinutes ?? 0m,
+            totalDurationMinutes = p.TotalMinutes ?? 0m,
             cost = p.TotalCost ?? 0m,
+            plannedStartUtc = p.PlannedStartUtc,
+            stopsCount = stopsCountDict.GetValueOrDefault(p.Id, 0),
             hasApproximations = false
         });
 
@@ -94,43 +108,72 @@ public sealed class RoutePlansController(
 
         var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
 
+        var servicePointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
+        var servicePoints = await db.ServicePoints
+            .Where(sp => sp.OrganizationId == DemoOrganization.Id && servicePointIds.Contains(sp.Id))
+            .ToDictionaryAsync(sp => sp.Id, ct);
+
         return Ok(new
         {
             routePlanId = plan.Id,
+            id = plan.Id,
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
+            vehicleId = plan.VehicleId,
             vehicleCode = vehicle?.Code ?? "",
             totalKm = plan.TotalKm,
+            totalDistanceKm = plan.TotalKm ?? 0m,
             totalMinutes = plan.TotalMinutes,
+            totalDurationMinutes = plan.TotalMinutes ?? 0m,
             totalCost = plan.TotalCost,
-            stops = stops.Select(s => new
+            plannedStartUtc = plan.PlannedStartUtc,
+            stops = stops.Select(s =>
             {
-                sequenceNumber = s.SequenceNumber,
-                servicePointId = s.ServicePointId,
-                status = s.Status,
-                plannedArrivalUtc = s.PlannedArrivalUtc,
-                actualArrivalUtc = s.ActualArrivalUtc
+                servicePoints.TryGetValue(s.ServicePointId, out var sp);
+                return new
+                {
+                    sequenceNumber = s.SequenceNumber,
+                    sequence = s.SequenceNumber,
+                    servicePointId = s.ServicePointId,
+                    servicePointCode = sp?.Code ?? "",
+                    servicePointName = sp?.Name ?? sp?.Code ?? "",
+                    status = s.Status,
+                    plannedArrivalUtc = s.PlannedArrivalUtc,
+                    etaUtc = s.PlannedArrivalUtc,
+                    actualArrivalUtc = s.ActualArrivalUtc
+                };
             })
         });
     }
 
     [HttpPost]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
-    public async Task<IActionResult> CreatePlan([FromBody] PlanRequest request, CancellationToken ct = default)
+    public async Task<IActionResult> CreatePlan([FromBody] PlanRequest? request = null, CancellationToken ct = default)
     {
-        var result = await planner.PlanAsync(request, ct);
+        var req = request ?? new PlanRequest(null, null, true);
+        var result = await planner.PlanAsync(req, ct);
+
+        var planDate = req.Date ?? await clock.TodayAsync(ct);
 
         // Guardar cada ruta como un RoutePlan con estado Proposed
         var createdPlans = new List<RoutePlan>();
         foreach (var r in result.Routes)
         {
-            var code = $"PLAN-{DateTime.UtcNow:yyyyMMdd}-{r.VehicleCode}";
+            var baseCode = $"PLAN-{planDate:yyyyMMdd}-{r.VehicleCode}";
+
+            // Verificar si ya existe una revisión para este código y calcular la siguiente revisión
+            var existingMaxRevision = await db.RoutePlans
+                .Where(p => p.OrganizationId == DemoOrganization.Id && p.Code == baseCode)
+                .MaxAsync(p => (int?)p.Revision, ct) ?? 0;
+
+            var revision = existingMaxRevision + 1;
+
             var plan = new RoutePlan
             {
                 OrganizationId = DemoOrganization.Id,
-                Code = code,
-                Revision = 1,
+                Code = baseCode,
+                Revision = revision,
                 VehicleId = r.VehicleId,
                 Status = "Proposed",
                 ProposedBy = User.AccountId()?.ToString() ?? "System",
@@ -180,6 +223,7 @@ public sealed class RoutePlansController(
             routes = createdPlans.Select(p => new
             {
                 routePlanId = p.Id,
+                id = p.Id,
                 code = p.Code,
                 revision = p.Revision,
                 status = p.Status
@@ -207,6 +251,20 @@ public sealed class RoutePlansController(
         [FromBody] CompleteStopRequest? req = null,
         CancellationToken ct = default)
     {
+        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+        if (userRole == Roles.Conductor)
+        {
+            var userAccountId = User.AccountId();
+            var stopEntity = await db.RouteStops.FirstOrDefaultAsync(s => s.RoutePlanId == id && s.SequenceNumber == sequence && s.OrganizationId == DemoOrganization.Id, ct);
+            if (stopEntity == null) return NotFound();
+
+            var hasAssignedDelivery = await db.Deliveries.AnyAsync(d => d.RouteStopId == stopEntity.Id && d.AssignedAccountId == userAccountId && d.OrganizationId == DemoOrganization.Id, ct);
+            if (!hasAssignedDelivery)
+            {
+                return Forbid();
+            }
+        }
+
         var request = new CompleteStopRequest(id, sequence, req?.ActualArrivalUtc, req?.ActualDepartureUtc);
         var stop = await publisher.CompleteStopAsync(request, ct);
         return Ok(stop);

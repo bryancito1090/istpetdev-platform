@@ -301,6 +301,13 @@ Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y M
 
 Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
 
+## Culminación e integración fullstack de Spec 004 y rutas dinámicas — 13 de octubre de 2026
+
+Fuente: solicitud de Alexander Martínez de actualizar la Bóveda con la finalización del Spec 004 y los avances de la rama `test` / `feature/004-campo-qr-custodia-offline`:
+- Cierre formal de todas las tareas pendientes de Spec 004 (T0 a T10): migración `FieldOperations` en EF Core (`20261013202540_FieldOperations`), endpoints en controladores C# (`DeliveriesController`, `HandlingUnitsController`, `EvidenceController`, `MobileAssignmentsController`, `PublicTraceController`, `DemoController`), adaptador `HttpFieldApiService` conectando Web y Mobile a la API local (`http://localhost:5000`), outbox atómico hospitalario con acta formal, sanitización de token QR en `#t=` y limitador de tasa `PublicTraceRateLimiter`.
+- Enriquecimiento del panel web de rutas (`rutas.page.ts`) y motor logístico (`RoutePlansController.cs`): cálculo dinámico de revisiones de planes de ruta, conteo real de paradas (`stopsCount`), detalle de paradas con nombres legibles de puntos de servicio y banner reactivo de retroalimentación.
+- Formalización de **ADR-27** (Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas), cierre de contradicciones en [[Hechos canonicos]], actualización de [[Plan de trabajo specs 004 y 005]], mitigación de riesgos en [[Riesgos y decisiones pendientes]], cierre de hallazgos SEG-03/04/05 en [[Registro de seguimiento y hallazgos]], y actualización de entregas B-06, B-07, B-08, B-11 y B-12 en [[Backlog]].
+
 
 
 

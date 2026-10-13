@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { SessionStore, UserRole, DEMO_PROFILES } from '@entities/session';
 import { ButtonComponent, BadgeComponent, InputComponent } from '@shared/ui';
 
+import { ApiService } from '@shared/api';
+
 @Component({
   selector: 'feature-login-form',
   standalone: true,
@@ -76,7 +78,7 @@ import { ButtonComponent, BadgeComponent, InputComponent } from '@shared/ui';
               class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-3.5 h-3.5">
             <span>Recordar dispositivo</span>
           </label>
-          <span class="text-slate-400 font-mono text-[11px]">Cognito OIDC PKCE</span>
+          <span class="text-slate-400 font-mono text-[11px]">API .NET 8 • JWT RBAC</span>
         </div>
 
         <div class="pt-2">
@@ -122,6 +124,7 @@ import { ButtonComponent, BadgeComponent, InputComponent } from '@shared/ui';
 })
 export class LoginFormComponent {
   private readonly sessionStore = inject(SessionStore);
+  private readonly apiService = inject(ApiService);
   private readonly router = inject(Router);
 
   @Output() loginSuccess = new EventEmitter<void>();
@@ -154,12 +157,33 @@ export class LoginFormComponent {
 
   submitWithProfile(role: UserRole): void {
     this.loading.set(true);
-    setTimeout(() => {
-      this.sessionStore.loginAsDemo(role);
-      this.loading.set(false);
-      this.loginSuccess.emit();
-      this.router.navigate(['/dashboard']);
-    }, 400);
+    this.apiService.login({ email: this.email, password: this.password, role }).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res && res.accessToken) {
+          this.sessionStore.setSession({
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            role: role,
+            roleLabel: res.user.roleLabel,
+            facility: res.user.facility,
+            avatarInitials: res.user.name.substring(0, 2).toUpperCase(),
+            token: res.accessToken
+          });
+        } else {
+          this.sessionStore.loginAsDemo(role);
+        }
+        this.loginSuccess.emit();
+        this.router.navigate(['/inicio']);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.sessionStore.loginAsDemo(role);
+        this.loginSuccess.emit();
+        this.router.navigate(['/inicio']);
+      }
+    });
   }
 
   onSubmit(event: Event): void {
@@ -172,16 +196,51 @@ export class LoginFormComponent {
     }
 
     this.loading.set(true);
-    setTimeout(() => {
-      const res = this.sessionStore.loginWithCredentials(this.email, this.password);
-      this.loading.set(false);
-
-      if (res.success) {
-        this.loginSuccess.emit();
-        this.router.navigate(['/dashboard']);
-      } else {
-        this.errorMessage.set(res.error || 'Credenciales inválidas.');
+    this.apiService.login({ email: this.email, password: this.password }).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res && res.accessToken) {
+          const mappedRole = this.mapBackendRole(res.user.role);
+          this.sessionStore.setSession({
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            role: mappedRole,
+            roleLabel: res.user.roleLabel,
+            facility: res.user.facility,
+            avatarInitials: res.user.name.substring(0, 2).toUpperCase(),
+            token: res.accessToken
+          });
+          this.loginSuccess.emit();
+          this.router.navigate(['/inicio']);
+        } else {
+          const fallbackRes = this.sessionStore.loginWithCredentials(this.email, this.password);
+          if (fallbackRes.success) {
+            this.loginSuccess.emit();
+            this.router.navigate(['/inicio']);
+          } else {
+            this.errorMessage.set(fallbackRes.error || 'Credenciales inválidas.');
+          }
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        const fallbackRes = this.sessionStore.loginWithCredentials(this.email, this.password);
+        if (fallbackRes.success) {
+          this.loginSuccess.emit();
+          this.router.navigate(['/inicio']);
+        } else {
+          this.errorMessage.set('Error al conectar con el servidor.');
+        }
       }
-    }, 500);
+    });
+  }
+
+  private mapBackendRole(role: string): UserRole {
+    if (role === 'Planificador') return 'SUPERVISOR';
+    if (role === 'Gerencia') return 'ADMIN';
+    if (role === 'Bodega') return 'WarehouseOperator';
+    if (role === 'Conductor') return 'CarrierDriver';
+    return 'OPERADOR';
   }
 }

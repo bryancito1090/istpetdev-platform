@@ -8,6 +8,10 @@ import { routes } from './app.routes';
 import { authInterceptor, mobileOidcConfig } from './auth';
 import { FIELD_API } from './field/field-api.interface';
 import { MockFieldApiService } from './field/mock/mock-field-api.service';
+import { HttpFieldApiService } from './field/http-field-api.service';
+
+// Por defecto conectar con la API real en localhost:5000; solo usar mock si se pasa ?mock=true en la URL
+const useMockFieldApi = typeof window !== 'undefined' && window.location.search.includes('mock=true');
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,7 +28,7 @@ export const appConfig: ApplicationConfig = {
     }),
     {
       provide: FIELD_API,
-      useClass: MockFieldApiService
+      useClass: useMockFieldApi ? MockFieldApiService : HttpFieldApiService
     }
   ]
 };
