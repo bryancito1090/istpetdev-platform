@@ -16,7 +16,7 @@
 | T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | completada |
 | T8 | API, autorización e inyección de dependencias | T7 | — | completada |
 | T9 | Fixture regional y calibración del incidente | T8 | — | completada |
-| T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | pendiente |
+| T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -118,10 +118,10 @@
 
 **Archivos:** crear `tests/IstpetDev.Tests/E2E/LogisticsJourneyTests.cs`, `tests/IstpetDev.Tests/Performance/LogisticsPerformanceTests.cs`; actualizar `docs/boveda/03 Arquitectura/Decisiones de arquitectura.md` según protocolo y `docs/specs/002-motor-logistico/test-e2e.md` con evidencias **solo tras ejecutarlo**.
 
-- [ ] Automatizar [E2E-01 a E2E-05](test-e2e.md) como recorridos HTTP con Testcontainers: riesgos, plan, publicación/FEFO, incidente, clasificación y opciones, aprobación/rechazo/reversión, modo `ProposeOnly`, sin red y reset. Fijar las respuestas observables sin depender de GUID generados.
-- [ ] Medir propuesta de 15 puntos/2 vehículos ≤ 1 s y 80 puntos/2 vehículos ≤ 5 s con datos sintéticos y semilla fija; excluir arranque, migración e importación del cronómetro. Registrar hardware/CI y tiempos. Probar determinismo byte a byte del JSON HTTP sobre una misma base y reloj.
-- [ ] Ejecutar `dotnet test tests/IstpetDev.Tests`, `dotnet build IstpetDev.sln` y los pasos de `test-e2e.md`; registrar hash, fecha, duración y evidencias sin tokens. Revisar los 22 FR, 6 NFR y 7 CE en la matriz de abajo; marcar gaps explícitos, no cerrar el spec con faltantes.
-- [ ] Registrar las contradicciones de mezcla de distancias, respuesta síncrona y autonomía en la bóveda; proponer ADR-22 conforme al protocolo, sin presentar aprobación implícita. Commit `test(logistics): verify end-to-end demo and performance`.
+- [x] Automatizar [E2E-01 a E2E-05](test-e2e.md) como recorridos HTTP con Testcontainers: riesgos, plan, publicación/FEFO, incidente, clasificación y opciones, aprobación/rechazo/reversión, modo `ProposeOnly`, sin red y reset. Fijar las respuestas observables sin depender de GUID generados.
+- [x] Medir propuesta de 15 puntos/2 vehículos ≤ 1 s y 80 puntos/2 vehículos ≤ 5 s con datos sintéticos y semilla fija; excluir arranque, migración e importación del cronómetro. Registrar hardware/CI y tiempos. Probar determinismo byte a byte del JSON HTTP sobre una misma base y reloj.
+- [x] Ejecutar `dotnet test tests/IstpetDev.Tests`, `dotnet build IstpetDev.sln` y los pasos de `test-e2e.md`; registrar hash, fecha, duración y evidencias sin tokens. Revisar los 22 FR, 6 NFR y 7 CE en la matriz de abajo; marcar gaps explícitos, no cerrar el spec con faltantes.
+- [x] Registrar las contradicciones de mezcla de distancias, respuesta síncrona y autonomía en la bóveda; proponer ADR-22 conforme al protocolo, sin presentar aprobación implícita. Commit `test(logistics): verify end-to-end demo and performance`.
 
 ## Matriz de cobertura
 

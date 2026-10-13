@@ -153,7 +153,7 @@ public sealed class RoutePublisher(
                 continue;
             }
 
-            var deliveryCode = $"DEL-{plan.Code}-{stop.SequenceNumber:D2}";
+            var deliveryCode = $"DEL-{plan.Code}-R{plan.Revision}-{stop.SequenceNumber:D2}";
             var delivery = new Delivery
             {
                 OrganizationId = DemoOrganization.Id,
