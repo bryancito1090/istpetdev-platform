@@ -17,6 +17,11 @@ export const routes: Routes = [
     title: 'Panel Operativo — IstpetDev Logistics'
   },
   {
+    path: 'warehouse',
+    loadComponent: () => import('@pages/warehouse').then(m => m.WarehousePage),
+    title: 'Bodega y Despacho — IstpetDev Logistics'
+  },
+  {
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
     title: 'Trazabilidad Pública — IstpetDev Logistics'

@@ -8,10 +8,15 @@
 @tailwind utilities;
 
 :root {
-  --ion-color-primary: #2563eb;
-  --ion-color-primary-rgb: 37, 99, 235;
+  --ion-color-primary: #00a7c4;
+  --ion-color-primary-rgb: 0, 167, 196;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #1d4ed8;
-  --ion-color-primary-tint: #3b82f6;
+  --ion-color-primary-shade: #008ca5;
+  --ion-color-primary-tint: #26bfd5;
+}
+
+/* Accesibilidad táctil WCAG 2.1 AA (área táctil mínima >= 44px) */
+ion-button {
+  min-height: 44px;
 }

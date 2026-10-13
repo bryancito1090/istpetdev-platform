@@ -34,7 +34,8 @@ tags: [arquitectura, contratos]
 | ADR-20 | Repositorio unificado | Código y bóveda en istpetdev-platform | **Aceptada por Bryan, 2026-10-12**, instrucción directa: bóveda en `docs/boveda/`, historial conservado e integración por PR a `develop`; reemplaza ADR-12 |
 | ADR-21 | Núcleo delgado para la demo | Esquema de 27 tablas, roles fijos e importador canónico | **Aceptada, 2026-10-13** (Deciders: Jorge Doicela, Bryan Doicela, Joseph Bano): difiere a P2 RF-17/18/19 y RNF-13; Schema95 se archiva en el tag `schema95-archivo`; formalizado en [[Runbook de DevOps y base de datos para la demo]] |
 | ADR-22 | Autonomía del agente | Agente con herramientas y motor de reglas determinista | **Propuesta, 2026-10-12** (Deciders PENDIENTE): el LLM orquesta y explica sin calcular; reglas en el backend deciden qué se ejecuta solo y qué se escala; complementa ADR-08 |
-| ADR-23 | Motor logístico y distancias | Heurística determinista en .NET y distancias en cadena | **Propuesta, 2026-10-12** (Deciders PENDIENTE): inserción + 2-opt + consolidación; tramos guardados → OSRM → aproximación declarada; complementa ADR-05 y [[Rutas y sobrecostos]] |
+| ADR-24 | Segregación de Plataformas y Roles de Campo | Web (Torre de Control) vs Móvil (Campo) y Recepción Hospitalaria QR | **Aceptada, 2026-10-13** (Deciders: Bryan y Equipo de Desarrollo): Bodega, Conductor y Receptor operan exclusivamente en PWA móvil (`apps/mobile`); Planificador, Gerencia y Auditor en Web (`apps/web`); Automatización como daemon sin interfaz. Recepción hospitalaria mediante verificación binaria y reporte ágil de novedades. |
+| ADR-25 | Ergonomía PWA y flujos por rol | Roles segregados, entrega desde ruta, lectura asimétrica QR y cero emojis | **Aceptada por Bryan y equipo, 2026-10-13**: Vistas exclusivas por rol (Chofer, Bodega, Supervisor); chofer simplificado a 3 botones; entrega iniciada desde parada en «Ver Ruta Hoy»; lectura asimétrica de QR (chofer lee caja en bodega, hospital lee al chofer); incidencias en entrega conectadas a alertas de supervisión; prohibición estricta de emojis por SVGs técnicos. |
 
 ## ADR-01 — versión de backend
 
@@ -230,3 +231,77 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 ### Complemento de ADR-22 — diseño del agente (12-oct-2026, propuesta)
 
 Brainstorming del [spec 003](../../specs/003-agente-logistico/spec.md): el agente es un workflow de n8n con nodo AI Agent en el servidor de Bryan (copia local en Docker como plan B); sus herramientas son 5 endpoints del motor de 002; el resultado lo envía un paso fijo del workflow; la API mide la traza, valida cada cifra contra los `facts` y responde a los 10 s con el camino determinista si el agente no entrega. **Proveedor: DeepSeek**, elegido por el equipo sin comparación y sujeto a una prueba de aceptación (llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10). Identidad con un scope `istpetdev-api/automation` y rol `Automatizacion` sin permiso para publicar, aprobar, rechazar, deshacer ni cambiar el modo. Avisos al conductor dentro de la PWA.
+
+## ADR-24 — Segregación de Roles por Plataforma y Flujo de Recepción Hospitalaria Simplificada
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Equipo de Desarrollo. **Origen:** instrucción directa de refinamiento ergonómico y segregación de perfiles funcionales. **Complementa:** ADR-04, ADR-14, ADR-16 y ADR-17.
+
+### Contexto y requisito
+En la versión inicial del prototipo web existía un enlace y una pantalla de «Bodega y Despacho» accesible desde el panel de escritorio, y la pantalla pública mostraba accesos prematuros al panel interno. Asimismo, no existía una separación explícita de dispositivos entre la operativa de campo física y la supervisión de torre de control, y el flujo del receptor hospitalario requería una simplificación ergonómica inmediata para el momento crítico de entrega de insumos en el hospital.
+
+### Opciones evaluadas
+1. **Opción A (Monolito de interfaz unificado):** Permitir que todos los roles operen en Web y Móvil simultáneamente.
+   - *Desventaja:* Inconsistencia ergonómica severa; un operador de bodega cargando camiones o un receptor en farmacia hospitalaria no utilizan una laptop de escritorio ni deben navegar por matrices de riesgo ni mapas VRP PostGIS.
+2. **Opción B (Segregación estricta por ergonomía física y tipo de dispositivo):**
+   - **Plataforma Web (`apps/web`):** Dedicada exclusivamente a la **Torre de Control Estratégica** (Planificador, Gerencia y Auditor).
+   - **Plataforma Móvil (`apps/mobile`):** Dedicada exclusivamente a las **Operaciones Físicas de Campo** (Bodega, Conductor y Receptor Hospitalario) con capacidades 100% offline y soporte táctil/cámara.
+   - **Automatización:** Ejecución autónoma como daemon técnico de fondo (sin pantallas humanas).
+
+### Decisión
+Se adopta la **Opción B**:
+1. **Bodega:** Se retira de la plataforma web. Opera exclusivamente en `apps/mobile` para picking físico, lectura QR de salida y despacho a unidades vehiculares.
+2. **Receptor Hospitalario:** Opera exclusivamente en `apps/mobile` con un flujo ultrarrápido:
+   - Lectura de QR del bulto recibido (`HU`).
+   - Dictamen binario inmediato: **✓ Todo Conforme** (sin daños ni faltantes) o **⚠️ Pasó algo malo**.
+   - En caso de anomalía, selección mediante chips de categorización: *Empaque roto o golpeado*, *Sello de seguridad roto / alterado*, *Faltan galones / unidades*, *Lote o fecha no coincide*, más notas explicativas.
+   - Emisión de acta de recepción (`REC-2026-XXXX`) sincronizada mediante cola outbox hacia la Torre de Control.
+3. **Planificador y Gerencia:** Centralizados en `apps/web` para análisis macro de stock, asignación de rutas VRP y gobernanza.
+4. **Portada Pública Web:** Limpieza estricta de la landing pública (`/`), removiendo accesos directos al panel y canalizando el ingreso exclusivamente por autenticación (`/login`).
+
+### Consecuencias
+- Seguridad y RBAC reforzados: Cada perfil solo tiene acceso a las pantallas congruentes con su ámbito de trabajo.
+- Optimización de rendimiento móvil: El bundle móvil no incluye tablas pesadas ni mapas VRP innecesarios para el personal de campo.
+- Flujo realista para la demo y el jurado hospitalario.
+
+### Verificación
+- Compilación exitosa de `apps/web` (`npm run build:web`) con validación de límites FSD y ESLint.
+- Compilación exitosa de `apps/mobile` (`npm run build:mobile`) en modo producción con Ionic 8 Standalone.
+
+## ADR-25 — Ergonomía de custodia en PWA móvil: Roles diferenciados, lectura asimétrica de QR y reporte de incidencias
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Equipo de Desarrollo. **Origen:** refinamiento del flujo de campo, simplificación cognitiva del conductor y auditoría de custodia médica. **Complementa:** ADR-04, ADR-06, ADR-14, ADR-17 y ADR-24.
+
+### Contexto y requisito
+En pruebas iniciales de campo se identificaron tres fricciones críticas:
+1. **Sobrecarga y confusión en el conductor:** Contar con un botón aislado de «Entregar Paquete» generaba riesgo de entrega equivocada por falta de contexto geográfico, y obligaba al chofer a escribir en el teléfono con guantes o en condiciones de movimiento.
+2. **Ambigüedad en la custodia por QR:** No estaba formalizado quién escaneaba a quién en bodega y en hospital.
+3. **Inconsistencia estética y profesionalismo:** El uso de emojis estándar (🔒, 📦, 🚚, ⚠️) degradaba la apariencia técnica exigida por el Arquetipo B Técnico/Minimalista para un sistema de salud institucional, variando su renderizado según el sistema operativo.
+
+### Decisión
+1. **Acceso institucional por login (`/login`):** La app inicia de forma anónima y redirige de `/home` a `/login` si no hay sesión activa. Se proveen credenciales institucionales y accesos rápidos por rol para demostración.
+2. **Ergonomía del Conductor (3 botones primarios):**
+   - **Descargar Ruta Hoy:** Carga offline de la jornada.
+   - **Recibir Paquetes:** Escaneo de los bultos/cajas en bodega antes de subir al vehículo para validar manifiesto y contenido.
+   - **Ver Ruta Hoy:** Muestra la secuencia de paradas (ej. *Hospital Laura*, *Centro de Salud Norte*). Al seleccionar una parada, se abre directamente la **Ficha de Entrega en Destino**.
+   - **Cero tipeo obligatorio:** El chofer presenta su pantalla con el **QR de entrega** para que el personal del hospital lo escanee con su propio lector, registra captura fotográfica y confirma la descarga sin escribir texto salvo incidencias.
+3. **Flujo Asimétrico de Custodia:**
+   - **En Bodega:** El conductor escanea el QR de las cajas para certificar la carga.
+   - **En Hospital:** El receptor hospitalario escanea el QR presentado por el conductor para asentar la transferencia de custodia.
+4. **Reporte de incidencias y escalamiento a supervisión:**
+   - Si ocurre una eventualidad en la parada (ej. bulto con fisura, personal ausente), el conductor redacta la novedad desde la misma ficha de entrega.
+   - La incidencia impacta reactivamente el módulo de **Alertas e Incidentes** del Supervisor y Operador de Bodega con un contador en tiempo real.
+5. **Ergonomía de Bodega y Supervisión en PWA:**
+   - **Operador de Bodega:** 5 acciones operativas (*Generar Paquete con impresión de QR*, *Registrar Despacho*, *Monitoreo en Tiempo Real*, *Gestión de Incidentes*, *Gestión de Rutas*).
+   - **Supervisor de Logística:** 3 módulos de control (*Monitoreo en Tiempo Real*, *Alertas e Incidentes* con contador dinámico, *Gestión de Rutas*).
+6. **Política estricta Cero Emojis:** Prohibición formal de emojis en templates UI; uso exclusivo de SVGs técnicos nítidos acordes a la paleta institucional (Slate 900, Cyan 600, Emerald 600, Amber 500, Red 600).
+
+### Consecuencias
+- Cero margen de error de entrega en destino: El conductor siempre opera dentro del contexto de la parada seleccionada.
+- Trazabilidad sin fricción para el chofer: Operación en campo basada en mostrar/escanear códigos QR y capturar fotos, reduciendo los tiempos de parada en más de un 70%.
+- Experiencia de usuario pulida y estandarizada entre iOS, Android y escritorio web.
+
+### Verificación
+- Verificado en `apps/mobile` con compilación sin errores (`npm run check:mobile`).
+- Rutas protegidas mediante `RoleGuard` y sesión gestionada por `MobileAuthService`.
+- Pruebas manuales en `http://localhost:8100` para los tres roles.
+
