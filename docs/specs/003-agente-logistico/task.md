@@ -63,9 +63,9 @@
 
 **Archivos:** crear `src/Infrastructure/Agent/N8nTrigger.cs`; modificar registro DI en `src/Infrastructure/DependencyInjection.cs`; probar en `tests/IstpetDev.Tests/Unit/Agent/N8nTriggerTests.cs`.
 
-- [ ] Pruebas rojas con servidor HTTP falso: cuerpo JSON contiene `runId`, `kind`, `incidentId`, `apiBaseUrl`, `deadlineUtc = StartedAtUtc + Agent:TimeoutSeconds`; `X-IstpetDev-Timestamp` es Unix segundos; `X-IstpetDev-Signature` equivale a `sha256=` + HMAC-SHA256 hex de `timestamp + "." + bytes exactos del cuerpo`. Un cambio de byte invalida la firma.
-- [ ] Implementar `IN8nTrigger` con `HttpClient`, secreto desde configuración/secret store, timeout de 2 s y rutas separadas `/watch` y `/incident`. Respuesta 2xx cuenta como disparo; timeout, error de red o no 2xx devuelve fallo que T5 convertirá en `n8n_unreachable`. No imprimir secreto ni firma en logs.
-- [ ] Prueba roja/verde del verificador exportado en el workflow: firma inválida y timestamp > 60 s se rechazan antes de llamar al agente. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~N8nTriggerTests'`; esperado: 0 fallos. Commit `feat(agent): sign n8n triggers`.
+- [x] Pruebas rojas con servidor HTTP falso: cuerpo JSON contiene `runId`, `kind`, `incidentId`, `apiBaseUrl`, `deadlineUtc = StartedAtUtc + Agent:TimeoutSeconds`; `X-IstpetDev-Timestamp` es Unix segundos; `X-IstpetDev-Signature` equivale a `sha256=` + HMAC-SHA256 hex de `timestamp + "." + bytes exactos del cuerpo`. Un cambio de byte invalida la firma.
+- [x] Implementar `IN8nTrigger` con `HttpClient`, secreto desde configuración/secret store, timeout de 2 s y rutas separadas `/watch` y `/incident`. Respuesta 2xx cuenta como disparo; timeout, error de red o no 2xx devuelve fallo que T5 convertirá en `n8n_unreachable`. No imprimir secreto ni firma en logs.
+- [x] Prueba roja/verde del verificador exportado en el workflow: firma inválida y timestamp > 60 s se rechazan antes de llamar al agente. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~N8nTriggerTests'`; esperado: 0 fallos. Commit `feat(agent): sign n8n triggers`.
 
 ### T5 — Orquestar ejecución, fallback y traza
 
