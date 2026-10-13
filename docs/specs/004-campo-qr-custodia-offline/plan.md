@@ -105,6 +105,7 @@ Todos los endpoints privados exigen JWT validado por la API. El actor viene de `
 | `POST /api/v1/deliveries/{id}/handling-units` | `{ lines:[{deliveryLineId,lotId,quantity}], operationId }` → 201 `{handlingUnitId,code,labelUrl,lines}` | 403 rol, 409 entrega no publicada/composición duplicada, 422 cantidad |
 | `POST /api/v1/deliveries/{id}/dispatch` | `{operationId,handlingUnitIds,occurredAtDevice}` + `Idempotency-Key` → 200 entrega/custodia | 403, 409 duplicado o unidad ajena, 422 stock |
 | `GET /api/v1/mobile/assignments` | `{serverTimeUtc,routes:[{routePlanId,revision,downloadedAtUtc,driverMessage,stops,deliveries,handlingUnits}]}`; solo asignadas | 401, 403 |
+| `GET /api/v1/deliveries?routePlanId=&status=&limit=50&cursor=` | `{items:[{deliveryId,routePlanId,pointCode,dueAtUtc,status,evidenceStatus}],nextCursor}`; orden estable por fecha, ruta e ID, con filtro autorizado para el panel 005 | 401, 403 |
 | `POST /api/v1/deliveries/{id}/receipts` | `{operationId,expectedDeliveryVersion,occurredAtDevice,lines:[{deliveryLineId,lotId,quantityAccepted,quantityRejected,unit,rejectionReason}]}` + misma clave → 200 `{receiptId,acceptedAtServer,deliveryVersion,deliveryStatus,evidenceStatus}` | 409 `IDEMPOTENCY_CONFLICT`, `ASSIGNMENT_CHANGED`, `QUANTITY_EXCEEDED`; 422 lote/unidad/estado |
 | `POST /api/v1/receipts/{id}/evidence-uploads` | `{operationId,kind,mimeType,byteSize,sha256}` → `{evidenceId,uploadUrl,requiredHeaders,expiresAtUtc}` | 403, 409 archivo ya confirmado, 422 tipo/tamaño |
 | `POST /api/v1/evidence/{id}/confirm` | `{operationId,sha256,byteSize}` → estado `Confirmed` tras `HEAD`/comprobación S3 | 403, 409 huella diferente, 503 S3 inaccesible |
@@ -220,6 +221,8 @@ El ensayo de H3 (14-oct 20:00) debe registrar cantidad antes/después en bodega,
 5. **Ensayo y corte:** ejecutar S-05/S-06/S-07/S-11 en teléfono real; si no cumple antes de H5, aplicar el plan B de D8.
 
 **Login y publicación HTTPS antes de H3.** FR-17 y FR-18 bloquean toda prueba de interfaz con la API: se hacen justo después del contrato (T1b) y antes de la PWA (T5) y de la etiqueta (T2 web). Sin ellos, el ensayo de H3 (14-oct 20:00) no puede hacerse desde los teléfonos.
+
+**Lectura para el panel 005 antes de H4.** FR-19 añade `GET /api/v1/deliveries`, solo lectura paginada. El equipo 004 debe añadirla a su `task.md` y comprobar que los estados de recepción/evidencia reflejan 004 sin exponer datos del QR público; el equipo 005 la consume, no la implementa de nuevo.
 
 ### Orden de recorte si se aprieta el plazo
 

@@ -195,3 +195,14 @@ Fuente: revisión de los specs 001–004 tras completar el equipo las tareas y p
 
 Verificación de la actualización: **75 notas Markdown**, **656 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
 
+## Propuesta documental del spec 005 — 12 de octubre de 2026
+
+Fuente: brainstorming con el usuario y contratos de los specs 001–004. Se redactaron [spec 005](../../specs/005-panel-simulador/spec.md) y [plan 005](../../specs/005-panel-simulador/plan.md); se registraron baselines, demanda y escenario adverso propuestos en [[Simulador y metricas]], dependencias y hitos en [[Definiciones de producto y plan hasta el pitch]], riesgos y backlog, contradicciones en [[Hechos canonicos]] y preparación en [[Registro de trabajo previo y del evento]]. Los contratos de lectura faltantes se añadieron a los specs productores 002 y 004. PR #10 estaba fusionado antes de crear la rama del 005 desde `develop`. Esta actualización es documental: no ejecutó simulación ni implementó software.
+
+Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos de lenguaje en notas no editadas por este spec.
+
+## Tareas y E2E del spec 005 — 12 de octubre de 2026
+
+Fuente: petición posterior del usuario de completar `task.md` y `test-e2e.md` del 005. Se redactan doce tareas T0–T11 con pruebas rojas/verdes, contratos, comandos y dependencias, más diez escenarios de punta a punta y una tabla vacía para registrar ejecuciones. Se actualizan [plan 005](../../specs/005-panel-simulador/plan.md), [tareas 005](../../specs/005-panel-simulador/task.md), [E2E 005](../../specs/005-panel-simulador/test-e2e.md), el índice de specs y el registro de preparación. La revisión E2E detectó que el reset de la tarea T7 de 001 borraba resultados de simulación; se corrigieron documentalmente FR-15, el plan y la tarea de 001, y se anotó la contradicción. No se implementó el sistema ni se ejecutaron esas pruebas; las reglas y resultados siguen como propuesta hasta aprobación y evidencia.
+
+Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos.

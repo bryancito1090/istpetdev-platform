@@ -114,6 +114,7 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 | FR-16 | `POST /api/v1/demo/route-plans/{id}/advance` (Planificación, solo con `Demo:Enabled=true`) DEBE completar las primeras N paradas pendientes ejecutando **preparación, despacho y recepción reales** con los servicios de este spec y las cantidades planificadas, de modo que inventario, custodia y estado de parada queden conciliados. Es idempotente por `operationId`. Reemplaza al endpoint provisional en los recorridos de 002 y 003 y en el pitch. | S-04, Dataset y escenarios (reinicio de demo) |
 | FR-17 | La web de bodega y la PWA del conductor DEBEN autenticarse con Cognito mediante Authorization Code + PKCE (ADR-18) usando `angular-auth-oidc-client` 22.0.1 e inyectar el access token con un interceptor en las llamadas a la API; el token no se persiste en el outbox (NFR-03). En la demo, las sesiones se inician antes del pitch. | ADR-18, Identidad OIDC y sesiones |
 | FR-18 | La PWA DEBE publicarse por HTTPS en el despliegue de demo (ruta `/campo/` del mismo dominio, servida por nginx) para poder instalarse y usar el service worker; los clientes Cognito web y móvil DEBEN incluir las URL de retorno y cierre HTTPS de la demo además de las de `localhost`. | ADR-04, ADR-18, Perfil A Reforzado |
+| FR-19 | `GET /api/v1/deliveries` DEBE listar entregas paginadas por ruta y estado para Gerencia, Planificación y Bodega, con punto, vencimiento, estado operativo y de evidencia, para el panel 005; no expone datos privados de la consulta pública. Dueño: equipo 004; integrar antes de H4. | RF-07, spec 005 |
 
 ### No funcionales
 
@@ -135,6 +136,7 @@ Usa `Delivery`/`DeliveryLine` y lotes FEFO de 002, `RoutePlan`/`RouteStop`, `Han
 | `POST /api/v1/deliveries/{id}/handling-units` | Bodega | Unidad preparada, líneas y URL/etiqueta QR |
 | `POST /api/v1/deliveries/{id}/dispatch` | Bodega | Movimientos, custodia y entrega despachada |
 | `GET /api/v1/mobile/assignments` | Conductor | Snapshot asignado y revisión de ruta |
+| `GET /api/v1/deliveries` | Gerencia, Planificación, Bodega | Lista paginada por ruta y estado, con punto, hora comprometida, estado operativo y estado de evidencia para el panel 005; sin datos privados de custodia pública |
 | `POST /api/v1/deliveries/{id}/receipts` | Conductor asignado | Recepción idempotente y estado de evidencia |
 | `POST /api/v1/receipts/{id}/evidence-uploads` | Conductor asignado | Autorización de carga S3 por archivo |
 | `POST /api/v1/evidence/{id}/confirm` | Conductor asignado | Evidencia confirmada tras comprobar objeto |

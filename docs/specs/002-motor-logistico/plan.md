@@ -293,6 +293,8 @@ Respuestas en camelCase; errores con Problem Details. Las cifras de los ejemplos
 
 **`POST /api/v1/route-plans/{id}/publish`** — cuerpo `{ "assignments": { "VEH-01": "<sub del conductor>" } }` (opcional) → `200` con las entregas creadas; repetir devuelve las mismas.
 
+**`GET /api/v1/route-plans?date=YYYY-MM-DD&status=Published&limit=50&cursor=`** — devuelve `{items:[{routePlanId,code,revision,status,vehicleCode,km,minutes,cost,hasApproximations}],nextCursor}`. Orden estable por fecha, código y revisión; `GET /route-plans/{id}` aporta paradas, `legs` y `facts`. Este contrato de lectura es productor para el panel 005 y no ejecuta el planificador.
+
 **`POST /api/v1/route-plans/{id}/stops/{sequence}/complete`** — **provisional**: al integrar 004 deja de ser un camino operativo (FR-15 de 004); para demo y pruebas se usa `POST /api/v1/demo/route-plans/{id}/advance` (FR-16 de 004). → `200`; fija `ActualArrivalUtc`/`ActualDepartureUtc` a los planificados (modo demo) o a los recibidos en el cuerpo.
 
 **`POST /api/v1/incidents`** — `{ "kind": "ROAD_CLOSURE", "lat": -0.2000, "lon": -78.5000, "radiusKm": 0.8, "factor": null, "vehicleCode": null, "description": "…", "isSynthetic": true }` → `201` con `{ incidentId, affectedRoutes: [ { routePlanId, vehicleCode, affectedLegs, affectedStops } ] }`.
@@ -452,7 +454,7 @@ Plan B el día del evento (opcional, en un portátil con ≥ 4 GB libres): OSRM 
 | 5 | Publicación FEFO con reservas e idempotencia; completar parada | 4 | [P] con 6 |
 | 6 | Política de autonomía, estado de modo y plantillas de explicación | 4 | [P] con 5 |
 | 7 | Incidentes, replanificación y opciones de escalado; `AgentDecision` | 5, 6 | — |
-| 8 | Controladores y roles | 7 | — |
+| 8 | Controladores y roles, incluida la lista paginada `GET /route-plans` que consume 005 (FR-23), con prueba de revisión vigente y permisos antes de H4 | 7 | — |
 | 9 | Fixture `demo-region`, script de tramos, incidentes predefinidos y calibración | 8 | — |
 | 10 | E2E, rendimiento y registro en la bóveda | 9 | — |
 

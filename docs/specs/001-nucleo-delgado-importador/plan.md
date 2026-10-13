@@ -87,7 +87,7 @@ Flujo de una importación:
 | Crear | `src/Application/Imports/ImportService.cs` | Orquestación, hash, `ImportBatch` |
 | Crear | `src/Application/Demo/DemoOptions.cs` | Opciones `Demo:*` y contrato `IDemoResetService` |
 | Crear | `src/Infrastructure/Imports/*.cs` | Lectores CSV, XLSX y compuesto |
-| Crear | `src/Infrastructure/Demo/DemoResetService.cs` | Borrado operativo + importación del fixture |
+| Crear | `src/Infrastructure/Demo/DemoResetService.cs` | Borrado operativo + importación del fixture; conservar historial completado de simulación para 005 |
 | Crear | `src/Infrastructure/Persistence/LeanSchema.cs` | Configuración EF del núcleo |
 | Crear | `src/Infrastructure/Persistence/AccountSeeder.cs` | Cuentas de demo desde configuración |
 | Crear | `src/Infrastructure/Persistence/Migrations/*_DemoCore.cs` | Migración generada |
