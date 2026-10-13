@@ -9,10 +9,10 @@
 | T0 | Base 001/002 y contratos confirmados | 001, 002 | — | completada |
 | T1 | `AgentRun`, migración y reset | T0 | — | completada |
 | T2 | Validador de cifras y mensajes | T1 | [P] con T3 y T4 | completada |
-| T3 | Scope M2M, rol y Terraform | T1 | [P] con T2 y T4 | pendiente |
-| T4 | Disparo HMAC de n8n | T1 | [P] con T2 y T3 | pendiente |
-| T5 | Orquestación, fallback, carrera y traza | T2, T3, T4 | — | pendiente |
-| T6 | Endpoints, correlación y disparo por incidente | T5 | — | pendiente |
+| T3 | Scope M2M, rol y Terraform | T1 | [P] con T2 y T4 | completada |
+| T4 | Disparo HMAC de n8n | T1 | [P] con T2 y T3 | completada |
+| T5 | Orquestación, fallback, carrera y traza | T2, T3, T4 | — | completada |
+| T6 | Endpoints, correlación y disparo por incidente | T5 | — | completada |
 | T7 | Prompt, workflows y control de credenciales | T6 | — | pendiente |
 | T8 | Copia local de n8n | T7 | [P] con T9 | pendiente |
 | T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | pendiente |
