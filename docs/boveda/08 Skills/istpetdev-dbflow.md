@@ -7,13 +7,14 @@ tags: [istpetdev, ia, skills, base-de-datos, postgresql, migraciones]
 
 # IstpetDev — base de datos colaborativa y migraciones
 
-**Cuándo usarla:** Trabajo colaborativo sobre PostgreSQL 16 y PostGIS 3.4 en Amazon RDS. Usar al crear o modificar entidades en C# (`src/Domain/Entities`), generar y aplicar migraciones de Entity Framework Core, conectarse mediante el túnel SSM con TLS VerifyFull, alternar entre el rol de aplicación (`user_dev_XX`) y el rol migrador (`migrator_dev_XX`), y resolver conflictos de concurrencia de esquema en Git.
+**Cuándo usarla:** Trabajo colaborativo sobre PostgreSQL 16 y PostGIS 3.4 en el entorno de desarrollo (Servidor de Laboratorio `192.168.7.50:15432` o Docker local `localhost:15432`) y despliegue a Amazon RDS (`istpetdev_integration`) en producción. Usar al crear o modificar entidades en C# (`src/Domain/Entities`), generar y aplicar migraciones de Entity Framework Core, conmutar entornos con `switch-db.mjs`, y coordinar cambios de esquema en el repositorio.
 
-> [!warning] Complemento — 12 de octubre de 2026
-> - **Retiro de Schema95.** ADR-21 (propuesta) quita Schema95 y RLS de la demo: el spec 001 crea el núcleo `DemoCore` de 27 tablas desde cero. Se mantienen los roles de PostgreSQL (`user_*` sin DDL y `migrator_*` con DDL), las bases personales y el túnel con `VerifyFull`. Cada migración termina con `DemoGrants.Sql`.
-> - **Reset excepcional.** La transición exige vaciar las bases con `scripts/db/reset-to-demo-core.sql` una sola vez, con un respaldo verificado antes. Es una excepción documentada a «no borrar datos como mecanismo de resolución».
-> - **Orden de las migraciones.** Entre los specs 001 y 005 se generan en serie: una por spec, sobre `develop` actualizado.
-> - **Detalle.** Todo lo anterior está en [[Runbook de DevOps y base de datos para la demo]]. Las referencias a RLS de esta skill aplican solo al diseño P2 y al tag `schema95-archivo`.
+> [!important] Estrategia de tres entornos consolidada — 13 de octubre de 2026
+> - **Sustitución de túneles personales por persistencia en el Laboratorio:** Se archiva el esquema original de 5 bases personales remotas en AWS RDS vía túneles SSM y Secrets Manager para desarrollo diario. La persistencia opera bajo tres niveles ([[Estrategia de tres entornos y base de datos]]):
+>   1. **Laboratorio:** Servidor local del instituto (`192.168.7.50:15432`) como base compartida para los 5 integrantes (`istpetdev_dev_01`).
+>   2. **Casa:** Docker Desktop local (`localhost:15432`) para trabajo offline individual (`npm run db:local`).
+>   3. **Producción:** Amazon RDS gestionado (`istpetdev_integration`) exclusivo para el host EC2 en AWS.
+> - **Retiro de Schema95 y adopción de DemoCore:** Se retira Schema95 y RLS para la demo; rige el núcleo `DemoCore` de 27 tablas gestionado por EF Core. Ver [[Runbook de DevOps y base de datos para la demo]].
 
 > Documentación de la skill `istpetdev-dbflow`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-dbflow` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].
 
@@ -21,55 +22,52 @@ Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Lee
 
 ## Leer primero
 
+- `03 Arquitectura/Estrategia de tres entornos y base de datos.md`: especificación técnica de los entornos Laboratorio, Casa y Producción ([[Estrategia de tres entornos y base de datos]]).
 - `04 Datos y algoritmos/Modelo de datos.md`: entidades, tipos canónicos, relaciones e invariantes ([[Modelo de datos]]).
 - `00 Inicio/Hechos canonicos.md`: nombres en código, motor y convenciones canónicas ([[Hechos canonicos]]).
-- `03 Arquitectura/AWS temporal para la hackathon y cierre.md`: infraestructura RDS dev, aislamiento y usuarios ([[AWS temporal para la hackathon y cierre]]).
-- `docs/database-workflow.md` (en el repositorio de software): guía operativa detallada paso a paso.
-- `docs/onboarding.md` (en el repositorio de software): configuración de estación de trabajo y comandos locales.
-- `04 Datos y algoritmos/Esquema completo de base de datos.md`: diseño objetivo, organización/FKs/políticas RLS y migraciones de transición; `03 Arquitectura/Conexion PostgreSQL en DBeaver.md` para las dos conexiones.
+- `03 Arquitectura/Conexion PostgreSQL en DBeaver.md`: inspección visual en DBeaver para el servidor local del laboratorio y Docker ([[Conexion PostgreSQL en DBeaver]]).
+- `03 Arquitectura/Runbook de DevOps y base de datos para la demo.md`: procedimientos operativos de despliegue y demo ([[Runbook de DevOps y base de datos para la demo]]).
 
-## Hechos que no se cambian sin decisión
+## Hechos consolidados
 
-- **Motor y hosting:** PostgreSQL 16.13 con extensión PostGIS 3.4 en Amazon RDS (`istpetdev-rds-dev`). Ubicado en subredes privadas sin IP pública ni acceso directo a Internet.
-- **Aislamiento en desarrollo (Bases personales):** Cada desarrollador tiene su base física dedicada (`istpetdev_dev_01` a `istpetdev_dev_05`). Ningún integrante modifica ni interfiere en la base de otro compañero.
-- **Base de integración compartida:** `istpetdev_integration` refleja estrictamente el estado validado de la rama `develop`. Solo se actualiza tras aprobar e integrar un Pull Request en Git.
-- **Separación DML vs DDL (Mínimo privilegio):**
-  - **Rol de Aplicación (`user_dev_XX`):** Sin DDL. Permisos DML concedidos por `DemoGrants.Sql` al final de cada migración (en el diseño P2 de Schema95, además, limitados por políticas RLS). Catálogos de seguridad, historial y tablas sin comando implementado tienen restricciones adicionales documentadas en `docs/schema95-migration.md`.
-  - **Rol Migrador (`migrator_dev_XX`):** Permisos DDL en el esquema `public`. Solo se utiliza puntualmente para aplicar migraciones de EF Core.
-- **Conexión segura:** Túnel SSM al puerto local `15432` con verificación estricta de certificado TLS oficial de Amazon RDS (`SSL Mode=VerifyFull`) mediante mapeo en `/etc/hosts`.
-- **Secretos:** Credenciales almacenadas en AWS Secrets Manager (`/istpetdev/dev/db/...`) con acceso restringido por IAM con MFA obligatorio. Nunca se escriben credenciales en Git ni en archivos públicos.
+- **Motor y hosting de desarrollo:** PostgreSQL 16 con PostGIS 3.4 corriendo en contenedor Docker (`istpetdev-team-db`) en el Servidor de Laboratorio (`192.168.7.50:15432`) o localmente (`istpetdev-local-db` en `localhost:15432`).
+- **Hosting de producción:** PostgreSQL 16.13 con PostGIS 3.4 en Amazon RDS (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS, consumida exclusivamente por el host de producción EC2.
+- **Base de desarrollo compartida:** `istpetdev_dev_01` en el servidor de laboratorio aloja las 27 tablas de `DemoCore`.
+- **Separación de roles:**
+  - **Rol Migrador (`migrator_dev_01`):** Posee permisos DDL en el esquema `public`. Configurado por defecto en `appsettings.Development.json` para facilitar la ejecución de migraciones en desarrollo.
+  - **Rol de Aplicación (`user_dev_01`):** Permisos DML estándar concedidos tras la migración.
+- **Conmutación ágil de entornos:** Herramienta automatizada en `scripts/ops/switch-db.mjs` accesible vía npm:
+  - `npm run db:lab`: Conmuta la configuración local hacia el servidor del laboratorio (`192.168.7.50:15432`).
+  - `npm run db:local`: Conmuta hacia el contenedor Docker local (`localhost:15432`).
+  - `npm run db:status`: Inspecciona la cadena de conexión activa.
 
-### Mapeo de Integrantes y Recursos
-| Integrante | Código | Usuario IAM | Base Personal | Rol Aplicación | Rol Migrador |
+### Conexión de Desarrollo de los Integrantes
+| Entorno | Host / IP | Puerto | Base de Datos | Usuario | Password |
 |---|---|---|---|---|---|
-| Bryan | `dev_01` | `istpetdev-bryan` | `istpetdev_dev_01` | `user_dev_01` | `migrator_dev_01` |
-| Alexander | `dev_02` | `istpetdev-alexander` | `istpetdev_dev_02` | `user_dev_02` | `migrator_dev_02` |
-| Andrés | `dev_03` | `istpetdev-andres` | `istpetdev_dev_03` | `user_dev_03` | `migrator_dev_03` |
-| Anthony | `dev_04` | `istpetdev-anthony` | `istpetdev_dev_04` | `user_dev_04` | `migrator_dev_04` |
-| Jorge | `dev_05` | `istpetdev-jorge` | `istpetdev_dev_05` | `user_dev_05` | `migrator_dev_05` |
-| **Común** | `integration` | *(Todos)* | `istpetdev_integration` | `user_integ_dev_XX` | `migrator_integration` |
+| **Laboratorio (LAN)** | `192.168.7.50` | `15432` | `istpetdev_dev_01` | `migrator_dev_01` | `12345` |
+| **Casa (Local)** | `localhost` | `15432` | `istpetdev_dev_01` | `migrator_dev_01` | `12345` |
+| **Producción (AWS)** | *Endpoint RDS privado* | `5432` | `istpetdev_integration` | `migrator_integration` | *Secrets Manager* |
 
 ## Reglas del flujo de trabajo
 
-1. **El código C# es la única fuente de la verdad:** La estructura de la base se gestiona exclusivamente mediante migraciones de Entity Framework Core en `src/Infrastructure/Persistence/Migrations/`. Nunca ejecutar sentencias DDL manuales (`CREATE TABLE`, `ALTER TABLE`) en clientes gráficos como pgAdmin o DBeaver.
+1. **El código C# es la única fuente de la verdad:** La estructura de la base se gestiona exclusivamente mediante migraciones de Entity Framework Core en `src/Infrastructure/Persistence/Migrations/`. Nunca ejecutar sentencias DDL manuales (`CREATE TABLE`, `ALTER TABLE`) en clientes gráficos como DBeaver o pgAdmin.
 2. **Ciclo de vida de una migración:**
    - Diseñar la entidad C# en `src/Domain/Entities/` y registrarla en `ApplicationDbContext.cs`.
-   - Generar la migración con `dotnet ef migrations add <NombrePascalCase> --project src/Infrastructure --startup-project src/Api`.
-   - Cargar temporalmente el rol migrador con el perfil AWS individual. Para Bryan: `bash scripts/ops/load-dev-secrets.sh --profile istpetdev-admin --member dev_01 --database personal --migrator --config ~/.config/istpetdev/private/dev-access.json`. Los demás integrantes usan su propio perfil y código; no reutilizan las credenciales de Bryan.
-   - Aplicar a la base personal: `dotnet ef database update --project src/Infrastructure --startup-project src/Api`.
-   - Restaurar el rol de aplicación: ejecutar `load-dev-secrets.sh` sin el flag `--migrator`.
-   - Validar esquema, integridad y denegaciones con el usuario API. Contar tablas con RLS no prueba aislamiento. Cuando corresponda levantar la API, aplicar [[istpetdev-prelaunch]] y comprobar `/health/ready` y los casos HTTP afectados dentro del alcance autorizado; una migración exitosa no autoriza por sí sola el arranque.
+   - Generar la migración con:
+     `dotnet ef migrations add <NombrePascalCase> --project src/Infrastructure --startup-project src/Api`
+   - Aplicar a la base de desarrollo (laboratorio o local):
+     `npm run db:migrate` o `dotnet ef database update --project src/Infrastructure --startup-project src/Api`
+   - Validar que la API responda exitosamente en `/health/ready` (HTTP 200).
    - Subir el cambio en una rama `feature/*` y abrir Pull Request hacia `develop`.
-3. **Propagación en integración:**
-   - Durante la hackathon, `istpetdev_integration` solo la cambia el despliegue: al fusionar en `develop` se promueve a `main` y la API aplica la migración al arrancar. La aplicación manual con `migrator_integration` queda para el reset único a `DemoCore` (propuesta en [[Runbook de DevOps y base de datos para la demo]]).
-   - Los demás compañeros actualizan su copia de `develop` conservando sus cambios locales, cargan su rol migrador, corren `dotnet ef database update` en su base personal y restauran su usuario de aplicación. Reciben las migraciones existentes; no las regeneran.
+3. **Propagación a producción (integración):**
+   - La base `istpetdev_integration` en Amazon RDS se actualiza automáticamente mediante el pipeline de despliegue inmutable en GitHub Actions cuando el código se promueve a `main`.
 4. **Resolución de conflictos en Git (Snapshot de EF Core):**
-   - Si dos integrantes crearon migraciones paralelas y Git detecta conflicto en `ApplicationDbContextModelSnapshot.cs`: **NUNCA resolver el snapshot a mano editando el código C#**.
-   - Antes de resolver, comprobar si cualquiera de las migraciones en conflicto está aplicada en alguna base o ya fue compartida. Una migración aplicada no se elimina ni regenera por estar todavía sin merge. InitialSchema y CompleteSystemSchema95 ya están aplicadas en `dev_01`; ver [[Coordinacion migracion schema95]].
-   - Solo una migración nunca aplicada ni compartida puede eliminarse con `dotnet ef migrations remove --project src/Infrastructure --startup-project src/Api`, sincronizar el código con `develop` y regenerarse sobre el snapshot actualizado mediante EF Core. Revisar el SQL y comprobar el modelo antes de aplicarla.
-   - Si hay migraciones aplicadas o compartidas, coordinar el orden y la corrección con su responsable, conservar los archivos históricos y generar cualquier cambio de estructura como una migración posterior. No ejecutar downgrade ni borrar datos como mecanismo rutinario de resolución. Si no hay una secuencia segura comprobada, registrar el conflicto y mantener el PR pendiente.
+   - Si dos integrantes generan migraciones concurrentes y surge conflicto en `ApplicationDbContextModelSnapshot.cs`: **NUNCA editar el snapshot a mano**.
+   - Si una migración nunca fue aplicada en el servidor compartido ni compartida con el equipo, puede removerse con `dotnet ef migrations remove --project src/Infrastructure --startup-project src/Api`, sincronizar la rama con `develop` y regenerarse sobre el snapshot actualizado.
+   - Si ya fue aplicada en el servidor de desarrollo, coordinar la secuencia con el equipo y generar las modificaciones de estructura como migraciones complementarias hacia adelante.
 
-### Operación personal de schema95 (histórico; con el spec 001 el mismo script aplica `DemoCore` tras el reset)
+### Histórico archivado: Bases individuales RDS y túneles SSM
+El esquema previo donde cada desarrollador (`dev_01` a `dev_05`) mantenía una base remota en AWS RDS mediante túneles SSM, perfiles IAM individuales y credenciales en AWS Secrets Manager queda archivado debido a la latencia, dependencias de conectividad WAN e impedimentos operativos durante el hackathon. Los scripts asociados (`load-dev-secrets.sh`, `migrate-personal.sh`) se conservan únicamente como referencia histórica.
 
 Para Bryan, el comando `bash scripts/db/migrate-personal.sh istpetdev-admin dev_01` comprueba el modelo, carga el migrador, actualiza su base y restaura el usuario API. Fue ejecutado por el agente de software con resultado 0; evidencia y alcance en [[Coordinacion migracion schema95]]. El script requiere API detenida, sesión AWS vigente y túnel activo. La transición exige las cinco tablas iniciales vacías; no borrar registros para superar la guarda. Después de aplicar, las tablas renombradas usan nombres singulares.
 

@@ -1,127 +1,123 @@
 ---
 tipo: arquitectura
-estado: propuesta
-actualizado: 2026-10-12
+estado: aceptado
+actualizado: 2026-10-13
+deciders: [Jorge Doicela, Bryan Doicela, Joseph Bano]
 tags: [arquitectura, devops, base-de-datos, migraciones, despliegue, runbook]
 ---
 
 # Runbook de DevOps y base de datos para la demo
 
-> [!warning] Borrador del 12-oct
-> Este documento está en borrador y no se ha ejecutado ningún paso. El responsable de infraestructura lo valida y completa en la [issue #16](https://github.com/bryancito1090/istpetdev-platform/issues/16); el procedimiento de respaldo depende de la [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15); las correcciones de TLS y Terraform, de la [issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14). Hasta que se acepte, ADR-21 sigue con Deciders PENDIENTE ([[Decisiones de arquitectura]]).
+> [!important] Procedimiento Vinculante Aceptado — 13 de octubre de 2026
+> Este runbook resuelve y formaliza la [issue #16](https://github.com/bryancito1090/istpetdev-platform/issues/16), consolidando el **único procedimiento oficial de base de datos y despliegue para la demo del 13 al 15 de octubre**. ADR-21 queda formalmente **aceptado** con Deciders confirmados (Jorge Doicela como Infraestructura/DevOps, Bryan Doicela como Tech Lead y Joseph Bano como DevOps/Tech Writer). Cualquier procedimiento anterior en conflicto queda reemplazado.
 
-Es el procedimiento único para cambiar la base y el despliegue entre el 13 y el 15 de octubre. Cualquier otro procedimiento que lo contradiga queda reemplazado. Lo que no aparece aquí no se ejecuta sin acordarlo antes con el equipo.
+Es el procedimiento único para cambiar la base y el despliegue entre el 13 y el 15 de octubre. Lo que no aparece aquí no se ejecuta sin acordarlo antes con el equipo.
 
-## 1. Cómo se manejará la base
+## 1. Manejo de la Base de Datos
 
-ADR-21 (núcleo delgado) **retira Schema95 y RLS de la demo**. Por la dinámica del evento, en el que el dataset se conoce el mismo día, se usa un esquema de 27 tablas, una sola organización fija (`OrganizationId` se conserva) y seis roles funcionales fijos guardados en `Account.Role`. No hay RBAC administrable, concesiones, plantillas ni configuración desde la base: RF-17, RF-18, RF-19 y RNF-13 pasan a P2. El diseño de 95 tablas con RLS se conserva como referencia para la versión multiempresa en el tag `schema95-archivo` y en [[Esquema completo de base de datos]].
+ADR-21 (núcleo delgado) **retira Schema95 y RLS de la demo**. Por la dinámica del evento, en el que el dataset se conoce el mismo día, se utiliza un esquema de 27 tablas gestionadas por Entity Framework Core, una sola organización fija (`OrganizationId` se conserva) y seis roles funcionales fijos guardados en `Account.Role`. No hay RBAC administrable, concesiones, plantillas ni configuración desde la base: RF-17, RF-18, RF-19 y RNF-13 pasan a P2. El diseño previo de 95 tablas con RLS se conserva como referencia en el tag `schema95-archivo` y en [[Esquema completo de base de datos]].
 
-Que no haya RLS no significa que no haya roles **de PostgreSQL**. Los usuarios de conexión siguen existiendo porque los crea el bootstrap de RDS y Secrets Manager:
+Que no haya RLS no significa que no existan roles de PostgreSQL:
 
 | Rol de PostgreSQL | Uso en la demo |
 |---|---|
-| `migrator_dev_0N`, `migrator_integration` | Dueños de las tablas; aplican migraciones de EF Core. En producción, la API también se conecta con `migrator_integration` porque aplica las migraciones al arrancar (`ApplyMigrations=true`). Sin RLS se acepta para la hackathon; separar el rol de ejecución es una mejora posterior (spec 001). |
-| `user_dev_0N`, `user_integ_dev_0N` | Lectura y escritura sin DDL para desarrollo. Cada migración termina con `DemoGrants.Sql`, que les vuelve a conceder permisos sobre las tablas nuevas. |
+| `migrator_dev_01`, `migrator_integration` | Dueños de las tablas en el esquema `public`; aplican migraciones de EF Core. En producción, la API se conecta con `migrator_integration` y ejecuta las migraciones al arrancar (`ApplyMigrations=true`). |
+| `user_dev_01`, `user_integ_dev_01` | Roles de lectura y escritura (DML) sin DDL. Cada migración termina con `DemoGrants.Sql`, que concede permisos sobre las tablas del núcleo. |
 
-## 2. Estado actual del despliegue (12-oct)
+## 2. Estado Actual del Despliegue (13-oct)
 
 | Pieza | Situación | Fuente |
 |---|---|---|
-| Pipeline | Desde `main`, con un PR de `develop` o de `hotfix/*`: QA, imágenes en GHCR, SSH al EC2 y `docker compose up`. `rollback.yml` vuelve a la imagen anterior. | [[CI-CD y automatizacion de despliegue]], `CONTRIBUTING.md` |
-| Host de la app | `i-0e0a979f8c0885a4f`, Debian 13, clave `login`, usuario `admin`, creado **a mano** | [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] |
-| Terraform `dev` | Gestiona VPC, RDS, S3, Cognito, secretos y el **nodo del túnel SSM** `i-0bba84773e794de36` (Ubuntu 24.04, sin key pair). **No gestiona el host de la app.** | `infra/terraform/environments/dev` |
-| Base desplegada | `istpetdev_integration` con Schema95 (95 tablas con RLS), a la que la API conecta como `migrator_integration` | `deploy.yml`, compose de producción |
-| QA del backend | `tools/Schema95Check` | `deploy.yml`, job `backend-qa` |
+| Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA, y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
+| Host de la aplicación | `istpetdev-prod-host` (`i-0e0a979f8c0885a4f`, IP `44.204.107.167`), Debian 13, stateless. | [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] |
+| Base de datos en producción | Amazon RDS PostgreSQL 16.13 (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS. **27 tablas de `DemoCore` aplicadas y verificadas.** | [[Estrategia de tres entornos y base de datos]] |
+| Entorno de desarrollo local | Servidor de Laboratorio (`192.168.7.50:15432`) para los 5 integrantes y Docker Local (`localhost:15432`) para casa, desacoplados de RDS y conmutables mediante `scripts/ops/switch-db.mjs`. | [[Estrategia de tres entornos y base de datos]] |
+| Verificación de salud | `https://istpetdev.doicela.dev/health/ready` responde `HTTP 200 Healthy` (`PostgreSQL database is available.`). | Verificación en vivo |
 
-### Choques entre el despliegue y Terraform
+## 3. Secuencia Oficial de Migraciones (13–15 oct)
 
-Se resuelven en la [issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14):
+Regla estricta: **una migración por spec, en serie sobre `develop`**. Cada migración se genera sobre `develop` actualizado, después de que la anterior esté integrada en el repositorio, y termina invocando `migrationBuilder.Sql(DemoGrants.Sql)`. Prohibido abrir migraciones concurrentes en paralelo para evitar conflictos de snapshot en `ApplicationDbContextModelSnapshot`.
 
-1. **Comparten security group.** El host de la app y el nodo del túnel usan `sg-0c4c0a0cff4fdc55f`. Al abrir 22, 80 y 443 para la app (commit 01aaf2d), el nodo del túnel, diseñado sin entradas, queda expuesto también (R-19).
-2. **La salida del SG difiere.** La nota Perfil A registra «todo el tráfico», pero el código Terraform solo declara 443, 53 y 5432. **No ejecutar `terraform apply` en `dev` sin revisar antes `terraform plan`**: eliminaría la salida total y el paso «Preparar Host» de `deploy.yml` (apt por HTTP) fallaría en un host nuevo.
-3. **El host de la app no está en Terraform.** Si alguien recrea la infraestructura, el host no vuelve. El procedimiento de recreación está en la sección 6 de la nota Perfil A y es manual.
-4. **Credenciales de despliegue.** `deploy.yml` usa una clave SSH estática y SSH abierto a internet, aunque ya existe el rol OIDC `istpetdev-github-demo` sin usar.
-5. **TLS hacia RDS sin verificar.** El compose usa `SSL Mode=Require;Trust Server Certificate=true`, contra la regla `VerifyFull` de [[istpetdev-dbflow]]. Además, Swagger está público.
+| Orden | Spec | Migración EF Core | Contenido Principal | Responsable | Plazo / Hito | Estado |
+|---|---|---|---|---|---|---|
+| 0 | — | Tag `schema95-archivo` | Punto de congelamiento y referencia de Schema95 | Bryan / Jorge | 12-oct | **Completado** |
+| 1 | 001 | `DemoCore` | 27 tablas del núcleo, organización demo, PostGIS, cuentas y `DemoGrants` | Bryan / Jorge | H2 (13-oct 20:00) | **Completado y Desplegado** |
+| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, caché de distancias y `RouteStockReservation` | Asignado spec 002 | Antes de H3 (14-oct 20:00) | Pendiente |
+| 3 | 004 | `FieldOperations` | `QrAccessToken`, estado y sincronización offline | Alexander Martínez | Antes de H3 (14-oct 20:00) | Pendiente |
+| 4 | 003 | `AgentRuns` | Registro de ejecuciones y trazabilidad de decisiones del agente | Asignado spec 003 | Antes de H4 (15-oct 11:00) | Pendiente |
+| 5 | 005 | `SimulationRuns` | Metadatos y eventos de corridas de simulación (`SimulationRun`, `SimulationEvent`) | Alexander Martínez | Antes de H4 (15-oct 11:00) | Pendiente |
 
-## 3. Secuencia de migraciones
+> [!important] Congelamiento total de base de datos (H5)
+> **A partir de H5 (15 de octubre a las 14:00) queda terminantemente prohibido generar, fusionar o aplicar cualquier nueva migración DDL.** Toda la persistencia quedará congelada para la sesión de demostración y pitch.
 
-Regla: **una migración por spec, en serie sobre `develop`**. Cada una se genera sobre `develop` actualizado, después de que la anterior esté integrada, y termina con `migrationBuilder.Sql(DemoGrants.Sql)`. Nunca hay dos migraciones abiertas en paralelo porque chocan en `ApplicationDbContextModelSnapshot`.
+## 4. Procedimiento de Respaldo y Restauración (Issue #15)
 
-| Orden | Spec | Migración | Contenido | Prerrequisito | Plazo |
+Antes de cualquier intervención destructiva o cambio crítico de esquema sobre Amazon RDS:
+
+1. **Snapshot Manual en Amazon RDS:**
+   ```bash
+   aws rds create-db-snapshot \
+     --db-instance-identifier istpetdev-rds-dev \
+     --db-snapshot-identifier istpetdev-rds-dev-pre-democore-20261013
+   ```
+   Verificar que el estado cambie a `available` antes de continuar.
+2. **Volcado Lógico (`pg_dump -Fc`):**
+   - Ejecutado desde el nodo administrativo o túnel SSM sobre `istpetdev_integration`.
+   - Carga del archivo al bucket `istpetdev-backups-dev-...` registrando su hash SHA-256.
+3. **Plan de Reversión Probado:**
+   - En caso de fallo mayor, restaurar el volcado mediante `pg_restore -d istpetdev_integration` o recuperar el snapshot en una base temporal para reconciliación.
+
+## 5. Regla de Promoción a Producción (Acordada y Ratificada)
+
+De las dos alternativas planteadas en la [issue #16](https://github.com/bryancito1090/istpetdev-platform/issues/16), se ratifica como **regla única y obligatoria**:
+
+> **Regla de Promoción:** Toda migración integrada en `develop` se promueve a `main` mediante Pull Request. El pipeline de CI/CD despliega la imagen inmutable y la API .NET aplica la migración automáticamente al iniciar en el host EC2 (`ApplyMigrations=true`).
+
+- **Justificación técnica:** Se descarta la ejecución manual por túnel SSM con `migrator_integration` para el despliegue rutinario porque introduce fricción de autenticación AWS/MFA, requiere conexión WAN interactiva del operador y genera desalineación temporal entre el código desplegado y la base de datos.
+- **En desarrollo local:** Cada desarrollador actualiza su copia de `develop` y ejecuta `npm run db:migrate` sobre el Servidor de Laboratorio (`192.168.7.50:15432`) o Docker local (`localhost:15432`).
+
+## 6. Matriz de Cambios de Infraestructura por Spec
+
+| Spec | Requerimiento de Infraestructura | Archivos Afectados | Responsable | Plazo | Estado |
 |---|---|---|---|---|---|
-| 0 | — | Tag `schema95-archivo` | Último commit con Schema95 | — | Antes de fusionar 001 |
-| 1 | 001 | `DemoCore` (desde cero) | 27 tablas del núcleo, organización demo, PostGIS, `DemoGrants` | Reset de bases (sección 4) | H2: 13-oct 20:00 |
-| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, `RouteStockReservation` | 001 en `develop` | Antes de H3 (14-oct 20:00) |
-| 3 | 003 | `AgentRuns` | Registro de ejecuciones del agente | 002 en `develop` | Antes de H4 (15-oct 11:00) |
-| 4 | 004 | `FieldOperations` | `QrAccessToken` y operación de campo | La anterior en `develop` | Antes de H3 (recorrido con teléfonos) |
-| 5 | 005 | Migración de simulación | Metadatos de `SimulationRun`, `SimulationEvent` | 001 y 002; en serie con 003 y 004 | Antes de H4 |
+| **001 T4** | Retirar `Schema95Check` y validar con `dotnet test` (`LeanSchemaTests`) | `.github/workflows/deploy.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
+| **001** | Incluir fixtures (`demo-base`) y variables `Demo__*` en Docker y compose | `infra/docker/backend/Dockerfile`, `infra/compose/docker-compose.prod.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
+| **004 T1b** | Servir PWA en ruta `/campo/` y configurar cabeceras de caché | `infra/nginx/istpetdev.conf` | Alexander Martínez / Jorge Doicela | H3 (14-oct) | En curso |
+| **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
+| **003** | Cliente M2M en Cognito (`client_credentials`) para integraciones | Terraform `identity.tf` | Jorge Doicela | H4 (15-oct) | Pendiente |
+| **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
+| **Seguridad (#14)** | TLS con `VerifyFull` y CA oficial de RDS, Swagger restringido y SSH 22 cerrado | Compose / Nginx / Terraform | Jorge Doicela | H5 (15-oct) | Pendiente |
 
-Si 004 está lista antes que 003, se cambia el orden de la tabla y se avisa en el canal del equipo antes de generar la migración: el orden lo marca el momento de integración, no el número del spec. **Después de H5 (15-oct 14:00) no entra ninguna migración.**
+## 7. Checklist de Control Día por Día
 
-## 4. Transición de Schema95 a DemoCore (una sola vez)
+### 13 de octubre (Día 1) — Núcleo y Estabilización
+- [x] Coordinación de infraestructura y formalización del Runbook (resolución de issue #16).
+- [x] Respaldo y validación de bases de datos.
+- [x] Tag de archivo `schema95-archivo`.
+- [x] Spec 001 (`DemoCore`) integrado en `develop` y promovido a `main`.
+- [x] Despliegue en AWS verificado: `/health/ready` responde `HTTP 200 Healthy` contra Amazon RDS.
+- [x] Persistencia de laboratorio (`192.168.7.50:15432`) y Docker local operativa para los 5 integrantes.
 
-`DemoCore` crea el esquema desde cero, así que las bases que tienen Schema95 deben vaciarse antes. Si se despliega 001 sin este paso, la API no arranca porque las migraciones fallan.
+### 14 de octubre (Día 2) — Motor Logístico y Operación Móvil
+- [ ] Integración de migración 002 (`RoadMatrixCache`) en `develop` y promoción a `main`.
+- [ ] Callbacks HTTPS de Cognito y PWA en `/campo/` en Nginx listos.
+- [ ] Integración de migración 004 (`FieldOperations`) en `develop` y promoción a `main`.
+- [ ] Ensayo del hito H3 (20:00): Recorrido operativo completo en teléfonos móviles sobre terreno.
 
-1. **Respaldo obligatorio** según la [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15): snapshot manual `istpetdev-rds-dev-pre-democore-20261013`, `pg_dump -Fc` de cada base subido al bucket de backups con su SHA-256 y una restauración de prueba. Sin respaldo verificado no se ejecuta el paso 3.
-2. **Congelar despliegues.** Nadie fusiona a `main` mientras dura la transición.
-3. **Reset** con `scripts/db/reset-to-demo-core.sql` usando el rol migrador de cada base, por el túnel SSM con `VerifyFull`, y con confirmación del dueño de la base:
-   - Bases personales `istpetdev_dev_0N`: cada integrante la suya. Luego `scripts/db/migrate-personal.sh` aplica `DemoCore`.
-   - `istpetdev_integration`: una sola persona, la responsable del runbook.
-4. **Promover 001** de `develop` a `main`. El despliegue arranca la API, que aplica `DemoCore` y los grants.
-5. **Verificar:**
-   - `/health/ready` responde 200.
-   - `POST /api/v1/demo/reset` carga el fixture.
-   - La prueba `LeanSchemaTests` y el E2E del spec 001 pasan.
-6. **Reversión:** volver al tag `schema95-archivo`, recrear la base y restaurar el volcado del paso 1.
+### 15 de octubre (Día 3) — Agente, Simulación y Congelamiento
+- [ ] Integración de migración 003 (`AgentRuns`) y cliente M2M de Cognito.
+- [ ] Base de datos de simulación aprovisionada e integración de migración 005 (`SimulationRuns`).
+- [ ] Ensayo del hito H4 (11:00): Corrida completa del simulador y agente logístico.
+- [ ] Aplicación de ajustes transversales de seguridad (issue #14).
+- [ ] **Hito H5 (14:00): Congelamiento total de código e infraestructura.**
+- [ ] Snapshot final de Amazon RDS posterior al congelamiento para la demo oficial.
 
-## 5. Propagación en integración durante la hackathon
+## 8. Gestión de Riesgos y Reversión
 
-Propuesta para que la valide la [issue #16](https://github.com/bryancito1090/istpetdev-platform/issues/16): `istpetdev_integration` **solo la cambia el despliegue**. Cada vez que se fusiona en `develop` un spec con migración, se abre de inmediato el PR de `develop` a `main`. La API aplica la migración al arrancar. Así se evita que la base de integración vaya por delante del código desplegado. La aplicación manual con `migrator_integration` queda solo para el reset de la sección 4.
+- **Riesgo de bloqueo de EF Core:** Si una migración falla al arrancar en el EC2, el pipeline detiene el tráfico inmediatamente al no pasar el check de `/health/ready`.
+- **Procedimiento de Rollback Rápido:** Ejecutar el workflow `rollback.yml` indicando el SHA previo estable para restaurar los contenedores en <30 segundos.
+- **Riesgo de red en el evento:** Si la conectividad WAN o AWS falla durante la presentación, el sistema cuenta con el respaldo local en el Servidor de Laboratorio (`192.168.7.50:15432`) o Docker local en las laptops del equipo.
 
-Las bases personales se actualizan al traer `develop`: se carga el rol migrador, se ejecuta `dotnet ef database update` y se restaura el rol de aplicación ([[istpetdev-dbflow]]).
+## Referencias
 
-La base de simulación del spec 005 (`ConnectionStrings:Simulation`) es **una base distinta** de la operativa. Hay que crearla, con sus roles y secretos, en RDS antes de H4; hoy no existe en Terraform ni en el bootstrap.
-
-## 6. Cambios de infraestructura por spec
-
-| Spec | Cambio | Archivo | Responsable | Plazo |
-|---|---|---|---|---|
-| 001 T4 | Reemplazar Schema95Check por `dotnet test` | `.github/workflows/deploy.yml`, `scripts/db/migrate-personal.sh` | Quien implemente 001 | H2 |
-| 001 | Copiar `data/fixtures` y activar `Demo__Enabled` y `Demo__FixturePath` | `infra/docker/backend/Dockerfile`, compose de producción | Quien implemente 001, con revisión de infraestructura | H2 |
-| 003 | Cliente M2M de Cognito (`client_credentials`) | Terraform `identity.tf` | Infraestructura (R-22) | H3 |
-| 003 | Perfil `agent` de n8n en el compose local (plan B) | `infra/compose/docker-compose.local.yml` | Quien implemente 003 | H4 |
-| 004 T1b | PWA servida en `/campo/` y callbacks HTTPS de Cognito | `infra/nginx/istpetdev.conf`, Terraform `identity.tf` | Infraestructura (R-24) | H3 |
-| 005 | Base de simulación y su cadena de conexión | Bootstrap de RDS, secretos, compose | Infraestructura | H4 |
-| 005 FR-21 | Corrida oficial en una máquina dedicada, no en el t3.micro; el ZIP se importa con verificación SHA-256 | Procedimiento del spec 005 | Quien implemente 005 | H4 |
-| Transversal | `VerifyFull`, Swagger restringido, SSH cerrado, host de la app en Terraform | [issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14) | Infraestructura | Antes de H5 |
-
-## 7. Checklist por día
-
-**13-oct**
-- [ ] Coordinación con infraestructura: este runbook, issues #14 a #16, R-22 y R-24.
-- [ ] Respaldo verificado (#15).
-- [ ] Tag `schema95-archivo`.
-- [ ] Reset de las bases.
-- [ ] 001 en `develop` y en `main` (H2, 20:00).
-- [ ] `/health/ready` responde 200 en `https://istpetdev.doicela.dev`.
-
-**14-oct**
-- [ ] Migraciones de 002 y 004, cada una promovida a `main`.
-- [ ] Cliente M2M y callbacks HTTPS aplicados.
-- [ ] PWA en `/campo/`.
-- [ ] Recorrido de H3 (20:00) en teléfonos.
-
-**15-oct**
-- [ ] Migraciones de 003 y 005, con la base de simulación creada.
-- [ ] H4 (11:00).
-- [ ] Correcciones de #14 desplegadas.
-- [ ] H5 (14:00): no entran más migraciones ni cambios de infraestructura.
-- [ ] Snapshot posterior al congelamiento para el día del evento.
-
-## 8. Riesgos
-
-R-19, R-22, R-24, R-28, R-32 y R-33 en [[Riesgos y decisiones pendientes]].
-
-## Relacionado
-
-[[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]]
+[[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[Estrategia de tres entornos y base de datos]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]]

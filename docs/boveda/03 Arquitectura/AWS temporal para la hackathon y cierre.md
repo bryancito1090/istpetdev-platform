@@ -460,5 +460,11 @@ Para evitar bloqueos y pisadas de esquema entre compañeros, se adoptó el está
 - **Guía completa en el repositorio:** `docs/database-workflow.md` (y referenciada en `docs/onboarding.md`).
 - **Filosofía:** El código C# es la fuente de la verdad; nunca se ejecutan sentencias DDL manuales en clientes SQL.
 
+### 5. Consolidación Operativa para el Hackathon — 13 de octubre de 2026
+Para agilizar el desarrollo colaborativo y evitar fallos por caídas de túneles SSM en laptops, el flujo diario del equipo se formaliza en tres entornos desacoplados ([[Estrategia de tres entornos y base de datos]]):
+1. **Laboratorio:** Base compartida en el servidor local del instituto (`192.168.7.50:15432`) para los 5 integrantes mediante red LAN.
+2. **Casa:** Docker Desktop local (`localhost:15432`) para desarrollo individual offline.
+3. **Producción:** Amazon RDS (`istpetdev_integration`) para el servidor público en AWS EC2 ([https://istpetdev.doicela.dev](https://istpetdev.doicela.dev)).
+
 
 

@@ -276,22 +276,29 @@ Planificación documental: no se ejecutaron aplicación, suites funcionales, ens
 
 Verificación documental de esta actualización: **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores**. Se conservan dos avisos previos de lenguaje.
 
-## Preparación de publicación en develop — 12 de octubre de 2026
+## Estrategia de tres entornos y ciclo de vida de persistencia — 13 de octubre de 2026
 
-Fuente: instrucción directa de Bryan de subir los cambios a `develop`. Se prepara una rama documental desde `origin/develop` actualizado (`19a3f1a`, con el spec 001 ya integrado), para publicar mediante PR conforme a CONTRIBUTING. Se sustituyen los enlaces a TRX locales fuera de Git por sus rutas de artefactos y el resumen de evidencia versionado; la documentación compartida conserva enlaces disponibles tras clonar.
+Fuente: instrucción directa de Jorge/Bryan de formalizar la estrategia de tres entornos de persistencia (Casa / Standalone, Laboratorio / On-Premise en red local `192.168.7.50:15432`, y Producción / AWS RDS `istpetdev_integration`) para eliminar la fricción operativa durante el desarrollo del hackathon. Se crea [[Estrategia de tres entornos y base de datos]] y se enlaza desde [[Entornos y operacion acordados]] y [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]].
 
-Verificación previa al PR: `npm run check` aprobado (lint y compilación de API, contratos, web y móvil), con avisos existentes de dependencias frontend; **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores** y dos avisos documentales previos. La publicación es documental y no incluye cambios de aplicación ni preparación de una release en `main`.
+Verificación documental de esta actualización: **82 notas Markdown**, **808 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
 
 ## Asignación de specs 004 y 005 a Alexander Martínez — 13 de octubre de 2026
 
 Fuente: solicitud de Alexander Martínez de asumir la implementación de los specs 004 (Campo, QR y PWA Offline) y 005 (Panel Web y Simulador 90 Días), sincronización con Linear (tareas ALK-12 a ALK-35) y formalización del plan de trabajo en la bóveda. Se crea [[Plan de trabajo specs 004 y 005]], se actualiza el mapa de la bóveda, el registro de seguimiento y los metadatos de los specs 004 y 005.
 
-Verificación documental de esta actualización: **82 notas Markdown**, **797 enlaces internos resueltos**, **0 errores**.
+## Integración de estrategia de tres entornos en develop — 13 de octubre de 2026
+
+Fuente: integración de la rama `fix/ci-despliegue-inmutable` en `develop` con la estrategia de persistencia en tres entornos, conmutador `switch-db.mjs` y actualización de configuración predeterminada de base de datos para el equipo.
+
+Verificación documental de esta actualización: **83 notas Markdown**, **812 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
+
 
 ## Segregación de roles por plataforma y ADR-24 — 13 de octubre de 2026
 
 Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y Móvil (PWA de Campo), incorporar el rol y flujo ágil de Receptor Hospitalario y retirar accesos públicos prematuros. Se actualiza [[Usuarios y flujos]], [[Decisiones de arquitectura]] con ADR-24 y ADR-25, y se genera [[2026-10-13-informe-segregacion-roles-y-plataformas]].
 
-Verificación documental de esta actualización: **83 notas Markdown**, **798 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
 
 
