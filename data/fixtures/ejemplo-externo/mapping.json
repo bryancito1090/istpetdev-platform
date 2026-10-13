@@ -1,0 +1,24 @@
+{
+  "name": "ejemplo-externo",
+  "delimiter": ";",
+  "decimalSeparator": ",",
+  "dateFormats": ["yyyy-MM"],
+  "files": {
+    "service_points": {
+      "file": "clientes.csv",
+      "columns": { "code": "Cód. Cliente", "name": "Razón Social", "lat": "Latitud", "lon": "Longitud", "region": "Provincia" },
+      "constants": { "category": "cliente" }
+    },
+    "products": {
+      "file": "catalogo.csv",
+      "columns": { "sku": "Código", "name": "Descripción" },
+      "constants": { "base_unit": "L" }
+    },
+    "consumptions": {
+      "file": "consumo_mensual.csv",
+      "columns": { "point_code": "Cliente", "sku": "Producto", "date": "Mes", "quantity": "Galones" },
+      "constants": { "period_days": "30" },
+      "scale": { "quantity": 3.78541 }
+    }
+  }
+}

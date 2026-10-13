@@ -45,9 +45,13 @@ tags: [hackathon, equipo]
 
 ## Ejecución del equipo
 
+- [[Seguimiento de implementacion y pruebas]] — entrada del equipo desde el 13-oct: integrar, probar, corregir faltantes y decidir el pase técnico.
+- [[Registro de seguimiento y hallazgos]] — tablero editable de responsables, versiones, casos, evidencia y siguientes acciones.
+- [[Continuidad del piloto y specs 007 a 012]] — entrada y primera entrega de cada etapa futura, preservando el alcance de demo.
 - [[Equipo y acuerdos]], [[Plan de ejecucion]], [[Backlog]].
 - [[Riesgos y decisiones pendientes]], [[Registro de trabajo previo y del evento]].
 - [[Definiciones de producto y plan hasta el pitch]] — objetivo norte, definiciones D1–D8, cortes, guardarraíles, hitos y plan B hasta el pitch (12-oct). Specs implementables en `docs/specs/` del repositorio.
+- [[Analisis de cobertura de specs]] — porcentaje propuesto por spec, avance local acreditable y brechas de la demo frente a posibles entregas posteriores.
 - [[Coordinacion migracion schema95]] — histórico: aplicación personal y evidencia de Schema95.
 - [[Registro de mentorias]].
 

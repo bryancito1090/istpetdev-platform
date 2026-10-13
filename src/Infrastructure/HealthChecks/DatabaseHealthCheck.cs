@@ -34,6 +34,10 @@ public class DatabaseHealthCheck : IHealthCheck
                 var pending = await _dbContext.Database.GetPendingMigrationsAsync(cts.Token);
                 if (pending.Any())
                     return HealthCheckResult.Unhealthy("Database migrations are pending.");
+                var actual = await _dbContext.Database.SqlQueryRaw<string>(
+                    "SELECT table_name AS \"Value\" FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT IN ('__EFMigrationsHistory','spatial_ref_sys')").ToListAsync(cts.Token);
+                var expected = _dbContext.Model.GetEntityTypes().Select(e => e.GetTableName()).Distinct().Order().ToArray();
+                if (!actual.Order().SequenceEqual(expected)) return HealthCheckResult.Unhealthy("Database schema is incompatible with DemoCore.");
                 return HealthCheckResult.Healthy("PostgreSQL database is available.");
             }
 

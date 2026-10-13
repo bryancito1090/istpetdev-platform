@@ -90,6 +90,8 @@ Los nombres de la columna «Origen» son skills personales de un integrante (car
 
 El 9 de octubre se agrega [[istpetdev-prelaunch]] con su nota como fuente editable, paquete local generado y referencia de activación en AGENTS.md. Esa referencia se aplica antes de arranque/exposición/despliegue desde este contexto de trabajo. No instala por sí sola la skill globalmente ni modifica el repositorio de software; la copia local debe actualizarse desde la nota cuando cambie. La activación en las otras herramientas sigue requiriendo C-06.
 
+**Comprobación del 12-oct durante la planificación del seguimiento:** la copia local de prelaunch se regeneró desde su fuente porque omitía el complemento que limita RLS al diseño P2. Al generar la copia, conservar también los avisos de alcance y transformar los wikilinks en rutas de notas. La demo verifica roles fijos/asignaciones y seguridad de los caminos existentes; leer las referencias de RBAC administrable/Schema95 no activa esos módulos. La fuente editable permanece en esta bóveda y el paquete local sigue siendo generado, sin una segunda variante editable.
+
 ## Validar una skill (C-06)
 
 Con una tarea pequeña y real, en cada herramienta que use el equipo:

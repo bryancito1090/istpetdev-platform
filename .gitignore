@@ -67,3 +67,7 @@ AGENTS.md
 CLAUDE.md
 GEMINI.md
 .github/copilot-instructions.md
+
+# Evidencia local generada por las pruebas (CI conserva sus artifacts)
+**/TestResults/
+artifacts/

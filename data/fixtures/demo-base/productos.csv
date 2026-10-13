@@ -1,0 +1,3 @@
+sku,name,base_unit,weight_per_unit,volume_per_unit
+DES-01,Desinfectante hospitalario,L,1.05,0.001
+PAP-01,Papel higiénico industrial,UN,0.80,0.004

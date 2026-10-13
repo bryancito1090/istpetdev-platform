@@ -7,6 +7,9 @@ tags: [demo, validacion, istpetdev]
 
 # Plan de validación
 
+> [!important] Ejecución y registro desde el 13-oct
+> La secuencia de campaña integrada está en [[Seguimiento de implementacion y pruebas]] y sus estados en [[Registro de seguimiento y hallazgos]]. Esta matriz sigue siendo la fuente de criterios V. Para la demo se comprueban roles fijos y asignaciones; los casos de RBAC administrable, plantillas y RLS corresponden al alcance diferido descrito en las notas fuente.
+
 Las pruebas se realizan sobre entregas reales de software. **Todavía no se han ejecutado**; esta nota define qué evidencia necesitamos.
 
 ## Matriz de validación

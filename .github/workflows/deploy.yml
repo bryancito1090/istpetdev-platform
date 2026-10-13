@@ -5,6 +5,13 @@ on:
     branches: ["main"]
     paths:
       - "src/**"
+      - "scripts/db/**"
+      - ".dockerignore"
+      - ".config/dotnet-tools.json"
+      - "global.json"
+      - "IstpetDev.sln"
+      - "data/fixtures/**"
+      - "tests/**"
       - "apps/web/**"
       - "libs/shared-core/**"
       - "infra/**"
@@ -77,45 +84,12 @@ jobs:
             echo "Reiniciando servicios de aplicación..."
             docker compose -f infra/compose/docker-compose.prod.yml restart istpetdev-backend istpetdev-web
             sleep 5
-            (curl -sf http://127.0.0.1:5000/health/live || curl -sf http://localhost/health/live) && echo "Servicios reiniciados correctamente"
-
-  detect-changes:
-    name: "Detección Inteligente de Rutas"
-    needs: validate-source
-    runs-on: ubuntu-latest
-    if: ${{ inputs.restart_only != true }}
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - name: "Checkout del código"
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: "Evaluar rutas modificadas"
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            backend:
-              - 'src/**'
-              - 'infra/docker/backend/**'
-              - 'IstpetDev.sln'
-              - 'infra/compose/docker-compose.prod.yml'
-              - '.github/workflows/deploy.yml'
-            frontend:
-              - 'apps/web/**'
-              - 'libs/shared-core/**'
-              - 'infra/docker/web/**'
-              - 'package*.json'
-              - 'infra/compose/docker-compose.prod.yml'
-              - '.github/workflows/deploy.yml'
+            (curl -sf http://127.0.0.1:5000/health/ready || curl -sf http://localhost/health/ready) && echo "Servicios reiniciados correctamente"
 
   backend-qa:
     name: "QA Backend (.NET 8)"
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    needs: validate-source
+    if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código"
@@ -132,13 +106,26 @@ jobs:
       - name: "Compilar solución en Release"
         run: dotnet build IstpetDev.sln -c Release --no-restore
 
-      - name: "Verificar integridad del modelo relacional (Schema 95 & RLS)"
-        run: dotnet run --project tools/Schema95Check -- "$PWD"
+      - name: "Verificar núcleo, importador y recorrido HTTP"
+        env:
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1'
+        run: |
+          for category in Unit Integration E2E; do
+            dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
+          done
+          python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Conservar resultados de pruebas"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec001-cd-tests
+          path: artifacts/spec001/*.trx
 
   frontend-qa:
     name: "QA Frontend (Angular 22)"
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+    needs: validate-source
+    if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código"
@@ -164,8 +151,8 @@ jobs:
 
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
-    needs: [validate-source, detect-changes, backend-qa]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch') }}
+    needs: [validate-source, backend-qa]
+    if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -204,8 +191,8 @@ jobs:
 
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
-    needs: [validate-source, detect-changes, frontend-qa]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && (needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch') }}
+    needs: [validate-source, frontend-qa]
+    if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -244,8 +231,8 @@ jobs:
 
   deploy-ec2:
     name: "Despliegue Inmutable en Servidor EC2"
-    needs: [validate-source, detect-changes, backend-qa, frontend-qa, build-backend, build-frontend]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
+    needs: [validate-source, build-backend, build-frontend]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código para sincronizar configuraciones"
@@ -323,16 +310,17 @@ jobs:
             echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
 
             OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
-            if docker manifest inspect "ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}" >/dev/null 2>&1; then
-              export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
-            else
-              export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:latest"
-            fi
+            export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
+            export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
 
-            if docker manifest inspect "ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}" >/dev/null 2>&1; then
-              export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
-            else
-              export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:latest"
+            # Verificacion estricta de artefactos inmutables en GHCR (Fail-Fast sin fallbacks ciegos)
+            if ! docker manifest inspect "$BACKEND_IMAGE" >/dev/null 2>&1; then
+              echo "Error critico: La imagen inmutable de backend no existe en GHCR: $BACKEND_IMAGE"
+              exit 1
+            fi
+            if ! docker manifest inspect "$FRONTEND_IMAGE" >/dev/null 2>&1; then
+              echo "Error critico: La imagen inmutable de frontend no existe en GHCR: $FRONTEND_IMAGE"
+              exit 1
             fi
             if [ -z "$DB_PASSWORD" ] && [ -f .env ]; then
               echo "Cargando DB_PASSWORD desde archivo .env persistente en host..."
