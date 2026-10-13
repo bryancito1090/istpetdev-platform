@@ -49,6 +49,8 @@ export async function calculateBlobSha256(blob: Blob): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+const DRIVER_ACK_REVISION_KEY = 'istpetdev_driver_ack_route_revision';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -61,6 +63,7 @@ export class FieldOutboxService {
   readonly activeAssignment = signal<MobileAssignmentResponse | null>(null);
   readonly isSyncing = signal<boolean>(false);
   readonly isSimulatingOffline = signal<boolean>(false);
+  readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
 
   constructor() {
     this.init();
@@ -105,6 +108,7 @@ export class FieldOutboxService {
     const db = await this.getDb();
     await db.put('assignments', assignment);
     this.activeAssignment.set(assignment);
+    this.checkDriverNotices(assignment);
   }
 
   /**
@@ -116,9 +120,46 @@ export class FieldOutboxService {
     if (all && all.length > 0) {
       const latest = all[0];
       this.activeAssignment.set(latest);
+      this.checkDriverNotices(latest);
       return latest;
     }
     return null;
+  }
+
+  /**
+   * Evalúa si existe un aviso de revisión de ruta (driverMessage) no reconocido aún (PA-02).
+   */
+  checkDriverNotices(assignment: MobileAssignmentResponse): void {
+    if (!assignment || !assignment.routes) return;
+    try {
+      const lastAckStr = localStorage.getItem(DRIVER_ACK_REVISION_KEY);
+      const lastAck = lastAckStr ? parseInt(lastAckStr, 10) : 0;
+
+      for (const route of assignment.routes) {
+        if (route.driverMessage && route.revision > lastAck) {
+          this.activeDriverNotice.set({
+            revision: route.revision,
+            message: route.driverMessage,
+            routePlanId: route.routePlanId
+          });
+          break;
+        }
+      }
+    } catch {
+      // Ignorar fallo de localStorage
+    }
+  }
+
+  /**
+   * Marca el aviso de revisión de ruta como reconocido para no insistir (PA-02).
+   */
+  acknowledgeNotice(revision: number): void {
+    try {
+      localStorage.setItem(DRIVER_ACK_REVISION_KEY, revision.toString());
+    } catch {
+      // Ignorar fallo de storage
+    }
+    this.activeDriverNotice.set(null);
   }
 
   /**
@@ -244,9 +285,9 @@ export class FieldOutboxService {
 
       const receiptId = receiptResponse.receiptId;
 
-      // Paso 2: Subir foto de evidencia si existe
+      // Paso 2: Subir foto de evidencia con reintentos y retroceso exponencial (PA-02, F5)
       if (item.evidencePhotoBlob && item.photoSha256 && !item.photoEvidenceId) {
-        const photoUpload = await this.uploadAndConfirmEvidence(
+        const photoUpload = await this.uploadAndConfirmEvidenceWithRetry(
           receiptId,
           'photo',
           item.evidencePhotoBlob,
@@ -257,9 +298,9 @@ export class FieldOutboxService {
         await db.put('outbox_items', item);
       }
 
-      // Paso 3: Subir firma si existe
+      // Paso 3: Subir firma con reintentos y retroceso exponencial (PA-02, F5)
       if (item.evidenceSignatureBlob && item.signatureSha256 && !item.signatureEvidenceId) {
-        const sigUpload = await this.uploadAndConfirmEvidence(
+        const sigUpload = await this.uploadAndConfirmEvidenceWithRetry(
           receiptId,
           'signature',
           item.evidenceSignatureBlob,
@@ -365,6 +406,59 @@ export class FieldOutboxService {
           error: (err) => reject(err)
         });
     });
+  }
+
+  /**
+   * Sube y confirma evidencia binaria implementando reintentos con retroceso exponencial (PA-02, F5).
+   */
+  private async uploadAndConfirmEvidenceWithRetry(
+    receiptId: string,
+    kind: 'photo' | 'signature',
+    blob: Blob,
+    sha256: string,
+    operationId: string,
+    maxRetries = 3
+  ): Promise<{ evidenceId: string }> {
+    let attempt = 0;
+    let delayMs = 1000;
+
+    while (attempt < maxRetries) {
+      try {
+        return await this.uploadAndConfirmEvidence(receiptId, kind, blob, sha256, operationId);
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          throw err;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        delayMs *= 2;
+      }
+    }
+    throw new Error(`Excedido límite de reintentos para subir evidencia ${kind}.`);
+  }
+
+  /**
+   * Resuelve un conflicto 409 (ASSIGNMENT_CHANGED / versión) actualizando la versión esperada
+   * pero manteniendo intactos todos los datos capturados y evidencias locales (FR-12).
+   */
+  async resolveConflictWithNewVersion(operationId: string, newVersion: number): Promise<OutboxItem> {
+    const db = await this.getDb();
+    const item = await db.get('outbox_items', operationId);
+    if (!item) {
+      throw new Error(`Ítem ${operationId} no encontrado en la cola outbox.`);
+    }
+
+    item.expectedDeliveryVersion = newVersion;
+    item.receiptPayload.expectedDeliveryVersion = newVersion;
+    item.status = 'SavedOnDevice';
+    item.errorCode = undefined;
+    item.errorMessage = undefined;
+
+    await db.put('outbox_items', item);
+    await this.refreshOutboxItems();
+
+    // Reintentar sincronización inmediata
+    return this.syncItem(operationId);
   }
 
   /**

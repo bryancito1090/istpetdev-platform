@@ -145,16 +145,32 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                 }
               </div>
 
-              <!-- Mensaje de Conflicto 409 si ocurrió -->
+              <!-- Mensaje de Conflicto 409 (FR-12 / F5) -->
               @if (item.status === 'Conflict' && item.errorMessage) {
-                <div class="p-2.5 bg-rose-50 border border-rose-200 rounded text-rose-800 text-[11px]">
-                  <span class="font-bold block">Conflicto ({{ item.errorCode }}):</span>
-                  <span>{{ item.errorMessage }}</span>
+                <div class="p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-900 text-xs space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold">Conflicto de Servidor ({{ item.errorCode }}):</span>
+                    <span class="text-[10px] bg-rose-200 text-rose-900 px-1.5 py-0.5 rounded font-mono font-bold">Datos Protegidos</span>
+                  </div>
+                  <p class="text-[11px] leading-relaxed">{{ item.errorMessage }}</p>
+                  <p class="text-[10px] text-rose-700 italic">
+                    ✓ La firma y foto capturadas en campo no se han perdido. Puede resolver adaptando a la versión de ruta activa.
+                  </p>
                 </div>
               }
 
               <!-- Botones de Acción -->
-              <div class="flex gap-2 pt-1">
+              <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                @if (item.status === 'Conflict') {
+                  <ion-button
+                    size="small"
+                    color="warning"
+                    class="flex-1"
+                    (click)="resolveConflict(item)">
+                    ⚡ Resolver con Nueva Versión y Reintentar
+                  </ion-button>
+                }
+
                 @if (item.status !== 'Complete') {
                   <ion-button
                     size="small"
@@ -186,6 +202,12 @@ export class SyncPage {
 
   syncSingle(operationId: string): void {
     this.outboxService.syncItem(operationId).catch(() => {});
+  }
+
+  resolveConflict(item: OutboxItem): void {
+    // Si la versión actual era 1 o 2, intentar avanzar a la versión activa o +1
+    const nextVersion = item.expectedDeliveryVersion < 3 ? item.expectedDeliveryVersion + 1 : 1;
+    this.outboxService.resolveConflictWithNewVersion(item.operationId, nextVersion).catch(() => {});
   }
 
   getStatusLabel(status: string): string {

@@ -63,6 +63,32 @@ import { FieldOutboxService } from '../field/outbox/field-outbox.service';
         </span>
       </div>
 
+      <!-- Banner de Aviso de Revisión de Ruta (PA-02 / FR-12 / F5) -->
+      @if (outboxService.activeDriverNotice(); as notice) {
+        <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-950 rounded-xl shadow-sm flex items-start gap-3">
+          <span class="text-2xl mt-0.5">⚠️</span>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-black text-xs uppercase tracking-wider text-amber-900">
+                Aviso de Revisión de Ruta (Rev {{ notice.revision }})
+              </span>
+              <span class="text-[10px] font-mono bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold">
+                {{ notice.routePlanId }}
+              </span>
+            </div>
+            <p class="text-xs font-medium text-amber-900 leading-relaxed">{{ notice.message }}</p>
+            <div class="mt-2.5">
+              <button
+                type="button"
+                (click)="outboxService.acknowledgeNotice(notice.revision)"
+                class="text-xs font-bold px-3 py-1.5 bg-amber-900 text-white rounded-lg active:bg-amber-950 transition shadow-sm">
+                ✓ Entendido / Reconocer Aviso
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Tarjeta de Sesión Activa del Conductor -->
       <ion-card class="m-0 mb-4">
         <ion-card-header class="pb-2">
