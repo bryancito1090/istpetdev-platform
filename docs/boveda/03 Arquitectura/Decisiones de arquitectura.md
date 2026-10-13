@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-13
 tags: [arquitectura, contratos]
 ---
 
@@ -36,6 +36,7 @@ tags: [arquitectura, contratos]
 | ADR-22 | Autonomía del agente | Agente con herramientas y motor de reglas determinista | **Propuesta, 2026-10-12** (Deciders PENDIENTE): el LLM orquesta y explica sin calcular; reglas en el backend deciden qué se ejecuta solo y qué se escala; complementa ADR-08 |
 | ADR-24 | Segregación de Plataformas y Roles de Campo | Web (Torre de Control) vs Móvil (Campo) y Recepción Hospitalaria QR | **Aceptada, 2026-10-13** (Deciders: Bryan y Equipo de Desarrollo): Bodega, Conductor y Receptor operan exclusivamente en PWA móvil (`apps/mobile`); Planificador, Gerencia y Auditor en Web (`apps/web`); Automatización como daemon sin interfaz. Recepción hospitalaria mediante verificación binaria y reporte ágil de novedades. |
 | ADR-25 | Ergonomía PWA y flujos por rol | Roles segregados, entrega desde ruta, lectura asimétrica QR y cero emojis | **Aceptada por Bryan y equipo, 2026-10-13**: Vistas exclusivas por rol (Chofer, Bodega, Supervisor); chofer simplificado a 3 botones; entrega iniciada desde parada en «Ver Ruta Hoy»; lectura asimétrica de QR (chofer lee caja en bodega, hospital lee al chofer); incidencias en entrega conectadas a alertas de supervisión; prohibición estricta de emojis por SVGs técnicos. |
+| ADR-26 | Rol Auditor de solo lectura | Séptimo rol fijo, humano, con lectura total en la web y ninguna escritura | **Aceptada por Joseph Baño, 2026-10-13** (sesión de definición del spec 013): formaliza el Auditor que ADR-24 ya asigna a la web; amplía los roles fijos de ADR-21 sin migración; [ADR-26](#adr-26--rol-auditor-de-solo-lectura) |
 
 ## ADR-01 — versión de backend
 
@@ -305,3 +306,54 @@ En pruebas iniciales de campo se identificaron tres fricciones críticas:
 - Rutas protegidas mediante `RoleGuard` y sesión gestionada por `MobileAuthService`.
 - Pruebas manuales en `http://localhost:8100` para los tres roles.
 
+## ADR-26 — Rol Auditor de solo lectura
+
+- **Estado:** aceptado. **Fecha:** 2026-10-13. **Deciders:** Joseph Baño (DevOps / Tech Writer). **Origen:** sesión de definición del [spec 013](../../specs/013-login-y-cuentas/spec.md) del 13-oct-2026, al detectar que ADR-24 nombra un rol que la API no tiene. **Complementa:** ADR-14, ADR-21 y ADR-24.
+
+### Contexto y requisito
+
+ADR-24 asigna la web a «Planificador, Gerencia y Auditor», y el frontend ya define un perfil `Auditor`. La API, en cambio, solo conoce seis roles fijos (`src/Domain/Common/Roles.cs`, spec 001): Gerencia, Planificador, Bodega, Conductor, Receptor y Automatizacion. Una cuenta con rol `Auditor` hoy no obtiene ningún permiso, y el spec 013 necesita saber qué roles puede asignar Gerencia.
+
+Para la demo y el piloto hace falta un perfil que revise la trazabilidad completa (custodia, recepciones, decisiones del agente y cambios de cuentas) sin poder alterar la operación. Ningún rol actual cumple eso: Gerencia y Planificador pueden aprobar, publicar y gestionar.
+
+### Opciones
+
+| Opción | Ventaja | Costo/límite |
+|---|---|---|
+| A. No agregarlo y retirarlo del frontend y de ADR-24 | Sin cambios en la API | Quien revisa la trazabilidad necesita una cuenta de Gerencia, con permisos de escritura que no le corresponden |
+| B. Séptimo rol fijo de solo lectura total | Separa revisar de operar; reutiliza las pantallas de la web | Revisar la autorización de cada endpoint de lectura |
+| C. Rol de lectura acotada a custodia y auditoría | Mínimo privilegio estricto | Requiere pantallas propias, que hoy no existen |
+
+### Decisión
+
+Se adopta **B**. `Auditor` es un séptimo rol fijo, humano (`Kind = human`), que opera solo en la web:
+
+- **Puede leer** todo lo que leen Gerencia y Planificador: panel, rutas y revisiones, entregas, custodia completa, recepciones con su estado de evidencia, decisiones y traza del agente, simulaciones y la auditoría de cuentas (`AuditEvent`).
+- **No puede** crear, aprobar, rechazar, publicar, replanificar, revertir, despachar, recibir, importar, reiniciar la demo, cambiar el modo de autonomía ni gestionar cuentas. Cualquier escritura responde 403.
+- Gerencia puede asignarlo desde la gestión de cuentas del spec 013, igual que los otros roles humanos.
+
+Es una ampliación de los **roles fijos** de ADR-21, no la administración dinámica de roles y permisos (RF-17), que sigue en P2.
+
+### Consecuencias
+
+- **Datos:** sin migración. `Account.Role` es texto sin restricción en la base; basta con agregar `Auditor` a `Roles.cs` (`All`, `IsValid` y un grupo de lectura).
+- **API:** los endpoints de lectura que hoy usan `Roles.Planning` o listas explícitas incluyen `Auditor`; los de escritura no. Una prueba recorre los endpoints de escritura con un token de Auditor y exige 403.
+- **Frontend:** la web admite Auditor (ADR-24) y oculta todas las acciones de escritura; la PWA lo rechaza con el mensaje de plataforma.
+- **Specs:** 013 lo incluye como rol asignable y como rol de la web; 001 pasa de seis a siete roles fijos.
+- **Pruebas de autorización** de 001, 002 y 003 deben sumar el caso Auditor en sus endpoints de escritura.
+
+### Verificación
+
+Se acepta cuando: (1) `Roles.cs` incluye `Auditor`; (2) una prueba de integración con token de Auditor obtiene 200 en los endpoints de lectura y 403 en todos los de escritura; (3) la web muestra al Auditor el panel sin botones de acción. Pendiente de implementación en el spec 013.
+
+### Referencias
+
+[[Decisiones de arquitectura]] (ADR-14, ADR-21, ADR-24) · [[Identidad OIDC y sesiones]] · [[RBAC y configuracion del sistema]] · [spec 013](../../specs/013-login-y-cuentas/spec.md) · [spec 001](../../specs/001-nucleo-delgado-importador/spec.md)
+
+### Alternativas rechazadas
+
+| Alternativa | Razón de rechazo |
+|---|---|
+| A. No agregarlo | Obliga a dar permisos de escritura a quien solo revisa |
+| C. Lectura acotada | Exige pantallas nuevas antes del congelamiento sin ganancia visible para el jurado |
+| Lectura + exportación | La exportación todavía no existe (la planifica 005); se reconsidera después del evento |

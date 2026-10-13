@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-13
 tags: [hackathon, equipo, ia]
 ---
 
@@ -108,6 +108,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Núcleo delgado para la demo | ADR-21 | Aceptada (difiere ADR-16 a P2) | 2026-10-13, issue #16 | Jorge, Bryan, Joseph ([[Runbook de DevOps y base de datos para la demo]]) |
 | Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
 | Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
+| Rol Auditor de solo lectura | ADR-26 | Aceptada (séptimo rol fijo; amplía ADR-21 sin migración) | 2026-10-13, spec 013 | Joseph Baño |
 
 ## Nombres en código
 

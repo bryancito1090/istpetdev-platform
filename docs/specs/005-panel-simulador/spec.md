@@ -6,7 +6,7 @@ creado: 2026-10-12
 actualizado: 2026-10-13
 responsable: Alexander Martínez
 aprobado_por: PENDIENTE
-depende_de: [001, 002, 003, 004]
+depende_de: [001, 002, 003, 004, 013]
 boveda: ["04 Datos y algoritmos/Simulador y metricas", "04 Datos y algoritmos/Dataset y escenarios", "04 Datos y algoritmos/Rutas y sobrecostos", "06 Equipo/Definiciones de producto y plan hasta el pitch"]
 ---
 
@@ -79,7 +79,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 | FR-02 | El mapa Leaflet/OSM DEBE representar `legs` de 002: trazo vial si `source=Road` y geometría recibida; si `source=Approximation`, segmento punteado y etiqueta visible. Centro y zoom se derivan de los puntos visibles (`fitBounds`), sin coordenadas iniciales del fixture. Si faltan mosaicos por falta de red, la lista de paradas, ETA y costos sigue disponible; los iconos necesarios se sirven localmente. | ADR-05, Rutas y sobrecostos |
 | FR-03 | Las decisiones DEBEN aparecer en dos columnas: «Ejecutadas solas» y «Esperan tu aprobación». Cada tarjeta indica acción, motivo, `facts`, opción factible, revisión y enlace a la traza de 003. Estados posteriores (aprobada, rechazada, revertida) quedan en historial filtrable. | D5, RF-07 |
 | FR-04 | Aprobar, rechazar y deshacer DEBEN usar los endpoints de 002; el interruptor «solo proponer» DEBE leer y escribir el modo de 002. El frontend no recalcula ni clasifica decisiones. | D5 |
-| FR-05 | El panel DEBE usar el login PKCE y el interceptor del spec 004, sin otro flujo de autenticación. La API impone roles fijos de 001; controles de escritura solo para roles autorizados. | ADR-18, FR-17 de 004 |
+| FR-05 | El panel DEBE usar el login PKCE, los guards y el interceptor del [spec 013](../013-login-y-cuentas/spec.md), sin otro flujo de autenticación. La API impone roles fijos de 001 y ADR-26; controles de escritura solo para roles autorizados (el Auditor solo lee). | ADR-18, ADR-26, spec 013 |
 | FR-06 | El generador DEBE emitir los archivos canónicos de 001 y `road_segments` de 002, además de manifiesto con seed, versión, parámetros y hash. DEBE cargarlos mediante el importador de 001 en un entorno de simulación aislado de `demo-region`; no se permite escritura directa de datos operativos desde el generador. | G1, G2, Dataset y escenarios |
 | FR-07 | Antes de evaluar una política, la API DEBE precalcular por seed y escenario un calendario exógeno común de demanda solicitada, incidentes y tiempos. Cada política ve solo registros conocidos hasta la hora simulada. El flujo diario ordena observación → riesgo → plan/reserva → viajes/entregas → demanda → faltantes/conciliación; una entrega tardía no borra un faltante anterior. | RF-08, Simulador y metricas |
 | FR-08 | La política IstpetDev DEBE reutilizar el cálculo determinista de riesgo, asignación, planificador y costo de 002 mediante servicios de aplicación, sin HTTP interno, LLM ni n8n. Para una corrida se elige **solo matriz vial completa** o **solo aproximación declarada**; nunca tramos mezclados. | D4, ADR-23, G5 |

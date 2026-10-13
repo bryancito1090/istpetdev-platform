@@ -6,7 +6,7 @@ creado: 2026-10-12
 actualizado: 2026-10-13
 responsable: Alexander Martínez
 aprobado_por: PENDIENTE
-depende_de: ["001", "002"]
+depende_de: ["001", "002", "013"]
 boveda:
   - 02 Producto/Requisitos y aceptacion.md
   - 03 Arquitectura/Movil offline y sincronizacion.md
@@ -113,7 +113,7 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 | FR-14 | La página `public-trace` DEBE abrir la URL QR directamente, leer el token del fragmento, enviarlo por `X-Trace-Token`, retirarlo de la barra de direcciones con `history.replaceState` y dejar de usar la `Delivery` como unidad logística o el registro de demo fijo. | RF-13 |
 | FR-15 | La finalización de `RouteStop` DEBE derivarse de recepciones aceptadas para sus entregas; el endpoint provisional `/stops/{sequence}/complete` de 002 no puede simular recepción ni modificar inventario. | RF-06, S-04 |
 | FR-16 | `POST /api/v1/demo/route-plans/{id}/advance` (Planificación, solo con `Demo:Enabled=true`) DEBE completar las primeras N paradas pendientes ejecutando **preparación, despacho y recepción reales** con los servicios de este spec y las cantidades planificadas, de modo que inventario, custodia y estado de parada queden conciliados. Es idempotente por `operationId`. Reemplaza al endpoint provisional en los recorridos de 002 y 003 y en el pitch. | S-04, Dataset y escenarios (reinicio de demo) |
-| FR-17 | La web de bodega y la PWA del conductor DEBEN autenticarse con Cognito mediante Authorization Code + PKCE (ADR-18) usando `angular-auth-oidc-client` 22.0.1 e inyectar el access token con un interceptor en las llamadas a la API; el token no se persiste en el outbox (NFR-03). En la demo, las sesiones se inician antes del pitch. | ADR-18, Identidad OIDC y sesiones |
+| FR-17 | La PWA DEBE usar el login, los guards y el interceptor del [spec 013](../013-login-y-cuentas/spec.md) (Authorization Code + PKCE, ADR-18); 004 no implementa otro flujo de autenticación. El token no se persiste en el outbox (NFR-03). En la demo, las sesiones se inician antes del pitch. *(Desde el 13-oct el login es responsabilidad de 013; antes lo asignaba este FR.)* | ADR-18, Identidad OIDC y sesiones, spec 013 |
 | FR-18 | La PWA DEBE publicarse por HTTPS en el despliegue de demo (ruta `/campo/` del mismo dominio, servida por nginx) para poder instalarse y usar el service worker; los clientes Cognito web y móvil DEBEN incluir las URL de retorno y cierre HTTPS de la demo además de las de `localhost`. | ADR-04, ADR-18, Perfil A Reforzado |
 | FR-19 | `GET /api/v1/deliveries` DEBE listar entregas paginadas por ruta y estado para Gerencia, Planificación y Bodega, con punto, vencimiento, estado operativo y de evidencia, para el panel 005; no expone datos privados de la consulta pública. Dueño: equipo 004; integrar antes de H4. | RF-07, spec 005 |
 
