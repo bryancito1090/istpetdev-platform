@@ -105,7 +105,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Configuración y plantillas desde DB | ADR-16 | Aceptada la dirección, diseño propuesto | Instrucción directa, 2026-10-09 | Bryan |
 | Móvil offline y firma | ADR-17 | Aceptada (IndexedDB + signature_pad) | 2026-10-11 | Jefe de Frontend y Bryan |
 | Cliente OIDC Cognito | ADR-18 | Aceptada (PKCE S256 + AuthInterceptor) | 2026-10-11 | Jefe de Frontend y Bryan |
-| Núcleo delgado para la demo | ADR-21 | Propuesta (difiere ADR-16 a P2) | Sesión de definición del 12-oct | PENDIENTE (incluir a Bryan) |
+| Núcleo delgado para la demo | ADR-21 | Aceptada (difiere ADR-16 a P2) | 2026-10-13, issue #16 | Jorge, Bryan, Joseph ([[Runbook de DevOps y base de datos para la demo]]) |
 | Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
 | Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
 
