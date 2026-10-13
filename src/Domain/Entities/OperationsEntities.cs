@@ -42,4 +42,7 @@ public sealed class AgentDecision : OrganizationEntity
     public DateTime? DecidedAtUtc { get; set; }
     public DateTime? ExecutedAtUtc { get; set; }
     public string? FailureReason { get; set; }
+    public string DriverMessage { get; set; } = string.Empty;
+    public string ExplanationSource { get; set; } = "Template";
+    public string? ExplanationMismatch { get; set; }
 }

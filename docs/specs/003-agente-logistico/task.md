@@ -6,8 +6,8 @@
 
 | ID | Entrega comprobable | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|
-| T0 | Base 001/002 y contratos confirmados | 001, 002 | — | pendiente |
-| T1 | `AgentRun`, migración y reset | T0 | — | pendiente |
+| T0 | Base 001/002 y contratos confirmados | 001, 002 | — | completada |
+| T1 | `AgentRun`, migración y reset | T0 | — | completada |
 | T2 | Validador de cifras y mensajes | T1 | [P] con T3 y T4 | pendiente |
 | T3 | Scope M2M, rol y Terraform | T1 | [P] con T2 y T4 | pendiente |
 | T4 | Disparo HMAC de n8n | T1 | [P] con T2 y T3 | pendiente |
@@ -30,17 +30,17 @@
 
 **Archivos:** leer `docs/specs/001-nucleo-delgado-importador/` y `docs/specs/002-motor-logistico/`; sin cambios de código.
 
-- [ ] Comprobar que existen `src/Application/Imports/ValueParser.cs`, `src/Application/Logistics/Planning/RoutePlanner.cs`, `src/Api/Controllers/RoutePlansController.cs`, `src/Api/Controllers/IncidentsController.cs`, `AgentDecision`, el rol `Automatizacion` y `tests/IstpetDev.Tests`. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'Category=E2E'`; esperado: 0 fallos antes de atribuir regresiones a 003.
-- [ ] Confirmar contrato de `AgentDecision.CorrelationId`, hechos de cada decisión, publicación automática y endpoints de 002. Verificar si el reset de demo permite `demo-region` y si `GET /incidents/{id}` debe añadirse en T6.
-- [ ] Resolver `aprobado_por` y PA-01/PA-02 del spec con el equipo. Obtener la versión exacta de n8n que usa Bryan y definir quién aplica Terraform. No escribir claves en el repo. Crear rama desde el `develop` que contiene 001 y 002.
+- [x] Comprobar que existen `src/Application/Imports/ValueParser.cs`, `src/Application/Logistics/Planning/RoutePlanner.cs`, `src/Api/Controllers/RoutePlansController.cs`, `src/Api/Controllers/IncidentsController.cs`, `AgentDecision`, el rol `Automatizacion` y `tests/IstpetDev.Tests`. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'Category=E2E'`; esperado: 0 fallos antes de atribuir regresiones a 003.
+- [x] Confirmar contrato de `AgentDecision.CorrelationId`, hechos de cada decisión, publicación automática y endpoints de 002. Verificar si el reset de demo permite `demo-region` y si `GET /incidents/{id}` debe añadirse en T6.
+- [x] Resolver `aprobado_por` y PA-01/PA-02 del spec con el equipo. Obtener la versión exacta de n8n que usa Bryan y definir quién aplica Terraform. No escribir claves en el repo. Crear rama desde el `develop` que contiene 001 y 002.
 
 ### T1 — Persistir ejecuciones y limpiar en reset
 
 **Archivos:** crear `src/Domain/Entities/AgentRun.cs` y `src/Infrastructure/Persistence/Migrations/*_AgentRuns.cs`; modificar `src/Domain/Entities/LogisticsEntities.cs` (decisión), `src/Infrastructure/Persistence/LeanSchema.cs`, `ApplicationDbContext.cs`, `src/Application/Common/Interfaces/IApplicationDbContext.cs`, `src/Infrastructure/Demo/DemoResetService.cs`; probar en `tests/IstpetDev.Tests/Integration/Agent/AgentRunPersistenceTests.cs`.
 
-- [ ] Prueba roja `AgentRunPersistenceTests`: un run guarda tipo, estado, disparador, tiempos, latencia, modelo, versión de prompt, ejecución n8n, traza JSON y motivo de fallback; `AgentDecision` guarda `DriverMessage`, `ExplanationSource`, `ExplanationMismatch` y `CorrelationId`. `DriverMessage` > 160 caracteres se rechaza.
-- [ ] Crear una sola migración `AgentRuns` sobre la última de 002: tabla `AgentRun` e índice `(OrganizationId, StartedAtUtc DESC)`, columnas de decisión y `migrationBuilder.Sql(DemoGrants.Sql)` al final. `ToolCallsJson` inicia como `[]`, no `null`.
-- [ ] Prueba roja/verde de reset: `POST /demo/reset` borra `AgentRun` antes de decisiones y no deja referencias colgantes. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~AgentRunPersistenceTests'`; esperado: 0 fallos. Commit `feat(agent): persist runs and decision explanations`.
+- [x] Prueba roja `AgentRunPersistenceTests`: un run guarda tipo, estado, disparador, tiempos, latencia, modelo, versión de prompt, ejecución n8n, traza JSON y motivo de fallback; `AgentDecision` guarda `DriverMessage`, `ExplanationSource`, `ExplanationMismatch` y `CorrelationId`. `DriverMessage` > 160 caracteres se rechaza.
+- [x] Crear una sola migración `AgentRuns` sobre la última de 002: tabla `AgentRun` e índice `(OrganizationId, StartedAtUtc DESC)`, columnas de decisión y `migrationBuilder.Sql(DemoGrants.Sql)` al final. `ToolCallsJson` inicia como `[]`, no `null`.
+- [x] Prueba roja/verde de reset: `POST /demo/reset` borra `AgentRun` antes de decisiones y no deja referencias colgantes. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~AgentRunPersistenceTests'`; esperado: 0 fallos. Commit `feat(agent): persist runs and decision explanations`.
 
 ### T2 — Validar cifras del LLM
 
