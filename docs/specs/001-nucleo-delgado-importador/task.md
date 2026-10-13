@@ -3791,7 +3791,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IstpetDev.Application.Imports;
+using IstpetDev.Domain.Entities;
+using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Tests.Support;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IstpetDev.Tests.Integration.Api;
 
@@ -3883,6 +3887,37 @@ public class ImportsApiTests(PostgisContainer postgres)
         var response = await api.ClientFor(TestTokens.Driver).PostAsync("/api/v1/imports", Upload("ejemplo-externo"));
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Demo_reset_keeps_completed_simulation_evidence_for_spec_005()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var planner = api.ClientFor(TestTokens.Planner);
+        await using var scope = api.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var organizationId = await db.Organizations.Select(x => x.Id).SingleAsync();
+        var run = new SimulationRun
+        {
+            Id = Guid.NewGuid(), OrganizationId = organizationId, Seed = 11,
+            DatasetHash = "fixture-hash", PolicyCode = "fixed7-v1",
+            Status = "Completed", StartedAtUtc = DateTime.UtcNow,
+            CompletedAtUtc = DateTime.UtcNow
+        };
+        db.SimulationRuns.Add(run);
+        db.SimulationMetrics.Add(new SimulationMetric
+        {
+            Id = Guid.NewGuid(), OrganizationId = organizationId,
+            SimulationRunId = run.Id, Code = "km_total",
+            PolicyCode = "fixed7-v1", Numerator = 10m,
+            Value = 10m, Unit = "km"
+        });
+        await db.SaveChangesAsync();
+
+        Assert.Equal(HttpStatusCode.OK,
+            (await planner.PostAsync("/api/v1/demo/reset", null)).StatusCode);
+        Assert.Equal(1, await db.SimulationRuns.CountAsync(x => x.Id == run.Id));
+        Assert.Equal(1, await db.SimulationMetrics.CountAsync(x => x.SimulationRunId == run.Id));
+    }
 }
 ```
 
@@ -3932,7 +3967,8 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         }
     }
 
-    // Orden inverso a las dependencias. Se conservan Organization, Account e ImportBatch (historial).
+    // Orden inverso a las dependencias. Se conservan Organization, Account, ImportBatch
+    // y SimulationRun/SimulationMetric completados: el reset operativo no borra evidencia de 005.
     private async Task DeleteOperationalDataAsync(CancellationToken ct)
     {
         await db.CustodyEvents.ExecuteDeleteAsync(ct);
@@ -3947,8 +3983,6 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.RoutePlans.ExecuteDeleteAsync(ct);
         await db.AgentDecisions.ExecuteDeleteAsync(ct);
         await db.RiskSnapshots.ExecuteDeleteAsync(ct);
-        await db.SimulationMetrics.ExecuteDeleteAsync(ct);
-        await db.SimulationRuns.ExecuteDeleteAsync(ct);
         await db.IdempotencyRecords.ExecuteDeleteAsync(ct);
         await db.StockBalances.ExecuteDeleteAsync(ct);
         await db.HandlingUnitLines.ExecuteDeleteAsync(ct);
@@ -4060,7 +4094,7 @@ public sealed class ImportsController(IImportService importer) : ControllerBase
 - [ ] **Step 5: Ejecutar las pruebas y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ImportsApiTests"`
-Expected: PASS (5 pruebas). `Demo_reset_loads_the_fixture_on_a_brand_new_database` cubre el foco de revisión 4: la API crea PostGIS e inserta puntos sin reiniciar.
+Expected: PASS (6 pruebas). `Demo_reset_loads_the_fixture_on_a_brand_new_database` cubre el foco de revisión 4: la API crea PostGIS e inserta puntos sin reiniciar. `Demo_reset_keeps_completed_simulation_evidence_for_spec_005` fija la conservación del resultado al reiniciar la demo.
 
 - [ ] **Step 6: Empaquetar fixtures y activar la demo en el despliegue**
 

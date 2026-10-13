@@ -69,7 +69,7 @@ Este spec reduce el esquema al núcleo que la demo necesita y crea una **única 
 
 **Escenarios de aceptación:**
 
-1. **Dado** un entorno con datos modificados, **cuando** ejecuto el reset de demo, **entonces** quedan exactamente los datos del fixture `demo-base` y el reporte de importación correspondiente.
+1. **Dado** un entorno con datos modificados, **cuando** ejecuto el reset de demo, **entonces** quedan exactamente los datos **operativos** del fixture `demo-base` y el reporte de importación correspondiente; el historial de simulaciones completadas se conserva para auditoría del 005.
 2. **Dado** un entorno con la demo desactivada (`Demo:Enabled=false`), **cuando** llamo al reset, **entonces** responde 404.
 
 ### H4 — Acceso por roles simples (P1)
@@ -111,7 +111,7 @@ Este spec reduce el esquema al núcleo que la demo necesita y crea una **única 
 | FR-12 | Con errores y sin `allowPartial`, no se aplica nada (respuesta 422). Con `allowPartial=true` se aplican las filas válidas. | — |
 | FR-13 | Cada ejecución DEBE quedar registrada como `ImportBatch` con perfil, hash SHA-256 de los archivos, estado (`Applied`, `DryRun`, `Rejected`) y reporte. | Simulador y metricas (trazabilidad del dataset) |
 | FR-14 | `POST /api/v1/imports` (multipart) DEBE aceptar archivos asociados a una entidad por el nombre del campo del formulario (clave canónica o alias en español) o por el nombre de archivo declarado en el perfil. | Contratos API y eventos (convenciones) |
-| FR-15 | `POST /api/v1/demo/reset` DEBE borrar los datos operativos (no cuentas ni historial de importaciones) e importar el fixture configurado en una transacción; solo existe con `Demo:Enabled=true`. | Dataset y escenarios (reinicio de demo) |
+| FR-15 | `POST /api/v1/demo/reset` DEBE borrar los datos operativos (no cuentas, historial de importaciones ni `SimulationRun`/`SimulationMetric` completados) e importar el fixture configurado en una transacción; solo existe con `Demo:Enabled=true`. El 005 conserva también sus `SimulationEvent`/exportaciones completadas al integrarse. | Dataset y escenarios (reinicio de demo), spec 005 |
 | FR-16 | El repositorio DEBE incluir el fixture `data/fixtures/demo-base` (6 puntos, 2 SKU, 1 bodega, 1 vehículo, incluido el caso 60 L / 12 L por día) y el fixture `data/fixtures/ejemplo-externo` (formato distinto con perfil de mapeo). | Hechos canonicos (fixture inicial 6 puntos/2 SKU; caso hospital) |
 | FR-17 | La API DEBE autorizar por **rol fijo** almacenado en `Account.Role` y resuelto por `(issuer, subject)` del token; una identidad sin cuenta activa no tiene rol. | ADR-14 (roles funcionales), Identidad OIDC |
 | FR-18 | Las cuentas de la demo DEBEN declararse en configuración (`Demo:Accounts`) y sembrarse al arrancar. | — |

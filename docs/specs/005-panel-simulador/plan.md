@@ -1,6 +1,6 @@
 # 005 — Panel web y simulador comparativo de 90 días con KPIs: plan de implementación
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. El equipo redacta `task.md` y `test-e2e.md` a partir de este plan; no están incluidos en este PR documental.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Las tareas ejecutables están en [`task.md`](task.md) y los recorridos de aceptación en [`test-e2e.md`](test-e2e.md); aún no se han ejecutado.
 
 **Goal:** Sustituir el panel de maqueta por el recorrido operativo real y comparar 90 días de la política IstpetDev con dos baselines congelados, con resultados y exportación reproducibles.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- El estado es `borrador`: Deciders y aprobación del equipo pendientes; `task.md`/`test-e2e.md` son del equipo. Ninguna cifra de impacto se afirma medida antes de la primera corrida exportada.
+- El estado es `borrador`: Deciders y aprobación del equipo pendientes. `task.md`/`test-e2e.md` están redactados por petición posterior del usuario; ninguna tarea o E2E se afirma ejecutada ni una cifra de impacto medida antes de una corrida exportada.
 - G1–G8 y D1–D8 del [README](../README.md); reloj `America/Guayaquil`, mensajes en español, unidades base por SKU, tiempos internos UTC, hashes SHA-256, `numeric(18,3)` para cantidades.
 - Una migración de 005 sobre `develop` actualizado tras 001/002, coordinada secuencialmente con las migraciones de 003/004; termina en `migrationBuilder.Sql(DemoGrants.Sql)` y no altera la prueba de núcleo sin Schema95 de 001. El simulador puede avanzar antes de que 003/004 se integren.
 - H4, 15-oct 11:00, exige resultados reales de tres seeds y un escenario adverso. H5, 15-oct 14:00, congela funcionalidad. Sin simulador no se inventan cifras ni hay plan B honesto.
@@ -49,7 +49,9 @@ flowchart LR
 
 El worker reclama un `comparisonId` pendiente en la BD principal y escribe avance por unidad seed/escenario/política. Una sola comparación activa por instancia evita que las corridas contiendan con la demo. Si la API reinicia, marca `Interrupted` la unidad en curso y permite reencolarla desde el inicio con el mismo manifiesto; nunca combina métricas parciales de intentos distintos. La respuesta HTTP `202` no espera las 1080 jornadas ni sus planificaciones regionales.
 
-**Aislamiento:** configurar `ConnectionStrings:Simulation` a una base distinta de la operativa y ejecutar allí las mismas migraciones necesarias de 001/002/005. Antes de cada política se recrea el estado inicial en esa base **mediante el importador de 001**; la demanda futura permanece en calendario/ledger, no como `Consumption` visible desde el día 0. El modo de simulación inyecta reloj y repositorios de esa conexión en los servicios de 002. En despliegue, comprobar que la cadena no apunta a la misma base; si coincide, `POST /simulations/comparisons` responde error y no inicia. Datos de corrida completada y exportación quedan en la BD principal hasta limpieza explícita de demo.
+**Aislamiento:** configurar `ConnectionStrings:Simulation` a una base distinta de la operativa y ejecutar allí las mismas migraciones necesarias de 001/002/005. Antes de cada política se recrea el estado inicial en esa base **mediante el importador de 001**; la demanda futura permanece en calendario/ledger, no como `Consumption` visible desde el día 0. El modo de simulación inyecta reloj y repositorios de esa conexión en los servicios de 002. En despliegue, comprobar que la cadena no apunta a la misma base; si coincide, `POST /simulations/comparisons` responde error y no inicia. Datos de corrida completada y exportación quedan en la BD principal hasta una limpieza explícita de resultados de simulación.
+
+El reset operativo de 001 conserva `SimulationRun`/`SimulationMetric` completados (FR-15 y T7 corregidos al redactar las pruebas del 005); el 005 conserva también `SimulationEvent` y ZIP asociados. E2E-04 y E2E-07 verifican que reiniciar `demo-region` no borra evidencia de impacto.
 
 **Ciclo horario propuesto:** comienzo de jornada 06:00 local: revelar observaciones conocidas y avisos; 06:05 calcular riesgo/pedido; salida y entregas en ETA factible según rutas; cada solicitud de consumo tiene hora exógena; faltante se registra en esa hora si el stock local no basta. Conciliar al final del día. Los incidentes tienen hora de ocurrencia y de conocimiento; las políticas reaccionan solo tras conocerlos. Las tres comparten la misma secuencia de eventos ajenos a sus decisiones. Una obligación común no cambia de fecha límite por política.
 
@@ -113,9 +115,9 @@ Ningún paquete nuevo. Confirmar al implementar las versiones exactas del lockfi
 |---|---|---|
 | Unidad | Baselines en límites de aviso/día 7, RNG/calendario, orden horario, costo sin doble personal, quiebres evitados/nuevos, N/A y mediana/rango | `dotnet test --filter FullyQualifiedName~Simulation` |
 | Integración | Generador → importador 001 en base aislada, matriz homogénea, worker/reinicio, permisos, migración/grants, igualdad de stock operativo antes/después | `dotnet test --filter FullyQualifiedName~SimulationIntegration` |
-| Rendimiento | 1080 jornadas × regiones con matriz local; registrar número de llamadas, p50/p95 por llamada y total; si >60 min, perfilar planificación/copia de base/IO y resolver antes de H4 | Script `scripts/simulation/benchmark.sh` que deberá crear el equipo en `task.md` |
-| Web | API vacía/401/error, actualización cada 5 s, estados de decisiones, leyenda sólida/punteada, 1280/390 px y ausencia de literales del escenario | `npm --workspace apps/web run lint` y prueba web que defina el equipo |
-| E2E | Reset `demo-region` → riesgo/ruta → `advance` → incidente → columnas/aprobación → corrida/importación/exportación → repetición de métricas | Lo redacta el equipo en `test-e2e.md`; conservar exportación e IDs como evidencia |
+| Rendimiento | 1080 jornadas × regiones con matriz local; registrar número de llamadas, p50/p95 por llamada y total; si >60 min, perfilar planificación/copia de base/IO y resolver antes de H4 | Script `scripts/simulation/benchmark.sh` definido para implementación en `task.md` |
+| Web | API vacía/401/error, actualización cada 5 s, estados de decisiones, leyenda sólida/punteada, 1280/390 px y ausencia de literales del escenario | `npm run lint:web`, `npm run build:web` y E2E-01/02/10 |
+| E2E | Reset `demo-region` → riesgo/ruta → `advance` → incidente → columnas/aprobación → corrida/importación/exportación → repetición de métricas | Escenarios E2E-01–E2E-10 de `test-e2e.md`; conservar exportación e IDs como evidencia |
 
 La aceptación de impacto requiere comparar un resultado repetido, no solo comprobar que un archivo se descargó. Una segunda seed debe cambiar el calendario; la misma seed/versión debe mantener métricas y eventos. Los cuatro KPI de portada incluyen numerador/denominador en el detalle y N/A cuando procede.
 
@@ -135,6 +137,6 @@ La aceptación de impacto requiere comparar un resultado repetido, no solo compr
 
 Revertir el PR de implementación del 005 retira endpoints/pantallas/worker, pero no borra resultados ni la migración aplicada sin revisar datos. Detener el worker, conservar ZIP y `SimulationRun`, y crear una migración correctiva si la estructura falla; no usar `Down` destructivo en la base de ensayo compartida. Las lecturas de 002/004 son aditivas y pueden permanecer. La operación `demo-region` sigue en la conexión principal.
 
-## Descomposición para el `task.md` del equipo
+## Ejecución de `task.md`
 
-El equipo debe convertir cada fase en pasos pequeños TDD, con nombres de pruebas, código/firmas y comandos exactos, sin dejar huecos: (1) contratos de lectura; (2) base aislada e importador; (3) calendario; (4) baselines; (5) adaptador 002; (6) ledger/métricas; (7) worker/endpoints/export; (8) benchmark; (9) dashboard y mapa; (10) simulación web; (11) E2E y evidencia. Cada tarea que cambie esquema espera a la migración anterior integrada en `develop`; no generar dos migraciones para 005.
+Ejecutar T0–T11 de [`task.md`](task.md) con prueba roja, cambio mínimo, prueba verde y commit; los recorridos de [`test-e2e.md`](test-e2e.md) registran evidencia de aceptación. Cada tarea que cambie esquema espera a la migración anterior integrada en `develop`; no generar dos migraciones para 005. El presente documento sigue siendo propuesta, no reporte de implementación.

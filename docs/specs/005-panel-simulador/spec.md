@@ -157,6 +157,8 @@ El generador produce datos canónicos y el importador de 001 los carga **en un c
 
 > **⚠️ Contradicción detectada** — Hecho nuevo: el 005 añade una lectura paginada de rutas a 002 y de entregas a 004 para que el panel recupere el estado sin depender de IDs precargados. · Hecho establecido: los contratos originales de 002/004 solo exponían ruta individual y consulta móvil. · Impacto: sin estas lecturas, el panel requeriría datos fijos o consultas privadas. · Opciones: añadir las lecturas a sus specs productores; crear agregador propio; codificar IDs. · Propuesta: primeras lecturas, documentadas en los specs productores en este PR, con dueños 002 y 004 antes de H4.
 
+> **⚠️ Contradicción detectada** — Hecho nuevo: una corrida completada de 005 debe seguir exportable después de `POST /api/v1/demo/reset`. · Hecho establecido: la [tarea T7 de 001](../001-nucleo-delgado-importador/task.md) borraba `SimulationMetric` y `SimulationRun` al reiniciar los datos operativos. · Impacto: el pitch perdería la evidencia de impacto al preparar la escena. · Opciones: conservar resultados completados fuera del reset operativo; exportar y borrar cada vez; prohibir reset tras la corrida. · Propuesta: primera opción, corregida explícitamente en el spec/plan/tarea productores de 001 en este PR; 005 conserva además `SimulationEvent` y exportación.
+
 ## Riesgos
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
@@ -181,7 +183,7 @@ El generador produce datos canónicos y el importador de 001 los carga **en un c
 
 | Spec productor | 005 consume (nombre exacto) | 005 produce o exige | Dueño y hito |
 |---|---|---|---|
-| 001 | `SimulationRun`, `SimulationMetric`, `POST /api/v1/imports`, `GET /api/v1/service-points`, `POST /api/v1/demo/reset`, roles fijos | Extensión de runs/eventos en una migración 005; generador canónico que usa importador aislado; no cambia el núcleo de tablas ni Schema95 | 001 antes de H2; 005 antes de H4 |
+| 001 | `SimulationRun`, `SimulationMetric`, `POST /api/v1/imports`, `GET /api/v1/service-points`, `POST /api/v1/demo/reset`, roles fijos | Extensión de runs/eventos en una migración 005; generador canónico que usa importador aislado; reset de 001 conserva runs/métricas completados (FR-15 y T7 corregidos en este PR), sin cambiar el núcleo ni Schema95 | 001 antes de H2; 005 antes de H4 |
 | 002 | `GET /api/v1/risks`, `GET /api/v1/route-plans`, `GET /api/v1/route-plans/{id}`, `GET /api/v1/agent-decisions`, `POST /api/v1/agent-decisions/{id}/approve`, `POST /api/v1/agent-decisions/{id}/reject`, `POST /api/v1/route-plans/{id}/revert`, `GET /api/v1/autonomy/mode`, `PUT /api/v1/autonomy/mode`, `POST /api/v1/demo/incidents`, planificador, costo y `facts` | Lectura `GET /route-plans` añadida explícitamente a 002 en este PR; simulador reutiliza servicios sin duplicarlos | 002 antes de H4; 005 antes de H4 |
 | 003 | `POST /api/v1/agent/runs`, `GET /api/v1/agent/runs`, `GET /api/v1/agent/runs/{id}`, `AgentRun` y origen de explicación | Disparo y vista de traza; no implementa LLM ni flujo n8n | 003 antes de H4; panel puede mostrar plantillas de 002 si falla agente |
 | 004 | Login PKCE web (FR-17/T1b), `GET /api/v1/deliveries`, `POST /api/v1/demo/route-plans/{id}/advance` y estados de entrega | Lectura `GET /deliveries` añadida explícitamente a 004 en este PR; sin duplicar auth ni usar `/stops/{sequence}/complete` provisional | 004 login y `advance` antes de H3; lectura antes de H4 |

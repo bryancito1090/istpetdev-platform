@@ -189,10 +189,12 @@ El simulador corre como trabajo asíncrono dentro de la API, en base de simulaci
 
 **Bloqueos y plazo.** El 005 añade dos contratos de lectura a sus specs productores: `GET /api/v1/route-plans` en 002 y `GET /api/v1/deliveries` en 004, ambos antes de H4. La matriz completa 005↔001–004 está en el spec. El login y `advance` del 004 deben llegar antes de H3. Las 1080 jornadas de política se planifican por región; la corrida completa tiene objetivo medido ≤60 min antes de H4 (15-oct 11:00), y el límite por propuesta de 002 no basta. El simulador conserva prioridad sobre niveles adicionales del agente y no tiene plan B honesto. Esto es diseño propuesto, no software implementado ni resultados medidos.
 
+La redacción del E2E detectó otro bloqueo: la tarea T7 de 001 borraba runs/métricas de simulación al ejecutar el reset. El contrato de reset de 001 se corrige en este PR para conservar evidencia completada; el 005 conserva eventos/ZIP y E2E-04/E2E-07 comprueban que la escena puede reiniciarse sin perder el resultado del pitch. Sigue siendo una corrección documental pendiente de implementación.
+
 ## Pendientes de esta sesión
 
 - Confirmar quién decide D1–D8 y ADR-21 a ADR-23.
-- Aprobación por Deciders de 004 y 005; spec 006; `task.md` y `test-e2e.md` del 005 los redacta el equipo.
+- Aprobación por Deciders de 004 y 005; spec 006. `task.md` y `test-e2e.md` del 005 se redactaron por petición posterior del usuario; ejecución y evidencia siguen pendientes.
 - Bryan: credenciales de DeepSeek, OAuth2 de Cognito y secreto HMAC en su n8n; versión exacta de n8n para la copia local.
 - Kit previo de 006 e investigación de pliegos de compras públicas.
 - Confirmación escrita de la organización sobre trabajo previo (O-01).
