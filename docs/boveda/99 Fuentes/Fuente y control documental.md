@@ -276,9 +276,10 @@ Planificación documental: no se ejecutaron aplicación, suites funcionales, ens
 
 Verificación documental de esta actualización: **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores**. Se conservan dos avisos previos de lenguaje.
 
-## Preparación de publicación en develop — 12 de octubre de 2026
+## Estrategia de tres entornos y ciclo de vida de persistencia — 13 de octubre de 2026
 
-Fuente: instrucción directa de Bryan de subir los cambios a `develop`. Se prepara una rama documental desde `origin/develop` actualizado (`19a3f1a`, con el spec 001 ya integrado), para publicar mediante PR conforme a CONTRIBUTING. Se sustituyen los enlaces a TRX locales fuera de Git por sus rutas de artefactos y el resumen de evidencia versionado; la documentación compartida conserva enlaces disponibles tras clonar.
+Fuente: instrucción directa de Jorge/Bryan de formalizar la estrategia de tres entornos de persistencia (Casa / Standalone, Laboratorio / On-Premise en red local `192.168.7.50:15432`, y Producción / AWS RDS `istpetdev_integration`) para eliminar la fricción operativa durante el desarrollo del hackathon. Se crea [[Estrategia de tres entornos y base de datos]] y se enlaza desde [[Entornos y operacion acordados]] y [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]].
 
-Verificación previa al PR: `npm run check` aprobado (lint y compilación de API, contratos, web y móvil), con avisos existentes de dependencias frontend; **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores** y dos avisos documentales previos. La publicación es documental y no incluye cambios de aplicación ni preparación de una release en `main`.
+Verificación documental de esta actualización: **82 notas Markdown**, **804 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
 

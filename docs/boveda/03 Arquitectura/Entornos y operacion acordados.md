@@ -205,7 +205,7 @@ Una migración incompatible bloquea rollback automático. Restaurar DB requiere 
 - [OIDC GitHub/AWS](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws), [runners y direcciones IP](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#ip-addresses).
 - [Backend Terraform S3](https://developer.hashicorp.com/terraform/language/backend/s3), [Docker y publicación de puertos](https://docs.docker.com/engine/network/port-publishing/).
 
-Ver [[Repositorio de software y versiones]], [[Identidad OIDC y sesiones]], [[Plan de validacion]], [[AWS y Terraform]], [[CI-CD y automatizacion de despliegue]] y [[Hardening y seguridad de servidores]].
+Ver [[Repositorio de software y versiones]], [[Identidad OIDC y sesiones]], [[Plan de validacion]], [[AWS y Terraform]], [[CI-CD y automatizacion de despliegue]], [[Hardening y seguridad de servidores]] y [[Estrategia de tres entornos y base de datos]].
 
 ## Acceso individual y distribución de secretos — 7 de octubre de 2026
 

@@ -155,3 +155,11 @@ Dado que el host es stateless, el reemplazo de la máquina ante incidentes o red
 3. **Despliegue Automático**:
    - Ejecutar el workflow manual de GitHub Actions (`workflow_dispatch`) o hacer push a `main`.
    - El pipeline instalará dependencias, transferirá configuraciones y levantará los servicios conectándose a la base de datos existente sin necesidad de intervención manual en la terminal.
+
+---
+
+## Notas relacionadas
+
+- [[Estrategia de tres entornos y base de datos]] — Matriz completa de entornos (Casa, Laboratorio, Producción).
+- [[Runbook de DevOps y base de datos para la demo]] — Procedimientos operativos de recuperación y backup.
+- [[CI-CD y automatizacion de despliegue]] — Pipeline inmutable de release en GitHub Actions.
