@@ -13,7 +13,7 @@
 | T4 | Planificador de rutas y costos | T2, T3 | — | completada |
 | T5 | Publicación FEFO, reservas y paradas completadas | T4 | [P] con T6 | completada |
 | T6 | Política de autonomía y explicaciones por facts | T4 | [P] con T5 | completada |
-| T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | pendiente |
+| T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | completada |
 | T8 | API, autorización e inyección de dependencias | T7 | — | pendiente |
 | T9 | Fixture regional y calibración del incidente | T8 | — | pendiente |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | pendiente |
@@ -90,11 +90,11 @@
 
 **Archivos:** crear `src/Application/Logistics/Incidents/IncidentEvaluator.cs`, `Replanner.cs`, `src/Application/Logistics/Policy/EscalationOptions.cs`; probar en `tests/IstpetDev.Tests/Unit/Logistics/IncidentEvaluatorTests.cs`, `tests/IstpetDev.Tests/Integration/Logistics/ReplanningTests.cs`.
 
-- [ ] Pruebas rojas: `ROAD_CLOSURE` bloquea solo legs cuyo trazado cruza el círculo; `DELAY` multiplica minutos de legs afectados; `VEHICLE_BREAKDOWN` deja indisponible ese vehículo desde el incidente. Un trazado aproximado usa su segmento recto. La respuesta enumera rutas y paradas afectadas.
-- [ ] Implementar `IncidentEvaluator` con distancia punto–segmento local y `IncidentEffect`, sin modificar una ruta ya publicada. Añadir prueba con un tramo apenas fuera del radio y otra con extremos fuera pero trazado dentro.
-- [ ] Pruebas rojas de replan: completadas idénticas y en el mismo orden, comienzo en última parada completada, solo pendientes se reordenan, revisión `n+1` apunta a `SupersedesRoutePlanId=n`, diff incluye cambios de ETA, costo, movidas y no atendidas. Avería: otro vehículo vuelve al depósito, recarga y recibe pendientes factibles; resto `workday` o capacidad.
-- [ ] Implementar `ReplanAsync(Strict)`, `LateService` (ventana blanda solo de obligatorios) y `PrioritizeCritical` (sin consolidación, ventana dura); opción inviable declara `feasible=false` y razón. Guardar `AgentDecision` por vehículo con origen y estado; autoejecución publica, escalado conserva la revisión vigente; aprobar opción, rechazar y revertir son idempotentes. Revertir bloquea reservas/saldos, cancela solo entregas pendientes no despachadas, libera sus reservas `Active`, revalida stock, reserva para la revisión restaurada y publica una **tercera** revisión en un commit. `Consumed` y completadas quedan históricas; entrega pendiente ya despachada o stock insuficiente → 409 sin efectos. Probar replay de reversión y el invariante de reservas por saldo.
-- [ ] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~IncidentEvaluatorTests|FullyQualifiedName~ReplanningTests"`; esperado: 0 fallos. Commit `feat(logistics): replan incidents with auditable decisions`.
+- [x] Pruebas rojas: `ROAD_CLOSURE` bloquea solo legs cuyo trazado cruza el círculo; `DELAY` multiplica minutos de legs afectados; `VEHICLE_BREAKDOWN` deja indisponible ese vehículo desde el incidente. Un trazado aproximado usa su segmento recto. La respuesta enumera rutas y paradas afectadas.
+- [x] Implementar `IncidentEvaluator` con distancia punto–segmento local y `IncidentEffect`, sin modificar una ruta ya publicada. Añadir prueba con un tramo apenas fuera del radio y otra con extremos fuera pero trazado dentro.
+- [x] Pruebas rojas de replan: completadas idénticas y en el mismo orden, comienzo en última parada completada, solo pendientes se reordenan, revisión `n+1` apunta a `SupersedesRoutePlanId=n`, diff incluye cambios de ETA, costo, movidas y no atendidas. Avería: otro vehículo vuelve al depósito, recarga y recibe pendientes factibles; resto `workday` o capacidad.
+- [x] Implementar `ReplanAsync(Strict)`, `LateService` (ventana blanda solo de obligatorios) y `PrioritizeCritical` (sin consolidación, ventana dura); opción inviable declara `feasible=false` y razón. Guardar `AgentDecision` por vehículo con origen y estado; autoejecución publica, escalado conserva la revisión vigente; aprobar opción, rechazar y revertir son idempotentes. Revertir bloquea reservas/saldos, cancela solo entregas pendientes no despachadas, libera sus reservas `Active`, revalida stock, reserva para la revisión restaurada y publica una **tercera** revisión en un commit. `Consumed` y completadas quedan históricas; entrega pendiente ya despachada o stock insuficiente → 409 sin efectos. Probar replay de reversión y el invariante de reservas por saldo.
+- [x] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~IncidentEvaluatorTests|FullyQualifiedName~ReplanningTests"`; esperado: 0 fallos. Commit `feat(logistics): replan incidents with auditable decisions`.
 
 ### T8 — Endpoints y roles
 

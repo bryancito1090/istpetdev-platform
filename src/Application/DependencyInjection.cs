@@ -1,6 +1,7 @@
 using IstpetDev.Application.PublicTrace.Services;
 using IstpetDev.Application.Imports;
 using IstpetDev.Application.Logistics;
+using IstpetDev.Application.Logistics.Incidents;
 using IstpetDev.Application.Logistics.Planning;
 using IstpetDev.Application.Logistics.Policy;
 using IstpetDev.Application.ServicePoints.Services;
@@ -21,6 +22,8 @@ public static class DependencyInjection
         services.AddHttpClient<IDistanceProvider, DistanceProvider>();
         services.AddScoped<IRoutePlanner, RoutePlanner>();
         services.AddScoped<IRoutePublisher, RoutePublisher>();
+        services.AddScoped<IIncidentEvaluator, IncidentEvaluator>();
+        services.AddScoped<IReplanner, Replanner>();
         services.AddSingleton<AutonomyState>();
         services.AddScoped<IAutonomyPolicy, AutonomyPolicy>();
         services.AddSingleton<IExplanationTemplates, ExplanationTemplates>();
