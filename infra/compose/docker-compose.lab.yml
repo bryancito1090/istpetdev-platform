@@ -1,0 +1,39 @@
+# ==============================================================================
+# docker-compose.server.yml
+# Servidor de pruebas del laboratorio ISTPET (IP: 192.168.7.50).
+# Uso en el servidor: docker compose -f docker-compose.server.yml up -d
+# ==============================================================================
+
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: istpetdev-team-db
+    restart: unless-stopped
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: istpetdev_dev_01
+    volumes:
+      - team_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d istpetdev_dev_01"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: istpetdev-team-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  team_pgdata:

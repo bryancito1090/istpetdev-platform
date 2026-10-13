@@ -29,7 +29,7 @@ services:
       Cors__Origins__0: https://istpetdev.doicela.dev
       Cors__Origins__1: https://clean.doicela.dev
       Cors__Origins__2: http://localhost:4200
-      ApplyMigrations: ${APPLY_MIGRATIONS:-false}
+      ApplyMigrations: ${APPLY_MIGRATIONS:-true}
       Demo__Enabled: ${DEMO_ENABLED:-false}
       Demo__FixturePath: /app/data/fixtures/demo-base
       Authentication__Authority: ${COGNITO_AUTHORITY:-}

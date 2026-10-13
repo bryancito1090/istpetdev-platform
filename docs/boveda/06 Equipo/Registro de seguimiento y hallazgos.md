@@ -35,8 +35,8 @@ Estados operativos para este tablero: pendiente, entregado, integrado, verificad
 | 001 | PENDIENTE / PENDIENTE | Pendiente de revalidación integrada | PENDIENTE | Referencia previa: [verification.md](../../specs/001-nucleo-delgado-importador/verification.md), 115 pruebas locales | Simulacro humano, identidad/entorno reales y cierre documentado |
 | 002 | AnthonyPilatasig / Bryan | En progreso (T0-T6 completadas) | Issue #24 | `dotnet test` (49/49 pruebas de logística con 0 fallos: política de autonomía, estado en memoria y plantillas de explicación) | T7-T10 (Incidentes, revisiones, endpoints, E2E) |
 | 003 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Workflows, M2M y aceptación real |
-| 004 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Entrega, teléfono/HTTPS y E2E |
-| 005 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Panel, comparación y exportación |
+| 004 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-12 a ALK-23) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Despacho, PWA offline, S3 y E2E |
+| 005 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-24 a ALK-35) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Panel FSD, simulación 90d y exportador |
 | 006 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Preparación/ensayos; entrevistas y entrega en evento |
 
 ## Registro de pruebas

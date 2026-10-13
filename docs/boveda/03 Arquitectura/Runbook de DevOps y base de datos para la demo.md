@@ -64,9 +64,9 @@ Si 004 está lista antes que 003, se cambia el orden de la tabla y se avisa en e
 
 1. **Respaldo obligatorio** según la [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15): snapshot manual `istpetdev-rds-dev-pre-democore-20261013`, `pg_dump -Fc` de cada base subido al bucket de backups con su SHA-256 y una restauración de prueba. Sin respaldo verificado no se ejecuta el paso 3.
 2. **Congelar despliegues.** Nadie fusiona a `main` mientras dura la transición.
-3. **Reset** con `scripts/db/reset-to-demo-core.sql` usando el rol migrador de cada base, por el túnel SSM con `VerifyFull`, y con confirmación del dueño de la base:
-   - Bases personales `istpetdev_dev_0N`: cada integrante la suya. Luego `scripts/db/migrate-personal.sh` aplica `DemoCore`.
-   - `istpetdev_integration`: una sola persona, la responsable del runbook.
+3. **Reset y migración a DemoCore:**
+   - **Base de desarrollo (Laboratorio / Local):** En el servidor del laboratorio (`192.168.7.50:15432`) o Docker local (`localhost:15432`), se ejecuta `npm run db:migrate` (o `dotnet ef database update`) aplicando el esquema limpio de `DemoCore` (27 tablas).
+   - **Base de producción (`istpetdev_integration` en RDS):** Una sola persona, la responsable del runbook, ejecuta el reset y migración por túnel SSM o mediante el pipeline de despliegue inmutable.
 4. **Promover 001** de `develop` a `main`. El despliegue arranca la API, que aplica `DemoCore` y los grants.
 5. **Verificar:**
    - `/health/ready` responde 200.
@@ -78,7 +78,7 @@ Si 004 está lista antes que 003, se cambia el orden de la tabla y se avisa en e
 
 Propuesta para que la valide la [issue #16](https://github.com/bryancito1090/istpetdev-platform/issues/16): `istpetdev_integration` **solo la cambia el despliegue**. Cada vez que se fusiona en `develop` un spec con migración, se abre de inmediato el PR de `develop` a `main`. La API aplica la migración al arrancar. Así se evita que la base de integración vaya por delante del código desplegado. La aplicación manual con `migrator_integration` queda solo para el reset de la sección 4.
 
-Las bases personales se actualizan al traer `develop`: se carga el rol migrador, se ejecuta `dotnet ef database update` y se restaura el rol de aplicación ([[istpetdev-dbflow]]).
+El entorno de desarrollo del equipo se actualiza al traer `develop`: se ejecuta `npm run db:migrate` (o `dotnet ef database update`) sobre la base local o de laboratorio ([[istpetdev-dbflow]]).
 
 La base de simulación del spec 005 (`ConnectionStrings:Simulation`) es **una base distinta** de la operativa. Hay que crearla, con sus roles y secretos, en RDS antes de H4; hoy no existe en Terraform ni en el bootstrap.
 
