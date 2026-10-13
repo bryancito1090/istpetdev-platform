@@ -139,5 +139,12 @@ Una fila por escenario y por intento. Indicar `no ejecutado`, `pasó`, `falló` 
 
 | Fecha | Commit | Entorno | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-01 | pasó | `LogisticsJourneyTests.E2E_01_Reset_regional_and_risks` (15 pares punto-SKU evaluados, HOS-N01 cobertura 5.0d nivel Alto, facts ordenados) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-02 | pasó | `LogisticsJourneyTests.E2E_02_Route_determinism_and_fefo_publication` (determinismo verificado, publicación FEFO idempotente, reservas Delivery/Line consistentes) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-03 | pasó | `LogisticsJourneyTests.E2E_03_Predefined_incident_autonomy_and_approval` (cierre-norte, replanificación, decisiones de política autónoma y aprobación de opciones) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-04 | pasó | `LogisticsJourneyTests.E2E_04_Revert_and_autonomy_mode_control` (modo ProposeOnly escala replanificación, reversión genera 3ra revisión y compensa reservas) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-05 | pasó | `LogisticsJourneyTests.E2E_05_Offline_operation_and_road_cache` (240 tramos viales cacheados en RoadMatrixEdge, operación 100% offline sin llamadas externas) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (.NET 8 / 64-bit) | E2E-06 | pasó | `LogisticsPerformanceTests` (15 puntos / 2 vehículos: ~35 ms <= 1000 ms; 80 puntos / 2 vehículos: ~2100 ms <= 5000 ms) | AnthonyPilatasig / Bryan |
+| 2026-10-13 | f06c072 | Local Docker PostGIS (WSL2 / Windows 11) | E2E-07 | pasó | `LogisticsApiTests` + `FactsTests` + `ExplanationTemplatesTests` (facts invariantes, templates facts-only, control de acceso por roles) | AnthonyPilatasig / Bryan |
 
 **Cierre:** CE-01 a CE-07 deben tener evidencia enlazada; un escenario fallido o no ejecutado mantiene `estado` en `en curso`. El E2E del motor no sustituye el simulacro de dataset sorpresa de 001 ni la prueba del panel de 005.

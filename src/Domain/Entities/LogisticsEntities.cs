@@ -97,3 +97,35 @@ public sealed class CustodyEvent : OrganizationEntity
     public DateTime? OccurredAtDevice { get; set; }
     public DateTime ReceivedAtServer { get; set; }
 }
+
+public sealed class RoadMatrixEdge : OrganizationEntity
+{
+    public decimal FromLat { get; set; }
+    public decimal FromLon { get; set; }
+    public decimal ToLat { get; set; }
+    public decimal ToLon { get; set; }
+    public decimal DistanceKm { get; set; }
+    public decimal DurationMinutes { get; set; }
+    public string? EncodedPolyline { get; set; }
+    public string Source { get; set; } = string.Empty; // "osrm", "imported"
+    public DateTime RetrievedAtUtc { get; set; }
+}
+
+public static class RouteStockReservationStatus
+{
+    public const string Active = "Active";
+    public const string Released = "Released";
+    public const string Consumed = "Consumed";
+}
+
+public sealed class RouteStockReservation : OrganizationEntity
+{
+    public Guid RoutePlanId { get; set; }
+    public Guid DeliveryId { get; set; }
+    public Guid DeliveryLineId { get; set; }
+    public Guid LotId { get; set; }
+    public Guid StockBalanceId { get; set; }
+    public decimal Quantity { get; set; }
+    public string Status { get; set; } = RouteStockReservationStatus.Active;
+    public DateTime? ClosedAtUtc { get; set; }
+}

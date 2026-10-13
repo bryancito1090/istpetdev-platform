@@ -12,7 +12,7 @@ internal static class LeanSchema
     private const string PointType = "geometry(Point,4326)";
 
     private static readonly HashSet<string> LongText =
-        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason"];
+        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason", "EncodedPolyline"];
 
     public static void Configure(ModelBuilder model)
     {
@@ -157,6 +157,29 @@ internal static class LeanSchema
         model.Entity<AgentDecision>(e => e.HasIndex(d => new { d.OrganizationId, d.Status }));
         model.Entity<SimulationRun>();
         model.Entity<SimulationMetric>(e => Fk<SimulationMetric, SimulationRun>(e, m => m.SimulationRunId));
+
+        model.Entity<RoadMatrixEdge>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.FromLat, r.FromLon, r.ToLat, r.ToLon }).IsUnique();
+            e.Property(r => r.FromLat).HasPrecision(9, 5);
+            e.Property(r => r.FromLon).HasPrecision(9, 5);
+            e.Property(r => r.ToLat).HasPrecision(9, 5);
+            e.Property(r => r.ToLon).HasPrecision(9, 5);
+            e.Property(r => r.DistanceKm).HasPrecision(18, 3);
+            e.Property(r => r.DurationMinutes).HasPrecision(18, 3);
+        });
+
+        model.Entity<RouteStockReservation>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.RoutePlanId, r.DeliveryLineId, r.LotId }).IsUnique();
+            e.HasIndex(r => new { r.OrganizationId, r.StockBalanceId, r.Status });
+            e.Property(r => r.Quantity).HasPrecision(18, 3);
+            Fk<RouteStockReservation, RoutePlan>(e, r => r.RoutePlanId);
+            Fk<RouteStockReservation, Delivery>(e, r => r.DeliveryId);
+            Fk<RouteStockReservation, DeliveryLine>(e, r => r.DeliveryLineId);
+            Fk<RouteStockReservation, Lot>(e, r => r.LotId);
+            Fk<RouteStockReservation, StockBalance>(e, r => r.StockBalanceId);
+        });
 
         foreach (var entity in model.Model.GetEntityTypes().ToList())
         {

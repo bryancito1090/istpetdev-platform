@@ -16,7 +16,7 @@ public class LeanSchemaTests(PostgisContainer postgres)
         "Organization", "Account", "ServicePoint", "Location", "Vehicle", "Product", "Lot", "HandlingUnit", "HandlingUnitLine",
         "InventoryMovement", "StockBalance", "Consumption", "RoutePlan", "RouteStop", "Delivery", "DeliveryLine", "Receipt",
         "ReceiptLine", "Evidence", "CustodyEvent", "RiskSnapshot", "Incident", "IdempotencyRecord", "ImportBatch",
-        "AgentDecision", "SimulationRun", "SimulationMetric",
+        "AgentDecision", "SimulationRun", "SimulationMetric", "RoadMatrixEdge", "RouteStockReservation",
     ];
 
     [Fact]
