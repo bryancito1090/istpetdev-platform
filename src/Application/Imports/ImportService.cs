@@ -23,8 +23,8 @@ public sealed class ImportService(IApplicationDbContext db, ITabularReader reade
     {
         var profileErrors = request.Profile.Validate();
         if (profileErrors.Count > 0) throw new MappingProfileException(profileErrors);
-        if (request.Files.Count is < 1 or > 7 || request.Files.Select(f => f.Entity).Distinct().Count() != request.Files.Count)
-            throw new MappingProfileException(["Envíe entre uno y siete archivos, uno por entidad."]);
+        if (request.Files.Count < 1 || request.Files.Count > CanonicalSchema.Order.Length || request.Files.Select(f => f.Entity).Distinct().Count() != request.Files.Count)
+            throw new MappingProfileException([$"Envíe entre uno y {CanonicalSchema.Order.Length} archivos, uno por entidad."]);
         var batch = new ImportBatch
         {
             ProfileName = request.Profile.Name, DryRun = request.DryRun,

@@ -100,11 +100,12 @@ public sealed class RoutePublisher(
                 {
                     foreach (var lElem in loadsElem.EnumerateArray())
                     {
-                        loads.Add(new StopLoad(
-                            lElem.GetProperty("productId").GetGuid(),
-                            lElem.GetProperty("sku").GetString() ?? "",
-                            lElem.GetProperty("quantity").GetDecimal(),
-                            lElem.GetProperty("baseUnit").GetString() ?? "U"));
+                        var prodId = lElem.TryGetProperty("productId", out var p1) ? p1.GetGuid() : lElem.GetProperty("ProductId").GetGuid();
+                        var sku = lElem.TryGetProperty("sku", out var s1) ? s1.GetString() : lElem.GetProperty("Sku").GetString();
+                        var qty = lElem.TryGetProperty("quantity", out var q1) ? q1.GetDecimal() : lElem.GetProperty("Quantity").GetDecimal();
+                        var unit = lElem.TryGetProperty("baseUnit", out var b1) ? b1.GetString() : (lElem.TryGetProperty("BaseUnit", out var b2) ? b2.GetString() : "U");
+
+                        loads.Add(new StopLoad(prodId, sku ?? "", qty, unit ?? "U"));
                     }
                 }
                 plannedLoadsBySeq[seq] = loads;

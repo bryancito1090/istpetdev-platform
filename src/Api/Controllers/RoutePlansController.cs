@@ -149,7 +149,7 @@ public sealed class RoutePlansController(
                         loads = s.Loads
                     }),
                     legs = r.Legs
-                })
+                }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
             };
             db.RoutePlans.Add(plan);
 

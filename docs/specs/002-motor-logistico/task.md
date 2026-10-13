@@ -15,7 +15,7 @@
 | T6 | Política de autonomía y explicaciones por facts | T4 | [P] con T5 | completada |
 | T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | completada |
 | T8 | API, autorización e inyección de dependencias | T7 | — | completada |
-| T9 | Fixture regional y calibración del incidente | T8 | — | pendiente |
+| T9 | Fixture regional y calibración del incidente | T8 | — | completada |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | pendiente |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
@@ -109,10 +109,10 @@
 
 **Archivos:** crear `data/fixtures/demo-region/{bodegas,puntos,productos,vehiculos,lotes,inventario,consumos,tramos}.csv`, `mapping.json`, `incidentes.json`, `scripts/data/build-road-segments.py`, `scripts/data/calibrate-incident.sh`; modificar el selector de fixture del reset de 001; probar en `tests/IstpetDev.Tests/Integration/Logistics/DemoRegionTests.cs`.
 
-- [ ] Prueba roja: reset de `demo-region` importa por el importador canónico 1 bodega, 15 puntos, 2 vehículos, 3 SKU, consumos y tramos dirigidos; reloj `Dataset=2026-10-12`; 1 `Critico`, 4 `Alto`, 3 `Vigilar`, 1 `SinDatos`, 6 `Normal`; `HOS-N01/DES-01` tiene 5,0 días.
-- [ ] Crear los 7 CSV de 001 más `tramos.csv`, perfil e incidentes del plan. El generador consulta OSRM a ≤ 1 petición/s para 240 pares dirigidos y falla con salida clara si no obtiene datos; el CSV versionado permite correr sin red. Verificar `source=road` para todos los legs en el recorrido de demo y 0 solicitudes HTTP externas.
-- [ ] Calibrar `cierre-norte` **después** de ejecutar el planificador real mediante `scripts/data/calibrate-incident.sh`: reset, propuesta, publicación, dos paradas completadas, incidente, replan de rutas afectadas. Ajustar solo datos de `incidentes.json` o el fixture hasta obtener `VEH-02=AutoExecuted`, `VEH-01=Escalated`, con `late_service` y `prioritize_critical` calculadas. Fijar ese resultado en `DemoRegionTests`. Si 004 ya está integrado, el script completa las paradas con `POST /api/v1/demo/route-plans/{id}/advance` en vez del endpoint provisional.
-- [ ] Repetir reset y recorrido; los códigos del preset siguen resolviendo con IDs nuevos y la caché conserva tramos. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~DemoRegionTests"`; esperado: 0 fallos. Commit `feat(demo): add reproducible regional scenario`.
+- [x] Prueba roja: reset de `demo-region` importa por el importador canónico 1 bodega, 15 puntos, 2 vehículos, 3 SKU, consumos y tramos dirigidos; reloj `Dataset=2026-10-12`; 1 `Critico`, 4 `Alto`, 3 `Vigilar`, 1 `SinDatos`, 6 `Normal`; `HOS-N01/DES-01` tiene 5,0 días.
+- [x] Crear los 7 CSV de 001 más `tramos.csv`, perfil e incidentes del plan. El generador consulta OSRM a ≤ 1 petición/s para 240 pares dirigidos y falla con salida clara si no obtiene datos; el CSV versionado permite correr sin red. Verificar `source=road` para todos los legs en el recorrido de demo y 0 solicitudes HTTP externas.
+- [x] Calibrar `cierre-norte` **después** de ejecutar el planificador real mediante `scripts/data/calibrate-incident.sh`: reset, propuesta, publicación, dos paradas completadas, incidente, replan de rutas afectadas. Ajustar solo datos de `incidentes.json` o el fixture hasta obtener `VEH-02=AutoExecuted`, `VEH-01=Escalated`, con `late_service` y `prioritize_critical` calculadas. Fijar ese resultado en `DemoRegionTests`. Si 004 ya está integrado, el script completa las paradas con `POST /api/v1/demo/route-plans/{id}/advance` en vez del endpoint provisional.
+- [x] Repetir reset y recorrido; los códigos del preset siguen resolviendo con IDs nuevos y la caché conserva tramos. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~DemoRegionTests"`; esperado: 0 fallos. Commit `feat(demo): add reproducible regional scenario`.
 
 ### T10 — Recorrido E2E, rendimiento y bóveda
 

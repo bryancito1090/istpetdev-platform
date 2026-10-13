@@ -1,0 +1,7 @@
+sku,lot_code,expires_on,origin
+DES-01,L-DES-2610,2027-04-30,Proveedor sintético A
+DES-01,L-DES-2611,2027-08-31,Proveedor sintético A
+PAP-01,L-PAP-2610,2028-12-31,Proveedor sintético B
+PAP-01,L-PAP-2611,2029-06-30,Proveedor sintético B
+GUA-01,L-GUA-2610,2027-10-31,Proveedor sintético C
+GUA-01,L-GUA-2611,2028-03-31,Proveedor sintético C
