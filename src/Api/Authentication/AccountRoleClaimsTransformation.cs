@@ -29,13 +29,23 @@ public sealed class AccountRoleClaimsTransformation(ApplicationDbContext databas
         try
         {
             var account = await database.Accounts.AsNoTracking()
-                .Where(a => a.OrganizationId == DemoOrganization.Id && a.IsActive && a.Issuer == issuer && a.Subject == subject
+                .Where(a => a.OrganizationId == DemoOrganization.Id && a.Issuer == issuer && a.Subject == subject
                     && a.Kind == (technical ? "technical" : "human") && database.Organizations.Any(o => o.Id == a.OrganizationId && o.IsActive))
-                .Select(a => new { a.Id, a.Role }).SingleOrDefaultAsync();
-            if (account is not null && Roles.IsValid(account.Role) && technical == (account.Role == Roles.Automatizacion))
+                .Select(a => new { a.Id, a.Role, a.IsActive }).SingleOrDefaultAsync();
+
+            if (account is not null)
             {
-                resolvedRole = account.Role;
-                resolvedAccountId = account.Id;
+                if (!account.IsActive)
+                {
+                    // Cuenta revocada/inactiva: denegación estricta sin permitir fallbacks
+                    return principal;
+                }
+
+                if (Roles.IsValid(account.Role) && technical == (account.Role == Roles.Automatizacion))
+                {
+                    resolvedRole = account.Role;
+                    resolvedAccountId = account.Id;
+                }
             }
         }
         catch

@@ -47,43 +47,79 @@ IAM concede `secretsmanager:GetSecretValue` sobre los ARN exactos asignados, sin
 
 Mantener un registro privado con propietario, servicio, entorno, consumidores, alcance, caducidad y última rotación; **sin copiar el valor**. Secrets Manager y otros recursos persistentes tienen costos aunque el stack completo esté apagado; incluirlos en el presupuesto operativo.
 
-## 3. Incorporación y uso local
+## 3. Incorporación y Guía de Acceso para Integrantes del Equipo (Hackathon)
 
-1. Bryan da acceso a los repositorios con la cuenta GitHub individual del integrante.
-2. El administrador da de alta su identidad AWS con MFA y asigna su permission set dev, su base PostgreSQL y los secretos de integración necesarios.
-3. Comparte las instrucciones del portal SSO, región, perfil, nodo SSM, endpoint/CA de RDS y nombres de secretos por el canal privado del equipo. No manda una contraseña común ni tokens por el chat, issues o documentos.
-4. El integrante instala AWS CLI v2 y Session Manager plugin, configura su perfil e inicia sesión. La región SSO es la del directorio real; no asumir que siempre coincide con `us-east-1` del proyecto.
+Para eliminar la dependencia de redes físicas locales y permitir que los 5 integrantes desarrollen concurrentemente con datos sincronizados, la persistencia se consolidó en una **Base de Datos Centralizada en AWS EC2** (puerto `5432`) con las 27 tablas de `DemoCore` ya migradas. Los valores sensibles de host y contraseña se distribuyen exclusivamente por el canal privado del equipo y se custodian en el archivo `.env` local.
 
-```bash
-aws configure sso --profile istpetdev-dev
-aws sso login --profile istpetdev-dev
-```
+### Parámetros de Conexión de Desarrollo Centralizado
 
-El asistente solicita portal/región SSO, cuenta y permission set asignados. La configuración y caché quedan en el perfil del usuario, fuera de los repositorios. Al expirar la sesión se vuelve a ejecutar `aws sso login`. [Configuración oficial de CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+| Parámetro | Configuración en `.env` |
+|---|---|
+| **Host / IP** | `<IP_HOST_EC2_DEV>` (provisto por canal privado) |
+| **Puerto** | `5432` (TCP habilitado en Security Group) |
+| **Base de Datos** | `istpetdev_dev_01` |
+| **Usuario Único** | `migrator_dev_01` (permisos completos DDL y DML sobre esquema `public`) |
+| **Contraseña** | `<PASSWORD_DEV_EC2>` (provisto por canal privado) |
+| **SSL Mode** | `disabled` o `allow` (sin certificados especiales) |
 
-5. Obtiene únicamente su secreto autorizado y lo carga en configuración local. Ejemplo **para cuando exista el secreto**, sin mostrar su valor ni pasarlo como argumento de línea de comandos:
+### Procedimiento de Configuración Paso a Paso en la Laptop
 
-```bash
-umask 077
-private_dir="$HOME/.config/istpetdev/private"
-mkdir -p "$private_dir"
-chmod 700 "$private_dir"
-aws secretsmanager get-secret-value \
-  --profile istpetdev-dev \
-  --region us-east-1 \
-  --secret-id '/istpetdev/dev/db/dev_01' \
-  --query SecretString \
-  --output text > "$private_dir/db-dev.json"
-chmod 600 "$private_dir/db-dev.json"
-```
+Cada compañero debe seguir estos pasos una sola vez al clonar el repositorio:
 
-Sustituir `dev_01` por la asignación individual. El contrato de ese secreto es JSON, con campos `host`, `port`, `dbname`, `username` y `password`. El archivo privado es entrada para el launcher/proveedor de configuración que se implementará; .NET **no lo carga automáticamente** por existir. Si falla la lectura, no iniciar la API con un archivo vacío. [Lectura por CLI](https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets_cli.html).
+1. **Crear el archivo `.env` en la raíz de `istpetdev-platform`**:
+   Crear un archivo llamado exactamente `.env` (ignorado automáticamente por `.gitignore`) sustituyendo `<IP_HOST_EC2_DEV>` y `<PASSWORD_DEV_EC2>` por los valores compartidos por el administrador:
 
-El launcher adapta host/puerto al túnel y construye la conexión con validación TLS según [[Entornos y operacion acordados]]. Una connection string que incluya contraseña es un secreto completo. Se entrega por este acceso autorizado, no se publica como documentación del equipo.
+   ```env
+   ASPNETCORE_ENVIRONMENT=Development
+   ASPNETCORE_URLS=http://localhost:5000
 
-Para la API .NET, usar **user-secrets en Development** o inyección explícita de variables por el launcher/Compose. User-secrets mantiene los valores fuera del árbol del proyecto, pero no los cifra; `.env` privado tampoco es un almacén cifrado. Proteger el equipo y los archivos. Inicializar user-secrets cuando exista `src/Api`, importar mediante entrada estándar/archivo privado y evitar pegar valores en comandos que queden en el historial. `.env.example` publica solo nombres y ejemplos sin credenciales. [Secretos de desarrollo en .NET](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-8.0).
+   # Persistencia Centralizada en AWS EC2 (Desarrollo)
+   ConnectionStrings__Main=Host=<IP_HOST_EC2_DEV>;Port=5432;Database=istpetdev_dev_01;Username=migrator_dev_01;Password=<PASSWORD_DEV_EC2>
+   DATABASE_HOST=<IP_HOST_EC2_DEV>
+   DATABASE_PORT=5432
+   DATABASE_NAME=istpetdev_dev_01
+   DATABASE_USER=migrator_dev_01
+   DATABASE_PASSWORD=<PASSWORD_DEV_EC2>
 
-No imprimir `.env`, conexiones completas, respuestas de Secrets Manager, `dotnet user-secrets list` ni la caché SSO en logs, capturas o conversaciones con agentes. Eliminar la copia privada cuando deje de necesitarse; nunca moverla a la bóveda como respaldo.
+   # URLs de servicios locales
+   PUBLIC_WEB_URL=http://localhost:4200
+   PUBLIC_API_URL=http://localhost:5000
+   Cors__Origins__0=http://localhost:4200
+   Cors__Origins__1=http://localhost:8100
+   ApplyMigrations=false
+   ```
+
+2. **Verificar conectividad y sincronizar configuración**:
+   En la raíz del proyecto, ejecutar:
+   ```bash
+   npm run db:dev
+   ```
+   El script verificará la conexión TCP contra el puerto `5432` y sincronizará la cadena en los `user-secrets` locales de .NET. Para verificar el estado en cualquier momento:
+   ```bash
+   npm run db:status
+   ```
+
+3. **Iniciar el backend y frontend**:
+   ```bash
+   npm run dev:api    # Terminal 1: Inicia la API .NET en http://localhost:5000
+   npm run dev:web    # Terminal 2: Inicia la aplicación Angular en http://localhost:4200
+   ```
+   *Nota de seguridad y arquitectura:*
+   - Solo existe un único archivo de configuración `src/Api/appsettings.json` en local. No se utilizan archivos secundarios como `appsettings.Development.json` para evitar discrepancias de configuración.
+   - `src/Api/appsettings.json` y `.env` están completamente excluidos de Git en `.gitignore`.
+   - A GitHub viajan exclusivamente las plantillas de ejemplo: `!.env.example` en la raíz y `!src/Api/appsettings.example.json` en `src/Api/`.
+   - Al clonar por primera vez, el integrante puede generar su `appsettings.json` local copiando `appsettings.example.json` y completando los valores provistos de forma privada. Si ejecuta el backend con `npm run dev:api`, `src/Api/Program.cs` inyecta automáticamente las variables definidas en `.env`.
+
+4. **Inspección visual en DBeaver (Opcional)**:
+   Si el desarrollador desea explorar o consultar datos con un cliente SQL gráfico, debe seguir la guía de [[Conexion PostgreSQL en DBeaver]].
+
+5. **Trabajo Offline (En caso de no tener internet)**:
+   Si un integrante necesita trabajar de forma individual y desconectada, puede alternar a Docker Local:
+   ```bash
+   npm run docker:up   # Levanta PostgreSQL local en localhost:15432
+   npm run db:local    # Configura la API para conectar localmente
+   ```
+   Y volver a la base compartida con `npm run db:dev`.
 
 ## 4. GitHub Actions y despliegues
 
@@ -105,7 +141,7 @@ El servidor **https://n8n.bryan-bano.com/** conserva las credenciales cargadas p
 
 ## 6. Protección de Git y retirada de accesos
 
-En ambos repositorios se excluyen `.env` privados, directorios de secretos, copias `.aws`, llaves privadas y material sensible de Terraform. Un `.env.example` puede versionarse solo con valores públicos/campos vacíos. `.gitignore` evita nuevas inclusiones ordinarias; **no elimina archivos ya rastreados, commits anteriores ni protege frente a `git add -f`**.
+En ambos repositorios se excluyen `.env` privados, todos los archivos `appsettings.json` y `appsettings.*.json` locales, directorios de secretos, copias `.aws`, llaves privadas y material sensible de Terraform. Las únicas excepciones autorizadas para viajar a GitHub son las plantillas de ejemplo: `.env.example` y `src/Api/appsettings.example.json`. `.gitignore` evita nuevas inclusiones ordinarias; para archivos previamente rastreados como `appsettings.json`, se aplicó desindexación explícita (`git rm --cached`). **No utilizar `git add -f` sobre archivos de configuración**.
 
 Antes de cada publicación revisar los archivos staged y las exportaciones de n8n. Añadir detección de secretos al CI que implementará el compañero y activar secret scanning/push protection cuando el plan del repo lo permita. Un repo privado también tiene colaboradores, clones e historial: no debe contener credenciales reales.
 

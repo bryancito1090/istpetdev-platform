@@ -326,6 +326,9 @@ Secret creado → copiar solo ARN. Agregar ese ARN exacto a `GetSecretValue` en 
 
 ### 10. Incorporación en cada máquina
 
+> [!important] Flujo operativo consolidado para la Hackathon (13 de octubre de 2026)
+> Para eliminar la fricción de túneles SSM, credenciales IAM/MFA complejas y latencia durante el desarrollo conjunto, la incorporación del equipo se realiza directamente mediante la **Base de Datos Centralizada en AWS EC2 (puerto 5432)** con el usuario único `migrator_dev_01`. Cada integrante clona `develop`, crea su archivo `.env` en la raíz (ignorado por Git) con la cadena de conexión centralizada y ejecuta `npm run db:dev`. Consultar el procedimiento paso a paso en [[Credenciales y acceso del equipo]] y la configuración de cliente SQL en [[Conexion PostgreSQL en DBeaver]].
+
 Cada integrante acepta invitación GitHub/Identity Center, establece contraseña/MFA y clona `develop`. Instala las herramientas y dependencias con docs/onboarding.md; los binarios instalados en la máquina de Bryan no viajan con Git.
 
 ```bash

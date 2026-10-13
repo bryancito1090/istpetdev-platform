@@ -24,7 +24,7 @@ public class PublicTraceHttpTests(PostgisContainer postgres)
     private static string Hash(string token) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
 
-    private static async Task<Guid> SeedUnitAsync(ApiFactory api, DateTime expiresAtUtc, DateTime? revokedAtUtc = null)
+    private static async Task<Guid> SeedUnitAsync(ApiFactory api, DateTime expiresAtUtc, DateTime? revokedAtUtc = null, string token = Token)
     {
         var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m, suffix);
@@ -34,7 +34,7 @@ public class PublicTraceHttpTests(PostgisContainer postgres)
         var unit = new HandlingUnit { Code = $"CAJA-{suffix}", LocationId = d.VehicleLocationId, Status = "Dispatched", DeliveryId = d.DeliveryId };
         db.AddRange(unit,
             new HandlingUnitLine { HandlingUnitId = unit.Id, LotId = d.LotId, Quantity = 12m },
-            new QrAccessToken { HandlingUnitId = unit.Id, TokenHash = Hash(Token), ExpiresAtUtc = expiresAtUtc, RevokedAtUtc = revokedAtUtc, CreatedByAccountId = actor.Id },
+            new QrAccessToken { HandlingUnitId = unit.Id, TokenHash = Hash(token), ExpiresAtUtc = expiresAtUtc, RevokedAtUtc = revokedAtUtc, CreatedByAccountId = actor.Id },
             new CustodyEvent { HandlingUnitId = unit.Id, DeliveryId = d.DeliveryId, ActorAccountId = actor.Id, EventKind = "Dispatched",
                                OperationId = Domain.Common.BaseEntity.NewId(), ReceivedAtServer = DateTime.UtcNow });
         await db.SaveChangesAsync();
@@ -70,18 +70,22 @@ public class PublicTraceHttpTests(PostgisContainer postgres)
     public async Task Invalid_expired_revoked_missing_or_query_tokens_are_uniform_404()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
-        var valid = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7));
-        var expired = await SeedUnitAsync(api, DateTime.UtcNow.AddMinutes(-1));
-        var revoked = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7), DateTime.UtcNow);
+        var validToken = Token + "-valid";
+        var expiredToken = Token + "-expired";
+        var revokedToken = Token + "-revoked";
+
+        var valid = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7), token: validToken);
+        var expired = await SeedUnitAsync(api, DateTime.UtcNow.AddMinutes(-1), token: expiredToken);
+        var revoked = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7), DateTime.UtcNow, token: revokedToken);
 
         var responses = new[]
         {
             await GetTrace(api, valid, null),
-            await GetTrace(api, valid, Token + "x"),
-            await GetTrace(api, expired, Token),
-            await GetTrace(api, revoked, Token),
-            await GetTrace(api, Guid.NewGuid(), Token),
-            await api.CreateClient().GetAsync($"/api/v1/public/trace/{valid}?token={Token}"),
+            await GetTrace(api, valid, validToken + "x"),
+            await GetTrace(api, expired, expiredToken),
+            await GetTrace(api, revoked, revokedToken),
+            await GetTrace(api, Guid.NewGuid(), validToken),
+            await api.CreateClient().GetAsync($"/api/v1/public/trace/{valid}?token={validToken}"),
         };
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.NotFound, r.StatusCode));

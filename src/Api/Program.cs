@@ -19,6 +19,38 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Centralizacion de configuracion: En desarrollo, cargar .env si existe para no exponer credenciales en archivos rastreados
+if (builder.Environment.IsDevelopment())
+{
+    var envCandidatePaths = new[]
+    {
+        Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.env")),
+        Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".env")),
+        Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".env"))
+    };
+
+    var resolvedEnvFile = envCandidatePaths.FirstOrDefault(File.Exists);
+    if (resolvedEnvFile != null)
+    {
+        var inMemoryEnv = new Dictionary<string, string?>();
+        foreach (var line in File.ReadAllLines(resolvedEnvFile))
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) continue;
+            var sep = trimmed.IndexOf('=');
+            if (sep > 0)
+            {
+                var rawKey = trimmed[..sep].Trim();
+                var val = trimmed[(sep + 1)..].Trim();
+                var configKey = rawKey.Replace("__", ":");
+                inMemoryEnv[configKey] = val;
+                Environment.SetEnvironmentVariable(rawKey, val);
+            }
+        }
+        builder.Configuration.AddInMemoryCollection(inMemoryEnv);
+    }
+}
+
 // Safe logging: ensure no headers/tokens are leaked in logs
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
