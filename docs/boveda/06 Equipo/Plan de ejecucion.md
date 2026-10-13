@@ -7,6 +7,9 @@ tags: [hackathon, istpetdev]
 
 # Plan de ejecución
 
+> [!important] Seguimiento solicitado por Bryan — 12-oct-2026
+> Para la jornada del 13-oct y las pruebas posteriores a 001–006, usar [[Seguimiento de implementacion y pruebas]] y actualizar [[Registro de seguimiento y hallazgos]]. La continuación planificada está en [[Continuidad del piloto y specs 007 a 012]]. Los calendarios anteriores de esta nota se conservan como antecedentes; la ejecución se acredita con resultados reales.
+
 Plan propuesto desde el **6 de octubre de 2026** para llegar al 16 con la mayor parte del sistema integrado. La preparación de código se adapta a las respuestas de [[Consultas para la organizacion]]. No implica que el trabajo ya esté construido.
 
 ## Calendario de preparación

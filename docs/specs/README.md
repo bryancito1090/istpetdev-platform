@@ -4,6 +4,8 @@ Especificaciones implementables del sistema para la Hackathon Expo Clean Ecuador
 
 La **bóveda** (`docs/boveda/`) sigue siendo la fuente de verdad del producto, el reto y las decisiones. Un spec no cambia una decisión de la bóveda por sí mismo: cuando la contradice, lo declara en la sección «Contradicciones con la bóveda» y deja una tarea para registrarlo con el protocolo de [Convenciones y estados](../boveda/00%20Inicio/Convenciones%20y%20estados.md).
 
+**Trabajo del equipo desde el 13-oct:** [seguimiento de integración y pruebas](../boveda/06%20Equipo/Seguimiento%20de%20implementacion%20y%20pruebas.md), [registro editable de hallazgos](../boveda/06%20Equipo/Registro%20de%20seguimiento%20y%20hallazgos.md) y [continuidad hacia 007–012](../boveda/06%20Equipo/Continuidad%20del%20piloto%20y%20specs%20007%20a%20012.md). Esta planificación conserva roles fijos/asignación en la demo; la administración dinámica de permisos y RLS corresponden al diseño diferido. El 006 distingue preparación técnica de entrevistas y entrega del evento.
+
 ## Formato
 
 Cada spec es una carpeta `NNN-nombre-corto/` con cuatro archivos. La plantilla está en [`_plantilla/`](_plantilla/).

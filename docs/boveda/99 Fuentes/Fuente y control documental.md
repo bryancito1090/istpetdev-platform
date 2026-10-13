@@ -258,3 +258,27 @@ Resultados verificados en Release: 115 pruebas aprobadas (66 Unit, 48 Integratio
 
 Verificación documental de esta actualización: **77 notas Markdown**, **715 enlaces internos resueltos**, **0 errores**.
 
+## Análisis de cobertura y avance de specs — 12 de octubre de 2026
+
+Fuente: petición de Bryan de analizar a fondo los specs frente a los objetivos y límites de la bóveda. Se crea [[Analisis de cobertura de specs]] y se enlaza desde el mapa: ponderación propuesta de 001–006 para la demo acotada, evidencia local de 001, pendientes dentro de los specs actuales y posibles specs de piloto/P2 descritos solo por encima. Se contrastaron los contadores de los TRX existentes (115 pruebas aprobadas), sin reejecutar la aplicación ni consultar AWS o las issues remotas.
+
+Los porcentajes son una estimación de capacidades, no una aprobación del alcance ni una declaración de versión lista. No se cambian requisitos, ADRs ni estados de cierre; no se crean specs futuros ni se realizan cambios de software o despliegue.
+
+Verificación documental de esta actualización: **78 notas Markdown**, **736 enlaces internos resueltos**, **0 errores**. Se conservan dos avisos previos de lenguaje.
+
+## Seguimiento integrado y continuidad del piloto — 12 de octubre de 2026
+
+Fuente: instrucción de Bryan de dedicar esta sesión a planificación exhaustiva para el equipo del 13-oct, pruebas tras los seis specs, registro de faltantes y continuidad hacia 007–012. Se crean [[Seguimiento de implementacion y pruebas]], [[Registro de seguimiento y hallazgos]] y [[Continuidad del piloto y specs 007 a 012]]; se enlazan desde README, Bienvenido, mapa, índice de specs y planes del equipo. La guía separa pase técnico y cierre del evento, reutiliza los E2E existentes y mantiene el 008 mínimo apoyado en el runbook.
+
+Ante la consulta de Bryan sobre RBAC, se contrastaron los roles fijos del código y el núcleo sin RLS con las notas. Se documenta que RBAC administrable/RLS pertenecen al diseño diferido, mientras autorización por rol/asignación y RNF-14 siguen vigentes. La copia local de prelaunch se regeneró desde [[istpetdev-prelaunch]] para conservar el complemento de alcance que faltaba; no se modifica ni se versiona como segunda fuente editable.
+
+Planificación documental: no se ejecutaron aplicación, suites funcionales, ensayos, migraciones ni despliegues; no se crean los specs detallados de 007–012 ni se acreditan cierres anticipados. Se comprobaron 94 enlaces Markdown locales de las entradas y guías, sin enlaces rotos.
+
+Verificación documental de esta actualización: **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores**. Se conservan dos avisos previos de lenguaje.
+
+## Preparación de publicación en develop — 12 de octubre de 2026
+
+Fuente: instrucción directa de Bryan de subir los cambios a `develop`. Se prepara una rama documental desde `origin/develop` actualizado (`19a3f1a`, con el spec 001 ya integrado), para publicar mediante PR conforme a CONTRIBUTING. Se sustituyen los enlaces a TRX locales fuera de Git por sus rutas de artefactos y el resumen de evidencia versionado; la documentación compartida conserva enlaces disponibles tras clonar.
+
+Verificación previa al PR: `npm run check` aprobado (lint y compilación de API, contratos, web y móvil), con avisos existentes de dependencias frontend; **81 notas Markdown**, **793 enlaces internos resueltos**, **0 errores** y dos avisos documentales previos. La publicación es documental y no incluye cambios de aplicación ni preparación de una release en `main`.
+

@@ -4,6 +4,7 @@ Repositorio de software y documentación para el Reto 1 de Expo Clean Ecuador 20
 
 - GitHub: https://github.com/bryancito1090/istpetdev-platform (repositorio privado)
 - [Bóveda de decisiones y documentación](docs/boveda/README.md): `docs/boveda/`, dentro de este repositorio. Abrir esa carpeta como bóveda en Obsidian.
+- [Seguimiento de implementación y pruebas](docs/boveda/06%20Equipo/Seguimiento%20de%20implementacion%20y%20pruebas.md): guía del equipo para integrar 001–006, registrar faltantes y continuar hacia el piloto.
 - Rama base de desarrollo: `develop`.
 
 ---
