@@ -142,7 +142,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`) |
 | `GET /route-plans/{id}` | Cualquiera | Revisión con paradas, trazados, origen de distancias y `facts` |
 | `POST /route-plans/{id}/publish` | Planificación | Crea entregas y reservas; idempotente |
-| `POST /route-plans/{id}/stops/{sequence}/complete` | Planificación, Conductor | Marca una parada como completada (004 lo hará con la recepción real) |
+| `POST /route-plans/{id}/stops/{sequence}/complete` | Planificación, Conductor | **Provisional hasta 004.** Marca una parada como completada (004 lo hará con la recepción real) |
 | `POST /route-plans/{id}/revert` | Planificación | Vuelve a publicar la revisión anterior como nueva |
 | `POST /incidents` | Planificación, Automatización | Registra un incidente y devuelve las rutas afectadas |
 | `POST /route-plans/{id}/replan` | Planificación, Automatización | Nueva revisión + clasificación de la política + opciones si se escala |

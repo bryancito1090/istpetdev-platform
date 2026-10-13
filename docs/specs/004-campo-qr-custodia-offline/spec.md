@@ -87,7 +87,7 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 
 **Escenarios de aceptación:**
 
-1. **Dado** un token público vigente, **cuando** abro la URL del QR, **entonces** veo código de caja, producto y unidad, estado e hitos generales «preparada», «despachada» y «recibida» con horas del servidor; no veo cantidades, firmas, fotos, teléfonos, nombres personales ni token en el cuerpo de respuesta.
+1. **Dado** un token público vigente en el fragmento de la URL (`#t=…`), **cuando** abro la URL del QR, **entonces** la página envía el token por cabecera y veo código de caja, producto y unidad, estado e hitos generales «preparada», «despachada» y «recibida» con horas del servidor; no veo cantidades, firmas, fotos, teléfonos, nombres personales ni token en el cuerpo de respuesta.
 2. **Dado** un token revocado, vencido o alterado, **cuando** consulto la URL, **entonces** la respuesta no revela si la unidad existe ni su inventario.
 
 ## Requisitos
@@ -97,7 +97,7 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 | ID | Requisito | Traza a bóveda |
 |---|---|---|
 | FR-01 | Bodega DEBE crear `HandlingUnit` y sus líneas de lote desde una `Delivery` publicada antes del despacho; una entrega admite varias unidades, cada unidad pertenece a una sola entrega activa y sus cantidades no exceden las líneas reservadas. | RF-05, Modelo de datos |
-| FR-02 | La API DEBE emitir una URL QR con ID de unidad y token público aleatorio, almacenado solo como hash, con vencimiento y revocación; la etiqueta se imprime desde el navegador al crearla. Para reimprimir después se emite otro token y se revoca el anterior. El QR no autoriza escrituras. | RF-05, RF-13, Seguridad y evidencias |
+| FR-02 | La API DEBE emitir una URL QR de la forma `https://<web>/public-trace/{unitId}#t=<token>`, con token público aleatorio en el **fragmento** (el navegador no lo envía al servidor ni queda en logs de acceso), almacenado solo como hash, con vencimiento y revocación; la etiqueta se imprime desde el navegador al crearla. Para reimprimir después se emite otro token y se revoca el anterior. El QR no autoriza escrituras. | RF-05, RF-13, Seguridad y evidencias |
 | FR-03 | Despachar DEBE exigir rol Bodega, unidad preparada y entrega publicada; en una transacción valida lote/cantidad y la reserva activa de 002, la marca consumida, descuenta el agregado reservado, registra movimientos bodega→vehículo, `CustodyEvent` y estado de entrega. Reintentar la misma operación no duplica efectos. | RF-05, RNF-02 |
 | FR-04 | El conductor DEBE descargar solo rutas, revisiones, unidades y entregas asignadas a `Delivery.AssignedAccountId`, con líneas, unidades y hora de actualización suficientes para operar offline. | RF-06, RNF-01 |
 | FR-05 | La PWA DEBE persistir en IndexedDB operación, líneas, foto y PNG de `signature_pad` en una transacción local antes de mostrar «Guardado en el teléfono»; reiniciar la app conserva todo. | RF-06, RF-09, RNF-04, ADR-17 |
@@ -108,9 +108,12 @@ Este spec reemplaza el marcado provisional `POST /route-plans/{id}/stops/{sequen
 | FR-10 | La PWA DEBE sincronizar recepción primero y evidencias después; solicitar autorización de carga por archivo, subir a S3 privado y confirmar checksum/tamaño/tipo. Fallas de archivos no revierten la recepción y se reintentan independientemente. | RF-09, ADR-17 |
 | FR-11 | La PWA DEBE mostrar los estados «Guardado en el teléfono», «Enviando», «Aceptado por el servidor», «Conflicto» y «Evidencia pendiente», y permitir reintento manual al recuperar conexión o sesión. | ADR-17, RNF-04 |
 | FR-12 | La PWA DEBE detectar por consulta periódica una revisión nueva de la ruta asignada y mostrar `AgentDecision.DriverMessage` con revisión y cambios; el acuse local evita repetir el aviso. | D4, FR-11 de 003 |
-| FR-13 | La consulta pública DEBE resolver `HandlingUnit` y `CustodyEvent` reales con token vigente, devolver solo código, producto/unidad, estado e hitos generales con horas de servidor; revocación, expiración y limitación de consultas se aplican antes de revelar datos. | RF-13, Seguridad y evidencias |
-| FR-14 | La página `public-trace` DEBE abrir la URL QR directamente y dejar de usar la `Delivery` como unidad logística o el registro de demo fijo. | RF-13 |
+| FR-13 | La consulta pública `GET /api/v1/public/trace/{unitId}` DEBE recibir el token en la cabecera `X-Trace-Token` (nunca en la query string), resolver `HandlingUnit` y `CustodyEvent` reales con token vigente, devolver solo código, producto/unidad, estado e hitos generales con horas de servidor; revocación, expiración y limitación de consultas se aplican antes de revelar datos. | RF-13, Seguridad y evidencias |
+| FR-14 | La página `public-trace` DEBE abrir la URL QR directamente, leer el token del fragmento, enviarlo por `X-Trace-Token`, retirarlo de la barra de direcciones con `history.replaceState` y dejar de usar la `Delivery` como unidad logística o el registro de demo fijo. | RF-13 |
 | FR-15 | La finalización de `RouteStop` DEBE derivarse de recepciones aceptadas para sus entregas; el endpoint provisional `/stops/{sequence}/complete` de 002 no puede simular recepción ni modificar inventario. | RF-06, S-04 |
+| FR-16 | `POST /api/v1/demo/route-plans/{id}/advance` (Planificación, solo con `Demo:Enabled=true`) DEBE completar las primeras N paradas pendientes ejecutando **preparación, despacho y recepción reales** con los servicios de este spec y las cantidades planificadas, de modo que inventario, custodia y estado de parada queden conciliados. Es idempotente por `operationId`. Reemplaza al endpoint provisional en los recorridos de 002 y 003 y en el pitch. | S-04, Dataset y escenarios (reinicio de demo) |
+| FR-17 | La web de bodega y la PWA del conductor DEBEN autenticarse con Cognito mediante Authorization Code + PKCE (ADR-18) usando `angular-auth-oidc-client` 22.0.1 e inyectar el access token con un interceptor en las llamadas a la API; el token no se persiste en el outbox (NFR-03). En la demo, las sesiones se inician antes del pitch. | ADR-18, Identidad OIDC y sesiones |
+| FR-18 | La PWA DEBE publicarse por HTTPS en el despliegue de demo (ruta `/campo/` del mismo dominio, servida por nginx) para poder instalarse y usar el service worker; los clientes Cognito web y móvil DEBEN incluir las URL de retorno y cierre HTTPS de la demo además de las de `localhost`. | ADR-04, ADR-18, Perfil A Reforzado |
 
 ### No funcionales
 
@@ -136,7 +139,8 @@ Usa `Delivery`/`DeliveryLine` y lotes FEFO de 002, `RoutePlan`/`RouteStop`, `Han
 | `POST /api/v1/receipts/{id}/evidence-uploads` | Conductor asignado | Autorización de carga S3 por archivo |
 | `POST /api/v1/evidence/{id}/confirm` | Conductor asignado | Evidencia confirmada tras comprobar objeto |
 | `GET /api/v1/handling-units/{id}/trace` | Roles operativos autorizados | Custodia completa permitida |
-| `GET /api/v1/public/trace/{unitId}?token=…` | Público con token | Resumen limitado de la unidad |
+| `GET /api/v1/public/trace/{unitId}` + cabecera `X-Trace-Token` | Público con token | Resumen limitado de la unidad |
+| `POST /api/v1/demo/route-plans/{id}/advance` | Planificación (solo demo) | Completa N paradas con preparación, despacho y recepción reales |
 | `POST /api/v1/handling-units/{id}/public-token/revoke` | Bodega, Gerencia | Revocación del enlace público |
 
 JSON camelCase, horas ISO 8601 UTC y errores Problem Details con código estable y `correlationId`. En operaciones reintentables, `Idempotency-Key` y `operationId` deben coincidir. El detalle de cuerpos, estados y migración va en `plan.md`.
@@ -163,11 +167,13 @@ JSON camelCase, horas ISO 8601 UTC y errores Problem Details con código estable
 
 ## Contradicciones con la bóveda
 
-> **⚠️ Contradicción detectada** — Hecho nuevo: la recepción de 004 sustituye el endpoint provisional de 002 que marca una parada completa con horas planificadas o indicadas sin recibo. · Hecho establecido: el [plan de 002](../002-motor-logistico/plan.md#contratos-http) propone `/stops/{sequence}/complete`. · Impacto: conservar ambos como caminos equivalentes permitiría una parada «completa» sin inventario recibido. · Opciones: (a) desactivar el marcado provisional cuando 004 se integre; (b) conservarlo solo para fixture de pruebas sin efecto operativo; (c) mantener ambos. · Propuesta: (a).
+> **⚠️ Contradicción detectada** — Hecho nuevo: la recepción de 004 sustituye el endpoint provisional de 002 que marca una parada completa con horas planificadas o indicadas sin recibo. · Hecho establecido: el [plan de 002](../002-motor-logistico/plan.md#contratos-http) propone `/stops/{sequence}/complete`. · Impacto: conservar ambos como caminos equivalentes permitiría una parada «completa» sin inventario recibido. · Opciones: (a) desactivar el marcado provisional cuando 004 se integre; (b) conservarlo solo para fixture de pruebas sin efecto operativo; (c) mantener ambos. · Propuesta: (a), más el endpoint de demo `advance` (FR-16), que completa paradas con operaciones reales. Al integrar 004, el E2E-03 de 002, `calibrate-incident.sh`, el escenario `incident` de la prueba de aceptación de 003 y su E2E pasan a usar `advance`; antes de esa integración siguen usando el endpoint provisional.
 
 > **⚠️ Contradicción detectada** — Hecho nuevo: la página pública exige token y consulta `HandlingUnit`/`CustodyEvent` reales. · Hecho establecido: el código actual de `PublicTraceService` devuelve una `Delivery` o un registro fijo de demo sin token, y la página usa un código precargado. · Impacto: hoy podría presentar hitos que no ocurrieron y exponer una consulta sin el control propuesto en [Seguridad y evidencias](../../boveda/03%20Arquitectura/Seguridad%20y%20evidencias.md). · Opciones: (a) reemplazar servicio y página; (b) ocultar la página hasta completar la API. · Propuesta: (a), sin afirmar que ya está implementado.
 
-> **⚠️ Contradicción detectada** — Hecho nuevo: 004 agrega asociación unidad–entrega y token público revocable después del núcleo de 27 tablas. · Hecho establecido: [spec 001](../001-nucleo-delgado-importador/spec.md#entidades-y-contratos) fija exactamente 27 tablas para su cierre, mientras el [esquema completo de la bóveda](../../boveda/04%20Datos%20y%20algoritmos/Esquema%20completo%20de%20base%20de%20datos.md) prevé `DeliveryHandlingUnit` y `QrAccessToken`. · Impacto: el conteo de 001 debe medirse antes de la migración de 004; el esquema final de la demo crece de forma explícita. · Opciones: (a) migración posterior de 004; (b) ampliar 001 y retrasar su hito. · Propuesta: (a).
+> **⚠️ Contradicción detectada** — Hecho nuevo: el token público viaja en el fragmento de la URL del QR y en la cabecera `X-Trace-Token`. · Hecho establecido: [Contratos API y eventos](../../boveda/03%20Arquitectura/Contratos%20API%20y%20eventos.md) propone `GET /api/v1/public/trace/{unitId}?token=...`. · Impacto: con la query string, el token queda en los logs de acceso de nginx y en el historial del navegador. · Opciones: (a) fragmento + cabecera; (b) query string con logs filtrados. · Propuesta: (a).
+
+> **⚠️ Contradicción detectada** — Hecho nuevo: 004 agrega asociación unidad–entrega y token público revocable después del núcleo de 27 tablas. · Hecho establecido: [spec 001](../001-nucleo-delgado-importador/spec.md#criterios-de-éxito) cierra con 27 tablas (desde el 12-oct, su prueba exige ese núcleo y la ausencia de Schema95, no un conteo cerrado, para que 002–004 añadan tablas sin romperla), mientras el [esquema completo de la bóveda](../../boveda/04%20Datos%20y%20algoritmos/Esquema%20completo%20de%20base%20de%20datos.md) prevé `DeliveryHandlingUnit` y `QrAccessToken`. · Impacto: el conteo de 001 debe medirse antes de la migración de 004; el esquema final de la demo crece de forma explícita. · Opciones: (a) migración posterior de 004; (b) ampliar 001 y retrasar su hito. · Propuesta: (a).
 
 Notas revisadas sin otra contradicción: Movil offline y sincronizacion (cola, conflictos), Contratos API y eventos (idempotencia y endpoints), Decisiones de arquitectura (ADR-06, ADR-17, ADR-18), Dataset y escenarios (S-05, S-06, S-07, S-11), Plus para ganar (plus 3).
 
@@ -191,8 +197,13 @@ Notas revisadas sin otra contradicción: Movil offline y sincronizacion (cola, c
 - CE-06: foto y firma constan como evidencia privada confirmada; una falla de carga muestra «Evidencia pendiente» y se recupera sin duplicar el recibo.
 - CE-07: el teléfono del jurado abre la etiqueta QR por HTTPS y ve solo producto/unidad, estado e hitos reales; token revocado, vencido o alterado no revela datos.
 - CE-08: una nueva revisión con `DriverMessage` muestra un aviso en la PWA del conductor asignado y no lo repite después de marcarlo leído.
+- CE-09: la PWA se instala desde `https://<dominio de demo>/campo/` en el teléfono del pitch; Bodega y Conductor inician sesión con PKCE y sus llamadas a la API llevan el access token; ningún token aparece en IndexedDB durable.
+- CE-10: `POST /api/v1/demo/route-plans/{id}/advance {stops: 2}` deja 2 paradas completadas con recibos, movimientos y custodia reales; repetirlo con el mismo `operationId` no cambia nada; el incidente predefinido de 002 se ejecuta después sobre ese estado.
 
 ## Preguntas abiertas
 
 - PA-01: ¿quiénes del equipo figurarán como Deciders de las propuestas D1–D8 y de este diseño? Decide: equipo; registrar nombres y fecha antes de pasar el spec a `aprobado`.
 - PA-02: ¿qué teléfono Android, navegador y URL HTTPS se usarán en los ensayos de CE-02 y CE-07? Decide: equipo antes de H3.
+- PA-03: ¿la pantalla de Bodega (preparar caja, imprimir etiqueta, escanear y despachar) vive en la web o en la PWA con rol Bodega? El plan solo tiene la página de etiqueta; falta la interfaz del despacho que se muestra en escena. Decide: equipo antes de T2.
+- PA-04: ¿la evidencia se sube con URL prefirmadas desde el navegador (requiere CORS del bucket y permisos IAM del EC2, del equipo de infraestructura) o a través de la API, que la guarda en S3 desde el servidor? Recomendación de la revisión del 12-oct: a través de la API. Decide: equipo antes de T6.
+- PA-05: ¿el límite de consultas del QR público se aplica por IP o por token? Los jurados comparten IP en la wifi del recinto (NAT); recomendación: por token con umbral holgado y prueba con 7 escaneos simultáneos. Decide: equipo antes de T7.

@@ -50,7 +50,7 @@ Antes del ensayo real, cargar los workflows exportados de `automation/n8n/workfl
 
 **Pasos:**
 
-1. Resetear `demo-region`; proponer y publicar dos rutas con los endpoints de 002; completar dos paradas. Disparar `POST /api/v1/demo/incidents` con `{ "preset": "cierre-norte" }` y `Agent:AutoOnIncident=true`.
+1. Resetear `demo-region`; proponer y publicar dos rutas con los endpoints de 002; completar dos paradas (antes de integrar 004, con el endpoint provisional de 002; después, tras integrar 004, con `POST /api/v1/demo/route-plans/{id}/advance {stops: 2}` (FR-16 de 004), que completa con preparación, despacho y recepción reales). Disparar `POST /api/v1/demo/incidents` con `{ "preset": "cierre-norte" }` y `Agent:AutoOnIncident=true`.
 2. Obtener el `runId` correlacionado al incidente y consultar `GET /agent/runs/{id}` hasta estado terminal, sin iniciar otro run manual. Confirmar que la traza contiene `get_incident_impact` y un `replan` por cada ruta afectada.
 3. Consultar revisiones y `AgentDecision`: `VEH-02=AutoExecuted` y publicada, `VEH-01=Escalated` y pendiente con `late_service` y `prioritize_critical`. Ambas tienen explicación, facts y `DriverMessage` ≤ 160 caracteres; la PWA 004 podrá leer el mensaje al detectar la nueva revisión.
 4. Comprobar que las paradas completadas se conservan y que `CorrelationId` de ambas decisiones apunta al run. Repetir una consulta a la ruta: no crea revisiones nuevas.

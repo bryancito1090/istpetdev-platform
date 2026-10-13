@@ -211,7 +211,7 @@ Notas revisadas sin contradicción: Contratos API y eventos (prefijo `/api/v1`, 
 - CE-01: con una base vacía, `POST /api/v1/demo/reset` deja 1 bodega, 6 puntos, 2 productos, 1 vehículo, 2 lotes, 9 saldos y 7 consumos, y responde en menos de 5 s.
 - CE-02: el fixture `ejemplo-externo` (separador `;`, decimales con coma, galones por mes, encabezados con tildes) se importa con su perfil y deja el consumo de `C-100` en 359,614 L con `period_days = 30`.
 - CE-03: un dataset preparado por alguien ajeno al importador se carga en ≤ 60 minutos escribiendo solo un perfil de mapeo (E2E-03).
-- CE-04: el esquema contiene exactamente las 27 tablas de «Entidades y contratos» más `__EFMigrationsHistory` y las tablas propias de PostGIS.
+- CE-04: al cerrar 001, el esquema contiene las 27 tablas de «Entidades y contratos» (más `__EFMigrationsHistory` y las tablas de PostGIS) y ninguna tabla eliminada de Schema95. La prueba automática exige ese núcleo y la ausencia de Schema95, no un conteo cerrado: los specs 002–004 añaden tablas con sus propias migraciones sin romperla.
 - CE-05: `dotnet test` pasa completo en `ci.yml` y el paso Schema95Check desaparece de `deploy.yml`.
 
 ## Preguntas abiertas

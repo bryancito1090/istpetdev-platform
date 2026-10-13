@@ -66,7 +66,7 @@ Para ensayo manual local, iniciar la base y API como en [test-e2e de 001](../001
 
 **Pasos:**
 
-1. Resetear `demo-region`, crear y publicar las dos rutas. Completar **dos** paradas planificadas por `POST /api/v1/route-plans/{id}/stops/{sequence}/complete`; guardar sus códigos, orden y horas. Disparar `POST /api/v1/demo/incidents` con `{ "preset": "cierre-norte" }`.
+1. Resetear `demo-region`, crear y publicar las dos rutas. Completar **dos** paradas planificadas por `POST /api/v1/route-plans/{id}/stops/{sequence}/complete` (antes de integrar 004) o, tras integrar 004, con `POST /api/v1/demo/route-plans/{id}/advance {stops: 2}` (FR-16 de 004), que completa con preparación, despacho y recepción reales; guardar sus códigos, orden y horas. Disparar `POST /api/v1/demo/incidents` con `{ "preset": "cierre-norte" }`.
 2. Verificar que el incidente devuelve rutas y legs afectados. Replanificar cada ruta afectada con `POST /api/v1/route-plans/{id}/replan` e `incidentId` de la respuesta anterior.
 3. Verificar que las dos completadas siguen idénticas en la nueva revisión, que ningún leg pendiente cruza el cierre y que el diff enumera cambios reales de ETA/costo/paradas. Para `VEH-02`, `decision.outcome=AutoExecuted` y nueva revisión `Published`. Para `VEH-01`, `decision.outcome=Escalated`, nueva revisión `Proposed` y revisión anterior todavía vigente.
 4. En `VEH-01`, comprobar dos opciones **calculadas**: `late_service` y `prioritize_critical`, cada una con factibilidad, costo, ETA por parada e incumplimientos declarados. `late_service` declara el retraso de `HOS-N01`; `prioritize_critical` no consolida y mantiene ventanas duras. Aprobar `late_service` por `POST /api/v1/agent-decisions/{id}/approve` y consultar `GET /api/v1/agent-decisions?status=Approved`.

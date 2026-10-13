@@ -293,7 +293,7 @@ Respuestas en camelCase; errores con Problem Details. Las cifras de los ejemplos
 
 **`POST /api/v1/route-plans/{id}/publish`** — cuerpo `{ "assignments": { "VEH-01": "<sub del conductor>" } }` (opcional) → `200` con las entregas creadas; repetir devuelve las mismas.
 
-**`POST /api/v1/route-plans/{id}/stops/{sequence}/complete`** → `200`; fija `ActualArrivalUtc`/`ActualDepartureUtc` a los planificados (modo demo) o a los recibidos en el cuerpo.
+**`POST /api/v1/route-plans/{id}/stops/{sequence}/complete`** — **provisional**: al integrar 004 deja de ser un camino operativo (FR-15 de 004); para demo y pruebas se usa `POST /api/v1/demo/route-plans/{id}/advance` (FR-16 de 004). → `200`; fija `ActualArrivalUtc`/`ActualDepartureUtc` a los planificados (modo demo) o a los recibidos en el cuerpo.
 
 **`POST /api/v1/incidents`** — `{ "kind": "ROAD_CLOSURE", "lat": -0.2000, "lon": -78.5000, "radiusKm": 0.8, "factor": null, "vehicleCode": null, "description": "…", "isSynthetic": true }` → `201` con `{ incidentId, affectedRoutes: [ { routePlanId, vehicleCode, affectedLegs, affectedStops } ] }`.
 
@@ -373,7 +373,7 @@ SKUs: `DES-01` desinfectante (L, 1,05 kg/L, 0,001 m³/L), `PAP-01` papel higién
 
 **Archivos:** los 7 CSV canónicos de 001 + `tramos.csv` (`road_segments`) + `incidentes.json` (incidentes predefinidos por nombre, con vehículos y zonas por **código y coordenadas**, nunca por Id) + `mapping.json`.
 
-**Incidente predefinido `cierre-norte`:** un cierre sobre el corredor que el vehículo del norte usa para llegar a `HOS-N01`, diseñado para que (a) la ruta del otro vehículo solo cambie de orden dentro de los umbrales → `AutoExecuted` y (b) `HOS-N01` pierda su ventana → `Escalated`. **Se calibra después de implementar el planificador** con `scripts/data/calibrate-incident.sh` (ejecuta reset → propuesta → publicación → completar 2 paradas → incidente → replan y muestra los resultados), y una prueba E2E fija el resultado.
+**Incidente predefinido `cierre-norte`:** un cierre sobre el corredor que el vehículo del norte usa para llegar a `HOS-N01`, diseñado para que (a) la ruta del otro vehículo solo cambie de orden dentro de los umbrales → `AutoExecuted` y (b) `HOS-N01` pierda su ventana → `Escalated`. **Se calibra después de implementar el planificador** con `scripts/data/calibrate-incident.sh` (ejecuta reset → propuesta → publicación → completar 2 paradas → incidente → replan y muestra los resultados), y una prueba E2E fija el resultado. Tras integrar 004, el script completa las 2 paradas con `advance` en lugar del endpoint provisional.
 
 **Generación de tramos:** `scripts/data/build-road-segments.py` lee bodegas y puntos del fixture, consulta OSRM (`--base-url`, por defecto el público) a ≤ 1 petición/s y escribe `tramos.csv` con km, minutos y polilínea para todos los pares dirigidos (16 × 15 = 240). Se ejecuta con `python3 -I` y solo la biblioteca estándar.
 

@@ -8,10 +8,11 @@
 |---|---|---|---|---|
 | T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | pendiente |
 | T1 | Modelo, migración y DTOs de campo | T0 | — | pendiente |
-| T2 | Preparación de caja, QR y etiqueta | T1 | [P] con T5 | pendiente |
+| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | pendiente |
+| T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | pendiente |
 | T3 | Despacho atómico e idempotente | T2 | — | pendiente |
 | T4 | Recepción, parcial, conflictos y parada | T3 | — | pendiente |
-| T5 | Outbox durable y captura offline | T1 | [P] con T2–T4 | pendiente |
+| T5 | Outbox durable y captura offline | T1, T1b | [P] con T2–T4 | pendiente |
 | T6 | Evidencia privada y reintentos | T4, T5 | [P] con T7 | pendiente |
 | T7 | Consulta pública limitada y revocación | T2 | [P] con T5–T6 | pendiente |
 | T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | pendiente |
@@ -42,6 +43,15 @@
 - [ ] Generar una migración `FieldOperations` sobre 001/002, reutilizando columnas ya existentes. Índices para token hash y clave `(OrganizationId, ActorId, Action, OperationId)`; `RetainUntilUtc` ≥ aceptación + 7 días. Añadir concesiones de rol según patrón de migración de 001. Probar `dotnet ef database update` en base de prueba vacía y con entregas existentes; no borrar el historial operativo.
 - [ ] Fijar DTOs camelCase, UUID v7, horas UTC, cantidades decimales con unidad base, errores Problem Details con `code` y `correlationId`; compartir tipos TypeScript del contrato, sin incluir tokens OIDC en el outbox. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~FieldSchemaTests'` y `npm run check`; esperado: 0 fallos. Commit `feat(field): add operations schema and contracts`.
 
+### T1b — Login PKCE y PWA por HTTPS
+
+**Archivos:** crear `apps/web/src/app/auth/{auth.config.ts,auth.guard.ts}` y `apps/mobile/src/app/auth/{auth.config.ts,auth.guard.ts}`; modificar `apps/web/src/app/app.config.ts`, `apps/mobile/src/app/app.config.ts`, `apps/mobile/angular.json` (base `/campo/`); crear `infra/docker/mobile/Dockerfile`; modificar `infra/nginx/istpetdev.conf`, `infra/compose/docker-compose.prod.yml`, `infra/terraform/environments/dev/identity.tf`; añadir `angular-auth-oidc-client@22.0.1` a ambas apps.
+
+- [ ] Prueba roja (Angular): sin sesión, una ruta protegida redirige al login; con sesión, una petición a `/api/v1/*` lleva `Authorization: Bearer`; una petición a otro origen no la lleva. Ningún token se escribe en IndexedDB (lo comprueba la prueba del outbox de T5).
+- [ ] Configurar `provideAuth` con Authorization Code + PKCE contra el dominio de Cognito del output `cognito` de Terraform, `scope` con `openid` e `istpetdev-api/access`, renovación silenciosa por refresh token y el interceptor de la biblioteca limitado a la URL de la API. Guard de ruta por rol leído de la API (no del token).
+- [ ] Publicar la PWA: imagen estática de `apps/mobile` servida en `location /campo/` del nginx de demo, con `Service-Worker-Allowed` y caché correcta del `ngsw.json`. Añadir a los clientes Cognito web y móvil las URL HTTPS de retorno y cierre de la demo, conservando las de `localhost`. Coordinar `apply` y despliegue con el equipo de infraestructura.
+- [ ] Ejecutar `npm run check`; instalar la PWA desde `https://<dominio de demo>/campo/` en el teléfono del pitch e iniciar sesión como Conductor y como Bodega (CE-09). Commit `feat(auth): add pkce login and publish field pwa over https`.
+
 ### T2 — Preparar caja y emitir etiqueta QR
 
 **Archivos:** crear `src/Application/Field/HandlingUnitPreparationService.cs`, `src/Api/Controllers/FieldController.cs`, `apps/web/src/pages/field-label/field-label.page.ts`; probar en `tests/IstpetDev.Tests/Integration/Field/HandlingUnitPreparationTests.cs` y prueba web de etiqueta.
@@ -65,7 +75,8 @@
 - [ ] Pruebas rojas: conductor solo recibe `Delivery.AssignedAccountId` propia y despachada. Solicitud incluye mismo UUID v7 en cuerpo/cabecera, `expectedDeliveryVersion`, `occurredAtDevice`, líneas por `deliveryLineId`/lote, aceptado/rechazado en unidad base y motivo del rechazo; actor se toma del JWT, nunca del cuerpo.
 - [ ] Implementar una transacción con bloqueo de `DeliveryLine` y `StockBalance`: `Receipt`/`ReceiptLine`, movimiento vehículo→punto **solo** por aceptado, custodia de rechazado/pendiente en vehículo, estado de entrega y parada derivado del recibo, respuesta idempotente guardada. Hora contable = servidor; `occurredAtDevice` es evidencia informativa. Desactivar el endpoint provisional `/stops/{sequence}/complete` como camino operativo, sin simular movimiento.
 - [ ] Pruebas rojas/verde de 12 L despachados: 9 aceptados elevan punto 9; 3 rechazados siguen en vehículo con motivo. Una devolución posterior hecha por Bodega mueve esos 3 a bodega con nuevo `CustodyEvent`; no ocurre automáticamente al rechazar.
-- [ ] Probar replay igual, clave alterada, dos dispositivos con claves distintas y suma que excede pendiente: solo uno confirma, el otro 409 `QUANTITY_EXCEEDED`, sin stock negativo ni duplicado. Cambiar revisión de ruta entre captura y sync: aceptar si entrega/asignación/cantidad siguen vigentes; reasignar entrega: 409 `ASSIGNMENT_CHANGED` con datos permitidos. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~ReceiptIntegrationTests|FullyQualifiedName~FieldAuthorizationTests'`; esperado: 0 fallos. Commit `feat(field): accept idempotent receipts and complete stops`.
+- [ ] Probar replay igual, clave alterada, dos dispositivos con claves distintas y suma que excede pendiente: solo uno confirma, el otro 409 `QUANTITY_EXCEEDED`, sin stock negativo ni duplicado. Cambiar revisión de ruta entre captura y sync: aceptar si entrega/asignación/cantidad siguen vigentes; reasignar entrega: 409 `ASSIGNMENT_CHANGED` con datos permitidos. Usar el código de `ReceiptIntegrationTests` de la sección «Código de las pruebas clave». Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~ReceiptIntegrationTests|FullyQualifiedName~FieldAuthorizationTests'`; esperado: 0 fallos. Commit `feat(field): accept idempotent receipts and complete stops`.
+- [ ] Implementar `POST /api/v1/demo/route-plans/{id}/advance` (FR-16) con `DemoAdvanceService`: para las primeras N paradas pendientes prepara la unidad, despacha y recibe las cantidades planificadas **con los mismos servicios** de T2–T4, en orden, idempotente por `operationId` (cada operación interna deriva su clave de él). Solo con `Demo:Enabled=true` y rol Planificación. Usar `DemoAdvanceTests` de la sección de código. Actualizar el E2E-03 y `calibrate-incident.sh` de 002 y el escenario `incident` de 003 para usar `advance` (ya anotado en esos documentos). Commit `feat(demo): advance stops with real field operations`.
 
 ### T5 — Captura y outbox offline
 
@@ -89,7 +100,7 @@
 **Archivos:** modificar `src/Application/PublicTrace/Services/PublicTraceService.cs`, `src/Api/Controllers/PublicTraceController.cs`, `libs/shared-core/src/contracts/trace.contract.ts`, `apps/web/src/pages/public-trace/public-trace.page.ts`, `apps/web/src/shared/api/api.service.ts`; probar en `tests/IstpetDev.Tests/Integration/Field/PublicTraceHttpTests.cs` y prueba web de página.
 
 - [ ] Pruebas rojas: token correcto devuelve únicamente código de unidad, producto/unidad, estado e hitos `prepared`, `dispatched`, `received` con horas de **servidor** tomadas de `CustodyEvent`; no hay cantidad, actor, contacto, ruta, foto/firma, URL privada ni token en JSON. El registro fijo de demo y la búsqueda pública por código de Delivery desaparecen.
-- [ ] Implementar `GET /api/v1/public/trace/{unitId}?token=…`: comparar hash de token vigente, revocación y caducidad **antes** de proyectar datos; sin token, alterado, expirado, revocado o unidad inexistente → respuesta uniforme 404. `Cache-Control: no-store`; 429 por límite de tasa sin revelar existencia. `POST /handling-units/{id}/public-token/revoke` solo Bodega/Gerencia.
+- [ ] Implementar `GET /api/v1/public/trace/{unitId}` con el token en la cabecera `X-Trace-Token` (la query string no se acepta) y la URL de la etiqueta con el token en el fragmento `#t=`: comparar hash de token vigente, revocación y caducidad **antes** de proyectar datos; sin token, alterado, expirado, revocado o unidad inexistente → respuesta uniforme 404. `Cache-Control: no-store`; 429 por límite de tasa sin revelar existencia. `POST /handling-units/{id}/public-token/revoke` solo Bodega/Gerencia.
 - [ ] La página acepta directamente la URL QR por HTTPS, consulta el endpoint y muestra estados en lenguaje simple; no usa fixture incrustado. Comprobar que reimpresión revoca etiqueta anterior y que el token no entra en analytics/logs de la página. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~PublicTraceHttpTests'` y `npm run check`; esperado: 0 fallos. Commit `feat(field): expose limited revocable qr trace`.
 
 ### T8 — Asignaciones y aviso de revisión
@@ -117,6 +128,305 @@
 - [ ] Registrar la sustitución del endpoint provisional de 002, el nuevo esquema posterior al conteo de 27 tablas de 001 y la consulta pública tokenizada en la bóveda. Añadir trabajo de 004 al registro previo/tag del equipo según G8, sin declarar aprobación de una ADR todavía propuesta.
 - [ ] Si falta alguna prueba obligatoria, dejar `estado: en curso` y anotar plan B de D8 (recepción en línea/video) como contingencia, no como pase E2E. Commit `docs(field): record physical demo evidence` solo con artefactos permitidos.
 
+## Código de las pruebas clave
+
+Pruebas de los invariantes que más daño harían si fallan en escena. Usan la infraestructura de pruebas de 001 (`PostgisContainer`, `ApiFactory`, `TestTokens`) y las entidades de 001, 002 y de la migración de T1. Si un nombre de propiedad difiere tras T1, ajustar la prueba **en el mismo commit** que la entidad, sin cambiar el comportamiento que verifica.
+
+### Apoyo: entrega despachada sembrada (T1)
+
+`tests/IstpetDev.Tests/Support/FieldSeed.cs`:
+
+```csharp
+using IstpetDev.Domain.Common;
+using IstpetDev.Domain.Entities;
+using IstpetDev.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IstpetDev.Tests.Support;
+
+// Siembra directa en la base para probar recepción y consulta pública sin depender del recorrido de 002.
+public static class FieldSeed
+{
+    public sealed record Dispatched(Guid DeliveryId, Guid DeliveryLineId, Guid LotId, Guid PointLocationId, Guid VehicleLocationId, long DeliveryVersion);
+
+    // suffix hace únicos los códigos cuando una prueba siembra varias entregas en la misma base.
+    public static async Task<Dispatched> DispatchedDeliveryAsync(ApiFactory api, decimal quantity, string suffix = "T")
+    {
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var driver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
+        var product = new Product { Sku = $"SKU-{suffix}", Name = "Producto de prueba", BaseUnit = "L", IsActive = true };
+        var lot = new Lot { ProductId = product.Id, Code = $"LOTE-{suffix}" };
+        var point = new ServicePoint { Code = $"P-{suffix}", Name = "Punto de prueba", Criticality = "normal", IsActive = true };
+        var warehouse = new Location { Code = $"B-{suffix}", Name = "Bodega de prueba", Kind = LocationKinds.Warehouse, IsActive = true };
+        var pointLocation = new Location { Code = $"P-{suffix}", Name = "Punto de prueba", Kind = LocationKinds.ServicePoint, ServicePointId = point.Id, IsActive = true };
+        var vehicle = new Vehicle { Code = $"V-{suffix}", DepotLocationId = warehouse.Id, MaxWeight = 1000, IsActive = true };
+        var vehicleLocation = new Location { Code = $"V-{suffix}", Name = "Vehículo de prueba", Kind = LocationKinds.Vehicle, VehicleId = vehicle.Id, IsActive = true };
+        var delivery = new Delivery
+        {
+            Code = $"D-{suffix}", OriginLocationId = warehouse.Id, ServicePointId = point.Id,
+            Status = nameof(Domain.Enums.DeliveryStatus.Dispatched), AssignedAccountId = driver.Id, DispatchedAtUtc = DateTime.UtcNow,
+        };
+        var line = new DeliveryLine { DeliveryId = delivery.Id, LotId = lot.Id, PlannedQuantity = quantity, DispatchedQuantity = quantity };
+        db.AddRange(product, lot, point, warehouse, pointLocation, vehicle, vehicleLocation, delivery, line,
+            new StockBalance { LocationId = vehicleLocation.Id, LotId = lot.Id, QuantityOnHand = quantity });
+        await db.SaveChangesAsync();
+        return new Dispatched(delivery.Id, line.Id, lot.Id, pointLocation.Id, vehicleLocation.Id, delivery.Version);
+    }
+
+    public static async Task<decimal> OnHandAsync(ApiFactory api, Guid locationId, Guid lotId)
+    {
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await db.StockBalances.Where(b => b.LocationId == locationId && b.LotId == lotId)
+            .Select(b => b.QuantityOnHand).SingleOrDefaultAsync();
+    }
+}
+```
+
+### Recepción: replay, conflicto, concurrencia y parcial (T4)
+
+`tests/IstpetDev.Tests/Integration/Field/ReceiptIntegrationTests.cs`:
+
+```csharp
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using IstpetDev.Domain.Common;
+using IstpetDev.Tests.Support;
+
+namespace IstpetDev.Tests.Integration.Field;
+
+[Collection(PostgisCollection.Name)]
+[Trait("Category", "Integration")]
+public class ReceiptIntegrationTests(PostgisContainer postgres)
+{
+    private static readonly DateTime CapturedAt = new(2026, 10, 15, 15, 0, 0, DateTimeKind.Utc);
+
+    // El cuerpo se serializa una vez por operación: un replay debe enviar exactamente los mismos bytes.
+    private static string Body(FieldSeed.Dispatched d, Guid operationId, decimal accepted, decimal rejected = 0) =>
+        JsonSerializer.Serialize(new
+        {
+            operationId, expectedDeliveryVersion = d.DeliveryVersion, occurredAtDevice = CapturedAt,
+            lines = new[]
+            {
+                new { deliveryLineId = d.DeliveryLineId, lotId = d.LotId, quantityAccepted = accepted, quantityRejected = rejected,
+                      unit = "L", rejectionReason = rejected > 0 ? "Envase dañado" : null },
+            },
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+    private static HttpRequestMessage Receipt(Guid deliveryId, Guid operationId, string body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/deliveries/{deliveryId}/receipts")
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("Idempotency-Key", operationId.ToString());
+        return request;
+    }
+
+    [Fact]
+    public async Task Same_key_and_body_replays_the_response_and_changed_body_conflicts()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var driver = api.ClientFor(TestTokens.Driver);
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m);
+        var operationId = BaseEntity.NewId();
+        var body = Body(d, operationId, 12m);
+
+        var first = await driver.SendAsync(Receipt(d.DeliveryId, operationId, body));
+        var replay = await driver.SendAsync(Receipt(d.DeliveryId, operationId, body));
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal(await first.Content.ReadAsStringAsync(), await replay.Content.ReadAsStringAsync());
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, d.PointLocationId, d.LotId));
+
+        var changed = await driver.SendAsync(Receipt(d.DeliveryId, operationId, Body(d, operationId, 11m)));
+        Assert.Equal(HttpStatusCode.Conflict, changed.StatusCode);
+        Assert.Contains("IDEMPOTENCY_CONFLICT", await changed.Content.ReadAsStringAsync());
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, d.PointLocationId, d.LotId));
+    }
+
+    [Fact]
+    public async Task Two_devices_with_distinct_keys_cannot_receive_more_than_dispatched()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m);
+        Guid first = BaseEntity.NewId(), second = BaseEntity.NewId();
+
+        var responses = await Task.WhenAll(
+            api.ClientFor(TestTokens.Driver).SendAsync(Receipt(d.DeliveryId, first, Body(d, first, 12m))),
+            api.ClientFor(TestTokens.Driver).SendAsync(Receipt(d.DeliveryId, second, Body(d, second, 12m))));
+
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.OK);
+        var rejected = Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+        Assert.Contains("QUANTITY_EXCEEDED", await rejected.Content.ReadAsStringAsync());
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, d.PointLocationId, d.LotId));
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, d.VehicleLocationId, d.LotId));
+    }
+
+    [Fact]
+    public async Task Partial_receipt_keeps_the_rejected_quantity_in_the_vehicle()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m);
+        var operationId = BaseEntity.NewId();
+
+        var response = await api.ClientFor(TestTokens.Driver).SendAsync(Receipt(d.DeliveryId, operationId, Body(d, operationId, 9m, 3m)));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(9m, await FieldSeed.OnHandAsync(api, d.PointLocationId, d.LotId));
+        Assert.Equal(3m, await FieldSeed.OnHandAsync(api, d.VehicleLocationId, d.LotId));
+    }
+}
+```
+
+### Consulta pública: cabecera, campos permitidos y 404 uniforme (T7)
+
+`tests/IstpetDev.Tests/Integration/Field/PublicTraceHttpTests.cs`. El hash del token es SHA-256 del texto UTF-8 en hexadecimal minúscula; si T2 elige otro formato, cambiar `Hash` en el mismo commit.
+
+```csharp
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using IstpetDev.Domain.Entities;
+using IstpetDev.Infrastructure.Persistence;
+using IstpetDev.Tests.Support;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IstpetDev.Tests.Integration.Field;
+
+[Collection(PostgisCollection.Name)]
+[Trait("Category", "Integration")]
+public class PublicTraceHttpTests(PostgisContainer postgres)
+{
+    private const string Token = "token-de-prueba-0123456789abcdef0123456789abcdef";
+    private static readonly string[] AllowedFields = ["unitId", "status", "productUnits", "events"];
+
+    private static string Hash(string token) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
+
+    private static async Task<Guid> SeedUnitAsync(ApiFactory api, DateTime expiresAtUtc, DateTime? revokedAtUtc = null)
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m, suffix);
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var actor = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
+        var unit = new HandlingUnit { Code = $"CAJA-{suffix}", LocationId = d.VehicleLocationId, Status = "Dispatched", DeliveryId = d.DeliveryId };
+        db.AddRange(unit,
+            new HandlingUnitLine { HandlingUnitId = unit.Id, LotId = d.LotId, Quantity = 12m },
+            new QrAccessToken { HandlingUnitId = unit.Id, TokenHash = Hash(Token), ExpiresAtUtc = expiresAtUtc, RevokedAtUtc = revokedAtUtc, CreatedByAccountId = actor.Id },
+            new CustodyEvent { HandlingUnitId = unit.Id, DeliveryId = d.DeliveryId, ActorAccountId = actor.Id, EventKind = "Dispatched",
+                               OperationId = Domain.Common.BaseEntity.NewId(), ReceivedAtServer = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+        return unit.Id;
+    }
+
+    private static Task<HttpResponseMessage> GetTrace(ApiFactory api, Guid unitId, string? token)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/public/trace/{unitId}");
+        if (token is not null) request.Headers.Add("X-Trace-Token", token);
+        return api.CreateClient().SendAsync(request);
+    }
+
+    [Fact]
+    public async Task Valid_token_in_header_returns_only_public_fields()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var unitId = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7));
+
+        var response = await GetTrace(api, unitId, Token);
+        var text = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        using var json = JsonDocument.Parse(text);
+        Assert.All(json.RootElement.EnumerateObject(), p => Assert.Contains(p.Name, AllowedFields));
+        Assert.DoesNotContain(Token, text);
+        Assert.DoesNotContain("quantity", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("actor", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Invalid_expired_revoked_missing_or_query_tokens_are_uniform_404()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var valid = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7));
+        var expired = await SeedUnitAsync(api, DateTime.UtcNow.AddMinutes(-1));
+        var revoked = await SeedUnitAsync(api, DateTime.UtcNow.AddDays(7), DateTime.UtcNow);
+
+        var responses = new[]
+        {
+            await GetTrace(api, valid, null),
+            await GetTrace(api, valid, Token + "x"),
+            await GetTrace(api, expired, Token),
+            await GetTrace(api, revoked, Token),
+            await GetTrace(api, Guid.NewGuid(), Token),
+            await api.CreateClient().GetAsync($"/api/v1/public/trace/{valid}?token={Token}"),
+        };
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.NotFound, r.StatusCode));
+    }
+}
+```
+
+### `advance` con operaciones reales (T4)
+
+`tests/IstpetDev.Tests/E2E/DemoAdvanceTests.cs` — usa el fixture `demo-base` de 001, que tiene 3 puntos en riesgo para un vehículo:
+
+```csharp
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using IstpetDev.Domain.Common;
+using IstpetDev.Infrastructure.Persistence;
+using IstpetDev.Tests.Support;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IstpetDev.Tests.E2E;
+
+[Collection(PostgisCollection.Name)]
+[Trait("Category", "E2E")]
+public class DemoAdvanceTests(PostgisContainer postgres)
+{
+    [Fact]
+    public async Task Advance_completes_stops_with_real_receipts_and_is_idempotent()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var planner = api.ClientFor(TestTokens.Planner);
+        Assert.Equal(HttpStatusCode.OK, (await planner.PostAsync("/api/v1/demo/reset", null)).StatusCode);
+
+        var proposal = await (await planner.PostAsJsonAsync("/api/v1/route-plans", new { includeConsolidation = true }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var routePlanId = proposal.GetProperty("routes")[0].GetProperty("routePlanId").GetGuid();
+        var vehicleCode = proposal.GetProperty("routes")[0].GetProperty("vehicleCode").GetString()!;
+        var publish = await planner.PostAsJsonAsync($"/api/v1/route-plans/{routePlanId}/publish",
+            new { assignments = new Dictionary<string, string> { [vehicleCode] = TestTokens.Driver } });
+        Assert.True(publish.IsSuccessStatusCode, await publish.Content.ReadAsStringAsync());
+
+        var operationId = BaseEntity.NewId();
+        var first = await planner.PostAsJsonAsync($"/api/v1/demo/route-plans/{routePlanId}/advance", new { operationId, stops = 2 });
+        var replay = await planner.PostAsJsonAsync($"/api/v1/demo/route-plans/{routePlanId}/advance", new { operationId, stops = 2 });
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(await first.Content.ReadAsStringAsync(), await replay.Content.ReadAsStringAsync());
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(2, await db.Receipts.CountAsync());
+        Assert.Equal(2, await db.RouteStops.CountAsync(s => s.RoutePlanId == routePlanId && s.Status == "Completed"));
+        Assert.True(await db.CustodyEvents.CountAsync() >= 4);   // al menos despacho y recepción por parada
+    }
+}
+```
+
+
 ## Matriz de cobertura
 
 | Requisitos | Tarea | Evidencia principal |
@@ -129,6 +439,8 @@
 | FR-12 | T8 | revisión y aviso, E2E-06 |
 | FR-13–FR-14 | T7 | proyección pública, E2E-07 |
 | FR-15 | T4, T9 | parada por recibo, E2E-02 |
+| FR-16 | T4 | `DemoAdvanceTests`, E2E-10 |
+| FR-17–FR-18 | T1b | login y PWA por HTTPS, E2E-09 |
 | NFR-01, NFR-05 | T5, T10 | teléfono real y cuota, E2E-02/08 |
 | NFR-02 | T1, T4 | retención ≥ 7 días, E2E-03 |
 | NFR-03 | T5 | outbox sin JWT, E2E-08 |
@@ -142,3 +454,5 @@
 | CE-06 | T6 | E2E-05 |
 | CE-07 | T7 | E2E-07 |
 | CE-08 | T8 | E2E-06 |
+| CE-09 | T1b | E2E-09 |
+| CE-10 | T4 | `DemoAdvanceTests`, E2E-10 |

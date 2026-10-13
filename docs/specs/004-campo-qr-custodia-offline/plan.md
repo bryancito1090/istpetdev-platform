@@ -109,10 +109,11 @@ Todos los endpoints privados exigen JWT validado por la API. El actor viene de `
 | `POST /api/v1/receipts/{id}/evidence-uploads` | `{operationId,kind,mimeType,byteSize,sha256}` → `{evidenceId,uploadUrl,requiredHeaders,expiresAtUtc}` | 403, 409 archivo ya confirmado, 422 tipo/tamaño |
 | `POST /api/v1/evidence/{id}/confirm` | `{operationId,sha256,byteSize}` → estado `Confirmed` tras `HEAD`/comprobación S3 | 403, 409 huella diferente, 503 S3 inaccesible |
 | `GET /api/v1/handling-units/{id}/trace` | Custodia operativa autorizada | 403, 404 |
-| `GET /api/v1/public/trace/{unitId}?token=…` | `{unitId,status,productUnits:[{sku,unit}],events:[{stage,timestamp}]}`; sin evidencia ni cantidades | 404 uniforme para token ausente/inválido/vencido/revocado; 429 límite |
+| `GET /api/v1/public/trace/{unitId}` con cabecera `X-Trace-Token` | `{unitId,status,productUnits:[{sku,unit}],events:[{stage,timestamp}]}`; sin evidencia ni cantidades | 404 uniforme para token ausente/inválido/vencido/revocado; 429 límite (por IP o por token: PA-05) |
+| `POST /api/v1/demo/route-plans/{id}/advance` | `{operationId,stops}` → 200 `{completedStops:[{sequence,deliveryId,receiptId}]}`; solo `Demo:Enabled=true`, rol Planificación | 404 demo desactivada, 409 stock o estado incompatible |
 | `POST /api/v1/handling-units/{id}/public-token/revoke` | 204; emisión de nuevo token requiere operación de Bodega o Gerencia | 403, 404 |
 
-Fijar `PublicTraceResponseDto` y OpenAPI al contrato nuevo. El token QR aleatorio tiene al menos 128 bits de entropía y se guarda como SHA-256; la URL solo usa `unitId` y token, sin datos operativos en la ruta. Vencimiento inicial configurable de **7 días** desde emisión; la etiqueta debe reimprimirse si se rota el token. La respuesta pública usa `Cache-Control: no-store` y límite por IP/tasa en el endpoint. Los hitos se derivan de eventos persistidos, no de tiempos estimados. Horas públicas son las de servidor.
+Fijar `PublicTraceResponseDto` y OpenAPI al contrato nuevo. El token QR aleatorio tiene al menos 128 bits de entropía y se guarda como SHA-256; la URL del QR es `https://<web>/public-trace/{unitId}#t=<token>`: el token va en el **fragmento**, que el navegador no envía al servidor, así que no queda en logs de nginx ni de la API; la página lo lee, lo envía en la cabecera `X-Trace-Token` y lo retira de la barra de direcciones con `history.replaceState`. Vencimiento inicial configurable de **7 días** desde emisión; la etiqueta debe reimprimirse si se rota el token. La respuesta pública usa `Cache-Control: no-store` y límite de tasa (clave del límite pendiente en PA-05). Los hitos se derivan de eventos persistidos, no de tiempos estimados. Horas públicas son las de servidor.
 
 ### Máquina de estados de la PWA
 
@@ -160,6 +161,10 @@ Las rutas describen responsabilidades; el equipo escribe el detalle incremental 
 | Crear | `apps/mobile/ngsw-config.json` y `apps/mobile/public/manifest.webmanifest` | Shell offline y manifiesto instalable |
 | Modificar | `apps/web/src/pages/public-trace/public-trace.page.ts` y `apps/web/src/shared/api/api.service.ts` | URL QR directa y respuesta real |
 | Crear | `apps/web/src/pages/field-label/field-label.page.ts` | Etiqueta imprimible desde navegador de bodega |
+| Crear | `src/Application/Field/DemoAdvanceService.cs` y acción en `src/Api/Controllers/DemoController.cs` | `advance`: preparación, despacho y recepción reales para N paradas (FR-16) |
+| Crear | `apps/web/src/app/auth/` y `apps/mobile/src/app/auth/` (configuración OIDC, guard e interceptor) | Login PKCE de bodega y conductor (FR-17) |
+| Crear | `infra/docker/mobile/Dockerfile` y bloque `location /campo/` en `infra/nginx/istpetdev.conf`; servicio en `infra/compose/docker-compose.prod.yml` | PWA publicada por HTTPS (FR-18); coordinar con infraestructura |
+| Modificar | `infra/terraform/environments/dev/identity.tf` | URL de retorno y cierre HTTPS de la demo en los clientes web y móvil (FR-18) |
 
 ## Decisiones técnicas
 
@@ -180,6 +185,7 @@ Las rutas describen responsabilidades; el equipo escribe el detalle incremental 
 | [`idb`](https://www.npmjs.com/package/idb) | 8.0.4 | `apps/mobile` | Transacciones IndexedDB con Blobs |
 | [`signature_pad`](https://www.npmjs.com/package/signature_pad) | 5.1.4 | `apps/mobile` | Firma táctil a PNG |
 | [`qrcode`](https://www.npmjs.com/package/qrcode) | 1.5.4 | `apps/web` | Etiqueta QR en navegador |
+| [`angular-auth-oidc-client`](https://www.npmjs.com/package/angular-auth-oidc-client) | 22.0.1 | `apps/web`, `apps/mobile` | PKCE con Cognito; requiere `@angular/core` ≥ 20, compatible con Angular 22.2.1 (verificado el 12-oct) |
 | [`AWSSDK.S3`](https://www.nuget.org/packages/AWSSDK.S3/4.0.104.2) | 4.0.104.2 | `src/Infrastructure` | Presignar carga privada y verificar objeto |
 
 Antes de añadir un paquete, comprobar si 001 u otra rama ya lo incorporó y usar la versión existente si cumple el contrato. El `package-lock.json` debe fijar las versiones JS. La SDK de S3 usa credenciales del rol de la API; no se envían credenciales AWS al móvil.
@@ -211,7 +217,20 @@ El ensayo de H3 (14-oct 20:00) debe registrar cantidad antes/después en bodega,
 2. **Backend transaccional:** preparación/QR, despacho, recepción e idempotencia. Se implementa con pruebas de integración antes de la UI; recepción bloquea E2E offline.
 3. **En paralelo tras contratos:** la PWA puede construir outbox/captura sobre DTOs; la web puede reemplazar consulta pública y etiqueta; S3 puede preparar `EvidenceService` con interfaz estable.
 4. **Integración:** conectar PWA a API, S3 y revisión de ruta de 003. Si 003 aún no existe, probar con una revisión/`DriverMessage` sembrada por API y conectar el productor real después.
-5. **Ensayo y corte:** ejecutar S-05/S-06/S-07/S-11 en teléfono real; si no cumple antes de H5, aplicar el plan B de D8. `task.md` y `test-e2e.md` los redacta el equipo.
+5. **Ensayo y corte:** ejecutar S-05/S-06/S-07/S-11 en teléfono real; si no cumple antes de H5, aplicar el plan B de D8.
+
+**Login y publicación HTTPS antes de H3.** FR-17 y FR-18 bloquean toda prueba de interfaz con la API: se hacen justo después del contrato (T1b) y antes de la PWA (T5) y de la etiqueta (T2 web). Sin ellos, el ensayo de H3 (14-oct 20:00) no puede hacerse desde los teléfonos.
+
+### Orden de recorte si se aprieta el plazo
+
+Se recorta en este orden, de lo que menos ve el jurado a lo que más; lo que queda abajo no se recorta.
+
+| Orden | Se recorta | Qué queda en su lugar |
+|---|---|---|
+| 1 | Evidencia en S3 (T6) | Foto y firma quedan en «Evidencia pendiente» en el teléfono; el recibo y el inventario se aceptan igual. Se dice en el pitch |
+| 2 | Aviso de revisión en la PWA (T8) | El cambio de ruta se muestra en el panel (005); el conductor recarga su asignación |
+| 3 | Captura sin señal (T5 offline) | Recepción en línea; el modo avión se muestra en el video de respaldo (plan B de D8) |
+| — | **No se recortan:** login (T1b), preparación y QR (T2), despacho (T3), recepción idempotente (T4), consulta pública (T7) y `advance` (T4) | Son el recorrido físico mínimo y la base de 002 y 003 |
 
 ## Reversión
 
