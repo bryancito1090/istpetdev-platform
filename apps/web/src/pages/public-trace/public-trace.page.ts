@@ -2,8 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { WEB_FIELD_API, IWebFieldApi } from '@shared/api';
-import { PublicTraceUnitDto, FieldProblemDetails } from '@istpetdev/shared-core';
+import { ApiService } from '@shared/api';
+import { PublicTraceResponseDto } from '@istpetdev/shared-core';
 import { CardComponent, InputComponent, ButtonComponent, BadgeComponent, AlertComponent } from '@shared/ui';
 import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@lucide/angular';
 
@@ -40,13 +40,13 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
               Consulta Pública de Custodia de Unidades (HU)
             </h1>
             <p class="text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-              Verificación de origen, sellado y recepción de insumos hospitalarios. El acceso seguro utiliza tokens efímeros transmitidos fuera de la URL del navegador.
+              Verificación de origen, sellado y recepción de insumos hospitalarios. El acceso seguro utiliza tokens efímeros transmitidos fuera de la URL del servidor en la cabecera X-Trace-Token.
             </p>
           </div>
 
           <div class="shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-right">
             <span class="text-[10px] text-slate-400 uppercase font-semibold block">Protocolo de Confianza</span>
-            <span class="font-mono text-xs font-bold text-slate-800">Token Hash S-07 + UUID v7</span>
+            <span class="font-mono text-xs font-bold text-slate-800">Token Hash SHA-256 + X-Trace-Token</span>
           </div>
         </div>
       </div>
@@ -57,9 +57,9 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
           <form (submit)="submitSearch()" class="flex flex-col sm:flex-row sm:items-end gap-3">
             <div class="flex-1">
               <ui-input
-                label="Código de Unidad de Manipulación (HU)"
+                label="Código o ID de Unidad de Manipulación (HU)"
                 type="text"
-                placeholder="Ej. hu-001"
+                placeholder="Ej. CAJA-001 o UUID"
                 [(ngModel)]="unitId"
                 name="unitId"
                 hint="Código legible impreso en la etiqueta física o transmitido por el lector QR."
@@ -69,12 +69,12 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
 
             <div class="flex-1">
               <ui-input
-                label="Token Secreto de Traza (Opcional si vino en el QR)"
+                label="Token Secreto de Traza (de la URL QR #t=...)"
                 type="text"
-                placeholder="Ej. tok-demo-hu-001"
+                placeholder="Token de traza público"
                 [(ngModel)]="traceToken"
                 name="traceToken"
-                hint="Transmitido en el fragmento #t=... del código QR para proteger privacidad."
+                hint="Transmitido en el fragmento #t=... del código QR y enviado en la cabecera X-Trace-Token."
                 [disabled]="loading()">
               </ui-input>
             </div>
@@ -84,7 +84,7 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
                 type="submit"
                 variant="primary"
                 size="md"
-                [disabled]="loading() || !unitId.trim()"
+                [disabled]="loading() || !unitId.trim() || !traceToken.trim()"
                 [loading]="loading()"
                 ariaLabel="Consultar trazabilidad de la unidad">
                 <svg lucidePackageSearch [size]="14" class="mr-1.5 text-white stroke-[2.2]"></svg>
@@ -92,29 +92,6 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
               </ui-button>
             </div>
           </form>
-
-          <!-- Accesos directos de unidades demo -->
-          <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs">
-            <span class="text-slate-400 font-medium">Bultos Demo Disponibles:</span>
-            <button
-              type="button"
-              (click)="selectPreset('hu-001', 'tok-demo-hu-001')"
-              class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-primary-50 hover:text-primary-700 font-mono text-[11px] font-semibold transition-colors border border-slate-200/60">
-              hu-001 (Insulina NPH)
-            </button>
-            <button
-              type="button"
-              (click)="selectPreset('hu-002', 'tok-demo-hu-002')"
-              class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-primary-50 hover:text-primary-700 font-mono text-[11px] font-semibold transition-colors border border-slate-200/60">
-              hu-002 (Amoxicilina 500mg)
-            </button>
-            <button
-              type="button"
-              (click)="selectPreset('hu-revoked', 'tok-revoked-001')"
-              class="px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 font-mono text-[11px] font-semibold transition-colors border border-rose-200/60">
-              hu-revoked (Simular Token Revocado)
-            </button>
-          </div>
         </div>
       </ui-card>
 
@@ -149,8 +126,8 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
           <!-- Metadatos de la Unidad y Estado -->
           <div class="p-5 sm:p-6 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white text-xs">
             <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span class="text-slate-400 uppercase font-semibold block text-[10px]">Código Legible</span>
-              <span class="font-bold text-sm text-slate-900 block font-mono">{{ data.code }}</span>
+              <span class="text-slate-400 uppercase font-semibold block text-[10px]">Identificador Verificado</span>
+              <span class="font-bold text-sm text-slate-900 block font-mono">{{ data.unitId }}</span>
               <span class="text-[10px] text-slate-500 block mt-0.5">Etiqueta QR Verificada</span>
             </div>
 
@@ -165,37 +142,43 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
           <div class="p-5 sm:p-6 bg-white space-y-4">
             <div>
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
-                Eventos Registrados de Custodia
+                Eventos Registrados de Custodia (Servidor)
               </h3>
 
-              <div class="space-y-2">
-                @for (ev of data.events; track ev.timestamp) {
-                  <div class="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2">
-                      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      <span class="font-bold text-slate-800">{{ ev.stage }}</span>
+              @if (data.events && data.events.length > 0) {
+                <div class="space-y-2">
+                  @for (ev of data.events; track ev.timestamp) {
+                    <div class="p-3 bg-slate-50/70 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs">
+                      <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="font-bold text-slate-800">{{ ev.stage }}</span>
+                      </div>
+                      <span class="font-mono text-slate-500 text-[11px]">{{ ev.timestamp | date:'short' }}</span>
                     </div>
-                    <span class="font-mono text-slate-500 text-[11px]">{{ ev.timestamp | date:'short' }}</span>
-                  </div>
-                }
-              </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-xs text-slate-400 italic">No hay eventos de custodia registrados para esta unidad.</p>
+              }
             </div>
 
             <!-- Insumos en la Unidad -->
-            <div class="pt-2">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                Insumos Verificados en el Bulto ({{ data.productUnits.length }} item(s))
-              </h3>
+            @if (data.productUnits && data.productUnits.length > 0) {
+              <div class="pt-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Insumos Verificados en el Bulto ({{ data.productUnits.length }} item(s))
+                </h3>
 
-              <div class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden text-xs">
-                @for (prod of data.productUnits; track prod.sku) {
-                  <div class="p-3 bg-slate-50/50 flex items-center justify-between">
-                    <span class="font-bold text-slate-800">{{ prod.sku }}</span>
-                    <span class="text-slate-500 font-mono">{{ prod.unit }}</span>
-                  </div>
-                }
+                <div class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden text-xs">
+                  @for (prod of data.productUnits; track prod.sku) {
+                    <div class="p-3 bg-slate-50/50 flex items-center justify-between">
+                      <span class="font-bold text-slate-800">{{ prod.sku }}</span>
+                      <span class="text-slate-500 font-mono">{{ prod.unit }}</span>
+                    </div>
+                  }
+                </div>
               </div>
-            </div>
+            }
           </div>
 
           <!-- Footer del Certificado -->
@@ -214,33 +197,34 @@ import { LucideShieldCheck, LucidePackageSearch, LucideCheckCircle2 } from '@luc
   `
 })
 export class PublicTracePage implements OnInit {
-  private readonly webFieldApi = inject<IWebFieldApi>(WEB_FIELD_API);
+  private readonly apiService = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
 
-  unitId = 'hu-001';
-  traceToken = 'tok-demo-hu-001';
+  unitId = '';
+  traceToken = '';
 
-  readonly trace = signal<PublicTraceUnitDto | null>(null);
+  readonly trace = signal<PublicTraceResponseDto | null>(null);
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly errorTitle = signal<string>('Unidad no encontrada');
   readonly errorCode = signal<number>(404);
 
   ngOnInit(): void {
-    // 1. Leer parámetros query (?u=...)
+    // 1. Leer parámetros ruta (/public-trace/:unitId) o query (?u=...)
+    const routeUnit = this.route.snapshot.paramMap.get('unitId');
     const queryUnit = this.route.snapshot.queryParamMap.get('u');
-    if (queryUnit) {
-      this.unitId = queryUnit;
+    if (routeUnit || queryUnit) {
+      this.unitId = routeUnit || queryUnit || '';
     }
 
-    // 2. Extraer fragmento hash (#t=...) de forma segura en cliente (S-07)
+    // 2. Extraer fragmento hash (#t=...) de forma segura en cliente (S-07, FR-14)
     if (typeof window !== 'undefined' && window.location.hash) {
       const hash = window.location.hash;
-      const match = hash.match(/t=([^&]+)/);
+      const match = hash.match(/[#&]t=([^&]+)/);
       if (match && match[1]) {
         this.traceToken = decodeURIComponent(match[1]);
 
-        // Limpiar inmediatamente el token de la barra de direcciones del navegador
+        // Retirar inmediatamente el token de la barra de direcciones del navegador
         try {
           const cleanUrl = window.location.pathname + window.location.search;
           window.history.replaceState(null, '', cleanUrl);
@@ -250,34 +234,35 @@ export class PublicTracePage implements OnInit {
       }
     }
 
-    // Si viene la unidad predefinida, consultar automáticamente
-    if (this.unitId && this.traceToken) {
-      this.searchTrace(this.unitId, this.traceToken);
+    // Si viene la unidad y el token en el enlace QR, consultar automáticamente
+    if (this.unitId.trim() && this.traceToken.trim()) {
+      this.searchTrace(this.unitId.trim(), this.traceToken.trim());
     }
   }
 
-  selectPreset(unitId: string, token: string): void {
-    this.unitId = unitId;
-    this.traceToken = token;
-    this.searchTrace(unitId, token);
-  }
-
   submitSearch(): void {
-    if (!this.unitId.trim()) return;
+    if (!this.unitId.trim() || !this.traceToken.trim()) return;
     this.searchTrace(this.unitId.trim(), this.traceToken.trim());
   }
 
   searchTrace(unitId: string, token: string): void {
+    if (!unitId || !token) {
+      this.errorTitle.set('Token requerido');
+      this.errorMessage.set('La consulta pública exige el token secreto de traza (X-Trace-Token).');
+      this.errorCode.set(404);
+      return;
+    }
+
     this.loading.set(true);
     this.errorMessage.set(null);
     this.trace.set(null);
 
-    this.webFieldApi.getPublicTrace(unitId, token).subscribe({
+    this.apiService.getPublicTrace(unitId, token).subscribe({
       next: (res) => {
         this.trace.set(res);
         this.loading.set(false);
       },
-      error: (err: FieldProblemDetails | any) => {
+      error: (err: any) => {
         this.loading.set(false);
         const status = err?.status || 404;
         this.errorCode.set(status);
@@ -288,9 +273,9 @@ export class PublicTracePage implements OnInit {
             'Se ha superado el número de consultas públicas permitidas para este token. Por favor espere unos segundos e intente de nuevo.'
           );
         } else {
-          this.errorTitle.set('Unidad no encontrada o token inválido');
+          this.errorTitle.set('Unidad no encontrada');
           this.errorMessage.set(
-            err?.detail || 'El token de traza no es válido, ha sido revocado o la unidad no existe en el sistema.'
+            'El token de traza no es válido, ha sido revocado, ha vencido o la unidad no existe en el sistema.'
           );
         }
       }

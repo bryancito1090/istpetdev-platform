@@ -1,14 +1,16 @@
 export interface TraceEventDto {
   stage: string;
   timestamp: string;
-  location: string;
+}
+
+export interface PublicTraceProductUnitDto {
+  sku: string;
+  unit: string;
 }
 
 export interface PublicTraceResponseDto {
   unitId: string;
-  traceType: string;
   status: string;
-  generatedAtUtc: string;
-  summary: string;
+  productUnits: PublicTraceProductUnitDto[];
   events: TraceEventDto[];
 }

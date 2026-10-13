@@ -8,6 +8,12 @@ import { routes } from './app.routes';
 import { authInterceptor, mobileOidcConfig } from './auth';
 import { FIELD_API } from './field/field-api.interface';
 import { MockFieldApiService } from './field/mock/mock-field-api.service';
+import { HttpFieldApiService } from './field/http-field-api.service';
+
+const useMockFieldApi = typeof window !== 'undefined' && (
+  window.location.search.includes('mock=true') ||
+  window.localStorage?.getItem('istpetdev:use_mock') === 'true'
+);
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,7 +30,7 @@ export const appConfig: ApplicationConfig = {
     }),
     {
       provide: FIELD_API,
-      useClass: MockFieldApiService
+      useClass: useMockFieldApi ? MockFieldApiService : HttpFieldApiService
     }
   ]
 };

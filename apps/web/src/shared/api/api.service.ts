@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../config/environment';
 import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
@@ -336,15 +336,23 @@ export class ApiService {
   }
 
   // ==========================================
-  // 9. TRAZABILIDAD PÚBLICA QR (GET /public/trace/{unitId})
+  // 9. TRAZABILIDAD PÚBLICA QR (GET /public/trace/{unitId}) Y REVOCACIÓN
   // ==========================================
 
-  getPublicTrace(unitId: string): Observable<PublicTraceResponseDto | null> {
-    return this.http.get<PublicTraceResponseDto>(`${this.baseUrl}/api/v1/public/trace/${encodeURIComponent(unitId)}`).pipe(
-      catchError(err => {
-        console.warn('Public trace query failed', err);
-        return of(null);
-      })
+  getPublicTrace(unitId: string, token: string): Observable<PublicTraceResponseDto> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token
+    });
+    return this.http.get<PublicTraceResponseDto>(
+      `${this.baseUrl}/api/v1/public/trace/${encodeURIComponent(unitId)}`,
+      { headers }
+    );
+  }
+
+  revokePublicToken(unitId: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/api/v1/handling-units/${encodeURIComponent(unitId)}/public-token/revoke`,
+      {}
     );
   }
 

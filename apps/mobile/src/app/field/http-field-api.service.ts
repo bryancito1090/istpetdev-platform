@@ -1,0 +1,94 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, switchMap, of } from 'rxjs';
+import {
+  CreateHandlingUnitRequest,
+  HandlingUnitResponse,
+  DispatchRequest,
+  DispatchResponse,
+  MobileAssignmentResponse,
+  DeliveryListResponse,
+  CreateReceiptRequest,
+  ReceiptResponse,
+  EvidenceUploadRequest,
+  EvidenceUploadResponse,
+  EvidenceConfirmRequest,
+  EvidenceConfirmResponse,
+  DemoAdvanceRequest,
+  DemoAdvanceResponse,
+  PublicTraceUnitDto
+} from '@istpetdev/shared-core';
+import { IFieldApi } from './field-api.interface';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HttpFieldApiService implements IFieldApi {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = ''; // Relativo o configurado por reverse proxy (/api/v1)
+
+  createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse> {
+    return this.http.post<HandlingUnitResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/handling-units`, req);
+  }
+
+  dispatch(deliveryId: string, req: DispatchRequest, idempotencyKey: string): Observable<DispatchResponse> {
+    const headers = new HttpHeaders({
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<DispatchResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/dispatch`, req, { headers });
+  }
+
+  getDeliveries(routePlanId?: string, status?: string, cursor?: string, limit?: number): Observable<DeliveryListResponse> {
+    let params = new HttpParams();
+    if (routePlanId) params = params.set('routePlanId', routePlanId);
+    if (status) params = params.set('status', status);
+    if (cursor) params = params.set('cursor', cursor);
+    if (limit) params = params.set('limit', limit.toString());
+
+    return this.http.get<DeliveryListResponse>(`${this.baseUrl}/api/v1/deliveries`, { params });
+  }
+
+  revokePublicToken(unitId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/api/v1/handling-units/${unitId}/public-token/revoke`, {});
+  }
+
+  advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse> {
+    return this.http.post<DemoAdvanceResponse>(`${this.baseUrl}/api/v1/demo/route-plans/${routePlanId}/advance`, req);
+  }
+
+  getAssignments(): Observable<MobileAssignmentResponse> {
+    return this.http.get<MobileAssignmentResponse>(`${this.baseUrl}/api/v1/mobile/assignments`);
+  }
+
+  createReceipt(deliveryId: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse> {
+    const headers = new HttpHeaders({
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<ReceiptResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/receipts`, req, { headers });
+  }
+
+  uploadEvidence(receiptId: string, req: EvidenceUploadRequest, fileBlob?: Blob): Observable<EvidenceUploadResponse> {
+    return this.http.post<EvidenceUploadResponse>(`${this.baseUrl}/api/v1/receipts/${receiptId}/evidence-uploads`, req).pipe(
+      switchMap((resp) => {
+        if (!fileBlob || !resp.uploadUrl || resp.uploadUrl.includes('istpetdev.local')) {
+          return of(resp);
+        }
+        const headers = new HttpHeaders(resp.requiredHeaders || { 'Content-Type': req.mimeType });
+        return this.http.put(resp.uploadUrl, fileBlob, { headers }).pipe(
+          switchMap(() => of(resp))
+        );
+      })
+    );
+  }
+
+  confirmEvidence(evidenceId: string, req: EvidenceConfirmRequest): Observable<EvidenceConfirmResponse> {
+    return this.http.post<EvidenceConfirmResponse>(`${this.baseUrl}/api/v1/evidence/${evidenceId}/confirm`, req);
+  }
+
+  getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token
+    });
+    return this.http.get<PublicTraceUnitDto>(`${this.baseUrl}/api/v1/public/trace/${unitId}`, { headers });
+  }
+}

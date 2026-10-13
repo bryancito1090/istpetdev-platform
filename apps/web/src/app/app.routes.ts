@@ -49,6 +49,11 @@ export const routes: Routes = [
     title: 'Trazabilidad QR — IstpetDev'
   },
   {
+    path: 'public-trace/:unitId',
+    loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
+    title: 'Trazabilidad QR — IstpetDev'
+  },
+  {
     // Compatibilidad con enlaces antiguos: envía a la página de inicio del rol.
     path: 'dashboard',
     canActivate: [homeRedirectGuard],
