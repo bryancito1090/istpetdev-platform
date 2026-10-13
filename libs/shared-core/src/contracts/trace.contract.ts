@@ -10,7 +10,8 @@ export interface PublicTraceProductUnitDto {
 
 export interface PublicTraceResponseDto {
   unitId: string;
+  code?: string;
   status: string;
-  productUnits: PublicTraceProductUnitDto[];
+  productUnits?: PublicTraceProductUnitDto[];
   events: TraceEventDto[];
 }
