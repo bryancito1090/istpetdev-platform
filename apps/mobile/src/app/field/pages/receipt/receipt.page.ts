@@ -149,7 +149,7 @@ interface ReceiptLineForm {
 
                 @if (line.quantityAccepted + line.quantityRejected !== line.expectedQuantity) {
                   <div class="text-[11px] text-amber-700 bg-amber-50 p-1.5 rounded">
-                    ⚠ La suma ({{ line.quantityAccepted + line.quantityRejected }}) difiere de lo esperado ({{ line.expectedQuantity }}).
+                    Aviso: La suma ({{ line.quantityAccepted + line.quantityRejected }}) difiere de lo esperado ({{ line.expectedQuantity }}).
                   </div>
                 }
               </div>
@@ -200,11 +200,11 @@ interface ReceiptLineForm {
 
               <div class="flex gap-2">
                 <ion-button expand="block" fill="outline" class="flex-1" (click)="fileInput.click()">
-                  📷 {{ photoBlob() ? 'Cambiar Foto' : 'Tomar / Seleccionar Foto' }}
+                  {{ photoBlob() ? 'Cambiar Foto' : 'Tomar / Seleccionar Foto' }}
                 </ion-button>
 
                 <ion-button expand="block" fill="outline" (click)="generateSimulatedPhoto()">
-                  ✨ Foto Demo
+                  Foto Demo
                 </ion-button>
               </div>
 
@@ -263,7 +263,7 @@ interface ReceiptLineForm {
             color="success"
             [disabled]="isSaving()"
             (click)="submitReceipt()">
-            {{ isSaving() ? 'Guardando en Teléfono...' : '✓ Confirmar y Guardar en Dispositivo' }}
+            {{ isSaving() ? 'Guardando en Teléfono...' : 'Confirmar y Guardar en Dispositivo' }}
           </ion-button>
 
           <p class="text-[11px] text-center text-slate-500">

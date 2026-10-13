@@ -78,7 +78,10 @@ import { HandlingUnitResponse } from '@istpetdev/shared-core';
           <!-- Simulación de visor QR con soporte de escaneo rápido -->
           <div class="p-6 bg-slate-900 rounded-xl text-center text-white mb-4 relative overflow-hidden flex flex-col items-center justify-center min-h-[160px]">
             <div class="w-24 h-24 border-2 border-dashed border-emerald-400 rounded-lg flex items-center justify-center mb-2 animate-pulse">
-              <span class="text-3xl">📷</span>
+              <svg class="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </div>
             <p class="text-xs text-slate-300">Apunte la cámara a la etiqueta del paquete</p>
             <p class="text-[11px] text-slate-400 mt-1">O seleccione un código demo abajo</p>

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SessionStore } from '@entities/session';
@@ -48,10 +48,10 @@ interface ServiceStockAlert {
                 RETO 1 • EXPO CLEAN ECUADOR 2026
               </span>
               <span class="text-xs text-slate-400 font-mono">/</span>
-              <span class="text-xs font-semibold text-slate-600">DISTRIBUCIÓN INSTITUCIONAL B2B</span>
+              <span class="text-xs font-semibold text-slate-600 uppercase">{{ headerScope() }}</span>
               @if (sessionStore.isAuthenticated()) {
                 <ui-badge 
-                  variant="success" 
+                  [variant]="isAuditor() ? 'warning' : isPlanificador() ? 'transit' : 'success'" 
                   size="sm" 
                   [withDot]="true" 
                   [label]="sessionStore.currentUser()?.roleLabel ?? 'Operador'">
@@ -60,31 +60,60 @@ interface ServiceStockAlert {
             </div>
             
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Torre de Control de Suministros y Logística
+              {{ headerTitle() }}
             </h1>
             <p class="text-sm text-slate-500 max-w-3xl leading-relaxed">
-              Monitoreo predictivo de inventario de químicos de limpieza, consumibles y equipamiento. Prevención de quiebres de stock 5 días antes con optimización de rutas PostGIS.
+              {{ headerDescription() }}
             </p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5 self-start lg:self-auto shrink-0">
-            <ui-button
-              variant="secondary"
-              size="sm"
-              (buttonClick)="refreshData()"
-              ariaLabel="Actualizar telemetría operativa">
-              <svg lucideRefreshCw [size]="14" class="mr-1.5 text-slate-500 stroke-[2.2]"></svg>
-              <span>Sincronizar</span>
-            </ui-button>
+            @if (isAuditor()) {
+              <ui-button
+                variant="primary"
+                size="sm"
+                (buttonClick)="navigateToTrace()"
+                ariaLabel="Auditar unidad y trazabilidad criptográfica QR">
+                <svg lucidePackageSearch [size]="14" class="mr-1.5 text-white stroke-[2.2]"></svg>
+                <span>Auditar Unidad QR</span>
+              </ui-button>
+            } @else if (isPlanificador()) {
+              <ui-button
+                variant="secondary"
+                size="sm"
+                (buttonClick)="refreshData()"
+                ariaLabel="Actualizar telemetría de inventario">
+                <svg lucideRefreshCw [size]="14" class="mr-1.5 text-slate-500 stroke-[2.2]"></svg>
+                <span>Sincronizar Stock</span>
+              </ui-button>
 
-            <ui-button
-              variant="primary"
-              size="sm"
-              (buttonClick)="navigateToTrace()"
-              ariaLabel="Escanear y consultar trazabilidad de unidad logística con QR">
-              <svg lucidePackageSearch [size]="14" class="mr-1.5 text-white stroke-[2.2]"></svg>
-              <span>Consultar Unidad QR</span>
-            </ui-button>
+              <ui-button
+                variant="primary"
+                size="sm"
+                (buttonClick)="navigateToTrace()"
+                ariaLabel="Consultar unidad QR de insumos">
+                <svg lucidePackageSearch [size]="14" class="mr-1.5 text-white stroke-[2.2]"></svg>
+                <span>Consultar Unidad QR</span>
+              </ui-button>
+            } @else {
+              <ui-button
+                variant="secondary"
+                size="sm"
+                (buttonClick)="refreshData()"
+                ariaLabel="Actualizar telemetría operativa ejecutiva">
+                <svg lucideRefreshCw [size]="14" class="mr-1.5 text-slate-500 stroke-[2.2]"></svg>
+                <span>Sincronizar</span>
+              </ui-button>
+
+              <ui-button
+                variant="primary"
+                size="sm"
+                (buttonClick)="navigateToTrace()"
+                ariaLabel="Consultar trazabilidad global">
+                <svg lucidePackageSearch [size]="14" class="mr-1.5 text-white stroke-[2.2]"></svg>
+                <span>Consultar Unidad QR</span>
+              </ui-button>
+            }
           </div>
         </div>
 
@@ -161,7 +190,8 @@ interface ServiceStockAlert {
       </div>
 
       <!-- Alertas Predictivas de Stock: Reabastecimiento Preventivo 5 Días Antes -->
-      <ui-card [padding]="'none'">
+      <div id="stock-matrix" class="scroll-mt-20">
+        <ui-card [padding]="'none'">
         <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
           <div>
             <div class="flex items-center gap-2">
@@ -254,9 +284,12 @@ interface ServiceStockAlert {
           </table>
         </div>
       </ui-card>
+      </div>
 
       <!-- Widget de Mapa y Optimización de Rutas con Split-Screen B2B -->
-      <widget-route-map></widget-route-map>
+      <div id="routes-map" class="scroll-mt-20">
+        <widget-route-map></widget-route-map>
+      </div>
     </div>
   `
 })
@@ -321,6 +354,29 @@ export class OperationsDashboardPage {
       criticalItem: 'Reserva Estratégica 10,000L'
     }
   ];
+
+  readonly userRole = computed(() => this.sessionStore.userRole());
+  readonly isPlanificador = computed(() => this.userRole() === 'SUPERVISOR');
+  readonly isAuditor = computed(() => this.userRole() === 'AUDITOR');
+  readonly isGerencia = computed(() => this.userRole() === 'ADMIN' || this.userRole() === 'OPERADOR' || !this.userRole());
+
+  readonly headerScope = computed(() => {
+    if (this.isAuditor()) return 'AUDITORÍA DE CUSTODIA Y CUMPLIMIENTO';
+    if (this.isPlanificador()) return 'PLANIFICACIÓN Y REABASTECIMIENTO PREVENTIVO';
+    return 'TORRE DE CONTROL Y GOBERNANZA LOGÍSTICA';
+  });
+
+  readonly headerTitle = computed(() => {
+    if (this.isAuditor()) return 'Panel de Auditoría de Custodia e Inmutabilidad';
+    if (this.isPlanificador()) return 'Torre de Control • Planificación Logística';
+    return 'Torre de Control de Suministros y Logística';
+  });
+
+  readonly headerDescription = computed(() => {
+    if (this.isAuditor()) return 'Verificación de trazabilidad criptográfica UUID v7, ledger inmutable de custodia y cumplimiento de normativas de higiene hospitalaria ARCSA/SERCOP.';
+    if (this.isPlanificador()) return 'Monitoreo predictivo de inventario hospitalario. Detección de quiebres con 5 días de anticipación y optimización de rutas de reabastecimiento en PostGIS.';
+    return 'Supervisión integral de la red de abastecimiento hospitalario. Telemetría de flota, ahorro de combustible y continuidad operativa sin quiebres de stock.';
+  });
 
   navigateToTrace(): void {
     this.router.navigate(['/public-trace']);

@@ -7,6 +7,7 @@ import {
   MobileUserProfile,
   DEMO_DRIVER_PROFILE,
   DEMO_WAREHOUSE_PROFILE,
+  DEMO_RECEIVER_PROFILE,
   DEMO_MANAGER_PROFILE
 } from './auth.models';
 
@@ -54,8 +55,8 @@ export class MobileAuthService {
       // Ignorar fallo de sessionStorage
     }
 
-    // Por defecto en la PWA móvil iniciamos con el perfil de conductor activo para facilitar pruebas
-    return this.createMockSessionState(DEMO_DRIVER_PROFILE);
+    // Por defecto inicia en estado anónimo para solicitar autenticación en /login
+    return this.defaultAnonymousState();
   }
 
   private defaultAnonymousState(): MobileSessionState {
@@ -110,6 +111,14 @@ export class MobileAuthService {
   }
 
   /**
+   * Conmuta la sesión activa al perfil de Receptor de Hospital (HospitalReceiver).
+   */
+  loginAsReceiver(): void {
+    const state = this.createMockSessionState(DEMO_RECEIVER_PROFILE);
+    this.persistVolatileSession(state);
+  }
+
+  /**
    * Conmuta la sesión activa al perfil de Supervisor / Gerente Logístico (LogisticsManager).
    */
   loginAsManager(): void {
@@ -138,6 +147,37 @@ export class MobileAuthService {
   }
 
   /**
+   * Autenticación mediante credenciales institucionales (correo y contraseña).
+   */
+  loginWithCredentials(email: string, password: string): { success: boolean; error?: string } {
+    const trimmed = (email || '').trim().toLowerCase();
+    if (!trimmed || !password) {
+      return { success: false, error: 'Por favor ingrese su correo y contraseña.' };
+    }
+
+    if (password.length < 4) {
+      return { success: false, error: 'La contraseña debe contener al menos 4 caracteres.' };
+    }
+
+    let profile: MobileUserProfile;
+    if (trimmed.includes('bodega') || trimmed.includes('warehouse') || trimmed.includes('elena')) {
+      profile = DEMO_WAREHOUSE_PROFILE;
+    } else if (trimmed.includes('supervisor') || trimmed.includes('manager') || trimmed.includes('santiago')) {
+      profile = DEMO_MANAGER_PROFILE;
+    } else {
+      profile = {
+        ...DEMO_DRIVER_PROFILE,
+        email: trimmed,
+        name: trimmed.startsWith('carlos') ? DEMO_DRIVER_PROFILE.name : trimmed.split('@')[0]
+      };
+    }
+
+    const state = this.createMockSessionState(profile);
+    this.persistVolatileSession(state);
+    return { success: true };
+  }
+
+  /**
    * Cierra la sesión activa y limpia tokens en memoria.
    */
   logout(): void {
@@ -145,6 +185,6 @@ export class MobileAuthService {
     if (this.oidcSecurityService && !this.useMockSession()) {
       this.oidcSecurityService.logoff().subscribe();
     }
-    this.router.navigate(['/home']);
+    this.router.navigate(['/login']);
   }
 }

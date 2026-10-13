@@ -6,6 +6,7 @@
 export type FieldUserRole = 
   | 'CarrierDriver'       // Conductor de custodia / transporte en ruta
   | 'WarehouseOperator'   // Operador de bodega / despacho
+  | 'HospitalReceiver'    // Receptor en hospital / punto de servicio
   | 'LogisticsManager'   // Administrador / supervisor logístico
   | 'Auditor';            // Auditor de trazabilidad
 
@@ -50,6 +51,16 @@ export const DEMO_WAREHOUSE_PROFILE: MobileUserProfile = {
   roleLabel: 'Operador de Despacho y Custodia',
   warehouseId: 'WH-CENTRAL-01',
   avatarInitials: 'EB'
+};
+
+export const DEMO_RECEIVER_PROFILE: MobileUserProfile = {
+  id: 'usr-rec-ec-004',
+  name: 'Lic. Marco Receptor (Demo)',
+  email: 'marco.receptor@hospitalambato.gob.ec',
+  role: 'HospitalReceiver',
+  roleLabel: 'Receptor de Insumos Hospitalarios',
+  warehouseId: 'HOSP-AMB-PHARM',
+  avatarInitials: 'MR'
 };
 
 export const DEMO_MANAGER_PROFILE: MobileUserProfile = {

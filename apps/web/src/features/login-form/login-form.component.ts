@@ -113,6 +113,9 @@ import { ButtonComponent, BadgeComponent, InputComponent } from '@shared/ui';
             </button>
           }
         </div>
+        <p class="text-[11px] text-slate-400 mt-2 text-center">
+          * Los roles operativos de campo (Bodega, Conductor y Receptor) operan desde la <strong>App Móvil PWA</strong>.
+        </p>
       </div>
     </div>
   `
@@ -123,7 +126,7 @@ export class LoginFormComponent {
 
   @Output() loginSuccess = new EventEmitter<void>();
 
-  email = 'operador@istpetdev.ec';
+  email = 'supervisor@istpetdev.ec';
   password = 'password123';
   rememberMe = true;
 
@@ -132,10 +135,9 @@ export class LoginFormComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly demoRoles = [
-    { key: 'WarehouseOperator' as UserRole, name: 'Operador Bodega (Campo)', email: DEMO_PROFILES.WarehouseOperator.email },
-    { key: 'OPERADOR' as UserRole, name: 'Operador Logístico', email: DEMO_PROFILES.OPERADOR.email },
-    { key: 'SUPERVISOR' as UserRole, name: 'Supervisor Médico', email: DEMO_PROFILES.SUPERVISOR.email },
-    { key: 'AUDITOR' as UserRole, name: 'Auditor Custodia', email: DEMO_PROFILES.AUDITOR.email }
+    { key: 'SUPERVISOR' as UserRole, name: 'Planificador / Supervisor', email: DEMO_PROFILES.SUPERVISOR.email },
+    { key: 'ADMIN' as UserRole, name: 'Gerencia / Admin', email: DEMO_PROFILES.ADMIN.email },
+    { key: 'AUDITOR' as UserRole, name: 'Auditor de Custodia', email: DEMO_PROFILES.AUDITOR.email }
   ];
 
   togglePasswordVisibility(): void {
