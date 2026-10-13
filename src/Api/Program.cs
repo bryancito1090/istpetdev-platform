@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application;
 using IstpetDev.Application.Demo;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Infrastructure;
 using IstpetDev.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -29,6 +30,8 @@ builder.Services.AddCognitoAuthentication(builder.Configuration);
 builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformation>();
 
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
+builder.Services.Configure<LogisticsOptions>(builder.Configuration.GetSection(LogisticsOptions.SectionName));
+builder.Services.Configure<PolicyOptions>(builder.Configuration.GetSection(PolicyOptions.SectionName));
 // Rutas relativas de fixtures se resuelven contra la raíz de contenido (src/Api en desarrollo, /app en Docker).
 builder.Services.PostConfigure<DemoOptions>(options =>
     options.FixturePath = Path.GetFullPath(options.FixturePath, builder.Environment.ContentRootPath));

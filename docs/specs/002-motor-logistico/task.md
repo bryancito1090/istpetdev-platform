@@ -6,9 +6,9 @@
 
 | ID | Entrega comprobable | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|
-| T0 | Base de 001 y contrato de 002 confirmados | 001 | — | pendiente |
-| T1 | Configuración, reloj y facts | T0 | — | pendiente |
-| T2 | Riesgos, snapshots y asignación de bodega | T1 | [P] con T3 | pendiente |
+| T0 | Base de 001 y contrato de 002 confirmados | 001 | — | completada |
+| T1 | Configuración, reloj y facts | T0 | — | completada |
+| T2 | Riesgos, snapshots y asignación de bodega | T1 | [P] con T3 | completada |
 | T3 | Importación y caché de tramos, OSRM y aproximación | T1 | [P] con T2 | pendiente |
 | T4 | Planificador de rutas y costos | T2, T3 | — | pendiente |
 | T5 | Publicación FEFO, reservas y paradas completadas | T4 | [P] con T6 | pendiente |
@@ -30,27 +30,27 @@
 
 **Archivos:** `docs/specs/002-motor-logistico/spec.md`, `docs/specs/002-motor-logistico/plan.md` (lectura); esquema de 001 (lectura).
 
-- [ ] Confirmar que 001 está integrado: existen `src/Application/Imports/CanonicalWriter.cs`, `src/Infrastructure/Persistence/LeanSchema.cs`, `tests/IstpetDev.Tests/IstpetDev.Tests.csproj`, el fixture `demo-base` y `POST /api/v1/demo/reset`. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "Category=E2E"`; esperado: 0 fallos.
-- [ ] Registrar quién aprueba el spec y resolver las decisiones aún `PENDIENTE` en el frontmatter antes de iniciar cambios de dominio; no elevar el estado a `planificado` por la mera presencia de tareas.
-- [ ] Confirmar en el código integrado los nombres y propiedades de `RiskSnapshot`, `RoutePlan`, `RouteStop`, `Incident`, `Delivery`, `DeliveryLine`, `StockBalance`, `AgentDecision` y `DemoResetService`. Anotar diferencias frente a [plan.md](plan.md) en el PR antes de tocar persistencia.
-- [ ] Crear la rama de implementación desde el `develop` que contiene 001 y ejecutar `dotnet build IstpetDev.sln`; esperado: 0 errores. Este paso no publica ni modifica datos remotos.
+- [x] Confirmar que 001 está integrado: existen `src/Application/Imports/CanonicalWriter.cs`, `src/Infrastructure/Persistence/LeanSchema.cs`, `tests/IstpetDev.Tests/IstpetDev.Tests.csproj`, el fixture `demo-base` y `POST /api/v1/demo/reset`.
+- [x] Registrar quién aprueba el spec y resolver las decisiones aún `PENDIENTE` en el frontmatter antes de iniciar cambios de dominio; no elevar el estado a `planificado` por la mera presencia de tareas.
+- [x] Confirmar en el código integrado los nombres y propiedades de `RiskSnapshot`, `RoutePlan`, `RouteStop`, `Incident`, `Delivery`, `DeliveryLine`, `StockBalance`, `AgentDecision` y `DemoResetService`. Anotar diferencias frente a [plan.md](plan.md) en el PR antes de tocar persistencia.
+- [x] Crear la rama de implementación desde el `develop` que contiene 001 y ejecutar `dotnet build IstpetDev.sln`; esperado: 0 errores. Este paso no publica ni modifica datos remotos.
 
 ### T1 — Configuración, reloj operativo y facts
 
 **Archivos:** crear `src/Application/Logistics/LogisticsOptions.cs`, `OperationalClock.cs`, `Facts.cs`; modificar `src/Api/appsettings.json`, `src/Api/appsettings.Development.json`, `src/Application/DependencyInjection.cs`; probar en `tests/IstpetDev.Tests/Unit/Logistics/OperationalClockTests.cs` y `FactsTests.cs`.
 
-- [ ] Prueba roja `OperationalClockTests`: con consumos de periodo `[2025-09-01, 2025-09-08)` el modo `Dataset` devuelve `2025-09-08`; `Fixed` devuelve la fecha configurada; `Real` usa fecha local de la zona; sin consumos, `Dataset` cae a `Fixed` o `Real`. Para `2026-10-12 07:00` en `America/Guayaquil`, `WorkdayStartUtcAsync` devuelve `2026-10-12T12:00:00Z`.
-- [ ] Implementar `ClockMode`, `IOperationalClock`, opciones tipadas `Logistics:*` y `Agent:Policy:*`, validación de valores positivos, y `Fact(string Code, string Subject, decimal Value, string Unit)` según el plan. Inyectar `TimeProvider` para probar `Real` sin depender del reloj de CI; usar `TimeZoneInfo` y emitir `timezone_fallback` cuando aplique.
-- [ ] Prueba roja y verde `FactsTests`: orden estable por `(Code, Subject, Unit)`, formato invariante en JSON y sin cifras generadas fuera de la lista. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~OperationalClockTests|FullyQualifiedName~FactsTests"`; esperado: 0 fallos. Commit `feat(logistics): add operational clock and facts`.
+- [x] Prueba roja `OperationalClockTests`: con consumos de periodo `[2025-09-01, 2025-09-08)` el modo `Dataset` devuelve `2025-09-08`; `Fixed` devuelve la fecha configurada; `Real` usa fecha local de la zona; sin consumos, `Dataset` cae a `Fixed` o `Real`. Para `2026-10-12 07:00` en `America/Guayaquil`, `WorkdayStartUtcAsync` devuelve `2026-10-12T12:00:00Z`.
+- [x] Implementar `ClockMode`, `IOperationalClock`, opciones tipadas `Logistics:*` y `Agent:Policy:*`, validación de valores positivos, y `Fact(string Code, string Subject, decimal Value, string Unit)` según el plan. Inyectar `TimeProvider` para probar `Real` sin depender del reloj de CI; usar `TimeZoneInfo` y emitir `timezone_fallback` cuando aplique.
+- [x] Prueba roja y verde `FactsTests`: orden estable por `(Code, Subject, Unit)`, formato invariante en JSON y sin cifras generadas fuera de la lista. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~OperationalClockTests|FullyQualifiedName~FactsTests"`; esperado: 0 fallos. Commit `feat(logistics): add operational clock and facts`.
 
 ### T2 — Riesgos, cantidades y asignación
 
 **Archivos:** crear `src/Application/Logistics/RiskCalculator.cs`, `ReplenishmentAllocator.cs`; probar en `tests/IstpetDev.Tests/Unit/Logistics/RiskCalculatorTests.cs`, `ReplenishmentAllocatorTests.cs` y `tests/IstpetDev.Tests/Integration/Logistics/RiskSnapshotTests.cs`.
 
-- [ ] Pruebas rojas: consumo prorrateado al recortar una ventana de 14 días; disponible = existencia menos reserva de lotes válidos; en camino = despachado menos aceptado; cobertura 5,0 con lead time 2 + margen 3 da `Alto`, límites exactos de `Critico` y `Vigilar`; consumo ausente/cero o stock más antiguo que `StaleStockDays` da `SinDatos` con cobertura `null`.
-- [ ] Implementar `IRiskCalculator.CalculateAsync(bool persistSnapshots, CancellationToken)` y el cálculo de `SuggestedQuantity` en unidad base, redondeado hacia arriba a 3 decimales. Respetar lead time por punto antes del global. `persistSnapshots=true` guarda entradas, versión de fórmula y reloj en `RiskSnapshot`; `false` no escribe. La prueba de integración consulta la fila persistida.
-- [ ] Pruebas rojas de `ReplenishmentAllocator`: 2 obligatorios del mismo SKU compiten por bodega; gana nivel/prioridad/código, la suma asignada no supera stock menos seguridad y el resto recibe `warehouse_stock`; consolidación usa solo remanente. No tomar lotes bloqueados o vencidos.
-- [ ] Implementar asignación FEFO estable por vencimiento y código de lote, con cantidad no negativa. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RiskCalculatorTests|FullyQualifiedName~ReplenishmentAllocatorTests|FullyQualifiedName~RiskSnapshotTests"`; esperado: 0 fallos. Commit `feat(logistics): calculate risk and allocate replenishment`.
+- [x] Pruebas rojas: consumo prorrateado al recortar una ventana de 14 días; disponible = existencia menos reserva de lotes válidos; en camino = despachado menos aceptado; cobertura 5,0 con lead time 2 + margen 3 da `Alto`, límites exactos de `Critico` y `Vigilar`; consumo ausente/cero o stock más antiguo que `StaleStockDays` da `SinDatos` con cobertura `null`.
+- [x] Implementar `IRiskCalculator.CalculateAsync(bool persistSnapshots, CancellationToken)` y el cálculo de `SuggestedQuantity` en unidad base, redondeado hacia arriba a 3 decimales. Respetar lead time por punto antes del global. `persistSnapshots=true` guarda entradas, versión de fórmula y reloj en `RiskSnapshot`; `false` no escribe. La prueba de integración consulta la fila persistida.
+- [x] Pruebas rojas de `ReplenishmentAllocator`: 2 obligatorios del mismo SKU compiten por bodega; gana nivel/prioridad/código, la suma asignada no supera stock menos seguridad y el resto recibe `warehouse_stock`; consolidación usa solo remanente. No tomar lotes bloqueados o vencidos.
+- [x] Implementar asignación FEFO estable por vencimiento y código de lote, con cantidad no negativa. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RiskCalculatorTests|FullyQualifiedName~ReplenishmentAllocatorTests|FullyQualifiedName~RiskSnapshotTests"`; esperado: 0 fallos. Commit `feat(logistics): calculate risk and allocate replenishment`.
 
 ### T3 — Tramos viales e importador
 
