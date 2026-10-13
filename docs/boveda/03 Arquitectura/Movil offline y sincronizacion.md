@@ -109,3 +109,9 @@ Para eliminar fricciones operativas y mitigar riesgos de error humano en rutas d
 ### 4. Directriz de Interfaz Técnica
 - Prohibición estricta de emojis en la interfaz gráfica. Los elementos de navegación y estado emplean iconos SVG vectoriales precisos bajo el Arquetipo B Técnico/Minimalista.
 
+### 5. Integración Fullstack con API Real y Sincronización Hospitalaria (13-oct-2026)
+- **Conexión Predeterminada:** En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` opera por defecto a través de `HttpFieldApiService`; el modo simulado mock se conserva como fallback contingente mediante el parámetro explícito `?mock=true`.
+- **Encolamiento Atómico en Outbox:** Al dictaminar la recepción de un bulto en farmacia hospitalaria (rol `HospitalReceiver` en `HomePage`), se genera una transacción atómica mediante `saveReceiptAtomic` que persiste en IndexedDB (`istpetdev-driver-outbox-db`) el dictamen (conforme o con incidencias categorizadas y notas) y las líneas de entrega, transmitiéndolo de manera idempotente contra `POST /api/v1/deliveries/{id}/receipts` en el backend .NET.
+- **Trazabilidad Ininterrumpida:** La operación asienta la custodia física en destino tanto con conectividad activa como tras interrupciones temporales en modo avión, emitiendo el acta formal `REC-2026-XXXX`.
+
+

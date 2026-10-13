@@ -30,6 +30,24 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
         </button>
       </div>
 
+      <!-- Banner de retroalimentación -->
+      @if (feedbackMessage()) {
+        <div 
+          class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
+          [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
+          <div class="flex items-center gap-2">
+            <span>{{ feedbackMessage()!.type === 'success' ? '✓' : '⚠' }}</span>
+            <span>{{ feedbackMessage()!.text }}</span>
+          </div>
+          <button 
+            type="button" 
+            (click)="feedbackMessage.set(null)" 
+            class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">
+            ✕
+          </button>
+        </div>
+      }
+
       <!-- Estado cargando -->
       @if (loading()) {
         <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
@@ -47,8 +65,9 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             <button 
               type="button"
               (click)="generatePlan()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
-              Generar primera ruta ahora
+              [disabled]="actionLoading()"
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
+              {{ actionLoading() ? 'Calculando...' : 'Generar primera ruta ahora' }}
             </button>
             <a 
               routerLink="/alertas" 
@@ -186,6 +205,7 @@ export class RutasPage implements OnInit {
   readonly selectedDetail = signal<RoutePlanDetailDto | null>(null);
   readonly loading = signal(true);
   readonly actionLoading = signal(false);
+  readonly feedbackMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
 
   readonly mapMarkers = signal<MapMarker[]>([]);
   readonly mapPolylines = signal<MapPolyline[]>([]);
@@ -199,8 +219,13 @@ export class RutasPage implements OnInit {
     this.apiService.getRoutePlans().subscribe(plans => {
       this.loading.set(false);
       this.routePlans.set(plans || []);
-      if (plans && plans.length > 0 && !this.selectedPlanId()) {
-        this.selectPlan(plans[0].id);
+      if (plans && plans.length > 0) {
+        if (!this.selectedPlanId() || !plans.some(p => p.id === this.selectedPlanId())) {
+          this.selectPlan(plans[0].id);
+        }
+      } else {
+        this.selectedPlanId.set(null);
+        this.selectedDetail.set(null);
       }
     });
   }
@@ -215,27 +240,57 @@ export class RutasPage implements OnInit {
 
   generatePlan(): void {
     this.actionLoading.set(true);
+    this.feedbackMessage.set(null);
     this.apiService.createRoutePlan({}).subscribe({
-      next: () => {
+      next: (res) => {
         this.actionLoading.set(false);
+        const count = res?.routes?.length ?? 0;
+        this.feedbackMessage.set({
+          type: 'success',
+          text: count > 0 
+            ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!`
+            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.'
+        });
+        if (count > 0) {
+          const first = res.routes[0];
+          const firstId = first.id || first.routePlanId;
+          if (firstId) {
+            this.selectedPlanId.set(firstId);
+          }
+        }
         this.loadPlans();
       },
-      error: () => {
+      error: (err) => {
         this.actionLoading.set(false);
+        const errMsg = err?.error?.message || err?.message || 'Error al solicitar el cálculo de rutas al motor logístico.';
+        this.feedbackMessage.set({
+          type: 'error',
+          text: errMsg
+        });
       }
     });
   }
 
   publishPlan(id: string): void {
     this.actionLoading.set(true);
+    this.feedbackMessage.set(null);
     this.apiService.publishRoutePlan(id).subscribe({
       next: () => {
         this.actionLoading.set(false);
+        this.feedbackMessage.set({
+          type: 'success',
+          text: 'Ruta publicada al conductor exitosamente.'
+        });
         this.selectPlan(id);
         this.loadPlans();
       },
-      error: () => {
+      error: (err) => {
         this.actionLoading.set(false);
+        const errMsg = err?.error?.message || err?.message || 'Error al publicar la ruta.';
+        this.feedbackMessage.set({
+          type: 'error',
+          text: errMsg
+        });
       }
     });
   }

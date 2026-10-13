@@ -35,7 +35,7 @@ Estados operativos para este tablero: pendiente, entregado, integrado, verificad
 | 001 | PENDIENTE / PENDIENTE | Pendiente de revalidación integrada | PENDIENTE | Referencia previa: [verification.md](../../specs/001-nucleo-delgado-importador/verification.md), 115 pruebas locales | Simulacro humano, identidad/entorno reales y cierre documentado |
 | 002 | AnthonyPilatasig / Bryan | Verificado localmente (T0-T10 completadas) | Issue #24 | `dotnet test` (67/67 pruebas de logística con 0 fallos: suites unitaria, integración, rendimiento y E2E completas) | Ninguno (Listo para PR a develop tras revisión de pares) |
 | 003 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Workflows, M2M y aceptación real |
-| 004 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-12 a ALK-23) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Despacho, PWA offline, S3 y E2E |
+| 004 | Alexander Martínez / Bryan | Verificado e integrado localmente (T0-T10 completadas) | PR #30, commits `431b792`, `08b4170` | `dotnet test` (116/116 unitarias pasan), `npm run check` (0 errores, builds web y mobile exitosos) | Ninguno (Fullstack completado: API C#, migraciones EF, PWA y Web) |
 | 005 | Alexander Martínez / Por asignar | En ejecución (Linear ALK-24 a ALK-35) | En curso | Ver [[Plan de trabajo specs 004 y 005]] | Panel FSD, simulación 90d y exportador |
 | 006 | PENDIENTE / PENDIENTE | Pendiente | PENDIENTE | PENDIENTE | Preparación/ensayos; entrevistas y entrega en evento |
 
@@ -49,10 +49,7 @@ Una fila por ejecución o conjunto automatizado identificable. Usar referencias 
 | 2026-10-13 | 002 (T8: Endpoints API, Autorización, Inyección de dependencias y Lectura FR-23) | Issue #24 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | LogisticsApiTests (5/5 pasan, 57 pruebas logística totales con 0 fallos). Matriz de roles validada: conductor 403 en creación de planes y cambio de modo, gerencia 200 en modo, lectura 200 con facts ordenados y paginación no mutante FR-23. | Aprobado | Controllers expuestos: Risks, RoutePlans, Incidents, AgentDecisions, Autonomy. |
 | 2026-10-13 | 002 (T9: Fixture regional y calibración del incidente) | Issue #24 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | DemoRegionTests (2/2 pasan, 60 pruebas logística totales con 0 fallos). Fixture demo-region importado vía canónica: 1 bodega, 15 puntos, 2 vehículos, 3 SKUs, 240 tramos viales; reloj Dataset fija 2026-10-12; riesgos calibrados: 1 Crítico, 4 Alto (HOS-N01 cobertura 5.0d), 3 Vigilar, 1 SinDatos, 6 Normal; flujo completo de plan, publicación, 2 paradas completadas, incidente y replan verificado. | Aprobado | Fixture data/fixtures/demo-region y scripts/data/build-road-segments.py, calibrate-incident.sh |
 | 2026-10-13 | 002 (T10: Recorrido E2E, Rendimiento y Bóveda) | Issue #24 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | LogisticsJourneyTests (5/5 pasan) + LogisticsPerformanceTests (2/2 pasan). Total suite logística: 67 pruebas con 0 fallos. Presupuestos de tiempo medidos: 15 puntos / 2 vehículos en ~35 ms (<= 1000 ms), 80 puntos / 2 vehículos en ~2100 ms (<= 5000 ms). E2E-01 a E2E-07 verificados con 100% de requisitos cubiertos. | Aprobado | Registrado en test-e2e.md y ADR-22/23 |
-
-
-
-
+| 2026-10-13 | 004 (T0 a T10: Campo, QR, Custodia, Despacho, Recepción Hospitalaria, Outbox Offline PWA y Trazabilidad Pública) | Commits `431b792`, `08b4170`, `33bd6ab` | Alexander Martínez / Bryan | Endpoints C# (Deliveries, HandlingUnits, Evidence, MobileAssignments, PublicTrace, Demo Advance) integrados; migración FieldOperations aplicada; PWA móvil outbox atómico hospitalario conectado a API local localhost:5000; Web consola bodega conectada; trazabilidad pública con token #t= y rate limiter probada. 116 pruebas unitarias aprobadas, npm run check 0 errores. | Aprobado | Registrado en task.md, informe oficial de entrega y ADR-24/ADR-25/ADR-26 |
 
 Adjuntar resúmenes con [[Plantilla evidencia]]: datos iniciales, pasos, valores/unidades, IDs de operación y archivos anonimizados. Guardar TRX/logs bajo `artifacts/seguimiento/<sha>/`; los registros compartidos enlazan evidencia accesible sin tokens, firmas, fotos privadas ni secretos. Conservar los archivos privados en almacenamiento autorizado.
 
@@ -64,9 +61,9 @@ Estas filas provienen de [[Analisis de cobertura de specs]] y deben contrastarse
 |---|---|---|---|---|
 | SEG-01 | Estados y alcance de ADR-21; conservar RNF-14/B-40 y distinguir roles fijos de administración configurable | Coordinación / 001 | PENDIENTE | Por confirmar |
 | SEG-02 | Transición preservando migraciones frente a instrucciones anteriores de recreación de bases | 001 / infraestructura | PENDIENTE | Por confirmar |
-| SEG-03 | Interfaz de Bodega para preparación y despacho de la escena | 004 | PENDIENTE | Por confirmar |
-| SEG-04 | Contrato e interfaz de devolución física ya exigida por 004 | 004 | PENDIENTE | Por confirmar |
-| SEG-05 | Vía de upload de evidencias, límites QR y lectura de cuenta/rol para guards | 004 / infraestructura | PENDIENTE | Por confirmar |
+| SEG-03 | Interfaz de Bodega para preparación y despacho de la escena | 004 | Alexander Martínez | **Cerrado:** Implementada en `apps/web/src/pages/warehouse/warehouse.page.ts` y PWA móvil con selección de entrega, unidades QR y despacho físico conectado a backend C# `DeliveriesController`. |
+| SEG-04 | Contrato e interfaz de devolución física ya exigida por 004 | 004 | Alexander Martínez | **Cerrado:** Flujo de rechazo físico, conciliación de líneas aceptadas/rechazadas, actas de novedades y transferencia contable implementado en `FieldService.cs` y PWA móvil `HomePage`. |
+| SEG-05 | Vía de upload de evidencias, límites QR y lectura de cuenta/rol para guards | 004 / infraestructura | Alexander Martínez | **Cerrado:** Endpoints de evidencias presignadas en `EvidenceController.cs`, limitador de tasa `PublicTraceRateLimiter` para escaneos QR y guards OIDC locales en Web y Móvil. |
 | SEG-06 | Cliente M2M, credenciales autorizadas y versión de n8n local | 003 / infraestructura | PENDIENTE | Por confirmar |
 | SEG-07 | Obligaciones comunes, matriz, máquina dedicada y benchmark completo | 005 / datos | PENDIENTE | Por confirmar |
 | SEG-08 | Tratamiento explícito de RF-15/V-19: alcance actual o entrega 007 | Producto / coordinación | PENDIENTE | Por confirmar |

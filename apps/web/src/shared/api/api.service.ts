@@ -238,7 +238,22 @@ export class ApiService {
     if (status) params.append('status', status);
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
-    return this.http.get<RoutePlanSummaryDto[]>(`${this.baseUrl}/api/v1/route-plans${queryString}`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/v1/route-plans${queryString}`).pipe(
+      map(res => {
+        const raw = Array.isArray(res) ? res : (res?.items || []);
+        return raw.map((item: any) => ({
+          id: item.id || item.routePlanId,
+          code: item.code,
+          revision: item.revision,
+          status: item.status,
+          vehicleId: item.vehicleId,
+          vehicleCode: item.vehicleCode,
+          plannedStartUtc: item.plannedStartUtc,
+          totalDistanceKm: item.totalDistanceKm ?? item.km ?? 0,
+          totalDurationMinutes: item.totalDurationMinutes ?? item.minutes ?? 0,
+          stopsCount: item.stopsCount ?? 0
+        }));
+      }),
       catchError(err => {
         console.warn('Get route plans failed', err);
         return of([]);
@@ -247,7 +262,31 @@ export class ApiService {
   }
 
   getRoutePlanById(id: string): Observable<RoutePlanDetailDto | null> {
-    return this.http.get<RoutePlanDetailDto>(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}`).pipe(
+      map(res => {
+        if (!res) return null;
+        return {
+          id: res.id || res.routePlanId,
+          code: res.code,
+          revision: res.revision,
+          status: res.status,
+          vehicleId: res.vehicleId,
+          vehicleCode: res.vehicleCode,
+          plannedStartUtc: res.plannedStartUtc,
+          totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
+          totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
+          polyline: res.polyline || '',
+          stops: (res.stops || []).map((s: any) => ({
+            sequence: s.sequence ?? s.sequenceNumber,
+            servicePointId: s.servicePointId,
+            servicePointCode: s.servicePointCode || '',
+            servicePointName: s.servicePointName || '',
+            etaUtc: s.etaUtc || s.plannedArrivalUtc,
+            status: s.status,
+            ordersCount: s.ordersCount || 0
+          }))
+        } as RoutePlanDetailDto;
+      }),
       catchError(err => {
         console.warn('Get route plan by ID failed', err);
         return of(null);
@@ -255,7 +294,7 @@ export class ApiService {
     );
   }
 
-  createRoutePlan(req: { date?: string; vehicleCode?: string }): Observable<any> {
+  createRoutePlan(req: { date?: string; vehicleCodes?: string[]; includeConsolidation?: boolean } = {}): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/route-plans`, req);
   }
 
