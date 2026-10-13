@@ -1,11 +1,14 @@
 ---
 tipo: inicio
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [hackathon, equipo]
 ---
 
 # IstpetDev — Hackathon Expo Clean Ecuador 2026
+
+> [!important] Trabajo del equipo desde el 13 de octubre
+> Abrir [[Seguimiento de implementacion y pruebas]] para comprobar los specs 001–006. Actualizar responsables, pruebas y faltantes en [[Registro de seguimiento y hallazgos]]. Después del pase técnico, seguir [[Continuidad del piloto y specs 007 a 012]]. El alcance de demo conserva roles fijos y asignaciones; RBAC administrable y RLS quedan diferidos.
 
 Participamos en el **Reto 1: optimización y trazabilidad logística para el abastecimiento de insumos a nivel nacional**, dentro de Gestión Inteligente de Procesos.
 
