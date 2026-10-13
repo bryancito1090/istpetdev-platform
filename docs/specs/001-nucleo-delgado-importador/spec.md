@@ -3,7 +3,8 @@ id: "001"
 titulo: Núcleo delgado e importador genérico
 estado: en curso
 creado: 2026-10-12
-actualizado: 2026-10-12
+actualizado: 2026-10-13
+responsable: Anthony Pilatasig y Joseph Baño   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # requiere acuerdo del equipo; afecta trabajo de Schema95 (ver Contradicciones)
 depende_de: []
 boveda:
