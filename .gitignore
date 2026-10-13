@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
 *.pem
 *.key
 *.pfx

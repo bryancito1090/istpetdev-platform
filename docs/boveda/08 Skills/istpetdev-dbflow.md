@@ -7,12 +7,12 @@ tags: [istpetdev, ia, skills, base-de-datos, postgresql, migraciones]
 
 # IstpetDev — base de datos colaborativa y migraciones
 
-**Cuándo usarla:** Trabajo colaborativo sobre PostgreSQL 16 y PostGIS 3.4 en el entorno de desarrollo (Servidor de Laboratorio `192.168.7.50:15432` o Docker local `localhost:15432`) y despliegue a Amazon RDS (`istpetdev_integration`) en producción. Usar al crear o modificar entidades en C# (`src/Domain/Entities`), generar y aplicar migraciones de Entity Framework Core, conmutar entornos con `switch-db.mjs`, y coordinar cambios de esquema en el repositorio.
+**Cuándo usarla:** Trabajo colaborativo sobre PostgreSQL 16 y PostGIS 3.4 en el entorno de desarrollo centralizado (AWS EC2 configurado en `.env` o Docker local `localhost:15432`) y despliegue a Amazon RDS (`istpetdev_integration`) en producción. Usar al crear o modificar entidades en C# (`src/Domain/Entities`), generar y aplicar migraciones de Entity Framework Core, conmutar entornos con `switch-db.mjs`, y coordinar cambios de esquema en el repositorio.
 
 > [!important] Estrategia de tres entornos consolidada — 13 de octubre de 2026
-> - **Sustitución de túneles personales por persistencia en el Laboratorio:** Se archiva el esquema original de 5 bases personales remotas en AWS RDS vía túneles SSM y Secrets Manager para desarrollo diario. La persistencia opera bajo tres niveles ([[Estrategia de tres entornos y base de datos]]):
->   1. **Laboratorio:** Servidor local del instituto (`192.168.7.50:15432`) como base compartida para los 5 integrantes (`istpetdev_dev_01`).
->   2. **Casa:** Docker Desktop local (`localhost:15432`) para trabajo offline individual (`npm run db:local`).
+> - **Persistencia centralizada en la nube:** El desarrollo colaborativo diario de los 5 integrantes se consolida en la base de datos de desarrollo en AWS EC2 (`istpetdev_dev_01`) configurada a través de `.env`, eliminando la fricción de redes locales o túneles personales. La persistencia opera bajo tres niveles ([[Estrategia de tres entornos y base de datos]]):
+>   1. **Desarrollo Centralizado:** AWS EC2 con PostGIS (`istpetdev_dev_01`) para todo el equipo (`npm run db:dev` o `npm run db:cloud`).
+>   2. **Casa (Local):** Docker Desktop local (`localhost:15432`) para trabajo offline individual (`npm run db:local`).
 >   3. **Producción:** Amazon RDS gestionado (`istpetdev_integration`) exclusivo para el host EC2 en AWS.
 > - **Retiro de Schema95 y adopción de DemoCore:** Se retira Schema95 y RLS para la demo; rige el núcleo `DemoCore` de 27 tablas gestionado por EF Core. Ver [[Runbook de DevOps y base de datos para la demo]].
 
@@ -22,31 +22,30 @@ Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Lee
 
 ## Leer primero
 
-- `03 Arquitectura/Estrategia de tres entornos y base de datos.md`: especificación técnica de los entornos Laboratorio, Casa y Producción ([[Estrategia de tres entornos y base de datos]]).
+- `03 Arquitectura/Estrategia de tres entornos y base de datos.md`: especificación técnica de los entornos Desarrollo Centralizado, Casa y Producción ([[Estrategia de tres entornos y base de datos]]).
 - `04 Datos y algoritmos/Modelo de datos.md`: entidades, tipos canónicos, relaciones e invariantes ([[Modelo de datos]]).
 - `00 Inicio/Hechos canonicos.md`: nombres en código, motor y convenciones canónicas ([[Hechos canonicos]]).
-- `03 Arquitectura/Conexion PostgreSQL en DBeaver.md`: inspección visual en DBeaver para el servidor local del laboratorio y Docker ([[Conexion PostgreSQL en DBeaver]]).
+- `03 Arquitectura/Conexion PostgreSQL en DBeaver.md`: inspección visual en DBeaver para la base de datos de desarrollo y Docker ([[Conexion PostgreSQL en DBeaver]]).
 - `03 Arquitectura/Runbook de DevOps y base de datos para la demo.md`: procedimientos operativos de despliegue y demo ([[Runbook de DevOps y base de datos para la demo]]).
 
 ## Hechos consolidados
 
-- **Motor y hosting de desarrollo:** PostgreSQL 16 con PostGIS 3.4 corriendo en contenedor Docker (`istpetdev-team-db`) en el Servidor de Laboratorio (`192.168.7.50:15432`) o localmente (`istpetdev-local-db` en `localhost:15432`).
-- **Hosting de producción:** PostgreSQL 16.13 con PostGIS 3.4 en Amazon RDS (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS, consumida exclusivamente por el host de producción EC2.
-- **Base de desarrollo compartida:** `istpetdev_dev_01` en el servidor de laboratorio aloja las 27 tablas de `DemoCore`.
-- **Separación de roles:**
-  - **Rol Migrador (`migrator_dev_01`):** Posee permisos DDL en el esquema `public`. Configurado por defecto en `appsettings.Development.json` para facilitar la ejecución de migraciones en desarrollo.
-  - **Rol de Aplicación (`user_dev_01`):** Permisos DML estándar concedidos tras la migración.
-- **Conmutación ágil de entornos:** Herramienta automatizada en `scripts/ops/switch-db.mjs` accesible vía npm:
-  - `npm run db:lab`: Conmuta la configuración local hacia el servidor del laboratorio (`192.168.7.50:15432`).
-  - `npm run db:local`: Conmuta hacia el contenedor Docker local (`localhost:15432`).
-  - `npm run db:status`: Inspecciona la cadena de conexión activa.
+- **Motor y hosting de desarrollo centralizado:** PostgreSQL 16 con PostGIS 3.4 corriendo en contenedor Docker (`istpetdev_postgres` con imagen `postgis/postgis:16-3.4-alpine`) en instancia dedicada de AWS EC2. Ofrece conectividad directa a todo el equipo desde cualquier red (laboratorio, casa u oficina).
+- **Entorno alternativo local:** Contenedor local (`localhost:15432` para trabajo individual offline vía Docker Compose).
+- **Hosting de producción:** PostgreSQL 16.13 con PostGIS 3.4 en Amazon RDS (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS, consumida exclusivamente por el host de producción EC2 ([https://istpetdev.doicela.dev](https://istpetdev.doicela.dev)).
+- **Base de desarrollo compartida:** `istpetdev_dev_01` en AWS EC2 aloja las 27 tablas canónicas de `DemoCore`.
+- **Política de usuario único para desarrollo:** Todos los desarrolladores utilizan **`migrator_dev_01`** (contraseña protegida en `.env`), propietario del esquema `public` con permisos completos de DDL y DML para evitar fricciones operativas entre miembros del equipo.
+- **Centralización de configuración y no exposición de secretos:** 
+  - Archivo `.env`: Fuente única de verdad para el host, puerto, base de datos y credenciales en desarrollo (ignorado por Git).
+  - Backend .NET: `src/Api/appsettings.json` mantiene `"ConnectionStrings:Main": ""` limpio para no exponer IPs ni contraseñas en Git. `Program.cs` carga automáticamente `.env` en desarrollo.
+  - Scripts: `scripts/ops/switch-db.mjs` lee directamente de `.env` y gestiona `dotnet user-secrets` sin quemar IPs.
 
 ### Conexión de Desarrollo de los Integrantes
 | Entorno | Host / IP | Puerto | Base de Datos | Usuario | Password |
 |---|---|---|---|---|---|
-| **Laboratorio (LAN)** | `192.168.7.50` | `15432` | `istpetdev_dev_01` | `migrator_dev_01` | `12345` |
-| **Casa (Local)** | `localhost` | `15432` | `istpetdev_dev_01` | `migrator_dev_01` | `12345` |
-| **Producción (AWS)** | *Endpoint RDS privado* | `5432` | `istpetdev_integration` | `migrator_integration` | *Secrets Manager* |
+| **AWS Cloud EC2 (Desarrollo)** | Configurado en `.env` | `5432` | `istpetdev_dev_01` | `migrator_dev_01` (Único) | Configurada en `.env` |
+| **Casa (Local Offline)** | `localhost` | `15432` | `istpetdev_dev_01` | `migrator_dev_01` | Configurada en Compose local |
+| **Producción (AWS RDS)** | *Endpoint RDS privado* | `5432` | `istpetdev_integration` | `migrator_integration` | *Secrets Manager* |
 
 ## Reglas del flujo de trabajo
 
