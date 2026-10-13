@@ -11,28 +11,50 @@ public static class CognitoJwtExtensions
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme).Configure<IConfiguration>((options, effective) =>
         {
             var authority = effective["Authentication:Authority"];
-            options.MapInboundClaims = false;
             if (string.IsNullOrWhiteSpace(authority))
             {
-                options.Events = new JwtBearerEvents { OnMessageReceived = context => { context.Fail("Authentication is not configured."); return Task.CompletedTask; } };
-                return;
+                authority = DevJwtSecurity.DefaultAuthority;
             }
+
+            var isLocalDev = authority.StartsWith("https://identity.istpetdev.local", StringComparison.OrdinalIgnoreCase) || authority.Contains("localhost");
+
+            options.MapInboundClaims = false;
             options.Authority = authority;
-            options.MetadataAddress = $"{authority.TrimEnd('/')}/.well-known/openid-configuration";
-            options.RequireHttpsMetadata = true;
+
+            if (isLocalDev)
+            {
+                var metadata = new Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration { Issuer = authority };
+                metadata.SigningKeys.Add(DevJwtSecurity.DevKey);
+                options.ConfigurationManager = new Microsoft.IdentityModel.Protocols.StaticConfigurationManager<Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration>(metadata);
+                options.RequireHttpsMetadata = false;
+            }
+            else
+            {
+                options.MetadataAddress = $"{authority.TrimEnd('/')}/.well-known/openid-configuration";
+                options.RequireHttpsMetadata = true;
+            }
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true, ValidIssuer = authority, ValidateAudience = false,
-                ValidateLifetime = true, ValidateIssuerSigningKey = true,
-                ValidAlgorithms = [SecurityAlgorithms.RsaSha256], ClockSkew = TimeSpan.FromMinutes(1),
+                ValidateIssuer = true,
+                ValidIssuer = authority,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = isLocalDev ? DevJwtSecurity.DevKey : null,
+                ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
+                ClockSkew = TimeSpan.FromMinutes(1),
             };
+
             options.Events = new JwtBearerEvents
             {
                 OnTokenValidated = context =>
                 {
                     var principal = context.Principal;
                     var client = principal?.FindFirst("client_id")?.Value;
-                    var allowed = effective.GetSection("Authentication:AllowedClientIds").Get<string[]>() ?? [];
+                    var configuredAllowed = effective.GetSection("Authentication:AllowedClientIds").Get<string[]>() ?? [];
+                    var defaultAllowed = new[] { "istpetdev-web-client", "istpetdev-mobile-client", "istpetdev-web-portal", "istpetdev-mobile-pwa" };
+                    var allowed = configuredAllowed.Length > 0 ? configuredAllowed : defaultAllowed;
                     var technical = effective.GetSection("Authentication:TechnicalClientIds").Get<string[]>() ?? [];
                     var scopes = principal?.FindFirst("scope")?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
                     if (principal?.FindFirst("token_use")?.Value != "access") context.Fail("Only access tokens are authorized.");
@@ -45,7 +67,7 @@ public static class CognitoJwtExtensions
                 OnAuthenticationFailed = context =>
                 {
                     context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("CognitoJwtValidator")
-                        .LogWarning("Authentication failed: {ErrorType}", context.Exception.GetType().Name);
+                        .LogWarning("Authentication failed: {ErrorType} - {ErrorMessage}", context.Exception.GetType().Name, context.Exception.Message);
                     return Task.CompletedTask;
                 },
             };

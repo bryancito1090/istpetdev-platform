@@ -9,31 +9,15 @@ import { FooterWidget } from '@widgets/footer/footer.widget';
   standalone: true,
   imports: [RouterOutlet, HeaderWidget, FooterWidget],
   template: `
-    <div class="min-h-screen flex flex-col bg-white text-charcoal-800 overflow-x-hidden">
-      <!-- Barra Sutil F7: Entorno Frontend-First con Datos Simulados (Solo dentro del sistema) -->
-      @if (isSystemArea()) {
-        <aside aria-label="Aviso de entorno simulado" class="bg-charcoal-950 text-slate-300 text-[11px] py-1 px-4 border-b border-charcoal-800 select-none">
-          <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <span class="inline-flex h-2 w-2 rounded-full bg-primary-400 animate-pulse"></span>
-              <span>
-                Entorno Frontend-First: <strong class="text-white">Datos simulados (useMockApi)</strong>
-              </span>
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="font-mono text-[10px] text-slate-400 bg-white/10 px-2 py-0.5 rounded">
-                Torre de Control Web • Expo Clean 2026
-              </span>
-            </div>
-          </div>
-        </aside>
-      }
-
+    <div class="min-h-screen flex flex-col bg-slate-50 text-charcoal-800 overflow-x-hidden">
       <widget-header></widget-header>
       <main class="flex-1 w-full flex flex-col">
         <router-outlet></router-outlet>
       </main>
-      <widget-footer></widget-footer>
+      <!-- El pie solo se muestra en el portal público; dentro del sistema estorba. -->
+      @if (!isSystemArea()) {
+        <widget-footer></widget-footer>
+      }
     </div>
   `
 })
