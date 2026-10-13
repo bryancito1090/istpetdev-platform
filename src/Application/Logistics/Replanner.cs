@@ -261,7 +261,7 @@ public sealed class Replanner(
             OrganizationId = DemoOrganization.Id,
             Kind = "REPLAN_CLASSIFICATION",
             Status = decision.Outcome.ToString(),
-            ProposalJson = JsonSerializer.Serialize(new { proposedRoutePlanId = newPlan.Id, revision = newPlan.Revision, options = optionsList }),
+            ProposalJson = JsonSerializer.Serialize(new { proposedRoutePlanId = newPlan.Id, revision = newPlan.Revision, options = optionsList, facts = decision.Facts }),
             Rationale = string.Join("; ", decision.Reasons),
             CorrelationId = newPlan.Id,
             CreatedAtUtc = DateTime.UtcNow

@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<Incident> Incidents { get; }
     DbSet<IdempotencyRecord> IdempotencyRecords { get; }
     DbSet<ImportBatch> ImportBatches { get; }
+    DbSet<AgentRun> AgentRuns { get; }
     DbSet<AgentDecision> AgentDecisions { get; }
     DbSet<SimulationRun> SimulationRuns { get; }
     DbSet<SimulationMetric> SimulationMetrics { get; }
