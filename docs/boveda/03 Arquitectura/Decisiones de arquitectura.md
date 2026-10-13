@@ -328,7 +328,7 @@ Para la demo y el piloto hace falta un perfil que revise la trazabilidad complet
 
 Se adopta **B**. `Auditor` es un séptimo rol fijo, humano (`Kind = human`), que opera solo en la web:
 
-- **Puede leer** todo lo que leen Gerencia y Planificador: panel, rutas y revisiones, entregas, custodia completa, recepciones con su estado de evidencia, decisiones y traza del agente, simulaciones y la auditoría de cuentas (`AuditEvent`).
+- **Puede leer** todo lo que leen Gerencia y Planificador: panel, rutas y revisiones, entregas, custodia completa, recepciones con su estado de evidencia, decisiones y traza del agente y simulaciones. La auditoría de cuentas (`AuditEvent`) se sumará cuando exista: hoy la tabla no está en el esquema de la demo y FR-18 del spec 013 quedó pospuesto.
 - **No puede** crear, aprobar, rechazar, publicar, replanificar, revertir, despachar, recibir, importar, reiniciar la demo, cambiar el modo de autonomía ni gestionar cuentas. Cualquier escritura responde 403.
 - Gerencia puede asignarlo desde la gestión de cuentas del spec 013, igual que los otros roles humanos.
 

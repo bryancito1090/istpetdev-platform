@@ -34,7 +34,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 
 | Criterio | Peso | Cómo lo sostiene este spec |
 |---|---:|---|
-| Viabilidad técnica | 15% | Identidad administrada con MFA, revocación inmediata y auditoría; ante una pregunta del jurado se muestra que el acceso no es simulado |
+| Viabilidad técnica | 15% | Identidad administrada con MFA y revocación inmediata; ante una pregunta del jurado se muestra que el acceso no es simulado |
 | Prototipo/demo | 20% | Habilita el recorrido real de 004 y 005 (sin login real la PWA y el panel no hablan con la API) |
 | Presentación | 10% | Cada dispositivo de la demo muestra el nombre y rol reales; pantalla de Gerencia disponible para preguntas |
 
@@ -90,7 +90,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 3. **Dado** que soy la única Gerencia activa, **cuando** intento desactivarme o cambiar mi rol, **entonces** la operación se rechaza con un motivo claro.
 4. **Dado** un correo que ya tiene cuenta, **cuando** intento crearla otra vez, **entonces** se rechaza sin crear nada nuevo.
 5. **Dado** una invitación vencida (más de 1 día), **cuando** pulso «Reenviar invitación», **entonces** la persona recibe una nueva contraseña temporal.
-6. **Dado** cualquier alta o cambio, **cuando** consulto la auditoría en la base, **entonces** existe un `AuditEvent` con quién, qué, cuándo, antes y después.
+6. ~~**Dado** cualquier alta o cambio, **cuando** consulto la auditoría en la base, **entonces** existe un `AuditEvent` con quién, qué, cuándo, antes y después.~~ **Pospuesto hasta después del 17-oct** (decisión de Joseph Baño, 13-oct): la tabla `AuditEvent` no existe en el esquema de la demo (ver FR-18).
 
 ## Requisitos
 
@@ -115,7 +115,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 | FR-15 | `POST /api/v1/accounts/{id}/deactivate` y `/reactivate` (Gerencia) DEBEN cambiar `Account.IsActive` primero y luego deshabilitar/habilitar el usuario en Cognito y revocar sus sesiones (`AdminUserGlobalSignOut`). Si Cognito falla, la cuenta queda igualmente bloqueada en la API y la lista muestra el desfase para reintentar. | RNF-01 (revocación comprobada) |
 | FR-16 | `POST /api/v1/accounts/{id}/resend-invitation` (Gerencia) DEBE reenviar la invitación solo a usuarios que no completaron su primer ingreso. | — |
 | FR-17 | Una Gerencia NO DEBE poder desactivarse ni cambiar su propio rol, y la última Gerencia activa no puede perder ese rol ni desactivarse. | — |
-| FR-18 | Cada alta, cambio de rol o nombre, desactivación, reactivación y reenvío DEBE registrar un `AuditEvent` con actor, acción, recurso, resultado, antes y después. | Seguridad y evidencias |
+| FR-18 | ~~Cada alta, cambio de rol o nombre, desactivación, reactivación y reenvío DEBE registrar un `AuditEvent` con actor, acción, recurso, resultado, antes y después.~~ **Pospuesto** (Joseph Baño, 13-oct): la migración `20261012223838_DemoCore` elimina la tabla `AuditEvent` y crearla exige una migración, que NFR-03 prohíbe. Mientras tanto, los cambios de cuentas solo dejan trazas en los logs estructurados de la API, sin correos. | Seguridad y evidencias |
 | FR-19 | La web DEBE ofrecer a Gerencia una pantalla «Usuarios» con lista, alta, edición, desactivación, reactivación y reenvío, mostrando los errores de FR-13 a FR-17 con su motivo. | — |
 | FR-20 | La página administrada de Cognito DEBE mostrar logo, colores y tipografía institucionales de ISTPET. | Sistema de diseno y colores |
 | FR-21 | `Roles.cs` DEBE incluir `Auditor` como rol humano. Los endpoints de lectura que hoy admiten Gerencia o Planificador lo admiten también; ningún endpoint de escritura lo admite (403). La web oculta al Auditor toda acción de escritura. | ADR-26 |
@@ -132,7 +132,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 
 ## Entidades y contratos
 
-**Entidades:** sin cambios de esquema. Usa `Account` (`Kind`, `Issuer`, `Subject`, `DisplayName`, `Role`, `IsActive`) y `AuditEvent` del núcleo 001. Roles válidos para cuentas humanas: `Gerencia`, `Planificador`, `Auditor` (ADR-26), `Bodega`, `Conductor`, `Receptor` (`src/Domain/Common/Roles.cs`). `Auditor` no requiere migración: `Account.Role` es texto sin restricción en la base.
+**Entidades:** sin cambios de esquema. Usa `Account` (`Kind`, `Issuer`, `Subject`, `DisplayName`, `Role`, `IsActive`) del núcleo 001. `AuditEvent` **no** existe en el esquema de la demo (la elimina `DemoCore`), por eso FR-18 está pospuesto. Roles válidos para cuentas humanas: `Gerencia`, `Planificador`, `Auditor` (ADR-26), `Bodega`, `Conductor`, `Receptor` (`src/Domain/Common/Roles.cs`). `Auditor` no requiere migración: `Account.Role` es texto sin restricción en la base.
 
 **Endpoints nuevos:**
 
@@ -171,6 +171,7 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 - Gestión de la cuenta técnica de n8n (`Automatizacion`): la crea #38/003.
 - Cambiar la configuración de MFA del pool.
 - Login con proveedores externos (Google, Microsoft).
+- Auditoría de cambios de cuentas en `AuditEvent` (FR-18, H4-6): pospuesta hasta después del 17-oct porque exige una migración.
 
 ## Contradicciones con la bóveda
 
@@ -181,6 +182,8 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 > **✅ Resuelta (13-oct)** — Dueño del login. [spec 004](../004-campo-qr-custodia-offline/spec.md) FR-17 (y su T1b) y [spec 005](../005-panel-simulador/spec.md) FR-05 asignaban el login a 004. Ambos FR se actualizaron para depender de 013, y los dos specs listan 013 en `depende_de` como **dependencia parcial** (H1–H3, solo su frontend conectado a la API): la API de campo, el simulador, los KPI y la exportación no esperan a 013, y H4 no bloquea a nadie. Queda por ajustar `task.md` de 004 (T1b) en su próxima revisión.
 
 > **⚠️ Contradicción detectada** — Hecho nuevo: tokens solo en memoria. · Hecho establecido: el [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2) admite «memoria volátil o `sessionStorage`»; la nota [Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md) exige memoria. · Impacto: `sessionStorage` es accesible a cualquier script de la página. · Propuesta: seguir la bóveda (memoria). El informe es de Alexander: su corrección queda como tarea en el issue de este spec.
+
+> **⚠️ Contradicción detectada** — Hecho nuevo: la PWA solo admite Bodega, Conductor y Receptor; Gerencia y Planificador operan en la web. · Hecho establecido: [ADR-25](../../boveda/03%20Arquitectura/Decisiones%20de%20arquitectura.md) (punto 5) describe un «Supervisor de Logística» con tres módulos dentro de la PWA, y el frontend actual tiene el perfil `LogisticsManager` en `apps/mobile`; ADR-24 asigna la supervisión a la web. · Impacto: con 013 una cuenta de Gerencia o Planificador en la PWA ve «Tu cuenta opera en la plataforma web» y los módulos de supervisión móvil quedan inaccesibles. · Opciones: (a) seguir ADR-24 y retirar el perfil de supervisión de la PWA; (b) admitir Gerencia/Planificador también en la PWA. · Propuesta: (a), porque ADR-24 y ADR-26 fijan la plataforma por rol y el panel web ya cubre esos módulos. Decide: Joseph Baño con Alexander (autor de ADR-25); si se elige (b), cambian FR-07 y `Roles.PlatformOf`.
 
 Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅), RBAC y configuracion del sistema (roles fijos dentro del diseño diferido), Seguridad y evidencias, Runbook de DevOps y base de datos (sin migraciones nuevas), Credenciales y acceso del equipo.
 
