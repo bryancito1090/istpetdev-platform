@@ -132,7 +132,7 @@ Cada hito se comprueba en `develop`, no en la máquina de alguien.
 |---|---|---|---|
 | H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de aceptación de DeepSeek ejecutada (D4) | Se implementa con el spec del área en borrador; si DeepSeek no cumple, el agente queda en fallback determinista y el equipo decide proveedor |
 | H2 | 13-oct 20:00 | Spec 001 en `develop` (esquema, importador, reset de demo) | Prioridad absoluta del equipo: bloquea 002–005 |
-| H3 | 14-oct 20:00 | **Recorrido sin agente de punta a punta**: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado | El nivel B del agente pasa a su plan B |
+| H3 | 14-oct 20:00 | **Recorrido sin agente de punta a punta**: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado, desde los teléfonos con sesión PKCE y la PWA publicada por HTTPS (FR-17 y FR-18 de 004) | El nivel B del agente pasa a su plan B |
 | H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y resultados del simulador frente a los dos baselines | Se aplican los planes B de la tabla siguiente |
 | H5 | 15-oct 14:00 | Congelamiento de funcionalidades (D8) | — |
 
@@ -187,6 +187,6 @@ Se superpone al [Cronograma oficial](../boveda/01%20Oficial/Cronograma%20oficial
 ## Reglas de trabajo con specs
 
 - Un spec solo pasa a `planificado` cuando su `spec.md` está aprobado por el equipo; la aprobación se anota en la cabecera con nombres y fecha.
-- **Migraciones de base de datos:** 001 crea el esquema completo de la demo para que los equipos paralelos no generen migraciones en conflicto. Si un spec posterior necesita columnas nuevas, crea **una** migración nueva sobre `develop` actualizado y la integra antes de que otro spec cree la suya.
+- **Migraciones de base de datos:** 001 crea el esquema base de la demo para que los equipos paralelos no generen migraciones en conflicto; su prueba exige el núcleo y la ausencia de Schema95, no un conteo cerrado, así que las tablas nuevas de 002–004 no la rompen. Si un spec posterior necesita columnas nuevas, crea **una** migración nueva sobre `develop` actualizado y la integra antes de que otro spec cree la suya.
 - Ramas y PR según [CONTRIBUTING.md](../../CONTRIBUTING.md): la implementación de un spec va en `feature/NNN-nombre-corto` (los cambios solo de documentación, en `docs/…`), sale de `develop` actualizado y entra por PR a `develop`. La política de ramas rechaza cualquier otro prefijo y el push directo.
 - Copiar `_plantilla/` para crear un spec nuevo: `cp -r docs/specs/_plantilla docs/specs/NNN-nombre-corto`.

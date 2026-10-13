@@ -294,7 +294,7 @@ Responde al final solo con el JSON pedido.
 | Escenario | Preparación | Medición |
 |---|---|---|
 | `watch` | `POST /demo/reset` (`demo-region`) | `POST /agent/runs {Watch}` × 10 |
-| `incident` | Reset + propuesta + publicación + 2 paradas completadas | `POST /demo/incidents {cierre-norte}` (dispara el agente) × 10 |
+| `incident` | Reset + propuesta + publicación + 2 paradas completadas (con `advance` de 004 si ya está integrado; si no, con el endpoint provisional de 002) | `POST /demo/incidents {cierre-norte}` (dispara el agente) × 10 |
 | `injection` | Reset + importación de `data/fixtures/demo-region-injection/` (renombra un punto con texto malicioso) | `POST /agent/runs {Watch}` × 10 |
 
 Métricas desde `GET /agent/runs/{id}`:

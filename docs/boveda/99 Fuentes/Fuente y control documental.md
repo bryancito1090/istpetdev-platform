@@ -188,3 +188,10 @@ Verificación de la actualización: **75 notas Markdown**, **648 enlaces interno
 Fuente: brainstorming de campo con decisiones de preparación QR en bodega, recepción por conductor, conflicto por validez operativa, parciales bajo custodia del conductor y resumen público limitado. Se redactaron spec y plan de 004; se actualizaron las notas de producto, arquitectura, demo, hechos canónicos, backlog y riesgos. No se ejecutó el recorrido ni se registraron Deciders. El equipo redactará `task.md` y `test-e2e.md`.
 
 Verificación de esta actualización: **75 notas Markdown**, **653 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Revisión cruzada de los specs 001–004 — 12 de octubre de 2026
+
+Fuente: revisión de los specs 001–004 tras completar el equipo las tareas y pruebas de 002–004. Correcciones propuestas: dueño del login PKCE y publicación HTTPS de la PWA (spec 004), endpoint de demo `advance` que reemplaza el marcado provisional de paradas en los recorridos de 002 y 003, prueba de tablas de 001 que exige el núcleo sin Schema95 en lugar de un conteo cerrado, token del QR en el fragmento de la URL, orden de recorte y código de pruebas clave del 004. Se actualizan [[Definiciones de producto y plan hasta el pitch]], Hechos canónicos, Contratos API y eventos, Identidad OIDC y sesiones, riesgos R-24 y R-25, B-47 y el registro de trabajo previo. Documental: no ejecuta código.
+
+Verificación de la actualización: **75 notas Markdown**, **656 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+

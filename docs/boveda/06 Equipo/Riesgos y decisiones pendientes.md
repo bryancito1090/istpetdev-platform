@@ -32,6 +32,8 @@ tags: [hackathon, istpetdev]
 | R-20 | DeepSeek no cumple los umbrales de aceptación (latencia desde Ecuador o uso de herramientas en el nodo de n8n) | Agente que no responde a tiempo en la demo | Prueba de aceptación en H1; fallback determinista a los 10 s; nodo compatible con OpenAI como alternativa de conexión |
 | R-21 | Credenciales filtradas en workflows de n8n exportados al repositorio | Exposición de claves de DeepSeek o Cognito | Prueba de CI de secretos y credenciales solo en el almacén de n8n |
 | R-22 | El cliente técnico de Cognito no existe y depende de un `terraform apply` | n8n no puede autenticarse contra la API | Recurso definido en el spec 003; coordinar el apply antes de H3 |
+| R-24 | Login PKCE y publicación HTTPS de la PWA sin terminar antes de H3 (dependen de Terraform, nginx y compose del equipo de infraestructura) | Ningún teléfono puede operar contra la API en el ensayo | Tarea T1b del spec 004 al inicio; coordinar `apply` y despliegue el 13-oct |
+| R-25 | Límite de consultas del QR por IP con jurados detrás del mismo NAT | Respuesta 429 en pleno pitch | Decidir PA-05 del spec 004; prueba con 7 escaneos simultáneos |
 | R-23 | IndexedDB, instalación PWA o S3 fallan en el teléfono de demo | Se pierde el momento físico o queda evidencia pendiente | Ensayo en teléfono real antes de H3; recepción en línea y video como plan B de D8; estados separados para recibo y archivos (spec 004) |
 | R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM |
 

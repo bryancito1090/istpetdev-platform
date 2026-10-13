@@ -98,7 +98,7 @@ La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]
 |---|---|---|---|
 | H1 | 13-oct 13:00 | Specs 002–005 aprobados; prueba de aceptación de DeepSeek ejecutada | Se implementa con el spec en borrador; si DeepSeek no cumple, el agente queda en fallback determinista y el equipo decide proveedor |
 | H2 | 13-oct 20:00 | Spec 001 integrado en `develop` | Prioridad del equipo entero: bloquea 002–005 |
-| H3 | 14-oct 20:00 | Recorrido sin agente de punta a punta: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado | El nivel B del agente pasa a su plan B |
+| H3 | 14-oct 20:00 | Recorrido sin agente de punta a punta: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado, **desde los teléfonos con sesión PKCE y la PWA publicada por HTTPS** (FR-17 y FR-18 del spec 004) | El nivel B del agente pasa a su plan B |
 | H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y simulador con resultados frente a los dos baselines | Se aplican los planes B |
 | H5 | 15-oct 14:00 | Congelamiento de funcionalidades | — |
 
@@ -172,8 +172,14 @@ Aprobadas en el brainstorming del 12-oct; detalle en el [spec 003](../../specs/0
 | Parcial o rechazo | Lo no aceptado sigue en el vehículo bajo custodia del conductor hasta devolución física registrada en bodega | Evita incrementar saldos sin transferencia |
 | QR del jurado | URL HTTPS con token aleatorio revocable; resumen de producto/unidad, estado e hitos generales, sin cantidades ni datos personales | Da una comprobación visible y limitada según RF-13 |
 | Aviso al conductor | Consulta de revisiones en la PWA y mensaje de `AgentDecision.DriverMessage` | Cumple el nivel B del agente sin chat ni push |
+| Login de web y PWA | El spec 004 asume ADR-18: Cognito con PKCE mediante `angular-auth-oidc-client` 22.0.1 en la web de bodega y en la PWA | Ningún spec tenía dueño del login; sin él ninguna pantalla llama a la API (revisión del 12-oct) |
+| PWA por HTTPS | La PWA se publica en `/campo/` del dominio de demo y Cognito suma las URL de retorno HTTPS | La PWA no se desplegaba en ningún sitio; sin HTTPS no se instala ni funciona sin conexión |
+| Paradas completadas para el pitch | Endpoint de demo `advance`: completa N paradas con preparación, despacho y recepción reales | Sustituye al marcado provisional de 002 en el pitch y en los recorridos de 002 y 003 sin descuadrar el inventario |
+| Token del QR | En el fragmento de la URL (`#t=`) y enviado por cabecera `X-Trace-Token` | Con query string quedaba en logs de acceso e historial |
 
-El marcado provisional de parada completa de 002 queda sustituido por recepción aceptada al integrar 004. La página pública actual y su registro fijo no representan custodia real; el spec pide reemplazarlos. El esquema de 001 conserva su criterio de 27 tablas **antes** de la migración adicional de 004.
+El marcado provisional de parada completa de 002 queda sustituido por recepción aceptada al integrar 004. La página pública actual y su registro fijo no representan custodia real; el spec pide reemplazarlos. El esquema de 001 cierra con 27 tablas; desde la revisión del 12-oct su prueba exige ese núcleo y la ausencia de Schema95, no un conteo cerrado, para que 002–004 añadan tablas sin romper la CI.
+
+**Decisiones abiertas del campo (revisión del 12-oct):** dónde vive la pantalla de Bodega que prepara y despacha la caja (web o PWA); si la evidencia se sube con URL prefirmadas (requiere CORS e IAM del equipo de infraestructura) o a través de la API; y si el límite de consultas del QR se aplica por IP (los jurados comparten IP en la wifi del recinto) o por token. Registradas como PA-03 a PA-05 del spec 004.
 
 ## Pendientes de esta sesión
 

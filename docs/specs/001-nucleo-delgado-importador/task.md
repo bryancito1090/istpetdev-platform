@@ -1467,8 +1467,17 @@ public class LeanSchemaTests(PostgisContainer postgres)
         "AgentDecision", "SimulationRun", "SimulationMetric",
     ];
 
+    // Tablas de Schema95 que el núcleo delgado elimina; ninguna debe volver por una migración posterior.
+    private static readonly string[] RemovedSchema95Tables =
+    [
+        "Permission", "Role", "RolePermission", "RoleFieldPermission", "OrganizationAccess", "AccessRole", "AccessDelegation",
+        "ConfigurationDefinition", "ConfigurationVersion", "Template", "TemplateVersion", "WorkflowDefinition", "WorkflowVersion",
+        "FormSubmission", "Conversation", "Message", "Notification", "OutboxEvent", "AuditEvent", "SyncBatch",
+    ];
+
+    // Los specs 002–004 añaden sus tablas con migraciones propias: la prueba exige el núcleo, no un conteo cerrado.
     [Fact]
-    public async Task Migration_creates_exactly_the_core_tables_and_the_demo_organization()
+    public async Task Migration_creates_the_core_tables_without_schema95_and_the_demo_organization()
     {
         await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
         var tables = await db.Database.SqlQueryRaw<string>(
@@ -1476,7 +1485,8 @@ public class LeanSchemaTests(PostgisContainer postgres)
             "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' " +
             "AND table_name NOT IN ('__EFMigrationsHistory', 'spatial_ref_sys')").ToListAsync();
 
-        Assert.Equal(CoreTables.Order(), tables.Order());
+        Assert.Empty(CoreTables.Except(tables));
+        Assert.Empty(RemovedSchema95Tables.Intersect(tables));
         Assert.True(await db.Organizations.AnyAsync(o => o.Id == DemoOrganization.Id));
     }
 

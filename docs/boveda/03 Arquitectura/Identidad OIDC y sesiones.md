@@ -73,3 +73,7 @@ Ver [[Seguridad y evidencias]], [[Movil offline y sincronizacion]] y [[Entornos 
 ## Cliente de automatización — propuesta del 12 de octubre de 2026
 
 El spec 003 (`docs/specs/003-agente-logistico/`) propone crear en Terraform el cliente confidencial de n8n con un único scope `istpetdev-api/automation`, en lugar de los cuatro scopes finos de la sección «Automatización desde n8n». El límite real lo aplica la API: la identidad con ese scope solo recibe el rol `Automatizacion`, que no puede publicar, aprobar, rechazar, deshacer ni cambiar el modo de autonomía. Contradicción registrada en [[Hechos canonicos]].
+
+## Clientes web y PWA — revisión del 12 de octubre de 2026
+
+La revisión de specs encontró que ningún spec implementaba ADR-18. El spec 004 asume el login de la web de bodega y de la PWA con Authorization Code + PKCE mediante `angular-auth-oidc-client` 22.0.1 (compatible con Angular 22), con interceptor limitado a la API y sin tokens en el almacenamiento durable del teléfono. La PWA se publica en `/campo/` del dominio de demo y los clientes Cognito web y móvil deben sumar las URL de retorno y cierre HTTPS a las de `localhost`, que hoy son las únicas en Terraform.

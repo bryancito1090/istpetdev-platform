@@ -1,6 +1,6 @@
 # 004 — Campo: QR, custodia, despacho/recepción y PWA offline: pruebas de punta a punta
 
-> Recorridos de bodega, conductor y jurado sobre una misma caja física. Estos escenarios están **pendientes de ejecución**. El spec se cierra cuando E2E-01–E2E-08 pasan con evidencia guardada; las pruebas de teléfono real, S3 privado y QR desde teléfono ajeno no se sustituyen por pruebas simuladas.
+> Recorridos de bodega, conductor y jurado sobre una misma caja física. Estos escenarios están **pendientes de ejecución**. El spec se cierra cuando E2E-01–E2E-10 pasan con evidencia guardada; las pruebas de teléfono real, S3 privado y QR desde teléfono ajeno no se sustituyen por pruebas simuladas.
 
 ## Preparación del entorno
 
@@ -29,6 +29,8 @@ Para ensayo físico: abrir API y PWA desplegadas, confirmar `/health/ready=Healt
 | E2E-06 | Revisión nueva y aviso al conductor | H4, FR-04, FR-09, FR-12, CE-05/08 | móvil real | sí |
 | E2E-07 | Jurado escanea QR público limitado | H5, FR-02, FR-13–14, CE-07 | teléfono ajeno + HTTP | sí |
 | E2E-08 | Cuota, sesión y permisos | FR-05, FR-11, FR-15, NFR-01–05 | navegador + HTTP | sí |
+| E2E-09 | Login PKCE y PWA instalada por HTTPS | FR-17–FR-18, CE-09 | teléfono real + navegador | sí |
+| E2E-10 | `advance` de demo con operaciones reales | FR-16, CE-10 | HTTP automatizado | sí |
 
 ### E2E-01 — Preparar y despachar la caja
 
@@ -124,7 +126,7 @@ Para ensayo físico: abrir API y PWA desplegadas, confirmar `/health/ready=Healt
 **Pasos:**
 
 1. Desde un teléfono ajeno con **datos móviles**, escanear la etiqueta impresa y abrir HTTPS. Consultar la misma URL antes/después de preparar, despachar y recibir: hitos reales con horas de servidor; código de caja, producto/unidad y estado, sin cantidades.
-2. Inspeccionar JSON/red: no contiene actor, nombre, contacto, inventario, ruta, token en cuerpo, foto/firma ni URL privada. La página `public-trace` no muestra registro fijo de demo ni consulta una `Delivery` por código.
+2. Comprobar en la etiqueta que la URL tiene la forma `/public-trace/{unitId}#t=…` y en las herramientas de red que el token viaja en la cabecera `X-Trace-Token`, no en la query string; después de cargar, la barra de direcciones ya no muestra el token. Revisar el log de acceso de nginx del ensayo: el token no aparece. Inspeccionar JSON/red: no contiene actor, nombre, contacto, inventario, ruta, token en cuerpo, foto/firma ni URL privada. La página `public-trace` no muestra registro fijo de demo ni consulta una `Delivery` por código.
 3. Revocar token y reimprimir etiqueta con otro. URL anterior, token alterado, vencido, ausente y unidad inexistente tienen respuesta uniforme 404 sin revelar existencia; ráfaga de consultas recibe 429. Confirmar `Cache-Control: no-store`. La etiqueta nueva funciona.
 
 **Resultado esperado:** CE-07 y NFR-06: QR útil por HTTPS desde teléfono ajeno, con proyección pública limitada y revocación efectiva.
@@ -146,6 +148,35 @@ Para ensayo físico: abrir API y PWA desplegadas, confirmar `/health/ready=Healt
 
 **Evidencia a guardar:** capturas de fallo/recuperación con datos privados tapados, matriz de códigos HTTP, verificación de outbox sin token y saldos sin cambio por endpoint provisional.
 
+### E2E-09 — Login PKCE y PWA por HTTPS
+
+**Objetivo:** comprobar que las dos cuentas de la demo operan desde sus dispositivos con sesión real.
+
+**Pasos:**
+
+1. En el teléfono del pitch, abrir `https://<dominio de demo>/campo/`, instalar la PWA e iniciar sesión como Conductor con Cognito (PKCE). Repetir en el navegador de bodega como Bodega.
+2. Con las herramientas de red, comprobar que las llamadas a `/api/v1/*` llevan `Authorization: Bearer` y que ninguna otra petición lo lleva. Comprobar que IndexedDB no contiene tokens.
+3. Cerrar la PWA, activar modo avión y reabrir: abre desde el service worker con el último snapshot (E2E-02). Volver a la red: la sesión se renueva sin pedir credenciales mientras el refresh token sea válido.
+
+**Resultado esperado:** CE-09; sin esto no se pueden ejecutar E2E-01 a E2E-08 desde la interfaz.
+
+**Evidencia a guardar:** captura de la PWA instalada, códigos HTTP de llamadas autenticadas y verificación de IndexedDB sin tokens.
+
+### E2E-10 — `advance` de demo
+
+**Objetivo:** dejar paradas completadas con operaciones reales antes del incidente del pitch.
+
+**Pasos:**
+
+1. Restablecer `demo-region`, proponer y publicar las rutas asignando el conductor.
+2. `POST /api/v1/demo/route-plans/{id}/advance` con `{ operationId, stops: 2 }`: comprobar 2 recibos, movimientos bodega→vehículo→punto, eventos de custodia y paradas `Completed`.
+3. Repetir con el mismo `operationId`: misma respuesta, sin efectos nuevos. Disparar el incidente predefinido de 002: replanifica conservando las 2 paradas completadas.
+4. Con `Demo:Enabled=false`: 404.
+
+**Resultado esperado:** CE-10; el E2E-03 de 002 y el escenario `incident` de 003 pueden usar este endpoint en lugar del marcado provisional.
+
+**Evidencia a guardar:** salida de `DemoAdvanceTests`, conteos de recibos/movimientos antes y después del replay.
+
 ## Registro de ejecuciones
 
 Una fila por escenario e intento. Resultado: `no ejecutado`, `pasó`, `falló` o `bloqueado`, con causa concreta para los dos últimos. Cifras y tiempos solo se llaman «Medido» al enlazar la ejecución. Guardar evidencia según [Plantilla evidencia](../../boveda/09%20Plantillas/Plantilla%20evidencia.md), sin secretos, fotos ni firmas privadas.
@@ -153,4 +184,4 @@ Una fila por escenario e intento. Resultado: `no ejecutado`, `pasó`, `falló` o
 | Fecha | Commit | Entorno y dispositivo | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
 
-**Cierre:** CE-01–CE-08 necesitan filas con evidencia. El plan B del pitch (recepción en línea o video) es contingencia, no pase de la prueba offline. Si algún recorrido obligatorio no pasa o el spec sigue sin aprobación, mantener `estado` abierto.
+**Cierre:** CE-01–CE-10 necesitan filas con evidencia. El plan B del pitch (recepción en línea o video) es contingencia, no pase de la prueba offline. Si algún recorrido obligatorio no pasa o el spec sigue sin aprobación, mantener `estado` abierto.
