@@ -50,6 +50,7 @@ tags: [hackathon, equipo]
 - [[Continuidad del piloto y specs 007 a 012]] — entrada y primera entrega de cada etapa futura, preservando el alcance de demo.
 - [[Equipo y acuerdos]], [[Plan de ejecucion]], [[Backlog]].
 - [[Riesgos y decisiones pendientes]], [[Registro de trabajo previo y del evento]].
+- [[Plan de trabajo specs 004 y 005]] — desglose operativo y seguimiento en Linear de las tareas de Campo (004) y Simulador (005).
 - [[Definiciones de producto y plan hasta el pitch]] — objetivo norte, definiciones D1–D8, cortes, guardarraíles, hitos y plan B hasta el pitch (12-oct). Specs implementables en `docs/specs/` del repositorio.
 - [[Analisis de cobertura de specs]] — porcentaje propuesto por spec, avance local acreditable y brechas de la demo frente a posibles entregas posteriores.
 - [[Coordinacion migracion schema95]] — histórico: aplicación personal y evidencia de Schema95.
