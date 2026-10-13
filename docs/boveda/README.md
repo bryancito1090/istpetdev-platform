@@ -23,7 +23,7 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 | Tema | Nota |
 |---|---|
 | Esquema completo y estado personal | [Esquema de base de datos](04%20Datos%20y%20algoritmos/Esquema%20completo%20de%20base%20de%20datos.md) |
-| Coordinación de la migración de 95 tablas | [Estado y tareas entre agentes](06%20Equipo/Coordinacion%20migracion%20schema95.md) |
+| Coordinación de la migración de 95 tablas (histórico) | [Estado y tareas entre agentes](06%20Equipo/Coordinacion%20migracion%20schema95.md) |
 | RBAC, configuración y plantillas | [Configuración del sistema](03%20Arquitectura/RBAC%20y%20configuracion%20del%20sistema.md) |
 | Conexiones PostgreSQL | [DBeaver](03%20Arquitectura/Conexion%20PostgreSQL%20en%20DBeaver.md) |
 | Revisión antes de lanzar | [Skill de prelaunch](08%20Skills/istpetdev-prelaunch.md) |
@@ -35,6 +35,7 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 | Infraestructura AWS | [AWS y Terraform](03%20Arquitectura/AWS%20y%20Terraform.md) |
 | Despliegue Stateless y RDS | [Perfil A Reforzado](03%20Arquitectura/Perfil%20A%20Reforzado%20-%20Despliegue%20Stateless%20y%20Amazon%20RDS.md) |
 | Pipeline CI/CD | [CI/CD y despliegue](03%20Arquitectura/CI-CD%20y%20automatizacion%20de%20despliegue.md) |
+| Runbook de despliegue y base de datos (13–15 oct) | [Runbook de DevOps y base de datos](03%20Arquitectura/Runbook%20de%20DevOps%20y%20base%20de%20datos%20para%20la%20demo.md) |
 | Hardening Host | [Seguridad de servidores](03%20Arquitectura/Hardening%20y%20seguridad%20de%20servidores.md) |
 | Frontend FSD | [Feature-Sliced Design](03%20Arquitectura/Frontend%20con%20Feature-Sliced%20Design.md) |
 | Trabajo pendiente | [Backlog](06%20Equipo/Backlog.md) |

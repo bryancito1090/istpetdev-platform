@@ -10,6 +10,12 @@ tags: [arquitectura, aws, ec2, rds, postgresql, postgis, docker, stateless, prod
 > [!note] Estado Operativo
 > Arquitectura implementada, validada y en producción en la región `us-east-1`. El host EC2 opera de forma 100% stateless (sin volúmenes locales de datos), comunicándose directamente con la instancia gestionada de Amazon RDS PostgreSQL 16 a través de la red privada interna de la VPC.
 
+> [!warning] Complemento — 12 de octubre de 2026
+> - **Esquema.** Las 95 tablas con RLS (Schema95) son el estado **actual** de `istpetdev_integration`, no el que se usará en la demo. ADR-21 (propuesta) lo reemplaza con el spec 001 por el núcleo `DemoCore` de 27 tablas, **sin RLS** ni RBAC administrable, con roles funcionales fijos en `Account.Role`. La guarda `Schema95Preflight.sql` y `tools/Schema95Check` se retiran con ese spec.
+> - **Cambio y despliegue.** La secuencia de migraciones, el reset de las bases con respaldo previo y los cambios de infraestructura por spec están en [[Runbook de DevOps y base de datos para la demo]].
+> - **Fuera de Terraform.** El host de la app de esta nota no está gestionado por Terraform y comparte security group con el nodo del túnel SSM ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14), R-33).
+> - **Seguridad pendiente.** La cadena de conexión usa `Trust Server Certificate=true` y Swagger es público. Ambos puntos están pendientes de corregir en la misma issue.
+
 ---
 
 ## 1. Visión General de la Arquitectura
@@ -23,7 +29,7 @@ El **Perfil A Reforzado** evoluciona el diseño original de contenedor único ha
 
 2. **Persistencia Gestionada en Amazon RDS (`istpetdev-rds-dev`)**:
    - Instancia dedicada de PostgreSQL 16.13 con soporte geoespacial PostGIS 3.4.6.
-   - Retiene las 95 tablas del sistema, extensiones y políticas de Row-Level Security (RLS).
+   - Retiene hoy las 95 tablas de Schema95 con RLS. Con el spec 001 pasa al núcleo `DemoCore` de 27 tablas sin RLS ([[Runbook de DevOps y base de datos para la demo]]).
    - Snapshots automáticos y aislamiento de red en subredes privadas.
 
 ```mermaid
@@ -39,7 +45,7 @@ flowchart TD
   end
 
   subgraph RDS_Data [Amazon RDS: istpetdev-rds-dev<br>Subred Privada: 10.42.20.0/24 | Puerto 5432]
-    API -->|TCP 5432 - SSL Require<br>Latencia: ~38ms| DB[(Base: istpetdev_integration<br>95 Tablas + PostGIS + RLS)]
+    API -->|TCP 5432 - SSL Require<br>Latencia: ~38ms| DB[(Base: istpetdev_integration<br>Núcleo DemoCore + PostGIS<br>hoy: Schema95 con RLS)]
   end
 ```
 
@@ -85,8 +91,8 @@ La instancia compartida de Amazon RDS implementa aislamiento lógico mediante ba
 | `istpetdev_integration` | `migrator_integration` | **Entorno Desplegado en la Nube (EC2)**. Base central de integración y demostración. |
 | `istpetdev_dev_01` a `05` | `user_dev_01` a `05` | Bases personales aisladas de cada desarrollador para trabajo local vía túnel SSM. |
 
-### Guarda de Seguridad de Migración (`Schema95Preflight.sql`)
-La migración de EF Core (`CompleteSystemSchema95`) impone una regla estricta de seguridad en PL/pgSQL:
+### Guarda de Seguridad de Migración (`Schema95Preflight.sql`) — se retira con el spec 001
+Vigente hasta que se integre `DemoCore`; después queda solo en el tag `schema95-archivo`. La migración de EF Core (`CompleteSystemSchema95`) impone una regla estricta de seguridad en PL/pgSQL:
 1. Exige que la base sea exactamente `istpetdev_integration` o la base personal correspondiente.
 2. Exige que el rol que ejecuta la migración sea `migrator_integration`.
 3. Falla intencionalmente si el rol es `SUPERUSER` o tiene privilegios `BYPASSRLS` (ej. `istpetadmin`).
@@ -94,7 +100,7 @@ La migración de EF Core (`CompleteSystemSchema95`) impone una regla estricta de
 ### Propiedad y Permisos en `istpetdev_integration`
 - **Owner del esquema `public`**: `migrator_integration`.
 - **Owner de las tablas y secuencias**: `migrator_integration`.
-- **Privilegios**: DDL completo y habilitación de Row-Level Security concedido al rol migrador.
+- **Privilegios**: DDL completo para el rol migrador. Con `DemoCore` no hay RLS; cada migración termina con `DemoGrants.Sql`, que concede lectura y escritura a los roles `user_*`.
 
 ---
 
@@ -116,7 +122,7 @@ El flujo `.github/workflows/deploy.yml` despliega el sistema de forma idempotent
    - Si una ejecución de CD carece momentáneamente de variables en runner, el script en el host recurre al `.env` local preconfigurado.
 3. **Arranque del Contenedor Backend**:
    - Cadena de conexión inyectada vía variable `ConnectionStrings__Main`.
-   - `ApplyMigrations: "true"` ejecuta las comprobaciones y actualiza el esquema automáticamente al iniciar.
+   - `ApplyMigrations: "true"` ejecuta las comprobaciones y actualiza el esquema automáticamente al iniciar. Durante la hackathon, la base de integración solo la cambia el despliegue (propuesta en la sección 5 del [[Runbook de DevOps y base de datos para la demo]]).
 
 ---
 
@@ -128,7 +134,7 @@ La plataforma expone endpoints estándar de observabilidad verificados en vivo:
 |---|---|---|---|
 | `https://istpetdev.doicela.dev/health/live` | GET | `200 OK` | Confirma que el proceso .NET 8 está activo y respondiendo solicitudes HTTP. |
 | `https://istpetdev.doicela.dev/health/ready` | GET | `200 OK` | Ejecuta `CanConnectAsync()` contra RDS y valida que no existan migraciones pendientes en `__EFMigrationsHistory`. |
-| `https://istpetdev.doicela.dev/swagger` | GET | `200 OK` | Interfaz Swagger UI con la documentación OpenAPI interactiva. |
+| `https://istpetdev.doicela.dev/swagger` | GET | `200 OK` | Interfaz Swagger UI con la documentación OpenAPI interactiva. Hoy es pública; se va a restringir ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14)). |
 | `https://istpetdev.doicela.dev/` | GET | `200 OK` | Aplicación Angular 22 SPA servida con compresión y caché por Nginx. |
 
 ---

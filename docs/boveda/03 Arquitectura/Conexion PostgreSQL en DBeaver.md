@@ -1,11 +1,14 @@
 ---
 tipo: guia-operativa
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [postgresql, dbeaver, desarrollo, acceso]
 ---
 
 # Conexión PostgreSQL en DBeaver
+
+> [!warning] Complemento — 12 de octubre de 2026
+> Las dos conexiones (rol migrador y rol de datos) siguen vigentes. Las referencias a RLS aplican solo al diseño P2: con ADR-21 (propuesta) la demo usa el núcleo `DemoCore` sin RLS. Ver [[Runbook de DevOps y base de datos para la demo]].
 
 Guía para la base personal de Bryan; sustituir `dev_01` por la asignación correspondiente para cada integrante. El esquema objetivo es [[Esquema completo de base de datos]]; las migraciones siguen [[istpetdev-dbflow]].
 

@@ -49,7 +49,7 @@ Estos requisitos convierten el reto oficial y la propuesta del equipo en comport
 | RNF-10 | P1 | Rendimiento medido | Registrar volumen, p95 y errores; objetivo inicial p95 ≤2 s para consultas simples |
 | RNF-11 | P1 | Protección de evidencias | Acceso privado y permisos comprobados |
 | RNF-12 | P2 | Recuperación de fallos | Restauración/failover ensayados con tiempos registrados |
-| RNF-13 | P0 | Aislamiento PostgreSQL por fila | RLS/FORCE en tablas del tenant, rol API sin bypass/propiedad, FKs por organización; SELECT/INSERT/UPDATE/DELETE cruzados y pool sin contexto deniegan; [[Esquema completo de base de datos]] |
+| RNF-13 | P0 | Aislamiento PostgreSQL por fila | RLS/FORCE en tablas del tenant, rol API sin bypass/propiedad, FKs por organización; SELECT/INSERT/UPDATE/DELETE cruzados y pool sin contexto deniegan; [[Esquema completo de base de datos]]. ⚠️ Pasa a P2 si se acepta ADR-21 (propuesta del 12-oct): la demo no usa RLS ([[Runbook de DevOps y base de datos para la demo]]) |
 | RNF-14 | P0 | Verificación de seguridad previa a exposición | Evidencia vigente de controles existentes y complementarios; campos/contenido/datos clasificados/límites de abuso/cabeceras/dependencias verificados para caminos expuestos; [[Verificacion de seguridad antes del lanzamiento]] |
 
 El objetivo de rendimiento es del equipo, pendiente de carga y recursos definidos; excluir cálculos asíncronos de rutas/simulación de esa latencia interactiva.

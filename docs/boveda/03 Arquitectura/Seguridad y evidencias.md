@@ -1,11 +1,14 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [arquitectura, contratos]
 ---
 
 # Seguridad y evidencias
+
+> [!warning] Complemento — 12 de octubre de 2026
+> RLS/FORCE pasan a P2 con ADR-21 (propuesta). En la demo, el aislamiento es una sola organización fija con roles fijos. Ver [[Runbook de DevOps y base de datos para la demo]].
 
 ## Identidad y autorización
 
