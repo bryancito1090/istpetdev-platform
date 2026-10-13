@@ -7,49 +7,55 @@ tags: [postgresql, dbeaver, desarrollo, acceso]
 
 # Conexión PostgreSQL en DBeaver
 
-> [!warning] Complemento — 12 de octubre de 2026
-> Las dos conexiones (rol migrador y rol de datos) siguen vigentes. Las referencias a RLS aplican solo al diseño P2: con ADR-21 (propuesta) la demo usa el núcleo `DemoCore` sin RLS. Ver [[Runbook de DevOps y base de datos para la demo]].
+> [!important] Entorno consolidado — 13 de octubre de 2026
+> La conexión principal para el equipo de desarrollo se realiza directamente al **Servidor del Laboratorio (LAN)** o al **Docker Local (Casa)**. Se archiva el uso rutinario de túneles SSM hacia bases personales en Amazon RDS para desarrollo diario ([[Estrategia de tres entornos y base de datos]]).
 
-Guía para la base personal de Bryan; sustituir `dev_01` por la asignación correspondiente para cada integrante. El esquema objetivo es [[Esquema completo de base de datos]]; las migraciones siguen [[istpetdev-dbflow]].
+Guía operativa para conectar DBeaver a la base de datos de desarrollo `istpetdev_dev_01` (27 tablas de `DemoCore`). El esquema objetivo es [[Esquema completo de base de datos]]; el flujo de migraciones sigue [[istpetdev-dbflow]].
 
-## Lo que ya existe y lo que falta
+## 1. Conexión de Desarrollo (Laboratorio y Casa)
 
-Las capturas de Bryan del 9 de octubre muestran una conexión a `istpetdev_dev_01` con `migrator_dev_01`, contraseña guardada y puerto 15432. Esa conexión sirve para inspeccionar el esquema y aplicar migraciones con el rol correcto en .NET. La captura no acredita RLS, TLS verify-full, existencia de todas las tablas ni permisos RBAC de la aplicación.
+Para los 5 integrantes del equipo, los parámetros de conexión son estandarizados:
 
-El otro usuario ya fue creado por el bootstrap documentado: `user_dev_01`. No crear un usuario nuevo con el mismo nombre ni rotar su password para añadirlo a DBeaver. Su contraseña está en el secreto `/istpetdev/dev/db/dev_01`; la del migrador en `/istpetdev/dev/db/dev_01/migrator`. RBAC de usuarios finales se administra mediante la API/Cognito, no mediante el menú Roles de PostgreSQL.
-
-## Prerequisitos
-
-Túnel SSM abierto en 15432, autenticación AWS vigente, certificado oficial RDS y mapeo local del endpoint real a 127.0.0.1. El archivo privado `dev-access.json` contiene endpoint/nodo/documento; no passwords. Arranque automático puede abrir el túnel al iniciar sesión en el equipo, pero no elimina la renovación de autenticación AWS/MFA. No abrir RDS al público para evitar el túnel.
-
-## Dos conexiones con nombres claros
-
-| Campo | Conexión de migración | Conexión de datos |
+| Parámetro | Opción A: Laboratorio (LAN) | Opción B: Casa (Docker Local) |
 |---|---|---|
-| Nombre visible | IstpetDev — esquema dev_01 | IstpetDev — datos dev_01 |
-| Host | Endpoint RDS real de dev-access.json, mapeado localmente | El mismo |
-| Puerto | 15432 | 15432 |
-| Database | istpetdev_dev_01 | istpetdev_dev_01 |
-| Username | migrator_dev_01 | user_dev_01 |
-| Password | Guardada o secreto personal de migrador | Secreto personal de aplicación |
-| SSL Mode | verify-full | verify-full |
-| CA Certificate | ~/.config/istpetdev/certs/global-bundle.pem, expandido por selector | El mismo |
+| **Host** | `192.168.7.50` | `localhost` (o `127.0.0.1`) |
+| **Port** | `15432` | `15432` |
+| **Database** | `istpetdev_dev_01` | `istpetdev_dev_01` |
+| **Username** | `migrator_dev_01` (o `user_dev_01`) | `migrator_dev_01` (o `user_dev_01`) |
+| **Password** | `12345` | `12345` |
+| **SSL Mode** | disabled / allow (sin certificados) | disabled / allow |
 
-## Clic por clic
+### Configuración paso a paso en DBeaver
 
-1. Conexión existente → clic derecho → Edit Connection → General: asignar el nombre de esquema de la tabla anterior.
-2. Connection settings → Main: Host con endpoint real, port 15432 y database `istpetdev_dev_01`. Conservar username/password del migrador guardados.
-3. Botón `+ SSH, SSL, …` → SSL; abrir pestaña SSL, habilitar SSL si la versión muestra esa casilla, seleccionar verify-full y elegir el archivo CA. Mantener vacíos certificado/clave de cliente; no omitir validación de hostname.
-4. Test Connection → OK. Si aparece connection refused, verificar túnel/puerto; si aparece certificado inválido, revisar hostname/CA; si password authentication failed, verificar que contraseña y usuario correspondan al mismo secreto.
-5. Para el usuario de datos: menú Database → New Database Connection → PostgreSQL → Next. Usar los campos de la segunda columna y la misma configuración SSL.
-6. Obtener la contraseña: consola AWS → región us-east-1 → Secrets Manager → Secrets → `/istpetdev/dev/db/dev_01` → Retrieve secret value → copiar `password` directamente al campo Password de DBeaver. Guardarla allí según política local; no pegarla en la bóveda ni en conversaciones.
-7. General: nombre de datos → Test Connection → Finish. Cada conexión conserva su password propio; la contraseña guardada del migrador no es la del usuario de datos.
-8. En el navegador DB: Databases → istpetdev_dev_01 → Schemas → public → Tables; clic derecho → Refresh para ver tablas creadas por migraciones.
-9. Para SQL de inspección: clic derecho en la conexión deseada → SQL Editor → New SQL Script. Verificar en la barra del editor conexión y base antes de ejecutar. No reutilizar scripts MySQL con `USE`, `DATABASE()` o columnas `ENGINE`.
+1. Menú superior: **Database** → **New Database Connection** → seleccionar **PostgreSQL** → **Next**.
+2. Pestaña **Main**:
+   - **Host:** `192.168.7.50` (en el laboratorio) o `localhost` (en casa).
+   - **Port:** `15432`.
+   - **Database:** `istpetdev_dev_01`.
+   - **Username:** `migrator_dev_01`.
+   - **Password:** `12345`.
+3. Pestaña **SSL**: Deshabilitada o por defecto (no se requiere certificado CA para la LAN del laboratorio o contenedor local).
+4. Hacer clic en **Test Connection**: Debe mostrar `Connected` exitosamente.
+5. Hacer clic en **Finish**.
+6. En el árbol de navegación: `Databases` → `istpetdev_dev_01` → `Schemas` → `public` → `Tables`. Clic derecho → **Refresh** para visualizar las 27 tablas de `DemoCore`.
 
-Los nombres y controles SSL están documentados por [DBeaver](https://dbeaver.com/docs/dbeaver/SSL-Configuration/). Las etiquetas pueden variar con el idioma/versión; SSL también se puede configurar mediante propiedades del driver.
+## 2. Acceso a Amazon RDS en Producción (Solo Administración)
 
-## Verificar identidad y capacidad
+Amazon RDS (`istpetdev-rds-dev`) aloja la base de integración/producción `istpetdev_integration` y está restringida a subredes privadas en AWS. Solo se accede administrativamente mediante túnel SSM para auditar el despliegue en la nube:
+
+| Parámetro | Conexión RDS Producción (Vía Túnel SSM) |
+|---|---|
+| **Host** | Mapeo local del endpoint RDS a `127.0.0.1` |
+| **Puerto** | `15432` (túnel SSM activo) |
+| **Database** | `istpetdev_integration` |
+| **Username** | `migrator_integration` |
+| **Password** | Valor obtenido desde AWS Secrets Manager |
+| **SSL Mode** | `verify-full` con CA bundle oficial de RDS |
+
+> [!note] Histórico archivado
+> Las bases personales previas (`istpetdev_dev_01` a `05`) en RDS fueron sustituidas por el Servidor de Laboratorio para suprimir la latencia y la dependencia de credenciales IAM/MFA durante el hackathon.
+
+## 3. Verificar identidad y capacidad en DBeaver
 
 Ejecutar por separado en cada conexión:
 

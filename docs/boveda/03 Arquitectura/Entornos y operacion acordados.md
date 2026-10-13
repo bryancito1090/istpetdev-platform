@@ -107,7 +107,7 @@ Se conserva Terraform con state S3 y `use_lockfile=true`: bucket privado, versio
 
 RDS dev: PostgreSQL 16 con PostGIS compatible, `db.t4g.medium`, Single-AZ, 20 GiB gp3, autoscaling máximo 100 GiB, storage cifrado, `publicly_accessible=false`, `rds.force_ssl=1`, retención de backups siete días y deletion protection. Single-AZ es suficiente para colaboración; no se declara HA. Registrar motor, minor y extensión efectivos al aprovisionar.
 
-Una instancia sirve a `istpetdev_dev_01` ... `istpetdev_dev_05` y `istpetdev_integration`. Cada integrante tiene usuario/migrador de su base; revocar CONNECT y privilegios PUBLIC innecesarios, sin acceso a las otras bases. La base de integración usa schema/release desde `develop`; no recibe migraciones experimentales ni seeds simultáneos. El equipo puede trabajar conjuntamente contra integración con usuarios autorizados y datos sintéticos, coordinando cambios.
+La instancia RDS en AWS aloja la base de integración `istpetdev_integration` para el despliegue de producción. Aunque inicialmente se aprovisionaron bases `istpetdev_dev_01` a `05` en dicha instancia, el desarrollo diario del equipo se desacopló hacia el Servidor de Laboratorio (`192.168.7.50:15432`) y Docker local (`localhost:15432`) conforme a la [[Estrategia de tres entornos y base de datos]], eliminando la latencia de túneles SSM. La base de integración en RDS usa schema/release promovido desde `main` mediante CI/CD y no recibe migraciones experimentales locales.
 
 En demo, PostgreSQL/PostGIS permanece en Docker con volumen nombrado sobre EBS cifrado; no reutilizar el RDS dev como BD de demo. Aplicación sin superusuario, rol migrador con DDL y rol backup con lectura necesaria. Extensión PostGIS la instala el administrador/migrador controlado, no la aplicación. UUID v7 se genera mediante implementación interoperable API/móvil que se valide; PG16 lo almacena, sin suponer `uuidv7()` nativo.
 
@@ -205,7 +205,7 @@ Una migración incompatible bloquea rollback automático. Restaurar DB requiere 
 - [OIDC GitHub/AWS](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws), [runners y direcciones IP](https://docs.github.com/en/actions/reference/runners/github-hosted-runners#ip-addresses).
 - [Backend Terraform S3](https://developer.hashicorp.com/terraform/language/backend/s3), [Docker y publicación de puertos](https://docs.docker.com/engine/network/port-publishing/).
 
-Ver [[Repositorio de software y versiones]], [[Identidad OIDC y sesiones]], [[Plan de validacion]], [[AWS y Terraform]], [[CI-CD y automatizacion de despliegue]] y [[Hardening y seguridad de servidores]].
+Ver [[Repositorio de software y versiones]], [[Identidad OIDC y sesiones]], [[Plan de validacion]], [[AWS y Terraform]], [[CI-CD y automatizacion de despliegue]], [[Hardening y seguridad de servidores]] y [[Estrategia de tres entornos y base de datos]].
 
 ## Acceso individual y distribución de secretos — 7 de octubre de 2026
 
