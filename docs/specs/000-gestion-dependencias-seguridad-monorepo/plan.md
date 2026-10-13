@@ -1,107 +1,65 @@
-# 000 — Gestión de dependencias, remediación de vulnerabilidades y evaluación pnpm: plan de implementación
+# Gestión verificable de dependencias — plan de implementación
 
-**Goal:** Eliminar las dependencias deprecadas de `apps/web`, remediar las 7 vulnerabilidades de Tailwind CSS v3 mediante directivas de control de versiones y definir la hoja de ruta para la migración a `pnpm`.
+> Para agentes de implementación: ejecutar las tareas en orden y marcar cada paso (`- [ ]`) solo con evidencia guardada. Leer primero [spec.md](spec.md).
 
-**Architecture:** Mantenimiento de la capa de tooling y workspaces del monorepo Node.js / TypeScript. Modificaciones acotadas a manifiestos de paquetes (`package.json`) y configuración de paquetes anidados sin alterar código fuente ni dependencias de runtime.
+**Goal:** Reducir dependencias sin uso y tratar cada vulnerabilidad Node con remediación verificada o excepción temporal trazable.
 
-**Tech Stack:** Node.js v24.21.0, npm 11.1.0 / pnpm (Corepack 0.36.0), Angular 22.2.1, Tailwind CSS 3.4.19, Lucide Angular 1.55.0.
+**Architecture:** P1 conserva npm y su lockfile raíz. El informe de auditoría determina las acciones; ninguna versión de override se da por segura antes de comprobar aviso, árbol y build. P2 evalúa pnpm por separado.
 
-**Spec:** [`spec.md`](spec.md)
-
-## Global Constraints
-
-- Prohibido el uso de `npm audit fix --force` para evitar la actualización descontrolada a Tailwind CSS v4.
-- No alterar código de componentes en `apps/web/src/` ni `libs/shared-core/`.
-- Respetar la compatibilidad con Node.js 24.
-- Conservar los comandos de build y lint existentes (`npm run build:web`, `npm run lint:web`).
-
-## Review Focus
-
-1. Ruptura de clases CSS o configuración al tocar Tailwind $\rightarrow$ Comprobar `npm run build:web` y verificar que el bundle CSS contenga las utilidades de color corporativo.
-2. Iconos faltantes tras eliminar `lucide-angular` $\rightarrow$ Verificar que todas las importaciones apunten a `@lucide/angular` y compilen sin error.
-3. Regresiones en la resolución de módulos de monorepo $\rightarrow$ Probar la resolución cruzada con `@istpetdev/shared-core`.
+**Tech Stack:** npm workspaces `10.9.9`, Node `22.23.3`, Angular 22, Tailwind 3.4.19 y GitHub Actions. `.nvmrc`, `.npm-version`, `engines` y `.npmrc` mantienen la política común en desarrollo, CI, Docker y deploy.
 
 ---
 
-## Estructura de archivos
+## Archivos y responsabilidad
 
-| Acción | Ruta | Responsabilidad |
-|---|---|---|
-| Modificar | `apps/web/package.json` | Eliminar `lucide-angular` y `@angular/animations`. |
-| Modificar | `package.json` | Agregar directivas de `overrides` para `braces` y `postcss-selector-parser`. |
-| Crear (Opcional pnpm) | `pnpm-workspace.yaml` | Declarar las rutas de los workspaces para pnpm. |
-| Crear (Opcional pnpm) | `.npmrc` | Definir políticas de hoisting (`public-hoist-pattern`). |
+| Archivo | Responsabilidad |
+|---|---|
+| `apps/web/package.json` y `package-lock.json` | Retirar dependencias sin uso y registrar el árbol resuelto. |
+| `package.json`, `.nvmrc`, `.npm-version`, `.npmrc` | Fijar compatibilidad y herramientas Node/npm; guardar overrides solo si son compatibles y demostrados. |
+| `.github/workflows/ci.yml` | Ejecutar instalación limpia, builds y política de auditoría. |
+| `.github/workflows/deploy.yml`, `infra/docker/web/Dockerfile` | Usar el mismo gestor, lockfile y versiones de Node/npm que CI. |
+| `CONTRIBUTING.md` y notas de bóveda | Documentar política de gestor, auditoría y nombre del paquete de iconos. |
+| `pnpm-workspace.yaml` y `pnpm-lock.yaml` | Solo P2, desde una worktree temporal; no cambian P1 durante la evaluación. |
 
----
+## Tarea 1: capturar inventario actual, con red disponible
 
-## Planes de Ejecución
+- [ ] Registrar `node --version` y `npm --version` junto con fecha y commit.
+- [ ] Ejecutar desde la raíz `npm audit --json --workspaces --include-workspace-root > audit-before.json` y conservar **código de salida e informe**. La salida no cero por hallazgos es esperada; la salida de error de red no equivale a cero hallazgos.
+- [ ] Ejecutar `npm audit --json --omit=dev --workspaces --include-workspace-root > audit-runtime-before.json` para clasificar exposición. Este informe no reemplaza el anterior.
+- [ ] Ejecutar `npm explain braces` y `npm explain postcss-selector-parser` tras `npm ci`; registrar rutas, consumidores, versiones y sus rangos declarados.
+- [ ] Crear inventario de avisos con ID, severidad, ruta, alcance, versión corregida disponible, opción de tratamiento y responsable. Confirmar si los siete hallazgos históricos siguen vigentes.
 
-### Opción A — Solución Inmediata en npm (Recomendada para la demo / Pre-evento)
+## Tarea 2: limpieza directa sin migrar Tailwind
 
-Conserva `npm` sin alterar el flujo de trabajo de los integrantes del equipo:
+- [ ] Confirmar con búsqueda en `apps/web/src` ausencia de imports de `lucide-angular`, `@angular/animations` y `provideAnimations`.
+- [ ] Retirar los dos paquetes de `apps/web/package.json` y actualizar **solo** `package-lock.json` con la versión de npm elegida para el proyecto.
+- [ ] Ejecutar `npm ci` desde raíz, `npm run build:shared`, `npm run lint:web`, `npm run build:web` y `npm run build:mobile`. Registrar códigos de salida.
+- [ ] Revisar iconos y estilos principales de login, dashboard y mapa. Dejar la versión de Tailwind `3.4.19` en ambos workspaces.
 
-1. **Limpieza en `apps/web/package.json`:**
-   Remover de `dependencies`:
-   ```json
-   - "@angular/animations": "22.2.1",
-   - "lucide-angular": "^1.0.0",
-   ```
-2. **Overrides en `package.json` (Raíz):**
-   Agregar al objeto raíz:
-   ```json
-   "overrides": {
-     "braces": "^3.0.3",
-     "postcss-selector-parser": "^7.1.6"
-   }
-   ```
-3. **Reinstalación y verificación:**
-   ```powershell
-   npm install
-   npm run check:web
-   cd apps/web; npm audit
-   ```
+## Tarea 3: resolver avisos uno por uno
 
----
+- [ ] Para `braces`, comprobar el aviso [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm): `3.0.3` está afectada y no hay parche publicado al corte del spec. **No añadir `"braces": "^3.0.3"` como supuesto arreglo.** Investigar actualización o reemplazo compatible de los consumidores; volver a auditar el árbol. Si permanece, redactar excepción con mitigación, responsable y caducidad.
+- [ ] Para `postcss-selector-parser`, comprobar [GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) y probar una ruta que resuelva `7.1.6` o superior. Tailwind 3.4.19 y `postcss-nested@6.2.0` declaran rangos 6.x; una anulación a 7 requiere compilación Web/Mobile y revisión visual antes de aceptarse.
+- [ ] Repetir para los demás avisos que arroje la auditoría actual; no inferir que los dos paquetes anteriores explican todos los hallazgos.
+- [ ] Registrar para cada override propuesto versión exacta, consumidor, motivo, prueba de build, resultado del audit y condición para retirarlo. Repetir `npm ci` y los cuatro comandos de verificación de la tarea 2 tras cambiar el lockfile.
+- [ ] Guardar `audit-after.json`, comparar IDs, severidades y rutas con el inventario inicial; documentar hallazgos nuevos o excepciones pendientes.
 
-### Opción B — Migración Integral a pnpm (Arquitectura Monorepo Definitiva)
+## Tarea 4: política automatizada y documentación
 
-1. **Habilitación de pnpm:**
-   ```powershell
-   corepack enable pnpm
-   ```
-2. **Creación de `pnpm-workspace.yaml` en la raíz:**
-   ```yaml
-   packages:
-     - 'libs/*'
-     - 'apps/*'
-   ```
-3. **Configuración de `.npmrc` en la raíz:**
-   ```ini
-   auto-install-peers=true
-   strict-peer-dependencies=false
-   ```
-4. **Overrides en `package.json` raíz:**
-   ```json
-   "pnpm": {
-     "overrides": {
-       "braces": "^3.0.3",
-       "postcss-selector-parser": "^7.1.6"
-     }
-   }
-   ```
-5. **Generación de lockfile y verificación:**
-   ```powershell
-   pnpm install
-   pnpm --filter @istpetdev/web build
-   pnpm audit
-   ```
+- [ ] Fijar Node `22.23.3` y npm `10.9.9` según la release soportada por las dependencias del lockfile. Verificar `.nvmrc`, `.npm-version`, `engines`, `.npmrc`, ambos workflows, Docker y una instalación limpia.
+- [ ] Añadir auditoría de raíz y workspaces a CI/deploy, subir informe aunque falle y probar respuestas npm inválidas. Toda excepción versionada cubre un solo aviso, paquete, rango, ruta y versión; exige aprobación, responsable, justificación y vencimiento. La compuerta falla ante reporte inválido o hallazgo sin autorización.
+- [ ] Actualizar `CONTRIBUTING.md`, checklist de seguridad y ADR-04: el código usa `@lucide/angular`; conservar nota histórica del nombre anterior.
+- [ ] Revisar diff del lockfile, salida de builds, comparación visual e informes de auditoría antes de marcar P1 como implementado. No declarar cero vulnerabilidades si una excepción permanece.
 
----
+## Tarea 5: experimento pnpm (P2 independiente)
+
+- [ ] Fijar una versión de pnpm en `packageManager` y crear `pnpm-workspace.yaml` para `libs/shared-core`, `apps/web` y `apps/mobile` en una rama de prueba.
+- [ ] Cambiar las dependencias locales a `workspace:*`; generar `pnpm-lock.yaml` y ejecutar instalación limpia, builds y auditoría.
+- [ ] Medir tiempo y espacio frente a npm bajo condiciones comparables. Probar imports, Angular CLI y pares antes de considerar hoisting o relajación de reglas.
+- [ ] Si se adopta, migrar CI, deploy, documentación, cachés y scripts en el mismo cambio; eliminar `package-lock.json` para dejar un solo gestor y lockfile activo.
+
+- Política versionada y auditorías inicial/residual: `security/spec000/`. Logs, TRX y capturas efímeros: `artifacts/spec000/`, con retención de CI.
 
 ## Reversión
 
-En caso de requerir reversión en Git:
-```powershell
-git checkout HEAD -- package.json apps/web/package.json package-lock.json
-npm install
-```
+Si una remediación rompe build o estilos, revertir **el cambio específico** de manifiesto y lockfile y registrar el fallo. Mantener los informes para investigar otra ruta; no ejecutar `npm audit fix --force` ni aceptar una excepción implícita.
