@@ -80,6 +80,8 @@ public sealed class Evidence : OrganizationEntity
     public string StorageKey { get; set; } = string.Empty;
     public string MimeType { get; set; } = string.Empty;
     public string? Sha256 { get; set; }
+    public long? ByteSize { get; set; }
+    public string Status { get; set; } = "Pending";
     public Guid UploadedByAccountId { get; set; }
     public DateTime? ConfirmedAtUtc { get; set; }
 }
@@ -128,4 +130,13 @@ public sealed class RouteStockReservation : OrganizationEntity
     public decimal Quantity { get; set; }
     public string Status { get; set; } = RouteStockReservationStatus.Active;
     public DateTime? ClosedAtUtc { get; set; }
+}
+
+public sealed class QrAccessToken : OrganizationEntity
+{
+    public Guid HandlingUnitId { get; set; }
+    public string TokenHash { get; set; } = string.Empty;
+    public DateTime ExpiresAtUtc { get; set; }
+    public DateTime? RevokedAtUtc { get; set; }
+    public Guid? CreatedByAccountId { get; set; }
 }

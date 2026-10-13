@@ -61,11 +61,13 @@ internal static class LeanSchema
         {
             e.HasIndex(h => new { h.OrganizationId, h.Code }).IsUnique();
             Fk<HandlingUnit, Location>(e, h => h.LocationId);
+            Fk<HandlingUnit, Delivery>(e, h => h.DeliveryId);
         });
         model.Entity<HandlingUnitLine>(e =>
         {
             Fk<HandlingUnitLine, HandlingUnit>(e, l => l.HandlingUnitId);
             Fk<HandlingUnitLine, Lot>(e, l => l.LotId);
+            Fk<HandlingUnitLine, DeliveryLine>(e, l => l.DeliveryLineId);
         });
 
         model.Entity<InventoryMovement>(e =>
@@ -150,6 +152,13 @@ internal static class LeanSchema
             e.HasIndex(c => new { c.OrganizationId, c.OperationId }).IsUnique();
             Fk<CustodyEvent, HandlingUnit>(e, c => c.HandlingUnitId);
             Fk<CustodyEvent, Account>(e, c => c.ActorAccountId);
+        });
+
+        model.Entity<QrAccessToken>(e =>
+        {
+            e.HasIndex(t => new { t.OrganizationId, t.TokenHash }).IsUnique();
+            Fk<QrAccessToken, HandlingUnit>(e, t => t.HandlingUnitId);
+            Fk<QrAccessToken, Account>(e, t => t.CreatedByAccountId);
         });
 
         model.Entity<IdempotencyRecord>(e => { e.HasIndex(r => new { r.OrganizationId, r.AccountId, r.OperationId }).IsUnique(); Fk<IdempotencyRecord, Account>(e, r => r.AccountId); });

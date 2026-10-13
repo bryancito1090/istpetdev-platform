@@ -36,6 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SimulationMetric> SimulationMetrics => Set<SimulationMetric>();
     public DbSet<RoadMatrixEdge> RoadMatrixEdges => Set<RoadMatrixEdge>();
     public DbSet<RouteStockReservation> RouteStockReservations => Set<RouteStockReservation>();
+    public DbSet<QrAccessToken> QrAccessTokens => Set<QrAccessToken>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configuration)
     {
