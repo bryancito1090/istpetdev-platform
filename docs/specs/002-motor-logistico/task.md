@@ -14,7 +14,7 @@
 | T5 | Publicación FEFO, reservas y paradas completadas | T4 | [P] con T6 | completada |
 | T6 | Política de autonomía y explicaciones por facts | T4 | [P] con T5 | completada |
 | T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | completada |
-| T8 | API, autorización e inyección de dependencias | T7 | — | pendiente |
+| T8 | API, autorización e inyección de dependencias | T7 | — | completada |
 | T9 | Fixture regional y calibración del incidente | T8 | — | pendiente |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | pendiente |
 
@@ -100,10 +100,10 @@
 
 **Archivos:** crear `src/Api/Controllers/RisksController.cs`, `RoutePlansController.cs`, `IncidentsController.cs`, `AgentDecisionsController.cs`, `AutonomyController.cs`; modificar `src/Api/Controllers/DemoController.cs`, `src/Api/Program.cs`, `src/Infrastructure/DependencyInjection.cs`; probar en `tests/IstpetDev.Tests/Integration/Logistics/LogisticsApiTests.cs`.
 
-- [ ] Pruebas HTTP rojas de todos los endpoints de [Entidades y contratos](spec.md#entidades-y-contratos): métodos/códigos, JSON camelCase, `facts`, Problem Details, filtro de riesgos, consulta de revisión y decisiones, publicar/completar/revertir, registrar/replanificar, aprobar/rechazar, GET/PUT del modo, preset de demo.
-- [ ] Probar roles: lectura para cualquier cuenta autorizada; planificación y automatización crean planes/incidentes y replanifican; conductor solo completa; gerencia cambia modo; `POST /demo/incidents` devuelve 404 o 403 si `Demo:Enabled=false` y no ejecuta incidente. Los endpoints de escritura rechazan token ausente/rol incorrecto.
-- [ ] Conectar servicios y persistencia. `POST /route-plans` responde 201 síncrono; propuesta inicial queda pendiente de aprobación por defecto. Los errores de conflictos de stock y opciones inviables tienen códigos y motivos estables. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~LogisticsApiTests"`; esperado: 0 fallos. Commit `feat(api): expose deterministic logistics endpoints`.
-- [ ] **Lectura para el panel 005 (FR-23):** `GET /api/v1/route-plans?date=&status=&vehicleCode=&limit=50&cursor=` devuelve `{items:[{routePlanId,code,revision,status,vehicleCode,km,minutes,cost,hasApproximations}],nextCursor}` con la revisión vigente, orden estable por fecha, código y revisión, y no crea propuestas. Pruebas en `LogisticsApiTests`: paginación sin repetir IDs, sin token → 401, el GET no cambia el conteo de planes. Integrar antes de H4; el spec 005 (T1) la consume y no la implementa.
+- [x] Pruebas HTTP rojas de todos los endpoints de [Entidades y contratos](spec.md#entidades-y-contratos): métodos/códigos, JSON camelCase, `facts`, Problem Details, filtro de riesgos, consulta de revisión y decisiones, publicar/completar/revertir, registrar/replanificar, aprobar/rechazar, GET/PUT del modo, preset de demo.
+- [x] Probar roles: lectura para cualquier cuenta autorizada; planificación y automatización crean planes/incidentes y replanifican; conductor solo completa; gerencia cambia modo; `POST /demo/incidents` devuelve 404 o 403 si `Demo:Enabled=false` y no ejecuta incidente. Los endpoints de escritura rechazan token ausente/rol incorrecto.
+- [x] Conectar servicios y persistencia. `POST /route-plans` responde 201 síncrono; propuesta inicial queda pendiente de aprobación por defecto. Los errores de conflictos de stock y opciones inviables tienen códigos y motivos estables. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~LogisticsApiTests"`; esperado: 0 fallos. Commit `feat(api): expose deterministic logistics endpoints`.
+- [x] **Lectura para el panel 005 (FR-23):** `GET /api/v1/route-plans?date=&status=&vehicleCode=&limit=50&cursor=` devuelve `{items:[{routePlanId,code,revision,status,vehicleCode,km,minutes,cost,hasApproximations}],nextCursor}` con la revisión vigente, orden estable por fecha, código y revisión, y no crea propuestas. Pruebas en `LogisticsApiTests`: paginación sin repetir IDs, sin token → 401, el GET no cambia el conteo de planes. Integrar antes de H4; el spec 005 (T1) la consume y no la implementa.
 
 ### T9 — Fixture regional y calibración
 
