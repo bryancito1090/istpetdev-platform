@@ -241,3 +241,20 @@ Fuente: revisión de `develop` (3cb6861) y `main` (88a2221), de `deploy.yml`, de
 Es una actualización documental: no ejecuta Terraform, ni migraciones, ni respaldos. No se comprobó el estado real de AWS; los identificadores de recursos vienen de la nota Perfil A y del estado de despliegue del 8-oct.
 
 Verificación de esta actualización: **77 notas Markdown**, **714 enlaces internos resueltos**, **0 errores**. Se mantienen dos avisos previos de lenguaje.
+
+## Implementación y verificación local del spec 001 — 12 de octubre de 2026
+
+Fuente: instrucción directa de Bryan para implementar y verificar el spec 001 y su núcleo de 27 tablas en la rama `feature/001-nucleo-delgado-importador`, aplicando [[istpetdev-prelaunch]] en entorno local aislado. Se registran las diferencias D1–D9 del plan como alcance técnico local:
+1. **D1/D2:** Roles funcionales fijos y omisión de RLS para el escenario acotado de demo de una sola organización. RNF-13 y el modelo multiempresa se preservan para el producto general.
+2. **D3:** Conservación íntegra de las migraciones históricas `InitialSchema` y `CompleteSystemSchema95` (verificadas 7/7 con SHA-256 idénticos y tag `schema95-archivo`); la transición se realiza mediante una migración posterior `DemoCore` con guard que bloquea bases con datos ajenos a los seeds.
+3. **D4:** Cantidades `numeric(18,3)` y coordenadas `geometry(Point, 4326)` en el núcleo delgado.
+4. **D5:** Autenticación y scopes técnicos M2M preservados; resolución de cuenta y rol en base de datos local descartable.
+5. **D6:** Importación de consumo histórico por SKU y período con conversión estricta y sin doble descuento sobre saldos absolutos.
+6. **D7:** Ventanas operativas acotadas al importador; contratos de optimización logística diferidos a specs subsiguientes (002–004).
+7. **D8:** Conservación de RNF-14/B-40; B-29 se cierra únicamente en su alcance verificado con roles fijos locales, sin acreditar login web/PWA o SignalR.
+8. **D9:** No se inventa aprobación colectiva del equipo ni confirmación de la organización para O-01; PA-02 sigue formalmente pendiente.
+
+Resultados verificados en Release: 115 pruebas aprobadas (66 Unit, 48 Integration en PostGIS descartable, 1 E2E), `npm run check` aprobado, y contenedor backend `istpetdev-backend:spec001` construido y verificado con usuario no root y fixtures integrados. No se realizaron cambios ni consultas en Amazon RDS, AWS Cognito real ni despliegues expuestos.
+
+Verificación documental de esta actualización: **77 notas Markdown**, **715 enlaces internos resueltos**, **0 errores**.
+

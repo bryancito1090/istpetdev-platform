@@ -1,0 +1,15 @@
+.git
+**/bin
+**/obj
+**/node_modules
+**/TestResults
+**/.env
+**/.env.*
+!**/.env.example
+**/.private
+**/credentials.local.*
+**/secrets.local.*
+**/*.dump
+**/*.sql.gz
+**/*.tfstate*
+docs

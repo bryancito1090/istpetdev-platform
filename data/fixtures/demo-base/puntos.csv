@@ -1,0 +1,7 @@
+code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days
+HOS-001,Hospital Norte (sintético),-0.1700,-78.4800,Pichincha,hospital,alta,07:00,15:00,20,2
+CLI-002,Clínica Centro (sintética),-0.2100,-78.5000,Pichincha,clinica,alta,08:00,16:00,15,
+OFI-003,Oficina Corporativa (sintética),-0.1900,-78.4850,Pichincha,oficina,normal,08:00,17:00,10,
+ESC-004,Unidad Educativa (sintética),-0.2600,-78.5300,Pichincha,educacion,normal,07:00,13:00,10,
+CEN-005,Centro Comercial (sintético),-0.1750,-78.4900,Pichincha,comercial,media,09:00,20:00,15,
+HOS-006,Hospital Sur (sintético),-0.3000,-78.5500,Pichincha,hospital,alta,07:00,15:00,20,2

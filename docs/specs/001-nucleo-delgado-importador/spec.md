@@ -1,7 +1,7 @@
 ---
 id: "001"
 titulo: Núcleo delgado e importador genérico
-estado: borrador
+estado: en curso
 creado: 2026-10-12
 actualizado: 2026-10-12
 aprobado_por: PENDIENTE     # requiere acuerdo del equipo; afecta trabajo de Schema95 (ver Contradicciones)

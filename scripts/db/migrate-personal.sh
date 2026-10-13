@@ -14,7 +14,7 @@ config="$HOME/.config/istpetdev/private/dev-access.json"
 dotnet tool restore
 dotnet restore
 dotnet build --no-restore
-dotnet run --project tools/Schema95Check -- "$repo_dir"
+DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet test tests/IstpetDev.Tests --no-build --filter "FullyQualifiedName~LeanSchemaTests|FullyQualifiedName~MigrationSafetyTests"
 
 restore_application() {
     result=$?
