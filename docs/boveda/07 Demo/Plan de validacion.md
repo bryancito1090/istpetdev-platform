@@ -1,7 +1,7 @@
 ---
 tipo: validacion
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [demo, validacion, istpetdev]
 ---
 
@@ -104,10 +104,23 @@ V-32 se realiza con dos identidades IAM/MFA y credenciales temporales de `aws lo
 | V-34 | RBAC administrable y delegación | Rol nuevo permite solo acciones concedidas y dentro de ámbito; no autoconcede access.manage ni permisos/ámbitos ajenos; bootstrap conserva un administrador activo; revocación cambia AuthorizationVersion y bloquea próxima operación/SignalR/offline | RF-17, RNF-01 |
 | V-35 | Plantilla, campos y versiones | Crear/publicar/activar versión; captura conserva versión/hash; cambios crean otra; usuario no lee/escribe campo restringido; contenido ejecutable rechazado/escapado; captura antigua aceptada o conflicto explícito, sin pérdida | RF-18 |
 | V-36 | Configuración y workflow efectivos | Prioridad punto/ubicación/organización determinista; intervalos sin solapamiento; valores fuera de rango/handler desconocido rechazados; histórico reproducible y transición no viola stock/recepción | RF-19 |
-| V-37 | RLS real y conexión reutilizada | Catálogo tenant completo con RLS/FORCE/policies y rol API sin bypass; dos organizaciones/contexto vacío prueban SELECT/INSERT/UPDATE/DELETE, FK cruzada, tabla hija, ámbitos de punto/entrega/chat y reset entre peticiones del mismo pool | RNF-13 |
+| V-37 | RLS real y conexión reutilizada | Catálogo tenant completo con RLS/FORCE/policies y rol API sin bypass; dos organizaciones/contexto vacío prueban SELECT/INSERT/UPDATE/DELETE, FK cruzada, tabla hija, ámbitos de punto/entrega/chat y reset entre peticiones del mismo pool | RNF-13 ⚠️ P2 si se acepta ADR-21: la demo no usa RLS |
 | V-38 | Campos, contenido, cifrado y archivos | Intento de cambiar actor/organización/privilegios/saldo no tiene efecto; plantilla no habilita SQL/script/SSRF; datos clasificados cifrados y lectura acotada; archivo con MIME/checksum falsos y objeto pendiente no se sirve; SQL manual parametrizado | RNF-14, RF-18 |
 | V-39 | Abuso, cabeceras y dependencias del release | Ráfagas limitadas por identidad/organización/acción y QR no enumerable; cabeceras reales de proxy/browser válidas; reporte para revisión/lockfiles/digest exactos y sin hallazgo alto/crítico explotable sin mitigación | RNF-14 |
 
 Registrar pruebas reales con fixtures sintéticos, misma revisión y entorno. Controles ya definidos por las otras skills se reutilizan desde su evidencia; [[istpetdev-prelaunch]] añade los complementarios de [[Verificacion de seguridad antes del lanzamiento]]. Si falta acceso a DB/runtime, resultado pendiente, no aprobado por inspección documental.
 
 Pendiente de ejecución al terminar la hackathon; documentar residuos con espera obligatoria y no afirmar factura cero por apagar EC2/RDS.
+
+## Complemento propuesto — validación del spec 006, 12-oct-2026
+
+Los siguientes IDs solo se definen aquí; su ejecución sigue pendiente. Usar [[Plantilla evidencia]], consentimiento separado para notas y cita, y la tabla de ensayos del [006](../../specs/006-validacion-pitch-entrega/test-e2e.md). Una entrevista no demuestra frecuencia del problema, disposición de pago ni resultado de piloto.
+
+| ID | Caso | Criterio de salida | Evidencia |
+|---|---|---|---|
+| V-40 | Conversaciones en feria | ≥3 documentadas antes del 17-oct 12:30, ≥1 reacción al prototipo; evitar organizaciones cauteladas | Hojas consentidas y anonimizadas, objeción/cambio |
+| V-41 | Ensayos de pitch | Diez completos consecutivos sin fallo, últimos dos sin wifi del recinto, cada uno ≤ tiempo oficial −20 s | Cronómetro, corte, versión, roles, conexión y racha |
+| V-42 | Auditoría de afirmaciones | Cada número/cita/capacidad de la versión final enlaza ejecución y CE o se retira; simulado rotulado | Tarjetas, ZIP de 005, CE de 001–005, hashes de PDF |
+| V-43 | Paquete y trabajo previo | Siete entregables, editable/PDF, video fechado, tag `pre-evento`, registro de cambios y congelamiento 15:45 | Manifiesto, archivos locales, tag, registro y acuse de entrega |
+
+La revisión de fichas SERCOP en [[SERCOP limpieza hospitalaria y sanciones]] aporta contexto de preguntas, no medición del costo de un faltante ni prueba de sanción causada por este prototipo. Si O-04 u O-06 siguen pendientes, V-41/V-43 no se marcan validados aunque haya ensayos de preparación.

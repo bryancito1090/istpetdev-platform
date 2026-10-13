@@ -1467,8 +1467,17 @@ public class LeanSchemaTests(PostgisContainer postgres)
         "AgentDecision", "SimulationRun", "SimulationMetric",
     ];
 
+    // Tablas de Schema95 que el núcleo delgado elimina; ninguna debe volver por una migración posterior.
+    private static readonly string[] RemovedSchema95Tables =
+    [
+        "Permission", "Role", "RolePermission", "RoleFieldPermission", "OrganizationAccess", "AccessRole", "AccessDelegation",
+        "ConfigurationDefinition", "ConfigurationVersion", "Template", "TemplateVersion", "WorkflowDefinition", "WorkflowVersion",
+        "FormSubmission", "Conversation", "Message", "Notification", "OutboxEvent", "AuditEvent", "SyncBatch",
+    ];
+
+    // Los specs 002–004 añaden sus tablas con migraciones propias: la prueba exige el núcleo, no un conteo cerrado.
     [Fact]
-    public async Task Migration_creates_exactly_the_core_tables_and_the_demo_organization()
+    public async Task Migration_creates_the_core_tables_without_schema95_and_the_demo_organization()
     {
         await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
         var tables = await db.Database.SqlQueryRaw<string>(
@@ -1476,7 +1485,8 @@ public class LeanSchemaTests(PostgisContainer postgres)
             "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' " +
             "AND table_name NOT IN ('__EFMigrationsHistory', 'spatial_ref_sys')").ToListAsync();
 
-        Assert.Equal(CoreTables.Order(), tables.Order());
+        Assert.Empty(CoreTables.Except(tables));
+        Assert.Empty(RemovedSchema95Tables.Intersect(tables));
         Assert.True(await db.Organizations.AnyAsync(o => o.Id == DemoOrganization.Id));
     }
 
@@ -1880,7 +1890,7 @@ public sealed class ImportBatch : OrganizationEntity
     public Guid? CreatedByAccountId { get; set; }
 }
 
-// Propuesta del agente logístico (spec 003). Queda en Proposed hasta que una persona la aprueba.
+// Propuesta del agente logístico (spec 003). El motor de reglas de autonomía (spec 002, D5) decide si se ejecuta sola o espera aprobación.
 public sealed class AgentDecision : OrganizationEntity
 {
     public string Kind { get; set; } = string.Empty;
@@ -3781,7 +3791,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using IstpetDev.Application.Imports;
+using IstpetDev.Domain.Entities;
+using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Tests.Support;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IstpetDev.Tests.Integration.Api;
 
@@ -3873,6 +3887,37 @@ public class ImportsApiTests(PostgisContainer postgres)
         var response = await api.ClientFor(TestTokens.Driver).PostAsync("/api/v1/imports", Upload("ejemplo-externo"));
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Demo_reset_keeps_completed_simulation_evidence_for_spec_005()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var planner = api.ClientFor(TestTokens.Planner);
+        await using var scope = api.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var organizationId = await db.Organizations.Select(x => x.Id).SingleAsync();
+        var run = new SimulationRun
+        {
+            Id = Guid.NewGuid(), OrganizationId = organizationId, Seed = 11,
+            DatasetHash = "fixture-hash", PolicyCode = "fixed7-v1",
+            Status = "Completed", StartedAtUtc = DateTime.UtcNow,
+            CompletedAtUtc = DateTime.UtcNow
+        };
+        db.SimulationRuns.Add(run);
+        db.SimulationMetrics.Add(new SimulationMetric
+        {
+            Id = Guid.NewGuid(), OrganizationId = organizationId,
+            SimulationRunId = run.Id, Code = "km_total",
+            PolicyCode = "fixed7-v1", Numerator = 10m,
+            Value = 10m, Unit = "km"
+        });
+        await db.SaveChangesAsync();
+
+        Assert.Equal(HttpStatusCode.OK,
+            (await planner.PostAsync("/api/v1/demo/reset", null)).StatusCode);
+        Assert.Equal(1, await db.SimulationRuns.CountAsync(x => x.Id == run.Id));
+        Assert.Equal(1, await db.SimulationMetrics.CountAsync(x => x.SimulationRunId == run.Id));
+    }
 }
 ```
 
@@ -3922,7 +3967,8 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         }
     }
 
-    // Orden inverso a las dependencias. Se conservan Organization, Account e ImportBatch (historial).
+    // Orden inverso a las dependencias. Se conservan Organization, Account, ImportBatch
+    // y SimulationRun/SimulationMetric completados: el reset operativo no borra evidencia de 005.
     private async Task DeleteOperationalDataAsync(CancellationToken ct)
     {
         await db.CustodyEvents.ExecuteDeleteAsync(ct);
@@ -3937,8 +3983,6 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.RoutePlans.ExecuteDeleteAsync(ct);
         await db.AgentDecisions.ExecuteDeleteAsync(ct);
         await db.RiskSnapshots.ExecuteDeleteAsync(ct);
-        await db.SimulationMetrics.ExecuteDeleteAsync(ct);
-        await db.SimulationRuns.ExecuteDeleteAsync(ct);
         await db.IdempotencyRecords.ExecuteDeleteAsync(ct);
         await db.StockBalances.ExecuteDeleteAsync(ct);
         await db.HandlingUnitLines.ExecuteDeleteAsync(ct);
@@ -4050,7 +4094,7 @@ public sealed class ImportsController(IImportService importer) : ControllerBase
 - [ ] **Step 5: Ejecutar las pruebas y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ImportsApiTests"`
-Expected: PASS (5 pruebas). `Demo_reset_loads_the_fixture_on_a_brand_new_database` cubre el foco de revisión 4: la API crea PostGIS e inserta puntos sin reiniciar.
+Expected: PASS (6 pruebas). `Demo_reset_loads_the_fixture_on_a_brand_new_database` cubre el foco de revisión 4: la API crea PostGIS e inserta puntos sin reiniciar. `Demo_reset_keeps_completed_simulation_evidence_for_spec_005` fija la conservación del resultado al reiniciar la demo.
 
 - [ ] **Step 6: Empaquetar fixtures y activar la demo en el despliegue**
 
@@ -4188,41 +4232,22 @@ git commit -m "test(e2e): recorrido de reset de demo e importación de dataset e
 - Consumes: decisión del equipo de Task 0 (Deciders y fecha).
 - Produces: ADR-21 registrada; contradicciones visibles en Hechos canonicos.
 
-- [ ] **Step 1: Añadir ADR-21 al final de `Decisiones de arquitectura.md`**
+- [ ] **Step 1: Actualizar ADR-21 en `Decisiones de arquitectura.md`**
 
-Sustituir `<Deciders>` y `<fecha>` por los datos reales de Task 0. Si el equipo aún no decidió, dejar «Estado: propuesta» y «Deciders: PENDIENTE».
+ADR-21 ya está registrada como **propuesta** desde el 12-oct (fila de la tabla y sección «ADR-21 — núcleo delgado para la demo»). Con la decisión de Task 0:
 
-```markdown
-## ADR-21 — Núcleo delgado para la demo
+- En la fila `| ADR-21 |`, reemplazar «**Propuesta, 2026-10-12** (Deciders PENDIENTE; …)» por «**Aceptada por <Deciders>, <fecha>**» y conservar el resto del texto.
+- En la sección, cambiar `**Estado:** propuesta` por `**Estado:** aceptado` y `**Deciders:** PENDIENTE (…)` por los nombres reales.
+- Si el equipo no la acepta, marcarla `reemplazado` o dejarla como propuesta con el motivo, y **no** ejecutar este spec.
 
-**Estado:** <aceptado | propuesta>. **Fecha:** <fecha>. **Deciders:** <Deciders>. **Origen:** spec [001 — Núcleo delgado e importador genérico](../../specs/001-nucleo-delgado-importador/spec.md). **Reemplaza parcialmente:** ADR-16 (para la demo).
+- [ ] **Step 2: Cerrar las contradicciones en `Hechos canonicos.md`**
 
-**Contexto:** a cuatro días del evento, ninguna capacidad P0 del flujo logístico estaba construida, y cada funcionalidad nueva debía atravesar RLS, RBAC administrable y configuración desde DB. El jurado (5 de 7 no técnicos) evalúa el flujo demostrable, no la administración interna.
+Las filas ya existen desde el 12-oct. Con la decisión tomada:
 
-**Decisión:** la demo usa un esquema de 27 tablas sin RLS ni configuración dinámica, con una organización fija y seis roles funcionales fijos guardados en `Account.Role`. Todo dato operativo entra por un importador canónico (CSV/XLSX + perfil de mapeo). Schema95 queda archivado en el tag `schema95-archivo` y su diseño documentado en [[Esquema completo de base de datos]] y [[RBAC y configuracion del sistema]] como base de la versión multiempresa.
-
-**Consecuencias:** RF-17, RF-18, RF-19 y RNF-13 pasan a P2. B-29 se cierra con roles fijos; B-37 a B-40 quedan diferidas. Los ámbitos por asignación (conductor y receptor) se implementan en el spec 004 con `Delivery.AssignedAccountId`. Nombres nuevos: `ImportBatch` y `AgentDecision`.
-
-**Verificación:** pruebas del spec 001 (`dotnet test`) y [test-e2e del spec 001](../../specs/001-nucleo-delgado-importador/test-e2e.md).
-```
-
-- [ ] **Step 2: Registrar las contradicciones en `Hechos canonicos.md`**
-
-En la tabla «Contradicciones abiertas», añadir:
-
-```markdown
-| Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21, spec 001) | Equipo, con Bryan como Decider de ADR-16 |
-| Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
-```
-
-En la tabla «Nombres en código», añadir:
-
-```markdown
-| Lote de importación | `ImportBatch` | Spec 001 (⚠️ hasta aceptar ADR-21) |
-| Decisión del agente logístico | `AgentDecision` | Spec 001/003 (⚠️ hasta aceptar ADR-21) |
-```
-
-Actualizar `actualizado:` en la cabecera a la fecha del cambio.
+- En «Estado de las decisiones (ADR)», actualizar la fila `Núcleo delgado para la demo | ADR-21` con el estado y los Deciders.
+- En «Contradicciones abiertas», quitar la fila «Alcance de RBAC/configuración para la demo» y anotar la resolución al final de la sección («Cerrada el <fecha> por ADR-21»), como se hizo con las del 7 de octubre.
+- En «Nombres en código», quitar «⚠️ propuesta» de `ImportBatch` y `AgentDecision`.
+- Actualizar `actualizado:` en la cabecera.
 
 - [ ] **Step 3: Registrar el trabajo en `Registro de trabajo previo y del evento.md`**
 

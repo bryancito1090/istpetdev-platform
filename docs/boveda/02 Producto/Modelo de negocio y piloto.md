@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-producto
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [producto, reto-1]
 ---
 
@@ -60,3 +60,20 @@ Tamaño del grupo y metas se acuerdan con la empresa. La evaluación del hackath
 - ¿Qué resultado justificaría pagar por un piloto?
 
 Registrar respuestas y cambios con [[Plantilla evidencia]].
+
+## Complemento propuesto — ficha de piloto y negocio del spec 006, 12-oct-2026
+
+**Deciders PENDIENTE.** Comprador hipotético: empresa de limpieza con operación distribuida; decisor, necesidad y presupuesto se verifican en la feria y con una contraparte de piloto. El modelo de ingreso propuesto sigue siendo implementación inicial más suscripción por operación/puntos activos. **Precio:** [PENDIENTE: costos de soporte y disposición de pago]. No hay cliente comprometido, venta ni ROI observado.
+
+| Campo de ficha | Registro para negociar antes de iniciar |
+|---|---|
+| Alcance | Una bodega y un grupo de puntos/SKU acordado por contraparte; acceso, consentimiento, responsables y duración de cuatro semanas. |
+| Semana 1 | Observar rutas, inventario, demanda, urgencias, horas de trabajo y costos del proceso actual; registrar datos faltantes. |
+| Semana 2 | Propuestas paralelas con aprobación humana; medir aceptación/rechazo y motivo, sin cambiar operación por defecto. |
+| Semana 3 | Operar un grupo pequeño con QR, custodia y revisión diaria de conflictos, conexión y esfuerzo. |
+| Semana 4 | Comparar contra baseline acordado y decidir continuar, cambiar o parar; registrar efecto negativo además del positivo. |
+| Indicadores | Quiebres evitados y nuevos, demanda no atendida, costo de transporte y puntualidad, cada uno con unidad, período, numerador y denominador; trazar trabajo adicional. |
+| Umbral de avance | [PENDIENTE: acordar con contraparte antes del piloto], incluyendo tolerancia a quiebres nuevos y carga operativa. |
+| Recursos y costos | Nube, evidencias, mapa, IA, integración, capacitación y soporte con fuente fechada y uso real; no copiar costo de demo como costo de piloto. |
+
+La simulación sintética de 005, aun si produce un rango verificable, solo justifica una hipótesis para este piloto. Las entrevistas de feria no fijan precio. [[SERCOP limpieza hospitalaria y sanciones]] documenta obligaciones posibles en fichas específicas; no convierte una interrupción de insumos en multa evitada.

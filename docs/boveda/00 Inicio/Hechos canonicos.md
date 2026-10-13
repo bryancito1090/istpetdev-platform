@@ -49,6 +49,10 @@ Estas cifras son propuesta del equipo, no datos de una empresa ni exigencias del
 | Caso hospital | 60 L disponibles, 12 L/día, lead time 2 días, margen 3 días → cobertura 5 días | [[Inventario y prediccion]] | ⚠️ ilustrativo |
 | Fixture inicial | 6 puntos y 2 SKU | [[Dataset y escenarios]] | ⚠️ propuesta |
 | Resultados medidos | Ninguno todavía | [[Plan de validacion]] | ✅ |
+| Recorrido en vivo de la demo | ≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos (fixture `demo-region`) | D6 en [[Definiciones de producto y plan hasta el pitch]] | ⚠️ propuesta |
+| Fixture de pruebas del importador | `demo-base`: 6 puntos, 2 SKU, 1 bodega, 1 vehículo | Spec 001 (`docs/specs/`) | ⚠️ propuesta |
+| Congelamiento de funcionalidades | 15-oct-2026 14:00 | D8 en [[Definiciones de producto y plan hasta el pitch]] | ⚠️ propuesta |
+| Simulador del spec 005 | API .NET asíncrona, base aislada, tres semillas base y una adversa; baselines reactivo y calendario fijo de 7 días con cantidad histórica fija | [[Simulador y metricas]]; [spec 005](../../specs/005-panel-simulador/spec.md) | ⚠️ propuesta; sin resultados medidos |
 
 ## Stack y versiones
 
@@ -66,10 +70,10 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Arquetipo visual y UI | Arquetipo B — Técnico/Minimalista; Lucide Icons (`lucide-angular`), paleta oficial Expo Clean (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`) y tokens semánticos en `tailwind.config.js` ([[Sistema de diseno y colores]]) | ADR-04 ratificada | — | ✅ |
 | Móvil offline y firma | PWA con IndexedDB (`idb`), `signature_pad` para firma táctil y UUID v7 | ADR-06, ADR-17 aceptadas | — | ✅ |
 | Tiempo real | SignalR; Redis solo con varias réplicas | ADR-07 propuesta | — | ⚠️ |
-| IA | Cálculo determinista; LLM (DeepSeek) solo explica; n8n en el servidor existente de Bryan | ADR-08 | — | ⚠️ propuesta |
+| IA | Cálculo determinista; LLM (DeepSeek) solo explica; n8n en el servidor existente de Bryan. Propuesta del 12-oct: agente con herramientas y autonomía limitada, DeepSeek con prueba de aceptación (ADR-22) | ADR-08, ADR-22 | Papel del LLM (ver tabla de contradicciones) | ⚠️ propuesta |
 | Identidad | Amazon Cognito (OIDC, Authorization Code + PKCE S256; AuthInterceptor en frontend) | ADR-10, ADR-18 definidas | — | ✅ |
 | Autorización | RBAC administrable por organización: seis roles funcionales como seeds y ConfigurationAdmin administrativo propuesto; acciones implementadas en backend | ADR-16, solicitada por Bryan el 9-oct; [[RBAC y configuracion del sistema]] | Sustituye límite anterior de seis roles fijos; implementación pendiente | ✅ dirección aceptada; ⚠️ diseño físico propuesto |
-| Base objetivo del sistema | 95 tablas de dominio aplicadas en `istpetdev_dev_01` mediante CompleteSystemSchema95, conservando InitialSchema; 95 ENABLE/FORCE RLS | [[Esquema completo de base de datos]]; evidencia del agente de software en [[Coordinacion migracion schema95]] | PR #1 como borrador; integridad RDS y aislamiento/PostGIS descartable aprobados, incluido cliente EF/Npgsql y pool secuencial; JWT/HTTP real, concurrencia, recorrido/aislamiento RDS, merge e integración pendientes | ✅ aplicación personal y pruebas según evidencia; ⚠️ validaciones funcionales pendientes |
+| Base objetivo del sistema | ⚠️ Desde el 12-oct, ADR-21 (propuesta) cambia la base de la demo al núcleo `DemoCore` de 27 tablas sin RLS (spec 001; transición en [[Runbook de DevOps y base de datos para la demo]]). Antes: 95 tablas de dominio aplicadas en `istpetdev_dev_01` mediante CompleteSystemSchema95, conservando InitialSchema; 95 ENABLE/FORCE RLS | [[Esquema completo de base de datos]]; evidencia del agente de software en [[Coordinacion migracion schema95]] | PR #1 como borrador; integridad RDS y aislamiento/PostGIS descartable aprobados, incluido cliente EF/Npgsql y pool secuencial; JWT/HTTP real, concurrencia, recorrido/aislamiento RDS, merge e integración pendientes | ✅ aplicación personal y pruebas según evidencia; ⚠️ validaciones funcionales pendientes |
 | Plantillas y parámetros | Gestión en DB, versiones publicadas inmutables, formularios/roles/campos/ámbitos configurables | ADR-16; [[RBAC y configuracion del sistema]] | Condiciones y handlers permitidos; integridad/seguridad no desactivables por configuración | ✅ dirección aceptada; implementación pendiente |
 | Hosting demo | Perfil A: EC2 + Docker Compose + Nginx, encendido solo para ensayos; región `us-east-1` | ADR-09 | — | ⚠️ ver Deciders |
 | Desarrollo | Aplicaciones locales por integrante; RDS dev privado compartido (base por integrante + integración) | [[Entornos y operacion acordados]] | — | ✅ diseño, sin aprovisionar |
@@ -101,6 +105,9 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Configuración y plantillas desde DB | ADR-16 | Aceptada la dirección, diseño propuesto | Instrucción directa, 2026-10-09 | Bryan |
 | Móvil offline y firma | ADR-17 | Aceptada (IndexedDB + signature_pad) | 2026-10-11 | Jefe de Frontend y Bryan |
 | Cliente OIDC Cognito | ADR-18 | Aceptada (PKCE S256 + AuthInterceptor) | 2026-10-11 | Jefe de Frontend y Bryan |
+| Núcleo delgado para la demo | ADR-21 | Propuesta (difiere ADR-16 a P2) | Sesión de definición del 12-oct | PENDIENTE (incluir a Bryan) |
+| Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
+| Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
 
 ## Nombres en código
 
@@ -140,6 +147,10 @@ Tomados de [[Modelo de datos]] y [[Contratos API y eventos]]. Ningún asistente 
 | Resto de tablas del diseño ampliado | Nombres de las filas del catálogo físico; una fuente única, sin sinónimos nuevos | Esquema completo de base de datos |
 | API base | `/api/v1` | Contratos API y eventos |
 | Hub en tiempo real | `/hubs/operations` | Contratos API y eventos |
+| Lote de importación | `ImportBatch` | ADR-21, spec 001 (⚠️ propuesta) |
+| Decisión del agente logístico | `AgentDecision` | ADR-22, spec 001/002 (⚠️ propuesta) |
+| Caché de tramos viales | `RoadMatrixEdge` (indexada por coordenadas) | ADR-23, spec 002 (⚠️ propuesta) |
+| Ejecución del agente | `AgentRun` | ADR-22, spec 003 (⚠️ propuesta) |
 
 ## Rutas, puertos y comandos
 
@@ -161,6 +172,18 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Acceso AWS | SSO ([[Credenciales y acceso del equipo]]) o IAM + MFA temporal ([[AWS temporal para la hackathon y cierre]], marcado como vigente) | Bryan |
 | Archivos de skills para el código | Versionarlos en istpetdev-platform o mantenerlos locales | C-01 |
 | Autoría de ADR-04 (aceptación inicial), 09, 13, 14 y 15 | Confirmar Deciders | Reunión del equipo |
+| Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21) | Equipo, con Bryan como Decider de ADR-16 |
+| Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
+| Papel del LLM | Solo explica (ADR-08) o propone y orquesta con autonomía decidida por reglas deterministas (ADR-22) | Equipo |
+| Scopes de automatización | Cuatro scopes finos ([[Identidad OIDC y sesiones]]) o un scope `istpetdev-api/automation` + rol `Automatizacion` (spec 003) | Equipo |
+| Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
+| Cierre de parada y QR público | El marcado provisional de 002 completa sin recibo, y la página actual consulta entregas o un registro fijo sin token; el spec 004 propone recepción real y consulta de `HandlingUnit` con token revocable; para el pitch y los recorridos de 002 y 003, el endpoint de demo `advance` completa paradas con operaciones reales | Equipo; ver [[Definiciones de producto y plan hasta el pitch]] |
+| Token del QR público | Query string `?token=` ([[Contratos API y eventos]]) o fragmento de URL `#t=` y cabecera `X-Trace-Token` (spec 004, revisión del 12-oct) | Equipo |
+| Tamaño del esquema de demo | El criterio de 001 cuenta 27 tablas antes de 004 (desde el 12-oct su prueba exige ese núcleo sin Schema95, no un conteo cerrado); la asociación de caja/entrega y el token público de 004 requieren migración posterior, frente al esquema ampliado de [[Esquema completo de base de datos]] | Equipo |
+| **⚠️ Contradicción detectada** — Baselines del 005 | Hecho nuevo: `reactive-v1` y `fixed7-v1` fijan aviso, frecuencia y cantidades antes de correr; hecho establecido: [[Simulador y metricas]]/D7 solo nombraban dos baselines y [[Rutas y sobrecostos]] pedía frecuencia razonable; impacto: el resultado depende de estos parámetros. Opciones: aceptar/versionar reglas propuestas; esperar proceso empresarial; recalibrar después (sesgaría comparación). Propuesta: aceptar/versionar y declarar sintético | Equipo (Deciders pendientes) |
+| **⚠️ Contradicción detectada** — Cifras del panel | Hecho nuevo: spec 005 elimina valores, rutas y narración fijos del widget; hecho establecido: código actual muestra ahorro y telemetría sin medición, frente a [[Simulador y metricas]]; impacto: credibilidad del pitch. Opciones: maqueta etiquetada o datos reales de API. Propuesta: API con estado vacío; R-15 sigue abierto hasta probarlo | Equipo |
+| **⚠️ Contradicción detectada** — Lecturas para panel | Hecho nuevo: `GET /api/v1/route-plans` en 002 y `GET /api/v1/deliveries` en 004; hecho establecido: solo había ruta individual y consulta móvil; impacto: sin listas, el panel requiere IDs incrustados. Opciones: lecturas en productores, agregador 005 o IDs fijos. Propuesta: lecturas en specs productores antes de H4 | Equipo de 002/004 |
+| **⚠️ Contradicción detectada** — Reset y evidencia del 005 | Hecho nuevo: los resultados completados deben seguir exportables tras reiniciar `demo-region`; hecho establecido: la tarea T7 de 001 borraba `SimulationMetric`/`SimulationRun` en el reset; impacto: se pierde la evidencia del pitch. Opciones: conservar completados, exportar/borrar, prohibir reset. Propuesta: conservar resultados completados; FR-15 y T7 de 001 corregidos documentalmente, E2E del 005 lo verifica | Equipo de 001/005 |
 
 Cerradas el 7 de octubre por be0b127: versión .NET (8), PostgreSQL (16), Angular (22) y Capacitor (8), móvil (PWA primero), identidad (Cognito), repositorio de código y rutas (`src/**`).
 

@@ -64,7 +64,27 @@ module.exports = {
           card: '#FFFFFF',
           border: '#E2E8F0',
           dark: '#1E293B',
+        },
+        // Tokens de Sistema de Diseño Oficial Stripe (HDS)
+        stripe: {
+          indigo: '#635BFF',      // Botones primarios y acentos interactivos de Stripe
+          indigoHover: '#534BE8', // Hover de botones Stripe
+          hero: '#2D2564',        // Títulos de Hero (inspeccionado en DevTools)
+          heading: '#061B31',     // Títulos de sección (inspeccionado en DevTools)
+          muted: '#425466',       // Subtítulos y textos de soporte de Stripe
+          dark: '#0A2540',        // Carbón de navegación y footer
         }
+      },
+      fontFamily: {
+        sans: ['sohne-var', '"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
+      },
+      boxShadow: {
+        'stripe-xs': '0 2px 5px -1px rgba(50, 50, 93, 0.08), 0 1px 3px -1px rgba(0, 0, 0, 0.04)',
+        'stripe-sm': '0 4px 6px -1px rgba(50, 50, 93, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06)',
+        'stripe-md': '0 8px 18px -4px rgba(50, 50, 93, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.08)',
+        'stripe-lg': '0 13px 27px -5px rgba(50, 50, 93, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.1)',
+        'stripe-btn': '0 4px 12px rgba(99, 91, 255, 0.35)',
       }
     },
   },

@@ -1,11 +1,14 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [istpetdev, skills, seguridad, lanzamiento]
 ---
 
 # IstpetDev — verificación previa al lanzamiento
+
+> [!warning] Complemento — 12 de octubre de 2026
+> El paso de RLS aplica solo al diseño P2 (Schema95, tag `schema95-archivo`). Con ADR-21 (propuesta), la demo no tiene RLS: en su lugar se comprueba la autorización por rol fijo y por asignación, `VerifyFull` hacia RDS, Swagger restringido y SSH cerrado. Ver [[Runbook de DevOps y base de datos para la demo]].
 
 **Cuándo usarla:** Antes de levantar una versión de IstpetDev para pruebas, declararla lista, ejecutar un ensayo expuesto o preparar su despliegue. Verificar los controles complementarios de seguridad con evidencia del código y runtime, especialmente RLS y configuración/plantillas administrables.
 

@@ -1,11 +1,14 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [datos, postgresql, esquema, rbac, configuracion, plantillas]
 ---
 
 # Esquema completo de base de datos
+
+> [!warning] Complemento — 12 de octubre de 2026
+> Este catálogo de 95 tablas con RLS, FORCE y RBAC administrable (Schema95) queda como **diseño P2 para la versión multiempresa**. ADR-21 (propuesta) lo reemplaza en la demo por el núcleo `DemoCore` de 27 tablas sin RLS, con una organización fija y roles fijos en `Account.Role` (spec 001). El código de Schema95 se conserva en el tag `schema95-archivo`. El manejo de la base durante la hackathon está en [[Runbook de DevOps y base de datos para la demo]].
 
 Diseño objetivo para cubrir el sistema de [[Requisitos y aceptacion]], incluidos RBAC administrable y plantillas gestionadas desde la base. Bryan pidió esta ampliación el 9 de octubre; ADR-16 registra la decisión. El esquema físico de 95 tablas ya fue aplicado a la base personal de Bryan, según la evidencia del agente de software resumida en [[Coordinacion migracion schema95]]. Su revisión y propagación a integración siguen pendientes; esta nota no acredita que todas las funcionalidades estén implementadas. Complementa [[Modelo de datos]] y sustituye su catálogo fijo de roles mediante [[RBAC y configuracion del sistema]].
 

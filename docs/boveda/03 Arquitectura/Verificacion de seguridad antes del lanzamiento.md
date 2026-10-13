@@ -1,11 +1,14 @@
 ---
 tipo: especificacion-seguridad
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [seguridad, lanzamiento, rls, configuracion, verificacion]
 ---
 
 # Verificación de seguridad antes del lanzamiento
+
+> [!warning] Complemento — 12 de octubre de 2026
+> Las comprobaciones de RLS de esta nota (FORCE, políticas y rol API sin bypass) aplican al diseño P2, no a la demo: ADR-21 (propuesta) retira RLS y difiere RNF-13 a P2. Para la demo siguen vigentes las comprobaciones de autorización por rol fijo y por asignación (`Delivery.AssignedAccountId`), los datos clasificados, el QR público limitado, TLS `VerifyFull` hacia RDS, Swagger restringido y SSH cerrado ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14)). Procedimiento en [[Runbook de DevOps y base de datos para la demo]].
 
 Revisión complementaria solicitada por Bryan el 9 de octubre. La skill [[istpetdev-prelaunch]] usa esta nota antes de lanzar, desplegar o dar por lista una versión. Describe controles y evidencia que todavía deben implementarse/verificarse: no afirma que la aplicación actual ya los cumpla.
 

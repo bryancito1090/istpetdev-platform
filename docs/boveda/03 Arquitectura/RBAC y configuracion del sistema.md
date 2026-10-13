@@ -1,11 +1,14 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 tags: [rbac, configuracion, plantillas, seguridad, datos]
 ---
 
 # RBAC y configuración del sistema
+
+> [!warning] Complemento — 12 de octubre de 2026
+> ADR-21 (propuesta) difiere este diseño (RF-17, RF-18, RF-19 y RNF-13) a P2. En la demo se usan seis roles funcionales fijos en `Account.Role`, sin concesiones, plantillas ni configuración desde la base, y sin RLS. Detalle en [[Decisiones de arquitectura]] y [[Runbook de DevOps y base de datos para la demo]].
 
 Bryan pidió el 9 de octubre que roles, permisos, parámetros y plantillas se gestionen desde la base de datos. ADR-16 acepta esta ampliación y reemplaza la parte de ADR-14 que limitaba la demo a roles fijos sin administración dinámica. Las tablas y restricciones pertenecen a [[Esquema completo de base de datos]]; esta nota define el comportamiento que deben implementar API, web, PWA y automatización. Estado: diseño; implementación pendiente.
 

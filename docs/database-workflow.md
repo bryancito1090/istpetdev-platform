@@ -1,5 +1,7 @@
 # Flujo de Trabajo Colaborativo en Base de Datos (`istpet-dbflow`)
 
+> **Complemento del 12-oct-2026.** Las referencias a Schema95 y RLS describen el estado previo. Con el spec 001 (ADR-21) las bases se vacían una vez con `scripts/db/reset-to-demo-core.sql`, con respaldo previo, y pasan al núcleo `DemoCore` sin RLS. Los roles `user_*` y `migrator_*`, el túnel SSM y `VerifyFull` siguen igual. Procedimiento en `docs/boveda/03 Arquitectura/Runbook de DevOps y base de datos para la demo.md`.
+
 Guía operativa y estándares de arquitectura y desarrollo colaborativo para la base de datos **PostgreSQL 16 + PostGIS 3.4** alojada en Amazon RDS para el proyecto **IstpetDev** (Reto 1 — Expo Clean 2026).
 
 ---

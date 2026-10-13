@@ -1,7 +1,7 @@
 ---
 tipo: demo
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-12
 tags: [demo, validacion, istpetdev]
 ---
 
@@ -77,5 +77,22 @@ Ver [[Evaluacion y entregables]] y [[Registro de trabajo previo y del evento]].
 - [ ] Usar n8n de Bryan con API HTTPS alcanzable y cron/credencial demo; pausar sus workflows al apagar AWS.
 - [ ] Guardar tiempos reales de restart/rollback por separado de cola GitHub; los tiempos de la tabla anterior son metas pendientes de medida.
 - [ ] Registrar endpoint institucional, certificado y renovación una vez resueltos por el compañero.
+
+## Complemento propuesto — spec 006, 12-oct-2026
+
+**Deciders PENDIENTE.** El operador de cada escena lleva una tarjeta: disparador, línea de contingencia y segundo exacto de salida. Los cinco papeles están definidos en [[Guion del pitch]]; nombres y suplentes pendientes. Una alternativa solo se usa si fue ensayada en el mismo dispositivo y versión del material.
+
+| A los | Momento | Si falla | Línea y transición |
+|---|---|---|---|
+| 1:05 | Riesgo/agente | 003 no pasa | «Este riesgo sale de una regla verificable». Mostrar solo 002 con evidencia; si falta, marcarlo propuesta y avanzar a caja. |
+| 1:35 | Ruta | Mapa no carga | Lista ordenada de paradas y restricciones probadas; no decir «óptima». |
+| 2:05 | Incidente | n8n/LLM no responde | Replanificación determinista del 002 si CE-04 pasó; de otro modo omitir automatismo. |
+| 2:30 | Caja/móvil | Offline o cámara falla | Recepción en línea probada o video del 15-oct rotulado «grabado»; no afirmar sincronización en vivo. |
+| 3:10 | QR público | teléfono externo o HTTPS falla | Teléfono del equipo en hotspot si CE-07 pasó; si no, captura rotulada y pasar a impacto a 3:30. |
+| 3:30 | Impacto | ZIP/hash/FR-21 no pasa | Retirar rango y ahorro; explicar comparación propuesta sin números. |
+
+La tabla corresponde al guion de 5 min; usar puntos equivalentes de los cortes 3/7. Un fallo interrumpe la racha de ensayos aunque la contingencia permita terminar el pitch. La racha exigida es diez ensayos completos consecutivos sin fallo, los dos últimos sin la wifi del recinto; el tiempo es oficial menos 20 s. Registrar ejecución en el [E2E del 006](../../specs/006-validacion-pitch-entrega/test-e2e.md).
+
+**Puertas con hora:** 15-oct congelamiento funcional a las 14:00 y video de respaldo después de ensayo funcional; tag `pre-evento` del último commit antes del 16; 17-oct código congelado a las 10:30 salvo bloqueo, evidencia hasta 12:30, materiales a 15:45, entrega oficial 16:00–16:15. El video conserva fecha, commit y etiqueta de grabación. En el paquete, cada archivo tiene hash, responsable y estado `funcional`/`grabado`/`simulado`/`propuesto`; abrir el PDF y video sin red antes de entregar. O-04/O-06 determinan tiempo y formato oficiales.
 
 Runbooks de referencia: [[Entornos y operacion acordados]] e [[Identidad OIDC y sesiones]].

@@ -170,3 +170,74 @@ Verificación de la integración: **73 notas Markdown**, **609 enlaces internos 
 Fuente: implementación y validación en vivo del Perfil A Reforzado acordado por el equipo. Se incorpora [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] en `03 Arquitectura/`, documentando el cómputo stateless en AWS EC2 (`44.204.107.167`) desacoplado de la persistencia gestionada en Amazon RDS (`istpetdev-rds-dev` con PostgreSQL 16 + PostGIS) en la VPC del proyecto (`10.42.0.0/16`). Se audita la migración de las 95 tablas en la base central `istpetdev_integration` bajo el rol `migrator_integration`, las políticas RLS y la operatividad de los endpoints de observabilidad `/health/live` y `/health/ready`.
 
 Verificación de la actualización: **74 notas Markdown**, **611 enlaces internos resueltos**, **0 errores**.
+
+## Reestructuración propuesta y specs — 12 de octubre de 2026
+
+Fuente: sesión de definición de un integrante del equipo con asistencia de Claude Code. Se incorpora [[Definiciones de producto y plan hasta el pitch]] con el objetivo norte, las definiciones D1–D8, los cortes de alcance, los guardarraíles contra el dataset del evento, los hitos y el plan B. Se registran ADR-21 a ADR-23 como propuestas (Deciders pendientes), las contradicciones correspondientes en Hechos canónicos, los riesgos R-14 a R-19, las entregas B-41 a B-46 y complementos fechados en alcance, plan de ejecución, plus y consultas. Los specs implementables viven fuera de la bóveda, en `docs/specs/`. Esta actualización es documental: no ejecuta código, migraciones ni despliegues.
+
+Verificación de la actualización: **75 notas Markdown**, **643 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Spec 003 del agente logístico — 12 de octubre de 2026
+
+Fuente: brainstorming del spec 003 en la sesión de definición. Se actualiza D4 en [[Definiciones de producto y plan hasta el pitch]] (DeepSeek con prueba de aceptación, sin comparación de modelos) y se añaden las decisiones de diseño del agente; complemento de ADR-22 y nota en la fila de ADR-08; fila de IA, nombre `AgentRun` y contradicción de scopes en Hechos canónicos; complementos en n8n e IA e Identidad OIDC y sesiones; riesgos R-20 a R-22; criterio de B-44. Actualización documental: no ejecuta workflows, Terraform ni código.
+
+Verificación de la actualización: **75 notas Markdown**, **648 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Propuesta documental del spec 004 — 12 de octubre de 2026
+
+Fuente: brainstorming de campo con decisiones de preparación QR en bodega, recepción por conductor, conflicto por validez operativa, parciales bajo custodia del conductor y resumen público limitado. Se redactaron spec y plan de 004; se actualizaron las notas de producto, arquitectura, demo, hechos canónicos, backlog y riesgos. No se ejecutó el recorrido ni se registraron Deciders. El equipo redactará `task.md` y `test-e2e.md`.
+
+Verificación de esta actualización: **75 notas Markdown**, **653 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Revisión cruzada de los specs 001–004 — 12 de octubre de 2026
+
+Fuente: revisión de los specs 001–004 tras completar el equipo las tareas y pruebas de 002–004. Correcciones propuestas: dueño del login PKCE y publicación HTTPS de la PWA (spec 004), endpoint de demo `advance` que reemplaza el marcado provisional de paradas en los recorridos de 002 y 003, prueba de tablas de 001 que exige el núcleo sin Schema95 en lugar de un conteo cerrado, token del QR en el fragmento de la URL, orden de recorte y código de pruebas clave del 004. Se actualizan [[Definiciones de producto y plan hasta el pitch]], Hechos canónicos, Contratos API y eventos, Identidad OIDC y sesiones, riesgos R-24 y R-25, B-47 y el registro de trabajo previo. Documental: no ejecuta código.
+
+Verificación de la actualización: **75 notas Markdown**, **656 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Propuesta documental del spec 005 — 12 de octubre de 2026
+
+Fuente: brainstorming con el usuario y contratos de los specs 001–004. Se redactaron [spec 005](../../specs/005-panel-simulador/spec.md) y [plan 005](../../specs/005-panel-simulador/plan.md); se registraron baselines, demanda y escenario adverso propuestos en [[Simulador y metricas]], dependencias y hitos en [[Definiciones de producto y plan hasta el pitch]], riesgos y backlog, contradicciones en [[Hechos canonicos]] y preparación en [[Registro de trabajo previo y del evento]]. Los contratos de lectura faltantes se añadieron a los specs productores 002 y 004. PR #10 estaba fusionado antes de crear la rama del 005 desde `develop`. Esta actualización es documental: no ejecutó simulación ni implementó software.
+
+Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos de lenguaje en notas no editadas por este spec.
+
+## Tareas y E2E del spec 005 — 12 de octubre de 2026
+
+Fuente: petición posterior del usuario de completar `task.md` y `test-e2e.md` del 005. Se redactan doce tareas T0–T11 con pruebas rojas/verdes, contratos, comandos y dependencias, más diez escenarios de punta a punta y una tabla vacía para registrar ejecuciones. Se actualizan [plan 005](../../specs/005-panel-simulador/plan.md), [tareas 005](../../specs/005-panel-simulador/task.md), [E2E 005](../../specs/005-panel-simulador/test-e2e.md), el índice de specs y el registro de preparación. La revisión E2E detectó que el reset de la tarea T7 de 001 borraba resultados de simulación; se corrigieron documentalmente FR-15, el plan y la tarea de 001, y se anotó la contradicción. No se implementó el sistema ni se ejecutaron esas pruebas; las reglas y resultados siguen como propuesta hasta aprobación y evidencia.
+
+Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos.
+
+## Revisión del spec 005 — 12 de octubre de 2026
+
+Fuente: revisión del spec 005 tras su integración. Correcciones previas a cualquier corrida: las tres políticas secuencian paradas con el planificador de 002 y `fixed7-v1` escalona sus visitas por día laborable; la corrida oficial se ejecuta en una máquina dedicada y su ZIP se importa en la demo con verificación de hashes (FR-21); las lecturas de rutas y entregas quedan en las tareas de 002 y 004. Se actualizan [[Simulador y metricas]], [[Definiciones de producto y plan hasta el pitch]], el riesgo R-28 y el registro de trabajo previo. Documental: no ejecuta código.
+
+Verificación de la actualización: **75 notas Markdown**, **666 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
+
+## Propuesta documental del spec 006 — 12 de octubre de 2026
+
+Fuente: brainstorming con el equipo sobre validación, pitch y paquete. Se redactaron los cuatro archivos del [spec 006](../../specs/006-validacion-pitch-entrega/spec.md), guion 3/5/7, hoja de entrevista consentida, banco de veinte preguntas, ficha de piloto, matriz de afirmaciones y contingencias. La investigación [SERCOP](SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) consultada el 12-oct encuentra obligaciones y sanciones en fichas oficiales, pero no un costo observado de quiebre ni ahorro atribuible al proyecto. Son propuestas con Deciders pendientes; no hay entrevistas, ensayos, aprobación de CE de 001–005 ni materiales entregados.
+
+Verificación de esta actualización: **76 notas Markdown**, **676 enlaces internos resueltos**, **0 errores**. El aviso previo de lenguaje en el guion fue corregido; permanecen dos avisos anteriores en notas no editadas por este spec.
+
+## Runbook de DevOps y base de datos — 12 de octubre de 2026
+
+Fuente: revisión de `develop` (3cb6861) y `main` (88a2221), de `deploy.yml`, del compose de producción, del Terraform de `dev`, de `scripts/backup/backup-db.sh` y de los specs 001–005, pedida por el usuario.
+
+**Hallazgos**
+- Ningún commit corrige la conexión a RDS (`Trust Server Certificate=true`) ni Swagger público.
+- El host de la app está fuera de Terraform y comparte el security group con el nodo del túnel SSM.
+- El código del SG no refleja la salida real.
+- `backup-db.sh` respalda la base `postgres` en el disco del host.
+
+**Cambios en la bóveda**
+- Se crea [[Runbook de DevOps y base de datos para la demo]], en borrador.
+- Se añaden complementos fechados a las notas que presentaban Schema95 con RLS como vigente, más los riesgos R-32 y R-33 y una nota en B-32, RNF-13 y V-37.
+
+**Issues abiertas**
+- [#14](https://github.com/bryancito1090/istpetdev-platform/issues/14): TLS, Swagger, SSH y desalineación con Terraform. Asignada a Jorge Doicela.
+- [#15](https://github.com/bryancito1090/istpetdev-platform/issues/15): respaldo y restauración antes del reset. Asignada a Bryan Baño.
+- [#16](https://github.com/bryancito1090/istpetdev-platform/issues/16): validar el runbook único. Asignada a Jorge Doicela.
+
+Es una actualización documental: no ejecuta Terraform, ni migraciones, ni respaldos. No se comprobó el estado real de AWS; los identificadores de recursos vienen de la nota Perfil A y del estado de despliegue del 8-oct.
+
+Verificación de esta actualización: **77 notas Markdown**, **714 enlaces internos resueltos**, **0 errores**. Se mantienen dos avisos previos de lenguaje.

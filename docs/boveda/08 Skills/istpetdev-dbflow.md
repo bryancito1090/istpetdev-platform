@@ -9,6 +9,12 @@ tags: [istpetdev, ia, skills, base-de-datos, postgresql, migraciones]
 
 **Cuándo usarla:** Trabajo colaborativo sobre PostgreSQL 16 y PostGIS 3.4 en Amazon RDS. Usar al crear o modificar entidades en C# (`src/Domain/Entities`), generar y aplicar migraciones de Entity Framework Core, conectarse mediante el túnel SSM con TLS VerifyFull, alternar entre el rol de aplicación (`user_dev_XX`) y el rol migrador (`migrator_dev_XX`), y resolver conflictos de concurrencia de esquema en Git.
 
+> [!warning] Complemento — 12 de octubre de 2026
+> - **Retiro de Schema95.** ADR-21 (propuesta) quita Schema95 y RLS de la demo: el spec 001 crea el núcleo `DemoCore` de 27 tablas desde cero. Se mantienen los roles de PostgreSQL (`user_*` sin DDL y `migrator_*` con DDL), las bases personales y el túnel con `VerifyFull`. Cada migración termina con `DemoGrants.Sql`.
+> - **Reset excepcional.** La transición exige vaciar las bases con `scripts/db/reset-to-demo-core.sql` una sola vez, con un respaldo verificado antes. Es una excepción documentada a «no borrar datos como mecanismo de resolución».
+> - **Orden de las migraciones.** Entre los specs 001 y 005 se generan en serie: una por spec, sobre `develop` actualizado.
+> - **Detalle.** Todo lo anterior está en [[Runbook de DevOps y base de datos para la demo]]. Las referencias a RLS de esta skill aplican solo al diseño P2 y al tag `schema95-archivo`.
+
 > Documentación de la skill `istpetdev-dbflow`. El archivo `SKILL.md` no se versiona en la bóveda: quien quiera usarla con su asistente de IA copia este contenido a la carpeta de skills de su herramienta (frontmatter con `name: istpetdev-dbflow` y la descripción de arriba). Catálogo y origen en [[Catalogo y plan de skills]].
 
 Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Leer antes [[istpetdev-contexto]] y [[istpetdev-datos]].
@@ -28,7 +34,7 @@ Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Lee
 - **Aislamiento en desarrollo (Bases personales):** Cada desarrollador tiene su base física dedicada (`istpetdev_dev_01` a `istpetdev_dev_05`). Ningún integrante modifica ni interfiere en la base de otro compañero.
 - **Base de integración compartida:** `istpetdev_integration` refleja estrictamente el estado validado de la rama `develop`. Solo se actualiza tras aprobar e integrar un Pull Request en Git.
 - **Separación DML vs DDL (Mínimo privilegio):**
-  - **Rol de Aplicación (`user_dev_XX`):** Sin DDL. Permisos DML limitados por tabla, operación y políticas RLS; no implica CRUD sobre las 95 tablas. Catálogos de seguridad, historial y tablas sin comando implementado tienen restricciones adicionales documentadas en `docs/schema95-migration.md`.
+  - **Rol de Aplicación (`user_dev_XX`):** Sin DDL. Permisos DML concedidos por `DemoGrants.Sql` al final de cada migración (en el diseño P2 de Schema95, además, limitados por políticas RLS). Catálogos de seguridad, historial y tablas sin comando implementado tienen restricciones adicionales documentadas en `docs/schema95-migration.md`.
   - **Rol Migrador (`migrator_dev_XX`):** Permisos DDL en el esquema `public`. Solo se utiliza puntualmente para aplicar migraciones de EF Core.
 - **Conexión segura:** Túnel SSM al puerto local `15432` con verificación estricta de certificado TLS oficial de Amazon RDS (`SSL Mode=VerifyFull`) mediante mapeo en `/etc/hosts`.
 - **Secretos:** Credenciales almacenadas en AWS Secrets Manager (`/istpetdev/dev/db/...`) con acceso restringido por IAM con MFA obligatorio. Nunca se escriben credenciales en Git ni en archivos públicos.
@@ -55,7 +61,7 @@ Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Lee
    - Validar esquema, integridad y denegaciones con el usuario API. Contar tablas con RLS no prueba aislamiento. Cuando corresponda levantar la API, aplicar [[istpetdev-prelaunch]] y comprobar `/health/ready` y los casos HTTP afectados dentro del alcance autorizado; una migración exitosa no autoriza por sí sola el arranque.
    - Subir el cambio en una rama `feature/*` y abrir Pull Request hacia `develop`.
 3. **Propagación en integración:**
-   - Al fusionar el PR en `develop`, aplicar la migración en `istpetdev_integration` con el rol `migrator_integration`.
+   - Durante la hackathon, `istpetdev_integration` solo la cambia el despliegue: al fusionar en `develop` se promueve a `main` y la API aplica la migración al arrancar. La aplicación manual con `migrator_integration` queda para el reset único a `DemoCore` (propuesta en [[Runbook de DevOps y base de datos para la demo]]).
    - Los demás compañeros actualizan su copia de `develop` conservando sus cambios locales, cargan su rol migrador, corren `dotnet ef database update` en su base personal y restauran su usuario de aplicación. Reciben las migraciones existentes; no las regeneran.
 4. **Resolución de conflictos en Git (Snapshot de EF Core):**
    - Si dos integrantes crearon migraciones paralelas y Git detecta conflicto en `ApplicationDbContextModelSnapshot.cs`: **NUNCA resolver el snapshot a mano editando el código C#**.
@@ -63,7 +69,7 @@ Rutas relativas a la raíz del repositorio de software `istpetdev-platform`. Lee
    - Solo una migración nunca aplicada ni compartida puede eliminarse con `dotnet ef migrations remove --project src/Infrastructure --startup-project src/Api`, sincronizar el código con `develop` y regenerarse sobre el snapshot actualizado mediante EF Core. Revisar el SQL y comprobar el modelo antes de aplicarla.
    - Si hay migraciones aplicadas o compartidas, coordinar el orden y la corrección con su responsable, conservar los archivos históricos y generar cualquier cambio de estructura como una migración posterior. No ejecutar downgrade ni borrar datos como mecanismo rutinario de resolución. Si no hay una secuencia segura comprobada, registrar el conflicto y mantener el PR pendiente.
 
-### Operación personal de schema95
+### Operación personal de schema95 (histórico; con el spec 001 el mismo script aplica `DemoCore` tras el reset)
 
 Para Bryan, el comando `bash scripts/db/migrate-personal.sh istpetdev-admin dev_01` comprueba el modelo, carga el migrador, actualiza su base y restaura el usuario API. Fue ejecutado por el agente de software con resultado 0; evidencia y alcance en [[Coordinacion migracion schema95]]. El script requiere API detenida, sesión AWS vigente y túnel activo. La transición exige las cinco tablas iniciales vacías; no borrar registros para superar la guarda. Después de aplicar, las tablas renombradas usan nombres singulares.
 
