@@ -14,7 +14,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IServicePointsService, ServicePointsService>();
+        services.AddSingleton<IPublicTraceRateLimiter, PublicTraceRateLimiter>();
         services.AddScoped<IPublicTraceService, PublicTraceService>();
+        services.AddScoped<IstpetDev.Application.Field.IFieldService, IstpetDev.Application.Field.FieldService>();
         services.AddScoped<IImportService, ImportService>();
         services.AddScoped<IOperationalClock, OperationalClock>();
         services.AddScoped<IRiskCalculator, RiskCalculator>();

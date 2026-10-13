@@ -207,6 +207,20 @@ public sealed class RoutePlansController(
         [FromBody] CompleteStopRequest? req = null,
         CancellationToken ct = default)
     {
+        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+        if (userRole == Roles.Conductor)
+        {
+            var userAccountId = User.AccountId();
+            var stopEntity = await db.RouteStops.FirstOrDefaultAsync(s => s.RoutePlanId == id && s.SequenceNumber == sequence && s.OrganizationId == DemoOrganization.Id, ct);
+            if (stopEntity == null) return NotFound();
+
+            var hasAssignedDelivery = await db.Deliveries.AnyAsync(d => d.RouteStopId == stopEntity.Id && d.AssignedAccountId == userAccountId && d.OrganizationId == DemoOrganization.Id, ct);
+            if (!hasAssignedDelivery)
+            {
+                return Forbid();
+            }
+        }
+
         var request = new CompleteStopRequest(id, sequence, req?.ActualArrivalUtc, req?.ActualDepartureUtc);
         var stop = await publisher.CompleteStopAsync(request, ct);
         return Ok(stop);
