@@ -69,14 +69,14 @@ flowchart TD
 
 | Job | Condición / Dependencias | Acción Principal |
 |---|---|---|
-| `quick-restart` | `inputs.restart_only == 'true'` | SSH al servidor → `docker compose restart` → Health check `/api/ping`. |
-| `detect-changes` | `inputs.restart_only != 'true'` | `dorny/paths-filter@v3` para determinar si cambió backend, frontend o base de datos. |
-| `backend-qa` | Cambios en backend o disparo manual | Setup .NET (versión ADR-01) → `dotnet restore` → `dotnet build -c Release` → `dotnet test --no-build`. |
-| `frontend-qa` | Cambios en web o disparo manual | Setup Node.js 22 → `npm install` → `npm test` → `npm run build`. |
+| `validate-source` | Siempre en push o dispatch | Valida la política de ramas (`branch-policy.sh`): solo acepta PRs fusionados desde `develop` o `hotfix/*`. |
+| `quick-restart` | `inputs.restart_only == 'true'` | SSH al servidor → `docker compose restart` → Health check `/health/ready`. |
+| `backend-qa` | `inputs.restart_only != 'true'` | Setup .NET 8 → `dotnet restore` → `dotnet build -c Release` → Suite de pruebas (Unit, Integration, E2E) con PostGIS. |
+| `frontend-qa` | `inputs.restart_only != 'true'` | Setup Node.js 22 LTS → `npm ci` → Build de `@istpetdev/shared-core` → Linteo estricto → Build de producción Angular 22. |
 | `build-backend` | Éxito en `backend-qa` | Docker Buildx → Push a `ghcr.io/<owner>/istpetdev-backend:<sha>` con caché GHA. |
 | `build-frontend` | Éxito en `frontend-qa` | Docker Buildx → Push a `ghcr.io/<owner>/istpetdev-web:<sha>` con caché GHA. |
-| `deploy-ec2` | Éxito en `build-backend` y `build-frontend` | Conexión SSH → Mantenimiento de disco → Pull de imágenes → Verificación BD → `docker compose up -d`. |
-| `health-check-report` | Éxito en `deploy-ec2` | Verificación de endpoint en vivo y reporte en `$GITHUB_STEP_SUMMARY`. |
+| `deploy-ec2` | Éxito en `build-backend` y `build-frontend` | Conexión SSH → Mantenimiento de disco → Validación fail-fast de manifiestos inmutables en GHCR → Pull → Recreación atómica. |
+| `health-check-report` | Éxito en `deploy-ec2` | Verificación de endpoint en vivo y reporte ejecutivo en `$GITHUB_STEP_SUMMARY`. |
 
 #### Lógica del Despliegue en el Host (Script SSH en `deploy-ec2`):
 ```bash
@@ -88,18 +88,27 @@ docker image prune -f
 for img in istpetdev-backend istpetdev-web; do
   docker images --filter "reference=*${img}*" --format "{{.ID}}" | sort -u | tail -n +4 | xargs -r docker rmi -f 2>/dev/null || true
 done
-sudo journalctl --vacuum-size=20M 2>/dev/null || true
+sudo journalctl --vacuum-size=50M 2>/dev/null || true
 
 # 2. Autenticación en GHCR
-echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
 
-# 3. Selección de Tag Inmutable
-OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${{ github.sha }}"
-export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${{ github.sha }}"
+# 3. Selección y Validación Estricta de Tags Inmutables (Fail-Fast sin fallbacks ciegos)
+OWNER_LOWER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+export BACKEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-backend:${COMMIT_SHA}"
+export FRONTEND_IMAGE="ghcr.io/${OWNER_LOWER}/istpetdev-web:${COMMIT_SHA}"
 
-# 4. Descarga de Imágenes
-docker compose pull --quiet
+if ! docker manifest inspect "$BACKEND_IMAGE" >/dev/null 2>&1; then
+  echo "Error critico: La imagen inmutable de backend no existe en GHCR: $BACKEND_IMAGE"
+  exit 1
+fi
+if ! docker manifest inspect "$FRONTEND_IMAGE" >/dev/null 2>&1; then
+  echo "Error critico: La imagen inmutable de frontend no existe en GHCR: $FRONTEND_IMAGE"
+  exit 1
+fi
+
+# 4. Descarga de Imágenes Inmutables
+docker compose -f infra/compose/docker-compose.prod.yml pull --quiet
 
 # 5. Verificación de Conectividad con Amazon RDS (Perfil A Reforzado)
 # La persistencia está gestionada en Amazon RDS PostgreSQL 16 (istpetdev-rds-dev en VPC privada).
@@ -237,15 +246,19 @@ Para que el levantamiento de cualquier nueva instancia EC2 (Debian o Ubuntu) sea
 2. **Auto-aprovisionamiento**: El script instala Docker CE oficial, Docker Compose plugin, habilita UFW con rate limit en SSH y puertos 80/443 abiertos, crea /var/www/istpetdev con usuario operativo y auto-genera certificados SSL locales para soporte inmediato de Cloudflare en modo Flexible o Full.
 3. **Pipeline Inmutable**: El workflow deploy.yml sincroniza Compose y Nginx vía SCP y recrea contenedores de inmediato.
 
-### Optimizaciones Enterprise del Pipeline CI/CD — 12 de octubre de 2026
+### Evolución a Pipeline Determinista y Despliegue Inmutable (13 de octubre de 2026)
 
-Se elevaron los workflows de GitHub Actions al estándar enterprise basado en patrones de producción de alta eficiencia:
-1. **Detección Inteligente de Cambios (DAG con dorny/paths-filter@v3)**:
-   - Evaluación selectiva de rutas para backend (`src/**`, `infra/docker/backend/**`, `IstpetDev.sln`) y frontend (`apps/web/**`, `libs/shared-core/**`, `infra/docker/web/**`).
-   - Evita recompilar imágenes pesadas de Docker cuando el commit solo afecta a una de las capas.
-2. **Fallback Inteligente de Imágenes GHCR (`docker manifest inspect`)**:
-   - Si un componente no necesitó recompilarse en el commit actual, el orquestador detecta automáticamente la ausencia del tag SHA e inyecta la etiqueta `:latest` preexistente en GHCR, recortando tiempos de build y despliegue a menos de 2 minutos.
-3. **Mantenimiento Preventivo de Almacenamiento en Host**:
+Se consolidó el flujo de entrega continua eliminando antipatrones de omisión heurística y fallbacks ciegos:
+1. **Compilación Inmutable y Determinista en Producción (`main`)**:
+   - Cada commit o merge en `main` constituye un release formal a producción. Se retiró la omisión heurística de rutas (`paths-filter`) en `deploy.yml`.
+   - Tanto el Backend como el Frontend ejecutan sus compuertas de QA completas y empaquetan obligatoriamente imágenes Docker inmutables asociadas al commit SHA exacto (`${{ github.sha }}`) en GHCR.
+2. **Validación Fail-Fast y Retiro del Fallback a `:latest`**:
+   - En la orquestación del host EC2, se eliminó el fallback que inyectaba `:latest` cuando faltaba un tag SHA.
+   - El script verifica obligatoriamente la existencia de ambos manifiestos inmutables en GHCR (`docker manifest inspect`) antes de recrear contenedores. Si falta un artefacto, el pipeline aborta de inmediato y conserva la versión activa sin introducir degradación silenciosa.
+3. **Política Canónica de Caché para SPA (Nginx)**:
+   - En `infra/docker/web/nginx.conf`, el punto de entrada `/index.html` se sirve obligatoriamente con `Cache-Control: no-cache, no-store, must-revalidate` y `expires 0`.
+   - Los activos estáticos con hash de contenido (`*.js`, `*.css`, fuentes e imágenes) conservan `Cache-Control: public, max-age=15552000, immutable`. Esto previene que clientes o CDN retengan el index HTML tras un release.
+4. **Mantenimiento Preventivo de Almacenamiento en Host**:
    - Rotación y poda automática de logs del sistema (`journalctl --vacuum-size=50M`) y paquetes apt (`apt-get clean`).
    - Política de retención local de las últimas 3 versiones de cada imagen para garantizar rollback local instantáneo sin saturar el disco.
 4. **Respaldo Preventivo y Reseteo Controlado**:
@@ -260,7 +273,7 @@ Se elevaron los workflows de GitHub Actions al estándar enterprise basado en pa
 
 7. **Desacoplamiento de Entornos por Rama**:
    - `ci.yml`: Opera sobre `develop` y Pull Requests para validaciones rápidas de QA (tests unitarios y linter) sin desplegar al servidor.
-   - `deploy.yml`: Opera exclusivamente sobre la rama `main` (y `workflow_dispatch`), garantizando que solo 1 despliegue a producción se ejecute por ciclo de entrega, evitando ejecuciones duplicadas o concurrencia innecesaria sobre los contenedores del host.
+   - `deploy.yml`: Opera exclusivamente sobre la rama `main` (y `workflow_dispatch`), asegurando que solo 1 despliegue a producción se ejecute por ciclo de entrega, evitando ejecuciones duplicadas o concurrencia innecesaria sobre los contenedores del host.
 
 8. **Comprobación de Integridad de Datos en la Compuerta de QA**:
    - Hoy, el job `backend-qa` ejecuta `tools/Schema95Check` para verificar que las 95 tablas, el aislamiento RLS, las claves foráneas, los tipos y los snapshots siguen conformes antes de construir los contenedores Docker.
