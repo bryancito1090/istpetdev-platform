@@ -302,3 +302,10 @@ Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y M
 Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
 
 
+
+
+## Rol Auditor (ADR-26) y spec 013 de login — 13 de octubre de 2026
+
+Fuente: sesión de definición del spec 013 (login real y gestión de cuentas por Gerencia) con Joseph Baño. Se agrega ADR-26 (rol Auditor de solo lectura, aceptada por Joseph Baño) en [[Decisiones de arquitectura]] y en [[Hechos canonicos]]. Fuera de la bóveda se actualizan los specs 004 (FR-17) y 005 (FR-05) para que el login dependa de 013, y la fila D3 del índice de specs.
+
+Verificación documental de esta actualización: **84 notas Markdown**, **818 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.

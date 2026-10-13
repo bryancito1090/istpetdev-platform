@@ -72,7 +72,7 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 
 - [ ] Verificar `git fetch origin` y que la rama de implementación nace de `origin/develop` con 001 y 002 integrados. Confirmar `src/Application/Imports/CanonicalWriter.cs`, el importador de `road_segments`, `tests/IstpetDev.Tests/IstpetDev.Tests.csproj`, el planificador y los endpoints 002. Ejecutar `dotnet build IstpetDev.sln`; esperado `Build succeeded`.
 - [ ] Registrar Deciders y fecha para el spec 005, baseline `reactive-v1`/`fixed7-v1`, demanda sintética, regiones/flota y matriz permitida. Si se cambia una regla antes de la primera corrida, cambiar `policyVersion`/`datasetVersion` en spec y bóveda **antes** de generar resultados. No aprobar con `PENDIENTE`.
-- [ ] Confirmar 004 FR-17/T1b y `advance`, 003 `GET/POST /agent/runs`, y contratos nuevos 002 FR-23 / 004 FR-19. El backend T2–T8 puede avanzar sin 003/004; T9 requiere sus contratos reales.
+- [ ] Confirmar login de 013 (H1–H3) y `advance` de 004, 003 `GET/POST /agent/runs`, y contratos nuevos 002 FR-23 / 004 FR-19. El backend T2–T8 puede avanzar sin 003/004; T9 requiere sus contratos reales.
 - [ ] Comprobar el origen de la matriz y dos conexiones PostgreSQL distintas; si son la misma base, detener la preparación antes de importar. Registrar el compromiso de H4 en el PR de implementación.
 
 ### T1 — Lecturas estables de 002 y 004
