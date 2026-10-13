@@ -3,7 +3,8 @@ id: "002"
 titulo: Motor logístico determinista
 estado: borrador
 creado: 2026-10-12
-actualizado: 2026-10-12
+actualizado: 2026-10-13
+responsable: Anthony Pilatasig (motor logístico) y Bryan Doicela (revisión)   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # diseño aprobado en sesión de brainstorming del 12-oct; registrar nombre del integrante y confirmación del equipo
 depende_de: ["001"]
 boveda:
