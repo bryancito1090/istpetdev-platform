@@ -195,3 +195,8 @@ Fuente: revisión de los specs 001–004 tras completar el equipo las tareas y p
 
 Verificación de la actualización: **75 notas Markdown**, **656 enlaces internos resueltos**, **0 errores**. Se mantienen los tres avisos de lenguaje de propuesta ya existentes.
 
+## Propuesta documental del spec 005 — 12 de octubre de 2026
+
+Fuente: brainstorming con el usuario y contratos de los specs 001–004. Se redactaron [spec 005](../../specs/005-panel-simulador/spec.md) y [plan 005](../../specs/005-panel-simulador/plan.md); se registraron baselines, demanda y escenario adverso propuestos en [[Simulador y metricas]], dependencias y hitos en [[Definiciones de producto y plan hasta el pitch]], riesgos y backlog, contradicciones en [[Hechos canonicos]] y preparación en [[Registro de trabajo previo y del evento]]. Los contratos de lectura faltantes se añadieron a los specs productores 002 y 004. PR #10 estaba fusionado antes de crear la rama del 005 desde `develop`. Esta actualización es documental: no ejecutó simulación ni implementó software.
+
+Verificación de esta actualización: **75 notas Markdown**, **664 enlaces internos resueltos**, **0 errores**; permanecen tres avisos previos de lenguaje en notas no editadas por este spec.

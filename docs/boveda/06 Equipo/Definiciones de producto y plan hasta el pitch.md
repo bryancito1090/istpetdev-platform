@@ -181,10 +181,18 @@ El marcado provisional de parada completa de 002 queda sustituido por recepción
 
 **Decisiones abiertas del campo (revisión del 12-oct):** dónde vive la pantalla de Bodega que prepara y despacha la caja (web o PWA); si la evidencia se sube con URL prefirmadas (requiere CORS e IAM del equipo de infraestructura) o a través de la API; y si el límite de consultas del QR se aplica por IP (los jurados comparten IP en la wifi del recinto) o por token. Registradas como PA-03 a PA-05 del spec 004.
 
+## Panel y el simulador (spec 005)
+
+**Propuesta del 12-oct-2026; Deciders PENDIENTE.** El [spec 005](../../specs/005-panel-simulador/spec.md) y su [plan](../../specs/005-panel-simulador/plan.md) fijan la comparación antes de generar resultados. La web muestra el recorrido `demo-region` mediante riesgos explicados, mapa con tramos viales o aproximados etiquetados, entregas y decisiones en dos columnas («ejecutadas solas» / «esperan tu aprobación»), con aprobar, rechazar, deshacer y modo «solo proponer». El login PKCE es del 004; `facts`, planificador y política son del 002; la traza es del 003. La maqueta actual contiene cifras y geografía fijas (R-15), que el 005 debe sustituir por API.
+
+El simulador corre como trabajo asíncrono dentro de la API, en base de simulación separada y usando el importador canónico de 001. Compara 90 días de IstpetDev con reposición reactiva y calendario fijo cada siete días, de cantidad histórica fija; comparte calendario exógeno, recursos, matriz y costos. Muestra tres seeds base y un escenario adverso, con resultados como rango y cuatro tarjetas para jurados no técnicos: quiebres evitados/nuevos, demanda no atendida, costo de transporte y puntualidad. La red de unos 80 puntos solo aparece en `/simulation`; la demo en vivo conserva unos 15 puntos y dos vehículos. Los parámetros, supuestos y hashes quedan en la exportación. No se presentan porcentajes fijos.
+
+**Bloqueos y plazo.** El 005 añade dos contratos de lectura a sus specs productores: `GET /api/v1/route-plans` en 002 y `GET /api/v1/deliveries` en 004, ambos antes de H4. La matriz completa 005↔001–004 está en el spec. El login y `advance` del 004 deben llegar antes de H3. Las 1080 jornadas de política se planifican por región; la corrida completa tiene objetivo medido ≤60 min antes de H4 (15-oct 11:00), y el límite por propuesta de 002 no basta. El simulador conserva prioridad sobre niveles adicionales del agente y no tiene plan B honesto. Esto es diseño propuesto, no software implementado ni resultados medidos.
+
 ## Pendientes de esta sesión
 
 - Confirmar quién decide D1–D8 y ADR-21 a ADR-23.
-- Specs 004, 005 y 006; los `task.md` de 002 y 003 los redacta el equipo.
+- Aprobación por Deciders de 004 y 005; spec 006; `task.md` y `test-e2e.md` del 005 los redacta el equipo.
 - Bryan: credenciales de DeepSeek, OAuth2 de Cognito y secreto HMAC en su n8n; versión exacta de n8n para la copia local.
 - Kit previo de 006 e investigación de pliegos de compras públicas.
 - Confirmación escrita de la organización sobre trabajo previo (O-01).

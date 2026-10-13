@@ -118,6 +118,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | FR-20 | DEBE ofrecer explicaciones en español por plantilla para riesgo, propuesta, replanificación y escalado, construidas solo a partir de `facts`. | RF-12 (fallback determinista) |
 | FR-21 | DEBE existir el fixture `data/fixtures/demo-region` (≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos, 3 SKUs, tramos viales precalculados e incidentes predefinidos) y un script que regenera sus tramos con OSRM. | Dataset y escenarios, D6 |
 | FR-22 | `POST /api/v1/demo/incidents` DEBE disparar un incidente predefinido del fixture por su nombre, solo con `Demo:Enabled=true`. | Contratos API y eventos |
+| FR-23 | `GET /api/v1/route-plans` DEBE listar planes del día de forma paginada, filtrable por vehículo y estado, con revisión vigente, para que el panel 005 descubra IDs sin fijarlos en código; la respuesta no crea propuestas. Dueño: equipo 002; integrar antes de H4. | RF-07, spec 005 |
 
 ### No funcionales
 
@@ -141,6 +142,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | `GET /risks` | Cualquiera | Riesgos con entradas, nivel, cantidad sugerida y `facts` |
 | `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`) |
 | `GET /route-plans/{id}` | Cualquiera | Revisión con paradas, trazados, origen de distancias y `facts` |
+| `GET /route-plans` | Cualquiera | Lista paginada de planes del día, vehículo, estado y revisión vigente para el panel 005; no crea propuestas |
 | `POST /route-plans/{id}/publish` | Planificación | Crea entregas y reservas; idempotente |
 | `POST /route-plans/{id}/stops/{sequence}/complete` | Planificación, Conductor | **Provisional hasta 004.** Marca una parada como completada (004 lo hará con la recepción real) |
 | `POST /route-plans/{id}/revert` | Planificación | Vuelve a publicar la revisión anterior como nueva |
