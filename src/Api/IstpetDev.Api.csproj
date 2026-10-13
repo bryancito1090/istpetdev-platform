@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Authentication/OrganizationContextFilter.cs" />
     <ProjectReference Include="..\Application\IstpetDev.Application.csproj" />
     <ProjectReference Include="..\Infrastructure\IstpetDev.Infrastructure.csproj" />
   </ItemGroup>

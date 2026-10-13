@@ -2,6 +2,8 @@
 
 > Recorridos completos del spec. Se cierra cuando E2E-01, E2E-02 y E2E-03 pasan con evidencia guardada. E2E-04 y E2E-05 se ejecutan cuando el entorno de Cognito y el despliegue estén disponibles; si no lo están el 15-oct, se registra el motivo.
 
+> **Revisión pendiente antes de ejecutar (12-oct-2026):** ajustar estos recorridos al [plan revisado](plan.md#cambios-obligatorios-en-taskmd-y-test-e2emd-antes-de-ejecutarlos), aplicar prelaunch antes del arranque y separar pruebas locales de operaciones en integración o entorno expuesto. El plan requiere conservar migraciones e historial; recrear una base compartida no es un prerrequisito implícitamente autorizado. No se han ejecutado estos escenarios durante la planificación.
+
 ## Preparación del entorno
 
 ```bash
@@ -127,3 +129,8 @@ dotnet run --project src/Api                     # http://localhost:5000, entorn
 
 | Fecha | Commit | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|
+| 2026-10-12 | `06f2911` (local) | E2E-01 | Aprobado | `artifacts/spec001/E2E.trx` (`DatasetJourneyTests`), PostGIS descartable | Antigravity / Bryan |
+| 2026-10-12 | `06f2911` (local) | E2E-02 | Aprobado | `artifacts/spec001/E2E.trx`, `ImportServiceTests` en Release | Antigravity / Bryan |
+| — | — | E2E-03 | Pendiente | Requiere simulacro humano con dataset sorpresa | Pendiente de asignación |
+| — | — | E2E-04 | Pendiente | Requiere pool real de AWS Cognito (no simulado con RSA de test) | Pendiente de Cognito dev |
+| — | — | E2E-05 | Pendiente | Requiere ensayo en host/RDS desplegado antes del 15-oct | Pendiente de despliegue |

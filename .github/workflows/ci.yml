@@ -5,6 +5,13 @@ on:
     branches: ["develop"]
     paths:
       - "src/**"
+      - "scripts/db/**"
+      - ".dockerignore"
+      - ".config/dotnet-tools.json"
+      - "global.json"
+      - "IstpetDev.sln"
+      - "data/fixtures/**"
+      - "tests/**"
       - "apps/**"
       - "libs/**"
       - "package*.json"
@@ -13,6 +20,13 @@ on:
     branches: ["main", "develop"]
     paths:
       - "src/**"
+      - "scripts/db/**"
+      - ".dockerignore"
+      - ".config/dotnet-tools.json"
+      - "global.json"
+      - "IstpetDev.sln"
+      - "data/fixtures/**"
+      - "tests/**"
       - "apps/**"
       - "libs/**"
       - "package*.json"
@@ -40,8 +54,21 @@ jobs:
       - name: "Compilar solución en Release"
         run: dotnet build IstpetDev.sln -c Release --no-restore
 
-      - name: "Ejecutar pruebas unitarias"
-        run: dotnet test IstpetDev.sln -c Release --no-build --verbosity normal
+      - name: "Verificar núcleo, importador y HTTP con PostGIS descartable"
+        env:
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1'
+        run: |
+          for category in Unit Integration E2E; do
+            dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
+          done
+          python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Conservar resultados de pruebas"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec001-ci-tests
+          path: artifacts/spec001/*.trx
 
   frontend-qa:
     name: "QA Frontend (Angular 22)"

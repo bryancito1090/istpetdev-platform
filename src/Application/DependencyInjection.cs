@@ -1,4 +1,5 @@
 using IstpetDev.Application.PublicTrace.Services;
+using IstpetDev.Application.Imports;
 using IstpetDev.Application.ServicePoints.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IServicePointsService, ServicePointsService>();
         services.AddScoped<IPublicTraceService, PublicTraceService>();
+        services.AddScoped<IImportService, ImportService>();
 
         return services;
     }

@@ -5,6 +5,13 @@ on:
     branches: ["main"]
     paths:
       - "src/**"
+      - "scripts/db/**"
+      - ".dockerignore"
+      - ".config/dotnet-tools.json"
+      - "global.json"
+      - "IstpetDev.sln"
+      - "data/fixtures/**"
+      - "tests/**"
       - "apps/web/**"
       - "libs/shared-core/**"
       - "infra/**"
@@ -77,7 +84,7 @@ jobs:
             echo "Reiniciando servicios de aplicación..."
             docker compose -f infra/compose/docker-compose.prod.yml restart istpetdev-backend istpetdev-web
             sleep 5
-            (curl -sf http://127.0.0.1:5000/health/live || curl -sf http://localhost/health/live) && echo "Servicios reiniciados correctamente"
+            (curl -sf http://127.0.0.1:5000/health/ready || curl -sf http://localhost/health/ready) && echo "Servicios reiniciados correctamente"
 
   detect-changes:
     name: "Detección Inteligente de Rutas"
@@ -100,6 +107,12 @@ jobs:
           filters: |
             backend:
               - 'src/**'
+              - 'scripts/db/**'
+              - '.dockerignore'
+              - 'tests/**'
+              - 'data/fixtures/**'
+              - 'global.json'
+              - '.config/dotnet-tools.json'
               - 'infra/docker/backend/**'
               - 'IstpetDev.sln'
               - 'infra/compose/docker-compose.prod.yml'
@@ -132,8 +145,21 @@ jobs:
       - name: "Compilar solución en Release"
         run: dotnet build IstpetDev.sln -c Release --no-restore
 
-      - name: "Verificar integridad del modelo relacional (Schema 95 & RLS)"
-        run: dotnet run --project tools/Schema95Check -- "$PWD"
+      - name: "Verificar núcleo, importador y recorrido HTTP"
+        env:
+          DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1'
+        run: |
+          for category in Unit Integration E2E; do
+            dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
+          done
+          python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Conservar resultados de pruebas"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec001-cd-tests
+          path: artifacts/spec001/*.trx
 
   frontend-qa:
     name: "QA Frontend (Angular 22)"

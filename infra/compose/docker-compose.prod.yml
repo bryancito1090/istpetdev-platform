@@ -29,13 +29,18 @@ services:
       Cors__Origins__0: https://istpetdev.doicela.dev
       Cors__Origins__1: https://clean.doicela.dev
       Cors__Origins__2: http://localhost:4200
-      ApplyMigrations: "true"
+      ApplyMigrations: ${APPLY_MIGRATIONS:-false}
+      Demo__Enabled: ${DEMO_ENABLED:-false}
+      Demo__FixturePath: /app/data/fixtures/demo-base
+      Authentication__Authority: ${COGNITO_AUTHORITY:-}
+      Authentication__AllowedClientIds__0: ${COGNITO_WEB_CLIENT_ID:-}
+      Authentication__AllowedClientIds__1: ${COGNITO_MOBILE_CLIENT_ID:-}
       EnableSwagger: "true"
     depends_on:
       istpetdev-redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health/ready"]
       interval: 15s
       timeout: 5s
       retries: 5

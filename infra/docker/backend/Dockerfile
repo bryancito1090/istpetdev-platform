@@ -36,6 +36,7 @@ ENV ASPNETCORE_URLS=http://+:5000 \
 
 # Copiar artefactos compilados desde la etapa de build
 COPY --from=build /app/publish .
+COPY data/fixtures/ /app/data/fixtures/
 
 # Ejecución bajo usuario no privilegiado (nativo en .NET 8 alpine)
 USER $APP_UID
@@ -44,6 +45,6 @@ EXPOSE 5000
 
 # Verificación de salud interna del contenedor
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:5000/health/live || exit 1
+  CMD curl -f http://localhost:5000/health/ready || exit 1
 
 ENTRYPOINT ["dotnet", "IstpetDev.Api.dll"]

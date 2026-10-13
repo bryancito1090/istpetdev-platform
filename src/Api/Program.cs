@@ -1,17 +1,18 @@
-using System;
 using System.Text.Json;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Text.Json.Serialization;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application;
+using IstpetDev.Application.Demo;
 using IstpetDev.Infrastructure;
-using Microsoft.AspNetCore.Builder;
+using IstpetDev.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,14 +21,17 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
-// Add Application layer services (Use Cases, Queries, Services)
 builder.Services.AddApplicationServices();
-
-// Add Infrastructure services (DbContext, Npgsql, PostGIS, HealthChecks)
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// Add Cognito OIDC JWT Authentication per ADR-10
+// Cognito valida la identidad (ADR-10); el rol se lee de Account (spec 001).
 builder.Services.AddCognitoAuthentication(builder.Configuration);
+builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformation>();
+
+builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
+// Rutas relativas de fixtures se resuelven contra la raíz de contenido (src/Api en desarrollo, /app en Docker).
+builder.Services.PostConfigure<DemoOptions>(options =>
+    options.FixturePath = Path.GetFullPath(options.FixturePath, builder.Environment.ContentRootPath));
 
 // CORS configuration for local Angular web (4200) and Ionic mobile (8100)
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ??
@@ -44,30 +48,28 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
-builder.Services.AddScoped<IstpetDev.Api.Authentication.OrganizationContextFilter>();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.OnRejected = (context, _) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return ValueTask.CompletedTask;
+    };
+    options.AddPolicy("imports", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.AccountId()?.ToString() ?? "anonymous",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 var app = builder.Build();
 
-// Aplicar migraciones pendientes de EF Core si está configurado (ej. ApplyMigrations=true en Compose)
-if (app.Configuration.GetValue<bool>("ApplyMigrations", false) || args.Contains("--migrate"))
-{
-    try
-    {
-        using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<IstpetDev.Infrastructure.Persistence.ApplicationDbContext>();
-        app.Logger.LogInformation("Verificando y aplicando migraciones pendientes de EF Core...");
-        db.Database.Migrate();
-        app.Logger.LogInformation("Migraciones de base de datos aplicadas exitosamente.");
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "Error al aplicar migraciones de base de datos en arranque.");
-        if (args.Contains("--migrate")) throw;
-    }
-}
+await PrepareDatabaseAsync(app, args);
+if (args.Contains("--migrate")) return;
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", true))
 {
@@ -78,6 +80,7 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableS
 app.UseCors("IstpetDevCors");
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 // 1. Process Liveness: returns 200 OK as long as the process is alive, regardless of cloud/DB
@@ -126,3 +129,30 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapControllers();
 
 app.Run();
+
+// Migraciones opcionales y cuentas de demo. Un fallo se registra y la API arranca; /health/ready lo reporta.
+static async Task PrepareDatabaseAsync(WebApplication app, string[] args)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var migrateRequested = args.Contains("--migrate");
+    try
+    {
+        if (app.Configuration.GetValue<bool>("ApplyMigrations") || migrateRequested)
+        {
+            app.Logger.LogInformation("Verificando y aplicando migraciones pendientes de EF Core...");
+            await DatabaseInitializer.MigrateAsync(db);
+            app.Logger.LogInformation("Migraciones de base de datos aplicadas exitosamente.");
+        }
+        var demo = scope.ServiceProvider.GetRequiredService<IOptions<DemoOptions>>().Value;
+        if (demo.Enabled && demo.Accounts.Count > 0)
+            await AccountSeeder.SeedAsync(db, app.Configuration["Authentication:Authority"], demo.Accounts);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Error al preparar la base de datos en el arranque.");
+        throw;
+    }
+}
+
+public partial class Program { }

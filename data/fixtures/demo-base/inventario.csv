@@ -1,0 +1,10 @@
+location_kind,location_code,sku,lot_code,quantity
+warehouse,BOD-UIO,DES-01,L-DES-2610,800
+warehouse,BOD-UIO,PAP-01,L-PAP-2610,1500
+service_point,HOS-001,DES-01,L-DES-2610,60
+service_point,HOS-001,PAP-01,L-PAP-2610,120
+service_point,CLI-002,DES-01,L-DES-2610,90
+service_point,OFI-003,PAP-01,L-PAP-2610,200
+service_point,ESC-004,PAP-01,L-PAP-2610,40
+service_point,CEN-005,DES-01,L-DES-2610,35
+service_point,HOS-006,DES-01,L-DES-2610,150

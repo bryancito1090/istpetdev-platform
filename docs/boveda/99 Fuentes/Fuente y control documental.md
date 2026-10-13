@@ -170,3 +170,30 @@ Verificación de la integración: **73 notas Markdown**, **609 enlaces internos 
 Fuente: implementación y validación en vivo del Perfil A Reforzado acordado por el equipo. Se incorpora [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] en `03 Arquitectura/`, documentando el cómputo stateless en AWS EC2 (`44.204.107.167`) desacoplado de la persistencia gestionada en Amazon RDS (`istpetdev-rds-dev` con PostgreSQL 16 + PostGIS) en la VPC del proyecto (`10.42.0.0/16`). Se audita la migración de las 95 tablas en la base central `istpetdev_integration` bajo el rol `migrator_integration`, las políticas RLS y la operatividad de los endpoints de observabilidad `/health/live` y `/health/ready`.
 
 Verificación de la actualización: **74 notas Markdown**, **611 enlaces internos resueltos**, **0 errores**.
+
+## Plan de implementación del spec 001 — 12 de octubre de 2026
+
+Fuente: solicitud de Bryan de leer el spec y sus plantillas y preparar un plan detallado conforme a la bóveda. Se amplía el [plan del núcleo e importador](../../specs/001-nucleo-delgado-importador/plan.md), con diez tareas, trazabilidad, criterios de aceptación, pruebas y reversión. La revisión incluye documentos pertinentes y código local; propone conservar migraciones aplicadas mediante una transición posterior y corregir atomicidad, historial de reset, autorización y filtros CI.
+
+El spec sigue en borrador. ADR-21, su aprobación y los cambios de alcance continúan pendientes; las diferencias se describen en el plan sin sustituir decisiones vigentes de [[Hechos canonicos]], [[Requisitos y aceptacion]] ni [[Esquema completo de base de datos]]. RNF-14/B-40 se conserva. Los documentos de tareas y E2E incorporan una nota de revisión pendiente antes de ejecutar sus ejemplos anteriores.
+
+Trabajo realizado con Codex para análisis y redacción documental, aplicando ponytail y los criterios de [[istpetdev-prelaunch]]. No se implementó el importador ni se ejecutaron pruebas de software o aplicaciones. No se consultó RDS, aplicaron migraciones ni publicaron cambios externos. La verificación documental y de enlaces no acredita comportamiento de runtime.
+
+Verificación documental de esta revisión: **74 notas Markdown**, **615 enlaces internos resueltos**, **0 errores**; se mantienen los tres avisos de lenguaje preexistentes. Los enlaces locales y la estructura del paquete del spec se comprobaron adicionalmente, porque el verificador de la bóveda no revisa todos los archivos de `docs/specs/`.
+
+## Implementación y verificación local del spec 001 — 12 de octubre de 2026
+
+Fuente: instrucción directa de Bryan para implementar y verificar el spec 001 y su núcleo de 27 tablas en la rama `feature/001-nucleo-delgado-importador`, aplicando [[istpetdev-prelaunch]] en entorno local aislado. Se registran las diferencias D1–D9 del plan como alcance técnico local:
+1. **D1/D2:** Roles funcionales fijos y omisión de RLS para el escenario acotado de demo de una sola organización. RNF-13 y el modelo multiempresa se preservan para el producto general.
+2. **D3:** Conservación íntegra de las migraciones históricas `InitialSchema` y `CompleteSystemSchema95` (verificadas 7/7 con SHA-256 idénticos y tag `schema95-archivo`); la transición se realiza mediante una migración posterior `DemoCore` con guard que bloquea bases con datos ajenos a los seeds.
+3. **D4:** Cantidades `numeric(18,3)` y coordenadas `geometry(Point, 4326)` en el núcleo delgado.
+4. **D5:** Autenticación y scopes técnicos M2M preservados; resolución de cuenta y rol en base de datos local descartable.
+5. **D6:** Importación de consumo histórico por SKU y período con conversión estricta y sin doble descuento sobre saldos absolutos.
+6. **D7:** Ventanas operativas acotadas al importador; contratos de optimización logística diferidos a specs subsiguientes (002–004).
+7. **D8:** Conservación de RNF-14/B-40; B-29 se cierra únicamente en su alcance verificado con roles fijos locales, sin acreditar login web/PWA o SignalR.
+8. **D9:** No se inventa aprobación colectiva del equipo ni confirmación de la organización para O-01; PA-02 sigue formalmente pendiente.
+
+Resultados verificados en Release: 115 pruebas aprobadas (66 Unit, 48 Integration en PostGIS descartable, 1 E2E), `npm run check` aprobado, y contenedor backend `istpetdev-backend:spec001` construido y verificado con usuario no root y fixtures integrados. No se realizaron cambios ni consultas en Amazon RDS, AWS Cognito real ni despliegues expuestos.
+
+Verificación documental de esta actualización: **74 notas Markdown**, **616 enlaces internos resueltos**, **0 errores**.
+

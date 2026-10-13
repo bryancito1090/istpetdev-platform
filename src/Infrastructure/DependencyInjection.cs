@@ -2,6 +2,10 @@ using System;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Infrastructure.HealthChecks;
 using IstpetDev.Infrastructure.Persistence;
+using IstpetDev.Application.Imports;
+using IstpetDev.Application.Demo;
+using IstpetDev.Infrastructure.Imports;
+using IstpetDev.Infrastructure.Demo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +29,7 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
+                options.UseNpgsql(sp.GetRequiredService<IConfiguration>().GetConnectionString("Main") ?? connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.UseNetTopologySuite();
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
@@ -34,6 +38,8 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddSingleton<ITabularReader, TabularReader>();
+        services.AddScoped<IDemoResetService, DemoResetService>();
 
         // Register readiness health check
         services.AddHealthChecks()
