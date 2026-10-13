@@ -148,7 +148,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 
 Errores en Problem Details: 409 correo existente o regla de última Gerencia/propia cuenta; 422 rol inválido o `Automatizacion`; 503 Cognito no disponible; 403 sin cuenta activa.
 
-**Consumidores:** 004 (PWA: login, guards, interceptor, logout con outbox) y 005 (panel: login, guards por rol). Ambos dejan de implementar su propio login.
+**Consumidores:** 004 (PWA: login, guards, interceptor, logout con outbox) y 005 (panel: login, guards por rol). Ambos dejan de implementar su propio login. La dependencia es parcial: solo consumen H1–H3.
 
 **Dependencias de infraestructura (Jorge; Terraform solo con `-target` y plan revisado, ver #14):** URL HTTPS de retorno y cierre en los clientes web y móvil (#14, prioridad Alta); personalización de la página administrada de Cognito; perfil de instancia del host de la app con el permiso de NFR-02 y `HttpPutResponseHopLimit = 2` en IMDSv2 para que el contenedor obtenga credenciales.
 
@@ -178,7 +178,7 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 
 > **✅ Resuelta (13-oct)** — Rol Auditor. ADR-24 y el frontend lo nombraban y la API no lo tenía. [ADR-26](../../boveda/03%20Arquitectura/Decisiones%20de%20arquitectura.md) (aceptada por Joseph Baño) lo agrega como séptimo rol fijo, humano y de solo lectura total en la web, sin migración.
 
-> **✅ Resuelta (13-oct)** — Dueño del login. [spec 004](../004-campo-qr-custodia-offline/spec.md) FR-17 (y su T1b) y [spec 005](../005-panel-simulador/spec.md) FR-05 asignaban el login a 004. Ambos FR se actualizaron para depender de 013, y los dos specs listan 013 en `depende_de`. Queda por ajustar `task.md` de 004 (T1b) en su próxima revisión.
+> **✅ Resuelta (13-oct)** — Dueño del login. [spec 004](../004-campo-qr-custodia-offline/spec.md) FR-17 (y su T1b) y [spec 005](../005-panel-simulador/spec.md) FR-05 asignaban el login a 004. Ambos FR se actualizaron para depender de 013, y los dos specs listan 013 en `depende_de` como **dependencia parcial** (H1–H3, solo su frontend conectado a la API): la API de campo, el simulador, los KPI y la exportación no esperan a 013, y H4 no bloquea a nadie. Queda por ajustar `task.md` de 004 (T1b) en su próxima revisión.
 
 > **⚠️ Contradicción detectada** — Hecho nuevo: tokens solo en memoria. · Hecho establecido: el [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2) admite «memoria volátil o `sessionStorage`»; la nota [Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md) exige memoria. · Impacto: `sessionStorage` es accesible a cualquier script de la página. · Propuesta: seguir la bóveda (memoria). El informe es de Alexander: su corrección queda como tarea en el issue de este spec.
 

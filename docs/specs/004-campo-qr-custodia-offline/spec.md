@@ -6,7 +6,7 @@ creado: 2026-10-12
 actualizado: 2026-10-13
 responsable: Alexander Martínez
 aprobado_por: PENDIENTE
-depende_de: ["001", "002", "013"]
+depende_de: ["001", "002", "013 (parcial: H1–H3, solo FR-17)"]   # la API de campo no espera a 013; solo la PWA conectada a la API real
 boveda:
   - 02 Producto/Requisitos y aceptacion.md
   - 03 Arquitectura/Movil offline y sincronizacion.md
