@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | T0 | Base 001/002 y contratos confirmados | 001, 002 | — | completada |
 | T1 | `AgentRun`, migración y reset | T0 | — | completada |
-| T2 | Validador de cifras y mensajes | T1 | [P] con T3 y T4 | pendiente |
+| T2 | Validador de cifras y mensajes | T1 | [P] con T3 y T4 | completada |
 | T3 | Scope M2M, rol y Terraform | T1 | [P] con T2 y T4 | pendiente |
 | T4 | Disparo HMAC de n8n | T1 | [P] con T2 y T3 | pendiente |
 | T5 | Orquestación, fallback, carrera y traza | T2, T3, T4 | — | pendiente |
@@ -46,9 +46,9 @@
 
 **Archivos:** crear `src/Application/Agent/ExplanationValidator.cs`, `Models.cs`; probar en `tests/IstpetDev.Tests/Unit/Agent/ExplanationValidatorTests.cs`.
 
-- [ ] Pruebas rojas: `5,0 días` coincide con fact 5 días; `6 días` no coincide; `6,1 %` exige fact `%`; `10:30` exige fact de unidad `hora`; `2 rutas` exige fact de conteo; `VEH-02`, `HOS-N01` y código de revisión no producen falso mismatch. Probar redondeo a los decimales escritos y separadores coma/punto.
-- [ ] Implementar `IExplanationValidator.Validate(string, facts)` conforme al regex y las reglas de [Validador de cifras](plan.md#validador-de-cifras), reutilizando el parser numérico de 001. Validar explicación y mensaje por separado; mensaje de conductor ≤ 160 caracteres. Si una cifra no tiene respaldo, devolver el valor faltante para `ExplanationMismatch`; nunca dejar pasar la cifra inventada al texto persistido.
-- [ ] Confirmar que los facts de 002 incluyen conteos, ETA/hora local, costo, km y porcentajes usados en plantillas; si falta uno, añadirlo en el productor de 002 con prueba específica. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~ExplanationValidatorTests'`; esperado: 0 fallos. Commit `feat(agent): validate explanation numbers against facts`.
+- [x] Pruebas rojas: `5,0 días` coincide con fact 5 días; `6 días` no coincide; `6,1 %` exige fact `%`; `10:30` exige fact de unidad `hora`; `2 rutas` exige fact de conteo; `VEH-02`, `HOS-N01` y código de revisión no producen falso mismatch. Probar redondeo a los decimales escritos y separadores coma/punto.
+- [x] Implementar `IExplanationValidator.Validate(string, facts)` conforme al regex y las reglas de [Validador de cifras](plan.md#validador-de-cifras), reutilizando el parser numérico de 001. Validar explicación y mensaje por separado; mensaje de conductor ≤ 160 caracteres. Si una cifra no tiene respaldo, devolver el valor faltante para `ExplanationMismatch`; nunca dejar pasar la cifra inventada al texto persistido.
+- [x] Confirmar que los facts de 002 incluyen conteos, ETA/hora local, costo, km y porcentajes usados en plantillas; si falta uno, añadirlo en el productor de 002 con prueba específica. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~ExplanationValidatorTests'`; esperado: 0 fallos. Commit `feat(agent): validate explanation numbers against facts`.
 
 ### T3 — Separar identidad de automatización
 
