@@ -47,7 +47,12 @@ Los roles autorizados en el sistema son:
 * `Planificador`: Planifica rutas, publica planes, reasigna incidentes y solicita ejecuciones al agente.
 * `Conductor`: Consulta sus paradas asignadas y marca entregas/recepciones como completadas.
 * `Gerencia`: Monitorea paneles y es el **único rol autorizado** para modificar el modo de autonomía (`PUT /autonomy/mode`).
-* `Automatizacion`: Rol exclusivo para clientes máquina a máquina (M2M) como n8n (`istpetdev-api/automation`).
+* `Automatizacion`: Rol exclusivo para clientes máquina a máquina (M2M) como n8n (`istpetdev-api/automation`). Puede disparar replanificaciones, registrar incidentes y consultar riesgos/inventario. **Tiene prohibido explícitamente (403 Forbidden)**:
+  1. `POST /api/v1/route-plans/{id}/publish` (publicación de planes)
+  2. `POST /api/v1/agent-decisions/{id}/approve` (aprobación humana)
+  3. `POST /api/v1/agent-decisions/{id}/reject` (rechazo de decisiones)
+  4. `POST /api/v1/route-plans/{id}/revert` (reversión de revisiones)
+  5. `PUT /api/v1/autonomy/mode` (cambio de modo de autonomía)
 * `Administrador`: Acceso de gestión y mantenimiento.
 
 ---
