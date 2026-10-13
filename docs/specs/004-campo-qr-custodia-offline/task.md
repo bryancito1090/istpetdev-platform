@@ -6,18 +6,18 @@
 
 | ID | Entrega comprobable | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|
-| T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | completado (mock/frontend) / pendiente backend |
-| T1 | Modelo, migración y DTOs de campo | T0 | — | completado (contratos TS) / pendiente backend C# |
-| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (auth/guards frontend) / pendiente cloud |
-| T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | completado (web/mock) / pendiente endpoint C# |
-| T3 | Despacho atómico e idempotente | T2 | — | completado (web/mock) / pendiente endpoint C# |
-| T4 | Recepción, parcial, conflictos y parada | T3 | — | completado (móvil/mock) / pendiente endpoint C# |
-| T5 | Outbox durable y captura offline | T1, T1b | [P] con T2–T4 | completado (PWA/IndexedDB) / pendiente teléfono físico |
-| T6 | Evidencia privada y reintentos | T4, T5 | [P] con T7 | completado (móvil/mock) / pendiente S3 real |
-| T7 | Consulta pública limitada y revocación | T2 | [P] con T5–T6 | completado (web/mock) / pendiente endpoint C# |
-| T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | completado (móvil/mock) / pendiente productor 003 |
-| T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (frontend npm check ok) / pendiente backend C# |
-| T10 | Ensayo físico, evidencias y bóveda | T9 | — | pendiente (requiere backend desplegado y teléfono físico) |
+| T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | completado |
+| T1 | Modelo, migración y DTOs de campo | T0 | — | completado (migración FieldOperations + DTOs C#) |
+| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (auth/guards frontend + dev auth API) |
+| T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | completado (POST /deliveries/{id}/handling-units) |
+| T3 | Despacho atómico e idempotente | T2 | — | completado (POST /deliveries/{id}/dispatch) |
+| T4 | Recepción, parcial, conflictos y parada | T3 | — | completado (POST /deliveries/{id}/receipts y advance) |
+| T5 | Outbox durable y captura offline | T1, T1b | [P] con T2–T4 | completado (PWA/IndexedDB + HttpFieldApiService) |
+| T6 | Evidencia privada y reintentos | T4, T5 | [P] con T7 | completado (endpoints de evidencia en backend) |
+| T7 | Consulta pública limitada y revocación | T2 | [P] con T5–T6 | completado (GET /public/trace/{unitId}) |
+| T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | completado (GET /mobile/assignments) |
+| T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (npm run check y dotnet test ok) |
+| T10 | Ensayo físico, evidencias y bóveda | T9 | — | pendiente ensayo físico en dispositivo |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
