@@ -25,7 +25,9 @@ import { IFieldApi } from './field-api.interface';
 })
 export class HttpFieldApiService implements IFieldApi {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = ''; // Relativo o configurado por reverse proxy (/api/v1)
+  private readonly baseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : '';
 
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse> {
     return this.http.post<HandlingUnitResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/handling-units`, req);

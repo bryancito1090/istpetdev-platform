@@ -12,13 +12,14 @@ import {
   PublicTraceUnitDto
 } from '@istpetdev/shared-core';
 import { IWebFieldApi } from './field-api.interface';
+import { environment } from '../config/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HttpWebFieldApiService implements IWebFieldApi {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '';
+  private readonly baseUrl = environment.apiUrl || 'http://localhost:5000';
 
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse> {
     return this.http.post<HandlingUnitResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/handling-units`, req);
