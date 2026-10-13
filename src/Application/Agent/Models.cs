@@ -57,6 +57,7 @@ public interface IAgentRunService
     Task<AgentRunView> StartAndWaitAsync(StartRunRequest request, Guid? actorAccountId, CancellationToken ct);
     Task<ResultOutcome> SubmitResultAsync(Guid runId, AgentResult result, CancellationToken ct);
     Task<AgentRunView?> GetAsync(Guid runId, CancellationToken ct);
+    Task<IReadOnlyList<AgentRunView>> ListAsync(int limit, AgentRunKind? kind, AgentRunStatus? status, CancellationToken ct);
 }
 
 public interface IN8nTrigger

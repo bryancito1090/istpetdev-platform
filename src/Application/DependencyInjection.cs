@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IAutonomyPolicy, AutonomyPolicy>();
         services.AddSingleton<IExplanationTemplates, ExplanationTemplates>();
         services.AddSingleton<IExplanationValidator, ExplanationValidator>();
+        services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
 
         return services;

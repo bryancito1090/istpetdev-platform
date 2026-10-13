@@ -334,8 +334,129 @@ Estos endpoints comunican la API con el agente n8n y su red de seguridad fail-sa
 
 | Método y Ruta | Rol | Descripción |
 |---|---|---|
-| `POST /api/v1/agent/runs` | `Planificador` | Inicia una ejecución (`Watch` o `Incident`), dispara el webhook HMAC a n8n y espera hasta 10 s; si n8n no responde, ejecuta el **fallback determinista** en ≤ 11 s. |
+| `POST /api/v1/agent/runs` | `Planificador`, `Automatizacion` | Inicia una ejecución (`Watch` o `Incident`), dispara el webhook HMAC a n8n y espera hasta 10 s; si n8n no responde, ejecuta el **fallback determinista** en ≤ 11 s. |
 | `GET /api/v1/agent/runs/{id}` | Cualquier rol | Consulta la traza auditable (herramientas usadas, latencia en ms, modelo, versión de prompt y decisiones). |
 | `GET /api/v1/agent/runs?limit=20` | Cualquier rol | Historial de ejecuciones del agente. |
-| `POST /api/v1/agent/runs/{id}/result` | `Automatizacion` | Endpoint invocado por n8n para enviar la explicación validada y el mensaje al conductor. Rechaza si la ejecución ya cayó en fallback (409). |
-| `GET /api/v1/incidents/{id}` | Cualquier rol | Retorna el detalle e impacto del incidente sobre las rutas activas. |
+| `POST /api/v1/agent/runs/{id}/result` | `Automatizacion` (exclusivo) | Invocado por n8n para enviar la explicación validada y el mensaje al conductor. Rechaza si la ejecución ya cayó en fallback (409) o es inválida (422). |
+| `GET /api/v1/incidents/{id}` | Cualquier rol | Retorna el detalle e impacto evaluado del incidente sobre las rutas activas. |
+
+### 4.1. Iniciar Ejecución del Agente (`POST /api/v1/agent/runs`)
+
+```bash
+# Ejecutar monitoreo preventivo (Watch)
+curl -X POST "http://localhost:5000/api/v1/agent/runs" \
+  -H "Authorization: Bearer $PLANNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "kind": "Watch" }'
+
+# Ejecutar resolución de contingencia ante incidente (Incident)
+curl -X POST "http://localhost:5000/api/v1/agent/runs" \
+  -H "Authorization: Bearer $PLANNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "kind": "Incident", "incidentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }'
+```
+
+Respuesta (200 OK):
+```json
+{
+  "runId": "4c9e89d1-37d4-4e4b-97e3-0d5108b6bc37",
+  "kind": "Watch",
+  "status": "Completed",
+  "latencyMs": 1420,
+  "model": "gpt-4o",
+  "promptVersion": "v1.2",
+  "n8nExecutionId": "exec-1049",
+  "fallbackReason": null,
+  "toolCalls": [
+    {
+      "method": "GET",
+      "path": "/api/v1/risks",
+      "status": 200,
+      "milliseconds": 45,
+      "atUtc": "2026-10-13T20:00:01Z"
+    }
+  ],
+  "decisions": [
+    {
+      "agentDecisionId": "...",
+      "vehicleCode": "",
+      "outcome": "Evaluated",
+      "explanation": "El puesto HOS-N01 presenta riesgo crítico con cobertura de 5,0 días...",
+      "driverMessage": "Alerta de inventario en HOS-N01",
+      "source": "Llm",
+      "mismatchReason": null,
+      "facts": []
+    }
+  ]
+}
+```
+
+---
+
+### 4.2. Consultar Detalle de Incidente (`GET /api/v1/incidents/{id}`)
+
+```bash
+curl -X GET "http://localhost:5000/api/v1/incidents/{incidentId}" \
+  -H "Authorization: Bearer $PLANNER_TOKEN"
+```
+
+Respuesta (200 OK):
+```json
+{
+  "incidentId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "kind": "BloqueoVial",
+  "status": "Active",
+  "severity": "ALTA",
+  "description": "Derrumbe en tramo norte",
+  "occurredAtUtc": "2026-10-12T10:15:00Z",
+  "radiusKm": 2.5,
+  "affectedRoutes": [
+    {
+      "routePlanId": "...",
+      "vehicleCode": "VEH-01",
+      "affectedLegs": [{ "from": "DEP-01", "to": "HOS-N01" }],
+      "affectedStops": [1, 2]
+    }
+  ]
+}
+```
+
+---
+
+### 4.3. Enviar Resultado del Agente (`POST /api/v1/agent/runs/{id}/result`)
+* **Rol requerido:** Exclusivo de `Automatizacion` (`istpetdev-api/automation`).
+
+```bash
+curl -X POST "http://localhost:5000/api/v1/agent/runs/{runId}/result" \
+  -H "Authorization: Bearer $AUTOMATION_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "decisions": [
+      {
+        "agentDecisionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "explanation": "Desvío aplicado por derrumbe. Demora estimada de 15 minutos.",
+        "driverMessage": "Ruta desviada por derrumbe (+15 min). Continuar con precaución."
+      }
+    ],
+    "summary": "Replanificación evaluada y explicada",
+    "model": "gpt-4o",
+    "promptVersion": "v1.2",
+    "n8nExecutionId": "exec-1049",
+    "agentError": null
+  }'
+```
+
+Respuestas:
+* `202 Accepted`: Resultado recibido dentro del plazo y validado con éxito.
+* `409 Conflict`: La ejecución ya venció el timeout de 10 s y el fallback ya fue ejecutado.
+* `422 Unprocessable Entity`: La decisión o carga útil referenciada es inválida.
+
+---
+
+### 4.4. Cabecera de Observabilidad `X-Agent-Run-Id`
+Cualquier llamada que realice n8n (rol `Automatizacion`) a endpoints de la API puede incluir:
+```http
+X-Agent-Run-Id: <Guid-del-Run>
+```
+El middleware `AgentRunTraceMiddleware` captura automáticamente el método, ruta, status code y tiempo en milisegundos y lo adjunta de forma duradera a `AgentRun.ToolCallsJson` para auditoría total en el panel de control.
+

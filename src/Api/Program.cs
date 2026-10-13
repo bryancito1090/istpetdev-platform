@@ -2,8 +2,10 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Text.Json.Serialization;
+using IstpetDev.Api.Agent;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application;
+using IstpetDev.Application.Agent;
 using IstpetDev.Application.Demo;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Infrastructure;
@@ -32,6 +34,7 @@ builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformatio
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
 builder.Services.Configure<LogisticsOptions>(builder.Configuration.GetSection(LogisticsOptions.SectionName));
 builder.Services.Configure<PolicyOptions>(builder.Configuration.GetSection(PolicyOptions.SectionName));
+builder.Services.Configure<AgentOptions>(builder.Configuration.GetSection("Agent"));
 // Rutas relativas de fixtures se resuelven contra la raíz de contenido (src/Api en desarrollo, /app en Docker).
 builder.Services.PostConfigure<DemoOptions>(options =>
     options.FixturePath = Path.GetFullPath(options.FixturePath, builder.Environment.ContentRootPath));
@@ -85,6 +88,7 @@ app.UseCors("IstpetDevCors");
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseMiddleware<AgentRunTraceMiddleware>();
 
 // 1. Process Liveness: returns 200 OK as long as the process is alive, regardless of cloud/DB
 app.MapHealthChecks("/health/live", new HealthCheckOptions
