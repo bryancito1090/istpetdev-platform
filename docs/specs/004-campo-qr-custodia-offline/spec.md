@@ -3,7 +3,8 @@ id: "004"
 titulo: Campo — QR, custodia, despacho, recepción y PWA offline
 estado: borrador
 creado: 2026-10-12
-actualizado: 2026-10-12
+actualizado: 2026-10-13
+responsable: Alexander Martínez
 aprobado_por: PENDIENTE
 depende_de: ["001", "002"]
 boveda:
