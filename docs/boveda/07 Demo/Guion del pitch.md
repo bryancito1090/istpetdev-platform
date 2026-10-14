@@ -10,7 +10,7 @@ tags: [demo, validacion, istpetdev]
 **Meta interna:** tres minutos. Duración oficial y tiempo de preguntas pendientes de confirmar en [[Consultas para la organizacion]]. Ajustar este guion a lo que informe la organización.
 
 > [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
-> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. Es un borrador: la revisión humana de T1 y de la matriz siguen pendientes y O-04 no tiene respuesta.
+> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y la respuesta de O-04.
 
 > [!warning] Lectura del kit previo (14-oct-2026)
 > La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
@@ -130,7 +130,7 @@ La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no ten
 
 ## Versión de trabajo T2 — 14-oct-2026 (fase 2 del issue #46)
 
-**Borrador sin aprobar.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. Revisión humana de T1 y de la matriz: [PENDIENTE]. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). O-04 sigue pendiente: **160/280/400 s son metas internas, no tiempo oficial**. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
+**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). O-04 sigue pendiente: **160/280/400 s son metas internas, no tiempo oficial**. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
 
 **Etiquetas de escena.** `VIVO PREVISTO`: capacidad probada en pruebas automatizadas (EJ-07/08); la escena en pantalla no se ha ensayado y no se anuncia como «en vivo» hasta pasar E2E-04 del 006; si falla, se dice la sustitución. `GRABADO`: video del 15-oct, aún no existe; si se usa, se dice «esto es una grabación». `SIMULADO`: 005, datos sintéticos. `PROPUESTO`: diseño o plan, no demostrado.
 
@@ -146,7 +146,7 @@ La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no ten
 | 3. Demo — ruta | 95–125 | Web | VIVO PREVISTO | «Propone una ruta para cada vehículo respetando capacidad, horarios de atención y jornada.» | A-07 |
 | 3. Demo — incidente | 125–150 | Técnica | VIVO PREVISTO | «Cerramos una vía. Las paradas ya hechas se conservan y se crea una nueva versión de la ruta. Si el cambio supera los límites de costo o retraso, no se ejecuta: espera la aprobación de una persona.» | A-09, A-10 (sustitución) |
 | 3. Demo — caja | 150–190 | Móvil | PROPUESTO (VIVO solo si E2E-04 pasa) | «Así se prepara la caja: queda ligada a su lote y a la entrega. El conductor registra la recepción en la app.» Si E2E-04 no pasa: mostrar la etiqueta como diseño propuesto y no simular despacho. | A-13, A-15 (sustitución) |
-| 3. Demo — trazabilidad | 190–210 | Móvil → web | VIVO PREVISTO (API) | «En pantalla, lo que vería quien escanea la caja: producto, estado e hitos, sin datos privados; un código alterado no muestra nada.» Sin invitar al jurado a escanear. | A-16 (sustitución) |
+| 3. Demo — trazabilidad | 190–210 | Móvil → web | VIVO PREVISTO (API) | «La consulta pública devuelve producto, estado e hitos sin datos privados; un token alterado recibe 404 en la prueba de API.» Mostrar una pantalla solo después de comprobarla conectada. Sin invitar al jurado a escanear. | A-16 (sustitución) |
 | 4. Impacto | 210–235 | Web → narración | SIMULADO / PROPUESTO | «Diseñamos la comparación antes de ver resultados: 90 días sintéticos, tres semillas y un escenario adverso aparte, contra reposición reactiva y calendario fijo. Contamos los quiebres evitados y también los nuevos. El resultado solo lo mostraremos con su archivo verificable.» `[RESULTADO DEL SIMULADOR]` no se pronuncia. | A-19, A-20, A-21 |
 | 5. Viabilidad | 235–250 | Técnica | VIVO PREVISTO (pruebas) | «Usa datos que una empresa ya tiene; un archivo con otro formato se carga escribiendo solo un perfil. En prueba local, la ruta de 80 puntos se calcula en menos de cinco segundos. No prometemos la ruta óptima.» | A-22, A-24, A-33 |
 | 6. Modelo de negocio | 250–267 | Negocio | PROPUESTO | «Nuestro cliente por validar es la empresa de limpieza. Cobraríamos implementación y una suscripción; el precio lo definiremos con costos reales del piloto.» `[PRECIO]` no se pronuncia. | A-26, A-30, A-31 |

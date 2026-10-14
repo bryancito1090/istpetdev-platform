@@ -27,7 +27,7 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cinco componentes presentes; precio, cita y resultado quedan como huecos; revisión, corrección y nombre del revisor anotados. **Evidencia:** revisión fechada en el registro previo y versión del kit.
 
-**Estado al 14-oct-2026:** sin ejecutar. El kit está preparado por IA en la rama `feature/46-kit-previo-006` (resumen y hoja de revisión en [T1](task.md)); falta que una persona del equipo haga la lectura de unos 15 min. Hasta entonces, E2E-01 no tiene fila en el registro de ejecuciones y CE-01 sigue pendiente.
+**Estado al 14-oct-2026:** Joseph informó que revisó y aprobó todos los componentes del kit del PR #71 durante 15 minutos. No comunicó las horas de inicio y fin. E2E-01 y CE-01 se registran como cumplidos con esa declaración del revisor ([T1](task.md)); no se atribuye tiempo de construcción del kit al equipo.
 
 ### E2E-02 — Feria sin fabricar validación
 
@@ -55,7 +55,7 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cuatro afirmaciones rechazadas o corregidas cuando falta soporte; cero números de resultado huérfanos en versión congelada. Mostrar min/max de seeds solo con denominadores y etiqueta de simulación. **Evidencia:** matriz firmada por revisores y hashes de materiales auditados.
 
-**Estado al 14-oct-2026 (fase 2):** sin ejecutar. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Faltan los dos revisores humanos, el PDF y la versión congelada; las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye la revisión.
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar como recorrido completo. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Joseph aprobó el borrador `8693f73`; faltan el segundo revisor humano, la revisión de A-16/A-17/A-27 ajustadas después de su aprobación, el PDF y la versión congelada. Las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye el recorrido.
 
 ### E2E-06 — Racha real
 
@@ -73,4 +73,4 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 | Fecha/hora | Commit/material | Escenario | Duración/conexión | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
-| [PENDIENTE: primer ensayo] | [PENDIENTE: versión] | [PENDIENTE: ID] | [PENDIENTE: medición] | pendiente | [PENDIENTE: enlace] | [PENDIENTE: responsable] |
+| 2026-10-14 (hora no registrada) | PR #71, `228ab72` (T1 en `92a9e63`) | E2E-01 | 15 min, revisión documental | pasó según declaración del revisor; cinco componentes aprobados, sin correcciones adicionales informadas | [hoja de T1](task.md#hoja-de-revisión-humana-de-t1-unos-15-min), [registro previo](../../boveda/06%20Equipo/Registro%20de%20trabajo%20previo%20y%20del%20evento.md) | Joseph Baño (Andrés) |
