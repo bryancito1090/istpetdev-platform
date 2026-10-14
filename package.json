@@ -8,11 +8,15 @@
     "apps/web",
     "apps/mobile"
   ],
+  "engines": {
+    "node": "^22.23.3",
+    "npm": "10.9.9"
+  },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || exit 0",
-    "docker:up": "docker compose -f infra/compose/docker-compose.local.yml up -d",
-    "docker:down": "docker compose -f infra/compose/docker-compose.local.yml down",
-    "docker:reset": "docker compose -f infra/compose/docker-compose.local.yml down -v && docker compose -f infra/compose/docker-compose.local.yml up -d",
+    "docker:up": "docker compose -f infra/compose/docker-compose.dependencies.yml up -d",
+    "docker:down": "docker compose -f infra/compose/docker-compose.dependencies.yml down",
+    "docker:reset": "docker compose -f infra/compose/docker-compose.dependencies.yml down -v && docker compose -f infra/compose/docker-compose.dependencies.yml up -d",
     "db:migrate": "dotnet ef database update --project src/Infrastructure --startup-project src/Api",
     "db:dev": "node scripts/ops/switch-db.mjs dev",
     "db:cloud": "node scripts/ops/switch-db.mjs dev",
@@ -29,17 +33,19 @@
     "lint": "eslint apps/web/src",
     "lint:web": "eslint apps/web/src",
     "lint:fix": "eslint apps/web/src --fix",
-    "check": "npm run check:lint && npm run check:no-mock-login && npm run check:api && npm run check:shared && npm run check:web && npm run check:mobile",
+    "check": "npm run check:lint && npm run check:no-mock-login && npm run check:api && npm run check:shared && npm run check:web && npm run check:mobile && npm run check:campo-build",
     "check:lint": "npm run lint",
     "check:no-mock-login": "node scripts/ci/check-no-mock-login.mjs apps",
     "check:api": "dotnet build",
     "check:shared": "npm run build:shared",
     "check:web": "npm run build:web",
     "check:mobile": "npm run build:mobile",
+    "check:campo-build": "node scripts/ci/check-campo-build.mjs",
     "test:shared": "npm run test --workspace=libs/shared-core",
     "test:web": "npm run test --workspace=apps/web",
     "test:mobile": "npm run test --workspace=apps/mobile",
-    "test:frontend": "npm run test:shared && npm run test:web && npm run test:mobile"
+    "test:frontend": "npm run test:shared && npm run test:web && npm run test:mobile",
+    "audit:check": "node .github/scripts/audit-check.mjs"
   },
   "devDependencies": {
     "@nx/eslint-plugin": "^23.3.0",
@@ -50,5 +56,9 @@
     "eslint-plugin-boundaries": "^7.2.0",
     "nx": "^23.3.0",
     "typescript": "6.0.3"
+  },
+  "overrides": {
+    "undici": "^7.30.0",
+    "handlebars": "^4.7.10"
   }
 }

@@ -66,6 +66,8 @@ public static class CanonicalSchema
                 Code("lot_code", "lote", "codigo_lote"),
                 new("expires_on", FieldType.Date, false, ["vencimiento", "fecha_vencimiento", "caducidad"]),
                 new("origin", FieldType.Text, false, ["origen", "proveedor"]),
+                new("product_name", FieldType.Text, false, ["nombre_producto", "descripcion_producto", "nombre"]),
+                new("base_unit", FieldType.Text, false, ["unidad", "unidad_base", "um"]),
             ],
             [ImportEntity.Stock] =
             [

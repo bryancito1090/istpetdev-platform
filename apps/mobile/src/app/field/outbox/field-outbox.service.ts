@@ -220,6 +220,8 @@ export class FieldOutboxService {
       quantityAccepted: number;
       quantityRejected: number;
       unit: string;
+      remainingQuantity?: number;
+      nextRequestedQuantity?: number;
     }[];
     photoBlob?: Blob;
     signatureBlob?: Blob;

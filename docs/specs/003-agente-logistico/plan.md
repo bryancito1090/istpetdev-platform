@@ -226,20 +226,20 @@ Dos workflows con la misma estructura; la diferencia es el disparador y la instr
 | Nodo | Configuración |
 |---|---|
 | Webhook | `POST`, ruta `istpetdev/agent/watch` o `istpetdev/agent/incident`, responde de inmediato (202) |
-| Verificar firma (Code) | Recalcula el HMAC con el secreto guardado como credencial o variable de n8n; rechaza firmas inválidas o con más de 60 s |
+| Verificar firma (Set + Code) | Lee el HMAC desde `ISTPETDEV_WEBHOOK_SECRET`, valida firma y edad ≤ 60 s. La ejecución no guarda datos para no persistir la clave transitoria. Requiere `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`; limita la edición de workflows a administradores de confianza. |
 | AI Agent | Mensaje de sistema = prompt v1; máximo 8 iteraciones; salida con parser estructurado |
-| Modelo | Nodo de chat de DeepSeek (credencial con la clave). Si el nodo no soporta bien herramientas en la versión del servidor, nodo de chat compatible con OpenAI con la URL base de DeepSeek |
-| Herramientas (HTTP Request Tool × 5) | `get_risks`, `propose_routes`, `get_route_plan`, `get_incident_impact`, `replan`; credencial OAuth2 *client credentials* contra el dominio de Cognito con scope `istpetdev-api/automation`; cabecera `X-Agent-Run-Id` desde el webhook; timeout 3 s |
+| Modelo | Nodo nativo DeepSeek Chat Model, credencial con la clave; `deepseek-chat`, timeout 3 s y sin reintentos |
+| Herramientas (5) | `get_risks`, `propose_routes`, `get_route_plan`, `get_incident_impact`, `replan`, expuestas como herramientas de subworkflow. Cada una contiene un HTTP Request con OAuth2 *client credentials*, scope `istpetdev-api/automation`, cabecera `X-Agent-Run-Id`, timeout 3 s y un guard que la omite si quedan menos de 3,2 s o falta el incidente firmado. |
 | Parser de salida | Esquema JSON `{ decisions: [{ agentDecisionId, explanation, driverMessage }], summary }` |
 | Enviar resultado (HTTP Request) | `POST {apiBaseUrl}/agent/runs/{runId}/result` con el JSON + `model`, `promptVersion`, `$execution.id` |
 | Rama de error | Ante error del agente o del parser: `POST …/result` con `agentError` |
 | Schedule (solo `vigia`) | Desactivado por defecto (FR-13) |
 
-El webhook recibe `deadlineUtc` calculado por la API a partir de `AgentRun.StartedAtUtc + Agent:TimeoutSeconds`. Antes de cada llamada a herramienta o al modelo, el workflow comprueba el tiempo restante y limita el timeout a ese resto; si no queda tiempo para una llamada completa, salta a la rama de error. Los reintentos por 429/5xx/transporte solo se hacen dentro del mismo plazo, con espera acotada; nunca heredan los 15 s y tres intentos del HTTP externo general. Limitar la ejecución del AI Agent a menos de 10 s. Aunque n8n continúe tras el plazo por un proveedor lento, la actualización condicional en la API conserva el resultado del fallback y su callback recibe 409.
+El webhook recibe `deadlineUtc` calculado por la API a partir de `AgentRun.StartedAtUtc + Agent:TimeoutSeconds`. Cada herramienta omite la llamada si no cabe su timeout de 3 s dentro del tiempo restante. El AI Agent tiene máximo 8 iteraciones, el modelo tiene timeout de 3 s y la ejecución completa de n8n corta a los 8 s; la API conserva su fallback si se agota el plazo y un callback tardío recibe 409. No hay reintentos de DeepSeek ni de las herramientas.
 
 **Fuente única del prompt:** `automation/n8n/prompts/agente-logistico-v1.md`. `scripts/agent/build-workflows.py` (biblioteca estándar, `python3 -I`) inserta el texto del prompt y su versión en las plantillas `automation/n8n/templates/*.json` y escribe `automation/n8n/workflows/*.json`. Así el prompt del repositorio y el del workflow no divergen.
 
-Los nombres exactos de nodos y parámetros se verifican contra la versión de n8n del servidor de Bryan antes de exportar; las plantillas se generan exportando un workflow construido a mano en esa versión.
+La etiqueta fijada es `docker.n8n.io/n8nio/n8n:2.39.5`, cuyo digest local coincide con la imagen observada en el servidor. La configuración del servidor aún debe cambiar `latest` por esa etiqueta en #39. Las plantillas son exportaciones de n8n 2.39.5; `scripts/agent/build-workflows.py` inyecta el prompt y su versión determinísticamente.
 
 ### Prompt v1 (borrador para `agente-logistico-v1.md`)
 

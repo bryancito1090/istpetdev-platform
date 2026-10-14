@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: aceptado
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [arquitectura, identidad, oidc, rbac, seguridad]
 ---
 
@@ -74,6 +74,30 @@ Ver [[Seguridad y evidencias]], [[Movil offline y sincronizacion]] y [[Entornos 
 
 El spec 003 (`docs/specs/003-agente-logistico/`) propone crear en Terraform el cliente confidencial de n8n con un único scope `istpetdev-api/automation`, en lugar de los cuatro scopes finos de la sección «Automatización desde n8n». El límite real lo aplica la API: la identidad con ese scope solo recibe el rol `Automatizacion`, que no puede publicar, aprobar, rechazar, deshacer ni cambiar el modo de autonomía. Contradicción registrada en [[Hechos canonicos]].
 
-## Clientes web y PWA — revisión del 12 de octubre de 2026
+## Clientes web y PWA — implementación efectiva y hotfix del 14 de octubre de 2026
 
-La revisión de specs encontró que ningún spec implementaba ADR-18. El spec 004 asume el login de la web de bodega y de la PWA con Authorization Code + PKCE mediante `angular-auth-oidc-client` 22.0.1 (compatible con Angular 22), con interceptor limitado a la API y sin tokens en el almacenamiento durable del teléfono. La PWA se publica en `/campo/` del dominio de demo y los clientes Cognito web y móvil deben sumar las URL de retorno y cierre HTTPS a las de `localhost`, que hoy son las únicas en Terraform.
+La especificación 013 implementó el flujo OIDC PKCE real con Cognito User Pool (`us-east-1_4Y2j5DINp`) retirando completamente los mocks de desarrollo:
+
+1. **Clientes de Cognito y Callbacks de Producción**:
+   - Cliente Web (`6ejhdau47gad74id7id1l7ugln`):
+     - `CallbackURLs`: `http://localhost:4200/auth/callback` y `https://istpetdev.doicela.dev/auth/callback`
+     - `LogoutURLs`: `http://localhost:4200` y `https://istpetdev.doicela.dev`
+   - Cliente Móvil (`3k59rv5cov1sinllgd7igmpe1a`):
+     - `CallbackURLs`: `http://localhost:8100/auth/callback` y `https://istpetdev.doicela.dev/campo/auth/callback`
+     - `LogoutURLs`: `http://localhost:8100` y `https://istpetdev.doicela.dev/campo/`
+   - Sincronizados en AWS Cognito y formalizados en `infra/terraform/environments/dev/identity.tf`.
+
+2. **Resolución de Token Endpoint y Almacenamiento Libre de Tokens (`TokenFreeStorage`)**:
+   - `TokenFreeStorage` en `@istpetdev/shared-core` restringe la persistencia en `sessionStorage` exclusivamente a las claves del flujo PKCE para que ningún token sensible (`access_token`, `refresh_token`, `id_token`) resida en el almacenamiento del navegador.
+   - Para que el cliente `angular-auth-oidc-client` pueda canjear el código de autorización por el Access Token tras la redirección externa desde Cognito, `AUTH_FLOW_KEYS` incluye:
+     - `codeVerifier`: Verificador criptográfico PKCE S256.
+     - `authStateControl`: Control de estado contra CSRF.
+     - `authNonce`: Nonce de validación de replay.
+     - `authWellKnownEndPoints`: Metadata pública de los endpoints del proveedor (requerida para ubicar `/oauth2/token`).
+     - `storageCodeFlowInProgress`: Indicador de intercambio de código en progreso.
+   - Adicionalmente, `auth.config.ts` en Web y Móvil define `authWellknownEndpoints` estáticos explícitos para garantizar la resolución inmediata de endpoints sin depender exclusivamente del caché en almacenamiento.
+
+3. **Validación de Identidad y Claims en API**:
+   - Despliegue en EC2 parametriza `Authentication__Authority`, `Authentication__AllowedClientIds__0` y `Authentication__AllowedClientIds__1` desde variables de repositorio en GitHub Actions (`deploy.yml`).
+   - Endpoint `GET /api/v1/me` resuelve la identidad autenticada contra la tabla `Account` en PostgreSQL (`istpetdev_integration`), validando rol institucional y plataforma autorizada (`web` o `field`).
+

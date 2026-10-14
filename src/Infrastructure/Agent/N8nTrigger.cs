@@ -11,7 +11,8 @@ namespace IstpetDev.Infrastructure.Agent;
 public sealed class N8nOptions
 {
     public string BaseUrl { get; set; } = "http://localhost:5678";
-    public string WebhookSecret { get; set; } = "istpetdev-local-hmac-secret-change-in-prod";
+    public string? WebhookUrl { get; set; }
+    public string WebhookSecret { get; set; } = string.Empty;
     public string WatchWebhookPath { get; set; } = "/webhook/agent-watch";
     public string IncidentWebhookPath { get; set; } = "/webhook/agent-incident";
     public string ApiBaseUrl { get; set; } = "http://localhost:5000";
@@ -32,14 +33,36 @@ public sealed class N8nTrigger(
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public async Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
+    public Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
+        => TriggerAsync(runId, kind, incidentId, null, ct);
+
+    public async Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, DateTime? deadlineUtc, CancellationToken ct)
     {
         var opts = options.Value;
-        var path = kind == AgentRunKind.Incident
-            ? opts.IncidentWebhookPath
-            : opts.WatchWebhookPath;
+        if (string.IsNullOrWhiteSpace(opts.WebhookSecret))
+        {
+            logger.LogWarning("n8n webhook secret is not configured for run {RunId}", runId);
+            return TriggerOutcome.Error;
+        }
 
-        var deadlineUtc = DateTime.UtcNow.AddSeconds(opts.TimeoutSeconds);
+        string targetUrl;
+        if (!string.IsNullOrWhiteSpace(opts.WebhookUrl))
+        {
+            var suffix = kind == AgentRunKind.Incident ? "incident" : "watch";
+            targetUrl = $"{opts.WebhookUrl.TrimEnd('/')}/{suffix}";
+        }
+        else
+        {
+            var path = kind == AgentRunKind.Incident
+                ? opts.IncidentWebhookPath
+                : opts.WatchWebhookPath;
+
+            targetUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
+                ? path
+                : $"{opts.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
+        }
+
+        var deadline = deadlineUtc ?? DateTime.UtcNow.AddSeconds(opts.TimeoutSeconds);
 
         var payload = new
         {
@@ -47,16 +70,19 @@ public sealed class N8nTrigger(
             kind = kind.ToString(),
             incidentId,
             apiBaseUrl = opts.ApiBaseUrl,
-            deadlineUtc
+            deadlineUtc = deadline
         };
 
         var bodyJson = JsonSerializer.Serialize(payload, JsonOpts);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var signature = ComputeSignature(timestamp, bodyJson, opts.WebhookSecret);
 
-        var targetUrl = string.IsNullOrWhiteSpace(opts.BaseUrl)
-            ? path
-            : $"{opts.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
+        var remaining = deadline - DateTime.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            logger.LogWarning("Agent run {RunId} reached its deadline before the n8n webhook call", runId);
+            return TriggerOutcome.Error;
+        }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
         {
@@ -67,7 +93,8 @@ public sealed class N8nTrigger(
         request.Headers.Add(SignatureHeader, signature);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(2));
+        var requestTimeout = remaining < TimeSpan.FromSeconds(2) ? remaining : TimeSpan.FromSeconds(2);
+        timeoutCts.CancelAfter(requestTimeout);
 
         try
         {
@@ -82,7 +109,7 @@ public sealed class N8nTrigger(
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            logger.LogWarning("n8n webhook timed out after 2s for run {RunId}", runId);
+            logger.LogWarning("n8n webhook timed out after {TimeoutMs}ms for run {RunId}", (int)requestTimeout.TotalMilliseconds, runId);
             return TriggerOutcome.Error;
         }
         catch (Exception ex)

@@ -12,6 +12,8 @@ using IstpetDev.Application.Agent;
 using IstpetDev.Infrastructure.Agent;
 using IstpetDev.Infrastructure.Imports;
 using IstpetDev.Infrastructure.Demo;
+using IstpetDev.Application.Simulation;
+using IstpetDev.Infrastructure.Simulation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +60,12 @@ public static class DependencyInjection
             var client = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(pool.Region));
             return new CognitoIdentityDirectory(client, pool, provider.GetRequiredService<ILogger<CognitoIdentityDirectory>>());
         });
+
+        // Simulation services (005)
+        services.AddSingleton<SimulationWorker>();
+        services.AddSingleton<ISimulationWorker>(sp => sp.GetRequiredService<SimulationWorker>());
+        services.AddHostedService(sp => sp.GetRequiredService<SimulationWorker>());
+        services.AddScoped<ISimulationService, SimulationService>();
 
         // Register readiness health check
         services.AddHealthChecks()

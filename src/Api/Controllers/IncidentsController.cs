@@ -19,7 +19,8 @@ public sealed class IncidentsController(
     IApplicationDbContext db,
     IIncidentEvaluator evaluator,
     IOptions<AgentOptions> agentOptions,
-    IN8nTrigger n8nTrigger) : ControllerBase
+    IServiceScopeFactory scopes,
+    ILogger<IncidentsController> logger) : ControllerBase
 {
     private static readonly GeometryFactory Gf = new(new PrecisionModel(), 4326);
 
@@ -72,11 +73,13 @@ public sealed class IncidentsController(
             {
                 try
                 {
-                    await n8nTrigger.TriggerAsync(run.Id, AgentRunKind.Incident, incident.Id, CancellationToken.None);
+                    await using var scope = scopes.CreateAsyncScope();
+                    var agent = scope.ServiceProvider.GetRequiredService<IAgentRunService>();
+                    await agent.ResumeAndWaitAsync(run.Id, CancellationToken.None);
                 }
-                catch
+                catch (Exception error)
                 {
-                    // ignored in background fire-and-forget
+                    logger.LogError(error, "Failed to complete automatic incident run {RunId}", run.Id);
                 }
             });
         }

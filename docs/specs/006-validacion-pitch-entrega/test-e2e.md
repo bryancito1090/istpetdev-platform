@@ -27,11 +27,15 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cinco componentes presentes; precio, cita y resultado quedan como huecos; revisión, corrección y nombre del revisor anotados. **Evidencia:** revisión fechada en el registro previo y versión del kit.
 
+**Estado al 14-oct-2026:** Joseph informó que revisó y aprobó todos los componentes del kit del PR #71 durante 15 minutos. No comunicó las horas de inicio y fin. E2E-01 y CE-01 se registran como cumplidos con esa declaración del revisor ([T1](task.md)); no se atribuye tiempo de construcción del kit al equipo.
+
 ### E2E-02 — Feria sin fabricar validación
 
 **Pasos:** dos integrantes piden permiso en las pausas del 16; preguntan cinco minutos, sin grabar por defecto; el 17 presentan el prototipo a al menos una persona y piden interpretación antes de explicar. Separan permiso de notas y permiso de cita; evitan las organizaciones cauteladas.
 
 **Resultado:** ≥3 hojas antes de 12:30 del 17, ≥1 reacción al prototipo, al menos una objeción/ajuste o pendiente trazado. Rechazos cuentan como intento, no conversación. Si no se alcanza, CE-02 queda pendiente y el guion no dice «validado por el sector». **Evidencia:** notas anonimizadas con fecha, contexto, consentimiento y vínculo a cambio.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar; las conversaciones son el 16 y 17-oct. Hojas, registro de intentos y lista de la corrida oficial de 005 preparados en [hojas de feria](hojas-feria.md). CE-02 pendiente.
 
 ### E2E-03 — Siete bloques y cinco voces
 
@@ -39,11 +43,17 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** orden Anexo 5.7 exacto; 160/280/400 s o tiempo oficial −20 s tras O-04; nombres solo si el equipo los asignó. **Evidencia:** hoja de cronometraje y video interno permitido.
 
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar. Los cortes 3/5/7 y el reparto por bloque y papel están redactados en la «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), pero nadie los ha leído en voz alta ni cronometrado. Los segundos del guion son reparto planificado.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Nombres de los cinco papeles sin confirmar por el equipo; relevo y sustitución por parte en [escena y contingencias](escena-y-contingencias.md). CE-03 pendiente.
+
 ### E2E-04 — Demo y plan B en escena
 
 **Pasos:** ejecutar reset, riesgo, ruta, incidente, despacho/recepción y QR; luego repetir simulando por separado caída de DeepSeek, ausencia de mapa, falta de wifi, fallo de cámara/QR y ZIP de simulación no importable. La persona responsable dice la línea de contingencia y pasa al siguiente hito sin detener cronómetro.
 
 **Resultado:** ninguna escena afirma capacidad sin CE ejecutado; la recepción grabada se llama grabada, un QR que solo funciona en hotspot se opera con teléfono del equipo, y un resultado sin ZIP se retira. **Evidencia:** matriz de contingencia con video/cronómetro y enlace al CE de 001–005 correspondiente.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Protocolo del ensayo funcional, frases vigentes sin ensayo conectado y tarjetas C-01–C-05 preparadas en [escena y contingencias](escena-y-contingencias.md); ninguna contingencia provocada. El video de respaldo no existe. La tabla de pasadas funcionales está vacía en el [registro de ensayos](registro-ensayos.md#ensayos-funcionales-de-la-demo).
 
 ### E2E-05 — Trazabilidad de promesas
 
@@ -51,11 +61,17 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cuatro afirmaciones rechazadas o corregidas cuando falta soporte; cero números de resultado huérfanos en versión congelada. Mostrar min/max de seeds solo con denominadores y etiqueta de simulación. **Evidencia:** matriz firmada por revisores y hashes de materiales auditados.
 
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar como recorrido completo. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Joseph aprobó el borrador `8693f73`; faltan el segundo revisor humano, la revisión de A-16/A-17/A-27 ajustadas después de su aprobación, el PDF y la versión congelada. Las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye el recorrido.
+
+**Actualización 14-oct-2026 (fase 3):** segundo revisor pedido en la issue #46; la revisión no ha ocurrido. Hoja para registrar nombre, versión y correcciones en la [matriz](matriz-afirmaciones.md#hoja-de-segunda-revisión-e2e-05). CE-06 pendiente.
+
 ### E2E-06 — Racha real
 
 **Pasos:** diez pasadas consecutivas del corte oficial completo, incluidas preguntas breves y relevos; medir de primera palabra a cierre. Los ensayos 9 y 10 se hacen sin wifi del recinto y con el mismo plan de conexión elegido para escena. Registrar incluso fallos; un fallo vuelve contador a cero. Cronometrar aparte ronda de veinte respuestas, cada una ≤30 s.
 
 **Resultado:** contador llega a diez, dos últimas sin wifi, tiempo ≤ oficial −20 s en cada pasada, veinte respuestas dentro del límite. Si O-04 aún no llega, registrar pasadas como preparación, no CE-04 cerrado. **Evidencia:** diez filas consecutivas con enlaces, cronómetro, conexión, cinco roles, versión y fallos vacíos.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Registro de pasadas y ronda de veinte respuestas preparados en [registro de ensayos](registro-ensayos.md); racha 0/10. CE-04 y CE-05 pendientes.
 
 ### E2E-07 — Paquete que se entrega
 
@@ -63,8 +79,23 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** una sola versión entregable con siete componentes y vínculos de evidencia, copia local legible y hora de congelamiento. Si el formato no fue confirmado, CE-07 permanece pendiente hasta recibir instrucción oficial. **Evidencia:** manifiesto, hashes, registro de entrega y tag.
 
+**Estado al 14-oct-2026 16:00 (fase final):** sin ejecutar. [Manifiesto](manifiesto-paquete.md) abierto; editable y PDF provisionales con SHA-256; no hay tag `pre-evento`, video, congelamiento ni entrega. O-06 está pendiente, así que no hay canal para entregar.
+
+## Estado de los criterios al 14-oct-2026 16:00
+
+| CE | Estado | Motivo | Alternativa honesta si no se cumple |
+|---|---|---|---|
+| CE-01 | registrado | E2E-01: revisión de Joseph del 14-oct | — |
+| CE-02 | pendiente | Entrevistas el 16 y retorno el 17; ninguna conversación | «Es una hipótesis que estamos validando con expositores» (A-29) |
+| CE-03 | pendiente | Sin pasadas cronometradas; papeles sin confirmar; O-04 sin respuesta | Ensayar los tres cortes como preparación |
+| CE-04 | pendiente | Racha 0/10; O-04 sin respuesta | Pasadas clasificadas como preparación, sin cerrar contra un tiempo inventado |
+| CE-05 | pendiente | Ninguna ronda de respuestas cronometrada | Responder con las sustituciones de la matriz |
+| CE-06 | pendiente | Segunda revisión pedida, no realizada; sin versión congelada | Mantener retiradas y sustituciones vigentes |
+| CE-07 | pendiente | Sin congelamiento, entrega ni canal (O-06) | Entregar solo por un canal oficial confirmado; si no llega, registrar la consulta y no improvisar |
+| CE-08 | pendiente | Sin tag `pre-evento` ni video del 15-oct | Sin video: frases vigentes y diapositivas; nunca presentar una grabación como vivo |
+
 ## Registro de ejecuciones
 
 | Fecha/hora | Commit/material | Escenario | Duración/conexión | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
-| [PENDIENTE: primer ensayo] | [PENDIENTE: versión] | [PENDIENTE: ID] | [PENDIENTE: medición] | pendiente | [PENDIENTE: enlace] | [PENDIENTE: responsable] |
+| 2026-10-14 (hora no registrada) | PR #71, `228ab72` (T1 en `92a9e63`) | E2E-01 | 15 min, revisión documental | pasó según declaración del revisor; cinco componentes aprobados, sin correcciones adicionales informadas | [hoja de T1](task.md#hoja-de-revisión-humana-de-t1-unos-15-min), [registro previo](../../boveda/06%20Equipo/Registro%20de%20trabajo%20previo%20y%20del%20evento.md) | Joseph Baño (Andrés) |

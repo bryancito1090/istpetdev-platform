@@ -69,10 +69,20 @@ Caso demo: cierre de un tramo o demora añadida a aristas de la matriz. Colocar 
 - Solicitar aprobación si deja puntos pendientes o cambia compromisos.
 - Indicar si la incidencia es sintética y si el proveedor no soporta el bloqueo directamente.
 
+## Ruteo por pedidos, sourcing multialmacén y rebalanceo (ADR-28)
+
+Con la formalización de [[Decisiones de arquitectura#ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo|ADR-28]] (2026-10-14, PR #59):
+1. **Pedidos de entrega (`DeliveryOrder`):** La generación de ruta parte de órdenes de clientes con líneas de productos y cantidades específicas, no de visitas genéricas.
+2. **Sourcing multialmacén (`SourcingService`):** Determina la bodega óptima más cercana con stock disponible (FEFO) para surtir el pedido, salvaguardando el stock de seguridad.
+3. **Emparejamiento de flota (`VehicleMatcher`):** Evalúa la flota frente a restricciones físicas de peso acumulado, volumen en m³, jornada laboral y ventanas de tiempo, emitiendo causas deterministas de descarte.
+4. **Evaluación de secuencia multiparada (`RouteEvaluator`):** Garantiza que toda parada de recolección (`Kind = "Pickup"`) en bodega preceda cronológicamente a las paradas de entrega (`Kind = "Delivery"`) en puntos de servicio.
+5. **Rebalanceo preventivo (`RebalancingAdvisor`):** Proyecta la cobertura en días por bodega y producto, emitiendo sugerencias de transferencia inter-almacén con auditoría humana.
+6. **Planificador de emergencias (`EmergencyPlanner`):** Detecta desabastecimiento crítico y formula pedidos automáticos de alta prioridad.
+
 ## Datos viales y fallback
 
 Guardar fecha, proveedor, perfil y hash de matriz. Revisar condiciones de almacenamiento/reuso antes de preparar matrices para demo. Si no hay red, usar una matriz permitida y etiquetada; no presentarla como tráfico actual.
 
 El fallback mantiene el flujo y muestra antigüedad. La planificación asíncrona deja progreso y error recuperable.
 
-Ver [[Simulador y metricas]], [[Dataset y escenarios]] y [[Plan de validacion]].
+Ver [[Simulador y metricas]], [[Dataset y escenarios]], [[Plan de validacion]], [[Decisiones de arquitectura]] (ADR-05, ADR-23, ADR-28) y [[Modelo de datos]].

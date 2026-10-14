@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -13,17 +13,17 @@ Backlog compartido de IstpetDev, **sin asignación fija de integrantes**. Todas 
 
 | ID | Entrega | Depende de | Criterio de cierre | Estado |
 |---|---|---|---|---|
-| B-01 | Cerrar versiones y contrato | ADRs | Versiones/contrato revisados | Pendiente |
-| B-02 | Fixture de 6 puntos/2 SKU | B-01 | Unidades y balance verificables | Pendiente |
-| B-29 | Identidad y RBAC en servidor | B-01, ADR-10/16, B-37 | RNF-01/RF-17; cuentas demo, roles/permisos/ámbitos administrables, delegación/campos y revocación comprobados; V-13/V-24/V-34 | Pendiente |
-| B-03 | Catálogo, lotes y saldos | B-02/29 | RF-01/02, concurrencia válida | Pendiente |
-| B-04 | Consumo y cobertura | B-03 | RF-03, casos cero/desactualizado | Pendiente |
-| B-05 | Planner inicial | B-04, mapas | RF-04, inviables explícitos | Pendiente |
+| B-01 | Cerrar versiones y contrato | ADRs | Versiones/contrato revisados | **Completado** (ADR-01 a ADR-28) |
+| B-02 | Fixture de 6 puntos/2 SKU | B-01 | Unidades y balance verificables | **Completado** (demo-base / demo-region) |
+| B-29 | Identidad y RBAC en servidor | B-01, ADR-10/16, B-37 | RNF-01/RF-17; cuentas demo, roles/permisos/ámbitos administrables, delegación/campos y revocación comprobados; V-13/V-24/V-34 | **Completado** (ADR-21 roles fijos, ADR-26 Auditor, Spec 013) |
+| B-03 | Catálogo, lotes y saldos | B-02/29 | RF-01/02, concurrencia válida | **Completado** (Spec 001) |
+| B-04 | Consumo y cobertura | B-03 | RF-03, casos cero/desactualizado | **Completado** (Spec 002) |
+| B-05 | Planner inicial | B-04, mapas | RF-04, inviables explícitos | **Completado** (Spec 002 / ADR-28) |
 | B-06 | Unidades QR y custodia | B-03 | RF-05, líneas por lote | **Completado** (Spec 004) |
 | B-07 | Despacho/recepción online | B-06/29 | Cantidades parciales y permisos RBAC/asignación comprobados | **Completado** (Spec 004) |
 | B-08 | Persistencia y sincronización móvil | B-07 | RF-06, reinicio/reintento/duplicados y revocación offline de V-24 | **Completado** (Spec 004) |
-| B-09 | Panel integrado | B-04/05/07 | RF-07, datos/versiones consistentes | Pendiente |
-| B-10 | Baseline/comparación pequeña | B-05 | RF-08, mismos datos/recursos | Pendiente |
+| B-09 | Panel integrado | B-04/05/07 | RF-07, datos/versiones consistentes | **En curso** (Rutas, bodegas y mapas interactivos en develop, PR #59) |
+| B-10 | Baseline/comparación pequeña | B-05 | RF-08, mismos datos/recursos | Pendiente (Spec 005) |
 
 ## P1 — sistema completo para demo
 
@@ -32,26 +32,26 @@ Backlog compartido de IstpetDev, **sin asignación fija de integrantes**. Todas 
 | B-11 | S3 foto/firma | B-08 | RF-09, privada y reintentable | **Completado** (Spec 004) |
 | B-12 | Consulta pública QR | B-06/11 | RF-13, datos limitados y revocación | **Completado** (Spec 004) |
 | B-13 | SignalR y chat | B-07/29 | RF-10, políticas RBAC compartidas, historial y reconexión; V-14 | Pendiente |
-| B-14 | Incidente/replanificación | B-05/13 | RF-11, lo ejecutado se conserva | Pendiente |
-| B-15 | n8n riesgo/explicación | B-04 | RF-12, fallback/JSON/error | Pendiente |
+| B-14 | Incidente/replanificación | B-05/13 | RF-11, lo ejecutado se conserva | **Completado** (Spec 002) |
+| B-15 | n8n riesgo/explicación | B-04 | RF-12, fallback/JSON/error | **Completado** (Backend C# y triggers Spec 003) |
 | B-16 | n8n incidente demo | B-14/15 | Credencial limitada y caso etiquetado | Pendiente |
 | B-17 | Dataset 80 puntos/90 días | B-02 | Escenarios, seed y hash | Pendiente |
 | B-18 | Simulador/KPIs/exportaciones | B-10/17 | RF-14, balance y denominadores | Pendiente |
 | B-19 | Anomalía/investigación | B-04/17 | RF-15, alerta distinta de merma | Pendiente |
 | B-20 | Hosting HTTPS y Hardening Linux | B-01, recursos | RNF-06, Perfil A aprovisionado con UFW, Nginx TLS 1.2/1.3, Fail2ban, loopback binding y Lynis > 80/100 | Pendiente |
-| B-21 | Pipeline CI/CD DAG y rollback rápido | B-20 | ADR-15, GitHub Actions DAG con GHCR, retención de 3 versiones y rollback < 30s probado en vivo | Pendiente |
+| B-21 | Pipeline CI/CD DAG y rollback rápido | B-20 | ADR-15, GitHub Actions DAG con GHCR, retención de 3 versiones y rollback < 30s probado en vivo | **Completado en develop** (Issue #35 / PR #70: readiness estricto, fail-fast y rollback aditivo en [[Runbook de DevOps y base de datos para la demo]]) |
 | B-22 | Ensayo físico y contingencias | B-08/12/14/18/20 | Recorrido completo y video | Pendiente |
 | B-23 | Evidencia de usuario/mentor | B-09/22 | Validación documentada y cambios | Pendiente |
 | B-24 | Paquete/pitch final | B-18/22/23 | Entregables consistentes con evidencia | Pendiente |
 
 ## P2 — operación nacional
 
-| ID | Entrega | Criterio |
-|---|---|---|
-| B-25 | Multi-bodega/flota avanzada | Restricciones reales y benchmark |
-| B-26 | Pronóstico calibrado | Backtesting frente a base determinista |
-| B-27 | Carga/autoscaling/recuperación | Volumen y tiempos comprobados |
-| B-28 | Integración empresarial/piloto | Acuerdo y resultados observados |
+| ID | Entrega | Criterio | Estado |
+|---|---|---|---|
+| B-25 | Multi-bodega/flota avanzada | Restricciones reales y benchmark | **Completado anticipadamente en develop** ([[Decisiones de arquitectura#ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo|ADR-28]], PR #59) |
+| B-26 | Pronóstico calibrado | Backtesting frente a base determinista | Pendiente |
+| B-27 | Carga/autoscaling/recuperación | Volumen y tiempos comprobados | Pendiente |
+| B-28 | Integración empresarial/piloto | Acuerdo y resultados observados | Pendiente |
 
 ## Documentación y skills
 
@@ -120,8 +120,8 @@ Propuesta de la sesión de definición registrada en [[Definiciones de producto 
 | B-42 | Motor logístico: riesgo, ruta de 2 vehículos, replanificación y política de autonomía (spec 002) | B-41, ADR-22, ADR-23 | Criterios CE-01 a CE-07 del spec 002 | Pendiente |
 | B-43 | Fixture `demo-region` con tramos viales e incidente predefinido calibrado | B-42 | El incidente produce una decisión ejecutada sola y otra escalada | Pendiente |
 | B-44 | Agente niveles A y B con n8n (spec 003) y prueba de aceptación de DeepSeek | B-42 | Informe de aceptación: llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10; fallback visible | Pendiente |
-| B-45 | Kit previo de validación y pitch (spec 006), preparado con IA sin horas de construcción del equipo | — | Guion y hoja consentida de feria, esqueleto 3/5/7, modelo de negocio con precio pendiente, veinte respuestas ≤30 s e investigación SERCOP; revisión humana de unos 15 min registrada; CE-01 del 006 | Propuesta documentada; revisión pendiente |
-| B-46 | Evidencia del sector, ensayos y paquete en el evento (spec 006) | B-45, B-41 a B-44 y 005 | ≥3 conversaciones antes del 17-oct 12:30, ≥1 con reacción al prototipo; diez ensayos consecutivos, dos sin wifi; siete entregables y tag previo; V-40 a V-43 | Pendiente de evento y de CE ejecutados |
+| B-45 | Kit previo de validación y pitch (spec 006), preparado con IA sin horas de construcción del equipo | — | Guion y hoja consentida de feria, esqueleto 3/5/7, modelo de negocio con precio pendiente, veinte respuestas ≤30 s e investigación SERCOP; revisión humana de unos 15 min registrada; CE-01 del 006 | Kit preparado por IA y aprobado por Joseph el 14-oct en revisión de 15 min; CE-01 registrado en E2E-01 |
+| B-46 | Evidencia del sector, ensayos y paquete en el evento (spec 006) | B-45, B-41 a B-44 y 005 | ≥3 conversaciones antes del 17-oct 12:30, ≥1 con reacción al prototipo; diez ensayos consecutivos, dos sin wifi; siete entregables y tag previo; V-40 a V-43 | Pendiente de evento y de CE ejecutados; hojas, escena y registro de ensayos preparados el 14-oct (task 006, T3–T5) |
 | B-47 | Campo: QR, despacho, custodia, recepción offline, evidencia y consulta pública (spec 004) | B-41, B-42; avisos de B-44 | Criterios CE-01 a CE-10 del [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) (incluye login PKCE, PWA por HTTPS y `advance`); teléfono real en modo avión, reinicio y reintento | Pendiente |
 | B-48 | Panel web conectado a riesgos, rutas, decisiones y entregas (spec 005) | B-41, B-42, B-44, B-47; lecturas de 002/004 | CE-01 a CE-03 del [spec 005](../../specs/005-panel-simulador/spec.md); sin cifras/puntos fijos y acciones confirmadas por API antes de H4 | Pendiente |
 | B-49 | Simulador nacional de 90 días y comparación reproducible (spec 005) | B-41, B-42; importador y matriz homogénea | CE-04 a CE-08 del spec 005: tres seeds base, una adversa, dos baselines, exportación/hash y benchmark regional completo ≤60 min antes de H4 | Pendiente |

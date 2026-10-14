@@ -7,8 +7,8 @@ namespace IstpetDev.Application.Agent;
 
 public sealed partial class ExplanationValidator : IExplanationValidator
 {
-    // Excluye cifras pegadas a letras o guiones (VEH-02, HOS-N01, RP-20261012-01)
-    [GeneratedRegex(@"(?<![\p{L}\d-])(\d{1,2}:\d{2}|\d+(?:[.,]\d+)?)(\s?%)?(?![\p{L}\d-])")]
+    // Excluye cifras pegadas a letras o guiones como parte de códigos (VEH-02, HOS-N01, RP-20261012-01)
+    [GeneratedRegex(@"(?<![\p{L}\d]|[\p{L}\d]-)(-?\d{1,2}:\d{2}|-?\d+(?:[.,]\d+)?)(\s?%)?(?![\p{L}\d])")]
     private static partial Regex NumberExtractionRegex();
 
     public ValidationResult Validate(string text, IReadOnlyList<Fact> facts)
@@ -84,7 +84,8 @@ public sealed partial class ExplanationValidator : IExplanationValidator
         var percentFacts = facts.Where(f => f.Unit == "%" || f.Unit == "pct" || f.Code.Contains("pct")).ToList();
 
         return percentFacts.Any(f =>
-            Math.Round(f.Value, decimalsWritten) == number || f.Value == number);
+            Math.Round(f.Value, decimalsWritten) == number ||
+            f.Value == number);
     }
 
     private static bool ValidateGeneralNumber(string numberStr, IReadOnlyList<Fact> facts)

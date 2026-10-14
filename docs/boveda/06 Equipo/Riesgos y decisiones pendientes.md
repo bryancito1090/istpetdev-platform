@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -44,23 +44,20 @@ tags: [hackathon, istpetdev]
 | R-19 | SSH abierto a `0.0.0.0/0` por defecto en el grupo de seguridad de Terraform | Exposición del host de demo | Reportado el 12-oct al equipo de infraestructura: lista vacía por defecto o despliegue por SSM; [issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14). El SG lo comparte el nodo del túnel SSM ([[Runbook de DevOps y base de datos para la demo]]) |
 | R-32 | `reset-to-demo-core.sql` se ejecuta sin respaldo verificado o sin congelar despliegues | Pérdida de datos de integración o API caída por migraciones fallidas | Respaldo y restauración de prueba obligatorios ([issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15)) y secuencia de la sección 4 del [[Runbook de DevOps y base de datos para la demo]] |
 | R-33 | Host de la app fuera de Terraform y SG compartido con el nodo del túnel; un `terraform apply` sin revisar el plan quita la salida total del SG | Despliegue roto o nodo del túnel expuesto | No aplicar sin `terraform plan` revisado; importar el host a Terraform con SG propio ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14)) |
+| R-34 | Ruteo limitado a un único almacén sin considerar stock por bodega ni pedidos reales | Rutas inviables en operación multialmacén o despachos sin stock | **Resuelto (ADR-28, PR #59):** Sourcing multialmacén FEFO, matching de vehículos con validación de peso/volumen, evaluación de paradas pickup/delivery y rebalanceo proactivo. |
 
 ## Decisiones pendientes
 
-| Tema | Momento de resolución |
-|---|---|
-| Trabajo previo, entrega y tiempo de pitch | Capacitación del 8 de octubre |
-| Versiones .NET (ADR-01) y PostgreSQL (ADR-03); revisar Angular, Ionic y Capacitor fijados en ADR-04 (Angular 18 sin soporte) y Terraform | Antes del primer scaffold |
-| Región/cuenta/límite AWS | Antes de aprovisionar |
-| Motor RDS/PostGIS y generadores UUID | Antes de migraciones |
-| Proveedor vial/costo/almacenamiento permitido | Antes de matrices y comparativa |
-| Proveedor de identidad y sesión móvil/offline (ADR-10) | Antes de recepción autenticada; el modelo RBAC ya está aceptado en ADR-14 |
-| PWA vs nativo para demo | Antes de pruebas en dispositivos |
-| Repositorio del software | Antes de empezar el código; la bóveda ya usa Git/GitHub |
-| Modelo/prompt/cuotas IA | Antes de configurar n8n |
-| Costos reales y tamaño del piloto | Con información empresarial |
-| Quién decide D1–D8 y ADR-21 a ADR-23 ([[Definiciones de producto y plan hasta el pitch]]) | Antes de implementar el spec 001 |
-| Resultado de la prueba de aceptación de DeepSeek (D4) | Hito H1, 13-oct 13:00 |
+| Tema | Momento de resolución | Estado / Resolución |
+|---|---|---|
+| Versiones .NET (ADR-01) y PostgreSQL (ADR-03) | Antes del primer scaffold | **Resuelto:** .NET 8 y PostgreSQL 16 PostGIS en producción/dev |
+| Stack Web/Móvil (ADR-04) y Mapas (ADR-05) | Diseño frontend | **Resuelto:** Angular 22, Ionic 8, Leaflet con OpenStreetMap |
+| Proveedor de identidad (ADR-10, ADR-18, ADR-26) | Antes de recepción autenticada | **Resuelto:** Cognito OIDC PKCE, roles fijos y rol Auditor |
+| Segregación de plataformas y ergonomía (ADR-24, ADR-25) | Implementación de campo | **Resuelto:** Web Torre de Control vs PWA móvil de campo |
+| Integración de campo y revisiones dinámicas (ADR-27) | Integración frontend-backend | **Resuelto:** Endpoints C#, adaptadores HTTP y outbox atómico |
+| Ruteo multiparada por pedidos y bodegas (ADR-28) | Operativa y visualización de rutas | **Resuelto:** Sourcing multialmacén, VehicleMatcher y rebalanceo |
+| Modelo/prompt/cuotas IA (ADR-08, ADR-22) | Configuración n8n | En curso (DeepSeek con fallback determinista en backend) |
+| Costos reales y tamaño del piloto | Con información empresarial | P2 (Spec 007 a 012) |
 
 No faltan nombres ni especialidades del equipo: IstpetDev ya confirmó cinco integrantes con experiencia transversal.
 

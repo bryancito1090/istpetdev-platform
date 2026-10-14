@@ -13,8 +13,8 @@ tags: [arquitectura, aws, ec2, rds, postgresql, postgis, docker, stateless, prod
 > [!warning] Complemento — 12 de octubre de 2026
 > - **Esquema.** Las 95 tablas con RLS (Schema95) son el estado **actual** de `istpetdev_integration`, no el que se usará en la demo. ADR-21 (propuesta) lo reemplaza con el spec 001 por el núcleo `DemoCore` de 27 tablas, **sin RLS** ni RBAC administrable, con roles funcionales fijos en `Account.Role`. La guarda `Schema95Preflight.sql` y `tools/Schema95Check` se retiran con ese spec.
 > - **Cambio y despliegue.** La secuencia de migraciones, el reset de las bases con respaldo previo y los cambios de infraestructura por spec están en [[Runbook de DevOps y base de datos para la demo]].
-> - **Fuera de Terraform.** El host de la app de esta nota no está gestionado por Terraform y comparte security group con el nodo del túnel SSM ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14), R-33).
-> - **Seguridad pendiente.** La cadena de conexión usa `Trust Server Certificate=true` y Swagger es público. Ambos puntos están pendientes de corregir en la misma issue.
+> - **Gestión de Infraestructura y Excepción SSH (Issue #14).** El host de la app opera fuera de Terraform durante el evento para evitar cortes de tráfico saliente (`0.0.0.0/0`). El puerto 22 SSH se mantiene como excepción operativa aceptada para el runner de CI/CD de GitHub Actions, mitigado en el host mediante reglas UFW (`limit 22/tcp`), Fail2ban y autenticación exclusiva por clave criptográfica (migración a SSM diferida a P2).
+> - **Seguridad de TLS y Swagger Resuelta (Issue #14).** La conexión a RDS aplica `SSL Mode=VerifyFull` con el bundle oficial `/etc/ssl/rds/global-bundle.pem` integrado en la imagen del backend (sin `Trust Server Certificate`). Swagger está desactivado por defecto en producción (`EnableSwagger=false`) y la ruta `/health/` desacoplada en Nginx.
 
 ---
 
@@ -116,7 +116,7 @@ El flujo `.github/workflows/deploy.yml` despliega el sistema de forma idempotent
    - `DB_NAME`: `istpetdev_integration`
    - `DB_USER`: `migrator_integration`
    - `DB_PASSWORD`: Clave sincronizada con AWS Secrets Manager (`/istpetdev/dev/db/integration/migrator`).
-   - `DB_SSL_MODE`: `Require`
+    - `DB_SSL_MODE`: `VerifyFull` (con validación de `Root Certificate=/etc/ssl/rds/global-bundle.pem`)
 2. **Resiliencia en el Servidor**:
    - Las variables se persisten en `/var/www/istpetdev/.env`.
    - Si una ejecución de CD carece momentáneamente de variables en runner, el script en el host recurre al `.env` local preconfigurado.
@@ -134,7 +134,7 @@ La plataforma expone endpoints estándar de observabilidad verificados en vivo:
 |---|---|---|---|
 | `https://istpetdev.doicela.dev/health/live` | GET | `200 OK` | Confirma que el proceso .NET 8 está activo y respondiendo solicitudes HTTP. |
 | `https://istpetdev.doicela.dev/health/ready` | GET | `200 OK` | Ejecuta `CanConnectAsync()` contra RDS y valida que no existan migraciones pendientes en `__EFMigrationsHistory`. |
-| `https://istpetdev.doicela.dev/swagger` | GET | `200 OK` | Interfaz Swagger UI con la documentación OpenAPI interactiva. Hoy es pública; se va a restringir ([issue #14](https://github.com/bryancito1090/istpetdev-platform/issues/14)). |
+| `https://istpetdev.doicela.dev/swagger` | GET | `404 Not Found` / `200 OK` | Documentación OpenAPI. Desactivada por defecto en producción (`404`); disponible únicamente cuando se activa explícitamente `ENABLE_SWAGGER=true` para demostración ante jurado técnico. |
 | `https://istpetdev.doicela.dev/` | GET | `200 OK` | Aplicación Angular 22 SPA servida con compresión y caché por Nginx. |
 
 ---

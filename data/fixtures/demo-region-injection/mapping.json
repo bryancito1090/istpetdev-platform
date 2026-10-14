@@ -1,0 +1,13 @@
+{
+  "name": "demo-region",
+  "files": {
+    "warehouses": { "file": "bodegas.csv" },
+    "service_points": { "file": "puntos.csv" },
+    "products": { "file": "productos.csv" },
+    "vehicles": { "file": "vehiculos.csv" },
+    "lots": { "file": "lotes.csv" },
+    "stock": { "file": "inventario.csv" },
+    "consumptions": { "file": "consumos.csv" },
+    "road_segments": { "file": "tramos.csv" }
+  }
+}

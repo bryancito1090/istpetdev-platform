@@ -7,34 +7,38 @@
 
 services:
   db:
-    image: postgis/postgis:16-3.4-alpine
-    container_name: istpetdev-local-db
-    restart: unless-stopped
-    ports:
-      - "15432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_dev_password_local
-      POSTGRES_DB: postgres
-    volumes:
-      - local_pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    extends:
+      file: docker-compose.dependencies.yml
+      service: db
 
   redis:
-    image: redis:7.4-alpine
-    container_name: istpetdev-local-redis
+    extends:
+      file: docker-compose.dependencies.yml
+      service: redis
+
+  n8n:
+    profiles: ["agent"]
+    image: ${N8N_IMAGE:?Define N8N_IMAGE con la etiqueta exacta de n8n}
+    container_name: istpetdev-local-n8n
     restart: unless-stopped
     ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      - "127.0.0.1:5678:5678"
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Define N8N_ENCRYPTION_KEY local}
+      ISTPETDEV_API_BASE_URL: ${ISTPETDEV_API_BASE_URL:-http://host.docker.internal:5000/api/v1}
+      ISTPETDEV_WEBHOOK_SECRET: ${ISTPETDEV_WEBHOOK_SECRET:-}
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      GENERIC_TIMEZONE: America/Guayaquil
+      TZ: America/Guayaquil
+      N8N_DEFAULT_BINARY_DATA_MODE: filesystem
+      N8N_SECURE_COOKIE: "false"
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - local_n8n:/home/node/.n8n
+      - ../../automation/n8n/workflows:/workflows:ro
 
 volumes:
   local_pgdata:
+  local_n8n:

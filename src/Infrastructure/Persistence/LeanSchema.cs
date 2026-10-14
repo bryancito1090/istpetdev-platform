@@ -38,6 +38,7 @@ internal static class LeanSchema
         {
             e.HasIndex(p => new { p.OrganizationId, p.Code }).IsUnique();
             e.Property(p => p.Position).HasColumnType(PointType);
+            Fk<ServicePoint, Location>(e, p => p.ServingWarehouseLocationId);
         });
         model.Entity<Location>(e =>
         {
@@ -120,13 +121,49 @@ internal static class LeanSchema
             e.HasIndex(s => new { s.RoutePlanId, s.SequenceNumber }).IsUnique();
             Fk<RouteStop, RoutePlan>(e, s => s.RoutePlanId);
             Fk<RouteStop, ServicePoint>(e, s => s.ServicePointId);
+            Fk<RouteStop, Location>(e, s => s.LocationId);
+        });
+        model.Entity<RouteStopLine>(e =>
+        {
+            Fk<RouteStopLine, RouteStop>(e, l => l.RouteStopId);
+            Fk<RouteStopLine, Product>(e, l => l.ProductId);
+            Fk<RouteStopLine, Lot>(e, l => l.LotId);
+            Fk<RouteStopLine, DeliveryOrder>(e, l => l.DeliveryOrderId);
+        });
+        model.Entity<DeliveryOrder>(e =>
+        {
+            e.HasIndex(o => new { o.OrganizationId, o.OrderNumber }).IsUnique();
+            Fk<DeliveryOrder, ServicePoint>(e, o => o.DestinationServicePointId);
+            Fk<DeliveryOrder, Location>(e, o => o.DestinationLocationId);
+            Fk<DeliveryOrder, TransferSuggestion>(e, o => o.TransferSuggestionId);
+        });
+        model.Entity<DeliveryOrderLine>(e =>
+        {
+            Fk<DeliveryOrderLine, DeliveryOrder>(e, l => l.DeliveryOrderId);
+            Fk<DeliveryOrderLine, Product>(e, l => l.ProductId);
+        });
+        model.Entity<WarehouseStockPolicy>(e =>
+        {
+            e.HasIndex(p => new { p.OrganizationId, p.LocationId, p.ProductId }).IsUnique();
+            Fk<WarehouseStockPolicy, Location>(e, p => p.LocationId);
+            Fk<WarehouseStockPolicy, Product>(e, p => p.ProductId);
+        });
+        model.Entity<TransferSuggestion>(e =>
+        {
+            e.HasIndex(t => new { t.OrganizationId, t.Status });
+            Fk<TransferSuggestion, Location>(e, t => t.SourceLocationId);
+            Fk<TransferSuggestion, Location>(e, t => t.TargetLocationId);
+            Fk<TransferSuggestion, Product>(e, t => t.ProductId);
+            Fk<TransferSuggestion, Account>(e, t => t.ReviewedByAccountId);
         });
         model.Entity<Delivery>(e =>
         {
             e.HasIndex(d => new { d.OrganizationId, d.Code }).IsUnique();
             Fk<Delivery, RouteStop>(e, d => d.RouteStopId);
+            Fk<Delivery, DeliveryOrder>(e, d => d.DeliveryOrderId);
             Fk<Delivery, Location>(e, d => d.OriginLocationId);
             Fk<Delivery, ServicePoint>(e, d => d.ServicePointId);
+            Fk<Delivery, Location>(e, d => d.DestinationLocationId);
             Fk<Delivery, Account>(e, d => d.AssignedAccountId);
         });
         model.Entity<DeliveryLine>(e =>
@@ -169,8 +206,17 @@ internal static class LeanSchema
             e.HasIndex(d => new { d.OrganizationId, d.Status });
             e.Property(d => d.DriverMessage).HasMaxLength(160);
         });
-        model.Entity<SimulationRun>();
+        model.Entity<SimulationRun>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.ComparisonId });
+            e.HasIndex(r => new { r.OrganizationId, r.Seed, r.ScenarioCode, r.PolicyCode });
+        });
         model.Entity<SimulationMetric>(e => Fk<SimulationMetric, SimulationRun>(e, m => m.SimulationRunId));
+        model.Entity<SimulationEvent>(e =>
+        {
+            e.HasIndex(ev => new { ev.SimulationRunId, ev.Sequence }).IsUnique();
+            Fk<SimulationEvent, SimulationRun>(e, ev => ev.SimulationRunId);
+        });
 
         model.Entity<RoadMatrixEdge>(e =>
         {

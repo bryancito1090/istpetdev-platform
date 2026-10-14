@@ -1,13 +1,24 @@
 ---
 tipo: especificacion-producto
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [producto, reto-1]
 ---
 
 # Modelo de negocio y piloto
 
 **Estado:** hipótesis para validar con usuarios y mentores; no representa un acuerdo comercial.
+
+## Resumen para el kit previo (Anexo 5.6, p. 25)
+
+Resumen de una página para el pitch y la revisión del kit T1 del spec 006, 14-oct-2026. Cada fila remite a la sección que la sostiene; ninguna es dato validado.
+
+| Pregunta del manual | Respuesta actual | Estado |
+|---|---|---|
+| ¿Quién es el cliente? | Empresa de servicios de limpieza con operación distribuida; decisor posible: operaciones o gerencia. Usuarios: planificación, bodega y conductores (sección «Cliente y beneficiarios»). | Hipótesis; sin cliente comprometido |
+| ¿Cuál es la propuesta de valor? | Conectar riesgo → decisión → ruta → custodia → impacto en una misma operación, con evidencia de cada entrega ([[Historia y propuesta de valor]]). | Hipótesis H-P1 a H-P5 sin validar |
+| ¿Cómo genera ingresos? | Implementación inicial más suscripción por operación/puntos activos, precedida de un piloto de cuatro semanas (sección «Propuesta comercial»). | Hipótesis. **Precio:** [PENDIENTE: costos de soporte y disposición de pago] |
+| ¿Cuáles son los costos principales? | Hosting, evidencias en S3, mapas/distancias, DeepSeek, desarrollo/soporte y operación logística (tabla «Costos a levantar»). | Solo el cómputo EC2 del Perfil A tiene cifra con fuente; el resto, PENDIENTE |
 
 ## Cliente y beneficiarios
 
@@ -23,14 +34,16 @@ Ingreso propuesto: implementación inicial y suscripción por operación/puntos 
 
 | Componente | Evidencia necesaria |
 |---|---|
-| Hosting: Perfil A (EC2 + Docker, demo y piloto según ADR-09) o Perfil B (ECS/ALB/RDS/Redis, operación nacional) y n8n | Región, horas, tamaños y configuración; Perfil A t3.medium ≈ USD 37/mes verificado el 7-oct-2026 en [[AWS y Terraform]] |
+| Hosting: Perfil A (EC2 + Docker, demo y piloto según ADR-09) o Perfil B (ECS/ALB/RDS/Redis, operación nacional) y n8n | Región, horas, tamaños y configuración; Perfil A t3.medium ≈ USD 37/mes (EC2, EBS 40 GB e IPv4 pública) verificado el 7-oct-2026 en [[AWS y Terraform]]. No incluye Amazon RDS: costo de RDS [PENDIENTE: fuente fechada] |
 | S3 y transferencia | Cantidad/tamaño de evidencias, retención y tráfico |
-| Mapas | Proveedor, matrices, rutas y llamadas por día |
+| Mapas y distancias | Leaflet + OpenStreetMap sin costo de licencia ni cuotas (ADR-05); distancias por OSRM con URL configurable (ADR-23, propuesta). Costo de un OSRM propio o de un proveedor en piloto [PENDIENTE] |
 | DeepSeek | Modelo, tokens, frecuencia y reintentos |
 | Desarrollo/soporte | Horas de integración, capacitación y operación |
 | Operación logística | Costo/km, conductor, urgencias y penalizaciones documentadas |
 
 No incluir estimaciones de AWS o APIs sin fecha y fuente verificadas. El presupuesto sigue pendiente en [[Riesgos y decisiones pendientes]].
+
+> **⚠️ Contradicción detectada** — Hecho nuevo: [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] (estado aceptado) persiste en Amazon RDS PostgreSQL 16. · Hecho establecido: esta tabla, hasta el 12-oct, citaba ≈ USD 37/mes como costo del Perfil A, cifra que en [[AWS y Terraform]] cubre solo EC2, EBS e IPv4. · Impacto: presentar USD 37/mes como costo de hosting lo subestimaría. · Opciones: añadir el costo de RDS con fuente fechada; presentar solo el cómputo EC2 rotulado como parcial; omitir la cifra del pitch. · Propuesta: la segunda opción mientras falte la fuente de RDS.
 
 ## Modelo económico
 
@@ -51,6 +64,8 @@ Una ruta más corta puede generar peor puntualidad; no vender ahorro si traslada
 Tamaño del grupo y metas se acuerdan con la empresa. La evaluación del hackathon puede usar simulación; no presentarla como piloto ya realizado.
 
 ## Preguntas de entrevista
+
+De reserva para mentorías y para una contraparte de piloto; varias presuponen respuesta (faltantes, disposición de pago) y no se usan en la feria. La feria usa las cinco preguntas de [[Registro de mentorias]].
 
 - ¿Cuánto tiempo tarda hoy en enterarse de un faltante?
 - ¿Cómo calcula reposición y quién aprueba urgencias?

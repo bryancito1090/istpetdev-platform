@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: aceptado
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 deciders: [Jorge Doicela, Bryan Doicela, Joseph Bano]
 tags: [arquitectura, devops, base-de-datos, migraciones, despliegue, runbook]
 ---
@@ -41,11 +41,12 @@ Regla estricta: **una migración por spec, en serie sobre `develop`**. Cada migr
 | Orden | Spec | Migración EF Core | Contenido Principal | Responsable | Plazo / Hito | Estado |
 |---|---|---|---|---|---|---|
 | 0 | — | Tag `schema95-archivo` | Punto de congelamiento y referencia de Schema95 | Bryan / Jorge | 12-oct | **Completado** |
-| 1 | 001 | `DemoCore` | 27 tablas del núcleo, organización demo, PostGIS, cuentas y `DemoGrants` | Bryan / Jorge | H2 (13-oct 20:00) | **Completado y Desplegado** |
-| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, caché de distancias y `RouteStockReservation` | Asignado spec 002 | Antes de H3 (14-oct 20:00) | Pendiente |
-| 3 | 004 | `FieldOperations` | `QrAccessToken`, estado y sincronización offline | Alexander Martínez | Antes de H3 (14-oct 20:00) | Pendiente |
-| 4 | 003 | `AgentRuns` | Registro de ejecuciones y trazabilidad de decisiones del agente | Asignado spec 003 | Antes de H4 (15-oct 11:00) | Pendiente |
-| 5 | 005 | `SimulationRuns` | Metadatos y eventos de corridas de simulación (`SimulationRun`, `SimulationEvent`) | Alexander Martínez | Antes de H4 (15-oct 11:00) | Pendiente |
+| 1 | 001 | `DemoCore` | 27 tablas del núcleo, organización demo, PostGIS, cuentas y `DemoGrants` | Bryan / Jorge | H2 (13-oct 20:00) | **Completado y Desplegado en Prod** |
+| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, caché de distancias y `RouteStockReservation` | Asignado spec 002 | Antes de H3 (14-oct 20:00) | **Integrado en develop** (Pendiente en Prod) |
+| 3 | 004 | `FieldOperations` | `QrAccessToken`, estado y sincronización offline | Alexander Martínez | Antes de H3 (14-oct 20:00) | **Integrado en develop** (Pendiente en Prod) |
+| 4 | 003 | `AgentRuns` | Registro de ejecuciones y trazabilidad de decisiones del agente | Asignado spec 003 | Antes de H4 (15-oct 11:00) | **Integrado en develop** (Pendiente en Prod) |
+| 5 | 013 | `AccountsAndAudit` | Gestión de cuentas por Gerencia, bloqueo y rol Auditor (ADR-26) | Bryan / Jorge | 14-oct | **Integrado en develop** (Pendiente en Prod) |
+| 6 | 005 | `SimulationRuns` | Metadatos y eventos de corridas de simulación (`SimulationRun`, `SimulationEvent`) | Alexander Martínez | Antes de H4 (15-oct 11:00) | Pendiente |
 
 > [!important] Congelamiento total de base de datos (H5)
 > **A partir de H5 (15 de octubre a las 14:00) queda terminantemente prohibido generar, fusionar o aplicar cualquier nueva migración DDL.** Toda la persistencia quedará congelada para la sesión de demostración y pitch.
@@ -76,7 +77,179 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 - **Justificación técnica:** Se descarta la ejecución manual por túnel SSM con `migrator_integration` para el despliegue rutinario porque introduce fricción de autenticación AWS/MFA, requiere conexión WAN interactiva del operador y genera desalineación temporal entre el código desplegado y la base de datos.
 - **En desarrollo local:** Cada desarrollador actualiza su copia de `develop` y ejecuta `npm run db:migrate` sobre la base de desarrollo centralizada configurada en `.env` o Docker local (`localhost:15432`).
 
-## 6. Matriz de Cambios de Infraestructura por Spec
+---
+
+## 6. Alcance del CI frente a Amazon RDS (Matriz de Verificación)
+
+Un resultado exitoso en el flujo de integración continua (`ci.yml`) **no certifica** la conectividad, credenciales ni compatibilidad de migraciones con Amazon RDS. El pipeline ejecuta las suites de pruebas contra un contenedor Docker efímero local (`postgis/postgis:16-3.4-alpine`) aprovisionado al vuelo en el ejecutor de GitHub Actions.
+
+| Componente | Validado por CI (`ci.yml`) | Validado Exclusivamente en Despliegue (`deploy.yml`) |
+|---|---|---|
+| **Compilación y Tipado C#** | Sí (SDK .NET 8, `dotnet build -c Release`) | Heredado de la compilación inmutable |
+| **Arquitectura Frontend FSD** | Sí (`npm run lint:web`, límites boundaries) | Heredado |
+| **Pruebas Unitarias** | Sí (`LeanSchemaTests`, lógica de dominio) | Heredado |
+| **Pruebas de Integración BD** | Sí, sobre contenedor efímero descartable | No aplicable (evita mutaciones en prod) |
+| **Conectividad de Red AWS RDS** | **No** (VPC privada inaccesible desde GitHub) | **Sí** (EC2 dentro de la VPC en puerto 5432) |
+| **Credenciales Secrets Manager** | **No** (CI desconoce `migrator_integration`) | **Sí** (Inyectadas en runtime en host EC2) |
+| **TLS VerifyFull con CA Oficial** | **No** (Contenedor efímero sin TLS forzado) | **Sí** (`global-bundle.pem` montado en backend) |
+| **Aplicación Real de Migraciones** | **No** (Solo valida que el código compila) | **Sí** (`DatabaseInitializer.MigrateAsync` en RDS) |
+| **Criterio de Éxito de Despliegue** | Job en verde de GitHub Actions | `HTTP 200` estricto en `/health/ready` |
+
+> [!important] Regla de verificación obligatoria
+> La única certificación formal de que una migración fue aplicada exitosamente en producción es la respuesta `HTTP 200 Healthy` del endpoint `https://istpetdev.doicela.dev/health/ready` tras el paso 8 de `deploy.yml`. Si el endpoint responde `HTTP 503` o el contenedor reinicia, el despliegue aborta con código 1 (política Fail-Fast).
+
+---
+
+## 7. Procedimiento de Verificación de Migraciones en Producción
+
+Para auditar y verificar qué migraciones de Entity Framework Core se encuentran registradas en la tabla histórica `__EFMigrationsHistory` de Amazon RDS:
+
+### Método A: Consulta directa vía Túnel SSM (Auditoría Administrativa)
+
+Desde la estación de trabajo con el túnel administrativo SSM activo (mapeando el puerto 15432 local a Amazon RDS en subred privada):
+
+```bash
+# 1. Abrir túnel SSM en Terminal A
+aws ssm start-session \
+  --target i-0bba84773e794de36 \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com"],"portNumber":["5432"],"localPortNumber":["15432"]}'
+
+# 2. Consultar historial de migraciones en Terminal B
+psql -h 127.0.0.1 -p 15432 -U migrator_integration -d istpetdev_integration -c \
+  "SELECT \"MigrationId\", \"ProductVersion\" FROM \"__EFMigrationsHistory\" ORDER BY \"MigrationId\" ASC;"
+```
+
+**Resultado esperado tras promoción acumulada:**
+```text
+                  MigrationId                  | ProductVersion 
+-----------------------------------------------+----------------
+ 20261013031023_DemoCore                       | 8.0.11
+ 20261013143520_RoadMatrixCache                | 8.0.11
+ 20261013202540_FieldOperations                | 8.0.11
+ 20261013203831_AgentRuns                      | 8.0.11
+ 20261014162010_AccountsAndAudit               | 8.0.11
+(5 rows)
+```
+
+### Método B: Inspección de observabilidad vía endpoint HTTP
+
+Consultar el reporte detallado de estado de la base de datos en producción:
+```bash
+curl -s -i https://istpetdev.doicela.dev/health/ready
+```
+Respuesta esperada: `HTTP/1.1 200 OK` con payload JSON conteniendo `"status": "Healthy"`, confirmando conectividad y transaccionalidad activa sobre Amazon RDS.
+
+---
+
+## 8. Política de Rollback y Migraciones Aditivas
+
+El workflow `rollback.yml` restaura los contenedores `istpetdev-backend` e `istpetdev-web` a una versión inmutable previa (SHA anterior) en menos de 30 segundos. Sin embargo, **el rollback de contenedores no revierte las migraciones aplicadas en Amazon RDS**.
+
+### Regla Inviolable: Migraciones Aditivas (Zero-Downtime)
+
+Para garantizar que un rollback de imagen no rompa el backend:
+
+1. **Compatibilidad hacia atrás (Backward Compatibility):**
+   - Toda migración DDL debe ser estrictamente aditiva: creación de tablas nuevas, nuevas columnas con valor `DEFAULT` o que admitan `NULL`, y nuevos índices.
+   - **Prohibido:** Eliminar columnas, renombrar tablas en uso o alterar tipos de datos restrictivos dentro de la misma versión.
+   - Si se requiere retirar un campo obsoleto, se realiza en un ciclo de dos pasos: primero se deja de usar en el código de aplicación (conservando la columna), y en una versión posterior se elimina la columna física.
+2. **Procedimiento ante Rollback con Migración Aplicada:**
+   - Si la migración cumple la regla aditiva, la versión anterior de la API continuará operando normalmente ignorando las tablas o columnas adicionales.
+   - Si la migración introdujo una incompatibilidad regresiva crítica, el rollback de contenedores no es suficiente: se debe ejecutar la restauración del Snapshot previo en Amazon RDS.
+
+---
+
+## 9. Justificación de Roles de Persistencia en Producción
+
+En el entorno de producción (`istpetdev-prod-host`), la API .NET se ejecuta conectándose con el usuario **`migrator_integration`**:
+
+- **Razón técnica de diseño:** Permite que `DatabaseInitializer.MigrateAsync` aplique automáticamente las migraciones DDL al arrancar el contenedor en EC2 (`ApplyMigrations=true`).
+- **Alternativa evaluada:** Conectar la API en runtime con `user_integ_dev_01` (solo permisos DML) y ejecutar migraciones mediante un pipeline auxiliar previo. Se descartó para la demo porque exigiría túneles SSM interactivos con MFA durante el despliegue desatendido o un contenedor efímero adicional en AWS con privilegios de red elevados, introduciendo puntos de fallo en vivo durante el evento.
+- **Protección compensatoria:**
+  1. Red privada aislada: RDS no expone IP pública; solo acepta conexiones del Security Group `sg-0c4c0a0cff4fdc55f`.
+  2. TLS estricto `VerifyFull` con CA bundle oficial de AWS RDS.
+  3. Desactivación de Swagger UI en producción por defecto.
+  4. Credenciales inyectadas exclusivamente en el host EC2 con permisos restringidos (`chmod 600 .env`).
+
+---
+
+## 10. Plan B del Evento (Contingencia sin Internet / Sin Cobertura WAN)
+
+> [!important] Corrección operativa para el recinto del concurso
+> En el Centro de Exposiciones Quito no existe la red LAN institucional del laboratorio (`192.168.7.50`). Si la conectividad WAN (Cloudflare/AWS) falla durante la presentación o pitch ante los jueces, se activa de inmediato el **Plan B Local**.
+
+```mermaid
+flowchart LR
+    subgraph Laptop ["Laptop Host del Equipo (Standalone)"]
+        DockerDB["Docker Compose Local<br>PostGIS 16 (15432)<br>Redis 7.4 (6379)"]
+        LocalAPI[".NET 8 Web API<br>http://0.0.0.0:5000"]
+        LocalWeb["Angular 22 SPA<br>http://0.0.0.0:4200"]
+        Hotspot["Zona WiFi Portátil (Hotspot)<br>IP: 192.168.137.1 (o similar)"]
+    end
+
+    subgraph Movil ["Dispositivos de Campo"]
+        Phone["Teléfono Móvil del Evaluador / Jurado<br>Navegador PWA"]
+    end
+
+    DockerDB <--> LocalAPI
+    LocalAPI <--> LocalWeb
+    LocalWeb --- Hotspot
+    LocalAPI --- Hotspot
+    Hotspot -.->|Conexión WiFi Local| Phone
+```
+
+### Procedimiento de Activación del Plan B (<2 minutos)
+
+1. **Laptop Principal (Servidor Local Autónomo):**
+   ```bash
+   # Terminal 1: Iniciar PostgreSQL y Redis locales
+   npm run docker:up
+
+   # Terminal 2: Iniciar backend escuchando en todas las interfaces
+   dotnet run --project src/Api --urls "http://0.0.0.0:5000"
+
+   # Terminal 3: Servir frontend web y PWA
+   npm run dev:web -- --host 0.0.0.0
+   ```
+2. **Habilitar Red Local Compartida:**
+   - Activar la **Zona con cobertura inalámbrica móvil (Hotspot)** desde la laptop o conectar los equipos a un router WiFi portátil sin internet.
+   - Identificar la IP local de la laptop con `ipconfig` (ej: `192.168.137.1`).
+3. **Conexión de Teléfonos y Jurados:**
+   - Conectar los dispositivos móviles a la red WiFi del Hotspot.
+   - Navegar a `http://192.168.137.1:4200` (Torre de Control) o `http://192.168.137.1:4200/campo` (PWA de Campo).
+   - Los fixtures de datos base (`demo-base`) ya se encuentran incluidos localmente en el repositorio.
+
+---
+
+## 11. Checklist Obligatorio Previo a la Promoción a Main
+
+Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `main`:
+
+- [ ] **1. Migración Aditiva Verificada**: Comprobar que la nueva migración en `src/Infrastructure/Persistence/Migrations/` no elimine tablas ni columnas en uso por la versión actual.
+- [ ] **2. Snapshot Manual de RDS Creado**:
+  ```bash
+  aws rds create-db-snapshot \
+    --db-instance-identifier istpetdev-rds-dev \
+    --db-snapshot-identifier "istpetdev-rds-pre-deploy-$(date +%Y%m%d-%H%M)"
+  ```
+  Confirmar que el estado del snapshot sea `available`.
+- [ ] **3. Suite Local de Verificación en Verde**:
+  ```bash
+  npm run check
+  python docs/boveda/.github/scripts/check_vault.py
+  ```
+- [ ] **4. Variables de Entorno en Host EC2 Confirmadas**: Verificar que `DB_PASSWORD`, `COGNITO_*` y `DB_SSL_MODE=VerifyFull` estén presentes en `/var/www/istpetdev/.env`.
+- [ ] **5. Revisión de PR**: Verificar que los checks de CI (`LeanSchemaTests`, ESLint FSD) hayan concluido exitosamente en GitHub Actions.
+- [ ] **6. Verificación Post-Merge Inmediata**: Monitorear el workflow `deploy.yml` y auditar la respuesta:
+  ```bash
+  curl -s -i https://istpetdev.doicela.dev/health/ready
+  ```
+  Debe retornar `HTTP 200 Healthy`.
+
+---
+
+## 12. Matriz de Cambios de Infraestructura por Spec
 
 | Spec | Requerimiento de Infraestructura | Archivos Afectados | Responsable | Plazo | Estado |
 |---|---|---|---|---|---|
@@ -86,9 +259,11 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 | **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
 | **003** | Cliente M2M en Cognito (`client_credentials`) para integraciones | Terraform `identity.tf` | Jorge Doicela | H4 (15-oct) | Pendiente |
 | **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
-| **Seguridad (#14)** | TLS con `VerifyFull` y CA oficial de RDS, Swagger restringido y SSH 22 cerrado | Compose / Nginx / Terraform | Jorge Doicela | H5 (15-oct) | Pendiente |
+| **Seguridad (#14)** | TLS con `VerifyFull` + CA oficial de RDS y Swagger restringido por defecto. SSH 22 mitigado con UFW/fail2ban (cierre y Terraform diferidos a P2) | Dockerfile / Compose / Nginx / Program.cs / Deploy workflow | Jorge Doicela | Antes de H4 (14-oct) | **Completado** |
 
-## 7. Checklist de Control Día por Día
+---
+
+## 13. Checklist de Control Día por Día
 
 ### 13 de octubre (Día 1) — Núcleo y Estabilización
 - [x] Coordinación de infraestructura y formalización del Runbook (resolución de issue #16).
@@ -99,25 +274,32 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 - [x] Persistencia de desarrollo centralizada en AWS EC2 y Docker local operativa para los integrantes.
 
 ### 14 de octubre (Día 2) — Motor Logístico y Operación Móvil
-- [ ] Integración de migración 002 (`RoadMatrixCache`) en `develop` y promoción a `main`.
+- [x] Integración de migración 002 (`RoadMatrixCache`) en `develop`.
+- [x] Integración de migración 004 (`FieldOperations`) en `develop`.
+- [x] Integración de migración 013 (`AccountsAndAudit`) en `develop`.
+- [x] Saneamiento de seguridad TLS RDS VerifyFull y Swagger (Issue #14).
+- [x] Saneamiento de contraseñas de BD y rotación en laboratorio (Issue #34).
+- [ ] Validación de flujo de BD dev vs prod y endurecimiento de CI/CD (Issue #35).
 - [ ] Callbacks HTTPS de Cognito y PWA en `/campo/` en Nginx listos.
-- [ ] Integración de migración 004 (`FieldOperations`) en `develop` y promoción a `main`.
 - [ ] Ensayo del hito H3 (20:00): Recorrido operativo completo en teléfonos móviles sobre terreno.
 
 ### 15 de octubre (Día 3) — Agente, Simulación y Congelamiento
-- [ ] Integración de migración 003 (`AgentRuns`) y cliente M2M de Cognito.
+- [x] Integración de migración 003 (`AgentRuns`) en `develop`.
 - [ ] Base de datos de simulación aprovisionada e integración de migración 005 (`SimulationRuns`).
 - [ ] Ensayo del hito H4 (11:00): Corrida completa del simulador y agente logístico.
-- [ ] Aplicación de ajustes transversales de seguridad (issue #14).
 - [ ] **Hito H5 (14:00): Congelamiento total de código e infraestructura.**
 - [ ] Snapshot final de Amazon RDS posterior al congelamiento para la demo oficial.
 
-## 8. Gestión de Riesgos y Reversión
+---
 
-- **Riesgo de bloqueo de EF Core:** Si una migración falla al arrancar en el EC2, el pipeline detiene el tráfico inmediatamente al no pasar el check de `/health/ready`.
+## 14. Gestión de Riesgos y Reversión
+
+- **Riesgo de bloqueo de EF Core:** Si una migración falla al arrancar en el EC2, el proceso termina de inmediato (Fail-Fast) y el pipeline detiene el despliegue al no pasar la verificación estricta de `/health/ready` (HTTP 200).
 - **Procedimiento de Rollback Rápido:** Ejecutar el workflow `rollback.yml` indicando el SHA previo estable para restaurar los contenedores en <30 segundos.
-- **Riesgo de red en el evento:** Si la conectividad WAN o AWS falla durante la presentación, el sistema cuenta con el respaldo de persistencia local mediante Docker en las laptops del equipo.
+- **Riesgo de red en el evento:** Si la conectividad WAN o AWS falla durante la presentación, el sistema activa el **Plan B Local** mediante Docker en la laptop host y red WiFi Hotspot sin depender de internet.
+
+---
 
 ## Referencias
 
-[[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[Estrategia de tres entornos y base de datos]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]]
+[[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[Estrategia de tres entornos y base de datos]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]] · [[Evidencias y ensayos de base de datos y despliegue]]

@@ -5,4 +5,7 @@ export * from './inicio/inicio.page';
 export * from './datos/datos.page';
 export * from './alertas/alertas.page';
 export * from './rutas/rutas.page';
+export * from './bodegas/bodegas.page';
 export * from './public-trace/public-trace.page';
+export * from './users/users.page';
+export * from './simulation/simulation.page';

@@ -6,6 +6,8 @@ import {
   OnDestroy,
   OnInit,
   SimpleChanges,
+  Output,
+  EventEmitter,
   ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -38,18 +40,28 @@ export interface MapPolyline {
       <div #mapContainer class="w-full h-full min-h-[400px] z-0"></div>
       
       <!-- Overlay de leyenda cartográfica -->
-      <div class="absolute bottom-4 left-4 z-[400] bg-white/95 backdrop-blur px-3 py-2 rounded-lg border border-slate-200 shadow-md text-xs text-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-primary-600 inline-block"></span>
-            <span class="font-medium">Punto de Servicio</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-4 h-0.5 bg-primary-600 inline-block"></span>
-            <span class="font-medium">Ruta Optimizada</span>
+      @if (showLegend) {
+        <div class="absolute bottom-4 left-4 z-[400] bg-white/95 backdrop-blur px-3 py-2 rounded-lg border border-slate-200 shadow-md text-xs text-slate-700">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+              <span class="font-medium">Bodega</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-primary-600 inline-block"></span>
+              <span class="font-medium">Punto de Entrega</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-4 h-0.5 bg-primary-600 inline-block"></span>
+              <span class="font-medium">Vial continuo</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-4 h-0.5 border-b-2 border-dashed border-primary-500 inline-block"></span>
+              <span class="font-medium">Aproximación punteada</span>
+            </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   `,
   styles: [`
@@ -67,6 +79,10 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
   @Input() zoom = 7;
   @Input() markers: MapMarker[] = [];
   @Input() polylines: MapPolyline[] = [];
+  @Input() showLegend = true;
+
+  @Output() markerClick = new EventEmitter<MapMarker>();
+  @Output() mapClick = new EventEmitter<[number, number]>();
 
   private map?: L.Map;
   private markersLayer?: L.LayerGroup;
@@ -93,8 +109,13 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  public invalidateSize(): void {
+    setTimeout(() => {
+      this.map?.invalidateSize();
+    }, 150);
+  }
+
   private initMap(): void {
-    // Configurar iconos por defecto de Leaflet para evitar problemas de assets
     const defaultIcon = L.icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -116,16 +137,17 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
 
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.mapClick.emit([e.latlng.lat, e.latlng.lng]);
+    });
+
     this.markersLayer = L.layerGroup().addTo(this.map);
     this.polylinesLayer = L.layerGroup().addTo(this.map);
 
     this.renderMarkers();
     this.renderPolylines();
 
-    // Redimensionar correctamente tras el renderizado inicial
-    setTimeout(() => {
-      this.map?.invalidateSize();
-    }, 200);
+    this.invalidateSize();
   }
 
   private renderMarkers(): void {
@@ -134,14 +156,40 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
 
     this.markers.forEach((m) => {
       const popupContent = `
-        <div style="font-family: inherit; font-size: 13px; line-height: 1.4;">
+        <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 140px;">
           <strong style="color: #0f172a; font-size: 14px;">${m.title}</strong>
-          ${m.badge ? `<div style="margin-top: 4px;"><span style="background: #e6f7fa; color: #026e82; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${m.badge}</span></div>` : ''}
+          ${m.badge ? `<div style="margin-top: 4px;"><span style="background: ${m.badgeColor === 'amber' ? '#fef3c7; color: #92400e' : m.badgeColor === 'emerald' ? '#d1fae5; color: #065f46' : '#e6f7fa; color: #026e82'}; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${m.badge}</span></div>` : ''}
           ${m.description ? `<p style="margin-top: 6px; color: #475569; font-size: 12px; margin-bottom: 0;">${m.description}</p>` : ''}
         </div>
       `;
 
-      const marker = L.marker([m.latitude, m.longitude]).bindPopup(popupContent);
+      let icon: L.Icon | L.DivIcon | undefined = undefined;
+      if (m.badgeColor === 'amber') {
+        icon = L.divIcon({
+          className: 'custom-warehouse-pin',
+          html: `<div style="background-color: #d97706; color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);">B</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+          popupAnchor: [0, -13]
+        });
+      } else if (m.badgeColor === 'emerald') {
+        icon = L.divIcon({
+          className: 'custom-start-pin',
+          html: `<div style="background-color: #059669; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);">1</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          popupAnchor: [0, -12]
+        });
+      }
+
+      const marker = icon 
+        ? L.marker([m.latitude, m.longitude], { icon }).bindPopup(popupContent)
+        : L.marker([m.latitude, m.longitude]).bindPopup(popupContent);
+
+      marker.on('click', () => {
+        this.markerClick.emit(m);
+      });
+
       this.markersLayer?.addLayer(marker);
     });
 

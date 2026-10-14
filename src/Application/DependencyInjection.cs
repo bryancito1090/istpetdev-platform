@@ -32,9 +32,17 @@ public static class DependencyInjection
         services.AddScoped<IAutonomyPolicy, AutonomyPolicy>();
         services.AddSingleton<IExplanationTemplates, ExplanationTemplates>();
         services.AddSingleton<IExplanationValidator, ExplanationValidator>();
+        services.AddScoped<IWarehouseConsumptionAnalyzer, WarehouseConsumptionAnalyzer>();
+        services.AddScoped<IStockPolicyAdvisor, StockPolicyAdvisor>();
+        services.AddScoped<IRebalancingAdvisor, RebalancingAdvisor>();
+        services.AddScoped<ISourcingService, SourcingService>();
+        services.AddScoped<IVehicleMatcher, VehicleMatcher>();
+        services.AddScoped<IRouteEvaluator, RouteEvaluator>();
+        services.AddScoped<IEmergencyPlanner, EmergencyPlanner>();
         services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AccountProvisioning>();
+        services.AddScoped<AccountAdministration>();
 
         return services;
     }

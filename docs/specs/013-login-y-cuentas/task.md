@@ -20,10 +20,10 @@
 | T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | hecho |
 | T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | hecho |
 | T10 | Infraestructura: callbacks HTTPS, marca, IAM y hop limit (Jorge) | FR-20, NFR-02, #14 | — | [P] con todo | pendiente |
-| T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | pendiente (P2) |
-| T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | pendiente (P2) |
-| T13 | Web H4: pantalla «Usuarios» | FR-19 | T12, T6 | — | pendiente (P2) |
-| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | pendiente |
+| T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | hecho (P2) |
+| T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | hecho (P2) |
+| T13 | Web H4: pantalla «Usuarios» | FR-19 | T12, T6 | — | hecho (P2) |
+| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | en curso (fase A hecha) |
 
 `[P]` = puede ejecutarse en paralelo con otras `[P]` del mismo nivel porque no toca los mismos archivos.
 
@@ -3298,7 +3298,7 @@ git commit -m "infra(cognito): callbacks https, marca y permiso de cuentas del h
 - Consumes: `AccountProvisioning`, `IIdentityDirectory`, `AccountRuleException`, `IdentityDirectoryUnavailableException` (T3); `TestAccounts.SetRoleAsync` (T1); `ApiFactory.Directory` (T3).
 - Produces: `AccountItem(Guid Id, string DisplayName, string Role, bool IsActive, string? Email, string InvitationStatus, bool? DirectoryEnabled, bool OutOfSync)`; `CreateAccountInput(string Email, string DisplayName, string Role)`; `UpdateAccountInput(string? DisplayName, string? Role)`; `AccountAdministration.ListAsync`, `CreateAsync`; `GET` y `POST /api/v1/accounts`; `AccountsController.Fail(int, string, string)` con Problem Details y `code`.
 
-- [ ] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs`:
+- [x] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs`:
 
 ```csharp
 using System.Net;
@@ -3417,12 +3417,12 @@ public sealed partial class AccountsApiTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: FAIL de compilación con «The type or namespace name 'AccountItem' could not be found».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/AccountAdministration.cs`:
 
@@ -3535,17 +3535,24 @@ public sealed partial class AccountsController(AccountAdministration accounts) :
 
 En `src/Application/DependencyInjection.cs`, junto a `AccountProvisioning`: `services.AddScoped<AccountAdministration>();`.
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: PASS (3 + 1 + 1 + 2 + 1 casos). `Actor` aún no se usa; lo consumen los endpoints de T12.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Application/Accounts/AccountAdministration.cs src/Api/Controllers/AccountsController.cs src/Application/DependencyInjection.cs tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs
 git commit -m "feat(cuentas): listar y crear cuentas desde gerencia (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- `POST /api/v1/accounts` responde 201 con el `AccountItem` y sin cabecera `Location` (no existe `GET /accounts/{id}`).
+- Una identidad sin cuenta resoluble recibe 403 en todas las rutas (`User.AccountId()`), sin fallback.
+- Entradas ausentes o nulas devuelven 422 con el `code` de dominio (`invalid_email`, `invalid_display_name`, `invalid_role`).
+- .NET tras T11–T12: 312 pruebas (35 de `AccountsApiTests`).
 
 ---
 
@@ -3559,7 +3566,7 @@ git commit -m "feat(cuentas): listar y crear cuentas desde gerencia (spec 013 h4
 - Consumes: T11 (`AccountAdministration`, `AccountsController.Run`, `Actor`, `ToItem`).
 - Produces: `UpdateAsync(Guid actorId, Guid id, UpdateAccountInput, ct)`, `DeactivateAsync(Guid actorId, Guid id, ct)`, `ReactivateAsync(Guid id, ct)`, `ResendInvitationAsync(Guid id, ct)`; `PATCH /api/v1/accounts/{id}`, `POST …/{id}/deactivate`, `…/reactivate`, `…/resend-invitation` (204).
 
-- [ ] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs`:
+- [x] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs`:
 
 ```csharp
 using System.Net;
@@ -3704,12 +3711,12 @@ public sealed partial class AccountsApiTests
 
 Añadir `using Microsoft.Extensions.DependencyInjection;` al inicio del archivo (para `CreateScope` y `GetRequiredService`).
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: FAIL de compilación con «'AccountAdministration' does not contain a definition for 'DeactivateAsync'».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/AccountAdministration.Changes.cs`:
 
@@ -3845,17 +3852,25 @@ public sealed partial class AccountsController
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan, más toda la suite**
+- [x] **Step 4: Ejecutar y verificar que pasan, más toda la suite**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests" && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
 Expected: PASS (7 casos nuevos) y las tres categorías verdes, incluido `LeanSchemaTests` (29 tablas: no hubo migración).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Application/Accounts/AccountAdministration.Changes.cs src/Api/Controllers/AccountsController.Changes.cs tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs
 git commit -m "feat(cuentas): editar, desactivar con revocacion y reenviar invitacion (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- **PATCH con Cognito caído (NFR-05):** consulta Cognito (`FindBySubjectAsync`) antes de guardar; si falla, responde 503 `identity_unavailable` sin cambios en la base (el borrador guardaba primero y devolvía `outOfSync`).
+- **Revocación pendiente durable (FR-15, NFR-01):** si `DisableAsync` o `SignOutEverywhereAsync` fallan tras guardar `IsActive = false`, queda una fila en `IdempotencyRecord` con `ActionCode = "accounts.revoke_sessions"` (sin migración nueva). `GET /accounts` y la respuesta la suman a `outOfSync`; un reintento de desactivación o una reactivación exitosa la borran. `FieldService` solo consulta `ActionCode` `Dispatch` y `Receipt`, así que no interfiere.
+- **Reactivación con Cognito caído:** una transacción compensatoria devuelve `IsActive = false` y responde 503.
+- Prueba extra `Last_manager_maps_to_conflict_problem_details_at_controller_boundary` para el 409 `last_manager` en el borde HTTP.
+- Sugerencias no implementadas (después del congelamiento): `if` explícito antes de `ClearPendingRevocationAsync` y un índice parcial sobre `IdempotencyRecord` para las marcas pendientes.
 
 ---
 
@@ -3870,7 +3885,7 @@ git commit -m "feat(cuentas): editar, desactivar con revocacion y reenviar invit
 - Consumes: endpoints de T11–T12; `AccountItem`, `CreateAccountRequest`, `UpdateAccountRequest`, `HUMAN_ROLES` (T2); `AuthSession`, `authGuard`, `roleGuard` (T6).
 - Produces: `AccountsApi { list, create, update, deactivate, reactivate, resendInvitation }`; `accountErrorMessage(error: unknown): string`; `accountStatusLabel(item: AccountItem): string`; ruta `/users` solo Gerencia.
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `apps/web/src/entities/account/api/accounts.api.spec.ts`:
 
@@ -3976,12 +3991,12 @@ describe('UsersPage (FR-19)', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `npm run test:web`
 Expected: FAIL con «Could not resolve "./accounts.api"».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `apps/web/src/entities/account/model/account-messages.ts`:
 
@@ -4207,17 +4222,24 @@ En la plantilla de `apps/web/src/widgets/header/header.widget.ts`, antes del nom
                 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `npm run test:web && npm run build:web`
 Expected: PASS (`accounts.api.spec.ts` 2 casos, `users.page.spec.ts` 2 casos) y build sin errores.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/entities/account apps/web/src/pages/users apps/web/src/pages/index.ts apps/web/src/app/app.routes.ts apps/web/src/widgets/header/header.widget.ts
 git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- Antes de desactivar se pide confirmación (`window.confirm`); reactivar no la pide. La UI no ofrece acciones sobre la propia cuenta y «Reenviar invitación» solo aparece con `invitationStatus = 'pending'`.
+- `directoryEnabled` y `outOfSync` se muestran con insignias visibles («Revisar en Cognito»); el formulario usa `label for`, `role="alert"` y `aria-live`.
+- Pruebas añadidas fuera del plan: guard de `/users` (Planificador y Auditor redirigidos) y enlace del header solo para Gerencia. Web: 40 pruebas (27 + 13).
+- Sugerencia no implementada: reemplazar `window.confirm` por un modal propio de la UI.
 
 ---
 
@@ -4231,25 +4253,34 @@ git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 - Consumes: T1–T10 en `develop` (y T11–T13 si H4 entra).
 - Produces: registro de ejecuciones con evidencia; spec en estado `cerrado` o con H4 declarada como propuesta.
 
-- [ ] **Step 1: Verificación completa local**
+- [x] **Step 1: Verificación completa local**
 
 Run: `npm run check && npm run test:frontend && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
-Expected: todo verde; cero coincidencias del guardián.
+Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
 
-- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-12 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA.
+- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55).
 
-- [ ] **Step 3: Actualizar el spec** (coordinar con quien lo esté editando): FR-18 y H4-6 ya figuran como pospuestos desde el 13-oct; si H4 no entró antes del congelamiento, anotar «H4 se presenta como propuesta»; registrar la decisión sobre ADR-25 (Supervisor en la PWA); estado `cerrado` solo con E2E obligatorios aprobados.
+- [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
-- [ ] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`.
+- [x] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`; fila D3 de login Cognito actualizada.
 
-- [ ] **Step 5: Bóveda (G8)** — en «Registro de trabajo previo y del evento», las cuentas creadas antes del 16-oct por rol y fecha, sin correos personales; registrar la contradicción del reinicio de la PWA sin señal si Joseph y Alexander la resuelven.
+- [ ] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
 
-- [ ] **Step 6: Commit y PR**
+- [ ] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
 
-```bash
-git add docs/specs/013-login-y-cuentas docs/specs/README.md "docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md"
-git commit -m "docs(specs): cierre de spec 013 con evidencia e2e"
-git push -u origin feature/013-login-y-cuentas
-```
+### Desviaciones / estado fase A
 
-Abrir PR a `develop` con revisor Joseph Baño.
+- **Fase A realizada (cierre documental y validación local de suites):**
+  - **Step 1 (E2E-00):** Se ejecutaron completamente `npm run check`, `npm run test:frontend` (87 pruebas pasadas en 18 archivos) y `dotnet test` por categoría (Unit: 145 pasadas; Integration: 146 pasadas; E2E: 6 pasadas; total backend 297 pasadas). Guardián de CI contra login simulado verificado con cero coincidencias (`grep=1`). Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
+  - **Step 3:** Spec 013 actualizado sin cerrar (`estado: borrador` con nota explicativa al inicio). Se resolvió la contradicción ADR-25 vs ADR-24 adoptando la opción (a) (la PWA solo admite Bodega, Conductor y Receptor; `LogisticsManager` retirado en T7 de PR #56). Se marcó PA-04 como resuelta en #55 (Bryan Gerencia inicial, Jorge custodia el CSV fuera del repo). Se documentó H4 como implementada antes del congelamiento (PR #65). Se agregó la sección «Estado de implementación» enlazando las desviaciones de task.md y los pendientes. Se registró el riesgo abierto de recarga offline (tokens en memoria, FR-03; decide Joseph Baño con Alexander).
+  - **Step 4:** Fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md` y `test-e2e.md`. Se actualizó la fila D3 para reflejar que H1–H4 están implementados en `develop`.
+  - **Step 5 (parcial):** Se documentaron los PR #56 y #65 en `docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md`. Se dejó una línea pendiente para el registro de cuentas de demo creadas por rol y fecha.
+  - **Spec 004:** Se sincronizó la decisión 2 de `informe-entrega-spec-004-y-decisiones.md` para exigir tokens solo en memoria (ref. 013 FR-03, eliminando `sessionStorage`), y se actualizó T1b en `docs/specs/004-campo-qr-custodia-offline/task.md` indicando la absorción del login PKCE por 013 (PR #56) y el retiro de la «dev auth API».
+
+- **Pendiente para la Fase B (cierre técnico y validación E2E en vivo):**
+  - Configuración y validación de infraestructura (T10, issue #43): callbacks HTTPS de Cognito, marca ISTPET en Hosted UI, políticas IAM y hop limit = 2.
+  - Publicación y routing de la PWA bajo `/campo/` (issue #52).
+  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55).
+  - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
+  - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
+
