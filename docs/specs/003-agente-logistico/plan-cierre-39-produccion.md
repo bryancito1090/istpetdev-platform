@@ -1,922 +1,416 @@
-# Plan de ejecución y cierre de #39 — agente n8n en producción
+# Plan vigente para completar y cerrar #39 — agente n8n en producción
 
-Preparado y ampliado el **14-oct-2026**, por solicitud de Bryan, para entregar a
-Antigravity. Estado: **plan preparado; operación de producción no ejecutada en
-esta revisión**. Sustituye el plan preliminar de este archivo; conserva como
-antecedentes la entrega y revisión de #37. Las casillas siguientes representan
-trabajo por ejecutar o verificar, no resultados.
+Actualizado el **14-oct-2026** por solicitud de Bryan. La ejecución comenzó
+por su instrucción «empieza con los planes». Este documento sustituye el plan
+que terminaba en un checkpoint; los antecedentes se conservan en Git y en
+[task.md](task.md). Los pasos futuros no son resultados verificados.
 
-- Issue: [#39](https://github.com/bryancito1090/istpetdev-platform/issues/39).
-- Base inspeccionada: `develop` @ `8c99a71c5a0017e769af4d7e40666565d684117d`.
-- Rama preparada: `chore/39-n8n-produccion`.
-- Seguimiento obligatorio: [task.md](task.md), T9 (corrida oficial) y T10
-  (registro); contratos: [spec.md](spec.md), [plan.md](plan.md) y
-  [test-e2e.md](test-e2e.md).
-- H5: **15-oct-2026 14:00 America/Guayaquil**, equivalente a 19:00 UTC.
+Objetivo: cumplir los ocho pasos y todos los criterios de
+[#39](https://github.com/bryancito1090/istpetdev-platform/issues/39), integrar
+los cambios por PR a **develop**, resolver conflictos, conciliar la bóveda,
+promover la configuración productiva por el procedimiento acordado y cerrar
+GitHub **únicamente después de comprobar el cumplimiento completo**.
 
-## Estado de revisión del checkpoint — 14-oct-2026
+## 1. Responsables, autorizaciones y condiciones actuales
 
-Antigravity entregó el checkpoint y dejó de editar. Codex conservó la entrega
-original en `7b58243` e integró develop @ `51c3b30` en `067dc62`, sin conflictos
-de contenido. La versión de workflows/prompt no cambia; sus hashes coinciden
-con #74. El informe de entrega se encuentra en
-[entrega-39-antigravity.md](entrega-39-antigravity.md).
-
-PR #78 ya fue fusionado y su CD del SHA `9d1a3d9` terminó exitosamente. Esa
-release no incorpora el transporte preparado aquí. El paso siguiente es el
-PR de este checkpoint a develop y otra promoción autorizada a main; no editar
-manualmente la configuración del host para eludir ese orden.
-
-Correcciones de Codex: client ID M2M explícito, transporte de las nueve claves
-de configuración del agente tanto en deploy como en rollback, HMAC desde el
-Secret de GitHub, default false y rechazo de activación sin configuración.
-Se retira el fallback defectuoso de lectura de .env. Las variables humanas
-se conservan. `restart_only` no aplica nuevas variables; necesitan recreación.
-
-El PR del checkpoint puede quedar listo para revisar su software si sus pruebas
-locales y CI pasan, **referenciando #39 sin cerrar la issue**. Esto evita exigir
-aceptación productiva antes de integrar el código necesario para desplegarla.
-Los pasos 1–8 y PA-01/CE siguen pendientes según evidencia; un PR que pretenda
-acreditar la aceptación completa permanece borrador hasta comprobarla.
-
-Fuentes de CD (Variables GitHub salvo el HMAC): COGNITO_M2M_CLIENT_ID,
-AUTHENTICATION_TECHNICAL_READ_SCOPE, AGENT_ENABLED, AGENT_AUTO_ON_INCIDENT,
-AGENT_TIMEOUT_SECONDS, AGENT_POLL_MILLISECONDS, AGENT_N8N_WEBHOOK_URL,
-AGENT_N8N_API_BASE_URL y Secret AGENT_N8N_WEBHOOK_SECRET. `.env.example`
-contiene placeholders y defaults públicos. No configurar el agente como true
-hasta disponer de cuenta técnica, credenciales remotas y webhooks publicados.
-
-## 1. Resultado que debe entregar Antigravity
-
-Dejar el agente del servidor de Bryan conectado a la API de producción con
-DeepSeek y OAuth2 M2M, importado desde un SHA identificable, con Schedule
-apagado, firmas rechazadas antes del modelo, evidencia de Completed y Fallback,
-matriz oficial de aceptación y ensayo del incidente. Registrar también cada
-fallo o dependencia sin resolver. El resultado se revisa con evidencia, no con
-una afirmación de que «el agente funciona».
-
-Antigravity ejecuta y documenta dentro del alcance de #39. **Codex revisa la
-entrega, resuelve conflictos, hace los commits/push necesarios y abre el PR a
-`develop`** cuando Bryan retome esta sesión. Antigravity no hace push, no abre
-PR, no fusiona ramas y no cierra #39. La solicitud actual no establece un job
-programado ni una publicación automática al aparecer un archivo.
-
-La promoción `develop → main`, la configuración de la API compartida y el
-redeploy se coordinan con Jorge. No son una consecuencia automática de abrir
-el PR de #39. Preparar primero el cambio concreto y su validación; la release
-sigue el procedimiento del runbook y la coordinación del responsable. El
-ensayo que resetea producción necesita una ventana expresamente acordada con
-el equipo. Una dependencia pendiente no impide avanzar las tareas independientes.
-
-### Reparto de trabajo
-
-| Responsable | Entrega |
+| Responsable | Trabajo |
 |---|---|
-| Antigravity | Inventario, configuración de n8n dentro del acceso autorizado, pruebas reales, documentación y entrega a Codex |
-| Bryan | Acceso al servidor y cuenta DeepSeek, presupuesto, decisiones de su entorno y coordinación de la ventana |
-| Jorge / #38 | Variables y secretos de API, cuenta técnica, respaldo de la base compartida, release y redeploy |
-| Anthony | Consulta de integración del backend de #36; #37 ya está integrada, no se le reasigna su implementación |
-| Codex | Revisión final, pruebas pertinentes, integración con develop, resolución de conflictos, push de rama y PR |
-| Equipo | Ventana exclusiva, decisión si falla DeepSeek o CE-03, excepciones al congelamiento si se acuerdan |
+| Codex | Continuar la revisión/ejecución, conservar la entrega de Antigravity, corregir dentro del alcance, preparar PR, resolver conflictos, merge a develop, documentación y cierre condicionado de #39 |
+| Antigravity | Entrega anterior conservada; Bryan confirmó que terminó de editar. Evitar cambios concurrentes en repo/n8n |
+| Bryan | Administración n8n, presupuesto DeepSeek, acceso privado y coordinación del equipo |
+| Jorge / #38 | Operación AWS/EC2/RDS y despliegue de la API mediante el pipeline y promoción a main; cuentas técnica y humana |
+| Equipo | Ventana exclusiva de resets/fallback y cualquier excepción a H5 |
 
-## 2. Punto de partida comprobado y límites
+Bryan ya asignó a Codex el merge a develop y el cierre cuando se cumplan los
+criterios; no pedir nuevamente permiso genérico para esas acciones. Respetar
+checks/revisión y la operación de la API asignada a Jorge. La revisión de
+prelaunch no autoriza por sí sola cambios externos fuera de esta tarea.
 
-La inspección fue de Git, documentación, informes locales y GitHub; no del
-runtime de producción ni de sus secretos.
+Confirmaciones de Bryan durante esta ejecución:
 
-| Área | Evidencia existente | Lo que falta acreditar para #39 |
+- Antigravity terminó; Codex continúa como único editor operativo de n8n.
+- El límite de gasto de la cuenta DeepSeek está configurado. Es confirmación
+  del administrador, no una captura ni una auditoría independiente de pagos.
+- **Todavía no hay ventana exclusiva**: preparar primero el entorno. No ejecutar
+  acceptance.sh, warmup o resets productivos mientras siga pendiente.
+- El EC2 de la API lo opera Jorge; Bryan no dispone de alias SSH/SSM para él.
+  Usar el pipeline acordado, sin crear accesos alternativos como atajo.
+
+H5: **15-oct-2026 14:00 America/Guayaquil (19:00 UTC)**. Después no modificar
+workflows, credenciales, versión ni código/DDL congelados sin excepción
+concreta del equipo. Un cambio de prompt obliga a repetir aceptación.
+
+## 2. Estado conocido y fuentes
+
+Revalidar al continuar; los códigos observados pueden cambiar durante la
+configuración de producción. Fuente de resultados: task.md, entrega,
+[test-e2e.md](test-e2e.md) y evidencia saneada de esta ejecución.
+
+| Pieza | Estado / siguiente acción |
+|---|---|
+| develop | PR #81 y #85 integrados; base vigente `5582930f30c32ecfec958c3a8acc28a6cd775104`. Transporte M2M/agente en Compose/deploy/rollback, más configuración Development/example |
+| main | `9d1a3d9bec8d759bb338368388ce9ccbbe7b3016`; release #78/CD exitoso anterior. No incluye el transporte de #81 |
+| PR #83 | Auditoría y este plan: actualizar, validar e integrar a develop por Codex |
+| PR #85 / #38 | Bryan revisó y fusionó #85 a develop (`5582930`). Cuenta/configuración verificadas localmente por Jorge; producción sigue pendiente |
+| n8n | Runtime/Compose 2.39.5; imagen/digest comprobados. Ambos workflows publicados, cron apagado, credenciales resueltas incluidas herramientas |
+| Red | API readiness 200 desde servidor y contenedor n8n; HTTPS n8n 200 con User-Agent explícito. Rechazos 403 dependientes del cliente no acreditan HMAC |
+| HMAC | Fuentes consolidadas, archivo privado/runtime/GitHub sincronizados; firma positiva 202 en prueba temporal sin modelo y negativos 401. Conservar evidencia y probar run real en G |
+| M2M | Cognito emite token; API productiva observada en 401/403, sin risks 200. No inferir causa solo del código ni dar por completado el paso 3 |
+| Aceptación | No hay report productivo ni Completed/Fallback/CE-03 acreditados. Último informe local conocido p95=10001 ms, fallo conservado |
+| Ventana | Pendiente, explícitamente confirmada por Bryan |
+
+PR #84 de ruteo/auditoría no se fusiona como efecto de #39. Si entra mientras
+se prepara la release, revisar impacto en rutas/facts/fixture y aceptar el
+backend realmente desplegado. No reutilizar tiempos de otro SHA/entorno.
+
+## 3. Gates obligatorios de cierre
+
+| Gate | Resultado exigido | Evidencia |
 |---|---|---|
-| #36 | Cerrada; backend en develop, PR #40 | Backend y migraciones efectivos en producción |
-| #37 | Cerrada; [PR #74](https://github.com/bryancito1090/istpetdev-platform/pull/74) fusionado el 14-oct, CI de backend/frontend/política/bóveda en verde | Importación de los JSON de ese SHA en el servidor y funcionamiento real |
-| Release | `origin/main` @ `fac9c6e6f7f2a8b96e52a701e36424d213eb8a7b`; último job de despliegue consultado exitoso para ese SHA | main y develop divergían: 67 commits por delante y 1 por detrás en develop; #37 no estaba promovida. Reconsultar al ejecutar |
-| n8n | Comentarios de Bryan en #37/#39: 2.39.5, nodo nativo DeepSeek, digest coincidente local/remoto | Configuración del servidor reportada como `latest`: fijar sin cambiar la versión; revalidar runtime |
-| M2M | #38 registra apply dirigido, cliente `7h8pau7hu9pa40k85idbi7rgn4`, token y 200/403 locales | Secrets Manager, cuenta técnica y permisos en producción, transporte de variables por CD |
-| Compose/CD | En el SHA inspeccionado faltan las variables Agent y M2M en Compose de producción y su transporte en deploy.yml | Jorge debe completar #38 o entregar el cambio concreto para revisión |
-| Aceptación anterior | Informe inicial local: p95 9127 ms, herramientas 60/60, LLM 48/50, inyección 10/10 | Corresponde a una entrega anterior; no acredita el árbol final ni producción |
-| Último informe local encontrado | `artifacts/agent-acceptance/20261014-160708-465112/report.md`, commit `4742f3b`: herramientas 60/60, p95 **10001 ms**, LLM 47/50, inyección 10/10 | El umbral de latencia falló. Conservarlo y repetir la aceptación oficial; no afirmar que la última matriz pasó |
-| Incidente | task.md describe un intento antiguo con una sola ruta afectada | CE-03 exige dos decisiones, una automática y una escalada; recalibrar/verificar con el backend actual |
-| GitHub | #39 tiene label enhancement y no tiene milestone; no existen labels type::* ni milestones en el repo consultado | Conciliar metadatos del flujo institucional con la política real de GitHub antes de publicación, sin inventar un hito |
+| GC-1 Versión | n8n exacto/fijado, nodo DeepSeek nativo declarado y estabilidad | Runtime, etiqueta/digest, comentarios #37/#39 |
+| GC-2 Importación | Dos workflows del SHA oficial, credenciales resueltas, cron apagado, sin divergencia de lógica | Hashes, IDs/versiones publicadas, comparación de grafos y herramientas embebidas |
+| GC-3 Identidad/firma | M2M risks 200, cinco acciones prohibidas 403; HMAC inválido/expirado/alterado rechazado antes del modelo | Nodo OAuth2 temporal eliminado, respuestas y estados saneados; prueba positiva de firma |
+| GC-4 Ejecución/fallback | Watch Completed ≤10 s; Vigía detenido → Fallback ≤11 s; recuperación | Runs reales, tiempo de pared, modelo, v1, execution ID y traza |
+| GC-5 Aceptación | 10 Watch + 10 Incident + 10 Injection; cuatro umbrales aprobados | report.md oficial, exit code, numeradores/denominadores y SHA(s) |
+| GC-6 CE-03 | Dos decisiones: AutoExecuted y Escalated; explicación/facts/DriverMessage ≤160 | Incidente real, revisiones/decisiones y registro E2E-02/E2E-07 |
+| GC-7 Registro/integración | PA-01/T9/T10 reales, bóveda coherente, sin secretos, cambios integrados a develop | PR/merge/CI, documentación y evidencia accesible |
 
-El cuerpo del PR #74 y varios registros todavía describen «matriz en ejecución»
-o «PR en preparación». Tratar esas frases como antecedentes, no como evidencia
-final. Al cerrar #39 actualizar el estado vigente conservando intentos anteriores.
+Todos deben estar verificados para cerrar. Si falla un umbral, registrar el
+informe y conservar la operación fallback según spec 003/D4; no convertir el
+fallo en aceptación aprobada ni bajar umbrales. Un cambio de criterio exige
+una decisión formal del equipo antes de modificar el cierre.
 
-## 3. Lecturas, accesos y alcance antes de operar
+## 4. Lecturas y disciplina
 
-### Lectura obligatoria
+Leer AGENTS.md, README, README de la bóveda, Hechos canónicos, spec/plan/task/
+test-e2e de 003, entrega y antecedentes #36/#37/#38. Usar la skill local
+istpetdev-prelaunch antes de preparar release/activar/ensayar; su fuente
+editable es `docs/boveda/08 Skills/istpetdev-prelaunch.md`.
 
-1. README.md, docs/boveda/README.md y Hechos canónicos.
-2. Este plan, spec.md, plan.md, task.md, test-e2e.md y
-   [revision-integracion-37.md](revision-integracion-37.md).
-3. Bóveda: n8n e IA, Identidad OIDC y sesiones, Contratos API y eventos,
-   Runbook de DevOps y base de datos para la demo, Credenciales y acceso del
-   equipo, Seguimiento de implementación y pruebas y Registro de seguimiento
-   y hallazgos. Referencias concretas al final del documento.
-4. Antes de preparar la release, activar flujos o ensayar públicamente:
-   `docs/boveda/.local-skills/istpetdev-prelaunch/SKILL.md` y sus referencias.
-   La fuente editable es la nota de Skills de la bóveda; no versionar la copia.
-5. CONTRIBUTING.md, plantilla del PR y .github/scripts/branch-policy.sh.
-   Aplicar istpet-gitflow adaptando MR a PR: este repo vive en GitHub.
+Referencias pertinentes: Runbook demo, n8n e IA, Identidad OIDC, Contratos API
+y eventos, Credenciales, Verificación de seguridad, RBAC/configuración y Plan
+de validación. ADR-21: demo con organización/roles/asignación fijos, sin RLS;
+Schema95/RLS corresponde a P2. No introducir una migración por este cierre.
 
-### Inventario de acceso sin mostrar valores sensibles
+- Actualizar task.md por avance: distinguir código, prueba local, observación
+  productiva y despliegue. Conservar intentos fallidos y fuentes/fechas.
+- Reutilizar workflows, harness y controles. Corregir la causa comprobada con
+  el mínimo cambio; no crear otro proveedor o cliente Cognito.
+- Un único editor en n8n y una rama por implementación. Respaldar cambios ajenos
+  antes de conciliarlos; no sobrescribirlos ni mezclar resultados sin revisar.
+- Nunca publicar .env, JWT, HMAC, claves API, client_secret, refresh tokens,
+  Authorization, datos personales o items transitorios Load HMAC Key.
+- No push directo a main/develop, force-push, --admin o bypass de checks.
 
-- [ ] Identificar acceso SSH/administración al servidor **n8n**, distinto del
-  EC2 de la **API**. No deducir que ambos usan el mismo host, usuario o Compose.
-- [ ] Identificar proyecto Compose, servicio, contenedor, DB/volumen, proxy,
-  configuración persistente, runners y dueño. Registrar nombres operativos
-  en evidencia privada si contienen datos sensibles.
-- [ ] Confirmar sesión n8n con permisos para credenciales, importar y publicar.
-- [ ] Confirmar acceso a DeepSeek para revisar presupuesto y credencial.
-- [ ] Confirmar canal privado disponible con Jorge para secretos y confirmaciones.
-- [ ] Confirmar token humano de Planificador habilitado en producción. Gerencia,
-  M2M, ID token y token local no sustituyen ese access token.
-- [ ] Confirmar herramientas existentes: git, gh, docker/Compose, curl,
-  openssl, python3; revisar `n8n <comando> --help` en la versión fijada.
-- [ ] Comprobar `git status`, rama y posibles ediciones simultáneas. No hacer
-  reset --hard, clean -fd, stash automático ni sobrescribir trabajo ajeno.
+## 5. Fase A — Inventario y preparación verificable
 
-Si falta acceso, registrar exactamente el permiso/canal que falta. No buscar
-secretos en historiales, conversaciones ajenas ni archivos fuera del alcance.
-Las credenciales se introducen por su mecanismo privado, nunca por el prompt.
-
-### Límites de alcance
-
-Esta issue importa los workflows de #37. No rediseñar el agente, cambiar
-proveedor, añadir nodos por comodidad, relajar políticas, generar migraciones,
-aplicar Terraform general ni crear recursos cloud como atajo. Ya existe el
-cliente M2M: no crear otro para solucionar un 403. Una corrección indispensable
-se prepara en repo, se revisa y se importa desde su nuevo SHA aprobado.
-
-## 4. Secuencia de dependencias y decisiones
-
-| Gate | Condición para avanzar | Trabajo que sí puede continuar mientras falta |
-|---|---|---|
-| G0 | Base/contratos leídos y branch de trabajo correcta | Inventario documental y plan |
-| G1 | Versión exacta y acceso al servidor | Revisión de JSON y preparación de evidencia |
-| G2 | API de #36/#37 desplegada y saludable; #38 efectiva | Credenciales n8n, SHA de importación, borradores inactivos |
-| G3 | Secretos coincidentes, M2M 200/403, firmas 401 | Registro y diagnóstico, con agente deshabilitado |
-| G4 | Ventana acordada y Completed/Fallback reales | Pruebas locales y preparación del reporte |
-| G5 | Matriz oficial y CE-03 medidos, documentación coherente | Entrega parcial explícita si hay bloqueo |
-| G6 | Revisión Codex, conflictos resueltos, CI del SHA final | PR borrador si falta evidencia de producción |
-
-Si #38 necesita código todavía no integrado, el orden evita un bloqueo circular:
-preparar el diff y pruebas → entregar un checkpoint a Codex/Jorge → integrar
-por PR a develop → release coordinada a main → retomar los pasos de producción.
-No intentar terminar #39 alterando solo variables temporales del contenedor.
-
-## 5. Contrato exacto del SHA integrado
-
-### Imagen y modelo
-
-- n8n acordado: **2.39.5**.
-- Imagen verificada previamente: `docker.n8n.io/n8nio/n8n:2.39.5`.
-- Digest reportado: `sha256:cfa04788a34ae6f5d59d9086c5761315be2457a9608969553bd0add9a94959d1`.
-- Nodo: `@n8n/n8n-nodes-langchain.lmChatDeepSeek`, nativo.
-- Modelo configurado en los exports: `deepseek-chat`; prompt: `v1`.
-- No cambiar a OpenAI compatible si el nodo nativo ya funciona en esta versión.
-
-La issue usa `n8nio/n8n:<versión>` como ejemplo. El pull documentado usó el
-registry de n8n. Registrar registry, etiqueta y digest reales. Si se exige
-además comprobar Docker Hub, hacerlo como comprobación separada; no afirmar
-que su pull se verificó ni cambiar de imagen por suposición.
-
-### Rutas y workflows
-
-| Archivo | ID exportado | Webhook de producción |
-|---|---|---|
-| automation/n8n/workflows/vigia.json | `14fb7192-8115-54e9-a348-f2980e20bddf` | `https://n8n.bryan-bano.com/webhook/istpetdev/agent/watch` |
-| automation/n8n/workflows/incidente.json | `0754521d-91f4-5dd4-aa53-fd386c25a67b` | `https://n8n.bryan-bano.com/webhook/istpetdev/agent/incident` |
-
-Base para API: **`https://n8n.bryan-bano.com/webhook/istpetdev/agent`**.
-N8nTrigger añade `/watch` o `/incident`. No usar `/webhook-test`, no añadir el
-sufijo dos veces y no copiar la base ilustrativa incompleta de la issue.
-
-Borradores anteriores reportados: vigia `HO5zltuyBMATIwLT` e incidente
-`u5l4WnjD2sPhhvEb`. Identificarlos antes del import; no activarlos junto con los
-oficiales ni borrar otros workflows del servidor.
-
-### Credenciales, incluidas herramientas embebidas
-
-| Tipo | Nombre del export | ID del export |
-|---|---|---|
-| deepSeekApi | IstpetDev DeepSeek | `3b8794f0-9241-5c0c-9e19-c531bed733c8` |
-| oAuth2Api | IstpetDev M2M | `8e186867-4916-54b1-b968-c1c273f79a11` |
-
-Las cinco herramientas son nodos **ToolWorkflow** con subworkflows contenidos
-en `parameters.workflowJson`; no son cinco HTTP Request Tool simples. Dentro
-de esos JSON hay referencias OAuth2 al ID anterior. Además, Send Result y
-Start Scheduled Watch referencian la credencial M2M; DeepSeek Chat Model usa
-la otra. Coincidir solo en el nombre visible no garantiza que los IDs resuelvan.
-
-Priorizar crear/reutilizar los IDs esperados en el proyecto correcto, usando
-el mecanismo seguro que soporte 2.39.5. Si esos IDs colisionan con credenciales
-ajenas, no sobrescribirlas. Construir un mapa export-ID → remote-ID y revisar
-**todas** las referencias, incluidas las embebidas. Si la adaptación exige
-cambiar la definición ejecutable, devolverla al repo para revisión; no dejar
-un workflow distinto solo en la UI. Registrar remapeos operativos y separar
-metadatos de instancia de cambios de lógica.
-
-## 6. Paso 1 — Fijar y registrar versión de n8n
-
-**Entrada:** acceso administrativo al servidor y evidencia de #37/#39.
-
-1. Identificar el contenedor real. Consultar solo campos permitidos:
+1. Actualizar referencias GitHub y obtener estado/SHA de #81/#83/#85, develop,
+   main y CD efectivo. Diferenciar merge, build y despliegue exitoso.
+2. Preservar la entrega de Antigravity; reconciliar claims con pruebas reales.
+   Existencia de credenciales o 202 de webhook no demuestra Completed ni risks 200.
+3. Inventariar por API n8n ambos grafos, versión publicada, cron, conexiones,
+   credenciales visibles y cinco ToolWorkflow embebidos. No imprimir parámetros
+   que contengan secretos ni ejecutar el modelo para hacer inventario.
+4. Desde SSH de n8n comprobar runtime, Compose, imagen/digest, mounts y clave
+   de cifrado persistente por presencia/comparación privada. No recrear volúmenes.
+5. Verificar salida HTTPS desde servidor y contenedor, con certificado válido:
 
    ```bash
-   docker exec <contenedor-n8n> n8n --version
-   docker inspect <contenedor-n8n> --format '{{.Config.Image}} {{.Image}}'
-   docker image inspect <imagen-verificada> --format '{{json .RepoDigests}}'
+   curl --fail --silent --show-error --write-out '\nHTTP %{http_code}\n' \
+     https://istpetdev.doicela.dev/health/ready
    ```
 
-   La imagen configurada, el image ID y RepoDigests son datos diferentes.
-   No comparar dos tipos de digest como si fueran el mismo.
-2. Verificar que runtime sigue en 2.39.5 y el nodo nativo está disponible.
-3. Antes de recrear, verificar respaldo vigente de DB/volumen y configuración,
-   procedimiento de recuperación y preservación de **N8N_ENCRYPTION_KEY**.
-   Un export de workflows no es por sí solo un backup completo de n8n.
-4. Cambiar `latest` por la etiqueta exacta acordada en la fuente persistente
-   del servidor. No modificar la versión ni borrar volúmenes; no usar down -v.
-5. Validar configuración con `docker compose ... config --quiet`, sin imprimir
-   el Compose renderizado. Coordinar recreación/reinicio del único servicio
-   afectado y cualquier impacto sobre workflows ajenos.
-6. Releer versión/imagen y comprobar credenciales accesibles tras el reinicio.
-7. Publicar en #39 y #37 una nota saneada con versión, registry, digest, nodo,
-   fecha y resultado de fijación. Reutilizar los comentarios anteriores como
-   antecedente; no presentar `latest` como una fijación completada.
+6. Registrar presupuesto confirmado, accesos disponibles y pendientes. Reusar
+   evidencia local/CI vigente para el mismo código; no llamar scan a restore/build.
 
-**Salida:** versión estable, fuente persistente fijada, respaldo identificado
-y evidencia pública sin secretos. No actualizar n8n después sin coordinar #37.
+## 6. Fase B — Resolver identidad/configuración productiva con Jorge
 
-## 7. Paso 2 — HTTPS y conectividad de ida y vuelta
+1. #85 ya está integrado: appsettings.Development.json no se carga en Production;
+   appsettings.example.json es ejemplo y no equivale a configuración desplegada.
+   El Dockerfile/pipeline deben transportar la configuración efectiva.
+2. Revisar JWT con datos permitidos: issuer, token_use=access, client_id y scope
+   `istpetdev-api/automation`. Mantener tokens solo en memoria/almacén privado.
+   Verificar AllowedClientIds y TechnicalClientIds del runtime por allowlist.
+3. Contrastar AccountRoleClaimsTransformation y Account real: organización demo
+   activa, Issuer correcto, Subject=client_id, Kind=technical, Role=Automatizacion,
+   IsActive=true. Una cuenta humana de Planificador debe ser independiente.
+4. AccountSeeder solo corre con Demo.Enabled y Accounts configurados; omite
+   cuentas existentes y no reconcilia rol/actividad. El CLI de cuentas humanas
+   no es un provisionador técnico. No habilitar Demo__Enabled por suposición.
+5. Jorge debe escoger/registrar la vía mínima de provisión acordada en #38:
+   mantenimiento seguro existente o siembra explícita separada si hace falta.
+   Si requiere código, implementarlo/probarlo antes de C; no nuevo cliente,
+   grants/RLS, DDL o activación de resets como atajo. No reactivar/escalar una
+   cuenta incorrecta sin revisar la causa y el procedimiento autorizado.
+6. Verificar la cuenta humana, MFA/access token y permisos de demo. No cambiar
+   Gerencia de Bryan para suplir Planificador ni publicar su sub/correo.
+7. Conciliar la fila «Completado #38» heredada de #85 mientras solo haya prueba local.
+   Registrar por separado cliente Cognito, configuración, cuenta y prueba productiva.
+8. Preparar el escenario CE-03 en entorno aislado: dos rutas realmente afectadas,
+   una elegible para AutoExecute y otra Escalated según política determinista.
+   Dos IDs de ruta o un incidente que afecta solo una no cumplen CE-03.
+   Revisar la preparación de acceptance.py; el script legado calibrate-incident.sh
+   tiene fecha fija y no se ejecuta ciegamente en producción. No forzar decisiones.
 
-1. Verificar HTTPS/certificado y hostname de n8n desde un cliente autorizado.
-   No usar `curl -k` para convertir una validación TLS fallida en éxito.
-2. Desde el **servidor n8n**, ejecutar:
+## 7. Fase C — Código/documentación por PR y merge a develop
+
+Usar PR #83 para auditoría/plan; si hace falta implementación adicional,
+crear rama `chore/39-completar-produccion` desde develop actualizado. Reutilizar
+#85 y el trabajo útil de Jorge, con revisión de sus resultados y documentación.
+
+1. Antes de editar contrato, contrastar con la bóveda; actualizar primero el
+   contrato si cambia una interfaz. En #39 se mantiene v1 y política determinista.
+2. Integrar la base vigente en la rama de trabajo:
 
    ```bash
-   curl --fail --silent --show-error      --write-out '\nHTTP %{http_code}\n'      https://istpetdev.doicela.dev/health/ready
+   git fetch origin --prune
+   git merge origin/develop
    ```
 
-   Esperado: cuerpo saludable y **HTTP 200**. Conservar hora y origen de la
-   comprobación; el mismo curl desde la laptop no cumple este paso.
-3. Verificar también salida desde el contenedor/runner que hará HTTP hacia la
-   API, Cognito y DeepSeek. Si no tiene curl, usar una herramienta instalada;
-   no instalar paquetes ni imprimir un token para probar conectividad.
-4. Desde el host de la API, comprobar acceso HTTPS a los webhooks publicados
-   cuando estén listos; una prueba sin firma debe llegar a n8n y recibir 401.
-5. Revisar sincronización de reloj en API y n8n: la firma admite ±60 s.
-6. Revisar proxy: origen/base pública correctos, POST/body/headers preservados,
-   sin redirecciones inesperadas y sin páginas HTML de challenge en callbacks.
-   No desactivar protecciones globales de Cloudflare para pasar una prueba.
-7. Registrar salida saneada del curl en #39; distinguir host, contenedor y laptop.
-
-**Salida:** n8n HTTPS válido y comunicación entre los procesos reales. Un 200
-de readiness acredita salud de API/DB, no autenticación M2M ni agente operativo.
-
-## 8. Paso 3 — Credenciales, HMAC y entorno de n8n
-
-### DeepSeek
-
-- [ ] Crear/enlazar IstpetDev DeepSeek, tipo deepSeekApi, clave cargada solo en
-  el almacén cifrado de n8n; conservar una credencial existente válida.
-- [ ] Confirmar endpoint y modelo de los exports, y disponibilidad de la cuenta.
-- [ ] Verificar **límite de gasto efectivo** en la cuenta y quién lo controla.
-  Guardar evidencia sin clave, saldo personal ni datos de pago. Si la cuenta
-  no ofrece un límite duro, registrar esa limitación y resolver con Bryan;
-  una alerta o una afirmación sin evidencia no acredita el requisito.
-
-### OAuth2 de Cognito
-
-Configurar IstpetDev M2M, tipo oAuth2Api, con:
-
-| Campo | Valor / origen |
-|---|---|
-| Grant type | clientCredentials |
-| Access token URL | COGNITO_TOKEN_URL entregada por #38, terminada en /oauth2/token |
-| Client ID | Cliente existente de #38; revalidar el ID registrado |
-| Client secret | Canal privado / Secrets Manager, nunca Git |
-| Scope | `istpetdev-api/automation` |
-| Autenticación del cliente | Header (Basic), conforme a la credencial local validada |
-
-No añadir openid, scopes humanos ni roles elevados. Confirmar permisos del
-proyecto n8n para el workflow y sus herramientas embebidas. Reutilizar el token
-hasta su expiración mediante la credencial; no persistirlo en nodos Set.
-
-### HMAC y entorno
-
-1. Reutilizar el HMAC ya acordado si existe. Si todavía no hay uno, generar
-   32 bytes aleatorios como hexadecimal, sin mostrar la salida en el transcript:
+3. Si hay conflictos, resolver por contenido: conservar autenticación humana,
+   M2M, transporte deploy/rollback, cron apagado, historia de pruebas y decisiones
+   aceptadas. No elegir ours/theirs para todos los archivos. Revisar el diff final.
+4. Validar lo afectado: build-workflows.py --check, tests/scripts, pruebas .NET
+   pertinentes, shell/YAML/Compose y actionlint si cambia deploy, npm run check
+   si cambia frontend, check_vault.py y git diff --check. Usar PostGIS descartable
+   para integración; nunca ejecutar suites de DB contra RDS productivo.
+5. Revisar secretos del rango propio con redacción. UUIDs de referencias no son
+   claves; una exclusión debe ser puntual/justificada, nunca desactivar el scanner.
+6. Commit claro 10–72 caracteres; push a la rama de trabajo. PR a develop con
+   alcance concreto, pruebas/limitaciones, type::chore, milestone H5 y revisor.
+   Checkpoints usan **Refs #39**, sin cierre automático prematuro.
+7. Esperar checks del HEAD exacto, resolver revisión/conflictos y volver a revisar
+   si cambió la base. No usar un check de un commit anterior/cancelado como prueba.
+8. **Codex realiza el merge autorizado a develop**, sin bypass:
 
    ```bash
-   # Ejecutar en terminal privada; archivo fuera del repo y de sus artefactos.
-   umask 077
-   openssl rand -hex 32 > <archivo-privado-del-secreto>
+   gh pr merge <PR> --squash --match-head-commit <HEAD-verificado>
    ```
 
-   Importar su contenido por el mecanismo privado; no incluir la nueva línea
-   final en el valor. API y n8n usan la **misma cadena hexadecimal de 64
-   caracteres como texto UTF-8**, no decodificarla en un lado como bytes.
-2. Configurar de forma persistente, en el proceso donde se usa cada variable:
+9. Comprobar merge SHA y CI de develop; registrar integración y distinguirla
+   del deploy. Código validado en develop no acredita una API productiva preparada.
 
-| Variable n8n | Valor / criterio |
-|---|---|
-| ISTPETDEV_API_BASE_URL | `https://istpetdev.doicela.dev/api/v1` |
-| ISTPETDEV_WEBHOOK_SECRET | Mismo HMAC que API; secreto |
-| N8N_ENCRYPTION_KEY | Conservar la clave existente; no reemplazar |
-| N8N_BLOCK_ENV_ACCESS_IN_NODE | false, porque estos exports leen $env; solo editores de confianza |
-| NODE_FUNCTION_ALLOW_BUILTIN | crypto; sin wildcard; comprobar dónde se configura si hay runner externo |
-| GENERIC_TIMEZONE | America/Guayaquil |
-| WEBHOOK_URL / proxy | Base pública de n8n según el proxy real; no es la base Agent__N8n__WebhookUrl de API |
-| Cookie segura | Conservar HTTPS/cookie segura del servidor; no copiar N8N_SECURE_COOKIE=false del Compose local |
+## 8. Fase D — n8n estable, secreto único e importación reproducible
 
-El runner externo requiere revisar su propia configuración; no asumir que
-hereda todas las variables del contenedor principal. La allowlist de módulos
-puede necesitar `env-override` en el config del runner. Ver
-[documentación de runners](https://docs.n8n.io/hosting/configuration/environment-variables/task-runners/).
-El acceso a $env amplía lo que pueden leer los editores: revisar miembros y
-permisos del proyecto. Ver [seguridad de n8n](https://docs.n8n.io/hosting/configuration/environment-variables/security/).
+1. Respaldar Compose, PostgreSQL n8n y clave de cifrado en almacenamiento privado.
+   Fijar `docker.n8n.io/n8nio/n8n:2.39.5`, mismo digest/runtime confirmado; no
+   actualizar versión sin avisar a #37. Informar versión/nodo/pull en #37/#39.
+2. Mantener timezone America/Guayaquil, crypto en allowlist y env accesible para
+   el contrato existente. No habilitar módulos externos, runners inseguros ni
+   ExecuteCommand por rutina. Conservar DB y clave de cifrado al recrear.
+3. Generar HMAC con `openssl rand -hex 32` si no hay un secreto productivo válido
+   establecido. Tratar la cadena hexadecimal como UTF-8 en ambos lados; no
+   decodificarla como bytes hex en uno de ellos. Almacén privado 0600, fuera de Git.
+4. Evitar dos fuentes: un env_file privado y GitHub Secrets, valores sincronizados
+   en memoria/stdin; sin secreto literal en Compose ni shell tracing. Comparar
+   configuración resuelta/runtime de forma privada, reportando solo igualdad.
+5. Credenciales n8n: IstpetDev DeepSeek (deepSeekApi) y IstpetDev M2M (oAuth2Api,
+   clientCredentials, scope automation). Presupuesto confirmado por Bryan;
+   credenciales de Cognito se conservan cifradas en n8n, nunca en workflows.
+6. Fuente oficial inicial de #37: `8c99a71c5a0017e769af4d7e40666565d684117d`:
 
-### Comprobación sin persistir el secreto
+   | Archivo | SHA-256 |
+   |---|---|
+   | vigia.json | fb1528b0c6aff1e9545bf6b6f8980f50033b3cb1559abfc1e4e86166582c4083 |
+   | incidente.json | 83e56f3725a3b99abebe2f74396834801e21d7c8833ff38ca08aea2c9144a1bb |
+   | agente-logistico-v1.md | 25c727e8afce7b5a922013814531a7e98da68ad8867aea816eed17f42fb0f542 |
 
-El export tiene Load HMAC Key: coloca temporalmente `hmacKey` en un item, y
-Verify Signature devuelve solo `{valid, payload}`. Los ajustes de los JSON son
-`saveDataErrorExecution=none`, `saveDataSuccessExecution=none`,
-`saveExecutionProgress=false` y `saveManualExecutions=false`.
+7. Comparar remoto con export exacto de Git. Se permiten IDs/metadata de instancia
+   y remapeo de credenciales, incluido workflowJson de las cinco herramientas.
+   Si cambia lógica/prompt, corregir/exportar al repo mediante C y obtener nuevo SHA;
+   no llamar «exacto del SHA» a cambios locales sin exportar.
+8. Publicar Vigía/incidente individualmente, conservar Schedule deshabilitado.
+   En n8n 2.x comprobar CLI --help si se usa publish:workflow; no --all. Validar
+   versión publicada, no solo borrador. Guardar ID/versionId/hashes/fecha.
+9. saveDataError/success=none, saveExecutionProgress=false, saveManualExecutions=false:
+   no pinData o logs de Load HMAC Key. La ausencia de historial no prueba ausencia
+   de ejecuciones; la API y report son la evidencia durable.
+10. Direcciones exactas:
 
-- [ ] Conservar esos ajustes efectivos, revisar ejecuciones/subworkflows y
-  no activar pinData, guardar ejecución manual ni logs de debug con ese item.
-- [ ] No fotografiar ni exportar el resultado de Load HMAC Key; puede contener
-  el secreto incluso si los datos de ejecución no se guardan posteriormente.
-- [ ] Revisar redacción de errores OAuth2 y AgentError antes de compartir logs.
-- [ ] No exportar credenciales con --decrypted ni imprimir docker inspect completo.
+    | Configuración | Valor |
+    |---|---|
+    | Base webhook API | https://n8n.bryan-bano.com/webhook/istpetdev/agent |
+    | Rutas añadidas por API | /watch y /incident |
+    | ISTPETDEV_API_BASE_URL y Agent__N8n__ApiBaseUrl | https://istpetdev.doicela.dev/api/v1 |
 
-### Nodo temporal de comprobación
+11. Probar unsigned/invalid/expired/body alterado →401 en ambos workflows,
+    antes del modelo. Firmar `timestamp + '.' + bytes exactos del body`, cabeceras
+    X-IstpetDev-Timestamp / X-IstpetDev-Signature y prefijo sha256=. TLS válido.
+    Un 403 de Cloudflare no es un 401 del workflow. Probar también firma positiva;
+    un flujo temporal sin modelo puede verificar el parser, pero no reemplaza
+    el run real de G. Borrar todos los nodos/flujos de prueba.
 
-Crear un workflow/nodo HTTP temporal, sin publicación ni Schedule, con la
-credencial OAuth2 y `GET https://istpetdev.doicela.dev/api/v1/risks`.
-Verificar token obtenido y **200**. Registrar solo estado, scope confirmado,
-client ID esperado y momento; borrar el nodo/workflow y cualquier ejecución
-que contenga credenciales o token.
+## 9. Fase E — Release de preparación y operación de la API por Jorge
 
-Verificar **403**, con el mismo M2M, en los cinco cambios prohibidos usando
-recursos sintéticos reales de la ventana de ensayo: publicar, aprobar,
-rechazar, revertir y cambiar autonomía. Un 404/401 no acredita autorización
-correcta. Comparar estado antes/después; si hay 2xx, detener activación y
-escalar a #38/#36. Cuando se pruebe con X-Agent-Run-Id válido, conservar la
-traza saneada del 403 sin contaminar las muestras de la aceptación oficial.
+1. Prelaunch del SHA final: roles/asignación, contexto firmado no controlado por
+   modelo, HMAC, timeouts, secretos, TLS VerifyFull+CA RDS, Swagger restringido,
+   mitigación SSH acordada en runbook y reportes de dependencias disponibles.
+   Reusar evidencia vigente y marcar controles runtime no verificables.
+2. Revisar diff main..develop y paridad/hotfixes antes de promover. No resetear
+   ramas permanentes para quitar diferencias. Resolver por PR lo que corresponda.
+3. Preparar PR **develop → main**, política efectiva del repositorio (no inventar
+   release/* si branch-policy no la permite), con SHA/checks y revisor Jorge.
+   La operación/promoción productiva queda coordinada con él según confirmación
+   de Bryan. La preparación de este PR no es un despliegue ejecutado.
+4. Configuración inicial: AGENT_ENABLED=false. GitHub transporta ocho variables
+   públicas y el HMAC de GitHub Secrets. Conservar los dos clientes humanos:
 
-## 9. Paso 4 — Entrega y configuración efectiva con Jorge / #38
+   | Fuente GitHub | Uso |
+   |---|---|
+   | COGNITO_M2M_CLIENT_ID | AllowedClientIds__2 y TechnicalClientIds__0 |
+   | AUTHENTICATION_TECHNICAL_READ_SCOPE | istpetdev-api/automation |
+   | AGENT_ENABLED | false durante preparación; true solo en G |
+   | AGENT_AUTO_ON_INCIDENT | true |
+   | AGENT_TIMEOUT_SECONDS / AGENT_POLL_MILLISECONDS | 10 / 250 |
+   | AGENT_N8N_WEBHOOK_URL | base de D |
+   | AGENT_N8N_API_BASE_URL | API de D |
+   | Secret AGENT_N8N_WEBHOOK_SECRET | mismo secreto privado de n8n |
 
-Entregar por canal privado URL base y HMAC. La URL puede registrarse en la
-issue; el secreto nunca. Pedir confirmación saneada de #38 con SHA desplegado,
-salud, M2M 200/403 y presencia de claves, sin mostrar sus valores sensibles.
+5. Jorge verifica cuenta(s), mecanismo de provisión y secreto M2M privado según
+   #38, incluido Secrets Manager pendiente si corresponde. No imprimir DB env.
+6. Promoción por PR y CD sobre SHA inmutable; recrear servicios para aplicar env.
+   restart_only no introduce nuevas variables. Migraciones por procedimiento
+   oficial, sin ejecución manual/DDL ad hoc desde esta revisión.
+7. Verificar CD exitoso del SHA, imagen/configuración efectiva y readiness 200.
+   Un job cancelado/fallido o health antiguo no acredita deploy. Mantener guards
+   de activación incompleta y el mismo transporte en rollback.
 
-### Matriz de configuración de API
+## 10. Fase F — Permisos y red antes de activar
 
-| Clave .NET / variable de contenedor | Valor / comprobación |
-|---|---|
-| Authentication__Authority | Issuer correcto del pool, conservar clientes humanos |
-| Authentication__AllowedClientIds__2 | Client ID M2M de #38, o siguiente índice libre |
-| Authentication__TechnicalClientIds__0 | Mismo client ID M2M |
-| Authentication__TechnicalReadScope | istpetdev-api/automation; revisar TechnicalScope si existe y tiene precedencia |
-| Agent__Enabled | false durante preparación; true solo al paso 6 |
-| Agent__AutoOnIncident | true para incidente automático |
-| Agent__TimeoutSeconds | 10 |
-| Agent__PollMilliseconds | 250 |
-| Agent__N8n__WebhookUrl | https://n8n.bryan-bano.com/webhook/istpetdev/agent |
-| Agent__N8n__WebhookSecret | HMAC coincidente, vía secreto |
-| Agent__N8n__ApiBaseUrl | **https://istpetdev.doicela.dev/api/v1** |
-| Demo__Enabled | Decisión explícita de la ventana demo; false por defecto actual |
-| Demo__Accounts__N__* | Solo si #38 usa la siembra de cuentas; índice libre y cuenta técnica exacta |
+1. Nodo HTTP temporal de n8n con credencial M2M: token obtenido y GET risks **200**;
+   eliminarlo. Token emitido 200 + API 401/403 no cumplen este gate.
+2. Con el mismo M2M, probar publicar, aprobar, rechazar, revertir y cambiar autonomía
+   →**403**. Usar recursos apropiados y comprobar estado sin cambios; 401/404 no
+   prueban la matriz. Mantener intentos fuera de las 30 muestras oficiales.
+3. Verificar humano Planificador activo y su acceso/MFA/expiración; no publicar JWT.
+4. Desde backend productivo comprobar HTTPS de ambos webhooks sin challenge/redirect
+   y HMAC. No sustituir origen API por el curl de la laptop; no desactivar WAF global.
+5. Registrar GC-1/2/3, provisión humana y configuración. Resolver fallos antes de G.
 
-**Punto adicional al texto de la issue:** N8nTrigger toma `apiBaseUrl` de
-Agent:N8n:ApiBaseUrl; el valor inicial del código es localhost. Las herramientas
-usan ISTPETDEV_API_BASE_URL de n8n, mientras el callback Send Result toma la
-base del payload firmado. Configurar y verificar **ambas** bases productivas
-con /api/v1. Un GET de risks exitoso puede convivir con un callback mal dirigido.
+## 11. Fase G — Completed, Fallback y recuperación
 
-### Siembra de la cuenta técnica y demo
+1. Con F verificada, coordinar interrupción breve de Vigía con el equipo. Jorge
+   cambia AGENT_ENABLED=true y redeploya mediante recreación. Comprobar health.
+2. POST /api/v1/agent/runs con {"kind":"Watch"} y token Planificador; sondear
+   hasta terminal. Medir tiempo de pared POST→terminal, no solo harnessMs.
+3. Exigir Completed ≤10 s, modelo real, promptVersion=v1, n8nExecutionId,
+   herramientas/traza y decisiones explicadas. Guardar run/fecha/SHA saneados.
+4. Despublicar temporalmente solo Vigía, mantener Agent__Enabled=true y repetir:
+   Fallback ≤11 s con motivo de transporte y decisiones deterministas utilizables.
+   No simularlo apagando el agente ni modificando políticas.
+5. Recuperación garantizada: republicar la misma versión aun si falla el ensayo;
+   cron sigue apagado, Incidente activo. Repetir Watch y comprobar recuperación.
+6. Registrar GC-4. Si falla tiempo/Completed/recuperación, corregir y repetir el
+   camino afectado; no continuar como si estuviera aprobado.
 
-AccountRoleClaimsTransformation exige issuer/client_id, Kind=technical,
-Role=Automatizacion, cuenta y organización activas. El token puede ser válido
-sin que exista una cuenta y entonces la API no concede permisos.
+## 12. Fase H — Matriz oficial y CE-03 en ventana exclusiva
 
-Program.cs solo llama AccountSeeder si Demo.Enabled y hay Demo.Accounts.
-`--provision-accounts` del spec 013 crea **cuentas humanas**; no asumir que
-provisiona este M2M. Jorge debe registrar la vía usada para crear/reconciliar
-la cuenta técnica sin tocar cuentas ajenas.
+1. Acordar ventana explícita y respaldo/recuperación con Jorge/equipo. El harness
+   resetea antes de cada muestra y hace warmup/preparación adicional. No iniciar
+   mientras la respuesta vigente de Bryan sea «preparar primero el entorno».
+2. Verificar fixture determinista de B, cuentas, presupuesto, token vigente y
+   SHA de backend, workflows/prompt y harness por separado. Congelarlos durante
+   la corrida; el SHA del report es checkout del harness, no prueba del deploy.
+3. Ejecutar con token por entorno privado y shell tracing apagado:
 
-La aceptación necesita reset y avance de demo. No activar DEMO_ENABLED a
-ciegas: acordar qué endpoints habilita, datos sintéticos que borra, cuentas
-sembradas y duración de la ventana. No repetir el apply de Cognito como
-solución. Si falta una vía de provisionamiento, preparar el cambio mínimo
-revisable con su prueba en coordinación con #38, antes de operarlo.
-
-### Transporte completo de configuración
-
-Si #38 todavía no lo resolvió, preparar con Jorge el diff de:
-
-1. infra/compose/docker-compose.prod.yml: claves del contenedor, defaults
-   seguros, agente false por defecto y validación de valores requeridos.
-2. .github/workflows/deploy.yml: origen en GitHub Secrets/Variables → env del
-   step → lista envs de SSH → proceso remoto → Compose. Nombrar cada secreto
-   y variable en documentación, sin incluir valores.
-3. Procedimiento de redeploy/rollback: asegurar que un redeploy posterior no
-   elimina HMAC ni configuración. Mantener coherencia con rollback.yml.
-4. .env.example si hay nuevos nombres: placeholders únicamente.
-
-Una variable en GitHub no llega automáticamente al contenedor. Comprobar los
-saltos completos. Usar `config --quiet` y una allowlist que informe solo
-«presente/ausente», longitud si aplica y valores públicos. Nunca pegar el
-Compose expandido ni listar todas las variables del contenedor.
-
-### Gate de release
-
-- [ ] Confirmar ancestralidad de SHA workflows/backend en main, CI y SHA de
-  las imágenes que corren. El éxito de un deploy antiguo no acredita #37.
-- [ ] Coordinar la conciliación main/develop (había un hotfix exclusivo de
-  main) y PR develop → main con Jorge. No resetear main ni promover esta rama
-  chore directamente a producción.
-- [ ] Registrar migraciones reales aplicadas y respaldo con el responsable;
-  no generar DDL nuevo para una issue de entorno.
-- [ ] Tras el deploy de preparación, health/ready 200 y M2M 200/403 reales;
-  Agent.Enabled continúa false hasta tener flujos publicados y firmas probadas.
-
-## 10. Paso 5 — Importación oficial y publicación controlada
-
-### Fuente de importación
-
-Usar por defecto el SHA del PR #74:
-`8c99a71c5a0017e769af4d7e40666565d684117d`. Confirmarlo en #37 antes de operar.
-Si hay una corrección aprobada posterior, usar su SHA y registrar el cambio;
-no mezclar un JSON antiguo con el otro regenerado del working tree.
-
-- [ ] Obtener ambos JSON **desde el commit**, por `git show <SHA>:<ruta>` o
-  mecanismo equivalente, en un directorio privado de staging.
-- [ ] Calcular SHA-256 de ambos archivos y del prompt; guardar hashes y SHA
-  completo en un manifiesto sin secretos.
-- [ ] Comprobar reproducibilidad con build-workflows.py --check sobre la fuente
-  correspondiente; no importar outputs modificados sin commit.
-- [ ] Consultar objetos existentes y colisiones de ID antes de importar. Respaldo
-  previo del estado de los dos workflows y mapeo de credenciales, sin secretos.
-
-### Importar y publicar en 2.39.5
-
-Importar solo vigia/incidente en el proyecto de Bryan con credenciales resueltas.
-Los JSON traen active=true, pero no demuestra publicación efectiva. Comprobar
-el estado importado y usar publicación individual del workflow revisado.
-
-La CLI documenta `publish:workflow --id=...` y `unpublish:workflow --id=...`;
-los cambios de publicación por CLI necesitan reinicio para afectar al proceso
-ya en ejecución. Importar IDs existentes puede sobrescribirlos. Confirmar
-flags disponibles con --help y coordinar el reinicio en el servidor compartido.
-No usar operaciones --all para publicar/despublicar flujos ajenos. Fuente:
-[CLI de n8n](https://docs.n8n.io/hosting/cli-commands/).
-
-- [ ] Importación inicial controlada, sin habilitar automatizaciones hasta revisar.
-- [ ] Enlazar DeepSeek, callback OAuth2 y las cinco herramientas embebidas.
-- [ ] Revisar contexto firmado: runId/deadline/incidentId no los elige el modelo;
-  origen HTTP fijado por entorno. Conservar guardas de deadline y parser.
-- [ ] Vigia: nodo Schedule (disabled) sigue con disabled=true y sin cron efectivo.
-- [ ] Publicar únicamente ambos workflows y verificar rutas reales de producción.
-- [ ] Despublicar/archivar solo borradores de IstpetDev que colisionen; no borrado
-  masivo. Confirmar que no hay dos disparadores para el mismo evento.
-- [ ] Revisar la **versión publicada**, no solo el borrador, contra los archivos
-  de origen. Comparar nodos/parámetros/conexiones/ajustes, permitiendo solo
-  metadatos de instancia y remapeos declarados de credenciales.
-- [ ] Registrar versionId remoto, ID remoto, hash de origen y diferencias
-  operativas. Export saneado sin pinData, ejecuciones ni credenciales literales.
-
-### HMAC: prueba negativa antes de activar API
-
-Probar en **ambos** webhooks:
-
-| Caso | Resultado esperado |
-|---|---|
-| Firma inexistente / formato inválido | 401; ningún modelo/herramienta |
-| Timestamp actual + firma incorrecta | 401; ningún modelo/herramienta |
-| Firma correcta + timestamp más antiguo de 60 s | 401; ningún modelo/herramienta |
-| Cuerpo cambiado después de firmar | 401; ningún modelo/herramienta |
-
-Las pruebas firmadas se hacen desde un helper privado que lee el secreto sin
-mostrarlo, calcula HMAC-SHA256 sobre `timestamp + '.' + bytes exactos del body`
-y publica esos mismos bytes. No guardar firma completa ni headers secretos.
-Si se ejecuta n8n para evaluar/rechazar el webhook, eso no es una ejecución
-válida del **agente**: verificar ausencia de AI Agent y de herramientas.
-
-Un 404 significa que falta la ruta publicada; un 202 con firma inválida es un
-fallo. No seguir a aceptación ante esos resultados. El caso positivo firmado
-se acredita mediante el disparo real de la API en el paso 6, con un run válido.
-
-## 11. Prelaunch del entorno expuesto
-
-Antes de activar/ensayar, registrar los controles pertinentes de la skill local
-para el mismo SHA, proxy, DB e imagen. Reutilizar evidencia vigente de Jorge y
-spec 000/#14; la evidencia local de #37 no acredita el servidor.
-
-| Control | Qué comprobar / reutilizar | Estado inicial de este plan |
-|---|---|---|
-| Arquitectura DB / RLS | ADR-21 aceptado: organización fija y sin RLS en demo. Verificar entorno real; Schema95 es diseño archivado | Pendiente de runtime; RLS no aplica si se confirma ADR-21 |
-| Roles/asignación | M2M limitado, rol Planificador y permisos humanos conservados; cuenta/organización activas | Pendiente producción |
-| Contenido/campos | HMAC, contexto firmado separado del modelo, cifras y DriverMessage validados, cinco herramientas permitidas | Código revisado en #37; runtime pendiente |
-| Secretos/ejecuciones | Almacén cifrado, clave existente, ausencia de secretos en logs/export/items persistidos | Pendiente servidor |
-| Proxy/TLS/SSH | HTTPS final válido, VerifyFull RDS, Swagger restringido, postura SSH del procedimiento vigente | Reutilizar reporte vigente de Jorge o registrar faltante |
-| Dependencias | CI/auditorías del SHA/lockfiles; reporte del digest n8n/base si disponible; sin upgrade rutinario | CI de #74 verificado; escaneo de imagen no acreditado |
-| Datos/plantillas/archivos | No añade archivos ni plantillas administrables; fixtures sintéticos. Reutilizar controles ya expuestos de la app | No aplica a nuevas funciones de #39, con justificación; controles globales según release |
-
-Guardar un registro por control: fecha, revisión, entorno, verificado/fallo/
-pendiente/no aplica, evidencia, riesgo y acción. Si hay un fallo o pendiente
-explotable de acceso, contenido o dependencia crítica/alta accesible, no
-presentar la release/demo como lista. No ampliar la tarea a RLS/grants/servicios
-ajenos para completar la tabla.
-
-## 12. Paso 6 — Completed y Fallback reales
-
-**Entrada:** G2/G3, prelaunch registrado, cuenta Planificador, ventana acordada.
-
-1. Jorge activa Agent__Enabled=true por configuración persistente/redeploy.
-   Verificar Agent__AutoOnIncident=true y salud después. Registrar SHA de API,
-   image digest, SHA de workflows y versión n8n por separado.
-2. Preparar datos sintéticos sin otras ejecuciones en curso. Con Planificador:
-
-   ```http
-   POST https://istpetdev.doicela.dev/api/v1/agent/runs
-   Content-Type: application/json
-   Authorization: Bearer <cargado-solo-por-canal-privado>
-
-   {"kind":"Watch"}
+   ```bash
+   (
+     set +x
+     read -r -s -p 'Access token de Planificador: ' ISTPETDEV_PLANNER_TOKEN
+     printf '\n'
+     export ISTPETDEV_PLANNER_TOKEN
+     export N8N_IMAGE='docker.n8n.io/n8nio/n8n:2.39.5'
+     scripts/agent/acceptance.sh \
+       --base-url https://istpetdev.doicela.dev --runs 10
+   )
    ```
 
-3. Medir tiempo de pared desde envío hasta respuesta; después consultar el
-   run para confirmar persistencia. Esperado: HTTP 200, Completed y ≤10 s,
-   model=deepseek-chat, promptVersion=v1, n8nExecutionId no vacío, herramientas
-   en orden/códigos/latencias y decisiones con explicación y DriverMessage.
-4. Revisar logs saneados/callback si hay Fallback: reason, 401/403, URL,
-   credential-ID, reloj, Deadline y latencia del proveedor. No reintentar sin
-   límite ni editar el prompt en la UI para ocultar el fallo.
-5. **Despublicar solo vigia temporalmente**, confirmar que su webhook realmente
-   está detenido y repetir Watch. Esperado: Fallback, ≤11 s al panel, motivo
-   coherente (normalmente n8n_unreachable), propuesta determinista y Template.
-   Agent.Enabled se mantiene true: agent_disabled no prueba el workflow caído.
-6. Reactivar vigia incluso si falla la prueba, verificar Schedule apagado y
-   hacer un Watch de recuperación. Usar un procedimiento con limpieza/finally
-   o dejar explícita la obligación de restauración antes de salir.
-7. Guardar respuesta/traza saneada **antes del siguiente reset**: demo/reset
-   elimina AgentRun y decisiones; no bastan enlaces a IDs que ya no existirán.
+   Confirmar imagen real del servidor. No JWT en argumentos/logs ni --token-file
+   (no soportado). Leer ayuda/script del checkout final antes de ejecutar.
+4. Conservar report.md, exit code y fallos; exigir 10 Watch +10 Incident +10
+   Injection, sin HarnessError/muestras omitidas, y los cuatro umbrales:
+   herramientas ≥95%, p95 ≤10000 ms, decisiones Llm ≥90%, inyección 10/10 sin
+   acciones prohibidas/cambio de política. Revisar numeradores/denominadores.
+5. El harness penaliza fallback con mínimo 10001 ms; registrar impacto real en
+   p95, sin inventar que un único fallback siempre hace fallar la matriz.
+   harnessMs incluye reset/preparación. No editar resultados para conseguir PASS.
+6. Si falla, conservar informe, operar según fallback y corregir causa. Repetir
+   matriz completa con fecha/SHA nuevos cuando corresponda. Cambios de prompt
+   obligan a repetir; cambios ejecutables vuelven a C/E/F/G antes de aceptación.
+7. Adjuntar informe saneado a #39. Si no se puede subir adjunto por CLI, versionar
+   solo report/evidencia saneados y enlazar al blob de un SHA permanente; no
+   compartir artifacts privados completos o enlaces temporales inaccesibles.
+8. Incidente predefinido en vivo: crear por API, esperar su run Incident real,
+   respetar deduplicación y comprobar dos rutas/decisiones del escenario:
+   AutoExecuted y Escalated, explicación/facts/DriverMessage ≤160 cada una.
+   Verificar cambio automático de revisión y ausencia de ejecución de la escalada.
+9. Registrar E2E-02/E2E-07, run/decisiones/revisiones, fecha/zona, entorno y SHA(s).
+   Una única decisión no cumple CE-03; no fabricar una segunda fila o debilitar
+   autonomía. Restaurar demo al estado acordado y avisar fin por canal autorizado.
 
-No simular proveedores lentos ni enviar callbacks falsos en producción para
-repetir la suite local. El requisito de caída se acredita con el workflow
-real despublicado; carreras y resultados tardíos se reutilizan de las pruebas
-locales pertinentes salvo que cambie ese código.
+## 13. Fase I — Conciliación documental y merge final a develop
 
-## 13. Paso 7 — Aceptación oficial CE-01 (30 muestras)
+Mantener un registro único de afirmación/requisito, estado, fecha/entorno,
+SHA(s), fuente y responsable. Distinguir confirmación del administrador,
+reporte de Antigravity y verificación propia; conservar antecedentes fallidos.
 
-### Antes de la ventana
+| Documento | Cambio que debe reflejar |
+|---|---|
+| task.md | T9/T10 por avance, diferenciando local/runtime/deploy y gates pendientes |
+| test-e2e.md | Registros reales E2E-02/E2E-07; HMAC preparatorio no se etiqueta como matriz oficial aprobada |
+| spec.md | PA-01 resuelta tras uso real de credenciales y evidencia; mantener FR/NFR/CE |
+| plan.md / este plan | Contrato/configuración final si cambian, resultados y pendientes sin claims inventados |
+| Entrega/evidencia #39 | Manifiesto SHA/hashes, imagen/digest, release/runs/report y límites |
+| Bóveda Runbook | Estado cliente/configuración/cuentas productivos; no «Completado #38» basado solo en local |
+| Bóveda n8n e IA | Estado actual y cron/modelo/v1, base webhook, privacidad y evidencia |
+| Registro de hallazgos / Fuente documental | Avances, fallos conservados y fuentes de verificación |
+| Hechos canónicos / ADR / Contratos | Solo datos afectados y contradicciones reales; preservar ADR-21/22 |
 
-- [ ] Coordinar inicio/fin con el equipo; registrar conformidad y responsable.
-- [ ] Jorge identifica respaldo vigente y recuperación de datos; no crear
-  snapshots nuevos repetidos como efecto de cada corrida.
-- [ ] Confirmar que la base es de demo sintética y que reset/advance están
-  habilitados por la decisión de Demo.Enabled, no por un bypass improvisado.
-- [ ] Revalidar token humano, rol y expiración con margen para toda la matriz.
-- [ ] Confirmar flujos publicados, Schedule apagado y presupuesto disponible.
-- [ ] Probar preparación de incidente con el backend actual antes de las 30
-  muestras: rutas publicables, dos paradas completables, cierre-norte con run
-  **automático**. No atribuir al automático un run creado manualmente.
-- [ ] Fijar la imagen remota real en N8N_IMAGE al correr el harness desde la
-  laptop: el script puede inspeccionar el contenedor local o usar un fallback
-  de imagen y eso no verifica el servidor.
+1. Editar solo notas relacionadas que discrepen. No cambiar propuestas ajenas ni
+   declarar otros specs completos como efecto de #39. Evitar dos estados actuales
+   incompatibles; el histórico debe estar fechado y señalado como antecedente.
+2. Sanear antes de git add; comprobar secretos, enlaces, check_vault.py y diff.
+   Si hay código, ejecutar checks afectados; para cambios editoriales reutilizar
+   pruebas vigentes. Registrar el conteo real del verificador, no copiar uno viejo.
+3. Preparar PR final a develop, actualizar base y **resolver conflictos por
+   contenido** como C. Revisar de nuevo hechos/contratos y HEAD/checks exactos.
+4. **Codex fusiona a develop** al cumplir requisitos del repositorio y registra
+   SHA/CI. Un merge solo documental no cambia el SHA del backend validado ni
+   exige redeploy por rutina. Si cambió ejecutable, repetir los gates afectados.
 
-### Ejecución con token fuera de argumentos
+## 14. Fase J — Auditoría final y cierre de GitHub
 
-El script actual admite **ISTPETDEV_PLANNER_TOKEN**. No tiene --token-file;
-no inventar esa opción. En una terminal privada con xtrace apagado:
+Codex compara GC-1 a GC-7 con la descripción original de #39: versión estable,
+importación oficial, Completed/Fallback productivos, reporte de umbrales,
+CE-03/E2E-07, PA-01/T9/T10, documentación integrada y privacidad. Revisar que
+no hubo cambios posteriores que invaliden la prueba ni pendientes escondidos.
+
+Preparar comentario con fecha/entorno, versión, SHA(s), PR/merges/CD, enlaces
+permanentes a runs/evidencias, métricas y CE-03. Actualizar casillas solo por
+pruebas realizadas. Si existe ALK de Linear, enlazarlo; no duplicar subtareas.
+
+**Solo con todos los gates verificados**, publicar evidencia y cerrar:
 
 ```bash
-(
-  set +x
-  read -r -s -p 'Access token de Planificador: ' ISTPETDEV_PLANNER_TOKEN
-  printf '\n'
-  export ISTPETDEV_PLANNER_TOKEN
-  export N8N_IMAGE='docker.n8n.io/n8nio/n8n:2.39.5'
-  acceptance_rc=0
-  scripts/agent/acceptance.sh     --base-url https://istpetdev.doicela.dev     --runs 10 || acceptance_rc=$?
-  unset ISTPETDEV_PLANNER_TOKEN
-  exit "$acceptance_rc"
-)
+gh issue close 39 --repo bryancito1090/istpetdev-platform --reason completed
+gh issue view 39 --repo bryancito1090/istpetdev-platform \
+  --json state,closedAt,url
 ```
 
-No pegar el token en un tool call, issue ni chat. La variable evita ponerlo
-en argv/historial; no lo vuelve público ni permite compartir el entorno.
+Si algún gate falla o falta evidencia, mantener abierta y registrar pendiente,
+responsable y prueba concreta. Un cierre automático no equivale a aceptación;
+corregir cualquier cierre prematuro dentro del alcance solicitado.
 
-### Lo que el harness hace realmente
+## 15. Recuperación y entrega de continuidad
 
-- Ejecuta un **warmup adicional** con reset y Watch, fuera de las 30 muestras;
-  considerar ese reset, gasto y run al planificar la ventana.
-- Hace 10 Watch + 10 Incident + 10 Injection, con reset/preparación por intento.
-- Incidente: reset demo-region, proponer/publicar rutas, avanzar dos paradas
-  de la primera ruta y registrar `POST /api/v1/incidents` usando el fixture.
-  El preset ilustrado en la issue no es el request del harness integrado.
-- Inyección: usa demo-region-injection y compara política/facts contra baseline.
-- Guarda report.md y runs.json en artifacts/agent-acceptance/<fecha-hora>/,
-  ignorado por Git. No detener el proceso ante un primer fallo perdiendo el reporte.
-- `harnessMs` incluye preparación/reset; no equivale al tiempo de respuesta del
-  POST del panel. Medir ese tiempo aparte en el paso 6 y controles del ensayo.
-- Para un Fallback/error asigna una muestra de al menos 10001 ms al p95.
-  Un fallback aislado puede no ocupar el percentil 95 de 30 muestras: reportar
-  su número y motivo aunque el p95 agregado todavía pase. No alterar el cálculo
-  ni los umbrales para encubrir resultados; aclarar el límite de la medición.
-
-### Verificar reporte, no solo exit code
-
-| Métrica | Umbral oficial | Evidencia a registrar |
-|---|---|---|
-| Herramientas válidas | 2xx / llamadas totales ≥95% | Numerador, denominador, errores y endpoints |
-| Latencia | p95 ≤10000 ms con tratamiento de fallback del harness | p95, muestras, fallbacks, latencia API y tiempos de pared disponibles |
-| Explicaciones | Decisiones source=Llm / total ≥90% | Llm/total, Templates y mismatchReason |
-| Inyección | 10/10 sin llamadas prohibidas y política igual | Resultado por corrida y comparación baseline |
-
-- [ ] Confirmar exactamente 30 muestras, escenario de cada una, run/execution
-  IDs, modelo/prompt y fallos; el warmup no se agrega al denominador.
-- [ ] Registrar por separado SHA del **harness**, del **backend desplegado** y
-  de los **workflows importados**; el Commit del reporte identifica el checkout
-  que lo ejecutó, no automáticamente el backend remoto.
-- [ ] Conservar output/exit code y hash del report.md; revisar y sanear antes
-  de adjuntarlo. No subir runs.json sin revisar su contenido completo.
-- [ ] Adjuntar report.md/resumen completo en #39 mediante mecanismo soportado
-  por GitHub; si no admite el adjunto, publicar el Markdown íntegro saneado o
-  enlace privado durable accesible al equipo. No usar enlace público de Orca.
-- [ ] Si falla, conservar el informe fallido, diagnóstico y siguiente acción.
-  No cambiar el resultado del archivo original; nueva corrida = nuevo artefacto.
-
-Si falla un umbral, registrar CE-01 **falló/pendiente**, dejar operación
-segura por fallback mediante el procedimiento acordado y pedir la decisión
-del equipo sobre D4. Habilitar fallback no equivale a aceptación de DeepSeek.
-Toda corrección de prompt exige nuevo SHA/versionado, importación y **matriz
-completa**; nunca repetir solo las corridas que fallaron.
-
-## 14. Paso 8 — Incidente en vivo y resolución de CE-03
-
-CE-03 es independiente del porcentaje de explicaciones del reporte. Una
-matriz exitosa con una sola ruta afectada no prueba el incidente de dos decisiones.
-
-1. Restaurar demo-region dentro de la misma ventana y preparar las rutas y
-   paradas conforme al contrato actual de 002/004. Confirmar datos publicados
-   y avance real, conservando paradas completadas y reservas.
-2. Registrar cierre-norte usando el endpoint/fixture de la versión desplegada.
-   Comprobar runId de creación automática; consultar ese run, no iniciar otro.
-3. Consultar impacto, decisiones y revisiones. Exigir:
-
-   - Dos rutas afectadas y exactamente dos decisiones correlacionadas.
-   - Una AutoExecuted/publicada y una Escalated/pendiente de decisión humana.
-   - Explicación en español, facts y DriverMessage ≤160 caracteres en ambas.
-   - Una replanificación por ruta/transición; sin duplicados ni pérdida de
-     paradas completadas. El agente nunca llama publish/approve directamente.
-
-4. Guardar fecha/hora, API/workflow SHA, n8n/versionId, run/execution IDs,
-   resultados, tiempos y respuestas saneadas antes de resetear de nuevo.
-5. Registrar el incidente en **E2E-02** y referenciarlo desde el registro de
-   **E2E-07** solicitado por #39. No confundir IDs del spec 013 con el spec 003.
-
-### Si solo hay una ruta o ambas decisiones son del mismo tipo
-
-- Registrar CE-03 fallido con affectedRoutes, outcome y preparación concreta.
-- Revisar asignación de demanda, capacidad, paradas, corredor del incidente y
-  política actual; distinguir preparación incorrecta de un fixture descalibrado.
-- Preparar con responsable de 002 el ajuste mínimo reproducible de fixture/
-  preparación y prueba determinista, documentando el contrato en specs/bóveda.
-  No hardcodear la segunda decisión en n8n ni bajar los umbrales de la política.
-- Si cambia fixture/contrato usado por acceptance, requerir revisión, release
-  e informe completo nuevos. Conservar el fallo anterior. Si no se resuelve
-  antes de H5, entregar el bloqueo: #39 no satisface su cierre completo.
-
-## 15. Registro, documentación y criterios de cierre
-
-### Archivos que se espera actualizar
-
-| Archivo | Cambio autorizado esperado |
-|---|---|
-| task.md | Avances de T9/T10 separados por código/local/real/producción; pendientes y responsables |
-| test-e2e.md | Filas reales E2E-01/02/04/07; Completed/Fallback, HMAC, aceptación e incidente |
-| spec.md | PA-01 resuelta solo con credenciales remotas y uso verificado; estado y CE medidos |
-| Este plan | Casillas/resultados/URLs de evidencia y entrega final |
-| Bóveda n8n e IA | Hosting efectivo, SHA, modelo/prompt y resumen medido, incluidos fallos |
-| Bóveda Registro de seguimiento y hallazgos | Estado de #39, bloqueos y decisión del equipo |
-| Runbook demo | Estado real de #38/#39 y release; no declarar una tarea de Jorge por hecho sin evidencia |
-| Bóveda Fuente y control documental | Registrar cambios relevantes según plantilla de PR |
-| Compose/CD/ejemplos | Solo si #38 requiere el diff mínimo coordinado; validar antes de release |
-
-No cambiar la fuente del prompt, templates ni workflows para una importación
-operativa exitosa. Si fue indispensable corregir lógica, explicar por qué,
-contrastar el cambio con la bóveda y repetir las pruebas/aceptación afectadas.
-
-### Plantilla de evidencia por ejecución
-
-| Campo | Contenido |
-|---|---|
-| Fecha | ISO-8601 con -05:00 o UTC y zona explícita |
-| Entorno | Producción: API HTTPS + n8n del servidor de Bryan + DeepSeek real |
-| Revisión | Tres SHA completos (API/workflows/harness), versión n8n y digest |
-| Escenario | E2E del spec 003, paso de #39 y requisito/CE |
-| Acción | Preparación y request, sin autorización/secreto |
-| Resultado | Estado, código HTTP, tiempos, decisions/outcome/source/mensajes |
-| Proveniencia | runId, n8nExecutionId, promptVersion y modelo |
-| Artefacto | Ruta privada, hash y URL de resumen/adjunto saneado |
-| Estado | pasó/falló/bloqueado/no ejecutado; causa y responsable del pendiente |
-
-PA-01 se resuelve si ambas credenciales existen y son utilizables en el
-servidor, con prueba M2M y ejecución DeepSeek; no acredita por sí sola CE-01.
-No marcar el spec entero completado por resolver esa pregunta.
-
-### Lista final de cierre de #39
-
-- [ ] Versión exacta informada, fijada y estable; registry/digest/nodo documentados.
-- [ ] #36/#37 y configuración de #38 desplegadas, con SHA/imágenes comprobados.
-- [ ] Workflows del SHA oficial importados y publicados, sin divergencias de lógica.
-- [ ] Credenciales remotas enlazadas, HMAC válido/rechazo inválido, Schedule apagado.
-- [ ] M2M: risks 200 y cinco acciones prohibidas 403 sin efectos.
-- [ ] Watch Completed ≤10 s y Fallback con workflow parado ≤11 s; recuperación.
-- [ ] Matriz oficial adjunta y cuatro umbrales medidos; fallos registrados igual.
-- [ ] CE-03 de dos decisiones medido; E2E-02/07 registrados con fecha/SHA/entorno.
-- [ ] PA-01 resuelta con evidencia y T9/T10/bóveda coherentes.
-- [ ] Ningún secreto/dato personal en repo, issues, capturas, artefactos compartidos.
-- [ ] Prelaunch vigente, restauración de estado de demo y nota de congelamiento.
-
-Si falta cualquiera, declarar entrega parcial o bloqueada; no cerrar la issue.
-Enlazar ALK existente si el equipo usa Linear, sin crear ocho issues nuevas.
-
-## 16. Verificación local de los cambios entregados
-
-Para documentación: revisar enlaces, coherencia y `git diff --check`; correr
-check_vault.py si cambia la bóveda. No ejecutar la matriz de producción durante
-la revisión local sin ventana. La preparación de este plan no requiere levantar
-la aplicación ni repetir la suite completa de #37.
-
-Si hay cambios de configuración/scripts/código, ejecutar las pruebas pertinentes:
-
-```bash
-python3 -I scripts/agent/build-workflows.py --check
-python3 -I -m unittest discover -s tests/scripts -p 'test_*.py'
-bash -n scripts/agent/acceptance.sh scripts/agent/local-up.sh
-bash .github/scripts/branch-policy.sh pr   chore/39-n8n-produccion develop   bryancito1090/istpetdev-platform bryancito1090/istpetdev-platform
-python3 docs/boveda/.github/scripts/check_vault.py
-```
-
-Pruebas de agente/auth si cambia su código o la integración las afecta:
-
-```bash
-dotnet test tests/IstpetDev.Tests   --filter 'FullyQualifiedName~AgentJourneyTests|FullyQualifiedName~Integration.Agent|FullyQualifiedName~WorkflowSecretsTests|FullyQualifiedName~N8nTriggerTests'
-```
-
-Comprobar previamente DB de pruebas aislada; no ejecutar tests/migraciones
-contra RDS compartido por un .env accidental. CONTRIBUTING exige `npm run check`
-antes de pedir revisión; Codex lo ejecutará cuando el tipo de cambio lo requiera,
-y comprobará los checks de GitHub sobre el SHA final. Auditoría/secrets scan:
-usar las herramientas y compuertas existentes, registrar falta de herramienta;
-un build y git diff --check no son un escaneo de secretos.
-
-## 17. Entrega de Antigravity a Codex
-
-1. Actualizar este plan y task.md durante cada avance. Dejar evidencia real y
-   pendientes, sin convertir las casillas planeadas en resultados.
-2. Preparar `entrega-39-antigravity.md` al concluir
-   (crear entonces, no como supuesto resultado ahora) con:
-
-   - Estado: lista para revisión / checkpoint de dependencia / bloqueada.
-   - Rama y HEAD, archivos modificados y motivo; cambios externos efectivos.
-   - SHA API/workflows/harness, hashes/versionId n8n y credenciales remapeadas
-     por identificador, sin secretos.
-   - Resumen por paso 1–8: pasó/falló/pendiente y enlace/artefacto.
-   - Reporte oficial y métricas, intentos fallidos conservados, CE-03 y PA-01.
-   - Pruebas ejecutadas, fallos y condiciones que no se pudieron verificar.
-   - Estado final: workflows activos, cron apagado, API enabled/fallback,
-     ventana cerrada, datos de demo restaurados y rollback disponible.
-   - Dependencias que requieren acción de Jorge/Bryan y cambios listos para
-     revisión, sin solicitar credenciales por el prompt.
-
-3. Opcionalmente escribir el marcador local ignorado
-   `.git/istpetdev-39-ready.json` con `issue:39`, `branch`, `head`, `status`,
-   `deliveryReport`, `acceptanceReport`, `pending` y fecha. Resolver el git-dir
-   con `git rev-parse --absolute-git-dir` si se trabaja en otro worktree.
-   No guardar valores de secretos. El marcador es señal, no prueba ni trigger.
-4. Dejar de editar la rama tras la entrega. Avisar a Bryan para que retome a
-   Codex; no hay automatización de #39 habilitada por este documento.
-5. Si hay checkpoint de #38/release, pedir revisión de ese checkpoint antes de
-   esperar indefinidamente. Conservar tareas operativas pendientes para retomar.
-
-### Prompt de delegación
-
-```text
-Resuelve la issue #39 de ISTPETDEV siguiendo íntegramente
- docs/specs/003-agente-logistico/plan-cierre-39-produccion.md.
-Trabaja en la rama chore/39-n8n-produccion, desde el checkout de ISTPETDEV.
-Lee AGENTS.md, los README, los hechos canónicos, spec/plan/task/test-e2e 003,
-la revisión de #37 y la skill local de prelaunch con sus referencias.
-
-#37 ya está integrada mediante PR #74. Importa sus JSON desde un SHA
-identificable; no rediseñes workflows ni uses los borradores como prueba del
-import oficial. #38 solo acredita M2M local: verifica deploy, cuenta técnica,
-transporte completo de variables y permisos de producción. Respeta la
-coordinación de Jorge para release/redeploy y la ventana de resets del equipo.
-Avanza tareas independientes cuando falte una dependencia; entrega un
-checkpoint con cambios concretos si #38 necesita código/release primero.
-
-Fija n8n 2.39.5 preservando datos y N8N_ENCRYPTION_KEY; conserva DeepSeek nativo.
-Revisa credenciales embebidas y las dos bases productivas /api/v1: n8n y
-Agent__N8n__ApiBaseUrl. Publica solo webhooks, Schedule apagado. Prueba HMAC,
-M2M 200/403, Completed <=10 s, Fallback real <=11 s y recuperación.
-La aceptación son 30 muestras más warmup, con token por el mecanismo privado
-existente. Conserva fallos; el último informe local observado falló latencia.
-CE-03 exige dos decisiones (AutoExecuted/Escalated), no solo un reporte verde.
-No marques PA-01, CE ni tareas cumplidas sin evidencia real del servidor.
-
-No pongas secretos/tokens en el repo, prompt, issues, logs, capturas o exports.
-Actualiza task.md y test-e2e.md por avance, contrasta contratos con la bóveda.
-Al terminar crea entrega-39-antigravity.md con estado, SHA, evidencia, métricas,
-pendientes y estado remoto final; deja de editar y avisa a Bryan.
-No hagas push, PR, merge ni cierres #39: Codex hará revisión, resolución de
-conflictos, publicación de rama y PR hacia develop después de tu entrega.
-```
-
-## 18. Revisión, conflictos, push y PR — responsabilidad de Codex
-
-La instrucción de Bryan para publicar después de la entrega queda registrada;
-no es necesario pedirle otra vez autorización para revisión, conflictos,
-commit/push de la rama y creación del PR a develop. La fusión del PR o una
-release a main siguen fuera de la entrega solicitada para hacerlo mergeable.
-
-1. Confirmar que Antigravity terminó de editar, leer entrega/task y revisar
-   diff/artefactos/estado remoto. Preservar todo trabajo no relacionado.
-2. `git fetch origin`; comparar con origin/develop actualizado. Si avanzó,
-   integrar en la rama chore mediante merge para conservar historia y evitar
-   force-push. No usar ours/theirs de forma masiva.
-3. Resolver conflictos por significado, especialmente task/spec/test-e2e,
-   notas compartidas, deploy.yml, Compose y posible provisión de cuentas.
-   Mantener login real, clientes humanos, ruteo, seguridad y transporte de
-   variables de ambas ramas. No generar nuevas migraciones para resolverlos.
-4. Si el conflicto modifica lógica, prompt, contratos, fixture o defaults que
-   se ensayaron, repetir las verificaciones afectadas y matriz completa cuando
-   corresponda; mantener los SHA de producción registrados sin atribuirles
-   el nuevo árbol hasta desplegarlo por el flujo autorizado.
-5. Revisar secretos, git diff --check, pruebas pertinentes y política de rama.
-   Consultar los checks requeridos; no dar por mergeable un PR solo por no
-   haber conflictos textuales.
-6. Conciliar milestone y label type::chore con las convenciones institucionales.
-   Actualmente no existen: usar decisión/hito del equipo, no una fecha inventada.
-   En GitHub, registrar limitaciones de metadatos sin afirmar que existen los
-   jobs GitLab gitflow:* o gitleaks si el CI real no los implementa.
-7. Commit con asunto claro de 10–72 caracteres, por ejemplo:
-   `docs(n8n): registrar operación y aceptación de producción #39`.
-   Seleccionar archivos explícitos; no git add de secretos/artefactos ignorados.
-8. Push **solo** `chore/39-n8n-produccion` y crear PR base=develop con plantilla,
-   problema/resultado, SHA de evidencia, validación y límites. Descripción
-   multilinea por archivo temporal y gh --body-file, no interpolación de texto.
-9. Para el checkpoint de configuración: PR revisable con pruebas/CI verdes,
-   pendientes externos explícitos y referencia a #39 sin cierre automático.
-   Si pretende acreditar la operación completa y falta evidencia externa,
-   mantenerlo borrador. Closes #39 solo cuando todos los criterios de la issue
-   tengan evidencia; exigir checks verdes del **HEAD final**.
-10. Reconsultar mergeable/mergeStateStatus, CI y avance de develop. Resolver
-    conflictos nuevos si aparecen; repetir solo las pruebas afectadas.
-    Entregar URL del PR y condiciones pendientes para que se pueda mergear.
-
-## 19. Congelamiento, recuperación y fin de ventana
-
-Después de H5 no cambiar workflows, credenciales, prompt ni versión. Si la
-fecha ya pasó al retomar, registrar bloqueo y pedir la decisión del equipo
-para la intervención concreta; no atribuir una excepción al plan.
-
-| Fallo | Recuperación prevista |
-|---|---|
-| Agente/DeepSeek no cumple | Jorge configura Agent.Enabled=false por el mecanismo persistente acordado; API determinista, registrar agent_disabled y salud |
-| Webhook caído en ensayo | Restaurar publicación de vigia, comprobar cron apagado, salud y Watch de recuperación |
-| Credencial no enlaza | Mantener agente deshabilitado y corregir el mapeo autorizado; no recrear Cognito ni rotar todas las claves |
-| Import defectuoso | Restaurar solo versiones previas de los dos workflows desde respaldo; no afectar flujos ajenos |
-| Release API falla | Jorge usa rollback oficial por imágenes/SHA y verifica compatibilidad del esquema; revertir código no revierte automáticamente la DB |
-| Reset afectó ensayo ajeno | Detener matriz, informar y recuperar mediante responsable/respaldo; no restaurar RDS por iniciativa propia |
-
-Cerrar la ventana: quitar nodo temporal, borrar temporales privados de
-credenciales que ya no sean necesarios, verificar estado operativo acordado,
-Schedule apagado y datos sintéticos de demo restaurados. No borrar pruebas
-fallidas, reports, backups o volúmenes como «limpieza». Un fallback operativo
-es un resultado útil, pero no satisface por sí solo CE-01 ni CE-03.
-
-## Referencias del repositorio
-
-- [Spec 003](spec.md), [diseño](plan.md), [tareas](task.md),
-  [E2E](test-e2e.md), [revisión de #37](revision-integracion-37.md).
-- [Runbook de demo](../../boveda/03%20Arquitectura/Runbook%20de%20DevOps%20y%20base%20de%20datos%20para%20la%20demo.md).
-- [n8n e IA](../../boveda/05%20Automatizacion/n8n%20e%20IA.md).
-- [Identidad OIDC](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md).
-- [Contratos API/eventos](../../boveda/03%20Arquitectura/Contratos%20API%20y%20eventos.md).
-- [Prelaunch — fuente editable](../../boveda/08%20Skills/istpetdev-prelaunch.md).
-- [Seguridad prelaunch](../../boveda/03%20Arquitectura/Verificacion%20de%20seguridad%20antes%20del%20lanzamiento.md).
-- [Seguimiento del equipo](../../boveda/06%20Equipo/Registro%20de%20seguimiento%20y%20hallazgos.md).
-- [#38](https://github.com/bryancito1090/istpetdev-platform/issues/38),
-  [#37](https://github.com/bryancito1090/istpetdev-platform/issues/37),
-  [#36](https://github.com/bryancito1090/istpetdev-platform/issues/36).
-
-#55 se mantiene como coordinación informativa de cuentas humanas. No crear
-las seis cuentas ni iniciar su ronda como parte implícita de #39; basta una
-identidad Planificador de producción provisionada por la vía acordada del
-spec 013 y con MFA. M2M sigue separado de esa identidad humana.
+- Conservar versión publicada/ID y backups privados antes de cambios. Ante fallo,
+  recuperar configuración/versión conocida; no borrar volúmenes ni regenerar cifrado.
+- Ante contingencia coordinar Agent__Enabled=false persistente/recreación y health.
+  Restaurar Vigía tras la prueba. Imagen antigua no revierte migraciones: no
+  deshacer DDL/restaurar RDS automáticamente; Jorge dirige recuperación.
+- Entregar diff/SHA/PR/checks, manifiesto, evidencia saneada y gates restantes.
+  El último responsable registra integración y despliegue por separado.
+- Continuar trabajo independiente si falta ventana/acceso; pedir solo esa
+  referencia/coordinación, nunca claves o tokens en mensajes. Respetar H5.
+- Cuando se cumpla todo, ejecutar el cierre asignado; no terminar siempre en un
+  checkpoint por heredar la instrucción antigua de mantener #39 abierta.

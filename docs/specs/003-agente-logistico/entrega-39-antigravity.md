@@ -61,14 +61,14 @@ Se entrega un **checkpoint limpio y validado** con el diff de Compose y CI/CD li
 
 | Paso | Nombre | Estado | Resultado / Evidencia |
 |---|---|---|---|
-| **Paso 1** | Fijar y registrar versión de n8n | **Pendiente** | Digest local confirmado `cfa0478...`. Bryan debe actualizar el Compose persistente de `n8n.bryan-bano.com` sustituyendo `latest` por `2.39.5` y reiniciar el contenedor preservando datos y `N8N_ENCRYPTION_KEY`. |
-| **Paso 2** | HTTPS y conectividad | **Parcial** | `https://istpetdev.doicela.dev/health/ready` responde HTTP 200 Healthy con PostgreSQL disponible. `https://n8n.bryan-bano.com` cuenta con HTTPS válido. Falta curl de salida desde el interior del contenedor remoto de n8n. |
-| **Paso 3** | Credenciales n8n, HMAC y M2M | **Bloqueado** | Cognito emite token M2M válido con scope `istpetdev-api/automation` (HTTP 200). En la API de producción responde HTTP 401 (`invalid_token`) debido a que el cliente M2M no está aún en `AllowedClientIds` del contenedor en producción. Credenciales remotas pendientes en el almacén de Bryan. |
-| **Paso 4** | Configuración con Jorge / #38 | **En curso / Bloqueado** | Se implementó el diff completo en `docker-compose.prod.yml` y `deploy.yml`. PR #78 (`develop → main`) fue fusionado. Falta comprobar el deploy efectivo del transporte de este checkpoint y la provisión de la cuenta técnica `Kind=technical`, `Role=Automatizacion` en RDS. |
-| **Paso 5** | Importación oficial y publicación | **Pendiente** | Los webhooks `POST /webhook/istpetdev/agent/watch` e `incident` en `n8n.bryan-bano.com` devuelven HTTP 404 (borradores inactivos). Los JSON generados son reproducibles y reproducen exactamente el SHA `8c99a71`. Bryan debe importarlos y publicarlos. |
-| **Paso 6** | Completed y Fallback reales | **Bloqueado** | Depende de la finalización de los Pasos 4 y 5. |
-| **Paso 7** | Aceptación oficial CE-01 (30 corridas) | **Bloqueado** | El token humano de Planificador se refrescó con éxito en Cognito (HTTP 200), pero la API de producción devuelve HTTP 403 con diagnóstico de cuenta humana ausente o inactiva, pendiente de verificar en RDS. Requiere además ventana coordinada con el equipo para resets de demo. |
-| **Paso 8** | Incidente en vivo CE-03 | **Bloqueado** | Depende del paso 7. |
+| **Paso 1** | Fijar y registrar versión de n8n | **Cumplido / Verificado** | Bryan actualizó `docker-compose.yml del servidor n8n` con `image: docker.n8n.io/n8nio/n8n:2.39.5` y reinició el servicio. `/healthz` responde HTTP 200 `{"status":"ok"}`. |
+| **Paso 2** | HTTPS y conectividad | **Verificado** | API readiness 200 desde servidor y contenedor n8n (Codex, 22:45 UTC). n8n healthz HTTPS 200 con User-Agent estándar. |
+| **Paso 3** | Credenciales n8n, HMAC y M2M | **Parcial** | Credenciales vinculadas y HMAC preparado; Bryan confirma límite de gasto DeepSeek. Antigravity reportó HMAC 10/10. Codex verificó token/scope y rechazo 401 de risks desde nodo n8n; falta risks 200 y matriz de permisos de la API. |
+| **Paso 4** | Configuración con Jorge / #38 | **Preparado; deploy pendiente** | #81 y #85 fusionados en develop (`5582930`). Variables/HMAC de preparación cargados en GitHub, agente false. Jorge coordina promoción a main, cuenta(s)/env reales y deploy en EC2. |
+| **Paso 5** | Importación oficial y publicación | **Cumplido / Verificado** | Workflows canónicos activos (`vigia` `HO5zltuyBMATIwLT` con Schedule apagado; `incidente` `u5l4WnjD2sPhhvEb`). Webhooks `/watch` e `/incident` operativos y respondiendo 202 a HMAC válido. |
+| **Paso 6** | Completed y Fallback reales | **Bloqueado por Paso 4** | Requiere despliegue en EC2 del transporte y cuenta técnica M2M (PR #85). |
+| **Paso 7** | Aceptación oficial CE-01 (30 corridas) | **Bloqueado por Paso 4** | Requiere cuenta de Planificador en RDS de producción y ventana de demo acordada para resets. |
+| **Paso 8** | Incidente en vivo CE-03 | **Bloqueado por Paso 7** | Depende del paso 7. |
 
 ---
 
@@ -100,16 +100,16 @@ Para que Codex y el equipo puedan proceder con la ejecución en vivo:
    - Cuenta humana de Planificador habilitada para el ensayo (`Kind = "human"`, `Role = "Planificador"`, activa); no cambiar el rol de Gerencia de Bryan para suplirla.
 4. **Coordinar ventana de ensayo demo:** Autorizar ventana sin usuarios activos para permitir la ejecución de `demo/reset` del harness de aceptación.
 
-### A cargo de Bryan (Servidor n8n / #39)
-1. **Fijar imagen en servidor n8n:** Cambiar `latest` por `2.39.5` en el `docker-compose.yml` de su servidor `n8n.bryan-bano.com` y reiniciar el contenedor preservando datos.
-2. **Cargar credenciales en almacén n8n:**
-   - Credencial OAuth2 M2M `IstpetDev M2M` (`8e186867-4916-54b1-b968-c1c273f79a11`).
-   - Credencial DeepSeek `IstpetDev DeepSeek` (`3b8794f0-9241-5c0c-9e19-c531bed733c8`) con clave de API activa.
-   - Variables de entorno n8n: `ISTPETDEV_WEBHOOK_SECRET` (coincidente con API), `ISTPETDEV_API_BASE_URL=https://istpetdev.doicela.dev/api/v1`, `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, `NODE_FUNCTION_ALLOW_BUILTIN=crypto`.
-3. **Importar y publicar workflows:**
-   - Importar `vigia.json` e `incidente.json` del SHA `8c99a71`.
-   - Publicar ambos workflows verificando que el nodo Schedule de vigía permanezca deshabilitado.
-   - Comprobar que `POST /webhook/istpetdev/agent/watch` responde 401 ante firmas inválidas (en lugar de 404).
+### Preparación del servidor n8n — verificación y límites
+1. **Fijar imagen en servidor n8n (Completado):** Actualizado a `2.39.5` en `docker-compose.yml del servidor n8n` y contenedor reiniciado sin pérdida de datos.
+2. **Credenciales y variables cargadas; autorización API pendiente:**
+   - Credencial OAuth2 M2M `IstpetDev M2M` (`mZiC4AJxPhcKtANv`) vinculada.
+   - Credencial DeepSeek `IstpetDev DeepSeek` (`5aBicMrj0xaH7Nfl`) vinculada.
+   - Variables de entorno n8n operativas: `ISTPETDEV_WEBHOOK_SECRET`, `ISTPETDEV_API_BASE_URL=https://istpetdev.doicela.dev/api/v1`, `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, `NODE_FUNCTION_ALLOW_BUILTIN=crypto`, `GENERIC_TIMEZONE=America/Guayaquil`.
+3. **Importar y publicar workflows (Completado):**
+   - `vigia` (`HO5zltuyBMATIwLT`) e `incidente` (`u5l4WnjD2sPhhvEb`) activos y publicados en runtime.
+   - Schedule de vigía verificado como deshabilitado.
+   - Suite HMAC 10/10 superada: 401 ante firmas inválidas/expiradas/ausentes; 202 ante firmas válidas en `/watch` e `/incident`.
 
 ---
 
@@ -169,3 +169,30 @@ Checkpoint publicado por Codex en
 `develop`, con Jorge Doicela como revisor. Se incorporó el avance documental
 de #80 (`3936399`) sin cambios de software adicionales. El estado de CI se
 comprueba sobre el HEAD del PR; este checkpoint no cierra #39.
+
+
+## Continuidad de Codex tras integración de #85 — 14-oct-2026
+
+Bryan confirmó que Antigravity terminó, el límite de gasto DeepSeek está
+configurado y el EC2/API lo opera Jorge. No hay ventana de resets. Codex
+sincronizó la rama con develop `5582930`, sin conflictos de contenido.
+
+Se fijó/verificó n8n 2.39.5 y salida HTTPS desde servidor/contenedor. Durante
+las ediciones concurrentes apareció un HMAC literal en Compose que prevalecía
+sobre el archivo privado preparado. Se conservó la entrega y se consolidó
+la fuente privada de 32 bytes generada con OpenSSL; runtime/configuración
+coinciden y el HMAC fue entregado a GitHub Secrets por stdin. Volúmenes y clave
+de cifrado preservados. Firma positiva: 202 en flujo temporal con los mismos
+seis nodos de verificación, sin modelo/herramientas; ese flujo fue eliminado.
+La prueba negativa de los dos workflows reales devolvió 401.
+
+El nodo HTTP temporal con IstpetDev M2M, también eliminado, obtiene respuesta
+401 de la API productiva; la emisión Cognito y las propiedades públicas del
+cliente/scope son correctas. Observaciones anteriores de 403 desde cliente se
+conservan como historial, sin convertirlas en diagnóstico definitivo. El paso
+3 exige risks 200 y sigue parcial. #85 cambia archivos Development/example y
+no acredita carga de esos datos en Production ni provisión en RDS.
+
+El plan vigente incluye coordinación de release con Jorge, Completed/Fallback,
+matriz oficial/CE-03, conciliación de bóveda, merge a develop y cierre de #39
+solo con todos los gates. No se ejecutaron resets ni la matriz en esta revisión.

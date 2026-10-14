@@ -257,7 +257,7 @@ Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `m
 | **001** | Incluir fixtures (`demo-base`) y variables `Demo__*` en Docker y compose | `infra/docker/backend/Dockerfile`, `infra/compose/docker-compose.prod.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
 | **004 T1b** | Servir PWA en ruta `/campo/` y configurar cabeceras de caché | `infra/nginx/istpetdev.conf` | Alexander Martínez / Jorge Doicela | H3 (14-oct) | En curso |
 | **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
-| **003** | Cliente M2M en Cognito (`client_credentials`), scopes y cuenta técnica para el agente n8n | Terraform `identity.tf`, `src/Api/appsettings.*`, Compose, Deploy | Jorge Doicela | H3 (14-oct) | **Completado (Issue #38)** |
+| **003** | Cliente M2M en Cognito (`client_credentials`), scopes y cuenta técnica para el agente n8n | Terraform `identity.tf`, `src/Api/appsettings.*`, Compose, Deploy | Jorge Doicela | H3 (14-oct) | Cliente aplicado y configuración local integrada (#85, `5582930`); **despliegue/cuenta/permisos productivos pendientes** en [#38](https://github.com/bryancito1090/istpetdev-platform/issues/38)/[#39](https://github.com/bryancito1090/istpetdev-platform/issues/39) |
 | **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
 | **Seguridad (#14)** | TLS con `VerifyFull` + CA oficial de RDS y Swagger restringido por defecto. SSH 22 mitigado con UFW/fail2ban (cierre y Terraform diferidos a P2) | Dockerfile / Compose / Nginx / Program.cs / Deploy workflow | Jorge Doicela | Antes de H4 (14-oct) | **Completado** |
 
@@ -303,3 +303,21 @@ Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `m
 ## Referencias
 
 [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[Estrategia de tres entornos y base de datos]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]] · [[Evidencias y ensayos de base de datos y despliegue]]
+
+
+### Preparación del agente tras #85 — 14 de octubre de 2026
+
+Bryan fusionó #85 a develop (`5582930`), después del transporte de #81.
+Los cambios de appsettings.Development/example y la validación local de Jorge
+no demuestran carga de esa cuenta/configuración en Production: la siembra
+actual depende de Demo.Enabled. Jorge opera EC2/RDS y coordina la promoción
+de develop a main mediante el pipeline; la preparación n8n queda administrada
+por Bryan/Codex. No se modifica aquí el procedimiento de migraciones.
+
+Variables públicas del agente y HMAC privado preparados en GitHub, con
+AGENT_ENABLED=false; falta comprobar su aplicación en EC2 y risks 200 con M2M
+antes de activar. Desde n8n, el nodo HTTP de prueba aún recibió 401. Bryan
+confirmó límite de gasto DeepSeek y ausencia de ventana exclusiva: no hay
+reset ni matriz oficial productiva en esta preparación. Estado/evidencia:
+[preparación #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md)
+y [[n8n e IA]].

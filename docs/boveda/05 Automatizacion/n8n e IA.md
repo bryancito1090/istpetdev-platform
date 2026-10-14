@@ -93,7 +93,7 @@ API técnica autenticada con Cognito M2M/rol Automatización, cron `America/Guay
 La sesión de definición propone que WF-01 y WF-02 evolucionen a dos workflows de agente, `vigia` e `incidente`, con un nodo AI Agent cuyas herramientas son endpoints del motor logístico (ADR-22, [[Definiciones de producto y plan hasta el pitch]]). Se conservan los principios de esta nota: la API calcula y conserva el estado; n8n coordina; el LLM no cambia stock, prioridades ni fechas; una caída del LLM no detiene la operación (la API responde a los 10 s con el camino determinista). Cambian tres cosas: el LLM elige qué herramientas llamar; la política determinista del motor decide qué se publica solo; y cada cifra del texto se valida contra los datos calculados. Proveedor: DeepSeek, con prueba de aceptación. Workflows y prompt versionados en `automation/n8n/`; detalle en el spec 003 del repositorio (`docs/specs/003-agente-logistico/`).
 
 
-## Avance verificable de #37 — 14 de octubre de 2026
+## Histórico de la entrega inicial de #37 — 14 de octubre de 2026
 
 La rama `feature/37-n8n-workflows-local` contiene prompt, plantillas, workflows
 DeepSeek nativos, generador, perfil Docker `agent`, arranque y aceptación local.
@@ -118,7 +118,8 @@ El seguimiento y las instrucciones de obtención de credenciales se mantienen
 en [task.md](../../specs/003-agente-logistico/task.md) y
 [guia-cierre-37.md](../../specs/003-agente-logistico/guia-cierre-37.md).
 No se cambian el papel determinista de la API, las cinco herramientas, el
-control humano ni el estado de propuesta de ADR-22.
+control humano. La aprobación posterior de ADR-22 y el estado vigente se
+registran a continuación.
 
 El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
 1. El AI Agent y los nodos de herramientas se enlazaron con DeepSeek nativo en `build-workflows.py`.
@@ -127,3 +128,32 @@ El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
 4. Se ejecutó la matriz de aceptación de 30 corridas reales consecutivas en API 5017 contra DeepSeek nativo (reporte `artifacts/agent-acceptance/20261014-150147-176964/report.md`): 0 fallbacks, 100% herramientas 2xx (60/60), p95 9127 ms (<=10 s), 96% decisiones LLM (48/50) y 10/10 inyecciones neutralizadas con idéntica política y 0 herramientas prohibidas.
 
 Entrega verificada localmente y transferida a Codex para revisión e integración en `develop` vía PR; el despliegue en producción permanece planificado en [plan-cierre-39-produccion.md](../../specs/003-agente-logistico/plan-cierre-39-produccion.md).
+
+
+## Estado vigente de preparación #39 — 14 de octubre de 2026
+
+#37 se integró en PR #74 (`8c99a71`); ADR-22 fue aceptada por Bryan. La prueba
+local inicial aprobada es histórica: el último informe local conocido del
+árbol `4742f3b` registró p95 10001 ms y falló latencia. Ninguno sustituye una
+aceptación productiva. #81 y #85 están integrados en develop (`5582930`);
+Jorge coordina su promoción/deploy en la API, aún pendientes.
+
+En n8n de Bryan se comprobó runtime/Compose 2.39.5, DeepSeek nativo, ambos
+workflows publicados del SHA oficial con credenciales resueltas incluidas
+herramientas embebidas y Schedule deshabilitado. API readiness 200 desde
+servidor/contenedor. HMAC consolidado en archivo privado 0600 y GitHub Secrets,
+con runtime sincronizado; firmas incorrectas/expiradas/alteradas rechazadas
+401, y probe positivo sin modelo 202, posteriormente eliminado. Antigravity
+reportó su suite 10/10. La base es
+`https://n8n.bryan-bano.com/webhook/istpetdev/agent` (watch/incident).
+
+Bryan confirma límite de gasto DeepSeek configurado y que Antigravity terminó
+las ediciones. Eso no acredita todavía Completed ni respuestas de herramientas
+2xx: el nodo M2M → API risks dio 401 y fue eliminado. Quedan cuentas/roles
+productivos, release, Completed/Fallback, 30 muestras oficiales y CE-03 de dos
+decisiones. No hay ventana de resets acordada; #39 permanece abierta.
+
+Fuentes: [evidencia de preparación](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md),
+[task.md](../../specs/003-agente-logistico/task.md), [[Runbook de DevOps y base de datos para la demo]]
+y [[Registro de seguimiento y hallazgos]]. El plan vigente incluye integración
+y conflictos, documentación, operación y cierre condicionado de GitHub.
