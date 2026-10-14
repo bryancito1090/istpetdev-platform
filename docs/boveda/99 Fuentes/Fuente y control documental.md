@@ -346,4 +346,9 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 
 Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
 
+## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
+
+Fuente: atención a Issue #35 por Joseph Baño. Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para detener el proceso si las migraciones fallan en arranque. En [[Runbook de DevOps y base de datos para la demo]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **850 enlaces internos resueltos**, **0 errores**.
 
