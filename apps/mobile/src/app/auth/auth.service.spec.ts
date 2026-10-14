@@ -6,6 +6,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../config/environment';
+import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { MobileAuthService } from './auth.service';
 import { NAVIGATE_EXTERNAL } from './navigate-external';
 
@@ -14,14 +15,16 @@ const ME_URL = `${environment.apiUrl}/api/v1/me`;
 function setup(isAuthenticated: boolean) {
   const oidc = { checkAuth: vi.fn(() => of({ isAuthenticated })), authorize: vi.fn(), logoffLocal: vi.fn() };
   const navigate = vi.fn();
+  const outbox = { setOwner: vi.fn(async () => undefined) };
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
       { provide: OidcSecurityService, useValue: oidc },
       { provide: NAVIGATE_EXTERNAL, useValue: navigate },
+      { provide: FieldOutboxService, useValue: outbox },
     ],
   });
-  return { auth: TestBed.inject(MobileAuthService), backend: TestBed.inject(HttpTestingController), oidc, navigate };
+  return { auth: TestBed.inject(MobileAuthService), backend: TestBed.inject(HttpTestingController), oidc, navigate, outbox };
 }
 
 async function boot(isAuthenticated: boolean, me?: object, status = 200) {
@@ -99,5 +102,21 @@ describe('MobileAuthService', () => {
     expect(sessionKeys.some((k) => k.toLowerCase().includes('token'))).toBe(false);
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
+  });
+
+  it('bootstrap fija el dueño del outbox si la plataforma es field', async () => {
+    const { outbox } = await boot(true, { accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' });
+    expect(outbox.setOwner).toHaveBeenCalledWith('c-1');
+  });
+
+  it('bootstrap pasa null al outbox si la plataforma no es field', async () => {
+    const { outbox } = await boot(true, { accountId: 'g-1', displayName: 'Gerencia', role: 'Gerencia', platform: 'web' });
+    expect(outbox.setOwner).toHaveBeenCalledWith(null);
+  });
+
+  it('logout limpia el dueño del outbox antes de salir', async () => {
+    const { auth, outbox } = await boot(true, { accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' });
+    await auth.logout();
+    expect(outbox.setOwner).toHaveBeenCalledWith(null);
   });
 });

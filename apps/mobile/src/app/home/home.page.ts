@@ -14,7 +14,8 @@ import {
   IonCardContent,
   IonButton,
   IonBadge,
-  IonButtons
+  IonButtons,
+  AlertController
 } from '@ionic/angular/standalone';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
@@ -440,6 +441,7 @@ export class HomePage implements OnInit {
   readonly authService = inject(MobileAuthService);
   readonly outboxService = inject(FieldOutboxService);
   private readonly router = inject(Router);
+  private readonly alerts = inject(AlertController);
 
   readonly loadingRoute = signal<boolean>(false);
   readonly downloadMessage = signal<string | null>(null);
@@ -486,9 +488,7 @@ export class HomePage implements OnInit {
     { id: 'lot_mismatch', label: 'Lote o fecha no coincide' }
   ];
 
-  readonly pendingCount = computed(() => {
-    return this.outboxService.outboxItems().filter((i) => i.status !== 'Complete').length;
-  });
+  readonly pendingCount = this.outboxService.pendingCount;
 
   readonly totalDeliveries = computed(() => {
     const a = this.outboxService.activeAssignment();
@@ -616,7 +616,17 @@ export class HomePage implements OnInit {
     this.router.navigate(['/receipt', deliveryId]);
   }
 
-  logout(): void {
-    void this.authService.logout();
+  async logout(): Promise<void> {
+    const pending = this.outboxService.pendingCount();
+    if (pending > 0) {
+      const alert = await this.alerts.create({
+        header: 'Capturas sin sincronizar',
+        message: `Tienes ${pending} ${pending === 1 ? 'captura pendiente' : 'capturas pendientes'}. Se guardarán en este teléfono para tu cuenta y se enviarán cuando vuelvas a entrar.`,
+        buttons: [{ text: 'Cancelar', role: 'cancel' }, { text: 'Cerrar sesión', role: 'confirm' }],
+      });
+      await alert.present();
+      if ((await alert.onDidDismiss()).role !== 'confirm') return;
+    }
+    await this.authService.logout();
   }
 }

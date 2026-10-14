@@ -6,6 +6,7 @@ import { MeResponse, cognitoLogoutUrl, safeReturnUrl } from '@istpetdev/shared-c
 import { environment } from '../config/environment';
 import { FieldRole, FieldSessionStatus } from './auth.models';
 import { NAVIGATE_EXTERNAL } from './navigate-external';
+import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 
 const RETURN_URL_KEY = 'istpetdev.returnUrl';
 const FIELD_ROLES: readonly string[] = ['Bodega', 'Conductor', 'Receptor'];
@@ -16,6 +17,7 @@ export class MobileAuthService {
   private readonly oidc = inject(OidcSecurityService);
   private readonly http = inject(HttpClient);
   private readonly navigateExternal = inject(NAVIGATE_EXTERNAL);
+  private readonly outbox = inject(FieldOutboxService);
   private readonly state = signal<{ status: FieldSessionStatus; me: MeResponse | null }>({ status: 'loading', me: null });
 
   readonly status = computed(() => this.state().status);
@@ -34,6 +36,7 @@ export class MobileAuthService {
     try {
       const me = await firstValueFrom(this.http.get<MeResponse>(`${environment.apiUrl}/api/v1/me`));
       this.state.set({ status: me.platform === 'field' ? 'authenticated' : 'wrong-platform', me });
+      await this.outbox.setOwner(me.platform === 'field' ? me.accountId : null);
     } catch (error) {
       const disabled = error instanceof HttpErrorResponse && error.status === 403;
       this.state.set({ status: disabled ? 'disabled' : 'error', me: null });
@@ -63,6 +66,7 @@ export class MobileAuthService {
   }
 
   async logout(): Promise<void> {
+    await this.outbox.setOwner(null);
     this.state.set({ status: 'anonymous', me: null });
     this.oidc.logoffLocal();
     this.navigateExternal(cognitoLogoutUrl(environment.oidc.cognitoDomain, environment.oidc.clientId, environment.oidc.postLogoutRedirectUri));
