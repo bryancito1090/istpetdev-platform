@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthSession } from '@entities/session';
 
 @Component({
@@ -498,7 +498,14 @@ import { AuthSession } from '@entities/session';
     </div>
   `
 })
-export class LandingPage {
+export class LandingPage implements OnInit {
   readonly session = inject(AuthSession);
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    if (this.session.status() === 'authenticated') {
+      void this.router.navigateByUrl('/inicio');
+    }
+  }
 }
 
