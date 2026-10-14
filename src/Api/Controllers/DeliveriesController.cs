@@ -102,7 +102,7 @@ public sealed class DeliveriesController : ControllerBase
     /// FR-19: Lectura paginada de entregas para el panel de control (005).
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{Roles.Gerencia},{Roles.Planificador},{Roles.Bodega}")]
+    [Authorize(Roles = $"{Roles.Gerencia},{Roles.Planificador},{Roles.Bodega},{Roles.Auditor}")]
     public async Task<IActionResult> ListDeliveries(
         [FromQuery] Guid? routePlanId = null,
         [FromQuery] string? status = null,

@@ -30,7 +30,7 @@ public sealed class HandlingUnitsController : ControllerBase
     /// Custodia operativa autorizada para personal interno.
     /// </summary>
     [HttpGet("{id:guid}/trace")]
-    [Authorize(Roles = $"{Roles.Bodega},{Roles.Conductor},{Roles.Planificador},{Roles.Gerencia}")]
+    [Authorize(Roles = $"{Roles.Bodega},{Roles.Conductor},{Roles.Planificador},{Roles.Gerencia},{Roles.Auditor}")]
     public async Task<IActionResult> GetOperativeTrace(Guid id, CancellationToken ct)
     {
         try
