@@ -6,3 +6,4 @@ export * from './datos/datos.page';
 export * from './alertas/alertas.page';
 export * from './rutas/rutas.page';
 export * from './public-trace/public-trace.page';
+export * from './users/users.page';
