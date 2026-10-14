@@ -421,4 +421,10 @@ Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (C
 - [[Registro de trabajo previo y del evento]] y [[Backlog]] (B-46): fila y estado de la preparación.
 - Fuera de la bóveda: `escena-y-contingencias.md`, `hojas-feria.md` y `registro-ensayos.md` del spec 006, hoja de segunda revisión en `matriz-afirmaciones.md`, y estado en `task.md` y `test-e2e.md`.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **886 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **885 enlaces internos resueltos**, **0 errores**.
+
+## T6 del spec 006: manifiesto y presentación provisional — 14 de octubre de 2026, 16:00
+
+Fuente: issue #46 (fase final), pedido de Joseph Baño; IA (Claude Code, Opus 5.5) en el PR #76. Se crearon `manifiesto-paquete.md` y `materiales/` (pptx y PDF provisionales con su generador y SHA-256 en el manifiesto) del spec 006. [[Registro de trabajo previo y del evento]] añade la tabla del tag `pre-evento` y la sección «Cambios durante el evento», vacías. En [[Consultas para la organizacion]], O-04/O-06 siguen pendientes. Sin ensayos, entrevistas, video, tag ni entrega.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **888 enlaces internos resueltos**, **0 errores**.

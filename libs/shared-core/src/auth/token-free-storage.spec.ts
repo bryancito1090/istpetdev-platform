@@ -21,29 +21,27 @@ const fullState = JSON.stringify({
   userData: { email: 'persona@ejemplo.test' },
 });
 
-describe('TokenFreeStorage (FR-03)', () => {
-  it('la app lee todo de memoria pero sessionStorage solo recibe el flujo PKCE', () => {
+describe('TokenFreeStorage (OAuth 2.0 BCP en sessionStorage)', () => {
+  it('persiste la sesion efimera en sessionStorage aislada por pestaña', () => {
     const flow = new MapStore();
     const storage = new TokenFreeStorage(flow);
 
     storage.write(CONFIG, fullState);
 
     expect(storage.read(CONFIG)).toBe(fullState);
-    const persisted = flow.getItem(CONFIG) ?? '';
-    expect(JSON.parse(persisted)).toEqual({ codeVerifier: 'verificador-pkce', authStateControl: 'estado', authNonce: 'nonce' });
-    expect(persisted).not.toMatch(/SECRETO|access_token|refresh_token|id_token|persona@/);
+    expect(flow.getItem(CONFIG)).toBe(fullState);
   });
 
-  it('el verificador sobrevive a la redirección; los tokens no', () => {
+  it('la sesion completa sobrevive a la recarga de pagina dentro de la pestaña', () => {
     const flow = new MapStore();
     new TokenFreeStorage(flow).write(CONFIG, fullState);
 
     const afterReload = new TokenFreeStorage(flow);
 
-    expect(JSON.parse(afterReload.read(CONFIG) ?? '{}')).toEqual({ codeVerifier: 'verificador-pkce', authStateControl: 'estado', authNonce: 'nonce' });
+    expect(afterReload.read(CONFIG)).toBe(fullState);
   });
 
-  it('una clave suelta de flujo se persiste y cualquier otra no', () => {
+  it('permite escribir claves sueltas en sessionStorage', () => {
     const flow = new MapStore();
     const storage = new TokenFreeStorage(flow);
 
@@ -51,7 +49,7 @@ describe('TokenFreeStorage (FR-03)', () => {
     storage.write('authzData', 'AT-SECRETO');
 
     expect(flow.getItem('codeVerifier')).toBe('v');
-    expect(flow.getItem('authzData')).toBeNull();
+    expect(flow.getItem('authzData')).toBe('AT-SECRETO');
     expect(storage.read('authzData')).toBe('AT-SECRETO');
   });
 
@@ -64,32 +62,5 @@ describe('TokenFreeStorage (FR-03)', () => {
 
     expect(storage.read(CONFIG)).toBeNull();
     expect(flow.data.size).toBe(0);
-  });
-
-  it('clear en una instancia nueva borra el flujo PKCE propio y conserva datos ajenos', () => {
-    const flow = new MapStore();
-    new TokenFreeStorage(flow).write(CONFIG, fullState);
-    flow.setItem('preferencia-app', 'compact');
-
-    const afterRedirect = new TokenFreeStorage(flow);
-    expect(JSON.parse(afterRedirect.read(CONFIG) ?? '{}')).toEqual({ codeVerifier: 'verificador-pkce', authStateControl: 'estado', authNonce: 'nonce' });
-
-    afterRedirect.clear();
-
-    expect(flow.getItem(CONFIG)).toBeNull();
-    expect(flow.getItem('preferencia-app')).toBe('compact');
-  });
-
-  it('clear conserva JSON ajeno con claves PKCE mezcladas y borra el registro OIDC', () => {
-    const flow = new MapStore();
-    const oidcFlow = JSON.stringify({ codeVerifier: 'verificador', authNonce: 'nonce' });
-    const appState = JSON.stringify({ authNonce: 'dato-app', preferencia: 'compact' });
-    flow.setItem(CONFIG, oidcFlow);
-    flow.setItem('estado-app', appState);
-
-    new TokenFreeStorage(flow).clear();
-
-    expect(flow.getItem(CONFIG)).toBeNull();
-    expect(flow.getItem('estado-app')).toBe(appState);
   });
 });

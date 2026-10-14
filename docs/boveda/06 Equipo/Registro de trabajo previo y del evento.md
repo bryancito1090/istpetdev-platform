@@ -36,6 +36,18 @@ No inventar commits, pruebas o entrevistas. La documentación generada no implic
 
 Capturar un tag/hash de la versión previa y lista de partes funcionales, simuladas y pendientes. Durante las jornadas registrar qué se adaptó y por qué. Presentar esta distinción según el formato que confirme la organización.
 
+| Tag | Commit | Creado (fecha/hora, quién) | Partes funcionales / simuladas / pendientes |
+|---|---|---|---|
+| `pre-evento` | — | no creado al 14-oct 16:00; se crea después del congelamiento de funcionalidades (15-oct 14:00) y antes del 16-oct | — |
+
+## Cambios durante el evento (16–17 de octubre de 2026)
+
+Solo trabajo hecho durante las jornadas, comparado con `pre-evento`. Las filas de preparación no se copian aquí.
+
+| Fecha/hora | Cambio | Motivo (mentor, ficha final, entrevista, fallo de ensayo) | Commit | Evidencia |
+|---|---|---|---|---|
+| — | — | — | — | — |
+
 La propiedad intelectual se rige por el manual y los acuerdos específicos que efectivamente existan; ver [[Resumen del manual]].
 
 ## Registro de preparación — 7 de octubre de 2026
@@ -82,6 +94,7 @@ Bryan confirmó recursos/versiones y delegó recomendaciones. El compañero impl
 | 2026-10-14 (hora no registrada) | Preparación | Joseph Baño (Andrés) revisó durante 15 min y aprobó los cinco componentes del kit T1 del PR #71; no informó correcciones adicionales | [hoja de revisión T1](../../specs/006-validacion-pitch-entrega/task.md#hoja-de-revisión-humana-de-t1-unos-15-min), [E2E-01](../../specs/006-validacion-pitch-entrega/test-e2e.md#e2e-01--kit-utilizable), commit `228ab72` | CE-01 registrado; tiempo de construcción por IA no atribuido al equipo |
 | 2026-10-14 | Preparación | Endurecimiento de CI/CD, flujo de base de datos RDS vs dev, política Fail-Fast en arranque, formalización de Plan B del evento y paridad de migraciones (Issue #35) | [PR #70](https://github.com/bryancito1090/istpetdev-platform/pull/70) fusionado en `develop`; [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]] | Completado |
 | 2026-10-14 | Preparación | T3–T5 del spec 006 preparados por IA (Claude Code, Opus 5.5) a pedido de Joseph Baño: escena con cinco papeles sin nombres, relevo y sustitución por parte, contraste con la matriz y cinco contingencias; hojas anonimizadas para el 16 y el retorno del 17, con lista de la corrida oficial de 005; registro de ensayos con racha y ronda de veinte respuestas; segunda revisión de la matriz pedida en la issue #46 | [escena](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md), [hojas de feria](../../specs/006-validacion-pitch-entrega/hojas-feria.md), [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md), PR #75 | Solo preparación: sin ensayos, video, entrevistas, corrida de 005 ni segunda revisión; papeles sin confirmar; O-04/O-06 pendientes |
+| 2026-10-14 | Preparación | T6 del spec 006 abierto por IA (Claude Code, Opus 5.5) a pedido de Joseph Baño: manifiesto de siete entregables y presentación provisional de siete bloques (editable y PDF con SHA-256, «no es formato oficial · no entregado»). Protocolo del ensayo funcional corregido según la revisión de Codex del PR #75 | [manifiesto](../../specs/006-validacion-pitch-entrega/manifiesto-paquete.md), PR #76 | Preparación; sin congelar ni entregar; O-04/O-06 pendientes |
 | Pendiente | Preparación | Cuentas creadas por rol y fecha (demo): registro de cuentas creadas en el pool antes del 16-oct | Registro sin correos personales ni identificadores sensibles (G8) | Pendiente (se completa en Fase B tras E2E-01 / aprovisionamiento) |
 
 **Asistencia de IA:** los specs, esta reestructuración y las notas asociadas se redactaron con Claude Code (modelo Opus) a partir de preguntas y decisiones de un integrante del equipo. El código incluido en los specs es un ejemplo no ejecutado hasta que una tarea lo compile y pruebe (ver [[Convenciones y estados]]).

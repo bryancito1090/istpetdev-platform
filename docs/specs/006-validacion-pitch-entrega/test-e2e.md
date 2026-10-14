@@ -79,6 +79,21 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** una sola versión entregable con siete componentes y vínculos de evidencia, copia local legible y hora de congelamiento. Si el formato no fue confirmado, CE-07 permanece pendiente hasta recibir instrucción oficial. **Evidencia:** manifiesto, hashes, registro de entrega y tag.
 
+**Estado al 14-oct-2026 16:00 (fase final):** sin ejecutar. [Manifiesto](manifiesto-paquete.md) abierto; editable y PDF provisionales con SHA-256; no hay tag `pre-evento`, video, congelamiento ni entrega. O-06 está pendiente, así que no hay canal para entregar.
+
+## Estado de los criterios al 14-oct-2026 16:00
+
+| CE | Estado | Motivo | Alternativa honesta si no se cumple |
+|---|---|---|---|
+| CE-01 | registrado | E2E-01: revisión de Joseph del 14-oct | — |
+| CE-02 | pendiente | Entrevistas el 16 y retorno el 17; ninguna conversación | «Es una hipótesis que estamos validando con expositores» (A-29) |
+| CE-03 | pendiente | Sin pasadas cronometradas; papeles sin confirmar; O-04 sin respuesta | Ensayar los tres cortes como preparación |
+| CE-04 | pendiente | Racha 0/10; O-04 sin respuesta | Pasadas clasificadas como preparación, sin cerrar contra un tiempo inventado |
+| CE-05 | pendiente | Ninguna ronda de respuestas cronometrada | Responder con las sustituciones de la matriz |
+| CE-06 | pendiente | Segunda revisión pedida, no realizada; sin versión congelada | Mantener retiradas y sustituciones vigentes |
+| CE-07 | pendiente | Sin congelamiento, entrega ni canal (O-06) | Entregar solo por un canal oficial confirmado; si no llega, registrar la consulta y no improvisar |
+| CE-08 | pendiente | Sin tag `pre-evento` ni video del 15-oct | Sin video: frases vigentes y diapositivas; nunca presentar una grabación como vivo |
+
 ## Registro de ejecuciones
 
 | Fecha/hora | Commit/material | Escenario | Duración/conexión | Resultado | Evidencia | Quién |
