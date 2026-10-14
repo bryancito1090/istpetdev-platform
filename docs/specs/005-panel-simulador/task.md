@@ -10,7 +10,7 @@
 | T1 | Contratos de lectura de rutas y entregas | T0, 002/004 | [P] con T2 | hecho (integrado en develop vía PR #47 y PR #59) |
 | T2 | Generador canónico y calendario exógeno | T0, 001 | [P] con T1 | hecho |
 | T3 | Base aislada, importador y migración única | T2, 001/002 | — | pendiente |
-| T4 | Políticas reactiva y fija | T2–T3 | [P] con T5 | pendiente |
+| T4 | Políticas reactiva y fija | T2–T3 | [P] con T5 | hecho |
 | T5 | Adaptador IstpetDev y ciclo horario regional | T2–T3, 002 | [P] con T4 | pendiente |
 | T6 | Métricas, invariantes y agregación | T4–T5 | — | pendiente |
 | T7 | Worker, API, progreso y exportación | T3, T6 | — | pendiente |
@@ -107,11 +107,11 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 
 **Archivos:** crear `src/Application/Simulation/{PolicyRunner,ReactivePolicy,FixedCalendarPolicy}.cs`; pruebas `tests/IstpetDev.Tests/Unit/Simulation/{ReactivePolicyTests,FixedCalendarPolicyTests,PolicyParityTests}.cs`.
 
-- [ ] Prueba roja reactiva: con media histórica 10 L/día, lead time 2 días y saldo 19 L hay aviso; con 20 L exactos no hay aviso hasta que el saldo baje (límite explícito). Si saldo 19 L, en tránsito 1 L y meta 14 días, solicita `max(0,140−19−1)=120 L` antes de límites de bodega/capacidad. Sin historial usa consumo base del dataset y registra supuesto. Orden de avisos: hora, criticidad y código.
-- [ ] Implementar `reactive-v1` con observaciones disponibles al instante; el pedido no salta lead time ni ventanas, y falta de stock queda pendiente. Secuenciar las paradas del día con el **mismo planificador de 002** (inserción + 2-opt, mismas restricciones y costo) y el mismo servicio de distancia, sin llamar a la política IstpetDev (FR-09).
-- [ ] Prueba roja fija: en una región de 10 puntos ordenados por código, el punto de índice `i` recibe el día laborable `i mod 5` y se visita cada 7 días en ese día (cada punto una vez por semana; 2 puntos por día laborable); media previa 10 L/día fija 70 L por punto/SKU; un pico o un saldo distinto no cambia 70 L ni adelanta la visita. Stock/capacidad insuficiente registra pendiente, sin viaje imposible. La secuencia del día la arma el planificador de 002 y es idéntica a la que obtendría IstpetDev para las mismas paradas (prueba de paridad de ruteo, CE-10).
-- [ ] Implementar `fixed7-v1`, `PolicyRunner` y copia profunda del estado inicial por política. Prueba `PolicyParityTests`: los tres runners reciben el mismo `ScenarioCalendar.Sha256`, matriz, stock, flota, ventana y costo; nunca comparten estado mutable.
-- [ ] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ReactivePolicyTests|FullyQualifiedName~FixedCalendarPolicyTests|FullyQualifiedName~PolicyParityTests"`; esperado `Failed: 0`. Commit `feat(simulation): fijar baselines reactivo y semanal` con trailer.
+- [x] Prueba roja reactiva: con media histórica 10 L/día, lead time 2 días y saldo 19 L hay aviso; con 20 L exactos no hay aviso hasta que el saldo baje (límite explícito). Si saldo 19 L, en tránsito 1 L y meta 14 días, solicita `max(0,140−19−1)=120 L` antes de límites de bodega/capacidad. Sin historial usa consumo base del dataset y registra supuesto. Orden de avisos: hora, criticidad y código.
+- [x] Implementar `reactive-v1` con observaciones disponibles al instante; el pedido no salta lead time ni ventanas, y falta de stock queda pendiente. Secuenciar las paradas del día con el **mismo planificador de 002** (inserción + 2-opt, mismas restricciones y costo) y el mismo servicio de distancia, sin llamar a la política IstpetDev (FR-09).
+- [x] Prueba roja fija: en una región de 10 puntos ordenados por código, el punto de índice `i` recibe el día laborable `i mod 5` y se visita cada 7 días en ese día (cada punto una vez por semana; 2 puntos por día laborable); media previa 10 L/día fija 70 L por punto/SKU; un pico o un saldo distinto no cambia 70 L ni adelanta la visita. Stock/capacidad insuficiente registra pendiente, sin viaje imposible. La secuencia del día la arma el planificador de 002 y es idéntica a la que obtendría IstpetDev para las mismas paradas (prueba de paridad de ruteo, CE-10).
+- [x] Implementar `fixed7-v1`, `PolicyRunner` y copia profunda del estado inicial por política. Prueba `PolicyParityTests`: los tres runners reciben el mismo `ScenarioCalendar.Sha256`, matriz, stock, flota, ventana y costo; nunca comparten estado mutable.
+- [x] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ReactivePolicyTests|FullyQualifiedName~FixedCalendarPolicyTests|FullyQualifiedName~PolicyParityTests"`; esperado `Failed: 0`. Commit `feat(simulation): fijar baselines reactivo y semanal` con trailer.
 
 ### T5 — Política IstpetDev y ciclo regional por hora
 
