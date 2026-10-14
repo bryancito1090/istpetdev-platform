@@ -94,3 +94,12 @@ jobs:
 
       - name: "Compilar aplicación Web en Producción"
         run: npm run build:web
+
+      - name: "Sin login simulado (NFR-04 de 013)"
+        run: npm run check:no-mock-login
+
+      - name: "Pruebas unitarias frontend (shared-core, web y PWA)"
+        run: npm run test:frontend
+
+      - name: "Compilar PWA en Producción"
+        run: npm run build:mobile

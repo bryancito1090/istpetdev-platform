@@ -30,6 +30,9 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                { "replace": "src/app/config/environment.ts", "with": "src/app/config/environment.production.ts" }
+              ],
               "serviceWorker": "ngsw-config.json",
               "budgets": [
                 {
@@ -61,6 +64,15 @@
           "defaultConfiguration": "development",
           "options": {
             "port": 8100
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "mobile:build:development",
+            "tsConfig": "tsconfig.spec.json",
+            "runner": "vitest",
+            "setupFiles": ["src/test-setup.ts"]
           }
         }
       }

@@ -112,7 +112,7 @@ public sealed class FieldUnitTests
     public async Task DeliveriesController_handles_conflict_exception_as_problem_details_409()
     {
         var fake = new FakeFieldService();
-        var controller = new DeliveriesController(fake, null!);
+        var controller = new DeliveriesController(fake);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -136,7 +136,7 @@ public sealed class FieldUnitTests
     public async Task DeliveriesController_dispatch_returns_200_with_idempotency_key()
     {
         var fake = new FakeFieldService();
-        var controller = new DeliveriesController(fake, null!);
+        var controller = new DeliveriesController(fake);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -162,7 +162,7 @@ public sealed class FieldUnitTests
     public async Task EvidenceController_creates_upload_url_and_confirms()
     {
         var fake = new FakeFieldService();
-        var controller = new EvidenceController(fake, null!);
+        var controller = new EvidenceController(fake);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext

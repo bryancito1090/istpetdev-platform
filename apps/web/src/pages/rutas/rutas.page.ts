@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthSession } from '@entities/session';
 import { ApiService, RoutePlanSummaryDto, RoutePlanDetailDto } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
@@ -21,13 +22,15 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
           </p>
         </div>
 
-        <button 
-          type="button"
-          (click)="generatePlan()"
-          [disabled]="actionLoading()"
-          class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
-          {{ actionLoading() ? 'Calculando...' : '➕ Generar Nueva Ruta' }}
-        </button>
+        @if (session.canWrite()) {
+          <button
+            type="button"
+            (click)="generatePlan()"
+            [disabled]="actionLoading()"
+            class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
+            {{ actionLoading() ? 'Calculando...' : '➕ Generar Nueva Ruta' }}
+          </button>
+        }
       </div>
 
       <!-- Banner de retroalimentación -->
@@ -62,13 +65,15 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             No hay rutas creadas en el sistema todavía.
           </p>
           <div class="flex justify-center gap-3">
-            <button 
-              type="button"
-              (click)="generatePlan()"
-              [disabled]="actionLoading()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
-              {{ actionLoading() ? 'Calculando...' : 'Generar primera ruta ahora' }}
-            </button>
+            @if (session.canWrite()) {
+              <button
+                type="button"
+                (click)="generatePlan()"
+                [disabled]="actionLoading()"
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
+                {{ actionLoading() ? 'Calculando...' : 'Generar primera ruta ahora' }}
+              </button>
+            }
             <a 
               routerLink="/alertas" 
               class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
@@ -126,13 +131,19 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                   </div>
 
                   @if (selectedDetail()!.status !== 'Published') {
-                    <button 
-                      type="button"
-                      (click)="publishPlan(selectedDetail()!.id)"
-                      [disabled]="actionLoading()"
-                      class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                      {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
-                    </button>
+                    @if (session.canWrite()) {
+                      <button
+                        type="button"
+                        (click)="publishPlan(selectedDetail()!.id)"
+                        [disabled]="actionLoading()"
+                        class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                        {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
+                      </button>
+                    } @else {
+                      <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                        Pendiente de publicación
+                      </span>
+                    }
                   } @else {
                     <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
                       ✓ Ruta en Ejecución
@@ -199,6 +210,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 })
 export class RutasPage implements OnInit {
   private readonly apiService = inject(ApiService);
+  readonly session = inject(AuthSession);
 
   readonly routePlans = signal<RoutePlanSummaryDto[]>([]);
   readonly selectedPlanId = signal<string | null>(null);
@@ -239,6 +251,7 @@ export class RutasPage implements OnInit {
   }
 
   generatePlan(): void {
+    if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
     this.feedbackMessage.set(null);
     this.apiService.createRoutePlan({}).subscribe({
@@ -272,6 +285,7 @@ export class RutasPage implements OnInit {
   }
 
   publishPlan(id: string): void {
+    if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
     this.feedbackMessage.set(null);
     this.apiService.publishRoutePlan(id).subscribe({

@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthSession } from '@entities/session';
 import { ApiService, ImportReportDto } from '@shared/api';
 
 interface EntityGuide {
@@ -41,8 +42,9 @@ interface EntityGuide {
         </div>
       </div>
 
-      <!-- Área de carga -->
-      <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
+      @if (session.canWrite()) {
+        <!-- Área de carga -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
         <div>
           <label class="block text-sm font-semibold text-slate-800 mb-2">
             Seleccionar archivo(s) CSV o XLSX
@@ -89,7 +91,12 @@ interface EntityGuide {
             </button>
           </div>
         }
-      </div>
+        </div>
+      } @else {
+        <p role="alert" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          No tienes permiso para importar datos.
+        </p>
+      }
 
       <!-- Resultado de la importación -->
       @if (report()) {
@@ -152,6 +159,7 @@ interface EntityGuide {
 })
 export class DatosPage {
   private readonly apiService = inject(ApiService);
+  readonly session = inject(AuthSession);
 
   readonly selectedFiles = signal<File[]>([]);
   readonly loading = signal(false);
@@ -168,6 +176,7 @@ export class DatosPage {
   ];
 
   onFilesSelected(event: Event): void {
+    if (!this.session.canWrite()) return;
     const input = event.target as HTMLInputElement;
     if (input.files) {
       this.selectedFiles.set(Array.from(input.files));
@@ -176,6 +185,7 @@ export class DatosPage {
   }
 
   processImport(dryRun: boolean): void {
+    if (!this.session.canWrite()) return;
     const files = this.selectedFiles();
     if (files.length === 0) return;
 
