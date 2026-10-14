@@ -106,7 +106,7 @@ Identidad ejecutora: `istpetdev-bryan` (Perfil: `istpetdev-admin`)
 
 ### A. Construcción y Empaquetado Unificado
 - **Compilación**: Aplicación Angular móvil (`apps/mobile`) construida con `baseHref: "/campo/"` (`npm run build:mobile`).
-- **Empaquetado**: Copiada hacia `/usr/share/nginx/html/campo/` dentro de la imagen Docker unificada `istpetdev-web` (`ghcr.io/istpetdev/istpetdev-web`), servida a través del proxy inverso Nginx.
+- **Empaquetado**: Copiada hacia `/usr/share/nginx/html/campo/` dentro de la imagen Docker unificada `istpetdev-web` (`ghcr.io/bryancito1090/istpetdev-web`), servida a través del proxy inverso Nginx.
 - **Enrutamiento SPA**: Manejo de rutas profundas de la PWA redirigiendo a `/campo/index.html` sin colisionar con la SPA Web principal servida en `/`.
 
 ### B. Política de Caché e Invariantes del Service Worker
