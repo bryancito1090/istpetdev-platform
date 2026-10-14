@@ -1,4 +1,6 @@
+using IstpetDev.Application.Accounts;
 using IstpetDev.Application.PublicTrace.Services;
+using IstpetDev.Application.Agent;
 using IstpetDev.Application.Imports;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Incidents;
@@ -14,7 +16,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IServicePointsService, ServicePointsService>();
+        services.AddSingleton<IPublicTraceRateLimiter, PublicTraceRateLimiter>();
         services.AddScoped<IPublicTraceService, PublicTraceService>();
+        services.AddScoped<IstpetDev.Application.Field.IFieldService, IstpetDev.Application.Field.FieldService>();
         services.AddScoped<IImportService, ImportService>();
         services.AddScoped<IOperationalClock, OperationalClock>();
         services.AddScoped<IRiskCalculator, RiskCalculator>();
@@ -27,7 +31,10 @@ public static class DependencyInjection
         services.AddSingleton<AutonomyState>();
         services.AddScoped<IAutonomyPolicy, AutonomyPolicy>();
         services.AddSingleton<IExplanationTemplates, ExplanationTemplates>();
+        services.AddSingleton<IExplanationValidator, ExplanationValidator>();
+        services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
+        services.AddScoped<AccountProvisioning>();
 
         return services;
     }

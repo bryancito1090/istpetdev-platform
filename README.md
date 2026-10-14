@@ -14,6 +14,7 @@ Repositorio de software y documentación para el Reto 1 de Expo Clean Ecuador 20
 - [Bóveda Obsidian del equipo](docs/boveda/README.md): notas, decisiones, backlog, skills documentadas y manual oficial. Verificar desde la raíz con `python docs/boveda/.github/scripts/check_vault.py`.
 
 - 📘 [**Guía de Incorporación del Equipo (Onboarding)**](docs/onboarding.md): Configuración de máquina local, arranque de aplicaciones, túnel SSM y carga de secretos.
+- 🚀 [**Guía de Desarrollo Local y Endpoints API**](docs/api-guide.md): Comandos Docker local, n8n, arranque de API y catálogo completo de endpoints con ejemplos cURL/PowerShell.
 - 🎨 [**Arquitectura y Decisiones de Frontend**](docs/frontend-architecture.md): Estándares de interfaz, ADRs aprobados (mapas Leaflet, UI Kit, tokens, PWA offline y OIDC Cognito).
 - ☁️ [**Guía de Aprovisionamiento y Operación AWS Dev**](docs/aws-dev.md): Bootstrap Terraform con KMS existente, AWS dev, PostgreSQL/roles, MFA, TLS, backups y cierre.
 
@@ -35,11 +36,11 @@ El workspace ha sido completamente implementado, configurado y validado localmen
    - Angular 22.2.1, Angular CLI 22.2.2, TypeScript 6.0.3, RxJS 7.8.2.
    - Arquitectura Feature-Sliced Design (FSD): `app`, `pages`, `widgets`, `features`, `entities`, `shared`.
    - Componentes Standalone, Signals reactivos y Tailwind CSS 3.4.19.
-   - Comprobación funcional contra la API en tiempo real.
+   - Inicio de sesión real de Cognito con Authorization Code + PKCE; no hay login simulado ni contraseñas de demo en el repositorio.
 
 3. **Móvil Ionic Angular PWA** (`apps/mobile`):
    - Ionic Angular 8.8.19 con Angular 22.2.1 y Tailwind 3.4.19.
-   - PWA funcional con soporte de verificación de conectividad API.
+   - PWA funcional con inicio de sesión real de Cognito (cliente móvil) y soporte de verificación de conectividad API.
 
 4. **Librería de Contratos Compartidos** (`libs/shared-core`):
    - Paquete TypeScript `@istpetdev/shared-core` con modelos, contratos de API, unidades y validaciones sin dependencias de UI.

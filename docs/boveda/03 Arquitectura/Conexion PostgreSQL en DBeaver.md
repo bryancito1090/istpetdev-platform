@@ -8,36 +8,36 @@ tags: [postgresql, dbeaver, desarrollo, acceso]
 # Conexión PostgreSQL en DBeaver
 
 > [!important] Entorno consolidado — 13 de octubre de 2026
-> La conexión principal para el equipo de desarrollo se realiza directamente al **Servidor del Laboratorio (LAN)** o al **Docker Local (Casa)**. Se archiva el uso rutinario de túneles SSM hacia bases personales en Amazon RDS para desarrollo diario ([[Estrategia de tres entornos y base de datos]]).
+> La conexión principal para el equipo de desarrollo se realiza a la **Base de Datos Centralizada en AWS EC2**, configurada a través de las variables de entorno en `.env` con el usuario único `migrator_dev_01`. La opción de Docker Local (Casa) se mantiene para trabajo offline ([[Estrategia de tres entornos y base de datos]]).
 
 Guía operativa para conectar DBeaver a la base de datos de desarrollo `istpetdev_dev_01` (27 tablas de `DemoCore`). El esquema objetivo es [[Esquema completo de base de datos]]; el flujo de migraciones sigue [[istpetdev-dbflow]].
 
-## 1. Conexión de Desarrollo (Laboratorio y Casa)
+## 1. Conexión de Desarrollo (AWS Cloud EC2 y Casa)
 
-Para los 5 integrantes del equipo, los parámetros de conexión son estandarizados:
+Para los integrantes del equipo, los parámetros de conexión son estandarizados:
 
-| Parámetro | Opción A: Laboratorio (LAN) | Opción B: Casa (Docker Local) |
+| Parámetro | Opción Principal: AWS Cloud EC2 (Desarrollo) | Opción Alternativa: Casa (Docker Local) |
 |---|---|---|
-| **Host** | `192.168.7.50` | `localhost` (o `127.0.0.1`) |
-| **Port** | `15432` | `15432` |
+| **Host** | Valor de `DATABASE_HOST` en `.env` | `localhost` (o `127.0.0.1`) |
+| **Port** | `5432` | `15432` |
 | **Database** | `istpetdev_dev_01` | `istpetdev_dev_01` |
-| **Username** | `migrator_dev_01` (o `user_dev_01`) | `migrator_dev_01` (o `user_dev_01`) |
-| **Password** | `12345` | `12345` |
+| **Username** | `migrator_dev_01` (Usuario único DDL/DML) | `migrator_dev_01` (o `postgres`) |
+| **Password** | Valor de `DATABASE_PASSWORD` en `.env` | Credencial local en Compose |
 | **SSL Mode** | disabled / allow (sin certificados) | disabled / allow |
 
-### Configuración paso a paso en DBeaver
+### Configuración paso a paso en DBeaver (Opción Principal AWS EC2)
 
 1. Menú superior: **Database** → **New Database Connection** → seleccionar **PostgreSQL** → **Next**.
 2. Pestaña **Main**:
-   - **Host:** `192.168.7.50` (en el laboratorio) o `localhost` (en casa).
-   - **Port:** `15432`.
+   - **Host:** Colocar el valor de `DATABASE_HOST` definido en tu archivo local `.env`.
+   - **Port:** `5432`.
    - **Database:** `istpetdev_dev_01`.
    - **Username:** `migrator_dev_01`.
-   - **Password:** `12345`.
-3. Pestaña **SSL**: Deshabilitada o por defecto (no se requiere certificado CA para la LAN del laboratorio o contenedor local).
+   - **Password:** Colocar el valor de `DATABASE_PASSWORD` definido en tu archivo local `.env`.
+3. Pestaña **SSL**: Deshabilitada o por defecto (no se requiere certificado CA especial).
 4. Hacer clic en **Test Connection**: Debe mostrar `Connected` exitosamente.
 5. Hacer clic en **Finish**.
-6. En el árbol de navegación: `Databases` → `istpetdev_dev_01` → `Schemas` → `public` → `Tables`. Clic derecho → **Refresh** para visualizar las 27 tablas de `DemoCore`.
+6. En el árbol de navegación: `Databases` → `istpetdev_dev_01` → `Schemas` → `public` → `Tables`. Clic derecho → **Refresh** para visualizar las 27 tablas canónicas de `DemoCore`.
 
 ## 2. Acceso a Amazon RDS en Producción (Solo Administración)
 

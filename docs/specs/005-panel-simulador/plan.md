@@ -17,7 +17,7 @@
 - Una migración de 005 sobre `develop` actualizado tras 001/002, coordinada secuencialmente con las migraciones de 003/004; termina en `migrationBuilder.Sql(DemoGrants.Sql)` y no altera la prueba de núcleo sin Schema95 de 001. El simulador puede avanzar antes de que 003/004 se integren.
 - H4, 15-oct 11:00, exige resultados reales de tres seeds y un escenario adverso. H5, 15-oct 14:00, congela funcionalidad. Sin simulador no se inventan cifras ni hay plan B honesto.
 - La corrida completa tiene 3 seeds base × 3 políticas × 90 días + 1 seed adversa × 3 políticas × 90 días = **1080 jornadas de política**. Cada jornada puede planificar hasta una vez por región. Con 6 regiones de ≤15 puntos son hasta 6480 oportunidades; a 1 s/call (límite de 002 para 15 puntos) serían 108 min solo en planificación. Objetivo medido total ≤60 min con matriz local y resultados persistidos antes de H4.
-- La web reutiliza auth PKCE/interceptor de 004 (FR-17/T1b); ruta de ensayo usa `advance` de 004. No llama el endpoint provisional de 002 de completar parada.
+- La web reutiliza auth PKCE, guards e interceptor de [013](../013-login-y-cuentas/spec.md) (H1–H3; dependencia parcial, solo el panel); ruta de ensayo usa `advance` de 004. No llama el endpoint provisional de 002 de completar parada.
 - Cada corrida usa 100 % tramos viales precargados o 100 % aproximación declarada. No se oculta un tramo faltante ni se mezclan fuentes.
 
 ## Review Focus

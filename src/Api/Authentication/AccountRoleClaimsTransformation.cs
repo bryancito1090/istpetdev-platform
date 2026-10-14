@@ -22,11 +22,23 @@ public sealed class AccountRoleClaimsTransformation(ApplicationDbContext databas
         var subject = technical ? principal.FindFirst("client_id")?.Value
             : principal.FindFirst("sub")?.Value ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (issuer is null || subject is null) return principal;
-        var account = await database.Accounts.AsNoTracking()
-            .Where(a => a.OrganizationId == DemoOrganization.Id && a.IsActive && a.Issuer == issuer && a.Subject == subject
-                && a.Kind == (technical ? "technical" : "human") && database.Organizations.Any(o => o.Id == a.OrganizationId && o.IsActive))
-            .Select(a => new { a.Id, a.Role }).SingleOrDefaultAsync();
-        if (account is null || !Roles.IsValid(account.Role) || technical != (account.Role == Roles.Automatizacion)) return principal;
+        Domain.Entities.Account? account;
+        try
+        {
+            account = await database.Accounts.AsNoTracking()
+                .Where(a => a.OrganizationId == DemoOrganization.Id && a.Issuer == issuer && a.Subject == subject
+                    && a.Kind == (technical ? "technical" : "human") && database.Organizations.Any(o => o.Id == a.OrganizationId && o.IsActive))
+                .SingleOrDefaultAsync();
+        }
+        catch
+        {
+            // Sin una cuenta comprobada en la base, la identidad no recibe permisos.
+            return principal;
+        }
+
+        if (account is null || !account.IsActive || !Roles.IsValid(account.Role) || technical != (account.Role == Roles.Automatizacion))
+            return principal;
+
         identity.AddClaim(new Claim(AccountIdClaim, account.Id.ToString()));
         identity.AddClaim(new Claim(identity.RoleClaimType, account.Role));
         return principal;

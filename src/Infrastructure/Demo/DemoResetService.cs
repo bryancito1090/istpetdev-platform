@@ -70,6 +70,7 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.Incidents.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RouteStops.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RoutePlans.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.AgentRuns.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.AgentDecisions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RiskSnapshots.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         // Se conservan SimulationRuns y SimulationMetrics completados para spec 005

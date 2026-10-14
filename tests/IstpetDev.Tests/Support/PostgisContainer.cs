@@ -42,7 +42,7 @@ public sealed class PostgisContainer : IAsyncLifetime
         using var admin = new NpgsqlConnection(_container.GetConnectionString()); admin.Open();
         using var command = new NpgsqlCommand($"CREATE DATABASE \"{name}\" TEMPLATE istpetdev_dev_01 OWNER migrator_dev_01", admin);
         command.ExecuteNonQuery();
-        return Connection(name, "01");
+        return Connection(name, "01", pooling: false);
     }
 
     public async Task<string> NewEmptyDatabaseAsync()

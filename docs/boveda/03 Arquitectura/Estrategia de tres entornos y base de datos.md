@@ -9,9 +9,9 @@ tags: [arquitectura, base-de-datos, entornos, laboratorio, local, produccion, rd
 
 Esta nota define la arquitectura y el modelo operativo de persistencia para el proyecto IstpetDev, estructurado en tres entornos desacoplados para optimizar la velocidad del equipo durante el hackathon y garantizar la estabilidad del release en producción:
 
-1. **Entorno Casa (Local Individual)**: Ejecución offline desacoplada en cada laptop con Docker local.
-2. **Entorno Laboratorio (On-Premise Colaborativo)**: Servidor de pruebas en red local LAN (`192.168.7.50:15432`) para desarrollo conjunto en el instituto.
-3. **Entorno Producción (AWS Cloud)**: Despliegue stateless en AWS EC2 y Amazon RDS (`istpetdev_integration`) para la demostración a jueces y evaluación técnica.
+1. **Entorno Casa (Local Individual)**: Ejecución offline desacoplada en cada laptop con Docker local (`localhost:15432`) mediante `npm run db:local`.
+2. **Entorno Desarrollo Centralizado (AWS Cloud EC2)**: Base de datos única compartida (`istpetdev_dev_01`) alojada en instancia dedicada de AWS EC2 con PostGIS 16 y usuario único `migrator_dev_01`. Proporciona acceso concurrente continuo a todo el equipo desde cualquier ubicación (laboratorio, casa u oficina). Su configuración se centraliza estrictamente en el archivo `.env` en la raíz (ignorado por Git) para no exponer IPs ni credenciales en el repositorio de código. Comandos: `npm run db:dev` o `npm run db:cloud`.
+3. **Entorno Producción (AWS Cloud RDS)**: Despliegue stateless en AWS EC2 y Amazon RDS (`istpetdev_integration`) para la demostración a jueces y evaluación técnica oficial en [https://istpetdev.doicela.dev](https://istpetdev.doicela.dev).
 
 ---
 
@@ -23,26 +23,26 @@ flowchart TD
         LaptopA["Laptop Desarrollador"] --> LocalDocker["Docker Compose Local<br>localhost:15432<br>Base: istpetdev_dev_01"]
     end
 
-    subgraph Amb2 ["2. ENTORNO LABORATORIO (LAN On-Premise)"]
-        EquipoLab["Laptops del Equipo (x5)"] -->|Red Local 192.168.7.0/24| ServidorLab["Servidor Laboratorio (192.168.7.50:15432)<br>PostGIS 16 + Redis<br>Base: istpetdev_dev_01"]
+    subgraph Amb2 ["2. ENTORNO DESARROLLO CENTRALIZADO (AWS Cloud EC2)"]
+        EquipoRemoto["Laptops del Equipo (x5)<br>Laboratorio / Casa / Oficina"] -->|Internet TCP 5432<br>Configurado en .env| EC2DevDB["AWS EC2 Dev DB<br>Docker PostGIS 16 (istpetdev_postgres)<br>Base: istpetdev_dev_01<br>Usuario único: migrator_dev_01"]
     end
 
-    subgraph Amb3 ["3. ENTORNO PRODUCCIÓN (AWS Cloud)"]
+    subgraph Amb3 ["3. ENTORNO PRODUCCIÓN (AWS Cloud RDS)"]
         GitMain["GitHub Actions (Merge a main)"] -->|Deploy Inmutable| EC2Prod["AWS EC2: istpetdev-prod-host<br>https://istpetdev.doicela.dev"]
-        EC2Prod -->|VPC 10.42.0.0/16<br>TCP 5432 Privado| RDSProd["Amazon RDS: istpetdev-rds-dev<br>Base: istpetdev_integration"]
+        EC2Prod -->|VPC 10.42.0.0/16<br>TCP 5432 Privado| RDSProd["Amazon RDS: istpetdev-rds-dev<br>Base: istpetdev_integration<br>Usuario: migrator_integration"]
     end
 ```
 
-| Parámetro | 1. Casa (Local) | 2. Laboratorio (On-Premise) | 3. Producción (AWS RDS) |
+| Parámetro | 1. Casa (Local) | 2. Desarrollo Centralizado (AWS EC2) | 3. Producción (AWS RDS) |
 |---|---|---|---|
-| **Propósito** | Trabajo individual, pruebas destructivas y desarrollo offline. | Desarrollo colaborativo simultáneo del equipo de 5 integrantes. | Demostración oficial ante jueces y auditoría en vivo. |
-| **Alojamiento** | Docker Desktop en la laptop de cada integrante. | Contenedor Docker en el servidor del laboratorio. | Instancia gestionada Amazon RDS PostgreSQL 16.13 en `us-east-1`. |
-| **Endpoint / Host** | `localhost:15432` | `192.168.7.50:15432` | `istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com:5432` |
+| **Propósito** | Trabajo individual offline y pruebas destructivas. | Desarrollo colaborativo unificado desde cualquier red (lab/casa/oficina). | Demostración oficial ante jueces y auditoría en vivo. |
+| **Alojamiento** | Docker Desktop local en laptop. | Instancia dedicada AWS EC2 Debian en `us-east-1` (IP en `.env`). | Instancia gestionada Amazon RDS PostgreSQL 16.13 en `us-east-1`. |
+| **Endpoint / Host** | `localhost:15432` | Host centralizado configurado en `.env` (puerto `5432`) | `istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com:5432` |
 | **Base de datos** | `istpetdev_dev_01` | `istpetdev_dev_01` | `istpetdev_integration` |
-| **Credenciales** | `postgres` / `postgres_dev_password_local` | `migrator_dev_01` / `12345` | `migrator_integration` (AWS Secrets Manager) |
+| **Credenciales** | `postgres` / `postgres_dev_password_local` | `migrator_dev_01` (Usuario único; contraseña en `.env`) | `migrator_integration` (AWS Secrets Manager) |
 | **Soporte PostGIS** | `postgis/postgis:16-3.4-alpine` | `postgis/postgis:16-3.4-alpine` | Extensión `postgis` nativa de AWS RDS (3.4.6) |
-| **Dependencia Red** | Ninguna (100% offline). | Red física LAN del instituto (`192.168.7.0/24`). | Conectividad privada dentro de VPC `vpc-0217f06f82247cd0b`. |
-| **Comando Switch** | `npm run db:local` | `npm run db:lab` | Automático vía CI/CD (`deploy.yml`) |
+| **Dependencia Red** | Ninguna (100% offline). | Conectividad a Internet pública (Security Group puerto 5432). | Conectividad privada dentro de VPC `vpc-0217f06f82247cd0b`. |
+| **Configuración** | `npm run db:local` (`dotnet user-secrets`) | Centralizada en `.env` (sin exponer IPs en Git); `npm run db:dev` | Variables inyectadas por host en despliegue inmutable |
 
 ---
 
@@ -64,7 +64,7 @@ El entorno local permite que cualquier integrante trabaje sin conexión a intern
    ```bash
    npm run db:local
    ```
-   Elimina cualquier sobreescritura de `ConnectionStrings:Main` en `dotnet user-secrets`, provocando que el backend lea la configuración por defecto de `src/Api/appsettings.Development.json`.
+   Configura `ConnectionStrings:Main` en `dotnet user-secrets` para apuntar al PostgreSQL local en `localhost:15432`. Si se desea volver a la base en la nube por defecto, se ejecuta `npm run db:cloud`.
 
 3. **Iniciar backend y frontend**:
    ```bash
@@ -80,65 +80,42 @@ El entorno local permite que cualquier integrante trabaje sin conexión a intern
 
 ---
 
-## 3. Entorno 2: Desarrollo en laboratorio (On-Premise)
+---
 
-El entorno del laboratorio centraliza una única base de datos sobre la red local del instituto (`192.168.7.0/24`), permitiendo que los 5 integrantes compartan datos de prueba en tiempo real sin experimentar colisiones ni depender de túneles externos.
+## 3. Entorno 2: Desarrollo Centralizado del Equipo (AWS Cloud EC2)
 
-### Configuración del servidor del laboratorio (`192.168.7.50`)
+Para eliminar la dependencia de redes físicas locales y permitir que los integrantes del equipo colaboren en tiempo real con datos sincronizados desde cualquier ubicación (laboratorio, casa u oficina), el proyecto unificó toda la persistencia de desarrollo en una única base de datos centralizada en AWS EC2 con PostgreSQL 16 y PostGIS 3.4.
 
-En la máquina física del servidor del laboratorio:
+### Especificaciones técnicas de la base de datos de desarrollo
 
-1. **Definición de servicios (`infra/compose/docker-compose.lab.yml`)**:
-   ```yaml
-   services:
-     db:
-       image: postgis/postgis:16-3.4-alpine
-       container_name: istpetdev-team-db
-       restart: unless-stopped
-       ports:
-         - "15432:5432"
-       environment:
-         POSTGRES_USER: postgres
-         POSTGRES_PASSWORD: 12345
-         POSTGRES_DB: istpetdev_dev_01
-       volumes:
-         - team_pgdata:/var/lib/postgresql/data
+* **Host AWS EC2:** Instancia Debian en región `us-east-1` (dirección IP configurada en `.env`).
+* **Puerto:** `5432` habilitado en el Security Group `istpetdev-ec2-access-sg-dev` (regla TCP 5432).
+* **Motor y Contenedor:** Contenedor Docker `istpetdev_postgres` ejecutando la imagen oficial `postgis/postgis:16-3.4-alpine` con política de reinicio `restart: always`.
+* **Persistencia:** Volumen Docker `pgdata` montado en `/var/lib/postgresql/data`.
+* **Base de datos:** `istpetdev_dev_01` con las 27 tablas canónicas de `DemoCore` aplicadas mediante EF Core.
 
-     redis:
-       image: redis:7.4-alpine
-       container_name: istpetdev-team-redis
-       restart: unless-stopped
-       ports:
-         - "6379:6379"
-   ```
+### Política de usuario único para desarrollo (`migrator_dev_01`)
 
-2. **Arranque en el servidor**:
-   ```powershell
-   docker compose -f infra/compose/docker-compose.lab.yml up -d
-   ```
+Para eliminar cualquier fricción técnica de permisos:
 
-3. **Regla de Firewall de Windows en el servidor**:
-   Para permitir que las laptops del equipo alcancen el puerto `15432`, se ejecuta en PowerShell como Administrador:
-   ```powershell
-   New-NetFirewallRule -DisplayName "PostgreSQL ISTPET Lab" -Direction Inbound -LocalPort 15432 -Protocol TCP -Action Allow
-   ```
+1. **Usuario único estandarizado:** `migrator_dev_01` (contraseña protegida en `.env`).
+2. **Atributos y Permisos:** Propietario (`OWNER`) de la base de datos `istpetdev_dev_01`, del esquema `public` y de las 27 tablas de `DemoCore`. Configurado con `CREATEDB`, `NOSUPERUSER` y `NOBYPASSRLS`, satisfaciendo las guardas de seguridad de las migraciones de EF Core.
+3. **Rol de aplicación secundario:** `user_dev_01` aprovisionado para compatibilidad estricta con scripts DML de seguridad.
 
-### Conexión de los 5 integrantes del equipo
+### Centralización de configuración en `.env` y protección de credenciales
 
-Cada compañero, conectado al Wi-Fi o cable de la red `192.168.7.x`:
+Para evitar exponer IPs públicas y credenciales en el repositorio de Git (control de versiones):
 
-1. **Conmutar a la base del laboratorio**:
-   ```bash
-   npm run db:lab
-   ```
-   El script `scripts/ops/switch-db.mjs` verifica la conectividad TCP con `192.168.7.50:15432` y guarda la cadena de conexión en los `user-secrets` locales de .NET:
-   `Host=192.168.7.50;Port=15432;Database=istpetdev_dev_01;Username=migrator_dev_01;Password=12345`
+* **Fuente única de verdad (`.env`):** La configuración completa de conexión para desarrollo reside exclusivamente en el archivo `.env` en la raíz del proyecto (ignorado por `.gitignore`). Contiene `ConnectionStrings__Main`, `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER` y `DATABASE_PASSWORD`.
+* **Aislamiento estricto en Git:** Tanto `.env` como `src/Api/appsettings.json` local están ignorados por `.gitignore` y desindexados del repositorio. A GitHub viajan exclusivamente las plantillas `!.env.example` y `!src/Api/appsettings.example.json`. No se utiliza `appsettings.Development.json` para mantener una única fuente de configuración local y evitar duplicidad de parámetros.
+* **Inyección automática en .NET:** En `src/Api/Program.cs`, el backend carga automáticamente las variables del archivo `.env` local en desarrollo e inyecta la configuración en `IConfiguration`. Quien ejecute `npm run dev:api` o `dotnet run` obtiene la conexión sin necesidad de archivos duplicados ni secretos quemados en el código.
+* **Gestor de entorno (`scripts/ops/switch-db.mjs`):** Lee directamente los parámetros desde `.env` para verificar conectividad TCP y sincronizar `dotnet user-secrets`. No almacena IPs hardcodeadas y oculta contraseñas en consola.
 
-2. **Ejecutar la plataforma**:
-   ```bash
-   npm run dev:api
-   npm run dev:web
-   ```
+```bash
+npm run db:dev     # Sincroniza y activa el entorno de desarrollo centralizado desde .env
+npm run db:local   # Conmuta a Docker Local en localhost:15432
+npm run db:status  # Muestra el entorno activo y conectividad sin exponer credenciales
+```
 
 ---
 
@@ -165,16 +142,16 @@ sequenceDiagram
     autonumber
     actor Dev as Desarrollador
     participant Git as Repositorio Git
-    participant Lab as BD Laboratorio (192.168.7.50)
+    participant EC2Dev as BD Centralizada Dev (.env)
     participant CI as GitHub Actions (CI/CD)
     participant RDS as Amazon RDS (Producción)
 
     Dev->>Dev: dotnet ef migrations add <NuevaMigracion>
-    Dev->>Git: git commit && git push (en rama de trabajo)
-    Dev->>Lab: npm run db:migrate (actualiza base del laboratorio)
+    Dev->>Git: git push (en rama de trabajo develop/feature)
+    Dev->>EC2Dev: dotnet ef database update (actualiza base compartida vía .env)
     Git->>CI: Pull Request aprobado y merge a main
-    CI->>RDS: Ejecuta migraciones en istpetdev_integration
-    CI->>RDS: Valida endpoint /health/ready (200 OK)
+    CI->>RDS: Ejecuta migraciones en istpetdev_integration al desplegar
+    CI->>RDS: Valida endpoint /health/ready (HTTP 200 OK)
 ```
 
 ### Comandos de migración
@@ -184,17 +161,17 @@ sequenceDiagram
    dotnet ef migrations add <NombreMigracion> --project src/Infrastructure --startup-project src/Api
    ```
 
-2. **Aplicar migraciones al entorno seleccionado**:
+2. **Aplicar migraciones a la base de desarrollo centralizada**:
    ```bash
-   npm run db:migrate
+   dotnet ef database update --project src/Infrastructure --startup-project src/Api
    ```
-   *(Aplica los cambios a la base activa según el modo configurado: Laboratorio si está en `db:lab`, o Casa si está en `db:local`)*.
+   *(Aplica los cambios directamente a la base configurada en `.env`)*.
 
-3. **Verificación de estado**:
+3. **Verificación de estado e inspección**:
    ```bash
-   npm run db:status
+   dotnet ef dbcontext info --project src/Infrastructure --startup-project src/Api
    ```
-   Indica claramente a qué base de datos apunta la máquina antes de ejecutar operaciones destructivas.
+   Confirma el Data source activo y el estado de la base de datos antes de proceder.
 
 ---
 

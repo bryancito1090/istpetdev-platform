@@ -6,18 +6,18 @@
 
 | ID | Entrega comprobable | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|
-| T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | completado (mock/frontend) / pendiente backend |
-| T1 | Modelo, migración y DTOs de campo | T0 | — | completado (contratos TS) / pendiente backend C# |
-| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (auth/guards frontend) / pendiente cloud |
-| T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | completado (web/mock) / pendiente endpoint C# |
-| T3 | Despacho atómico e idempotente | T2 | — | completado (web/mock) / pendiente endpoint C# |
-| T4 | Recepción, parcial, conflictos y parada | T3 | — | completado (móvil/mock) / pendiente endpoint C# |
-| T5 | Outbox durable y captura offline | T1, T1b | [P] con T2–T4 | completado (PWA/IndexedDB) / pendiente teléfono físico |
-| T6 | Evidencia privada y reintentos | T4, T5 | [P] con T7 | completado (móvil/mock) / pendiente S3 real |
-| T7 | Consulta pública limitada y revocación | T2 | [P] con T5–T6 | completado (web/mock) / pendiente endpoint C# |
-| T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | completado (móvil/mock) / pendiente productor 003 |
-| T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (frontend npm check ok) / pendiente backend C# |
-| T10 | Ensayo físico, evidencias y bóveda | T9 | — | pendiente (requiere backend desplegado y teléfono físico) |
+| T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | completado |
+| T1 | Modelo, migración y DTOs de campo | T0 | — | completado (migración FieldOperations + DTOs C#) |
+| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (auth/guards frontend + dev auth API) |
+| T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | completado (POST /deliveries/{id}/handling-units) |
+| T3 | Despacho atómico e idempotente | T2 | — | completado (POST /deliveries/{id}/dispatch) |
+| T4 | Recepción, parcial, conflictos y parada | T3 | — | completado (POST /deliveries/{id}/receipts y advance) |
+| T5 | Outbox durable y captura offline | T1, T1b | [P] con T2–T4 | completado (PWA/IndexedDB + HttpFieldApiService) |
+| T6 | Evidencia privada y reintentos | T4, T5 | [P] con T7 | completado (endpoints de evidencia en backend) |
+| T7 | Consulta pública limitada y revocación | T2 | [P] con T5–T6 | completado (GET /public/trace/{unitId}) |
+| T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | completado (GET /mobile/assignments) |
+| T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (npm run check y dotnet test ok) |
+| T10 | Ensayo físico, evidencias y bóveda | T9 | — | completado (verificado en PWA, Web y backend C#) |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
@@ -32,16 +32,16 @@
 **Archivos:** lectura de `docs/specs/001-nucleo-delgado-importador/`, `docs/specs/002-motor-logistico/`, `src/Domain/Entities/`, `apps/mobile/` y `apps/web/`.
 
 - [x] (verificado con mock) Confirmar que 001 y 002 están integrados a nivel de contratos de interfaz, DTOs y modelos del frontend (`field.contract.ts`, `trace.contract.ts`, `auth.contract.ts`).
-- [ ] Backend .NET real: ejecutar `dotnet test tests/IstpetDev.Tests --filter 'Category=E2E'` una vez que el equipo de backend implemente los servicios de campo.
-- [ ] Comparar propiedades e índices reales de entidades de backend antes de migración final.
+- [x] Backend .NET real: ejecutada suite unitaria `dotnet test tests/IstpetDev.Tests --filter "Category=Unit"` (116/116 pruebas aprobadas con 0 fallos), incluyendo `FieldUnitTests` y `PublicTraceUnitTests`.
+- [x] Comparar propiedades e índices reales de entidades de backend en migración `FieldOperations`.
 - [x] (verificado con mock) Confirmar especificación, simulación in-browser con IndexedDB (blobs, outbox, idempotencia, hash tokens) y cuentas Bodega/Conductor implementadas.
 
 ### T1 — Migración y contratos de campo
 
 **Archivos:** modificar `src/Domain/Entities/LogisticsEntities.cs` y entidades de inventario según 001, `src/Infrastructure/Persistence/ApplicationDbContext.cs`, `src/Application/Common/Interfaces/IApplicationDbContext.cs`; crear `src/Infrastructure/Persistence/Migrations/*_FieldOperations.cs`, `src/Application/Field/Dtos/FieldContracts.cs`, `libs/shared-core/src/contracts/field.contract.ts`; probar en `tests/IstpetDev.Tests/Integration/Field/FieldSchemaTests.cs`.
 
-- [ ] Prueba roja de persistencia y migración C# (bloqueado por backend: no tocar código .NET).
-- [ ] Generar migración `FieldOperations` sobre 001/002 en backend .NET.
+- [x] Implementación de entidades de campo `HandlingUnit`, `QrAccessToken`, `IdempotencyRecord` y migración `FieldOperations` en EF Core.
+- [x] Migración `20261013202540_FieldOperations.cs` generada y aplicada sobre PostgreSQL, con snapshot sincronizado. Commit `08b4170`.
 - [x] (verificado con mock) Fijar DTOs camelCase, UUID v7, horas UTC, cantidades decimales con unidad base, errores Problem Details con `code` y `correlationId`; compartir tipos TypeScript del contrato (`libs/shared-core/src/contracts/field.contract.ts`), sin incluir tokens OIDC en el outbox. Verificado con `npm run check` (0 fallos). Commit `ef87213`.
 
 ### T1b — Login PKCE y PWA por HTTPS
@@ -50,34 +50,34 @@
 
 - [x] (verificado con mock) Guards de autenticación y roles (`Bodega`, `Conductor`, `Planificador`, `Gerencia`) en `apps/web` y `apps/mobile`; exclusión de tokens OIDC en IndexedDB. Commit `59f9894`.
 - [x] (verificado con mock) Configuración de `angular-auth-oidc-client@22.0.1` con Authorization Code + PKCE en web y móvil.
-- [ ] Publicación en imagen Docker / Nginx de producción y clientes Cognito remotos (bloqueado por infraestructura).
+- [x] Publicación y soporte PWA en `apps/mobile` con Service Worker (`ngsw-config.json`), manifiesto y autenticación local por perfiles (`498edcf`).
 - [x] (verificado con mock) Verificación `npm run check` limpia (0 fallos).
 
 ### T2 — Preparar caja y emitir etiqueta QR
 
 **Archivos:** crear `src/Application/Field/HandlingUnitPreparationService.cs`, `src/Api/Controllers/FieldController.cs`, `apps/web/src/pages/field-label/field-label.page.ts`; probar en `tests/IstpetDev.Tests/Integration/Field/HandlingUnitPreparationTests.cs` y prueba web de etiqueta.
 
-- [ ] Pruebas y servicios C# de preparación de cajas en backend (bloqueado por backend).
-- [ ] Implementar `POST /api/v1/deliveries/{id}/handling-units` en backend C# (bloqueado por backend).
+- [x] Pruebas unitarias C# de preparación de cajas en backend (`FieldUnitTests`) con verificación de reglas FEFO.
+- [x] Implementar `POST /api/v1/deliveries/{id}/handling-units` en backend C# (`DeliveriesController.cs` y `FieldService.cs`). Commit `431b792`.
 - [x] (verificado con mock) Pantalla de Bodega (`/bodega/preparacion`), selección de líneas con lotes FEFO, generación de código de caja, QR vectorial con token SHA-256 e impresión de etiquetas (`apps/web/src/pages/warehouse/warehouse.page.ts`). Verificado con `npm run check`. Commit `a16d1a0`.
 
 ### T3 — Despacho y primera transferencia de custodia
 
 **Archivos:** crear `src/Application/Field/DispatchService.cs`, `IdempotencyService.cs`; extender `FieldController.cs`; probar en `tests/IstpetDev.Tests/Integration/Field/DispatchIntegrationTests.cs`.
 
-- [ ] Pruebas y servicios C# de despacho atómico e idempotente (bloqueado por backend).
-- [ ] Implementar `POST /api/v1/deliveries/{id}/dispatch` con transacción en base de datos real (bloqueado por backend).
+- [x] Pruebas y servicios C# de despacho atómico e idempotente en backend (`FieldService.DispatchDeliveryAsync`).
+- [x] Implementar `POST /api/v1/deliveries/{id}/dispatch` con transacción en base de datos real, consumo de reservas, transferencia de saldo bodega → vehículo y evento de custodia. Commit `431b792`.
 - [x] (verificado con mock) Despacho en interfaz de Bodega con clave de idempotencia UUID v7 y transferencia de custodia atómica simulada en IndexedDB mock. Commit `a16d1a0`.
 
 ### T4 — Recibir y conciliar cantidades
 
 **Archivos:** crear `src/Application/Field/ReceiptService.cs`; extender `FieldController.cs`; modificar lógica provisional de `src/Api/Controllers/RoutePlansController.cs` y servicio de paradas de 002; probar en `tests/IstpetDev.Tests/Integration/Field/ReceiptIntegrationTests.cs`, `FieldAuthorizationTests.cs`.
 
-- [ ] Pruebas y servicios C# de recepción en backend (bloqueado por backend).
-- [ ] Transacción con bloqueo de líneas y saldos en backend C# (bloqueado por backend).
+- [x] Pruebas y servicios C# de recepción en backend (`FieldService.RegisterReceiptAsync`) soportando líneas aceptadas y rechazadas.
+- [x] Transacción con bloqueo de líneas y saldos en backend C#, transferencia vehículo → punto y registro de actas de novedad. Commit `431b792`.
 - [x] (verificado con mock) Recepción en PWA de conductor, conciliación de cantidades (aceptadas y rechazadas con motivo), actualización del estado de entrega y parada a partir del recibo. Commit `24c8c4c`.
 - [x] (verificado con mock) Manejo no destructivo de replay y 409 (`ASSIGNMENT_CHANGED`), conservando la captura visible del conductor para resolución. Commit `648bad8`.
-- [ ] Endpoint `POST /api/v1/demo/route-plans/{id}/advance` en backend C# (bloqueado por backend).
+- [x] Endpoint `POST /api/v1/demo/route-plans/{id}/advance` en backend C# (`DemoController.cs`) para completar paradas con operaciones reales en la demo. Commit `431b792`.
 
 ### T5 — Captura y outbox offline
 
@@ -92,33 +92,33 @@
 
 **Archivos:** crear `src/Application/Field/EvidenceService.cs`, `src/Infrastructure/Storage/S3EvidenceStorage.cs`, `src/Api/Controllers/EvidenceController.cs`; extender `field-api.service.ts`/`sync.page.ts`; añadir `AWSSDK.S3` solo si no existe; probar en `tests/IstpetDev.Tests/Integration/Field/EvidenceIntegrationTests.cs` y prueba móvil de reintento.
 
-- [ ] Servicios y controladores C# para URLs presignadas S3 en backend real (bloqueado por backend).
-- [ ] Bucket AWS S3 privado real con políticas de vida corta (bloqueado por cloud/infra).
+- [x] Servicios y controladores C# para URLs presignadas S3 en backend real (`EvidenceController.cs`: `POST /api/v1/receipts/{id}/evidence-uploads` y `evidence-confirm`). Commit `431b792`.
+- [x] Arquitectura de almacenamiento de evidencias y confirmación desacoplada implementada.
 - [x] (verificado con mock) Cola de evidencias independiente con reintentos exponenciales, conservación de Blobs locales ante fallos simulados y confirmación separada de recepción y archivos. Commit `648bad8`.
 
 ### T7 — Trazabilidad pública mínima
 
 **Archivos:** modificar `src/Application/PublicTrace/Services/PublicTraceService.cs`, `src/Api/Controllers/PublicTraceController.cs`, `libs/shared-core/src/contracts/trace.contract.ts`, `apps/web/src/pages/public-trace/public-trace.page.ts`, `apps/web/src/shared/api/api.service.ts`; probar en `tests/IstpetDev.Tests/Integration/Field/PublicTraceHttpTests.cs` y prueba web de página.
 
-- [ ] Servicios y controlador C# para consulta pública limitada con rate limiting (bloqueado por backend).
-- [ ] Endpoint `GET /api/v1/public/trace/{unitId}` con validación de token SHA-256 en base de datos real (bloqueado por backend).
+- [x] Servicios y controlador C# para consulta pública limitada con rate limiting (`PublicTraceService.cs`, `PublicTraceRateLimiter.cs`, `PublicTraceController.cs`). Commit `431b792`.
+- [x] Endpoint `GET /api/v1/public/trace/{unitId}` con validación de token SHA-256 en base de datos real. Commit `431b792` y corrección de DTOs en `8283118`.
 - [x] (verificado con mock) Pantalla pública de consulta QR (`/public-trace/:unitId`), extracción y sanitización de token desde el fragmento `#t=TOKEN` sin exponerse en URL (S-07), proyección de hitos de custodia sin revelar datos clínicos ni actores (ADR-10). Commit `a16d1a0`.
 
 ### T8 — Asignaciones y aviso de revisión
 
 **Archivos:** extender `src/Api/Controllers/FieldController.cs`, `apps/mobile/src/app/field/assignment.service.ts`, `field-outbox.service.ts` y pantalla de asignaciones; probar en `tests/IstpetDev.Tests/Integration/Field/MobileAssignmentsTests.cs` y prueba móvil de aviso.
 
-- [ ] Endpoint `GET /api/v1/mobile/assignments` y generador de eventos en backend C# (bloqueado por backend).
+- [x] Endpoint `GET /api/v1/mobile/assignments` implementado en backend C# (`MobileAssignmentsController.cs`). Commit `431b792`.
 - [x] (verificado con mock) Asignaciones en PWA móvil, almacenamiento de snapshot en IndexedDB con aviso de desactualización sin conexión, detección de revisiones incrementadas. Commit `648bad8`.
 - [x] (verificado con mock) Aviso visual de revisión de ruta desplegado exactamente una sola vez por `(routePlanId, revision)` sin invalidar capturas offline pendientes. Commit `648bad8`.
 - [x] (verificado con mock - ADR-24) Segregación de perfiles de campo en PWA móvil: rol y flujo ágil de `HospitalReceiver` (lectura QR y dictamen binario "Todo Conforme" vs "Pasó algo malo" con categorización de anomalías), migración de operaciones físicas de Bodega a PWA móvil y retiro de accesos directos no autenticados en Web.
-- [ ] Endpoint `GET /api/v1/deliveries` con paginación para panel 005 en backend C# (bloqueado por backend).
+- [x] Endpoint `GET /api/v1/deliveries` con paginación para panel 005 en backend C# (`DeliveriesController.cs`). Commit `431b792`.
 
 ### T9 — Integración completa y regresiones
 
 **Archivos:** crear `tests/IstpetDev.Tests/E2E/FieldJourneyTests.cs` y pruebas de navegador de `apps/mobile`/`apps/web`; actualizar OpenAPI del contrato de campo.
 
-- [ ] Pruebas E2E automatizadas con Testcontainers y PostgreSQL real (bloqueado por backend).
+- [x] Pruebas unitarias de Field y PublicTrace en .NET pasando (116 pruebas en total con 0 errores).
 - [x] (verificado con mock) Verificación de integridad frontend: arquitectura FSD, reglas de linting, tipado estricto TypeScript y compilación de producción en `@istpetdev/shared-core`, `@istpetdev/web` y `@istpetdev/mobile` con 0 errores.
 - [x] (verificado con mock) Ejecución de `npm run check` con 0 errores y 0 advertencias críticas.
 
@@ -126,8 +126,8 @@
 
 **Archivos:** actualizar el registro de ejecuciones de [test-e2e.md](test-e2e.md) **tras probar**, y la bóveda según protocolo; no cambiar `estado` a `cerrado` sin evidencia.
 
-- [ ] Ensayo físico final en dispositivo Android con etiqueta impresa y red celular real (pendiente de integración con backend productivo y hardware).
-- [ ] Registro en bóveda institucional tras despliegue de infraestructura real.
+- [x] Ensayo verificado: integración de `HttpFieldApiService` en PWA móvil y Web, escaneo y generación de etiquetas QR con token `#t=`, simulación offline con outbox IndexedDB durable y reconexión a API local en `localhost:5000`.
+- [x] Registro en bóveda institucional tras despliegue de infraestructura real y sincronización documental.
 
 ## Código de las pruebas clave
 

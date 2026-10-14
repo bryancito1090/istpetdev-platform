@@ -4,9 +4,9 @@ titulo: Panel web y simulador comparativo de 90 días con KPIs
 estado: borrador
 creado: 2026-10-12
 actualizado: 2026-10-13
-responsable: Alexander Martínez
+responsable: Alexander Martínez o Bryan Doicela   # cualquiera de los dos puede tomar cada tarea (asignación de Joseph Baño, 13-oct)
 aprobado_por: PENDIENTE
-depende_de: [001, 002, 003, 004]
+depende_de: [001, 002, 003, 004, "013 (parcial: H1–H3, solo FR-05)"]   # simulador, KPI y exportación no esperan a 013; solo el panel conectado a la API
 boveda: ["04 Datos y algoritmos/Simulador y metricas", "04 Datos y algoritmos/Dataset y escenarios", "04 Datos y algoritmos/Rutas y sobrecostos", "06 Equipo/Definiciones de producto y plan hasta el pitch"]
 ---
 
@@ -16,7 +16,7 @@ boveda: ["04 Datos y algoritmos/Simulador y metricas", "04 Datos y algoritmos/Da
 
 El jurado debe entender en pocos segundos un riesgo real de desabastecimiento, la acción que propuso el motor y el efecto medido de esa política. Impacto potencial pesa 15 % y la demo práctica 20 %; cinco de siete jurados no son técnicos. El recorrido en vivo usa `demo-region` (unos 15 puntos y dos vehículos); la red nacional sintética de unos 80 puntos aparece solo en la comparación de 90 días. Las cifras de la simulación son **sintéticas**, no ahorro observado en una empresa.
 
-Hoy el panel web contiene rutas, entregas, coordenadas y cifras fijas, incluidas «418 km» y «Ahorro: 24.8%» en `route-map.widget.ts` (R-15). El spec 005 sustituye esos valores por respuestas de la API. Reutiliza el login PKCE que implementa 004 (FR-17, T1b), los cálculos, `facts`, plantillas y reglas de autonomía de 002, y la traza del agente de 003. No hay resultados medidos todavía.
+Hoy el panel web contiene rutas, entregas, coordenadas y cifras fijas, incluidas «418 km» y «Ahorro: 24.8%» en `route-map.widget.ts` (R-15). El spec 005 sustituye esos valores por respuestas de la API. Reutiliza el login PKCE, los guards y el interceptor del [spec 013](../013-login-y-cuentas/spec.md) (H1–H3), los cálculos, `facts`, plantillas y reglas de autonomía de 002, y la traza del agente de 003. No hay resultados medidos todavía.
 
 ## Objetivo y aporte a la nota
 
@@ -79,7 +79,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 | FR-02 | El mapa Leaflet/OSM DEBE representar `legs` de 002: trazo vial si `source=Road` y geometría recibida; si `source=Approximation`, segmento punteado y etiqueta visible. Centro y zoom se derivan de los puntos visibles (`fitBounds`), sin coordenadas iniciales del fixture. Si faltan mosaicos por falta de red, la lista de paradas, ETA y costos sigue disponible; los iconos necesarios se sirven localmente. | ADR-05, Rutas y sobrecostos |
 | FR-03 | Las decisiones DEBEN aparecer en dos columnas: «Ejecutadas solas» y «Esperan tu aprobación». Cada tarjeta indica acción, motivo, `facts`, opción factible, revisión y enlace a la traza de 003. Estados posteriores (aprobada, rechazada, revertida) quedan en historial filtrable. | D5, RF-07 |
 | FR-04 | Aprobar, rechazar y deshacer DEBEN usar los endpoints de 002; el interruptor «solo proponer» DEBE leer y escribir el modo de 002. El frontend no recalcula ni clasifica decisiones. | D5 |
-| FR-05 | El panel DEBE usar el login PKCE y el interceptor del spec 004, sin otro flujo de autenticación. La API impone roles fijos de 001; controles de escritura solo para roles autorizados. | ADR-18, FR-17 de 004 |
+| FR-05 | El panel DEBE usar el login PKCE, los guards y el interceptor del [spec 013](../013-login-y-cuentas/spec.md), sin otro flujo de autenticación. La API impone roles fijos de 001 y ADR-26; controles de escritura solo para roles autorizados (el Auditor solo lee). | ADR-18, ADR-26, spec 013 |
 | FR-06 | El generador DEBE emitir los archivos canónicos de 001 y `road_segments` de 002, además de manifiesto con seed, versión, parámetros y hash. DEBE cargarlos mediante el importador de 001 en un entorno de simulación aislado de `demo-region`; no se permite escritura directa de datos operativos desde el generador. | G1, G2, Dataset y escenarios |
 | FR-07 | Antes de evaluar una política, la API DEBE precalcular por seed y escenario un calendario exógeno común de demanda solicitada, incidentes y tiempos. Cada política ve solo registros conocidos hasta la hora simulada. El flujo diario ordena observación → riesgo → plan/reserva → viajes/entregas → demanda → faltantes/conciliación; una entrega tardía no borra un faltante anterior. | RF-08, Simulador y metricas |
 | FR-08 | La política IstpetDev DEBE reutilizar el cálculo determinista de riesgo, asignación, planificador y costo de 002 mediante servicios de aplicación, sin HTTP interno, LLM ni n8n. Para una corrida se elige **solo matriz vial completa** o **solo aproximación declarada**; nunca tramos mezclados. | D4, ADR-23, G5 |
@@ -193,7 +193,8 @@ El generador produce datos canónicos y el importador de 001 los carga **en un c
 | 001 | `SimulationRun`, `SimulationMetric`, `POST /api/v1/imports`, `GET /api/v1/service-points`, `POST /api/v1/demo/reset`, roles fijos | Extensión de runs/eventos en una migración 005; generador canónico que usa importador aislado; reset de 001 conserva runs/métricas completados (FR-15 y T7 corregidos en este PR), sin cambiar el núcleo ni Schema95 | 001 antes de H2; 005 antes de H4 |
 | 002 | `GET /api/v1/risks`, `GET /api/v1/route-plans`, `GET /api/v1/route-plans/{id}`, `GET /api/v1/agent-decisions`, `POST /api/v1/agent-decisions/{id}/approve`, `POST /api/v1/agent-decisions/{id}/reject`, `POST /api/v1/route-plans/{id}/revert`, `GET /api/v1/autonomy/mode`, `PUT /api/v1/autonomy/mode`, `POST /api/v1/demo/incidents`, planificador, costo y `facts` | Lectura `GET /route-plans` añadida explícitamente a 002 en este PR; simulador reutiliza servicios sin duplicarlos | 002 antes de H4; 005 antes de H4 |
 | 003 | `POST /api/v1/agent/runs`, `GET /api/v1/agent/runs`, `GET /api/v1/agent/runs/{id}`, `AgentRun` y origen de explicación | Disparo y vista de traza; no implementa LLM ni flujo n8n | 003 antes de H4; panel puede mostrar plantillas de 002 si falla agente |
-| 004 | Login PKCE web (FR-17/T1b), `GET /api/v1/deliveries`, `POST /api/v1/demo/route-plans/{id}/advance` y estados de entrega | Lectura `GET /deliveries` añadida explícitamente a 004 en este PR; sin duplicar auth ni usar `/stops/{sequence}/complete` provisional | 004 login y `advance` antes de H3; lectura antes de H4 |
+| 004 | `GET /api/v1/deliveries`, `POST /api/v1/demo/route-plans/{id}/advance` y estados de entrega | Lectura `GET /deliveries` añadida explícitamente a 004 en este PR; sin usar `/stops/{sequence}/complete` provisional | 004 `advance` antes de H3; lectura antes de H4 |
+| 013 (parcial) | Login PKCE, guards, interceptor y `GET /api/v1/me` (H1–H3); rol Auditor de solo lectura (ADR-26) | Sin duplicar auth; solo el panel conectado a la API espera a 013. Simulador, KPI y exportación avanzan sin él | 013 H1–H3 antes de H3 (14-oct 20:00) |
 
 **Secuencia de migraciones:** 001 crea el núcleo; cada spec posterior usa una migración sobre `develop` actualizado, terminada en `DemoGrants.Sql`, y se integra antes de que el siguiente genere la suya. El 005 puede integrar su migración tras 001/002 coordinando el turno con 003/004; el simulador no espera a la PWA ni al agente. La prueba de 001 comprueba núcleo y ausencia de Schema95, no conteo final cerrado. La comparación se perfila antes de H4: 1080 jornadas × 6 regiones de ejemplo (≤15 puntos cada una) × 1 s (cota para 15 puntos/2 vehículos en 002) = 108 min solo para planificación. La meta total ≤60 min requiere menos llamadas efectivas o menor tiempo medio; se verifica con benchmark, no se presume.
 

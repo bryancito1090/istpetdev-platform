@@ -11,6 +11,7 @@ public sealed class IdempotencyRecord : OrganizationEntity
     public int? ResponseStatus { get; set; }
     public string? ResponseJson { get; set; }
     public DateTime? CompletedAtUtc { get; set; }
+    public DateTime? RetainUntilUtc { get; set; }
 }
 
 public sealed class ImportBatch : OrganizationEntity
@@ -42,4 +43,7 @@ public sealed class AgentDecision : OrganizationEntity
     public DateTime? DecidedAtUtc { get; set; }
     public DateTime? ExecutedAtUtc { get; set; }
     public string? FailureReason { get; set; }
+    public string DriverMessage { get; set; } = string.Empty;
+    public string ExplanationSource { get; set; } = "Template";
+    public string? ExplanationMismatch { get; set; }
 }

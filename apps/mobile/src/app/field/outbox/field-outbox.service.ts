@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { openDB, IDBPDatabase } from 'idb';
 import {
   CreateReceiptRequest,
@@ -12,6 +12,7 @@ import { generateUuidV7 } from '../mock/mock-field-api.service';
 
 export interface OutboxItem {
   operationId: string; // UUID v7
+  ownerAccountId: string; // FR-09: cuenta que capturó; otra cuenta no la ve ni la sincroniza
   deliveryId: string;
   expectedDeliveryVersion: number;
   recipientName: string;
@@ -37,7 +38,7 @@ export interface OutboxItem {
 }
 
 const DB_NAME = 'istpetdev-driver-outbox-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * Calcula el hash SHA-256 en formato hexadecimal de un Blob en el navegador.
@@ -64,9 +65,23 @@ export class FieldOutboxService {
   readonly isSyncing = signal<boolean>(false);
   readonly isSimulatingOffline = signal<boolean>(false);
   readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
+  private readonly owner = signal<string | null>(null);
+  private readonly legacyPendingCount = signal<number>(0);
+  readonly pendingCount = computed(
+    () => this.outboxItems().filter((item) => item.status !== 'Complete').length + this.legacyPendingCount()
+  );
 
   constructor() {
     this.init();
+  }
+
+  /** La fija MobileAuthService tras /me y la limpia al cerrar sesión. Nunca borra capturas. */
+  async setOwner(accountId: string | null): Promise<void> {
+    this.owner.set(accountId);
+    this.activeAssignment.set(null);
+    this.activeDriverNotice.set(null);
+    await this.refreshOutboxItems();
+    if (accountId) await this.loadCachedAssignment();
   }
 
   private async init(): Promise<void> {
@@ -77,9 +92,15 @@ export class FieldOutboxService {
   private getDb(): Promise<IDBPDatabase> {
     if (!this.dbPromise) {
       this.dbPromise = openDB(DB_NAME, DB_VERSION, {
-        upgrade(db) {
+        upgrade(db, _oldVersion, _newVersion, transaction) {
+          let outboxStore: any;
           if (!db.objectStoreNames.contains('outbox_items')) {
-            db.createObjectStore('outbox_items', { keyPath: 'operationId' });
+            outboxStore = db.createObjectStore('outbox_items', { keyPath: 'operationId' });
+          } else {
+            outboxStore = transaction.objectStore('outbox_items');
+          }
+          if (!outboxStore.indexNames.contains('by_owner')) {
+            outboxStore.createIndex('by_owner', 'ownerAccountId');
           }
           if (!db.objectStoreNames.contains('assignments')) {
             db.createObjectStore('assignments', { keyPath: 'driverAccountId' });
@@ -94,8 +115,15 @@ export class FieldOutboxService {
    * Refresca la señal reactiva de la cola outbox desde IndexedDB.
    */
   async refreshOutboxItems(): Promise<void> {
+    const owner = this.owner();
     const db = await this.getDb();
-    const items = await db.getAll('outbox_items');
+    const allItems: OutboxItem[] = await db.getAll('outbox_items');
+    const legacyCount = allItems.filter((item) => !item.ownerAccountId && item.status !== 'Complete').length;
+    this.legacyPendingCount.set(legacyCount);
+
+    const items: OutboxItem[] = owner
+      ? allItems.filter((item: OutboxItem) => item.ownerAccountId === owner)
+      : [];
     // Ordenar de más reciente a más antiguo por capturedAtUtc
     items.sort((a, b) => new Date(b.capturedAtUtc).getTime() - new Date(a.capturedAtUtc).getTime());
     this.outboxItems.set(items);
@@ -115,15 +143,14 @@ export class FieldOutboxService {
    * Carga la última asignación guardada localmente para permitir inicio 100% offline.
    */
   async loadCachedAssignment(): Promise<MobileAssignmentResponse | null> {
+    const owner = this.owner();
+    if (!owner) return null;
     const db = await this.getDb();
-    const all = await db.getAll('assignments');
-    if (all && all.length > 0) {
-      const latest = all[0];
-      this.activeAssignment.set(latest);
-      this.checkDriverNotices(latest);
-      return latest;
-    }
-    return null;
+    const assignment = (await db.get('assignments', owner)) as MobileAssignmentResponse | undefined;
+    if (!assignment) return null;
+    this.activeAssignment.set(assignment);
+    this.checkDriverNotices(assignment);
+    return assignment;
   }
 
   /**
@@ -197,6 +224,11 @@ export class FieldOutboxService {
     photoBlob?: Blob;
     signatureBlob?: Blob;
   }): Promise<OutboxItem> {
+    const ownerAccountId = this.owner();
+    if (!ownerAccountId) {
+      throw new Error('Inicia sesión para registrar una recepción.');
+    }
+
     const operationId = generateUuidV7();
     const capturedAtUtc = new Date().toISOString();
 
@@ -219,6 +251,7 @@ export class FieldOutboxService {
 
     const outboxItem: OutboxItem = {
       operationId,
+      ownerAccountId,
       deliveryId: params.deliveryId,
       expectedDeliveryVersion: params.expectedDeliveryVersion,
       recipientName: params.recipientName,
@@ -260,6 +293,10 @@ export class FieldOutboxService {
     const item = await db.get('outbox_items', operationId);
     if (!item) {
       throw new Error(`Ítem ${operationId} no encontrado en outbox.`);
+    }
+
+    if (item.ownerAccountId !== this.owner()) {
+      throw new Error('La captura pertenece a otra cuenta.');
     }
 
     if (this.isSimulatingOffline() || !navigator.onLine) {
