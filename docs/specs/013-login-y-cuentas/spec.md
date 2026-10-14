@@ -183,7 +183,7 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 
 > **✅ Resuelta (13-oct)** — Dueño del login. [spec 004](../004-campo-qr-custodia-offline/spec.md) FR-17 (y su T1b) y [spec 005](../005-panel-simulador/spec.md) FR-05 asignaban el login a 004. Ambos FR se actualizaron para depender de 013, y los dos specs listan 013 en `depende_de` como **dependencia parcial** (H1–H3, solo su frontend conectado a la API): la API de campo, el simulador, los KPI y la exportación no esperan a 013, y H4 no bloquea a nadie. Queda por ajustar `task.md` de 004 (T1b) en su próxima revisión.
 
-> **⚠️ Contradicción detectada** — Hecho nuevo: tokens solo en memoria. · Hecho establecido: el [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2) admite «memoria volátil o `sessionStorage`»; la nota [Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md) exige memoria. · Impacto: `sessionStorage` es accesible a cualquier script de la página. · Propuesta: seguir la bóveda (memoria). El informe es de Alexander: su corrección queda como tarea en el issue de este spec.
+> **✅ Resuelta (14-oct)** — Tokens solo en memoria frente al [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2), que admitía `sessionStorage`. Se siguió la bóveda ([Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md)): la decisión 2 del informe ahora dice «solo en memoria» con referencia a FR-03.
 
 > **✅ Resuelta (14-oct)** — ADR-25 frente a ADR-24 (roles en PWA). Se aplicó la opción (a): la PWA solo admite Bodega, Conductor y Receptor, alineada con ADR-24 y ADR-26. El perfil `LogisticsManager` se retiró en T7 (PR #56). Gerencia y Planificador operan exclusivamente en la plataforma web.
 
@@ -216,9 +216,7 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 
 - **PR #56** (T1–T9): implementación de roles (`Auditor`), `GET /api/v1/me`, script de aprovisionamiento idempotente (`--provision-accounts`), lógica de sesión OIDC en `shared-core`, integración real en web y PWA (con retiro de mocks y guards) y guardián de CI.
 - **PR #65** (T11–T13): API y web de gestión de cuentas por Gerencia (H4) — listado, alta, edición, desactivación/reactivación y reenvío de invitación, junto con la pantalla «Usuarios».
-- **Desviaciones relevantes:** documentadas en las secciones correspondientes de [task.md](task.md):
-  - [Desviaciones de T1–T9](task.md#desviaciones) (manejo de claims, almacenamiento en memoria y guards).
-  - [Desviaciones de T11–T13](task.md#desviaciones-1) (confirmación de desactivación en UI, insignias de sincronización y pruebas adicionales).
+- **Desviaciones relevantes:** documentadas en las secciones «Desviaciones» de las Tasks 6–9 y 11–13 de [task.md](task.md).
 - **Pendiente para cierre completo:**
   - T10: configuración de infraestructura en AWS/Cognito (callbacks HTTPS, marca, IAM y hop limit, issue [#43](https://github.com/bryancito1090/istpetdev-platform/issues/43)).
   - PWA en `/campo/`: despliegue y validación de la app móvil en subdirectorio (issue [#52](https://github.com/bryancito1090/istpetdev-platform/issues/52)).

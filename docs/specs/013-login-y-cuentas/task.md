@@ -4260,11 +4260,11 @@ Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `d
 
 - [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55).
 
-- [x] **Step 3: Actualizar el spec** (fase A, sin cerrar): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
+- [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
 - [x] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`; fila D3 de login Cognito actualizada.
 
-- [x] **Step 5: Bóveda (G8 — parcial)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
+- [ ] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
 
 - [ ] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
 
