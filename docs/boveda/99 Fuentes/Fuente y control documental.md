@@ -348,9 +348,10 @@ Verificación documental de esta actualización: **84 notas Markdown**, **846 en
 
 ## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
 
-Fuente: atención a Issue #35 por Joseph Baño. Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para detener el proceso si las migraciones fallan en arranque. En [[Runbook de DevOps y base de datos para la demo]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN.
+Fuente: atención y cierre de Issue #35 por Joseph Baño y Jorge Doicela a través del PR #70 (commit `0c13909`, merge `d2b7850`). Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para abortar el arranque de la API ante fallos de migración. En [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN. Se sincroniza la prueba de integración `MigrationSafetyTests.cs` para validar 8 migraciones canónicas de EF Core tras la incorporación de `SimulationRunsAndEvents`.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **850 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **856 enlaces internos resueltos**, **0 errores**.
+
 
 ## Kit previo T1 del spec 006 y estado de O-04/O-06 — 14 de octubre de 2026
 
@@ -378,4 +379,4 @@ Verificación documental de esta actualización: **85 notas Markdown**, **872 en
 
 Joseph Baño (Andrés) informó que revisó durante 15 minutos y aprobó los cinco componentes del kit T1 del PR #71 (`228ab72`), sin correcciones adicionales comunicadas. No informó horas de inicio y fin. CE-01 quedó registrado en `task.md` y E2E-01 del spec 006 y en [[Registro de trabajo previo y del evento]]; B-45 se actualizó en [[Backlog]]. Joseph también aprobó el borrador T2 (`8693f73`). La revisión posterior ajustó las afirmaciones A-16/A-17/A-27 de `matriz-afirmaciones.md` para limitar lo dicho a la prueba de API; faltan segundo revisor, PDF y ensayos para CE-03/CE-06.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **874 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **880 enlaces internos resueltos**, **0 errores**.
