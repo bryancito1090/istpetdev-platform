@@ -183,7 +183,10 @@ app.MapControllers();
 
 app.Run();
 
-// Migraciones opcionales y cuentas de demo. Un fallo se registra y la API arranca; /health/ready lo reporta.
+// Migraciones y aprovisionamiento inicial de base de datos.
+// Politica Fail-Fast: Si ApplyMigrations=true o se pasa --migrate y ocurre un fallo, la excepcion se relanza (throw)
+// para forzar la detencion inmediata del contenedor y evitar que el despliegue en CI/CD reporte exito falso.
+// Cuando ApplyMigrations=false, la API inicia y delega la observabilidad de conexion a /health/ready (503 si falla).
 static async Task PrepareDatabaseAsync(WebApplication app, string[] args)
 {
     using var scope = app.Services.CreateScope();

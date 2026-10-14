@@ -54,6 +54,7 @@ tags: [hackathon, equipo]
 - [[Definiciones de producto y plan hasta el pitch]] — objetivo norte, definiciones D1–D8, cortes, guardarraíles, hitos y plan B hasta el pitch (12-oct). Specs implementables en `docs/specs/` del repositorio.
 - [[Analisis de cobertura de specs]] — porcentaje propuesto por spec, avance local acreditable y brechas de la demo frente a posibles entregas posteriores.
 - [[Coordinacion migracion schema95]] — histórico: aplicación personal y evidencia de Schema95.
+- [[Evidencias y ensayos de base de datos y despliegue]] — ensayos de fallo fail-fast, verificación de migraciones en RDS, rollback aditivo y Plan B local (Issue #35).
 - [[Registro de mentorias]].
 
 ## Validación y presentación
