@@ -14,6 +14,38 @@ trabajo por ejecutar o verificar, no resultados.
   [test-e2e.md](test-e2e.md).
 - H5: **15-oct-2026 14:00 America/Guayaquil**, equivalente a 19:00 UTC.
 
+## Estado de revisión del checkpoint — 14-oct-2026
+
+Antigravity entregó el checkpoint y dejó de editar. Codex conservó la entrega
+original en `7b58243` e integró develop @ `51c3b30` en `067dc62`, sin conflictos
+de contenido. La versión de workflows/prompt no cambia; sus hashes coinciden
+con #74. El informe de entrega se encuentra en
+[entrega-39-antigravity.md](entrega-39-antigravity.md).
+
+PR #78 ya fue fusionado y su CD del SHA `9d1a3d9` terminó exitosamente. Esa
+release no incorpora el transporte preparado aquí. El paso siguiente es el
+PR de este checkpoint a develop y otra promoción autorizada a main; no editar
+manualmente la configuración del host para eludir ese orden.
+
+Correcciones de Codex: client ID M2M explícito, transporte de las nueve claves
+de configuración del agente tanto en deploy como en rollback, HMAC desde el
+Secret de GitHub, default false y rechazo de activación sin configuración.
+Se retira el fallback defectuoso de lectura de .env. Las variables humanas
+se conservan. `restart_only` no aplica nuevas variables; necesitan recreación.
+
+El PR del checkpoint puede quedar listo para revisar su software si sus pruebas
+locales y CI pasan, **referenciando #39 sin cerrar la issue**. Esto evita exigir
+aceptación productiva antes de integrar el código necesario para desplegarla.
+Los pasos 1–8 y PA-01/CE siguen pendientes según evidencia; un PR que pretenda
+acreditar la aceptación completa permanece borrador hasta comprobarla.
+
+Fuentes de CD (Variables GitHub salvo el HMAC): COGNITO_M2M_CLIENT_ID,
+AUTHENTICATION_TECHNICAL_READ_SCOPE, AGENT_ENABLED, AGENT_AUTO_ON_INCIDENT,
+AGENT_TIMEOUT_SECONDS, AGENT_POLL_MILLISECONDS, AGENT_N8N_WEBHOOK_URL,
+AGENT_N8N_API_BASE_URL y Secret AGENT_N8N_WEBHOOK_SECRET. `.env.example`
+contiene placeholders y defaults públicos. No configurar el agente como true
+hasta disponer de cuenta técnica, credenciales remotas y webhooks publicados.
+
 ## 1. Resultado que debe entregar Antigravity
 
 Dejar el agente del servidor de Bryan conectado a la API de producción con
@@ -839,9 +871,11 @@ release a main siguen fuera de la entrega solicitada para hacerlo mergeable.
 8. Push **solo** `chore/39-n8n-produccion` y crear PR base=develop con plantilla,
    problema/resultado, SHA de evidencia, validación y límites. Descripción
    multilinea por archivo temporal y gh --body-file, no interpolación de texto.
-9. Si falta evidencia externa, PR **borrador**, pendientes explícitos y issue
-   abierta. Si criterios completos, Closes #39, revisión del equipo y checks
-   verdes del **HEAD final**. No declarar aceptación completa por CI local.
+9. Para el checkpoint de configuración: PR revisable con pruebas/CI verdes,
+   pendientes externos explícitos y referencia a #39 sin cierre automático.
+   Si pretende acreditar la operación completa y falta evidencia externa,
+   mantenerlo borrador. Closes #39 solo cuando todos los criterios de la issue
+   tengan evidencia; exigir checks verdes del **HEAD final**.
 10. Reconsultar mergeable/mergeStateStatus, CI y avance de develop. Resolver
     conflictos nuevos si aparecen; repetir solo las pruebas afectadas.
     Entregar URL del PR y condiciones pendientes para que se pueda mergear.

@@ -141,6 +141,15 @@ Una fila por intento y escenario. Estados: `no ejecutado`, `pasó`, `falló` o `
 | 2026-10-14 | `dfd4507` | Local (API 5017, n8n 2.39.5) | E2E-05 | pasó | 10/10 corridas de inyección con misma política y 0 herramientas prohibidas | Antigravity |
 | 2026-10-14 | `dfd4507` | Local laptop (Docker agent) | E2E-06 | pasó | Drill Plan B: n8n abajo -> Fallback Template en 21 ms; n8n arriba -> Completed Llm en 6661 ms | Antigravity |
 | 2026-10-14 | `dfd4507` | Local (API 5017, DeepSeek nativo) | E2E-07 | pasó | Matriz 30/30 corridas: 60/60 tools (100%), p95 9127 ms, 48/50 LLM (96%), inyección 10/10. `artifacts/agent-acceptance/20261014-150147-176964/report.md` | Antigravity |
-| 2026-10-14 | `8c99a71` | Producción (`n8n.bryan-bano.com` + `istpetdev.doicela.dev`) | E2E-01 a E2E-07 | bloqueado | G1–G4: PR #78 develop→main pendiente; Compose/CD diff preparado en rama; webhooks remotos inactivos (404); cuenta técnica/humana en RDS pendiente | Antigravity |
+| 2026-10-14 | `8c99a71` (checkout de diagnóstico; backend remoto por verificar) | API de producción, diagnóstico desde cliente | E2E-04 (preparación M2M/humano) | bloqueado | Antigravity reportó token M2M emitido y risks 401; humano 403. No se probó la matriz de cinco acciones; causas de configuración/cuentas pendientes de confirmar | Antigravity |
+| 2026-10-14 | `8c99a71` (fuente de workflows; no importados aún) | n8n de producción, diagnóstico desde cliente | E2E-07 (preparación de webhooks) | bloqueado | Ambos webhooks devolvieron 404; HMAC/DeepSeek/30 muestras no ejecutados. PR #78 ya fusionado; transporte de #39 todavía no desplegado | Antigravity / revisión Codex |
 
-**Cierre:** CE-01–CE-06 cuentan con evidencia verificada localmente. La suite automatizada, la prueba de secretos, la resiliencia local (Plan B) y la matriz de aceptación de 30 corridas contra DeepSeek nativo en API 5017 cumplen los 4 umbrales exigidos. En producción (#39), la ejecución se encuentra bloqueada por dependencias externas identificadas y con su diff de preparación completado en [plan-cierre-39-produccion.md](plan-cierre-39-produccion.md) y [entrega-39-antigravity.md](entrega-39-antigravity.md).
+**Estado de cierre:** las filas locales anteriores corresponden a evidencia
+histórica de la entrega inicial de #37 y no acreditan producción ni todos los
+CE de #39. El último informe local disponible, del árbol `4742f3b`
+(`artifacts/agent-acceptance/20261014-160708-465112/report.md`), registró p95
+10001 ms y falló latencia; el incidente de dos decisiones CE-03 sigue por
+verificar. La aceptación oficial, Completed/Fallback reales, HMAC y permisos
+productivos permanecen pendientes. El transporte preparado se documenta en
+[plan-cierre-39-produccion.md](plan-cierre-39-produccion.md) y
+[entrega-39-antigravity.md](entrega-39-antigravity.md).

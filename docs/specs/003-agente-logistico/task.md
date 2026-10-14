@@ -15,7 +15,7 @@
 | T6 | Endpoints, correlación y disparo por incidente | T5 | — | completada |
 | T7 | Prompt, workflows y control de credenciales | T6 | — | completada |
 | T8 | Copia local de n8n | T7 | [P] con T9 | completada |
-| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | completada |
+| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | código y ensayo local histórico; corrida oficial de producción pendiente (#39) |
 | T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada localmente (producción en #39) |
 
 `[P]` indica archivos distintos; integrar los commits antes de T5 o T10. Las firmas de `AgentRunView`, `IAgentRunService`, `IN8nTrigger` e `IExplanationValidator` son las de [Componentes de la API](plan.md#componentes-de-la-api). Si 001/002 integrados cambian sus nombres, documentar el ajuste en el PR junto con las pruebas consumidoras.
@@ -299,10 +299,36 @@ operación remota bloqueada por dependencias G1–G4 de servidor y release**.
 | Transporte Compose/CD (#38) | Implementado en rama | `docker-compose.prod.yml` actualizado con `AllowedClientIds__2`, `TechnicalClientIds__0`, `TechnicalReadScope` y `Agent__*` (seguro: `Agent__Enabled=false` por defecto). `deploy.yml` configurado para exportar variables a host EC2. `.env.example` actualizado con placeholders. `docker compose config --quiet` verificado. |
 | Paso 1 (Versión n8n remota) | Pendiente de Bryan | Digest local `cfa0478...` coincide con imagen `docker.n8n.io/n8nio/n8n:2.39.5`. Servidor `n8n.bryan-bano.com` reportado como `latest`; fijación en el servidor administrado por Bryan pendiente. |
 | Paso 2 (Conectividad HTTPS) | Parcialmente verificado | `https://istpetdev.doicela.dev/health/ready` responde HTTP 200 Healthy. `https://n8n.bryan-bano.com` responde HTTPS válido. Verificación de salida desde contenedor remoto pendiente de acceso al servidor. |
-| Paso 3 (M2M en Cognito y API) | Token emitido; 401 en API | Token M2M emitido por Cognito con HTTP 200, scope `istpetdev-api/automation`, client `7h8pau7hu9pa40k85idbi7rgn4`. `GET /api/v1/risks` en producción responde 401 (`invalid_token`) porque la API en producción aún no tiene las variables de #38. |
-| Paso 4 (Release de API de #38/#37) | Bloqueado / En curso | PR #78 (`develop → main`) abierto en GitHub con CI en verde, pendiente de aprobación/merge por Jorge/Joseph. Tras deploy de PR #78 y del diff de Compose, Jorge debe sembrar la cuenta técnica en RDS. |
+| Paso 3 (M2M en Cognito y API) | Token emitido; 401 en API | Token M2M emitido por Cognito con HTTP 200, scope `istpetdev-api/automation`, client `7h8pau7hu9pa40k85idbi7rgn4`. `GET /api/v1/risks` en producción responde 401 (`invalid_token`) con diagnóstico de configuración M2M ausente, pendiente de inspección del runtime. |
+| Paso 4 (Release de API de #38/#37) | Bloqueado / En curso | PR #78 fusionado; Codex confirmó `9d1a3d9` el 14-oct. El transporte preparado aún requiere PR a develop, promoción y deploy; Jorge debe provisionar la cuenta técnica. |
 | Paso 5 (Webhooks remotos) | Pendiente de servidor | `POST /webhook/istpetdev/agent/watch` e `incident` en `n8n.bryan-bano.com` devuelven HTTP 404 (borradores inactivos en proyecto de Bryan). Importación oficial del SHA `8c99a71` y publicación pendientes de acceso al servidor. |
 | Paso 6 (Completed / Fallback) | Bloqueado | Requiere release de API, despliegue de variables, webhooks publicados y ventana de prueba. |
-| Paso 7 (Aceptación 30 muestras) | Bloqueado | Token humano de Planificador refrescado con éxito (HTTP 200 en Cognito); producción responde HTTP 403 por falta de provisión de cuenta en RDS. Requiere ventana de demo acordada por reseteo. |
+| Paso 7 (Aceptación 30 muestras) | Bloqueado | Token humano de Planificador refrescado con éxito (HTTP 200 en Cognito); producción responde HTTP 403 con diagnóstico de cuenta ausente/inactiva por comprobar en RDS. Requiere ventana de demo acordada por reseteo. |
 | Paso 8 (Incidente CE-03) | Bloqueado | Requiere superación de Pasos 6 y 7. |
 | Handover a Codex | Completado | Diff mínimo en rama, sin push ni PR de Antigravity; `entrega-39-antigravity.md` y marcador `.git/istpetdev-39-ready.json` listos para revisión. |
+
+## Revisión de Codex del checkpoint #39 — 14-oct-2026
+
+Entrega preservada en `7b58243`; develop @ `51c3b30` integrado en `067dc62`
+sin conflictos de contenido. Transporte completo de GitHub hacia SSH/Compose
+para el agente, incluido rollback; HMAC solo desde GitHub Secrets, client ID
+explícito, default deshabilitado y rechazo de activación incompleta. No cambian
+workflows, prompt, modelo, timeout de 10 s ni políticas del backend.
+
+| Dimensión | Estado |
+|---|---|
+| Código/configuración | Revisados y corregidos localmente; cambios de deploy/rollback/Compose y placeholders |
+| Pruebas locales | Python 16/16, .NET HMAC/secretos 11/11, npm run check, generación, YAML/shell y actionlint en verde |
+| Integración | develop actualizado incorporado; revisión local completada, preparada para push/PR; CI del SHA publicado se consulta en el PR |
+| Runtime/producción | Diagnósticos de Antigravity 200/401/403/404 registrados como observaciones; causas requieren contrastar configuración/cuentas |
+| Release | PR #78 fusionado; no incluye este checkpoint, que debe entrar por otro PR a develop antes de promoción autorizada |
+| T9/T10/PA-01/CE-01/CE-03 | Siguen pendientes de credenciales/configuración remota, cuentas, publicación de webhooks y ventana real de ensayo |
+
+Registro detallado y fuentes:
+[entrega-39-antigravity.md](entrega-39-antigravity.md). La revisión prepara un
+PR de configuración; no ejecuta deploy, siembra en RDS ni reset de demo.
+
+Metadatos del flujo: issue #39 con `type::chore` y milestone H5 del
+15-oct-2026, con la hora 14:00 America/Guayaquil en su descripción. El PR del
+checkpoint referencia la issue sin cerrarla; la operación productiva sigue
+pendiente y debe registrarse después del despliegue autorizado.
