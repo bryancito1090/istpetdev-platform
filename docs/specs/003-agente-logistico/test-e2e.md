@@ -11,11 +11,11 @@
 docker info --format '{{.ServerVersion}}'
 dotnet tool restore
 dotnet build IstpetDev.sln
-dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~AgentJourneyTests|FullyQualifiedName~WorkflowSecretsTests'
+dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~Integration.Agent|FullyQualifiedName~WorkflowSecretsTests'
 python3 -I scripts/agent/build-workflows.py
 ```
 
-Antes del ensayo real, cargar los workflows exportados de `automation/n8n/workflows/` en n8n y mantener apagado el Schedule de `vigia`. Configurar `Agent:Enabled=true`, `Agent:AutoOnIncident=true`, `Agent:TimeoutSeconds=10`, `Agent:PollMilliseconds=250`, URL del webhook y secreto fuera del repositorio. Confirmar `GET /health/ready=Healthy`. Guardar commit, versión de n8n, versión de prompt, modelo y entorno en la evidencia, nunca tokens ni secretos.
+Antes del ensayo real, ejecutar `scripts/agent/local-up.sh` para importar y publicar los workflows; mantener desactivado el nodo Schedule de `vigia`. Configurar `Agent:Enabled=true`, `Agent:AutoOnIncident=true`, `Agent:TimeoutSeconds=10`, `Agent:PollMilliseconds=250`, URL del webhook y secreto fuera del repositorio. En ambas instancias n8n, `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` permite leer la clave HMAC mediante expresiones; restringir la edición de workflows a administradores de confianza. Confirmar `GET /health/ready=Healthy`. Guardar commit, versión de n8n, versión de prompt, modelo y entorno en la evidencia, nunca tokens ni secretos.
 
 ## Escenarios
 
@@ -137,5 +137,9 @@ Una fila por intento y escenario. Estados: `no ejecutado`, `pasó`, `falló` o `
 
 | Fecha | Commit | Entorno | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
+| 2026-10-14 | `dfd4507` | Local (dotnet test) | E2E-01 a E2E-04 | pasó | 227/227 pruebas .NET verdes, traza, roles M2M, carreras y fallbacks | Antigravity |
+| 2026-10-14 | `dfd4507` | Local (API 5017, n8n 2.39.5) | E2E-05 | pasó | 10/10 corridas de inyección con misma política y 0 herramientas prohibidas | Antigravity |
+| 2026-10-14 | `dfd4507` | Local laptop (Docker agent) | E2E-06 | pasó | Drill Plan B: n8n abajo -> Fallback Template en 21 ms; n8n arriba -> Completed Llm en 6661 ms | Antigravity |
+| 2026-10-14 | `dfd4507` | Local (API 5017, DeepSeek nativo) | E2E-07 | pasó | Matriz 30/30 corridas: 60/60 tools (100%), p95 9127 ms, 48/50 LLM (96%), inyección 10/10. `artifacts/agent-acceptance/20261014-150147-176964/report.md` | Antigravity |
 
-**Cierre:** CE-01–CE-06 requieren evidencia enlazada. La prueba con n8n falso demuestra la integración y las carreras, pero no sustituye la ejecución de DeepSeek real ni el ensayo de la copia local. Si falta uno, el estado del spec sigue `en curso`.
+**Cierre:** CE-01–CE-06 cuentan con evidencia verificada localmente. La suite automatizada, la prueba de secretos, la resiliencia local (Plan B) y la matriz de aceptación de 30 corridas contra DeepSeek nativo en API 5017 cumplen los 4 umbrales exigidos. El despliegue y validación en servidor de producción se encuentra planificado y documentado como siguiente fase en [plan-cierre-39-produccion.md](plan-cierre-39-produccion.md).

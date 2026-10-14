@@ -46,14 +46,9 @@ public sealed class AgentRunTraceMiddleware(RequestDelegate next, ILogger<AgentR
                     using var scope = serviceProvider.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
-                    var run = await db.AgentRuns.FirstOrDefaultAsync(r => r.Id == runId);
-                    if (run != null)
-                    {
-                        var traces = JsonSerializer.Deserialize<List<ToolCallTrace>>(run.ToolCallsJson, JsonOpts) ?? [];
-                        traces.Add(new ToolCallTrace(method, path, statusCode, elapsedMs, DateTime.UtcNow));
-                        run.ToolCallsJson = JsonSerializer.Serialize(traces, JsonOpts);
-                        await db.SaveChangesAsync();
-                    }
+                    var trace = JsonSerializer.Serialize(new[] { new ToolCallTrace(method, path, statusCode, elapsedMs, DateTime.UtcNow) }, JsonOpts);
+                    await db.Database.ExecuteSqlInterpolatedAsync(
+                        $"UPDATE \"AgentRun\" SET \"ToolCallsJson\" = (\"ToolCallsJson\"::jsonb || {trace}::jsonb) WHERE \"Id\" = {runId} AND \"OrganizationId\" = {DemoOrganization.Id}");
                 }
                 catch (Exception ex)
                 {

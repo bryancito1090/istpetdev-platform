@@ -206,13 +206,13 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 
 ## ADR-22 — autonomía del agente con límites
 
-- **Estado:** propuesta. **Fecha:** 2026-10-12. **Deciders:** PENDIENTE. **Origen:** definiciones D4 y D5 de [[Definiciones de producto y plan hasta el pitch]]. **Complementa:** ADR-08.
+- **Estado:** aceptada el 14-oct-2026. **Fecha del diseño:** 2026-10-12. **Decider:** Bryan (confirmación expresa en la revisión de #37). **Origen:** definiciones D4 y D5 de [[Definiciones de producto y plan hasta el pitch]]. **Complementa:** ADR-08.
 
 **Contexto:** el plus de innovación es un agente que opera la logística, no un chatbot. ADR-08 limita el LLM a explicar; el jurado preguntará qué pasa si la IA se equivoca.
 
 **Opciones:** (a) aprobación humana para todo; (b) autonomía con límites decidida por reglas deterministas; (c) autonomía total.
 
-**Decisión propuesta:** (b). El LLM elige herramientas, compone y explica; nunca calcula rutas, cantidades ni fechas. Un motor de reglas en el backend ejecuta solo lo que no retira paradas obligatorias, cumple ventanas, sube el costo ≤ 15% y no retrasa más de 60 min; lo demás se escala con dos opciones calculadas. Interruptor «solo proponer» y acciones reversibles. Los datos importados se pasan al modelo como datos delimitados. El modelo se elige midiendo dos candidatos.
+**Decisión aceptada:** (b). El LLM elige herramientas, compone y explica; nunca calcula rutas, cantidades ni fechas. Un motor de reglas en el backend ejecuta solo lo que no retira paradas obligatorias, cumple ventanas, sube el costo ≤ 15% y no retrasa más de 60 min; lo demás se escala con dos opciones calculadas. Interruptor «solo proponer» y acciones reversibles. Los datos importados se pasan al modelo como datos delimitados. El complemento de diseño del spec 003 adopta DeepSeek y exige los umbrales de aceptación, sin comparación entre candidatos.
 
 **Consecuencias:** el motor de reglas vive en el spec 002 y el agente en el 003; cada decisión se registra en `AgentDecision`. ADR-08 conserva DeepSeek como proveedor, sujeto a la prueba de aceptación del spec 003 (ver complemento).
 
@@ -232,7 +232,9 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 
 **Verificación:** determinismo, calidad frente a fuerza bruta en instancias pequeñas, rendimiento (≤ 1 s con 15 puntos, ≤ 5 s con 80) y E2E del spec 002.
 
-### Complemento de ADR-22 — diseño del agente (12-oct-2026, propuesta)
+### Complemento de ADR-22 — diseño del agente (12-oct-2026; aceptado el 14-oct)
+
+**Aprobación:** Bryan confirmó expresamente este diseño en la revisión de #37 del 14-oct-2026. La aceptación local no acredita despliegue ni configuración de producción (#39).
 
 Brainstorming del [spec 003](../../specs/003-agente-logistico/spec.md): el agente es un workflow de n8n con nodo AI Agent en el servidor de Bryan (copia local en Docker como plan B); sus herramientas son 5 endpoints del motor de 002; el resultado lo envía un paso fijo del workflow; la API mide la traza, valida cada cifra contra los `facts` y responde a los 10 s con el camino determinista si el agente no entrega. **Proveedor: DeepSeek**, elegido por el equipo sin comparación y sujeto a una prueba de aceptación (llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10). Identidad con un scope `istpetdev-api/automation` y rol `Automatizacion` sin permiso para publicar, aprobar, rechazar, deshacer ni cambiar el modo. Avisos al conductor dentro de la PWA.
 

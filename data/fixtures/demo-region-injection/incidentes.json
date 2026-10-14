@@ -1,0 +1,11 @@
+{
+  "cierre-norte": {
+    "kind": "BloqueoVial",
+    "severity": "ALTA",
+    "description": "Cierre vial en corredor norte hacia Hospital Norte",
+    "lat": -0.1250,
+    "lon": -78.4850,
+    "radiusKm": 1.5,
+    "isSynthetic": true
+  }
+}
