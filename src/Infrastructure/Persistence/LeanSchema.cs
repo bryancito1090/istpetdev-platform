@@ -206,8 +206,17 @@ internal static class LeanSchema
             e.HasIndex(d => new { d.OrganizationId, d.Status });
             e.Property(d => d.DriverMessage).HasMaxLength(160);
         });
-        model.Entity<SimulationRun>();
+        model.Entity<SimulationRun>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.ComparisonId });
+            e.HasIndex(r => new { r.OrganizationId, r.Seed, r.ScenarioCode, r.PolicyCode });
+        });
         model.Entity<SimulationMetric>(e => Fk<SimulationMetric, SimulationRun>(e, m => m.SimulationRunId));
+        model.Entity<SimulationEvent>(e =>
+        {
+            e.HasIndex(ev => new { ev.SimulationRunId, ev.Sequence }).IsUnique();
+            Fk<SimulationEvent, SimulationRun>(e, ev => ev.SimulationRunId);
+        });
 
         model.Entity<RoadMatrixEdge>(e =>
         {

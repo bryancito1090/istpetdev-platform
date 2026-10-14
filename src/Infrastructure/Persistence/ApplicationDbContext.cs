@@ -35,6 +35,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AgentDecision> AgentDecisions => Set<AgentDecision>();
     public DbSet<SimulationRun> SimulationRuns => Set<SimulationRun>();
     public DbSet<SimulationMetric> SimulationMetrics => Set<SimulationMetric>();
+    public DbSet<SimulationEvent> SimulationEvents => Set<SimulationEvent>();
     public DbSet<RoadMatrixEdge> RoadMatrixEdges => Set<RoadMatrixEdge>();
     public DbSet<RouteStockReservation> RouteStockReservations => Set<RouteStockReservation>();
     public DbSet<QrAccessToken> QrAccessTokens => Set<QrAccessToken>();
