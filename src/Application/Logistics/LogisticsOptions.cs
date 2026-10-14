@@ -24,8 +24,18 @@ public sealed class LogisticsOptions
     public int MaxDetourMinutes { get; set; } = 20;
     public decimal ApproxDetourFactor { get; set; } = 1.3m;
     public decimal ApproxSpeedKmh { get; set; } = 40m;
+    public RebalancingOptions Rebalancing { get; set; } = new();
     public OsrmOptions Osrm { get; set; } = new();
     public PolicyOptions Policy { get; set; } = new();
+}
+
+public sealed class RebalancingOptions
+{
+    public int ConsumptionHistoryDays { get; set; } = 90;
+    public decimal MinTransferThresholdPct { get; set; } = 10m; // 10% del stock objetivo
+    public decimal MinCoverageDifferenceDays { get; set; } = 15m; // Mínimo 15 días de diferencia
+    public int CooldownDaysAfterDismiss { get; set; } = 7;
+    public decimal DefaultTargetCoverageDays { get; set; } = 30m;
 }
 
 public sealed class ClockOptions

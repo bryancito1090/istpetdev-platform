@@ -1,5 +1,11 @@
-/** Claves del flujo PKCE que deben sobrevivir a la redirección a Cognito. Ninguna es un token. */
-export const AUTH_FLOW_KEYS: readonly string[] = ['codeVerifier', 'authStateControl', 'authNonce'];
+/** Claves del flujo PKCE y configuración OIDC pública que deben sobrevivir a la redirección a Cognito. Ninguna es un token. */
+export const AUTH_FLOW_KEYS: readonly string[] = [
+  'codeVerifier',
+  'authStateControl',
+  'authNonce',
+  'authWellKnownEndPoints',
+  'storageCodeFlowInProgress'
+];
 
 export interface KeyValueStore {
   readonly length: number;

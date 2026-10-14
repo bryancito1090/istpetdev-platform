@@ -8,4 +8,5 @@ namespace IstpetDev.Application.ServicePoints.Services;
 public interface IServicePointsService
 {
     Task<IReadOnlyList<ServicePointDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ServicePointDto>> GetWarehousesAsync(CancellationToken cancellationToken = default);
 }

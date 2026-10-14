@@ -15,6 +15,7 @@ public sealed class ServicePoint : OrganizationEntity
     public TimeOnly? WindowEndLocal { get; set; }
     public int? ServiceMinutes { get; set; }
     public decimal? LeadTimeDays { get; set; }
+    public Guid? ServingWarehouseLocationId { get; set; }
     public bool IsActive { get; set; }
 }
 

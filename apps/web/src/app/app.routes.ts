@@ -61,6 +61,13 @@ export const routes: Routes = [
     title: 'Usuarios — IstpetDev'
   },
   {
+    path: 'bodegas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_WRITE_ROLES },
+    loadComponent: () => import('@pages/bodegas').then(m => m.BodegasPage),
+    title: 'Bodegas & Rebalanceo — IstpetDev'
+  },
+  {
     // Pública: el QR impreso en el bulto apunta aquí.
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),

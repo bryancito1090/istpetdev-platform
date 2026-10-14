@@ -61,13 +61,47 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
         routePlanId: 'rp-quito-sur-001',
         revision: 1,
         downloadedAtUtc: new Date().toISOString(),
-        driverMessage: 'Ruta inicial asignada. Entregas prioritarias en sector Hospitalario Norte.',
+        driverMessage: 'Ruta multi-bodega: Recoger lote en Bodega Norte y Bodega Sur antes de entregas hospitalarias.',
         vehicleCode: 'VEH-01-FURGON',
-        stopsCount: 3,
+        stopsCount: 4,
+        totalDistanceKm: 28.4,
+        estimatedDurationMinutes: 110,
         deliveries: [
           {
-            deliveryId: 'del-hosp-001',
+            deliveryId: 'pk-wh-norte-01',
             sequence: 1,
+            kind: 'Pickup',
+            locationId: 'wh-norte-01',
+            pointCode: 'BOD-NORTE',
+            pointName: 'Bodega Distribución Norte (Quito)',
+            address: 'Parque Industrial Carcelén, Galpón 4',
+            dueAtUtc: new Date(Date.now() + 1 * 3600 * 1000).toISOString(),
+            status: 'Prepared',
+            handlingUnits: [
+              {
+                handlingUnitId: 'hu-pickup-001',
+                code: 'REC-BOD-01',
+                deliveryId: 'pk-wh-norte-01',
+                status: 'Prepared',
+                labelUrl: 'https://istpetdev.local/campo/label/hu-pickup-001',
+                token: 'tok-sec-demo-pk-01',
+                lines: [
+                  {
+                    deliveryLineId: 'dl-pk-1',
+                    lotId: 'LOT-PINOK-01',
+                    sku: 'PINOKLIN-DESINF-5L',
+                    quantity: 20,
+                    unit: 'Galón'
+                  }
+                ],
+                createdAtUtc: new Date().toISOString()
+              }
+            ]
+          },
+          {
+            deliveryId: 'del-hosp-001',
+            sequence: 2,
+            kind: 'Delivery',
             pointCode: 'PTO-HOSP-01',
             pointName: 'Hospital General San Francisco',
             address: 'Av. Jaime Roldós Aguilera y Calle 14, Quito',
@@ -84,10 +118,10 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
                 lines: [
                   {
                     deliveryLineId: 'dl-001-1',
-                    lotId: 'LOT-DESINF-A1',
-                    sku: 'SKU-AMONIO-CUAT-4L',
+                    lotId: 'LOT-PINOK-01',
+                    sku: 'PINOKLIN-DESINF-5L',
                     quantity: 12,
-                    unit: 'L'
+                    unit: 'Galón'
                   }
                 ],
                 createdAtUtc: new Date().toISOString()
@@ -96,7 +130,8 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
           },
           {
             deliveryId: 'del-clin-002',
-            sequence: 2,
+            sequence: 3,
+            kind: 'Delivery',
             pointCode: 'PTO-CLIN-02',
             pointName: 'Clínica Metropolitana Norte',
             address: 'Av. Naciones Unidas y Amazonas, Quito',
@@ -106,7 +141,8 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
           },
           {
             deliveryId: 'del-salud-003',
-            sequence: 3,
+            sequence: 4,
+            kind: 'Delivery',
             pointCode: 'PTO-SALUD-03',
             pointName: 'Centro de Salud Nro 3',
             address: 'Calle Guayaquil y Espejo, Centro Histórico, Quito',

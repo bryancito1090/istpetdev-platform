@@ -1,0 +1,176 @@
+﻿braces@3.0.3 dev
+node_modules/braces
+  braces@"^3.0.3" from micromatch@4.0.8
+  node_modules/micromatch
+    micromatch@"4.0.8" from @boundaries/elements@3.1.1
+    node_modules/@boundaries/elements
+      @boundaries/elements@"3.1.1" from eslint-plugin-boundaries@7.2.0
+      node_modules/eslint-plugin-boundaries
+        dev eslint-plugin-boundaries@"^7.2.0" from the root project
+    micromatch@"4.0.8" from eslint-plugin-boundaries@7.2.0
+    node_modules/eslint-plugin-boundaries
+      dev eslint-plugin-boundaries@"^7.2.0" from the root project
+    micromatch@"^4.0.8" from fast-glob@3.3.3
+    node_modules/fast-glob
+      fast-glob@"^3.3.2" from tailwindcss@3.4.19
+      node_modules/tailwindcss
+        peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+        node_modules/@angular/build
+          dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+          apps/mobile
+            @istpetdev/mobile@1.0.0
+            node_modules/@istpetdev/mobile
+              workspace apps\mobile from the root project
+          dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+          apps/web
+            @istpetdev/web@1.0.0
+            node_modules/@istpetdev/web
+              workspace apps\web from the root project
+        dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+        apps/mobile
+          @istpetdev/mobile@1.0.0
+          node_modules/@istpetdev/mobile
+            workspace apps\mobile from the root project
+        dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+        apps/web
+          @istpetdev/web@1.0.0
+          node_modules/@istpetdev/web
+            workspace apps\web from the root project
+    micromatch@"^4.0.8" from tailwindcss@3.4.19
+    node_modules/tailwindcss
+      peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+      node_modules/@angular/build
+        dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+        apps/mobile
+          @istpetdev/mobile@1.0.0
+          node_modules/@istpetdev/mobile
+            workspace apps\mobile from the root project
+        dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+        apps/web
+          @istpetdev/web@1.0.0
+          node_modules/@istpetdev/web
+            workspace apps\web from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+      apps/mobile
+        @istpetdev/mobile@1.0.0
+        node_modules/@istpetdev/mobile
+          workspace apps\mobile from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+      apps/web
+        @istpetdev/web@1.0.0
+        node_modules/@istpetdev/web
+          workspace apps\web from the root project
+  braces@"~3.0.2" from chokidar@3.6.0
+  node_modules/tailwindcss/node_modules/chokidar
+    chokidar@"^3.6.0" from tailwindcss@3.4.19
+    node_modules/tailwindcss
+      peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+      node_modules/@angular/build
+        dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+        apps/mobile
+          @istpetdev/mobile@1.0.0
+          node_modules/@istpetdev/mobile
+            workspace apps\mobile from the root project
+        dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+        apps/web
+          @istpetdev/web@1.0.0
+          node_modules/@istpetdev/web
+            workspace apps\web from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+      apps/mobile
+        @istpetdev/mobile@1.0.0
+        node_modules/@istpetdev/mobile
+          workspace apps\mobile from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+      apps/web
+        @istpetdev/web@1.0.0
+        node_modules/@istpetdev/web
+          workspace apps\web from the root project
+postcss-selector-parser@7.1.6 dev
+node_modules/postcss-selector-parser
+micromatch@4.0.8 dev
+node_modules/micromatch
+  micromatch@"4.0.8" from @boundaries/elements@3.1.1
+  node_modules/@boundaries/elements
+    @boundaries/elements@"3.1.1" from eslint-plugin-boundaries@7.2.0
+    node_modules/eslint-plugin-boundaries
+      dev eslint-plugin-boundaries@"^7.2.0" from the root project
+  micromatch@"4.0.8" from eslint-plugin-boundaries@7.2.0
+  node_modules/eslint-plugin-boundaries
+    dev eslint-plugin-boundaries@"^7.2.0" from the root project
+  micromatch@"^4.0.8" from fast-glob@3.3.3
+  node_modules/fast-glob
+    fast-glob@"^3.3.2" from tailwindcss@3.4.19
+    node_modules/tailwindcss
+      peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+      node_modules/@angular/build
+        dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+        apps/mobile
+          @istpetdev/mobile@1.0.0
+          node_modules/@istpetdev/mobile
+            workspace apps\mobile from the root project
+        dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+        apps/web
+          @istpetdev/web@1.0.0
+          node_modules/@istpetdev/web
+            workspace apps\web from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+      apps/mobile
+        @istpetdev/mobile@1.0.0
+        node_modules/@istpetdev/mobile
+          workspace apps\mobile from the root project
+      dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+      apps/web
+        @istpetdev/web@1.0.0
+        node_modules/@istpetdev/web
+          workspace apps\web from the root project
+  micromatch@"^4.0.8" from tailwindcss@3.4.19
+  node_modules/tailwindcss
+    peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+    node_modules/@angular/build
+      dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+      apps/mobile
+        @istpetdev/mobile@1.0.0
+        node_modules/@istpetdev/mobile
+          workspace apps\mobile from the root project
+      dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+      apps/web
+        @istpetdev/web@1.0.0
+        node_modules/@istpetdev/web
+          workspace apps\web from the root project
+    dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+    apps/mobile
+      @istpetdev/mobile@1.0.0
+      node_modules/@istpetdev/mobile
+        workspace apps\mobile from the root project
+    dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+    apps/web
+      @istpetdev/web@1.0.0
+      node_modules/@istpetdev/web
+        workspace apps\web from the root project
+postcss-nested@6.2.0 dev
+node_modules/postcss-nested
+  postcss-nested@"^6.2.0" from tailwindcss@3.4.19
+  node_modules/tailwindcss
+    peerOptional tailwindcss@"^2.0.0 || ^3.0.0 || ^4.0.0" from @angular/build@22.2.2
+    node_modules/@angular/build
+      dev @angular/build@"22.2.2" from @istpetdev/mobile@1.0.0
+      apps/mobile
+        @istpetdev/mobile@1.0.0
+        node_modules/@istpetdev/mobile
+          workspace apps\mobile from the root project
+      dev @angular/build@"22.2.2" from @istpetdev/web@1.0.0
+      apps/web
+        @istpetdev/web@1.0.0
+        node_modules/@istpetdev/web
+          workspace apps\web from the root project
+    dev tailwindcss@"3.4.19" from @istpetdev/mobile@1.0.0
+    apps/mobile
+      @istpetdev/mobile@1.0.0
+      node_modules/@istpetdev/mobile
+        workspace apps\mobile from the root project
+    dev tailwindcss@"3.4.19" from @istpetdev/web@1.0.0
+    apps/web
+      @istpetdev/web@1.0.0
+      node_modules/@istpetdev/web
+        workspace apps\web from the root project

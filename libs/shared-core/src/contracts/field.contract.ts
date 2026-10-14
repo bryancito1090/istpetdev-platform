@@ -101,6 +101,8 @@ export interface DispatchResponse {
 export interface MobileAssignmentDelivery {
   deliveryId: string;
   sequence: number;
+  kind?: 'Pickup' | 'Delivery';
+  locationId?: string;
   pointCode: string;
   pointName: string;
   address: string;
@@ -116,6 +118,8 @@ export interface MobileAssignmentRoute {
   driverMessage?: string;
   vehicleCode: string;
   stopsCount: number;
+  totalDistanceKm?: number;
+  estimatedDurationMinutes?: number;
   deliveries: MobileAssignmentDelivery[];
 }
 
@@ -157,6 +161,8 @@ export interface ReceiptLineRequest {
   quantityRejected: number;
   unit: string;
   rejectionReason?: string;
+  remainingQuantity?: number;
+  nextRequestedQuantity?: number;
 }
 
 export interface CreateReceiptRequest {
@@ -172,6 +178,8 @@ export interface ReceiptLineDto {
   quantityAccepted: number;
   quantityRejected: number;
   unit: string;
+  remainingQuantity?: number;
+  nextRequestedQuantity?: number;
 }
 
 export interface ReceiptResponse {

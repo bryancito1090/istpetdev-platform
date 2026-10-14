@@ -138,6 +138,16 @@ Ejemplos: `feat(api): exponer cobertura por punto de servicio`, `fix(mobile): re
 - Deben pasar los checks obligatorios: **Validar rama de origen** y, cuando aplique, **CI - Integración Continua**.
 - Tras el merge, borra la rama de trabajo (GitHub lo ofrece en el PR).
 
+## 6.1 Entorno local y auditoría de dependencias (Spec 000)
+
+- **Node.js y npm fijados:** Se exige Node.js `22.23.3` (según `.nvmrc`) y npm `10.9.9` (según `.npm-version`), con `engine-strict=true`.
+- **Verificación previa a abrir PR:**
+  ```bash
+  npm run check         # Valida linting FSD, .NET 8, shared-core, Web y Mobile
+  npm run audit:check   # Verifica compuerta de auditoría contra security/spec000/exceptions.json
+  ```
+- **Prohibición de dependencias no autorizadas:** No instalar dependencias directas duplicadas o deprecadas. Toda nueva dependencia con aviso debe contar con ficha formal aprobada en `security/spec000/exceptions.json`.
+
 ## 7. Configuración del repositorio (administrador)
 
 GitHub Actions **valida** los PR y **detiene el despliegue** si el origen no es válido, pero solo la protección de ramas puede **impedir** un merge o un push directo. Un administrador del repositorio debe configurar una vez:

@@ -38,6 +38,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RoadMatrixEdge> RoadMatrixEdges => Set<RoadMatrixEdge>();
     public DbSet<RouteStockReservation> RouteStockReservations => Set<RouteStockReservation>();
     public DbSet<QrAccessToken> QrAccessTokens => Set<QrAccessToken>();
+    public DbSet<RouteStopLine> RouteStopLines => Set<RouteStopLine>();
+    public DbSet<DeliveryOrder> DeliveryOrders => Set<DeliveryOrder>();
+    public DbSet<DeliveryOrderLine> DeliveryOrderLines => Set<DeliveryOrderLine>();
+    public DbSet<WarehouseStockPolicy> WarehouseStockPolicies => Set<WarehouseStockPolicy>();
+    public DbSet<TransferSuggestion> TransferSuggestions => Set<TransferSuggestion>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configuration)
     {
