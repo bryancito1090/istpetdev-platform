@@ -1,4 +1,32 @@
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
+
+const mockIonicStandalone = vi.mock;
+mockIonicStandalone('@ionic/angular/standalone', async () => {
+  const { Component } = await import('@angular/core');
+  @Component({ selector: 'ion-dummy', template: '', standalone: true })
+  class IonDummyComponent {}
+
+  class MockAlertController {
+    create = vi.fn();
+  }
+
+  return {
+    IonHeader: IonDummyComponent,
+    IonToolbar: IonDummyComponent,
+    IonTitle: IonDummyComponent,
+    IonContent: IonDummyComponent,
+    IonCard: IonDummyComponent,
+    IonCardHeader: IonDummyComponent,
+    IonCardTitle: IonDummyComponent,
+    IonCardSubtitle: IonDummyComponent,
+    IonCardContent: IonDummyComponent,
+    IonButton: IonDummyComponent,
+    IonBadge: IonDummyComponent,
+    IonButtons: IonDummyComponent,
+    AlertController: MockAlertController
+  };
+});
 
 function createMemoryStorage(): Storage {
   const data = new Map<string, string>();

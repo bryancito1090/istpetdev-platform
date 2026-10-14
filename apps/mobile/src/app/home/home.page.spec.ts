@@ -1,31 +1,4 @@
 import { vi } from 'vitest';
-
-vi.mock('@ionic/angular/standalone', async () => {
-  const { Component } = await import('@angular/core');
-  @Component({ selector: 'ion-dummy', template: '', standalone: true })
-  class IonDummyComponent {}
-
-  class MockAlertController {
-    create = vi.fn();
-  }
-
-  return {
-    IonHeader: IonDummyComponent,
-    IonToolbar: IonDummyComponent,
-    IonTitle: IonDummyComponent,
-    IonContent: IonDummyComponent,
-    IonCard: IonDummyComponent,
-    IonCardHeader: IonDummyComponent,
-    IonCardTitle: IonDummyComponent,
-    IonCardSubtitle: IonDummyComponent,
-    IonCardContent: IonDummyComponent,
-    IonButton: IonDummyComponent,
-    IonBadge: IonDummyComponent,
-    IonButtons: IonDummyComponent,
-    AlertController: MockAlertController
-  };
-});
-
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';

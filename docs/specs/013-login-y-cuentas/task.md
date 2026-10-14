@@ -18,7 +18,7 @@
 | T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | hecho |
 | T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | hecho |
 | T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | hecho |
-| T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | pendiente |
+| T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | hecho |
 | T10 | Infraestructura: callbacks HTTPS, marca, IAM y hop limit (Jorge) | FR-20, NFR-02, #14 | — | [P] con todo | pendiente |
 | T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | pendiente (P2) |
 | T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | pendiente (P2) |
@@ -2950,13 +2950,14 @@ Para el outbox en IndexedDB, se incrementó `DB_VERSION` a 2 con un `upgrade` no
 
 **Files:**
 - Create: `scripts/ci/check-no-mock-login.mjs`
-- Modify: `package.json`, `.github/workflows/ci.yml`
+- Modify: `package.json`, `.github/workflows/ci.yml`, `apps/mobile/src/test-setup.ts`, `apps/mobile/src/app/home/home.page.spec.ts`
+- Update: `docs/specs/013-login-y-cuentas/task.md`
 
 **Interfaces:**
 - Consumes: T6 y T8 (sin restos de mock).
 - Produces: `npm run check:no-mock-login` (sale 1 con la lista de coincidencias); CI ejecuta `test:frontend`, el guardián y `build:mobile`.
 
-- [ ] **Step 1: Escribir la prueba que falla** (fixture temporal fuera del repo)
+- [x] **Step 1: Escribir la prueba que falla** (fixture temporal fuera del repo)
 
 Run:
 
@@ -2967,7 +2968,7 @@ node scripts/ci/check-no-mock-login.mjs "$tmp"; echo "salida=$?"
 
 Expected: FAIL con «Cannot find module …/scripts/ci/check-no-mock-login.mjs» y `salida=1`.
 
-- [ ] **Step 2: Implementación mínima** — `scripts/ci/check-no-mock-login.mjs`:
+- [x] **Step 2: Implementación mínima** — `scripts/ci/check-no-mock-login.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -2975,7 +2976,10 @@ Expected: FAIL con «Cannot find module …/scripts/ci/check-no-mock-login.mjs»
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const FORBIDDEN = [/loginWithCredentials/, /useMockSession/, /jwt-mock/, /mock-bearer-token/, /loginAsDemo/, /DEMO_PROFILES/];
+const FORBIDDEN = [
+  /loginWithCredentials/, /useMockSession/, /jwt-mock/, /mock-bearer-token/, /loginAsDemo/, /DEMO_PROFILES/,
+  /\/api\/v1\/auth\/login/, /auth\/login'/
+];
 const SKIP = new Set(['node_modules', 'dist', '.angular', 'www', 'coverage']);
 const EXTENSIONS = new Set(['.ts', '.html', '.js', '.mjs']);
 const roots = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['apps'];
@@ -3022,7 +3026,7 @@ En `.github/workflows/ci.yml`, en el trabajo «QA Frontend (Angular 22)», despu
         run: npm run build:mobile
 ```
 
-- [ ] **Step 3: Ejecutar y verificar**
+- [x] **Step 3: Ejecutar y verificar**
 
 Run:
 
@@ -3034,12 +3038,16 @@ rm -rf "$tmp"
 
 Expected: `fixture=1` con la línea `…/app/x.ts:1`; `apps=0` con «Sin login simulado en apps».
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
-git add scripts/ci/check-no-mock-login.mjs package.json .github/workflows/ci.yml
-git commit -m "ci: guardian contra login simulado y pruebas frontend (spec 013 nfr-04)"
+git add scripts/ci/check-no-mock-login.mjs package.json .github/workflows/ci.yml apps/mobile/src/test-setup.ts apps/mobile/src/app/home/home.page.spec.ts docs/specs/013-login-y-cuentas/task.md
+git commit -m "ci: añade guardián del login simulado y pruebas frontend (#42)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
+
+### Desviaciones
+
+En la suite de mobile, el runner Angular seguía advirtiendo sobre `vi.mock` aun cuando estaba al nivel del módulo en el spec. Se registró el mock desde `src/test-setup.ts` con una referencia de ejecución a `vi.mock`, antes de cargar los specs; `npm run test:mobile` pasa con 22 pruebas y sin el warning. El guardián también detecta la ruta retirada `/api/v1/auth/login` y la forma `auth/login'`.
 
 ---
 
