@@ -363,4 +363,20 @@ Fuente: issue #46 (fase 1), pedido de Joseph Baño; trabajo hecho por IA (Claude
 - [[Consultas para la organizacion]]: O-04 y O-06 siguen pendientes; se registra qué dice el manual y que las «Indicaciones para pitch y demostración» (§7.2, p. 7) no están en el repositorio.
 - Seguimiento en [[Registro de trabajo previo y del evento]], [[Backlog]] (B-45) y, fuera de la bóveda, `task.md` (T1) y `test-e2e.md` (E2E-01) del spec 006. CE-01 queda pendiente de la revisión humana de unos 15 min.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **873 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **867 enlaces internos resueltos**, **0 errores**.
+
+## T2 del spec 006: matriz de afirmaciones y guion — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 2), pedido de Joseph Baño; borrador hecho por IA (Claude Code, Opus 5.5) sobre `develop` en `7aed1eb`, rama `feature/46-fase2-guion-auditoria`. Sin entrevistas, ensayos, cronometrajes ni aprobaciones nuevas.
+- [[Guion del pitch]]: «Versión de trabajo T2» con cortes 3/5/7 (metas internas 160/280/400 s), cinco papeles, etiquetas vivo previsto/grabado/simulado/propuesto, frases retiradas y estructura de siete diapositivas sin archivo.
+- [[Consultas para la organizacion]]: O-04 y O-06 revisadas de nuevo; siguen sin respuesta con fuente.
+- [[Registro de trabajo previo y del evento]]: fila del borrador T2.
+- Fuera de la bóveda: `matriz-afirmaciones.md` y `evidencia/2026-10-14-suites-fase2.md` del spec 006 (105 pruebas automatizadas, todas pasaron); `task.md` (T2) y `test-e2e.md` (E2E-03 y E2E-05) con estado. La matriz registra dos contradicciones: 005 figura cerrado sin corrida oficial ni ZIP, y 004 figura concluido sin prueba de integración de despacho/recepción ni ensayo en teléfono.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **872 enlaces internos resueltos**, **0 errores**.
+
+## Revisión de Joseph para el kit y el borrador del guion — 14 de octubre de 2026
+
+Joseph Baño (Andrés) informó que revisó durante 15 minutos y aprobó los cinco componentes del kit T1 del PR #71 (`228ab72`), sin correcciones adicionales comunicadas. No informó horas de inicio y fin. CE-01 quedó registrado en `task.md` y E2E-01 del spec 006 y en [[Registro de trabajo previo y del evento]]; B-45 se actualizó en [[Backlog]]. Joseph también aprobó el borrador T2 (`8693f73`). La revisión posterior ajustó las afirmaciones A-16/A-17/A-27 de `matriz-afirmaciones.md` para limitar lo dicho a la prueba de API; faltan segundo revisor, PDF y ensayos para CE-03/CE-06.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **880 enlaces internos resueltos**, **0 errores**.
