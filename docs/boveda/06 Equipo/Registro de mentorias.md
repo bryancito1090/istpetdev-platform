@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -32,6 +32,8 @@ El manual (§11.5, p. 11) pide que un jurado se abstenga de evaluar un proyecto 
 
 Separar recomendación de mentor de una regla oficial del evento. Si cambia un requisito, confirmar autoridad y actualizar la fuente correspondiente.
 
+Estas preguntas y las de [[Modelo de negocio y piloto]] quedan de reserva para mentorías y para una contraparte de piloto. En la feria se usan solo las cinco preguntas del guion de abajo.
+
 ## Complemento propuesto — guion de feria del spec 006, 12-oct-2026
 
 **Uso:** dos integrantes entrevistan expositores el 16-oct en las pausas 11:00–11:30 y 13:00–14:00; regresan con prototipo el 17-oct de 11:00–12:30. Como cautela del equipo, no abordan JIMCORPSERVI/FEDELIMP ni LACIF. La conversación dura unos cinco minutos; se ofrece terminar antes. Un expositor no es automáticamente mentor ni jurado, y una opinión no es una regla oficial.
@@ -41,23 +43,31 @@ Separar recomendación de mentor de una regla oficial del evento. Si cambia un r
 | Minuto aproximado | Pregunta abierta | Qué escuchar, sin sugerir respuesta |
 |---|---|---|
 | 0:30–1:15 | ¿Cómo saben hoy que un punto se va a quedar sin un insumo? | Señal, frecuencia, persona y dato disponible. |
-| 1:15–2:00 | Cuénteme la última vez que tuvieron que cambiar una entrega o ruta. ¿Qué la provocó? | Causa, decisión y restricción; no presumir que ocurrió. |
+| 1:15–2:00 | ¿Les ha pasado tener que cambiar una entrega o una ruta ya planificada? Si ocurrió, ¿qué la provocó la última vez? | Causa, decisión y restricción; si no ocurrió, anotarlo y seguir. |
 | 2:00–2:45 | ¿Cómo comprueban lo enviado y lo recibido, incluso si falla la conexión? | Custodia, evidencia y conflicto. |
-| 2:45–3:30 | ¿Qué consecuencia operativa tiene un faltante y cómo la registran? | Tiempo, servicio, contrato; pedir documento antes de cualquier cifra. |
+| 2:45–3:30 | Si un punto se queda sin un insumo, ¿qué pasa después? ¿Queda registrado en algún lado? | Tiempo, servicio, contrato; pedir documento antes de cualquier cifra. |
 | 3:30–4:15 | Si probáramos una alerta, ruta y recepción con QR, ¿qué le impediría usarlo? | Objeción principal y condición de prueba. |
 
-**Cierre (45 s):** «¿Podemos volver mañana a mostrar un prototipo y pedirle que explique lo que entiende? ¿Autoriza una cita anónima de esta conversación?». La invitación de retorno no equivale a consentimiento para cita. El día 17 se muestra primero la pantalla sin explicación, se pregunta «¿qué haría ahora?» y se registra reacción, duda y corrección necesaria.
+**Cierre (45 s):** «¿Podemos volver mañana a mostrar un prototipo y pedirle que explique lo que entiende? ¿Podemos citar alguna frase sin su nombre? Si es así, ¿podemos mencionar su rol u organización junto a la cita?». La invitación de retorno no equivale a consentimiento para cita, y el permiso de cita no incluye la mención del rol u organización: son tres respuestas separadas. El día 17 se muestra primero la pantalla sin explicación, se pregunta «¿qué haría ahora?» y se registra reacción, duda y corrección necesaria.
 
 ### Hoja de campo para copiar por conversación
+
+Imprimir o copiar una hoja por conversación. Cada permiso se marca en su propia casilla; no se infiere uno de otro.
 
 | Campo | Registro |
 |---|---|
 | Fecha/hora, pausa, entrevistadores | [PENDIENTE: evento] |
 | Sector/rol/organización ofrecida voluntariamente; comprobar cautela de jurado | [PENDIENTE: contexto] |
-| Consentimiento para notas anónimas (sí/no) y para cita anónima (sí/no), por separado | [PENDIENTE: respuesta] |
-| Respuestas a cinco preguntas; distinguir cita literal de paráfrasis | [PENDIENTE: conversación] |
+| **Permiso 1 — notas anónimas** | ☐ sí ☐ no. Si es «no», agradecer, registrar solo «intento sin consentimiento» y no anotar respuestas. |
+| **Permiso 2 — cita textual sin nombre** | ☐ sí ☐ no ☐ no se preguntó. Hora y día en que se dio (puede ser el 16 o el 17). |
+| **Permiso 3 — mencionar rol u organización junto a la cita** | ☐ sí ☐ no ☐ no se preguntó. Solo aplica si el permiso 2 es «sí»; anotar exactamente qué rol/organización autorizó. |
+| Respuestas a cinco preguntas; distinguir cita literal (entre comillas) de paráfrasis (marcada «paráfrasis») | [PENDIENTE: conversación] |
 | Reacción al prototipo (solo retorno del 17), tarea que intentó y duda | [PENDIENTE: observación] |
 | Objeción, supuesto invalidado y cambio o decisión pendiente | [PENDIENTE: análisis] |
 | Fuente complementaria facilitada, si la hubo | [PENDIENTE: fuente] |
+| Enlace a la evidencia anonimizada ([[Plantilla evidencia]]) | [PENDIENTE: enlace] |
+| No anotar | Nombre personal, teléfono, correo, firma, foto o audio. |
 
-Tras cada conversación, pasar el registro anonimizado a [[Plantilla evidencia]] con tipo «entrevista»; no guardar firma, foto, audio, teléfono ni nombre personal por defecto. El pitch usa `[CITA DE LA FERIA]` solo con permiso explícito y conserva el contexto de la cita. La meta de [[Plan de validacion]] es al menos tres conversaciones, una con reacción al prototipo, antes del 17-oct a las 12:30; si falla, se declara pendiente.
+Tras cada conversación, pasar el registro anonimizado a [[Plantilla evidencia]] con tipo «entrevista»; no guardar firma, foto, audio, teléfono ni nombre personal por defecto. El pitch usa `[CITA DE LA FERIA]` solo con el permiso 2 y menciona rol/organización solo con el permiso 3; conserva el contexto de la cita. La meta de [[Plan de validacion]] es al menos tres conversaciones, una con reacción al prototipo, antes del 17-oct a las 12:30; si falla, se declara pendiente.
+
+**Ajustes del 14-oct-2026 (kit T1, preparados por IA y sujetos a la revisión humana del [task 006](../../specs/006-validacion-pitch-entrega/task.md)):** las preguntas 2 y 4 ya no presuponen que hubo un cambio de ruta ni un faltante; los permisos de notas, cita y mención de rol/organización quedan en casillas separadas, como pide ER-04; se añade el enlace a evidencia del contrato de hoja de entrevista. No hay entrevistas registradas.

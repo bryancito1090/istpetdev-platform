@@ -27,6 +27,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cinco componentes presentes; precio, cita y resultado quedan como huecos; revisión, corrección y nombre del revisor anotados. **Evidencia:** revisión fechada en el registro previo y versión del kit.
 
+**Estado al 14-oct-2026:** Joseph informó que revisó y aprobó todos los componentes del kit del PR #71 durante 15 minutos. No comunicó las horas de inicio y fin. E2E-01 y CE-01 se registran como cumplidos con esa declaración del revisor ([T1](task.md)); no se atribuye tiempo de construcción del kit al equipo.
+
 ### E2E-02 — Feria sin fabricar validación
 
 **Pasos:** dos integrantes piden permiso en las pausas del 16; preguntan cinco minutos, sin grabar por defecto; el 17 presentan el prototipo a al menos una persona y piden interpretación antes de explicar. Separan permiso de notas y permiso de cita; evitan las organizaciones cauteladas.
@@ -39,6 +41,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** orden Anexo 5.7 exacto; 160/280/400 s o tiempo oficial −20 s tras O-04; nombres solo si el equipo los asignó. **Evidencia:** hoja de cronometraje y video interno permitido.
 
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar. Los cortes 3/5/7 y el reparto por bloque y papel están redactados en la «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), pero nadie los ha leído en voz alta ni cronometrado. Los segundos del guion son reparto planificado.
+
 ### E2E-04 — Demo y plan B en escena
 
 **Pasos:** ejecutar reset, riesgo, ruta, incidente, despacho/recepción y QR; luego repetir simulando por separado caída de DeepSeek, ausencia de mapa, falta de wifi, fallo de cámara/QR y ZIP de simulación no importable. La persona responsable dice la línea de contingencia y pasa al siguiente hito sin detener cronómetro.
@@ -50,6 +54,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 **Pasos:** dos revisores subrayan cifras, citas y verbos de capacidad en PDF y guion; para cada uno buscan tarjeta de afirmación, ejecución y fuera de alcance del spec productor. Intentan deliberadamente una cita sin consentimiento, un «ahorro» sin ZIP, «IA replanifica sola» y «QR del jurado» sin HTTPS externo.
 
 **Resultado:** cuatro afirmaciones rechazadas o corregidas cuando falta soporte; cero números de resultado huérfanos en versión congelada. Mostrar min/max de seeds solo con denominadores y etiqueta de simulación. **Evidencia:** matriz firmada por revisores y hashes de materiales auditados.
+
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar como recorrido completo. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Joseph aprobó el borrador `8693f73`; faltan el segundo revisor humano, la revisión de A-16/A-17/A-27 ajustadas después de su aprobación, el PDF y la versión congelada. Las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye el recorrido.
 
 ### E2E-06 — Racha real
 
@@ -67,4 +73,4 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 | Fecha/hora | Commit/material | Escenario | Duración/conexión | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
-| [PENDIENTE: primer ensayo] | [PENDIENTE: versión] | [PENDIENTE: ID] | [PENDIENTE: medición] | pendiente | [PENDIENTE: enlace] | [PENDIENTE: responsable] |
+| 2026-10-14 (hora no registrada) | PR #71, `228ab72` (T1 en `92a9e63`) | E2E-01 | 15 min, revisión documental | pasó según declaración del revisor; cinco componentes aprobados, sin correcciones adicionales informadas | [hoja de T1](task.md#hoja-de-revisión-humana-de-t1-unos-15-min), [registro previo](../../boveda/06%20Equipo/Registro%20de%20trabajo%20previo%20y%20del%20evento.md) | Joseph Baño (Andrés) |

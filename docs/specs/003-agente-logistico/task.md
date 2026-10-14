@@ -242,3 +242,8 @@ La casilla de automatización T10 queda acreditada por `AgentJourneyTests.cs`
 y las regresiones de agente/ruteo: revisión dirigida 20/20, sin fallos. El
 ensayo CE-06 real sustituye `LocalWorkflowSmokeTests.cs`; no se crea una prueba
 que solo repita el bootstrap. La suite final y aceptación real siguen en curso.
+
+Durante la validación de PR #74, `develop` avanzó a `fd22f54` (CI/runbook #35
+y kit/guion #46). Se conservan esos cambios; el cambio de `Program.cs` es solo
+un comentario, y el conteo de migraciones coincide con la corrección ya aplicada.
+No cambian agente, workflows, prompt ni umbrales de la matriz en ejecución.

@@ -66,21 +66,23 @@ jobs:
             docker compose -f infra/compose/docker-compose.prod.yml up -d --remove-orphans istpetdev-backend istpetdev-web
             docker image prune -f
 
-            # 3. Verificación de salud interna
-            echo "Verificando disponibilidad inmediata del backend..."
+            # 3. Verificación estricta de readiness tras rollback (/health/ready)
+            echo "Verificando readiness del backend y conexión a RDS tras el rollback..."
             READY=false
-            for i in $(seq 1 6); do
-              if curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
+            for i in $(seq 1 10); do
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/health/ready || true)
+              if [ "$HTTP_STATUS" = "200" ]; then
                 READY=true
-                echo "Rollback completado y verificado exitosamente en el intento $i."
+                echo "Rollback completado y verificado exitosamente en el intento $i (HTTP 200 en /health/ready)."
                 break
               fi
+              echo "Esperando readiness tras rollback (intento $i/10, status=$HTTP_STATUS)..."
               sleep 3
             done
 
             if [ "$READY" != "true" ]; then
-              echo "Advertencia: El backend aún no responde tras el rollback."
-              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=30 istpetdev-backend
+              echo "Error critico: El backend no alcanzo estado READY tras el rollback a ${TARGET_SHA}."
+              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=50 istpetdev-backend
               exit 1
             fi
 
@@ -95,7 +97,8 @@ jobs:
           | **Dominio Público** | [https://istpetdev.doicela.dev](https://istpetdev.doicela.dev) |
           | **Target Commit SHA** | `${{ inputs.target_sha }}` |
           | **Ejecutado por** | @${{ github.actor }} |
+          | **Verificación Base de Datos** | Exitoso (HTTP 200 en `/health/ready`) |
 
           ### Nota Operativa:
-          Se restauraron los contenedores en producción a la imagen inmutable correspondiente a `${{ inputs.target_sha }}` en menos de 30 segundos, sin necesidad de recompilación de código.
+          Se restauraron los contenedores en producción a la imagen inmutable correspondiente a `${{ inputs.target_sha }}` en menos de 30 segundos, validando conectividad efectiva con Amazon RDS sin degradación de base de datos.
           EOF

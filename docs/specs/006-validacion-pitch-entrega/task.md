@@ -4,8 +4,8 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 
 | ID | Entregable | Depende de | Fecha límite | Estado |
 |---|---|---|---|---|
-| T1 | Kit previo y revisión humana | — | 15-oct | pendiente |
-| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | pendiente |
+| T1 | Kit previo y revisión humana | — | 15-oct | hecho: revisión de 15 min y aprobación de Joseph el 14-oct; CE-01 registrado |
+| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | borrador aprobado por Joseph el 14-oct; segundo revisor, O-04/O-06 y ensayos pendientes |
 | T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente |
 | T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente |
 | T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente |
@@ -13,10 +13,42 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 
 ## T1 — Kit previo sin horas del equipo
 
-- [ ] Imprimir o descargar hoja de entrevista de [Registro de mentorias](../../boveda/06%20Equipo/Registro%20de%20mentorias.md); comprobar casillas independientes de notas y cita.
-- [ ] Revisar el esqueleto 3/5/7 y los huecos `[CITA DE LA FERIA]`, `[RESULTADO DEL SIMULADOR]` y `[PRECIO]` de [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md).
-- [ ] Revisar cliente, valor, ingresos y costos de [Modelo de negocio y piloto](../../boveda/02%20Producto/Modelo%20de%20negocio%20y%20piloto.md), sin precio inventado.
-- [ ] Revisar veinte preguntas y fuentes de [SERCOP](../../boveda/99%20Fuentes/SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md); registrar quién dedicó unos 15 min a la revisión y qué corrigió. El kit lo prepara IA; no atribuir horas de construcción al equipo.
+- [x] Imprimir o descargar hoja de entrevista de [Registro de mentorias](../../boveda/06%20Equipo/Registro%20de%20mentorias.md); comprobar casillas independientes de notas y cita.
+- [x] Revisar el esqueleto 3/5/7 y los huecos `[CITA DE LA FERIA]`, `[RESULTADO DEL SIMULADOR]` y `[PRECIO]` de [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md).
+- [x] Revisar cliente, valor, ingresos y costos de [Modelo de negocio y piloto](../../boveda/02%20Producto/Modelo%20de%20negocio%20y%20piloto.md), sin precio inventado.
+- [x] Revisar veinte preguntas y fuentes de [SERCOP](../../boveda/99%20Fuentes/SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md); registrar quién dedicó unos 15 min a la revisión y qué corrigió. El kit lo prepara IA; no atribuir horas de construcción al equipo.
+
+**Estado al 14-oct-2026 (issue #46, fase 1):** Claude Code (Opus 5.5) preparó y corrigió el kit sobre `develop` en la rama `feature/46-kit-previo-006`, a pedido de Joseph Baño. Joseph informó que revisó y aprobó todos los componentes durante 15 minutos el 14-oct; no dio horas de inicio y fin. CE-01 queda registrado con esa duración informada por el revisor. No hay entrevistas, ensayos de escena ni cifras nuevas.
+
+| Componente ER-02 | Dónde está | Qué se corrigió el 14-oct |
+|---|---|---|
+| Hoja de entrevista | [Registro de mentorias](../../boveda/06%20Equipo/Registro%20de%20mentorias.md), «Hoja de campo» | Tres permisos en casillas separadas (notas, cita sin nombre, mención de rol/organización); preguntas 2 y 4 sin presuponer el hecho; enlace a evidencia; lista de datos que no se anotan |
+| Esqueleto 3/5/7 | [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), complemento del 006 | Aviso al inicio: el recorrido de 180 s queda como antecedente. Tiempos contrastados con el [plan](plan.md): coinciden |
+| Cliente, valor, ingresos y costos | [Modelo de negocio y piloto](../../boveda/02%20Producto/Modelo%20de%20negocio%20y%20piloto.md), «Resumen para el kit previo» | Resumen según Anexo 5.6. Corrección: USD 37/mes cubre solo EC2, no RDS (contradicción registrada). Fila de mapas alineada con ADR-05/ADR-23. Precio pendiente |
+| Banco de veinte preguntas | [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), «Banco de 20 preguntas» | Escalabilidad (n.º 11) sustituye la pregunta sobre el escaneo del jurado, cuya condición pasa a la n.º 10 |
+| Fuente SERCOP | [SERCOP](../../boveda/99%20Fuentes/SERCOP%20limpieza%20hospitalaria%20y%20sanciones.md) | URL y citas comprobadas el 14-oct; la fila de HGDC cita el texto literal |
+
+O-04 y O-06 siguen **pendientes**, sin respuesta con fuente en el repositorio ni en el manual ([Consultas para la organizacion](../../boveda/01%20Oficial/Consultas%20para%20la%20organizacion.md), «Estado de O-04 y O-06»).
+
+### Hoja de revisión humana de T1 (unos 15 min)
+
+Debe hacerla una persona del equipo con la versión del kit indicada en el PR. Al terminar, completar los campos, marcar las casillas de arriba y añadir la fila en [Registro de trabajo previo y del evento](../../boveda/06%20Equipo/Registro%20de%20trabajo%20previo%20y%20del%20evento.md).
+
+| Min. | Qué revisar | Criterio para aceptarlo |
+|---|---|---|
+| 0–3 | Hoja de entrevista | Se puede imprimir o copiar; los tres permisos son casillas independientes; ninguna de las cinco preguntas presupone respuesta, cifra o costo; no pide datos personales |
+| 3–6 | Esqueleto 3/5/7 | Siete bloques del Anexo 5.7 en orden en los tres cortes; `[CITA DE LA FERIA]`, `[RESULTADO DEL SIMULADOR]` y `[PRECIO]` siguen como huecos; ningún corte se presenta como tiempo oficial |
+| 6–9 | Resumen de negocio | Cliente, valor, ingresos y costos responden el Anexo 5.6; no hay precio ni ahorro; USD 37/mes no se presenta como costo total de hosting |
+| 9–13 | Veinte preguntas | Cada borrador cabe en ≤30 s leído en voz alta; ninguno afirma un CE como ejecutado; las n.º 16 y 17 no pronuncian el marcador; aceptar o revertir el cambio de la n.º 11 |
+| 13–15 | Fuente SERCOP | Abrir al menos un PDF y encontrar «se obliga a proveer» y «frecuencias de cambio»; la frase usable no contiene cifra de multa |
+
+| Campo | Registro |
+|---|---|
+| Revisor | Joseph Baño (Andrés), según mensaje del 14-oct |
+| Fecha, hora de inicio y fin | 14-oct-2026; duración informada: 15 min; horas de inicio y fin no registradas |
+| Versión revisada (commit o PR) | Kit del PR #71 (commit `228ab72`; contenido de T1 en `92a9e63`) |
+| Correcciones pedidas o hechas | Joseph aprobó T1; no informó correcciones adicionales |
+| ¿Aprueba el kit para T2/T3? | Sí, según mensaje de Joseph del 14-oct; CE-01 registrado en E2E-01 |
 
 ## T2 — Guion y auditoría de cada frase
 
@@ -24,6 +56,17 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 - [ ] Crear tarjeta por afirmación: frase, spec/CE, enlace de ejecución, límite y sustitución. Si falta ejecución, cambiar a `[PENDIENTE: evidencia]` en material de trabajo y retirar la frase del guion de escena.
 - [ ] Inspeccionar el flujo Artifacts/Slides del entorno antes de crear el archivo; con O-06 resuelto, crear editable y PDF local de la misma versión. En esta sesión no hay sesión PowerPoint conectada; el archivo de slides queda pendiente.
 - [ ] Releer la tabla cruzada del [spec](spec.md) y los «fuera de alcance» de 001–005 después de cualquier recorte de alcance.
+
+**Estado al 14-oct-2026 (issue #46, fase 2):** Claude Code (Opus 5.5), a pedido de Joseph Baño, preparó T2 como **borrador** en la rama `feature/46-fase2-guion-auditoria`, desde `develop` en `7aed1eb` (PR #71 ya fusionado). Joseph informó el mismo día que revisó y aprobó T1 y T2; su aprobación se refiere al borrador `8693f73`. Una revisión posterior ajustó A-16/A-17/A-27 para no atribuir a la pantalla ni a Cognito lo probado solo por API. Falta un segundo revisor para E2E-05, además de O-04/O-06, PDF y ensayos. **T2 no está cerrado.**
+
+| Casilla | Qué se hizo | Qué falta |
+|---|---|---|
+| O-04 y corte | O-04 y O-06 revisados de nuevo: sin respuesta con fuente ([Consultas](../../boveda/01%20Oficial/Consultas%20para%20la%20organizacion.md)). Cortes 3/5/7 con metas internas 160/280/400 s y siete bloques en orden en «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md); estructura de siete diapositivas, una por bloque | Respuesta oficial de O-04; elegir corte; nombres de los cinco papeles (PA-01) |
+| Tarjetas de afirmación | [Matriz de afirmaciones](matriz-afirmaciones.md): 33 frases o cifras con spec/CE, ejecución, límite, estado y sustitución. Se ejecutaron 105 pruebas automatizadas sobre `7aed1eb` (12 + 93, todas pasaron) para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Tras la revisión del borrador: 11 usables con límite, 11 solo como propuesta y 11 retiradas | Dos revisores (E2E-05); repetir sobre el commit congelado |
+| Slides | No se creó editable ni PDF: O-06 sin respuesta y formato sin confirmar | O-06; elegir herramienta; editable y PDF de la misma versión |
+| Releer cruce del spec | La matriz sustituye en la práctica la tabla cruzada del spec para el guion; registra dos contradicciones (005 «cerrado» sin corrida oficial; 004 «concluido» sin prueba de integración ni teléfono) | Respuesta de los responsables de 004/005 |
+
+No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 
 ## T3 — Entrevistas, mentoría y corrida
 

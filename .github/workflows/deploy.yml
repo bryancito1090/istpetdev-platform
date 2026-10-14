@@ -380,22 +380,24 @@ jobs:
               docker images --filter "reference=*${img}*" --format "{{.ID}}" | sort -u | tail -n +4 | xargs -r docker rmi -f 2>/dev/null || true
             done
 
-            # 8. Verificación de salud interna con reintentos
-            echo "Comprobando endpoint de salud de la API..."
+            # 8. Verificación estricta de readiness (Conexión a Amazon RDS y migraciones aplicadas)
+            echo "Comprobando endpoint de readiness de la API (/health/ready)..."
             READY=false
-            for i in $(seq 1 12); do
-              if curl -sf http://127.0.0.1:5000/health/ready > /dev/null || curl -sf http://127.0.0.1:5000/health/live > /dev/null || curl -sf http://localhost/health/live > /dev/null; then
+            for i in $(seq 1 15); do
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/health/ready || true)
+              if [ "$HTTP_STATUS" = "200" ]; then
                 READY=true
-                echo "API IstpetDev verificada exitosamente en el intento $i."
+                echo "API IstpetDev verificada y conectada a RDS exitosamente en el intento $i (HTTP 200)."
                 break
               fi
-              echo "Esperando inicialización de la API (intento $i/12)..."
-              sleep 5
+              echo "Esperando readiness de la API y migraciones de BD (intento $i/15, status=$HTTP_STATUS)..."
+              sleep 4
             done
 
             if [ "$READY" != "true" ]; then
-              echo "Error: la API no respondió en el tiempo límite."
-              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=50 istpetdev-backend
+              echo "Error critico: La API no alcanzo estado READY (PostgreSQL/RDS o migraciones no disponibles)."
+              echo "--- Ultimos logs de istpetdev-backend ---"
+              docker compose -f infra/compose/docker-compose.prod.yml logs --tail=80 istpetdev-backend
               exit 1
             fi
 
@@ -416,11 +418,12 @@ jobs:
           | **Commit SHA** | `${{ github.sha }}` |
           | **Desplegado por** | @${{ github.actor }} |
           | **Rama** | `${{ github.ref_name }}` |
+          | **Verificación Base de Datos** | Exitoso (HTTP 200 en `/health/ready`) |
 
           ### Servicios en Ejecución:
           - **Frontend Web SPA**: `istpetdev-web` servido por Nginx Reverse Proxy.
           - **Backend API**: `istpetdev-backend` (.NET 8 Web API en puerto 5000 interno).
-          - **Base de Datos**: Amazon RDS PostgreSQL 16 (`istpetdev-rds-dev` desacoplada).
+          - **Base de Datos**: Amazon RDS PostgreSQL 16 (`istpetdev-rds-dev` conectada y migrada).
           - **Caché y Mensajería**: `istpetdev-redis` (Redis 7.4).
           - **CDN / WAF**: Cloudflare SSL Termination hacia `istpetdev.doicela.dev`.
           EOF
