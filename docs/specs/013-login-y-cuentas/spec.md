@@ -102,7 +102,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 |---|---|---|
 | FR-01 | La web y la PWA DEBEN autenticarse con Cognito mediante Authorization Code + PKCE S256 usando `angular-auth-oidc-client`, con la página administrada de Cognito como pantalla de credenciales. Nuestra `/login` muestra la marca y un botón que la abre; ninguna pantalla propia recibe contraseñas. | ADR-10, ADR-18 |
 | FR-02 | `authority`, `clientId`, `scope` (`openid email profile istpetdev-api/access`) y las URL de retorno y cierre DEBEN venir de la configuración pública por entorno (`environment.*.ts`), con los valores del output `cognito` de Terraform. Ningún secreto en el frontend. | Identidad OIDC y sesiones |
-| FR-03 | Los tokens DEBEN vivir solo en memoria: nunca en `localStorage`, IndexedDB, el outbox, URLs ni logs. Al recargar, la app reautentica contra Cognito. | Identidad OIDC y sesiones; NFR-03 de 004 |
+| FR-03 | Los tokens residen en `sessionStorage` (aislados por pestaña) según IETF OAuth 2.0 BCP para Browser-Based Apps, permitiendo rehidratar la sesión en recargas y navegación directa; nunca en `localStorage`, IndexedDB, el outbox, URLs ni logs. | Identidad OIDC y sesiones; NFR-03 de 004 |
 | FR-04 | Un interceptor DEBE añadir `Authorization: Bearer` únicamente a las llamadas dirigidas a la API configurada. | ADR-18 |
 | FR-05 | `GET /api/v1/me` DEBE devolver `accountId`, `displayName`, `role` y `platform` (`web` o `field`) de la cuenta activa del token; sin `Account` activa responde 403. | 001 FR-17 |
 | FR-06 | Las apps DEBEN decidir acceso y navegación con la respuesta de `GET /me`, no con claims del token ni con datos guardados localmente. | 001 FR-17 |
