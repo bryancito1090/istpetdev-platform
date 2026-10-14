@@ -25,6 +25,7 @@ public sealed class AgentRunService(
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
@@ -58,7 +59,10 @@ public sealed class AgentRunService(
         db.AgentRuns.Add(run);
         await db.SaveChangesAsync(ct);
 
-        var triggerOutcome = await n8nTrigger.TriggerAsync(run.Id, request.Kind, request.IncidentId, ct);
+        var timeoutSeconds = options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 10;
+        var deadline = run.StartedAtUtc.AddSeconds(timeoutSeconds);
+
+        var triggerOutcome = await n8nTrigger.TriggerAsync(run.Id, request.Kind, request.IncidentId, deadline, ct);
         if (triggerOutcome == TriggerOutcome.Error)
         {
             run.Status = "Fallback";
@@ -70,9 +74,6 @@ public sealed class AgentRunService(
             await ExecuteFallbackLogicAsync(run, "n8n_unreachable", request.IncidentId, ct);
             return await BuildViewAsync(run.Id, ct);
         }
-
-        var timeoutSeconds = options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 10;
-        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
@@ -93,6 +94,7 @@ public sealed class AgentRunService(
 
         if (rowsAffected > 0)
         {
+            db.ChangeTracker.Clear();
             run.Status = "Fallback";
             run.FallbackReason = "timeout";
             run.CompletedAtUtc = now;
@@ -113,12 +115,14 @@ public sealed class AgentRunService(
 
         if (!string.IsNullOrWhiteSpace(result.AgentError))
         {
+            logger.LogWarning("Agent run {RunId} reported agent_error fallback", runId);
             var affected = await db.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE \"AgentRun\" SET \"Status\" = 'Fallback', \"FallbackReason\" = 'agent_error', \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
                 ct);
 
             if (affected == 0) return ResultOutcome.Late;
 
+            db.ChangeTracker.Clear();
             run.Status = "Fallback";
             run.FallbackReason = "agent_error";
             run.CompletedAtUtc = DateTime.UtcNow;
@@ -132,21 +136,16 @@ public sealed class AgentRunService(
         // Validate that referenced decisions exist in DB
         foreach (var item in result.Decisions)
         {
-            var exists = await db.AgentDecisions.AnyAsync(d => d.Id == item.AgentDecisionId && d.OrganizationId == DemoOrganization.Id, ct);
+            var exists = await db.AgentDecisions.AnyAsync(
+                d => d.Id == item.AgentDecisionId && d.OrganizationId == DemoOrganization.Id && d.CorrelationId == runId,
+                ct);
             if (!exists)
             {
                 return ResultOutcome.Invalid;
             }
         }
 
-        var completedAt = DateTime.UtcNow;
-        var latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
-
-        var rows = await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"AgentRun\" SET \"Status\" = 'Completed', \"Model\" = {result.Model}, \"PromptVersion\" = {result.PromptVersion}, \"N8nExecutionId\" = {result.N8nExecutionId}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
-            ct);
-
-        if (rows == 0)
+        if (run.Status != "Running")
         {
             return ResultOutcome.Late;
         }
@@ -183,6 +182,19 @@ public sealed class AgentRunService(
         }
 
         await db.SaveChangesAsync(ct);
+
+        var completedAt = DateTime.UtcNow;
+        var latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
+
+        var rows = await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AgentRun\" SET \"Status\" = 'Completed', \"Model\" = {result.Model}, \"PromptVersion\" = {result.PromptVersion}, \"N8nExecutionId\" = {result.N8nExecutionId}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
+            ct);
+
+        if (rows == 0)
+        {
+            return ResultOutcome.Late;
+        }
+
         return ResultOutcome.Accepted;
     }
 
@@ -249,24 +261,48 @@ public sealed class AgentRunService(
         }
         else if (string.Equals(run.Kind, AgentRunKind.Incident.ToString(), StringComparison.OrdinalIgnoreCase) && incidentId.HasValue)
         {
-            var existing = await db.AgentDecisions.Where(d => d.CorrelationId == run.Id).ToListAsync(ct);
-            if (existing.Count == 0)
+            var existing = await db.AgentDecisions
+                .Where(d => d.CorrelationId == run.Id)
+                .Select(d => d.ProposalJson)
+                .ToListAsync(ct);
+            var replannedRouteIds = existing
+                .Select(ReadPreviousRoutePlanId)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+
+            var impact = await incidentEvaluator.EvaluateAsync(incidentId.Value, ct);
+            foreach (var affected in impact.AffectedRoutes)
             {
-                var impact = await incidentEvaluator.EvaluateAsync(incidentId.Value, ct);
-                foreach (var affected in impact.AffectedRoutes)
+                if (replannedRouteIds.Contains(affected.RoutePlanId)) continue;
+
+                var result = await replanner.ReplanAsync(affected.RoutePlanId, incidentId.Value, ct);
+                var dec = await db.AgentDecisions
+                    .OrderByDescending(d => d.CreatedAtUtc)
+                    .FirstOrDefaultAsync(d => d.CorrelationId == result.ProposedRoutePlanId, ct);
+                if (dec != null)
                 {
-                    var result = await replanner.ReplanAsync(affected.RoutePlanId, incidentId.Value, ct);
-                    var dec = await db.AgentDecisions
-                        .OrderByDescending(d => d.CreatedAtUtc)
-                        .FirstOrDefaultAsync(d => d.CorrelationId == result.ProposedRoutePlanId, ct);
-                    if (dec != null)
-                    {
-                        dec.CorrelationId = run.Id;
-                        dec.ExplanationSource = "Template";
-                    }
+                    dec.CorrelationId = run.Id;
+                    dec.ExplanationSource = "Template";
                 }
-                await db.SaveChangesAsync(ct);
             }
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    private static Guid? ReadPreviousRoutePlanId(string proposalJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(proposalJson);
+            return document.RootElement.TryGetProperty("previousRoutePlanId", out var id)
+                && id.TryGetGuid(out var routePlanId)
+                ? routePlanId
+                : null;
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            return null;
         }
     }
 

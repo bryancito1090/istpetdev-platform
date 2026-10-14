@@ -20,7 +20,8 @@ public sealed record ReplanResult(
     PolicyDecision Decision,
     IReadOnlyList<EscalationOption>? Options,
     IReadOnlyList<Fact> Facts,
-    string Explanation);
+    string Explanation,
+    Guid? AgentDecisionId = null);
 
 public sealed record ReplanDiff(
     IReadOnlyList<string> MovedStops,
@@ -65,6 +66,7 @@ public sealed class Replanner(
             ?? throw new KeyNotFoundException($"RoutePlan {routePlanId} no encontrado.");
 
         var impact = await incidentEvaluator.EvaluateAsync(incidentId, ct);
+        var incident = await db.Incidents.FirstOrDefaultAsync(i => i.Id == incidentId && i.OrganizationId == DemoOrganization.Id, ct);
         var today = await clock.TodayAsync(ct);
 
         // 1. Construir prefijo fijo para cada ruta publicada
@@ -194,11 +196,16 @@ public sealed class Replanner(
         }
 
         // 6. Guardar nueva revisión RoutePlan (Revision + 1, SupersedesRoutePlanId = plan.Id)
+        var existingMaxRevision = await db.RoutePlans
+            .Where(p => p.OrganizationId == DemoOrganization.Id && p.Code == plan.Code)
+            .MaxAsync(p => (int?)p.Revision, ct) ?? plan.Revision;
+        var nextRevision = Math.Max(plan.Revision + 1, existingMaxRevision + 1);
+
         var newPlan = new RoutePlan
         {
             OrganizationId = DemoOrganization.Id,
             Code = plan.Code,
-            Revision = plan.Revision + 1,
+            Revision = nextRevision,
             SupersedesRoutePlanId = plan.Id,
             VehicleId = vehicle.Id,
             Status = decision.Outcome == PolicyOutcome.AutoExecuted ? "Published" : "Proposed",
@@ -255,13 +262,66 @@ public sealed class Replanner(
         }
         db.RouteStops.AddRange(newRouteStops);
 
+        var replanFacts = decision.Facts.ToList();
+        replanFacts.Add(new Fact("cost_increase_pct", "route", diff.CostDeltaPct, "%"));
+        if (diff.CostDeltaPct < 0)
+        {
+            replanFacts.Add(new Fact("cost_reduction_pct", "route", Math.Abs(diff.CostDeltaPct), "%"));
+        }
+        replanFacts.Add(new Fact("max_delay_minutes", "route", diff.EtaChangesMinutes.Values.DefaultIfEmpty(0).Max(), "min"));
+        foreach (var (stopCode, etaMin) in diff.EtaChangesMinutes)
+        {
+            replanFacts.Add(new Fact("eta_change_minutes", stopCode, etaMin, "min"));
+            if (etaMin < 0)
+            {
+                replanFacts.Add(new Fact("advance_minutes", stopCode, Math.Abs(etaMin), "min"));
+            }
+            else
+            {
+                replanFacts.Add(new Fact("delay_minutes", stopCode, etaMin, "min"));
+            }
+        }
+        replanFacts.Add(new Fact("total_km", proposedRoute.VehicleCode, Math.Round(proposedRoute.Km, 2), "km"));
+        replanFacts.Add(new Fact("total_minutes", proposedRoute.VehicleCode, Math.Round(proposedRoute.Minutes, 2), "min"));
+        replanFacts.Add(new Fact("total_cost", proposedRoute.VehicleCode, Math.Round(proposedRoute.Cost, 2), "USD"));
+        foreach (var stop in proposedRoute.Stops)
+        {
+            replanFacts.Add(new Fact("arrival_time", stop.PointCode, (decimal)stop.ArrivalUtc.TimeOfDay.TotalHours, "hora"));
+            replanFacts.Add(new Fact("arrival_time", stop.PointCode, (decimal)stop.ArrivalUtc.TimeOfDay.TotalMinutes, "min"));
+        }
+        if (incident?.RadiusKm.HasValue == true)
+        {
+            replanFacts.Add(new Fact("incident_radius_km", "incident", incident.RadiusKm.Value, "km"));
+        }
+        if (incident?.Position != null)
+        {
+            replanFacts.Add(new Fact("incident_lat", "incident", Math.Round((decimal)incident.Position.Y, 4), "deg"));
+            replanFacts.Add(new Fact("incident_lon", "incident", Math.Round((decimal)incident.Position.X, 4), "deg"));
+        }
+        replanFacts.Add(new Fact("revision", proposedRoute.VehicleCode, newPlan.Revision, "revision"));
+        replanFacts.Add(new Fact("previous_revision", proposedRoute.VehicleCode, plan.Revision, "revision"));
+        replanFacts.Add(new Fact("moved_stops_count", proposedRoute.VehicleCode, diff.MovedStops.Count, "stops"));
+        replanFacts.Add(new Fact("dropped_stops_count", proposedRoute.VehicleCode, diff.DroppedStops.Count, "stops"));
+        replanFacts.Add(new Fact("stops_count", proposedRoute.VehicleCode, newRouteStops.Count, "stops"));
+        for (int i = 1; i <= newRouteStops.Count + 4; i++)
+        {
+            replanFacts.Add(new Fact("stop_sequence", $"stop_{i}", i, "sequence"));
+        }
+
         // Guardar AgentDecision
         var agentDecision = new AgentDecision
         {
             OrganizationId = DemoOrganization.Id,
             Kind = "REPLAN_CLASSIFICATION",
             Status = decision.Outcome.ToString(),
-            ProposalJson = JsonSerializer.Serialize(new { proposedRoutePlanId = newPlan.Id, revision = newPlan.Revision, options = optionsList, facts = decision.Facts }),
+            ProposalJson = JsonSerializer.Serialize(new
+            {
+                previousRoutePlanId = plan.Id,
+                proposedRoutePlanId = newPlan.Id,
+                revision = newPlan.Revision,
+                options = optionsList,
+                facts = replanFacts
+            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true }),
             Rationale = string.Join("; ", decision.Reasons),
             CorrelationId = newPlan.Id,
             CreatedAtUtc = DateTime.UtcNow
@@ -278,7 +338,7 @@ public sealed class Replanner(
 
         var explanation = explanationTemplates.Explain(
             decision.Outcome == PolicyOutcome.AutoExecuted ? "replan" : "escalation",
-            decision.Facts);
+            replanFacts);
 
         return new ReplanResult(
             plan.Id,
@@ -289,8 +349,9 @@ public sealed class Replanner(
             diff,
             decision,
             optionsList,
-            decision.Facts,
-            explanation);
+            replanFacts,
+            explanation,
+            agentDecision.Id);
     }
 
     public async Task<RoutePlan> ApproveDecisionOptionAsync(ApproveOptionRequest request, CancellationToken ct = default)

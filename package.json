@@ -10,9 +10,9 @@
   ],
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || exit 0",
-    "docker:up": "docker compose -f infra/compose/docker-compose.local.yml up -d",
-    "docker:down": "docker compose -f infra/compose/docker-compose.local.yml down",
-    "docker:reset": "docker compose -f infra/compose/docker-compose.local.yml down -v && docker compose -f infra/compose/docker-compose.local.yml up -d",
+    "docker:up": "docker compose -f infra/compose/docker-compose.dependencies.yml up -d",
+    "docker:down": "docker compose -f infra/compose/docker-compose.dependencies.yml down",
+    "docker:reset": "docker compose -f infra/compose/docker-compose.dependencies.yml down -v && docker compose -f infra/compose/docker-compose.dependencies.yml up -d",
     "db:migrate": "dotnet ef database update --project src/Infrastructure --startup-project src/Api",
     "db:dev": "node scripts/ops/switch-db.mjs dev",
     "db:cloud": "node scripts/ops/switch-db.mjs dev",

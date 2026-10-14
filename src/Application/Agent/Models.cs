@@ -63,4 +63,6 @@ public interface IAgentRunService
 public interface IN8nTrigger
 {
     Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct);
+    Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, DateTime? deadlineUtc, CancellationToken ct)
+        => TriggerAsync(runId, kind, incidentId, ct);
 }

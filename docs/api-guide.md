@@ -12,15 +12,17 @@ El desarrollo se realiza de forma **aislada y offline** en tu máquina local, si
 Asegúrate de que Docker Desktop esté en ejecución:
 ```bash
 # Levantar PostGIS (puerto 15432) y Redis (puerto 6379)
-docker compose -f infra/compose/docker-compose.local.yml up -d
+npm run docker:up
 ```
 
 ### 1.2. (Opcional) Levantar n8n Localmente para el Agente Logístico
-Para probar los flujos del agente logístico con n8n en local:
+Completa las variables locales del agente en `.env` —incluidas la imagen fijada, las claves locales, el cliente M2M de #38 y la clave de desarrollo DeepSeek— y ejecuta:
 ```bash
-docker compose -f infra/compose/docker-compose.local.yml --profile agent up -d
+scripts/agent/local-up.sh
 ```
-* **Interfaz web de n8n:** [http://localhost:5678](http://localhost:5678)
+Los comandos `npm run docker:up`, `docker:down` y `docker:reset` usan el Compose de dependencias base (PostGIS/Redis), sin exigir variables de n8n. El Compose local del agente exige imagen y clave de cifrado incluso al validar su configuración.
+
+El script valida las variables, importa las credenciales desde un temporal que elimina al salir, genera e importa los workflows versionados y los publica en la instancia local. **Interfaz web de n8n:** [http://localhost:5678](http://localhost:5678).
 
 ### 1.3. Levantar la API Backend (.NET 8)
 ```bash

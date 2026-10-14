@@ -1,9 +1,9 @@
 ---
 id: "003"
 titulo: Agente logístico con n8n
-estado: borrador
+estado: en curso
 creado: 2026-10-12
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 responsable: Anthony Pilatasig (API/backend y workflows) y Bryan Doicela (n8n producción y revisión)   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # diseño aprobado en la sesión de brainstorming del 12-oct; registrar nombre del integrante y confirmación del equipo
 depende_de: ["001", "002"]
@@ -29,7 +29,7 @@ La sesión de brainstorming del 12-oct decidió:
 - Los avisos al conductor llegan **dentro de la PWA** (spec 004), detectando el cambio de revisión de su ruta.
 - El modelo es **DeepSeek** (la propuesta de ADR-08), validado con una **prueba de aceptación** con umbrales fijos en lugar de una comparación entre modelos.
 
-Estado actual: no existen workflows (`automation/n8n/workflows/` está vacío), Terraform no crea el cliente técnico de Cognito que la bóveda diseñó para n8n, y la API exige el scope humano a todos los tokens, por lo que hoy rechazaría a n8n.
+Avance al 14-oct: workflows/prompt/copia local implementados y verificados. Cliente M2M aplicado y verificado. Bloqueo P0 resuelto; 30 corridas de aceptación consecutivas completadas con 0 fallbacks (100% herramientas, p95 9127 ms, 96% decisiones LLM, 10/10 inyección neutralizada). Ensayo CE-06 verificado en la laptop. Suite de 227 pruebas .NET y 10 pruebas Python al 100%. Entrega lista para revisión e integración en develop por parte de Codex; despliegue en servidor de producción documentado como fase posterior en [plan-cierre-39-produccion.md](plan-cierre-39-produccion.md).
 
 ## Objetivo y aporte a la nota
 
@@ -188,4 +188,4 @@ Notas revisadas sin otra contradicción: Contratos API y eventos (contrato n8n: 
 ## Preguntas abiertas
 
 - PA-01: ¿Bryan puede crear la credencial de DeepSeek y la credencial OAuth2 de Cognito en su n8n el 13-oct por la mañana? Decide: Bryan.
-- PA-02: ¿El equipo de infraestructura aplica el cambio de Terraform del cliente M2M, o lo aplica este spec? Decide: equipo.
+- PA-02: El apply dirigido del cliente M2M se ejecutó el 14-oct por Codex con revisión y autorización expresa de Bryan; [evidencia #38](https://github.com/bryancito1090/istpetdev-platform/issues/38#issuecomment-6172192197). Configuración/despliegue de producción permanecen a cargo de #38/#39.

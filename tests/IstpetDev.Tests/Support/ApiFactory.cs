@@ -30,6 +30,7 @@ public sealed class ApiFactory(string connectionString, bool demoEnabled = true,
             ["Demo:Accounts:1:Subject"] = TestTokens.Driver,
             ["Demo:Accounts:1:DisplayName"] = "Conductor de prueba",
             ["Demo:Accounts:1:Role"] = Roles.Conductor,
+            ["Demo:Accounts:4:Subject"] = "driver-fixture-duplicate",
         }).AddInMemoryCollection(overrides ?? new Dictionary<string, string?>()));
         builder.ConfigureTestServices(services => services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
         {

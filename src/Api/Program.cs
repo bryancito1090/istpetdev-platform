@@ -51,6 +51,19 @@ if (builder.Environment.IsDevelopment())
     }
 }
 
+// Keep the local API and n8n on the same HMAC secret. An explicit Agent:N8n
+// setting still wins (as used by production); the shared local .env value is a fallback.
+if (string.IsNullOrWhiteSpace(builder.Configuration["Agent:N8n:WebhookSecret"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["ISTPETDEV_WEBHOOK_SECRET"]))
+{
+    builder.Configuration["Agent:N8n:WebhookSecret"] = builder.Configuration["ISTPETDEV_WEBHOOK_SECRET"];
+}
+if (string.IsNullOrWhiteSpace(builder.Configuration["Agent:N8n:ApiBaseUrl"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["ISTPETDEV_API_BASE_URL"]))
+{
+    builder.Configuration["Agent:N8n:ApiBaseUrl"] = builder.Configuration["ISTPETDEV_API_BASE_URL"];
+}
+
 // Safe logging: ensure no headers/tokens are leaked in logs
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

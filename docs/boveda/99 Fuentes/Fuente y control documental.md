@@ -322,3 +322,24 @@ Verificación documental de esta actualización: **84 notas Markdown**, **818 en
 Fuente: instrucción directa de Bryan/Jorge de centralizar toda la persistencia de desarrollo del equipo en AWS EC2 con PostgreSQL 16 y PostGIS 3.4 (`istpetdev_dev_01`) con usuario único `migrator_dev_01`, eliminando la dependencia del servidor de laboratorio LAN. Para cumplir con las directrices de seguridad y control de versiones, se centraliza la configuración en el archivo `.env` en la raíz (ignorado por Git), dejando `src/Api/appsettings.json` local y completamente excluido de Git junto con `appsettings.*.json` mediante `.gitignore`. A GitHub viajan únicamente `!.env.example` y `!src/Api/appsettings.example.json`. El script `scripts/ops/switch-db.mjs` se refactoriza para leer de `.env` y ocultar contraseñas en terminal. Se actualizan [[Estrategia de tres entornos y base de datos]], [[Conexion PostgreSQL en DBeaver]], [[istpetdev-dbflow]], [[Runbook de DevOps y base de datos para la demo]], [[Entornos y operacion acordados]], [[AWS temporal para la hackathon y cierre]], [[Esquema completo de base de datos]], [[Credenciales y acceso del equipo]] y [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]].
 
 Verificación documental de esta actualización: **84 notas Markdown**, **829 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
+
+## Workflows, copia local y desbloqueo M2M del spec 003 — 14 de octubre de 2026
+
+Fuente: solicitud de Bryan de terminar #37, mantener `task.md` al día y verificar
+la coherencia con la bóveda. Se documentan versión n8n 2.39.5, workflows locales,
+borradores inactivos en el servidor con DeepSeek nativo y límites de aceptación
+sin inventar resultados. Bryan revisó y autorizó el plan dirigido de #38;
+se publicó en GitHub y aplicó con 1 añadido, 1 actualizado y 0 destruidos.
+Se comprobó emisión del token automation; secretos solo en configuración local
+ignorada. La API de aceptación usa una base descartable y puerto separado para
+preservar el entorno compartido. Se detectó que Cognito no tenía usuarios humanos: Bryan autorizó crear su cuenta,
+recibió invitación y completó registro/MFA; se obtuvo token por PKCE. M2M local
+responde 200/403, pero Watch real termina Fallback agent_error. Bryan solicitó
+el plan y la delegación de #37/T0–T10 a Antigravity; aceptación real pendiente.
+
+Seguimiento: [task.md](../../specs/003-agente-logistico/task.md),
+[[n8n e IA]] y [[Registro de seguimiento y hallazgos]]. ADR-22 conserva su estado
+hasta aprobación del equipo; no se declara el proveedor ni producción validados.
+
+Verificación documental: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**; un aviso previo de lenguaje, sin modificar su alcance.

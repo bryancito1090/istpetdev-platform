@@ -1,7 +1,7 @@
 ---
 tipo: registro-ejecucion
 estado: pendiente
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 tags: [equipo, seguimiento, pruebas, hallazgos]
 ---
 
@@ -57,9 +57,11 @@ Una fila por ejecución o conjunto automatizado identificable. Usar referencias 
 | 2026-10-13 | 003 (T4: Firma HMAC-SHA256 y disparo de webhook n8n) | Issue #36 (Local xUnit) | AnthonyPilatasig / Bryan | N8nTriggerTests (6/6 pasan en 2 s). Cabeceras X-IstpetDev-Timestamp y X-IstpetDev-Signature (sha256=hex), timeout estricto de 2 s ante demoras de red, rutas separadas /watch y /incident, verificación con anti-tampering y rechazo de timestamps con deriva > 60 s sin imprimir secretos en logs. | Aprobado | N8nTrigger.cs |
 | 2026-10-13 | 003 (T5: Orquestador de ejecuciones, resolución de carreras y fallback fail-safe) | Issue #36 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | AgentRunsApiTests + AgentRunTraceTests (5/5 pasan). Transiciones de estado atómicas con UPDATE condicional; fallback determinista garantizado en <= 11 s ante agent_disabled, timeout o error de agente; resolución de carreras atómica (ganador único); rechazo con 409 Late a callbacks tardíos; traza append-only persistida. | Aprobado | AgentRunService.cs |
 | 2026-10-13 | 003 (T6: Endpoints HTTP de AgentRuns, Middleware de observabilidad y correlación) | Issue #36 (Local Docker PostGIS 15432) | AnthonyPilatasig / Bryan | AgentRunsApiTests (3/3 pasan) + AgentRunTraceTests (2/2 pasan). Endpoints POST /agent/runs, GET /agent/runs/{id}, GET /agent/runs, POST /agent/runs/{id}/result (202/409/422 con RBAC estricto Automatizacion) y GET /incidents/{id} expuestos; cabecera X-Agent-Run-Id trazada en middleware solo para llamadas M2M. | Aprobado | AgentRunsController.cs, AgentRunTraceMiddleware.cs, IncidentsController.cs |
+| 2026-10-14 | 003 (#37: T7/T8/T9 parcial) | Rama feature/37-n8n-workflows-local; n8n local 2.39.5 y borradores remotos | Bryan / Codex | Backend: 12 pruebas de integración; Python: 4 generador, 4 aceptación, 1 fixture, 1 limpieza. Borradores remotos vigia/incidente inactivos con DeepSeek nativo; parámetros/conexiones coinciden con repo. | En curso | Plan M2M revisado/autorizado por Bryan y aplicado: 1 añadido/1 actualizado/0 destruidos; token emitido con scope automation. Configuración API pendiente. Aceptación real y CE-06 pendientes; ver [task.md](../../specs/003-agente-logistico/task.md). |
 | 2026-10-13 | 004 (T0 a T10: Campo, QR, Custodia, Despacho, Recepción Hospitalaria, Outbox Offline PWA y Trazabilidad Pública) | Commits `431b792`, `08b4170`, `33bd6ab` | Alexander Martínez / Bryan | Endpoints C# (Deliveries, HandlingUnits, Evidence, MobileAssignments, PublicTrace, Demo Advance) integrados; migración FieldOperations aplicada; PWA móvil outbox atómico hospitalario conectado a API local localhost:5000; Web consola bodega conectada; trazabilidad pública con token #t= y rate limiter probada. 116 pruebas unitarias aprobadas, npm run check 0 errores. | Aprobado | Registrado en task.md, informe oficial de entrega y ADR-24/ADR-25/ADR-27 |
 
 Adjuntar resúmenes con [[Plantilla evidencia]]: datos iniciales, pasos, valores/unidades, IDs de operación y archivos anonimizados. Guardar TRX/logs bajo `artifacts/seguimiento/<sha>/`; los registros compartidos enlazan evidencia accesible sin tokens, firmas, fotos privadas ni secretos. Conservar los archivos privados en almacenamiento autorizado.
+
 
 ## Hallazgos a confirmar al inicio
 
@@ -72,7 +74,7 @@ Estas filas provienen de [[Analisis de cobertura de specs]] y deben contrastarse
 | SEG-03 | Interfaz de Bodega para preparación y despacho de la escena | 004 | Alexander Martínez | **Cerrado:** Implementada en `apps/web/src/pages/warehouse/warehouse.page.ts` y PWA móvil con selección de entrega, unidades QR y despacho físico conectado a backend C# `DeliveriesController`. |
 | SEG-04 | Contrato e interfaz de devolución física ya exigida por 004 | 004 | Alexander Martínez | **Cerrado:** Flujo de rechazo físico, conciliación de líneas aceptadas/rechazadas, actas de novedades y transferencia contable implementado en `FieldService.cs` y PWA móvil `HomePage`. |
 | SEG-05 | Vía de upload de evidencias, límites QR y lectura de cuenta/rol para guards | 004 / infraestructura | Alexander Martínez | **Cerrado:** Endpoints de evidencias presignadas en `EvidenceController.cs`, limitador de tasa `PublicTraceRateLimiter` para escaneos QR y guards OIDC locales en Web y Móvil. |
-| SEG-06 | Cliente M2M, credenciales autorizadas y versión de n8n local | 003 / infraestructura | PENDIENTE | Por confirmar |
+| SEG-06 | Cliente M2M, credenciales autorizadas y versión de n8n local | 003 / infraestructura | Jorge / Bryan | Parcial: n8n 2.39.5 confirmada y DeepSeek remota enlazada; M2M/scope aplicados con autorización y token emitido; configuración de API y aceptación local/producción pendientes (#37/#38). |
 | SEG-07 | Obligaciones comunes, matriz, máquina dedicada y benchmark completo | 005 / datos | PENDIENTE | Por confirmar |
 | SEG-08 | Tratamiento explícito de RF-15/V-19: alcance actual o entrega 007 | Producto / coordinación | PENDIENTE | Por confirmar |
 | SEG-09 | Evidencia de navegador/PWA y filtros CI de módulos/workflows, además de build web | 003/004/005 / CI | PENDIENTE | Por confirmar |
@@ -121,3 +123,13 @@ Copiar este bloque para cada día:
 - Responsable de la siguiente revisión:
 
 El orden de continuidad está en [[Continuidad del piloto y specs 007 a 012]]. Las pruebas nuevas y decisiones se enlazan desde los specs y [[Plan de validacion]] al ejecutarse; no mantener estados contradictorios en distintos índices.
+
+### 14 de octubre de 2026 — Entrega y verificación local spec 003 (#37)
+
+- Fecha y versión repetible: 2026-10-14, commit base `dfd4507`, rama `feature/37-n8n-workflows-local`.
+- Módulos integrados y casos aprobados: Spec 003 (agente logístico n8n). 227/227 pruebas .NET verdes, 10/10 pruebas Python verdes. Matriz de aceptación con DeepSeek nativo en API local 5017 (30/30 corridas exitosas, 0 fallbacks, 100% herramientas 2xx, p95 9127 ms, 96% decisiones LLM, 10/10 inyecciones neutralizadas; reporte `artifacts/agent-acceptance/20261014-150147-176964/report.md`). Ensayo CE-06 verificado en laptop (Plan B: 21 ms fallback con n8n caído, 6661 ms recuperación con n8n levantado).
+- Hallazgos abiertos y responsables: Despliegue en servidor de producción, fijación de versión en Compose y reset de base compartida delegados a #39 (`docs/specs/003-agente-logistico/plan-cierre-39-produccion.md`). Integración en `develop` vía PR asignada a Codex.
+- Pendientes de entorno y fecha/evento: Revisión e integración por Codex; prueba oficial en producción (#39) antes del pitch (16-17 oct).
+- Cambios de contrato/alcance registrados: Validador estricto con signos respetados y facts semánticos positivos (`cost_reduction_pct`, `advance_minutes`); cálculo de retraso en política sin redondeo prematuro; persistencia atómica de decisiones previa al estado Completed.
+- Próxima prueba: Revisión, resolución de conflictos con `origin/develop` (333ce68) y PR por parte de Codex.
+- Responsable de la siguiente revisión: Codex (revisión e integración post-entrega).

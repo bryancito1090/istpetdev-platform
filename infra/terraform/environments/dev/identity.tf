@@ -28,8 +28,9 @@ resource "aws_cognito_user_pool_domain" "dev" {
 }
 
 resource "aws_cognito_resource_server" "api" {
-  identifier   = "istpetdev-api"
-  name         = "IstpetDev API"
+  identifier = "istpetdev-api"
+  # Preserve the deployed name: this provider replaces the resource on rename.
+  name         = "IstpetDev human API"
   user_pool_id = aws_cognito_user_pool.dev.id
   scope {
     scope_name        = "access"

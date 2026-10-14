@@ -14,7 +14,7 @@ public sealed partial class ExplanationTemplates : IExplanationTemplates
 
     public string Explain(string kind, IReadOnlyList<Fact> facts)
     {
-        var factsMap = facts.ToDictionary(f => $"{f.Code}:{f.Subject}", f => f);
+        var factsMap = facts.GroupBy(f => $"{f.Code}:{f.Subject}").ToDictionary(g => g.Key, g => g.First());
 
         string template = kind.ToLowerInvariant() switch
         {
@@ -34,6 +34,12 @@ public sealed partial class ExplanationTemplates : IExplanationTemplates
             if (factsMap.TryGetValue(key, out var fact))
             {
                 return $"{fact.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} {fact.Unit}".Trim();
+            }
+
+            var byCode = facts.FirstOrDefault(f => f.Code == code);
+            if (byCode != null)
+            {
+                return $"{byCode.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} {byCode.Unit}".Trim();
             }
 
             // Si el fact no existe, no inventar valor
