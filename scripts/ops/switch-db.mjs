@@ -62,13 +62,16 @@ function getCloudConfig() {
   };
 }
 
-const LOCAL_CONFIG = {
-  host: 'localhost',
-  port: 15432,
-  database: 'istpetdev_dev_01',
-  user: 'postgres',
-  password: 'postgres_dev_password_local'
-};
+function getLocalConfig() {
+  const env = loadEnvConfig();
+  return {
+    host: process.env.LOCAL_DATABASE_HOST || env.LOCAL_DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.LOCAL_DATABASE_PORT || env.LOCAL_DATABASE_PORT || '15432', 10),
+    database: process.env.LOCAL_DATABASE_NAME || env.LOCAL_DATABASE_NAME || 'postgres',
+    user: process.env.LOCAL_DATABASE_USER || env.LOCAL_DATABASE_USER || 'postgres',
+    password: process.env.LOCAL_DATABASE_PASSWORD || env.LOCAL_DATABASE_PASSWORD || process.env.POSTGRES_PASSWORD || 'postgres_dev_password_local'
+  };
+}
 
 function checkTcp(host, port, timeoutMs = 2500) {
   return new Promise((resolve) => {
@@ -143,6 +146,10 @@ async function switchToDev(customHost, customPort) {
     console.log(`[OK] Conectividad TCP verificada con servidor de desarrollo (${host}:${port}).`);
   }
 
+  if (!password && (!cloud.rawConnection || !cloud.rawConnection.toLowerCase().includes('password='))) {
+    console.warn('[AVISO] DATABASE_PASSWORD no esta configurada en .env ni en variables de entorno.');
+  }
+
   const connStr = cloud.rawConnection || `Host=${host};Port=${port};Database=${database};Username=${user};Password=${password}`;
   execSync(`dotnet user-secrets set "ConnectionStrings:Main" "${connStr}"`, { cwd: apiDir, stdio: 'inherit' });
 
@@ -151,8 +158,8 @@ async function switchToDev(customHost, customPort) {
 }
 
 async function switchToLocal() {
-  const { host, port, database, user, password } = LOCAL_CONFIG;
-  const connStr = `Host=${host};Port=${port};Database=${database};Username=${user};Password=${password}`;
+  const { host, port, database, user, password } = getLocalConfig();
+  const connStr = `Host=${host};Port=${port};Database=${database};Username=${user};Password=${password};Include Error Detail=true;`;
   execSync(`dotnet user-secrets set "ConnectionStrings:Main" "${connStr}"`, { cwd: apiDir, stdio: 'inherit' });
 
   console.log(`\n[EXITO] Backend configurado para DOCKER LOCAL (${host}:${port}).`);
