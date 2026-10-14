@@ -11,7 +11,7 @@ public sealed class SimulationIsolationTests
         var opConn = "Host=localhost;Port=5432;Database=istpetdev_demo;Username=postgres;Password=secret";
         var simConn = "Host=localhost;Port=5432;Database=istpetdev_demo;Username=postgres;Password=secret";
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        var ex = Assert.Throws<SimulationIsolationException>(() =>
             SimulationDatabase.ValidateIsolation(opConn, simConn));
 
         Assert.Contains(SimulationDatabase.NotIsolatedErrorCode, ex.Message);
@@ -23,7 +23,7 @@ public sealed class SimulationIsolationTests
         var opConn = "Host=localhost;Port=5432;Database=istpetdev_demo;Username=postgres;Password=secret";
         var simConn = "Host=localhost;Port=5432;Database=ISTPETDEV_DEMO;Username=postgres;Password=secret  ";
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        var ex = Assert.Throws<SimulationIsolationException>(() =>
             SimulationDatabase.ValidateIsolation(opConn, simConn));
 
         Assert.Contains(SimulationDatabase.NotIsolatedErrorCode, ex.Message);
@@ -34,7 +34,7 @@ public sealed class SimulationIsolationTests
     {
         var opConn = "Host=localhost;Port=5432;Database=istpetdev_demo;Username=postgres;Password=secret";
 
-        var ex = Assert.Throws<InvalidOperationException>(() =>
+        var ex = Assert.Throws<SimulationIsolationException>(() =>
             SimulationDatabase.ValidateIsolation(opConn, null));
 
         Assert.Contains(SimulationDatabase.NotIsolatedErrorCode, ex.Message);

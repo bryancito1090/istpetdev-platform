@@ -3,6 +3,11 @@ using Npgsql;
 
 namespace IstpetDev.Infrastructure.Simulation;
 
+public sealed class SimulationIsolationException : InvalidOperationException
+{
+    public SimulationIsolationException(string message) : base(message) { }
+}
+
 public static class SimulationDatabase
 {
     public const string NotIsolatedErrorCode = "SIMULATION_DATABASE_NOT_ISOLATED";
@@ -11,12 +16,12 @@ public static class SimulationDatabase
     {
         if (string.IsNullOrWhiteSpace(simulationConnectionString))
         {
-            throw new InvalidOperationException($"{NotIsolatedErrorCode}: La cadena de conexión de simulación no está configurada.");
+            throw new SimulationIsolationException($"{NotIsolatedErrorCode}: La cadena de conexión de simulación no está configurada.");
         }
 
         if (string.Equals(operationalConnectionString.Trim(), simulationConnectionString.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException($"{NotIsolatedErrorCode}: La base de simulación no puede ser la misma que la base operativa.");
+            throw new SimulationIsolationException($"{NotIsolatedErrorCode}: La base de simulación no puede ser la misma que la base operativa.");
         }
 
         try
@@ -30,7 +35,7 @@ public static class SimulationDatabase
 
             if (sameHost && samePort && sameDatabase)
             {
-                throw new InvalidOperationException($"{NotIsolatedErrorCode}: La base de simulación '{simBuilder.Database}' apunta a la misma base física que la operativa.");
+                throw new SimulationIsolationException($"{NotIsolatedErrorCode}: La base de simulación '{simBuilder.Database}' apunta a la misma base física que la operativa.");
             }
         }
         catch (InvalidOperationException)
