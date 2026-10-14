@@ -1,26 +1,16 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { MobileAuthService } from './auth.service';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { switchMap, take } from 'rxjs';
+import { isPrivateApiRequest } from '@istpetdev/shared-core';
+import { environment } from '../config/environment';
 
-/**
- * Interceptor HTTP funcional para inyectar token Bearer en peticiones al API.
- * En modo simulado, adjunta el token JWT sintético correspondiente al perfil activo.
- */
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(MobileAuthService);
-  const token = authService.accessToken();
-
-  // No agregar token en peticiones de assets o traza pública sin autenticación
-  const isPublicOrAsset = req.url.includes('/assets/') || req.url.includes('/public-trace');
-
-  if (token && !isPublicOrAsset && !req.headers.has('Authorization')) {
-    const authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return next(authReq);
-  }
-
-  return next(req);
+/** FR-04: Bearer solo hacia la API configurada; la traza pública y terceros no lo reciben. */
+export const authInterceptor: HttpInterceptorFn = (request, next) => {
+  if (!isPrivateApiRequest(request.url, environment.apiUrl)) return next(request);
+  const oidc = inject(OidcSecurityService);
+  return oidc.getAccessToken().pipe(
+    take(1),
+    switchMap((token) => next(token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request)),
+  );
 };

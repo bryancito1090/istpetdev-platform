@@ -16,7 +16,7 @@ import {
   IonBadge,
   IonButtons
 } from '@ionic/angular/standalone';
-import { MobileAuthService } from '../auth/auth.service';
+import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi } from '../field/field-api.interface';
 
@@ -90,7 +90,7 @@ interface ReceiverScanSample {
             </ion-badge>
           </div>
           <ion-card-title class="text-lg text-slate-900 font-bold">
-            {{ authService.currentUser()?.name || 'Usuario Móvil' }}
+            {{ authService.me()?.displayName ?? '' }}
           </ion-card-title>
         </ion-card-header>
       </ion-card>
@@ -98,7 +98,7 @@ interface ReceiverScanSample {
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
-      @if (authService.currentRole() === 'HospitalReceiver') {
+      @if (authService.currentRole() === 'Receptor') {
         <div class="space-y-4">
           <ion-card class="m-0 border border-emerald-200 bg-white shadow-sm overflow-hidden">
             <div class="p-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
@@ -259,7 +259,7 @@ interface ReceiverScanSample {
       <!-- ======================================================== -->
       <!-- CASO 2: OPERADOR DE BODEGA (Móvil)                       -->
       <!-- ======================================================== -->
-      @else if (authService.currentRole() === 'WarehouseOperator') {
+      @else if (authService.currentRole() === 'Bodega') {
         <div class="space-y-4">
           <ion-card class="m-0 border border-sky-200 bg-white shadow-sm">
             <ion-card-header class="pb-2 bg-sky-50 border-b border-sky-100">
@@ -498,31 +498,21 @@ export class HomePage implements OnInit {
 
   readonly roleSubtitle = computed(() => {
     const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'Receptor Hospitalario';
-    if (role === 'WarehouseOperator') return 'Operador de Bodega Central';
-    if (role === 'LogisticsManager') return 'Supervisor Logístico';
-    return 'Conductor de Custodia';
+    return role ? FIELD_ROLE_LABELS[role] : '';
   });
 
-  readonly roleEntityBadge = computed(() => {
-    const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'Hospital Ambato';
-    if (role === 'WarehouseOperator') return 'Bodega: WH-CENTRAL-01';
-    if (role === 'LogisticsManager') return 'Torre de Control';
-    return `Vehículo: ${this.authService.currentVehicleId() || 'VH-EC-101'}`;
-  });
+  readonly roleEntityBadge = computed(() => this.roleSubtitle());
 
   readonly roleBadgeColor = computed(() => {
     const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'success';
-    if (role === 'WarehouseOperator') return 'tertiary';
-    if (role === 'LogisticsManager') return 'warning';
+    if (role === 'Receptor') return 'success';
+    if (role === 'Bodega') return 'tertiary';
     return 'primary';
   });
 
   async ngOnInit(): Promise<void> {
     // Si es conductor y no hay ruta en caché, intentar descargarla
-    if (this.authService.currentRole() === 'CarrierDriver' && !this.outboxService.activeAssignment()) {
+    if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
   }
@@ -627,7 +617,6 @@ export class HomePage implements OnInit {
   }
 
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    void this.authService.logout();
   }
 }

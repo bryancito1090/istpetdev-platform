@@ -16,7 +16,7 @@
 | T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | hecho |
 | T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | hecho |
 | T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | hecho |
-| T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | pendiente |
+| T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | hecho |
 | T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | pendiente |
 | T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | pendiente |
 | T10 | Infraestructura: callbacks HTTPS, marca, IAM y hop limit (Jorge) | FR-20, NFR-02, #14 | — | [P] con todo | pendiente |
@@ -2263,7 +2263,7 @@ El returnUrl interno validado vive en una clave de un solo uso en `localStorage`
 - Consumes: igual que T6 en `shared-core`; `GET /api/v1/me`.
 - Produces: `MobileAuthService` con `status`, `me`, `currentRole: Signal<FieldRole | null>`, `bootstrap()`, `login(returnUrl?)`, `takeReturnUrl()` (por defecto `/home`), `logout(): Promise<void>`; `FieldRole = 'Bodega' | 'Conductor' | 'Receptor'`; `FIELD_ROLE_LABELS`; `roleGuard`; `authInterceptor`.
 
-- [ ] **Step 1: Habilitar el runner con IndexedDB falso**
+- [x] **Step 1: Habilitar el runner con IndexedDB falso**
 
 Run: `npm install -D -E vitest@4 jsdom@27 fake-indexeddb@6 --workspace=apps/mobile`
 
@@ -2297,7 +2297,7 @@ y en `architect.build.configurations.production`:
 import 'fake-indexeddb/auto';
 ```
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `apps/mobile/src/app/config/environment.spec.ts`:
 
@@ -2397,12 +2397,12 @@ describe('MobileAuthService', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:mobile`
 Expected: FAIL con «Could not resolve "../config/environment"» y «Could not resolve "./navigate-external"».
 
-- [ ] **Step 4: Configuración, sesión, guard e interceptor**
+- [x] **Step 4: Configuración, sesión, guard e interceptor**
 
 `apps/mobile/src/app/config/environment.ts` (valores de `terraform output -json cognito`, `client_ids.mobile`):
 
@@ -2611,12 +2611,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
 En `apps/mobile/src/app/auth/index.ts` añadir `export * from './navigate-external';` y `export * from './pages/callback/callback.page';`.
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:mobile`
 Expected: PASS en `environment.spec.ts` (tras pegar los valores de Terraform) y `auth.service.spec.ts`.
 
-- [ ] **Step 6: Conectar la PWA y reemplazar el login simulado**
+- [x] **Step 6: Conectar la PWA y reemplazar el login simulado**
 
 En `apps/mobile/src/app/app.config.ts`: cambiar la importación de Angular a `import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';`, la de la librería a `import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';`, añadir `import { TokenFreeStorage } from '@istpetdev/shared-core';` y `import { MobileAuthService } from './auth';`, y añadir después de `provideAuth(mobileOidcConfig),`:
 
@@ -2743,12 +2743,12 @@ y reemplazar los bloques `roleSubtitle`, `roleEntityBadge` y `roleBadgeColor` po
 
 con `import { FIELD_ROLE_LABELS } from '../auth';` (o ampliar la importación existente de `../auth`).
 
-- [ ] **Step 7: Verificar build, pruebas y que no quedan restos del mock**
+- [x] **Step 7: Verificar build, pruebas y que no quedan restos del mock**
 
 Run: `npm run test:mobile && npm run build:mobile && grep -rnE "useMockSession|loginWithCredentials|loginAs(Driver|Warehouse|Receiver|Manager)|DEMO_[A-Z]+_PROFILE|mock-bearer-token|istpetdev_volatile_mobile_session|CarrierDriver|LogisticsManager" apps/mobile/src; echo "grep=$?"`
 Expected: pruebas PASS, build sin errores, `grep=1`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A apps/mobile package-lock.json
