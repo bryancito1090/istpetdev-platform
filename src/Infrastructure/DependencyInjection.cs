@@ -1,6 +1,10 @@
 using System;
+using Amazon;
+using Amazon.CognitoIdentityProvider;
+using IstpetDev.Application.Accounts;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Infrastructure.HealthChecks;
+using IstpetDev.Infrastructure.Identity;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Application.Imports;
 using IstpetDev.Application.Demo;
@@ -45,6 +49,15 @@ public static class DependencyInjection
 
         services.Configure<N8nOptions>(configuration.GetSection("Agent:N8n"));
         services.AddHttpClient<IN8nTrigger, N8nTrigger>();
+
+        // Perezoso: WebApplicationFactory aplica la configuración de pruebas después de registrar servicios.
+        services.AddSingleton<IIdentityDirectory>(provider =>
+        {
+            var pool = CognitoPool.FromAuthority(provider.GetRequiredService<IConfiguration>()["Authentication:Authority"]);
+            if (pool is null) return new UnconfiguredIdentityDirectory();
+            var client = new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(pool.Region));
+            return new CognitoIdentityDirectory(client, pool, provider.GetRequiredService<ILogger<CognitoIdentityDirectory>>());
+        });
 
         // Register readiness health check
         services.AddHealthChecks()

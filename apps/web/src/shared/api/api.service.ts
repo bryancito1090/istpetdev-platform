@@ -4,28 +4,6 @@ import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../config/environment';
 import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
 
-export interface AuthLoginResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresIn: number;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    roleLabel: string;
-    facility: string;
-  };
-}
-
-export interface CurrentUserDto {
-  id: string;
-  subject: string;
-  role: string;
-  roleLabel: string;
-  clientId?: string;
-}
-
 export interface RiskItemDto {
   servicePointId: string;
   servicePointCode: string;
@@ -167,36 +145,6 @@ export class ApiService {
         if (err.error) return of(err.error as HealthStatusDto);
         return of(null);
       })
-    );
-  }
-
-  // ==========================================
-  // 2. AUTENTICACIÓN Y SESIÓN (POST /auth/login, GET /auth/me)
-  // ==========================================
-
-  login(credentials: { email?: string; password?: string; role?: string }): Observable<AuthLoginResponse | null> {
-    return this.http.post<AuthLoginResponse>(`${this.baseUrl}/api/v1/auth/login`, credentials).pipe(
-      tap(() => this.apiLiveStatus.set('online')),
-      catchError(err => {
-        console.warn('API login failed', err);
-        return of(null);
-      })
-    );
-  }
-
-  getCurrentUser(): Observable<CurrentUserDto | null> {
-    return this.http.get<CurrentUserDto>(`${this.baseUrl}/api/v1/auth/me`).pipe(
-      catchError(err => {
-        console.warn('Get current user failed', err);
-        return of(null);
-      })
-    );
-  }
-
-  logout(): Observable<boolean> {
-    return this.http.post<{ success: boolean }>(`${this.baseUrl}/api/v1/auth/logout`, {}).pipe(
-      map(res => res.success),
-      catchError(() => of(true))
     );
   }
 

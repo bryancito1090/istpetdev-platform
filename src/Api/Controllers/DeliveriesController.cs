@@ -1,16 +1,13 @@
 using System;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using IstpetDev.Api.Authentication;
-using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Field;
 using IstpetDev.Application.Field.Dtos;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Api.Controllers;
 
@@ -20,12 +17,10 @@ namespace IstpetDev.Api.Controllers;
 public sealed class DeliveriesController : ControllerBase
 {
     private readonly IFieldService _fieldService;
-    private readonly IApplicationDbContext _db;
 
-    public DeliveriesController(IFieldService fieldService, IApplicationDbContext db)
+    public DeliveriesController(IFieldService fieldService)
     {
         _fieldService = fieldService;
-        _db = db;
     }
 
     /// <summary>
@@ -40,8 +35,9 @@ public sealed class DeliveriesController : ControllerBase
     {
         try
         {
-            var actorAccountId = await ResolveAccountIdAsync(ct);
-            var result = await _fieldService.CreateHandlingUnitAsync(id, request, actorAccountId, ct);
+            var actorAccountId = User.AccountId();
+            if (actorAccountId is null) return Forbid();
+            var result = await _fieldService.CreateHandlingUnitAsync(id, request, actorAccountId.Value, ct);
             return StatusCode(201, result);
         }
         catch (FieldException ex)
@@ -64,8 +60,9 @@ public sealed class DeliveriesController : ControllerBase
         try
         {
             var key = !string.IsNullOrWhiteSpace(idempotencyKey) ? idempotencyKey : request.OperationId.ToString();
-            var actorAccountId = await ResolveAccountIdAsync(ct);
-            var result = await _fieldService.DispatchAsync(id, request, actorAccountId, key, ct);
+            var actorAccountId = User.AccountId();
+            if (actorAccountId is null) return Forbid();
+            var result = await _fieldService.DispatchAsync(id, request, actorAccountId.Value, key, ct);
             return Ok(result);
         }
         catch (FieldException ex)
@@ -88,8 +85,9 @@ public sealed class DeliveriesController : ControllerBase
         try
         {
             var key = !string.IsNullOrWhiteSpace(idempotencyKey) ? idempotencyKey : request.OperationId.ToString();
-            var actorAccountId = await ResolveAccountIdAsync(ct);
-            var result = await _fieldService.CreateReceiptAsync(id, request, actorAccountId, key, ct);
+            var actorAccountId = User.AccountId();
+            if (actorAccountId is null) return Forbid();
+            var result = await _fieldService.CreateReceiptAsync(id, request, actorAccountId.Value, key, ct);
             return Ok(result);
         }
         catch (FieldException ex)
@@ -102,7 +100,7 @@ public sealed class DeliveriesController : ControllerBase
     /// FR-19: Lectura paginada de entregas para el panel de control (005).
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = $"{Roles.Gerencia},{Roles.Planificador},{Roles.Bodega}")]
+    [Authorize(Roles = $"{Roles.Gerencia},{Roles.Planificador},{Roles.Bodega},{Roles.Auditor}")]
     public async Task<IActionResult> ListDeliveries(
         [FromQuery] Guid? routePlanId = null,
         [FromQuery] string? status = null,
@@ -112,29 +110,5 @@ public sealed class DeliveriesController : ControllerBase
     {
         var result = await _fieldService.GetDeliveriesAsync(routePlanId, status, limit, cursor, ct);
         return Ok(result);
-    }
-
-    private async Task<Guid> ResolveAccountIdAsync(CancellationToken ct)
-    {
-        var claimVal = User.FindFirst(AccountRoleClaimsTransformation.AccountIdClaim)?.Value;
-        if (Guid.TryParse(claimVal, out var accountId)) return accountId;
-
-        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!string.IsNullOrWhiteSpace(sub) && Guid.TryParse(sub, out var subGuid))
-        {
-            return subGuid;
-        }
-
-        if (!string.IsNullOrWhiteSpace(sub))
-        {
-            var acc = await _db.Accounts.FirstOrDefaultAsync(a => a.Subject == sub && a.OrganizationId == DemoOrganization.Id, ct);
-            if (acc != null) return acc.Id;
-        }
-
-        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value ?? Roles.Conductor;
-        var existingForRole = await _db.Accounts.FirstOrDefaultAsync(a => a.Role == role && a.OrganizationId == DemoOrganization.Id, ct);
-        if (existingForRole != null) return existingForRole.Id;
-
-        return DemoOrganization.Id;
     }
 }

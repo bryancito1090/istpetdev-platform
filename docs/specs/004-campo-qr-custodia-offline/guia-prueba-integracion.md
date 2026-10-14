@@ -1,5 +1,7 @@
 # Guía de Prueba de Punta a Punta: Integración 002 (Motor) y 004 (Campo)
 
+> **Autenticación vigente (spec 013):** esta guía conserva el recorrido de 004, pero sus instrucciones antiguas de usuarios/botones demo quedaron retiradas. Web y PWA usan la página administrada de Cognito (Authorization Code + PKCE) con cuentas aprobadas y aprovisionadas; las contraseñas no se comparten en este documento ni se guardan en el repositorio. La API local en `Development` no valida tokens del User Pool real, así que el recorrido autenticado de punta a punta requiere una API desplegada y configurada con Cognito. No uses las instrucciones locales de abajo para validar llamadas autenticadas.
+
 ## 1. ¿Para qué se hizo esta integración? (Propósito y Contexto)
 
 Antes de esta integración, el sistema tenía dos módulos que funcionaban en silos aislados:
@@ -20,7 +22,7 @@ Con la integración realizada para la **Issue #33**:
 
 ## 2. Preparación del Entorno (Cómo arrancar los servicios)
 
-Para probar el flujo completo en tu máquina, abre **tres terminales** en la raíz del proyecto:
+Para arrancar la API y servir las apps localmente, abre **tres terminales** en la raíz del proyecto. Esto sirve para desarrollo y para revisar el inicio de sesión en Cognito; no permite completar el flujo de API autenticado descrito abajo. Para esa prueba usa apps y API de un entorno desplegado y conectado al mismo User Pool.
 
 ### Terminal 1: Backend API (.NET 8)
 ```powershell
@@ -34,38 +36,40 @@ npm run dev:api
 npm run dev:web
 ```
 * **URL:** `http://localhost:4200`
-* **Destinado a:** Planificación, Gerencia y Bodega de escritorio.
+* **Destinado a:** Gerencia, Planificador y Auditor.
 
 ### Terminal 3: PWA Móvil de Campo (Ionic / Angular)
 ```powershell
 npm run dev:mobile
 ```
 * **URL:** `http://localhost:8100`
-* **Destinado a:** Conductor y Receptor en teléfono o emulador móvil.
+* **Destinado a:** Bodega, Conductor y Receptor en teléfono o emulador móvil.
 
 ---
 
 ## 3. Cuentas y Roles para la Prueba
 
-La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precargadas en `appsettings.Development.json`:
+Usa cuentas de prueba Cognito entregadas por el equipo y aprovisionadas como cuentas activas de la API. En el acceso redirigido a Cognito, inicia sesión con la cuenta asignada al rol requerido; no hay acceso rápido ni usuarios con contraseñas locales.
 
-| Rol Institucional | Usuario / Subject | Clave / Login rápido | Propósito en el flujo |
-| :--- | :--- | :--- | :--- |
-| **Planificador** | `planner-1` | Botón "Planificación" o `planner@istpetdev.local` | Proponer y publicar rutas con lotes FEFO |
-| **Bodega** | `warehouse-1` | Botón "Bodega" o `warehouse@istpetdev.local` | Preparar caja física, emitir QR y despachar |
-| **Conductor (C-01)** | `driver-1` | Botón "Conductor" o `driver@istpetdev.local` | Descargar ruta, recibir en hospital y firmar |
-| **Gerencia** | `admin-1` | Botón "Gerencia" o `admin@istpetdev.local` | Supervisión general del panel |
+| Rol Institucional | Plataforma | Identidad | Inicio de sesión | Propósito en el flujo |
+| :--- | :--- | :--- | :--- | :--- |
+| **Gerencia** | Web | Cuenta asignada por el equipo | Página administrada de Cognito | Supervisión general del panel |
+| **Planificador** | Web | Cuenta asignada por el equipo | Página administrada de Cognito | Proponer y publicar rutas con lotes FEFO |
+| **Auditor** | Web | Cuenta asignada por el equipo | Página administrada de Cognito | Consultar la operación en modo de solo lectura |
+| **Bodega** | PWA | Cuenta asignada por el equipo | Página administrada de Cognito | Preparar caja física, emitir QR y despachar |
+| **Conductor** | PWA | Cuenta asignada por el equipo | Página administrada de Cognito | Descargar ruta, recibir en hospital y firmar |
+| **Receptor** | PWA (rol de 013; sin sesión separada en esta demo) | Receptor hospitalario | Firma en el dispositivo del Conductor asignado | Validar y firmar; el Conductor autenticado envía la recepción |
 
 ---
 
 ## 4. Paso a Paso del Recorrido de Prueba (Dónde hacer clic)
 
-### Paso 1: Resetear escenario y publicar la ruta (Planificador)
-1. Abre tu navegador en **`http://localhost:4200`**.
-2. En la pantalla de login, pulsa el botón **"Dra. Andrea Morales (Planificación)"** para iniciar sesión.
+### Paso 1: Preparar el escenario y publicar la ruta (Planificador)
+1. Para el recorrido integrado, abre la web del entorno desplegado que valida Cognito y está conectado a su API. `http://localhost:4200` sirve para revisar la interfaz y el retorno desde Cognito, pero su API local en `http://localhost:5000` corre en `Development` y no valida esos tokens.
+2. Inicia sesión en la página administrada de Cognito con la cuenta de Planificador asignada por el equipo y vuelve a la web desplegada.
 3. Dirígete a la pestaña **"Rutas"** en el menú de navegación superior.
 4. Si la base está vacía o deseas el escenario fresco:
-   * Abre Swagger en `http://localhost:5000/swagger` y ejecuta `POST /api/v1/demo/reset` (o haz clic en el botón de restablecer demo si está visible).
+   * En el entorno de prueba, abre el Swagger de su API y ejecuta `POST /api/v1/demo/reset` solo si el reset de demo está habilitado. Si está deshabilitado, carga el fixture con el procedimiento aprobado para ese entorno. No envíes el token Cognito a Swagger de la API local.
 5. En la vista de **Rutas**, selecciona la propuesta de ruta generada y haz clic en el botón **"Publicar Ruta"**.
 6. **¿Qué ocurrió en el backend?** 
    * Se crearon las entregas `DEL-...` con sus líneas de lote y reservas activas en `RouteStockReservation`.
@@ -74,8 +78,8 @@ La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precarga
 ---
 
 ### Paso 2: Preparar la caja y despachar (Bodega)
-1. En la PWA móvil (**`http://localhost:8100`**) o en la web con rol **Bodega** (`warehouse-1`):
-2. Inicia sesión como **"Elena Bodega (Operador de Almacén)"**.
+1. Abre la PWA móvil del entorno configurado con Cognito y la API desplegada.
+2. Cuando Cognito lo solicite, inicia sesión con la cuenta de Bodega asignada por el equipo.
 3. Verás la lista de entregas pendientes de preparación:
    * Selecciona la entrega publicada.
    * Haz clic en **"Preparar Caja"**.
@@ -91,7 +95,7 @@ La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precarga
 ---
 
 ### Paso 3: Descargar asignación en el teléfono (Conductor)
-1. En el navegador del móvil (**`http://localhost:8100`**), cierra sesión e inicia sesión como **"Carlos Mendoza (Conductor C-01)"**.
+1. En el navegador del móvil, cierra sesión e inicia sesión en Cognito con la cuenta de Conductor asignada por el equipo.
 2. Al ingresar a la pantalla principal, la PWA ejecutará automáticamente `GET /api/v1/mobile/assignments`:
    * Verás tu vehículo asignado (`VEH-01`).
    * Verás la ruta del día con las paradas en los hospitales correspondientes.
@@ -105,8 +109,8 @@ La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precarga
    * Toca en la parada correspondiente al hospital de destino.
    * Toca en **"Recibir Entrega"**.
    * Escanea o selecciona la caja `HU-...`.
-   * Confirma las cantidades aceptadas (p. ej. 10 L).
-   * Dibuja una firma táctil en el recuadro de firma.
+   * El receptor hospitalario valida las cantidades aceptadas (p. ej. 10 L) y dibuja su firma táctil en el dispositivo del Conductor asignado.
+   * El Conductor registra la recepción desde la PWA bajo su propia sesión de Cognito.
    * Toca en **"Guardar en el teléfono"**.
 3. **¿Qué ocurrió en la PWA?**
    * Todo se guardó atómicamente en IndexedDB (`istpetdev-driver-outbox-db`).
@@ -119,7 +123,7 @@ La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precarga
 2. En la PWA, ve a la pestaña de **Sincronización** (`/sync`) o pulsa el botón **"Sincronizar"**:
    * Observarás la transición visual: `"Guardado en el teléfono"` ➔ `"Enviando"` ➔ `"Aceptado por el servidor"`.
 3. **¿Qué ocurrió en el backend?**
-   * Se llamó a `POST /api/v1/deliveries/{id}/receipts` con el `operationId` y clave de idempotencia.
+   * La PWA envía `POST /api/v1/deliveries/{id}/receipts` con la sesión del Conductor asignado, el `operationId` y la clave de idempotencia; la firma del Receptor y la foto quedan asociadas a esa recepción.
    * El stock se movió del vehículo al centro de salud.
    * Se registró el evento de custodia `Received`.
    * La entrega pasó a `Delivered`.
@@ -128,10 +132,10 @@ La API cuenta con un módulo de desarrollo (`DevJwtSecurity`) y cuentas precarga
 ---
 
 ### Paso 6: Verificación de la parada completada y QR del Jurado
-1. Vuelve al panel web (**`http://localhost:4200`**) en la pestaña **"Rutas"**:
+1. Vuelve al panel web del mismo entorno desplegado en la pestaña **"Rutas"**:
    * Observa la parada del hospital: ya no está pendiente, ahora figura con el check verde de **"Completada"** con hora de llegada real.
 2. Abre la URL del QR de la caja que generó bodega:
-   * Ejemplo: `http://localhost:4200/public-trace/{unitId}#t={token}`
+   * Ejemplo: `<origen-web-del-entorno>/public-trace/{unitId}#t={token}`
    * Verás la pantalla pública de auditoría:
      * Código de caja y estado `Verificada`.
      * Lista de productos (SKU y unidad base).

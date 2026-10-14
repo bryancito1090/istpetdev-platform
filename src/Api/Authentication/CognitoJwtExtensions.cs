@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 
 namespace IstpetDev.Api.Authentication;
@@ -8,15 +9,29 @@ public static class CognitoJwtExtensions
     public static IServiceCollection AddCognitoAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme).Configure<IConfiguration>((options, effective) =>
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IConfiguration, IHostEnvironment>((options, effective, environment) =>
         {
             var authority = effective["Authentication:Authority"];
-            if (string.IsNullOrWhiteSpace(authority))
+            var allowed = (effective.GetSection("Authentication:AllowedClientIds").Get<string[]>() ?? [])
+                .Where(clientId => !string.IsNullOrWhiteSpace(clientId))
+                .Select(clientId => clientId.Trim())
+                .ToArray();
+            var usesLocalAuthentication = environment.IsDevelopment() || environment.IsEnvironment("Testing");
+
+            if (!usesLocalAuthentication && string.IsNullOrWhiteSpace(authority))
             {
-                authority = DevJwtSecurity.DefaultAuthority;
+                throw new InvalidOperationException("Authentication:Authority es obligatorio fuera de Development.");
             }
 
-            var isLocalDev = authority.StartsWith("https://identity.istpetdev.local", StringComparison.OrdinalIgnoreCase) || authority.Contains("localhost");
+            if (!usesLocalAuthentication && allowed.Length == 0)
+            {
+                throw new InvalidOperationException("Authentication:AllowedClientIds es obligatorio fuera de Development.");
+            }
+
+            authority = string.IsNullOrWhiteSpace(authority) ? DevJwtSecurity.DefaultAuthority : authority;
+            var isLocalDev = usesLocalAuthentication &&
+                (authority.StartsWith("https://identity.istpetdev.local", StringComparison.OrdinalIgnoreCase) || authority.Contains("localhost", StringComparison.OrdinalIgnoreCase));
 
             options.MapInboundClaims = false;
             options.Authority = authority;
@@ -52,9 +67,6 @@ public static class CognitoJwtExtensions
                 {
                     var principal = context.Principal;
                     var client = principal?.FindFirst("client_id")?.Value;
-                    var configuredAllowed = effective.GetSection("Authentication:AllowedClientIds").Get<string[]>() ?? [];
-                    var defaultAllowed = new[] { "istpetdev-web-client", "istpetdev-mobile-client", "istpetdev-web-portal", "istpetdev-mobile-pwa" };
-                    var allowed = configuredAllowed.Length > 0 ? configuredAllowed : defaultAllowed;
                     var technical = effective.GetSection("Authentication:TechnicalClientIds").Get<string[]>() ?? [];
                     var scopes = principal?.FindFirst("scope")?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
                     if (principal?.FindFirst("token_use")?.Value != "access")
@@ -90,7 +102,8 @@ public static class CognitoJwtExtensions
                     return Task.CompletedTask;
                 },
             };
-        });
+        })
+        .ValidateOnStart();
         services.AddAuthorization();
         return services;
     }

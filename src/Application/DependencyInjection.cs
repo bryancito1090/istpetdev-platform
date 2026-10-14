@@ -1,3 +1,4 @@
+using IstpetDev.Application.Accounts;
 using IstpetDev.Application.PublicTrace.Services;
 using IstpetDev.Application.Agent;
 using IstpetDev.Application.Imports;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddSingleton<IExplanationValidator, ExplanationValidator>();
         services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
+        services.AddScoped<AccountProvisioning>();
 
         return services;
     }
