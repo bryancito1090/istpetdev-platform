@@ -3049,6 +3049,15 @@ git commit -m "ci: añade guardián del login simulado y pruebas frontend (#42)"
 
 En la suite de mobile, el runner Angular seguía advirtiendo sobre `vi.mock` aun cuando estaba al nivel del módulo en el spec. Se registró el mock desde `src/test-setup.ts` con una referencia de ejecución a `vi.mock`, antes de cargar los specs; `npm run test:mobile` pasa con 22 pruebas y sin el warning. El guardián también detecta la ruta retirada `/api/v1/auth/login` y la forma `auth/login'`.
 
+### Cierre del login simulado en la API (Bloque B)
+
+- Se retiró `AuthController` y se añadieron pruebas de integración para confirmar que `/api/v1/auth/login` y `/api/v1/auth/me` responden 404; `/api/v1/me` queda como el único endpoint «quién soy».
+- `DevJwtSecurity` conserva únicamente la clave y autoridad del validador local; la API ya no crea ni firma JWT.
+- `CognitoJwtExtensions` valida al arrancar que Production tenga `Authentication:Authority` y `Authentication:AllowedClientIds`; Development/Testing conservan el modo local y no hay una lista predeterminada de clientes.
+- `AccountRoleClaimsTransformation` solo agrega rol y `accountId` después de encontrar una cuenta activa y aprovisionada. Las operaciones de campo reutilizan `ClaimsPrincipal.AccountId()` y responden 403 si falta; se eliminaron los fallbacks por rol, `sub` y `DemoOrganization.Id`.
+- Las pruebas de integración cubren los siete endpoints de campo que recibían una resolución de cuenta y verifican 403 sin aprovisionar al sujeto ni devolver contenido.
+- Desviación respecto al código de 004: `MobileAssignmentsController` tenía el mismo fallback inseguro que las tres clases indicadas en el bloque, por lo que también se actualizó. Las pruebas unitarias existentes se ajustaron al nuevo constructor sin reducir sus expectativas.
+
 ---
 
 ### Task 10: Infraestructura — callbacks HTTPS, marca, IAM y hop limit (Jorge)
