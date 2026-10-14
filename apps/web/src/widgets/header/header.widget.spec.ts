@@ -50,4 +50,9 @@ describe('HeaderWidget (FR-21)', () => {
     expect(usersLinkFor('Planificador')).toBeNull();
     expect(usersLinkFor('Auditor')).toBeNull();
   });
+
+  it('Planificador incluye las rutas operativas completas', () => {
+    const nav = navigationFor('Planificador');
+    expect(nav).toEqual(['/inicio', '/datos', '/alertas', '/rutas', '/bodegas', '/simulation']);
+  });
 });

@@ -15,3 +15,9 @@ export const homeRedirectGuard: CanActivateFn = () => {
   const session = inject(AuthSession);
   return inject(Router).parseUrl(session.status() === 'authenticated' ? '/inicio' : '/login');
 };
+
+/** Si ya hay sesión activa, la raíz (/) redirige a /inicio; si no, permite ver la landing. */
+export const landingRedirectGuard: CanActivateFn = () => {
+  const session = inject(AuthSession);
+  return session.status() === 'authenticated' ? inject(Router).parseUrl('/inicio') : true;
+};

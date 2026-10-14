@@ -3,7 +3,7 @@ import { ActivatedRouteSnapshot, provideRouter, Router, RouterStateSnapshot, Url
 import { describe, expect, it } from 'vitest';
 import { AuthSession, SessionStatus } from '../model/auth-session';
 import { authGuard } from './auth.guard';
-import { homeRedirectGuard, roleGuard } from './role.guard';
+import { homeRedirectGuard, landingRedirectGuard, roleGuard } from './role.guard';
 
 function guard(status: SessionStatus, role: string | null, run: () => unknown) {
   TestBed.resetTestingModule();
@@ -67,5 +67,16 @@ describe('homeRedirectGuard', () => {
   it('redirige a login sin sesión', () => {
     const anonymous = guard('anonymous', null, () => homeRedirectGuard({} as ActivatedRouteSnapshot, state)) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(anonymous)).toBe('/login');
+  });
+});
+
+describe('landingRedirectGuard', () => {
+  it('redirige a inicio con sesión activa', () => {
+    const authenticated = guard('authenticated', 'Planificador', () => landingRedirectGuard({} as ActivatedRouteSnapshot, state)) as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(authenticated)).toBe('/inicio');
+  });
+
+  it('permite ver la landing sin sesión', () => {
+    expect(guard('anonymous', null, () => landingRedirectGuard({} as ActivatedRouteSnapshot, state))).toBe(true);
   });
 });
