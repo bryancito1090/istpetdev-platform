@@ -347,7 +347,9 @@ public sealed class RoutePlansController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> Replan([FromRoute] Guid id, [FromBody] ReplanRequestInput req, CancellationToken ct = default)
     {
-        var res = await replanner.ReplanAsync(id, req.IncidentId, ct);
+        ReplanResult res;
+        try { res = await replanner.ReplanAsync(id, req.IncidentId, ct); }
+        catch (ReplanConflictException error) { return Conflict(new ProblemDetails { Status = 409, Title = error.Message }); }
         var agentRunId = await GetAgentRunIdAsync("Incident", ct);
         if (agentRunId.HasValue && res.AgentDecisionId.HasValue)
         {

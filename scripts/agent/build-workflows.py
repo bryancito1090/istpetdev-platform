@@ -128,6 +128,8 @@ def inject_prompt_into_workflow(workflow: dict[str, Any], prompt: str, name: str
     workflow_meta = workflow.setdefault("meta", {})
     workflow_meta["promptVersion"] = PROMPT_VERSION
     workflow_meta["n8nVersion"] = N8N_VERSION
+    # Runtime revision IDs are assigned by n8n when importing the source.
+    workflow.pop("versionId", None)
     return workflow
 
 

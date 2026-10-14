@@ -38,6 +38,8 @@ public sealed record RevertPlanRequest(
     Guid RoutePlanId,
     Guid? RequestedByAccountId = null);
 
+public sealed class ReplanConflictException(string message) : Exception(message);
+
 public interface IReplanner
 {
     Task<ReplanResult> ReplanAsync(Guid routePlanId, Guid incidentId, CancellationToken ct = default);
@@ -61,9 +63,15 @@ public sealed class Replanner(
 
     public async Task<ReplanResult> ReplanAsync(Guid routePlanId, Guid incidentId, CancellationToken ct = default)
     {
+        await using var transaction = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct) : null;
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT \"Id\" FROM \"RoutePlan\" WHERE \"Id\" = {routePlanId} AND \"OrganizationId\" = {DemoOrganization.Id} FOR UPDATE", ct);
         var plan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"RoutePlan {routePlanId} no encontrado.");
+        if (await db.RoutePlans.AnyAsync(p => p.SupersedesRoutePlanId == plan.Id && p.OrganizationId == DemoOrganization.Id, ct))
+            throw new ReplanConflictException("La ruta ya tiene una revisión; consulta la revisión vigente antes de replanificar.");
 
         var impact = await incidentEvaluator.EvaluateAsync(incidentId, ct);
         var incident = await db.Incidents.FirstOrDefaultAsync(i => i.Id == incidentId && i.OrganizationId == DemoOrganization.Id, ct);
@@ -339,6 +347,8 @@ public sealed class Replanner(
         var explanation = explanationTemplates.Explain(
             decision.Outcome == PolicyOutcome.AutoExecuted ? "replan" : "escalation",
             replanFacts);
+
+        if (transaction is not null) await transaction.CommitAsync(ct);
 
         return new ReplanResult(
             plan.Id,

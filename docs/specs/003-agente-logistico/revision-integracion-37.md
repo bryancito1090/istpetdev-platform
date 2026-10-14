@@ -9,8 +9,8 @@ dependencias para mantener el arranque sin variables de n8n.
 ## Hallazgos y correcciones en revisión
 
 - Las herramientas aceptaban del modelo `apiBaseUrl`, `deadlineUtc`, `runId`
-  e `incidentId`. Ahora reciben el contexto firmado mediante `fields.values`
-  del nodo ToolWorkflow, separado de `query`; el origen HTTP viene de
+  e `incidentId`. Ahora reciben el contexto firmado desde el payload del nodo `Verify Signature` al evaluar
+  el JSON del subworkflow, separado de `query`; el origen HTTP viene de
   `ISTPETDEV_API_BASE_URL`, configurado por el operador. El modelo solo elige
   `routePlanId`. No puede enviar la credencial OAuth2 a otro origen ni ampliar
   el deadline. Se conserva el contrato de cinco herramientas de #37 / NFR-04.
@@ -49,7 +49,32 @@ herramientas 60/60, p95 9127 ms, LLM 48/50, inyección 10/10.
 Corresponde al árbol entregado antes de las correcciones; no acredita el árbol
 conciliado. Se repetirá la aceptación local y CI sobre la revisión final.
 
-Los archivos `AgentJourneyTests.cs` y `LocalWorkflowSmokeTests.cs` mencionados
-en `task.md` no existen en la entrega. Las pruebas locales de integración
-existentes y el informe real se registran por separado; no se atribuye a CI
-un recorrido E2E automatizado inexistente.
+La entrega no incluía `AgentJourneyTests.cs` ni `LocalWorkflowSmokeTests.cs`.
+Codex añadió el primer archivo: vigía con traza, cinco rechazos 403, fixture de
+inyección, fallbacks por desactivación/red/timeout/error/resultado inválido,
+callback tardío, incidente automático y replanificación parcial sin repetición.
+`LocalWorkflowSmokeTests.cs` se sustituye por el ensayo real CE-06 documentado.
+La revisión dirigida pasó 20/20 pruebas de agente y ruteo, incluidas carrera de
+callback, append concurrente de traza, conflicto de replan y aprobación humana.
+
+## Pendientes completados tras la comprobación de casillas
+
+Bryan confirmó el diseño el 14-oct: `aprobado_por`, ADR-22 y hechos canónicos
+se actualizan con esa confirmación. Se corrigió el incidente automático para
+continuar el run persistido con scope independiente del request y ejecutar
+fallback; se completaron propuestas por vehículo y mensajes por plantilla,
+`invalid_result`, traza de 403 y `late_result_ignored`, validación HTTP y
+conflicto 409 ante replan concurrente. El cron apagado se conecta a un paso
+fijo autenticado que inicia Watch por la API cuando el operador lo habilite.
+
+Se conservó el intento de aceptación fallido
+`artifacts/agent-acceptance/20261014-152313-927145/report.md` (0 llamadas).
+El paso de contexto y compatibilidad del nodo ToolWorkflow se validan primero
+con el runtime real; no se reemplaza un resultado fallido por evidencia anterior.
+
+Suite completa local: **388/388**, 0 fallos ni omitidas, en 6 min 16 s,
+`artifacts/agent-review/delivery-final.trx`. Incluye las 3 pruebas de rendimiento
+del simulador integrado. Prueba real inicial con exports corregidos: Completed,
+2/2 herramientas 2xx, 2/2 decisiones LLM y 7456 ms. La matriz final sigue en curso.
+Auditoría NuGet sin paquetes vulnerables; `npm run audit:check` pasa con las
+7 excepciones vigentes del spec 000. No se acredita escaneo de imagen n8n.

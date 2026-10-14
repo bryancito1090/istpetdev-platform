@@ -6,6 +6,10 @@ on:
     paths:
       - "src/**"
       - "scripts/db/**"
+      - "scripts/agent/**"
+      - "automation/n8n/**"
+      - "infra/compose/docker-compose*.yml"
+      - ".env.example"
       - ".dockerignore"
       - ".config/dotnet-tools.json"
       - "global.json"
@@ -26,6 +30,10 @@ on:
     paths:
       - "src/**"
       - "scripts/db/**"
+      - "scripts/agent/**"
+      - "automation/n8n/**"
+      - "infra/compose/docker-compose*.yml"
+      - ".env.example"
       - ".dockerignore"
       - ".config/dotnet-tools.json"
       - "global.json"

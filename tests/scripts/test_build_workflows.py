@@ -20,6 +20,7 @@ SPEC.loader.exec_module(builder)
 def sample_workflow():
     return {
         "name": "sample",
+        "versionId": "stale-exported-version",
         "nodes": [
             {
                 "name": "AI Agent",
@@ -68,6 +69,7 @@ class BuildWorkflowsTests(unittest.TestCase):
             self.assertEqual("v1", result["parameters"]["body"]["promptVersion"])
             self.assertEqual("v1", workflow["meta"]["promptVersion"])
             self.assertEqual("2.39.5", workflow["meta"]["n8nVersion"])
+            self.assertNotIn("versionId", workflow)
         self.assertEqual(0, builder.build_workflows(*args, check_only=True))
 
     def test_missing_template_fails_before_creating_outputs(self):

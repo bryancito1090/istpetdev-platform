@@ -5,7 +5,7 @@ estado: en curso
 creado: 2026-10-12
 actualizado: 2026-10-14
 responsable: Anthony Pilatasig (API/backend y workflows) y Bryan Doicela (n8n producción y revisión)   # asignación de Joseph Baño, 13-oct
-aprobado_por: PENDIENTE     # diseño aprobado en la sesión de brainstorming del 12-oct; registrar nombre del integrante y confirmación del equipo
+aprobado_por: Bryan     # confirmación expresa durante la revisión del 14-oct-2026
 depende_de: ["001", "002"]
 boveda:
   - 05 Automatizacion/n8n e IA.md

@@ -76,7 +76,7 @@ En el fixture `demo-region`, las 8 órdenes de clientes acumulan ~500 kg de dema
 - [x] Comprobar que existen `src/Application/Imports/ValueParser.cs`, `src/Application/Logistics/Planning/RoutePlanner.cs`, `src/Api/Controllers/RoutePlansController.cs`, `src/Api/Controllers/IncidentsController.cs`, `AgentDecision`, el rol `Automatizacion` y `tests/IstpetDev.Tests`. Ejecutar `dotnet test tests/IstpetDev.Tests --filter 'Category=E2E'`; esperado: 0 fallos antes de atribuir regresiones a 003.
 - [x] Confirmar contrato de `AgentDecision.CorrelationId`, hechos de cada decisión, publicación automática y endpoints de 002. Verificar si el reset de demo permite `demo-region` y si `GET /incidents/{id}` debe añadirse en T6.
 - [x] Versión de n8n 2.39.5 confirmada y rama desde develop con 001/002. Apply M2M dirigido ejecutado con revisión/autorización expresa de Bryan; evidencia en #38, sin claves en el repo.
-- [ ] Resolver `aprobado_por` y la aprobación de diseño con el equipo. PA-01: DeepSeek remota disponible; credencial OAuth2/configuración de producción todavía pendientes. No confundir el apply autorizado con aprobar ADR-22.
+- [x] Resolver `aprobado_por`: Bryan confirmó expresamente el diseño de spec 003 / ADR-22 durante esta revisión del 14-oct. PA-01 (OAuth2 y configuración de producción) sigue pendiente en #39 y no se acredita por el apply local.
 
 ### T1 — Persistir ejecuciones y limpiar en reset
 
@@ -166,7 +166,7 @@ Pasos y obtención de credenciales: [guia-cierre-37.md](guia-cierre-37.md).
 
 **Archivos:** crear `tests/IstpetDev.Tests/E2E/AgentJourneyTests.cs`; actualizar `docs/boveda/05 Automatizacion/n8n e IA.md`, `docs/boveda/03 Arquitectura/Decisiones de arquitectura.md` conforme al protocolo y el registro de [test-e2e.md](test-e2e.md) solo con ejecuciones reales.
 
-- [ ] Automatizar [E2E-01 a E2E-05](test-e2e.md) sobre API + base con n8n falso: vigía, incidente, fallback, carrera, explicación inventada, traza, scopes/roles e inyección. Separar las pruebas con DeepSeek real y plan B local (E2E-06/07) para no hacer que CI dependa de credenciales externas.
+- [x] Automatizar [E2E-01 a E2E-05](test-e2e.md) sobre API + base con n8n falso: vigía, incidente, fallback, carrera, explicación inventada, traza, scopes/roles e inyección. Separar las pruebas con DeepSeek real y plan B local (E2E-06/07) para no hacer que CI dependa de credenciales externas.
 - [x] Ejecutar `dotnet test tests/IstpetDev.Tests` y `dotnet build IstpetDev.sln`: 227/227 pruebas pasadas (0 fallos). Ejecutar pruebas Python de scripts (10/10 pasadas) y el informe de aceptación (30/30 pasadas).
 - [x] Revisar uno por uno FR-01–FR-16 incluido FR-06b, NFR-01–05 y CE-01–06 con la matriz; registrar gaps como abiertos. Actualizar la bóveda con las decisiones de DeepSeek, scopes y herramientas; 0 errores en `check_vault.py`. Producción y reset de base compartida pendientes y delegados a [#39](plan-cierre-39-produccion.md).
 - [x] Dejar `estado` completado para handoff local; transferir a Codex mediante `.git/istpetdev-37-ready.json` para revisión e integración en develop.
@@ -230,3 +230,15 @@ Corrección del registro anterior: `AgentJourneyTests.cs` y
 `LocalWorkflowSmokeTests.cs` no existen; `AgentRunServiceTests.cs` se añade
 en esta revisión para cubrir la transacción de callback. No se considera
 automatizado E2E-01–05 por la sola existencia de pruebas HTTP parciales.
+
+Bryan confirmó el diseño durante esta revisión. Se implementan los pendientes
+reales de T5/T6/T10: incidente automático con scope propio y espera/fallback,
+propuestas deterministas por vehículo, resultado inválido con fallback inmediato,
+transición y traza atómicas, conflicto explícito al replanificar una revisión ya
+sustituida y recorrido `AgentJourneyTests.cs` con n8n simulado. Verificación
+en curso; no marcar pruebas en verde hasta su finalización.
+
+La casilla de automatización T10 queda acreditada por `AgentJourneyTests.cs`
+y las regresiones de agente/ruteo: revisión dirigida 20/20, sin fallos. El
+ensayo CE-06 real sustituye `LocalWorkflowSmokeTests.cs`; no se crea una prueba
+que solo repita el bootstrap. La suite final y aceptación real siguen en curso.

@@ -26,7 +26,7 @@ public sealed class AgentRunServiceTests(PostgisContainer postgres)
         using var reached = new ManualResetEventSlim();
         using var resume = new ManualResetEventSlim();
         var validator = new PausedValidator(reached, resume);
-        var service = new AgentRunService(db, null!, null!, null!, null!, null!, validator,
+        var service = new AgentRunService(db, null!, null!, null!, null!, null!, null!, validator,
             Options.Create(new AgentOptions()), NullLogger<AgentRunService>.Instance);
         var result = new AgentResult([new DecisionText(decision.Id, "Explicación validada", "Mensaje validado")], null, "deepseek-chat", "v1", "test", null);
         var callback = Task.Run(() => service.SubmitResultAsync(run.Id, result, default));

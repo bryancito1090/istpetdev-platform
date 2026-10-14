@@ -365,3 +365,16 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 - Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
 
 Verificación documental de esta actualización: **84 notas Markdown**, **848 enlaces internos resueltos**, **0 errores**.
+
+## Revisión e integración local de #37 — 14 de octubre de 2026
+
+Fuente: entrega de Antigravity y solicitud de Bryan de comprobar y completar
+las casillas de spec 003. Bryan confirmó la aprobación del diseño/ADR-22; se
+actualizan spec, plan, tareas y hechos canónicos. La revisión completa caminos
+locales faltantes de incidente automático, fallback, contexto firmado, traza,
+concurrencia y recorrido E2E. Evidencia y pendientes en
+[revision-integracion-37.md](../../specs/003-agente-logistico/revision-integracion-37.md).
+Producción permanece en #39; la aceptación del árbol final y CI aún se verifican.
+
+Verificación documental: **84 notas Markdown**, **847 enlaces internos resueltos**,
+**0 errores**; cuatro avisos de lenguaje previos, fuera de este cambio.

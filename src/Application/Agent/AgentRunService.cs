@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Incidents;
+using IstpetDev.Application.Logistics.Planning;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ public sealed class AgentRunService(
     IApplicationDbContext db,
     IN8nTrigger n8nTrigger,
     IRiskCalculator riskCalculator,
+    IRoutePlanner routePlanner,
     IReplanner replanner,
     IIncidentEvaluator incidentEvaluator,
     IExplanationTemplates explanationTemplates,
@@ -26,7 +28,8 @@ public sealed class AgentRunService(
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public async Task<AgentRunView> StartAndWaitAsync(StartRunRequest request, Guid? actorAccountId, CancellationToken ct)
@@ -43,21 +46,21 @@ public sealed class AgentRunService(
             ToolCallsJson = "[]"
         };
 
-        if (!options.Value.Enabled)
-        {
-            run.Status = "Fallback";
-            run.FallbackReason = "agent_disabled";
-            run.CompletedAtUtc = DateTime.UtcNow;
-            run.LatencyMs = 0;
-            db.AgentRuns.Add(run);
-            await db.SaveChangesAsync(ct);
-
-            await ExecuteFallbackLogicAsync(run, "agent_disabled", request.IncidentId, ct);
-            return await BuildViewAsync(run.Id, ct);
-        }
-
         db.AgentRuns.Add(run);
         await db.SaveChangesAsync(ct);
+        return await ResumeAndWaitAsync(run.Id, ct);
+    }
+
+    public async Task<AgentRunView> ResumeAndWaitAsync(Guid runId, CancellationToken ct)
+    {
+        var run = await db.AgentRuns.AsNoTracking().FirstAsync(r => r.Id == runId && r.OrganizationId == DemoOrganization.Id, ct);
+        var request = ParseTrigger(run.TriggerJson) ?? throw new InvalidOperationException("Missing persisted agent trigger");
+        if (run.Status != "Running") return await BuildViewAsync(run.Id, ct);
+        if (!options.Value.Enabled)
+        {
+            await CompleteFallbackAsync(run, "agent_disabled", ct);
+            return await BuildViewAsync(run.Id, ct);
+        }
 
         var timeoutSeconds = options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 10;
         var deadline = run.StartedAtUtc.AddSeconds(timeoutSeconds);
@@ -65,13 +68,7 @@ public sealed class AgentRunService(
         var triggerOutcome = await n8nTrigger.TriggerAsync(run.Id, request.Kind, request.IncidentId, deadline, ct);
         if (triggerOutcome == TriggerOutcome.Error)
         {
-            run.Status = "Fallback";
-            run.FallbackReason = "n8n_unreachable";
-            run.CompletedAtUtc = DateTime.UtcNow;
-            run.LatencyMs = (int)(run.CompletedAtUtc.Value - run.StartedAtUtc).TotalMilliseconds;
-            await db.SaveChangesAsync(ct);
-
-            await ExecuteFallbackLogicAsync(run, "n8n_unreachable", request.IncidentId, ct);
+            await CompleteFallbackAsync(run, "n8n_unreachable", ct);
             return await BuildViewAsync(run.Id, ct);
         }
 
@@ -86,21 +83,7 @@ public sealed class AgentRunService(
             }
         }
 
-        // Timeout reached: atomically transition from Running to Fallback
-        var now = DateTime.UtcNow;
-        var rowsAffected = await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"AgentRun\" SET \"Status\" = 'Fallback', \"FallbackReason\" = 'timeout', \"CompletedAtUtc\" = {now} WHERE \"Id\" = {run.Id} AND \"Status\" = 'Running'",
-            ct);
-
-        if (rowsAffected > 0)
-        {
-            db.ChangeTracker.Clear();
-            run.Status = "Fallback";
-            run.FallbackReason = "timeout";
-            run.CompletedAtUtc = now;
-            run.LatencyMs = (int)(now - run.StartedAtUtc).TotalMilliseconds;
-            await ExecuteFallbackLogicAsync(run, "timeout", request.IncidentId, ct);
-        }
+        await CompleteFallbackAsync(run, "timeout", ct);
 
         return await BuildViewAsync(run.Id, ct);
     }
@@ -113,24 +96,16 @@ public sealed class AgentRunService(
             return ResultOutcome.Invalid;
         }
 
+        if (run.Status != "Running") return await RecordLateResultAsync(runId, ct);
         if (!string.IsNullOrWhiteSpace(result.AgentError))
         {
-            logger.LogWarning("Agent run {RunId} reported agent_error fallback", runId);
-            var affected = await db.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE \"AgentRun\" SET \"Status\" = 'Fallback', \"FallbackReason\" = 'agent_error', \"CompletedAtUtc\" = {DateTime.UtcNow} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
-                ct);
-
-            if (affected == 0) return ResultOutcome.Late;
-
-            db.ChangeTracker.Clear();
-            run.Status = "Fallback";
-            run.FallbackReason = "agent_error";
-            run.CompletedAtUtc = DateTime.UtcNow;
-            run.LatencyMs = (int)(run.CompletedAtUtc.Value - run.StartedAtUtc).TotalMilliseconds;
-
-            var triggerReq = ParseTrigger(run.TriggerJson);
-            await ExecuteFallbackLogicAsync(run, "agent_error", triggerReq?.IncidentId, ct);
-            return ResultOutcome.Accepted;
+            var won = await CompleteFallbackAsync(run, "agent_error", ct);
+            return won ? ResultOutcome.Accepted : ResultOutcome.Late;
+        }
+        if (result.Decisions.Count == 0 || result.Decisions.Select(d => d.AgentDecisionId).Distinct().Count() != result.Decisions.Count)
+        {
+            await CompleteFallbackAsync(run, "invalid_result", ct);
+            return ResultOutcome.Invalid;
         }
 
         // Validate that referenced decisions exist in DB
@@ -141,6 +116,7 @@ public sealed class AgentRunService(
                 ct);
             if (!exists)
             {
+                await CompleteFallbackAsync(run, "invalid_result", ct);
                 return ResultOutcome.Invalid;
             }
         }
@@ -158,7 +134,11 @@ public sealed class AgentRunService(
         var rows = await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE \"AgentRun\" SET \"Status\" = 'Completed', \"Model\" = {result.Model}, \"PromptVersion\" = {result.PromptVersion}, \"N8nExecutionId\" = {result.N8nExecutionId}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
             ct);
-        if (rows == 0) return ResultOutcome.Late;
+        if (rows == 0)
+        {
+            await transaction.RollbackAsync(ct);
+            return await RecordLateResultAsync(runId, ct);
+        }
 
         // Update decisions with validated LLM text
         foreach (var item in result.Decisions)
@@ -184,6 +164,7 @@ public sealed class AgentRunService(
             else
             {
                 decision.ExplanationSource = "Template";
+                decision.DriverMessage = "Consulta la propuesta de ruta antes de continuar.";
                 decision.ExplanationMismatch = !validation.IsValid
                     ? validation.MismatchReason
                     : !driverValidation.IsValid ? driverValidation.MismatchReason : "driver_message_too_long";
@@ -238,34 +219,77 @@ public sealed class AgentRunService(
         return views;
     }
 
+    private async Task<bool> CompleteFallbackAsync(AgentRun run, string reason, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var completedAt = DateTime.UtcNow;
+        var latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
+        var rows = await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AgentRun\" SET \"Status\" = 'Fallback', \"FallbackReason\" = {reason}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {run.Id} AND \"Status\" = 'Running'", ct);
+        if (rows == 0) return false;
+        db.ChangeTracker.Clear();
+        await ExecuteFallbackLogicAsync(run, reason, ParseTrigger(run.TriggerJson)?.IncidentId, ct);
+        completedAt = DateTime.UtcNow;
+        latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AgentRun\" SET \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {run.Id}", ct);
+        await transaction.CommitAsync(ct);
+        return true;
+    }
+
+    private async Task<ResultOutcome> RecordLateResultAsync(Guid runId, CancellationToken ct)
+    {
+        var trace = JsonSerializer.Serialize(new[] { new ToolCallTrace("POST", $"/api/v1/agent/runs/{runId}/result", 409, 0, DateTime.UtcNow, "late_result_ignored") }, JsonOpts);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AgentRun\" SET \"ToolCallsJson\" = (\"ToolCallsJson\"::jsonb || {trace}::jsonb) WHERE \"Id\" = {runId} AND \"OrganizationId\" = {DemoOrganization.Id}", ct);
+        return ResultOutcome.Late;
+    }
+
     private async Task ExecuteFallbackLogicAsync(AgentRun run, string reason, Guid? incidentId, CancellationToken ct)
     {
         if (string.Equals(run.Kind, AgentRunKind.Watch.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             var risks = await riskCalculator.CalculateAsync(persistSnapshots: false, ct);
-            var facts = Facts.Sort(risks.SelectMany(r => r.Facts).ToList());
-            var explanation = explanationTemplates.Explain("risk", facts);
-
-            var decision = new AgentDecision
+            var plan = await routePlanner.PlanAsync(new PlanRequest(null, null, true), ct);
+            if (plan.Routes.Count == 0)
             {
-                OrganizationId = DemoOrganization.Id,
-                Kind = "RISK_WATCH",
-                Status = "Evaluated",
-                ProposalJson = JsonSerializer.Serialize(new { risksCount = risks.Count, facts }, JsonOpts),
-                Rationale = explanation,
-                ExplanationSource = "Template",
-                CorrelationId = run.Id,
-                CreatedAtUtc = DateTime.UtcNow
-            };
-            db.AgentDecisions.Add(decision);
+                var facts = Facts.Sort(risks.SelectMany(r => r.Facts).ToList());
+                db.AgentDecisions.Add(new AgentDecision
+                {
+                    OrganizationId = DemoOrganization.Id, Kind = "RISK_WATCH", Status = "Evaluated",
+                    ProposalJson = JsonSerializer.Serialize(new { facts, unserved = plan.Unserved }, JsonOpts),
+                    Rationale = explanationTemplates.Explain("risk", facts),
+                    DriverMessage = "No hay rutas propuestas; consulta al planificador antes de salir.",
+                    ExplanationSource = "Template", CorrelationId = run.Id, CreatedAtUtc = DateTime.UtcNow
+                });
+            }
+            foreach (var route in plan.Routes)
+            {
+                var facts = Facts.Sort(plan.Facts.Concat(risks.SelectMany(r => r.Facts)).Concat([
+                    new Fact("total_km", route.VehicleCode, route.Km, "km"),
+                    new Fact("stops_count", route.VehicleCode, route.Stops.Count, "stops")]).ToList());
+                db.AgentDecisions.Add(new AgentDecision
+                {
+                    OrganizationId = DemoOrganization.Id,
+                    Kind = "WATCH_ROUTE_PROPOSAL",
+                    Status = "Proposed",
+                    ProposalJson = JsonSerializer.Serialize(new { vehicleCode = route.VehicleCode, route, facts }, JsonOpts),
+                    Rationale = explanationTemplates.Explain("plan", facts),
+                    DriverMessage = "Consulta la propuesta de ruta antes de iniciar el recorrido.",
+                    ExplanationSource = "Template",
+                    CorrelationId = run.Id,
+                    CreatedAtUtc = DateTime.UtcNow
+                });
+            }
             await db.SaveChangesAsync(ct);
         }
         else if (string.Equals(run.Kind, AgentRunKind.Incident.ToString(), StringComparison.OrdinalIgnoreCase) && incidentId.HasValue)
         {
-            var existing = await db.AgentDecisions
-                .Where(d => d.CorrelationId == run.Id)
-                .Select(d => d.ProposalJson)
-                .ToListAsync(ct);
+            var existingDecisions = await db.AgentDecisions.Where(d => d.CorrelationId == run.Id).ToListAsync(ct);
+            foreach (var existingDecision in existingDecisions)
+                if (string.IsNullOrWhiteSpace(existingDecision.DriverMessage))
+                    existingDecision.DriverMessage = "Consulta la revisión vigente de la ruta antes de continuar.";
+            var existing = existingDecisions.Select(d => d.ProposalJson).ToList();
             var replannedRouteIds = existing
                 .Select(ReadPreviousRoutePlanId)
                 .Where(id => id.HasValue)
@@ -277,7 +301,9 @@ public sealed class AgentRunService(
             {
                 if (replannedRouteIds.Contains(affected.RoutePlanId)) continue;
 
-                var result = await replanner.ReplanAsync(affected.RoutePlanId, incidentId.Value, ct);
+                ReplanResult result;
+                try { result = await replanner.ReplanAsync(affected.RoutePlanId, incidentId.Value, ct); }
+                catch (ReplanConflictException) { continue; }
                 var dec = await db.AgentDecisions
                     .OrderByDescending(d => d.CreatedAtUtc)
                     .FirstOrDefaultAsync(d => d.CorrelationId == result.ProposedRoutePlanId, ct);
@@ -285,6 +311,7 @@ public sealed class AgentRunService(
                 {
                     dec.CorrelationId = run.Id;
                     dec.ExplanationSource = "Template";
+                    dec.DriverMessage = "Consulta la revisión vigente de la ruta antes de continuar.";
                 }
             }
             await db.SaveChangesAsync(ct);
@@ -326,6 +353,7 @@ public sealed class AgentRunService(
             try
             {
                 using var doc = JsonDocument.Parse(d.ProposalJson);
+                if (doc.RootElement.TryGetProperty("vehicleCode", out var vehicleProp)) vehicleCode = vehicleProp.GetString() ?? "";
                 if (doc.RootElement.TryGetProperty("proposedRoutePlanId", out var planIdProp))
                 {
                     var planId = planIdProp.GetGuid();

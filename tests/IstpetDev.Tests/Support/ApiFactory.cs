@@ -13,7 +13,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace IstpetDev.Tests.Support;
 
-public sealed class ApiFactory(string connectionString, bool demoEnabled = true, IReadOnlyDictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
+public class ApiFactory(string connectionString, bool demoEnabled = true, IReadOnlyDictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
 {
     public FakeIdentityDirectory Directory { get; } = new();
 

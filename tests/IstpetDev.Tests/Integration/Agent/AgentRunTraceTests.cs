@@ -81,6 +81,12 @@ public sealed class AgentRunTraceTests(PostgisContainer postgres)
             Assert.Equal("/api/v1/risks", trace.GetProperty("path").GetString());
             Assert.Equal(200, trace.GetProperty("status").GetInt32());
         }
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => client.GetAsync("/api/v1/risks")));
+        await using (var db = TestDb.Context(connection))
+        {
+            using var traces = JsonDocument.Parse((await db.AgentRuns.SingleAsync(r => r.Id == runId)).ToolCallsJson);
+            Assert.Equal(9, traces.RootElement.GetArrayLength());
+        }
     }
 
     [Fact]
@@ -279,8 +285,11 @@ public sealed class AgentRunTraceTests(PostgisContainer postgres)
         automation.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         automation.DefaultRequestHeaders.Add("X-Agent-Run-Id", runId.ToString());
 
-        var replanResponse = await automation.PostAsJsonAsync(
-            $"/api/v1/route-plans/{affectedPlanId}/replan", new { incidentId });
+        var competing = await Task.WhenAll(
+            automation.PostAsJsonAsync($"/api/v1/route-plans/{affectedPlanId}/replan", new { incidentId }),
+            automation.PostAsJsonAsync($"/api/v1/route-plans/{affectedPlanId}/replan", new { incidentId }));
+        Assert.Single(competing, response => response.StatusCode == HttpStatusCode.Conflict);
+        var replanResponse = Assert.Single(competing, response => response.StatusCode == HttpStatusCode.Created);
         Assert.Equal(HttpStatusCode.Created, replanResponse.StatusCode);
         using var replan = JsonDocument.Parse(await replanResponse.Content.ReadAsStringAsync());
         var decisionId = replan.RootElement.GetProperty("agentDecisionId").GetGuid();

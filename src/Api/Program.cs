@@ -145,9 +145,9 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableS
 app.UseCors("IstpetDevCors");
 
 app.UseAuthentication();
+app.UseMiddleware<AgentRunTraceMiddleware>();
 app.UseRateLimiter();
 app.UseAuthorization();
-app.UseMiddleware<AgentRunTraceMiddleware>();
 
 // 1. Process Liveness: returns 200 OK as long as the process is alive, regardless of cloud/DB
 app.MapHealthChecks("/health/live", new HealthCheckOptions

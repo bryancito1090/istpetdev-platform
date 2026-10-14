@@ -24,6 +24,18 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
     };
 
     [Fact]
+    public async Task Invalid_start_list_and_unknown_callback_return_client_errors()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = "Incident" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = 99 })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = "Incident", incidentId = Guid.NewGuid() })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.GetAsync("/api/v1/agent/runs?limit=0")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.GetAsync("/api/v1/agent/runs?limit=101")).StatusCode);
+    }
+
+    [Fact]
     public async Task Start_run_watch_with_agent_disabled_falls_back_immediately_with_200()
     {
         var connection = postgres.NewDatabase();
