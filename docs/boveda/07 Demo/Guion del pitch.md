@@ -12,6 +12,9 @@ tags: [demo, validacion, istpetdev]
 > [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
 > Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y la respuesta de O-04.
 
+> [!info] Preparación de T3–T5 (14-oct-2026, fase 3 del issue #46)
+> Papeles, relevos, sustituciones, frases vigentes sin ensayo conectado y contingencias: [escena y contingencias](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md). Pasadas y respuestas se anotan en el [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md). Hoy ninguna parte de la demo tiene ensayo conectado: se dice la «Frase vigente» de esa nota, no la de la tabla de abajo. Los nombres de los papeles siguen sin confirmar.
+
 > [!warning] Lectura del kit previo (14-oct-2026)
 > La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
 
