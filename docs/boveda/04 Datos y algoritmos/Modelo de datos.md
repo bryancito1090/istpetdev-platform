@@ -1,14 +1,14 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [datos, algoritmo, validacion]
 ---
 
 # Modelo de datos
 
-> [!warning] Complemento — 12 de octubre de 2026
-> El esquema físico de la demo es el núcleo `DemoCore` del spec 001 (27 tablas sin RLS, ADR-21, propuesta). El catálogo de 95 tablas queda como diseño P2. Ver [[Runbook de DevOps y base de datos para la demo]].
+> [!warning] Complemento — 14 de octubre de 2026
+> El esquema físico de la demo en `develop` evolucionó del núcleo inicial de 27 tablas (ADR-21) a **36 tablas núcleo** validadas en `LeanSchemaTests`, incorporando operaciones de campo ([[Decisiones de arquitectura#ADR-27 — Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas|ADR-27]]), ejecuciones del agente (Spec 003) y ruteo basado en pedidos, bodegas y rebalanceo ([[Decisiones de arquitectura#ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo|ADR-28]]). Ver [[Runbook de DevOps y base de datos para la demo]].
 
 Modelo lógico inicial y reglas de dominio. El catálogo físico objetivo, con columnas, claves, índices, restricciones, RLS y orden de migración, está en [[Esquema completo de base de datos]] desde el 9 de octubre. La bóveda define diseño; la implementación vive en el repositorio de software y su estado no se deduce de estas notas.
 
@@ -46,6 +46,9 @@ Modelo lógico inicial y reglas de dominio. El catálogo físico objetivo, con c
 | IdempotencyRecord | OperationId, actor/ámbito, huella y resultado |
 | OutboxEvent | Evento persistido y estado de publicación |
 | SimulationRun | Seed, dataset, políticas, parámetros y resultados |
+| DeliveryOrder / DeliveryOrderLine | Pedido formal de entrega hacia un cliente/punto con líneas solicitadas, despachadas y estado (ADR-28) |
+| WarehouseStockPolicy | Políticas de inventario por almacén y producto: stock mínimo, stock de seguridad y lote de reposición (ADR-28) |
+| TransferSuggestion | Sugerencia auditable de rebalanceo entre bodegas con estado, justificación y días de cobertura (ADR-28) |
 
 Estas entidades no obligan a crear un microservicio por tabla. El dataset y las simulaciones pueden vivir en un esquema separado para impedir mezclas con operación.
 

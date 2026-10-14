@@ -6,16 +6,16 @@
 
 | ID | Entrega verificable | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|
-| T0 | Base, Deciders, baselines y ramas confirmados | 001/002 | — | pendiente |
-| T1 | Contratos de lectura de rutas y entregas | T0, 002/004 | [P] con T2 | pendiente |
-| T2 | Generador canónico y calendario exógeno | T0, 001 | [P] con T1 | pendiente |
+| T0 | Base, Deciders, baselines y ramas confirmados | 001/002 | — | hecho (desarrollo sobre develop integrado con 001/002/004) |
+| T1 | Contratos de lectura de rutas y entregas | T0, 002/004 | [P] con T2 | hecho (integrado en develop vía PR #47 y PR #59) |
+| T2 | Generador canónico y calendario exógeno | T0, 001 | [P] con T1 | hecho |
 | T3 | Base aislada, importador y migración única | T2, 001/002 | — | pendiente |
 | T4 | Políticas reactiva y fija | T2–T3 | [P] con T5 | pendiente |
 | T5 | Adaptador IstpetDev y ciclo horario regional | T2–T3, 002 | [P] con T4 | pendiente |
 | T6 | Métricas, invariantes y agregación | T4–T5 | — | pendiente |
 | T7 | Worker, API, progreso y exportación | T3, T6 | — | pendiente |
 | T8 | Benchmark de corrida completa y corrección medida | T7 | [P] con T9 | pendiente |
-| T9 | Panel en vivo, mapa y acciones | T1, 003/004 | [P] con T8 | pendiente |
+| T9 | Panel en vivo, mapa y acciones | T1, 003/004 | [P] con T8 | en curso (mapa Leaflet, ruteo por pedidos y bodegas integrados en PR #59) |
 | T10 | Vista de simulación y exportación | T7, T9 | — | pendiente |
 | T11 | Recorrido E2E, evidencia y cierre | T8–T10 | — | pendiente |
 
@@ -70,29 +70,29 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 
 **Archivos (lectura):** `docs/specs/{001-nucleo-delgado-importador,002-motor-logistico,003-agente-logistico,004-campo-qr-custodia-offline}/{spec,plan}.md`, `docs/specs/005-panel-simulador/{spec,plan}.md`, `global.json`, `apps/web/package.json`.
 
-- [ ] Verificar `git fetch origin` y que la rama de implementación nace de `origin/develop` con 001 y 002 integrados. Confirmar `src/Application/Imports/CanonicalWriter.cs`, el importador de `road_segments`, `tests/IstpetDev.Tests/IstpetDev.Tests.csproj`, el planificador y los endpoints 002. Ejecutar `dotnet build IstpetDev.sln`; esperado `Build succeeded`.
-- [ ] Registrar Deciders y fecha para el spec 005, baseline `reactive-v1`/`fixed7-v1`, demanda sintética, regiones/flota y matriz permitida. Si se cambia una regla antes de la primera corrida, cambiar `policyVersion`/`datasetVersion` en spec y bóveda **antes** de generar resultados. No aprobar con `PENDIENTE`.
-- [ ] Confirmar login de 013 (H1–H3) y `advance` de 004, 003 `GET/POST /agent/runs`, y contratos nuevos 002 FR-23 / 004 FR-19. El backend T2–T8 puede avanzar sin 003/004; T9 requiere sus contratos reales.
-- [ ] Comprobar el origen de la matriz y dos conexiones PostgreSQL distintas; si son la misma base, detener la preparación antes de importar. Registrar el compromiso de H4 en el PR de implementación.
+- [x] Verificar `git fetch origin` y que la rama de implementación nace de `origin/develop` con 001 y 002 integrados. Confirmar `src/Application/Imports/CanonicalWriter.cs`, el importador de `road_segments`, `tests/IstpetDev.Tests/IstpetDev.Tests.csproj`, el planificador y los endpoints 002. Ejecutar `dotnet build IstpetDev.sln`; esperado `Build succeeded`.
+- [x] Registrar Deciders y fecha para el spec 005, baseline `reactive-v1`/`fixed7-v1`, demanda sintética, regiones/flota y matriz permitida. Si se cambia una regla antes de la primera corrida, cambiar `policyVersion`/`datasetVersion` en spec y bóveda **antes** de generar resultados. No aprobar con `PENDIENTE`.
+- [x] Confirmar login de 013 (H1–H3) y `advance` de 004, 003 `GET/POST /agent/runs`, y contratos nuevos 002 FR-23 / 004 FR-19. El backend T2–T8 puede avanzar sin 003/004; T9 requiere sus contratos reales.
+- [x] Comprobar el origen de la matriz y dos conexiones PostgreSQL distintas; si son la misma base, detener la preparación antes de importar. Registrar el compromiso de H4 en el PR de implementación.
 
 ### T1 — Lecturas estables de 002 y 004
 
 **Archivos:** 002 modifica `src/Api/Controllers/RoutePlansController.cs` y `tests/IstpetDev.Tests/Integration/Logistics/LogisticsApiTests.cs`; 004 modifica `src/Api/Controllers/DeliveriesController.cs` y `tests/IstpetDev.Tests/Integration/Field/FieldApiTests.cs` (crear si aún no existen). 005 solo verifica y consume.
 
-- [ ] Prueba roja HTTP de `GET /api/v1/route-plans?date=2026-10-12&limit=1`: 200, `items` con revisión vigente ordenada por fecha/código/revisión, `nextCursor` estable; segundo GET con cursor no repite ID. Sin token → 401. GET no aumenta conteo de planes.
-- [ ] Prueba roja HTTP de `GET /api/v1/deliveries?routePlanId=<id>&limit=1`: 200 con `deliveryId`, `routePlanId`, `pointCode`, `dueAtUtc`, `status`, `evidenceStatus`; paginación sin repetición. Conductor no autorizado → 403; vista pública no recibe datos privados.
-- [ ] Implementar solo lecturas y filtros en los specs productores, sin hacer nuevas migraciones. Ejecutar los filtros `FullyQualifiedName~LogisticsApiTests` y `FullyQualifiedName~FieldApiTests`; esperado `Failed: 0`.
-- [ ] Los equipos 002/004 hacen sus commits; 005 registra los hashes integrados. Si falta cualquiera antes de H4, escalar como bloqueo de integración, no fijar IDs en la web.
+- [x] Prueba roja HTTP de `GET /api/v1/route-plans?date=2026-10-12&limit=1`: 200, `items` con revisión vigente ordenada por fecha/código/revisión, `nextCursor` estable; segundo GET con cursor no repite ID. Sin token → 401. GET no aumenta conteo de planes.
+- [x] Prueba roja HTTP de `GET /api/v1/deliveries?routePlanId=<id>&limit=1`: 200 con `deliveryId`, `routePlanId`, `pointCode`, `dueAtUtc`, `status`, `evidenceStatus`; paginación sin repetición. Conductor no autorizado → 403; vista pública no recibe datos privados.
+- [x] Implementar solo lecturas y filtros en los specs productores, sin hacer nuevas migraciones. Ejecutar los filtros `FullyQualifiedName~LogisticsApiTests` y `FullyQualifiedName~FieldApiTests`; esperado `Failed: 0`.
+- [x] Los equipos 002/004 hacen sus commits; 005 registra los hashes integrados. Si falta cualquiera antes de H4, escalar como bloqueo de integración, no fijar IDs en la web.
 
 ### T2 — Generar canónicos y calendario exógeno
 
 **Archivos:** crear `src/Application/Simulation/{ScenarioGenerator,ExogenousCalendar}.cs`, `data/fixtures/simulation-national/{scenario.json,mapping.json}`, `tests/IstpetDev.Tests/Unit/Simulation/{ScenarioGeneratorTests,ExogenousCalendarTests}.cs`.
 
-- [ ] Prueba roja `ScenarioGeneratorTests`: seed 11 y versión `national-v1` generan los mismos bytes de siete CSV canónicos de 001, `road_segments` de 002, manifiesto y SHA-256 en dos ejecuciones; seed 12 cambia calendario, no IDs de puntos/recursos. Con N=6, D=3, dos SKU: 6 puntos, 3 días, 36 claves de demanda solicitada. Ninguna fila futura se importa como consumo observado inicial.
-- [ ] Implementar generador con parámetros en `scenario.json`: seis regiones para ≈80 puntos (≤15 por región), bodega y flota por región, histórico previo y matriz de origen declarado. Ordenar CSV por código/fecha/SKU, codificar UTF-8 y cantidades en unidad base. `mapping.json` usa el perfil de 001; no escribir puntos, nombres ni coordenadas en C#.
-- [ ] Prueba roja `ExogenousCalendarTests`: para una media de 10 L/día, un laborable sin ruido ni pico pide 10 L y un fin de semana 8 L; ruido con seed permanece en ±15 % y las mismas claves reciben picos etiquetados. `VisibleAt(t)` no devuelve demanda ni incidente con `KnownAtUtc > t`; una política que consulta día siguiente recibe cero eventos futuros.
-- [ ] Implementar PRNG con seed derivada de `(datasetVersion, seed)` y **una única generación antes de las políticas**; ordenar eventos por tiempo UTC/región/punto/SKU, calcular hash sobre serialización canónica. El adverso deriva del calendario base con demanda ×1,20, `leadTimeDays +1` y vehículo retirado declarado en manifest, igual para las tres políticas.
-- [ ] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ScenarioGeneratorTests|FullyQualifiedName~ExogenousCalendarTests"`; esperado `Failed: 0`. Commit `feat(simulation): generar demanda común y archivos canónicos` con trailer.
+- [x] Prueba roja `ScenarioGeneratorTests`: seed 11 y versión `national-v1` generan los mismos bytes de siete CSV canónicos de 001, `road_segments` de 002, manifiesto y SHA-256 en dos ejecuciones; seed 12 cambia calendario, no IDs de puntos/recursos. Con N=6, D=3, dos SKU: 6 puntos, 3 días, 36 claves de demanda solicitada. Ninguna fila futura se importa como consumo observado inicial.
+- [x] Implementar generador con parámetros en `scenario.json`: seis regiones para ≈80 puntos (≤15 por región), bodega y flota por región, histórico previo y matriz de origen declarado. Ordenar CSV por código/fecha/SKU, codificar UTF-8 y cantidades en unidad base. `mapping.json` usa el perfil de 001; no escribir puntos, nombres ni coordenadas en C#.
+- [x] Prueba roja `ExogenousCalendarTests`: para una media de 10 L/día, un laborable sin ruido ni pico pide 10 L y un fin de semana 8 L; ruido con seed permanece en ±15 % y las mismas claves reciben picos etiquetados. `VisibleAt(t)` no devuelve demanda ni incidente con `KnownAtUtc > t`; una política que consulta día siguiente recibe cero eventos futuros.
+- [x] Implementar PRNG con seed derivada de `(datasetVersion, seed)` y **una única generación antes de las políticas**; ordenar eventos por tiempo UTC/región/punto/SKU, calcular hash sobre serialización canónica. El adverso deriva del calendario base con demanda ×1,20, `leadTimeDays +1` y vehículo retirado declarado en manifest, igual para las tres políticas.
+- [x] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ScenarioGeneratorTests|FullyQualifiedName~ExogenousCalendarTests"`; esperado `Failed: 0`. Commit `feat(simulation): generar demanda común y archivos canónicos` con trailer.
 
 ### T3 — Importar en base separada y crear una migración
 

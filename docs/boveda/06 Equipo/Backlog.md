@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -13,17 +13,17 @@ Backlog compartido de IstpetDev, **sin asignación fija de integrantes**. Todas 
 
 | ID | Entrega | Depende de | Criterio de cierre | Estado |
 |---|---|---|---|---|
-| B-01 | Cerrar versiones y contrato | ADRs | Versiones/contrato revisados | Pendiente |
-| B-02 | Fixture de 6 puntos/2 SKU | B-01 | Unidades y balance verificables | Pendiente |
-| B-29 | Identidad y RBAC en servidor | B-01, ADR-10/16, B-37 | RNF-01/RF-17; cuentas demo, roles/permisos/ámbitos administrables, delegación/campos y revocación comprobados; V-13/V-24/V-34 | Pendiente |
-| B-03 | Catálogo, lotes y saldos | B-02/29 | RF-01/02, concurrencia válida | Pendiente |
-| B-04 | Consumo y cobertura | B-03 | RF-03, casos cero/desactualizado | Pendiente |
-| B-05 | Planner inicial | B-04, mapas | RF-04, inviables explícitos | Pendiente |
+| B-01 | Cerrar versiones y contrato | ADRs | Versiones/contrato revisados | **Completado** (ADR-01 a ADR-28) |
+| B-02 | Fixture de 6 puntos/2 SKU | B-01 | Unidades y balance verificables | **Completado** (demo-base / demo-region) |
+| B-29 | Identidad y RBAC en servidor | B-01, ADR-10/16, B-37 | RNF-01/RF-17; cuentas demo, roles/permisos/ámbitos administrables, delegación/campos y revocación comprobados; V-13/V-24/V-34 | **Completado** (ADR-21 roles fijos, ADR-26 Auditor, Spec 013) |
+| B-03 | Catálogo, lotes y saldos | B-02/29 | RF-01/02, concurrencia válida | **Completado** (Spec 001) |
+| B-04 | Consumo y cobertura | B-03 | RF-03, casos cero/desactualizado | **Completado** (Spec 002) |
+| B-05 | Planner inicial | B-04, mapas | RF-04, inviables explícitos | **Completado** (Spec 002 / ADR-28) |
 | B-06 | Unidades QR y custodia | B-03 | RF-05, líneas por lote | **Completado** (Spec 004) |
 | B-07 | Despacho/recepción online | B-06/29 | Cantidades parciales y permisos RBAC/asignación comprobados | **Completado** (Spec 004) |
 | B-08 | Persistencia y sincronización móvil | B-07 | RF-06, reinicio/reintento/duplicados y revocación offline de V-24 | **Completado** (Spec 004) |
-| B-09 | Panel integrado | B-04/05/07 | RF-07, datos/versiones consistentes | Pendiente |
-| B-10 | Baseline/comparación pequeña | B-05 | RF-08, mismos datos/recursos | Pendiente |
+| B-09 | Panel integrado | B-04/05/07 | RF-07, datos/versiones consistentes | **En curso** (Rutas, bodegas y mapas interactivos en develop, PR #59) |
+| B-10 | Baseline/comparación pequeña | B-05 | RF-08, mismos datos/recursos | Pendiente (Spec 005) |
 
 ## P1 — sistema completo para demo
 
@@ -32,8 +32,8 @@ Backlog compartido de IstpetDev, **sin asignación fija de integrantes**. Todas 
 | B-11 | S3 foto/firma | B-08 | RF-09, privada y reintentable | **Completado** (Spec 004) |
 | B-12 | Consulta pública QR | B-06/11 | RF-13, datos limitados y revocación | **Completado** (Spec 004) |
 | B-13 | SignalR y chat | B-07/29 | RF-10, políticas RBAC compartidas, historial y reconexión; V-14 | Pendiente |
-| B-14 | Incidente/replanificación | B-05/13 | RF-11, lo ejecutado se conserva | Pendiente |
-| B-15 | n8n riesgo/explicación | B-04 | RF-12, fallback/JSON/error | Pendiente |
+| B-14 | Incidente/replanificación | B-05/13 | RF-11, lo ejecutado se conserva | **Completado** (Spec 002) |
+| B-15 | n8n riesgo/explicación | B-04 | RF-12, fallback/JSON/error | **Completado** (Backend C# y triggers Spec 003) |
 | B-16 | n8n incidente demo | B-14/15 | Credencial limitada y caso etiquetado | Pendiente |
 | B-17 | Dataset 80 puntos/90 días | B-02 | Escenarios, seed y hash | Pendiente |
 | B-18 | Simulador/KPIs/exportaciones | B-10/17 | RF-14, balance y denominadores | Pendiente |
@@ -46,12 +46,12 @@ Backlog compartido de IstpetDev, **sin asignación fija de integrantes**. Todas 
 
 ## P2 — operación nacional
 
-| ID | Entrega | Criterio |
-|---|---|---|
-| B-25 | Multi-bodega/flota avanzada | Restricciones reales y benchmark |
-| B-26 | Pronóstico calibrado | Backtesting frente a base determinista |
-| B-27 | Carga/autoscaling/recuperación | Volumen y tiempos comprobados |
-| B-28 | Integración empresarial/piloto | Acuerdo y resultados observados |
+| ID | Entrega | Criterio | Estado |
+|---|---|---|---|
+| B-25 | Multi-bodega/flota avanzada | Restricciones reales y benchmark | **Completado anticipadamente en develop** ([[Decisiones de arquitectura#ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo|ADR-28]], PR #59) |
+| B-26 | Pronóstico calibrado | Backtesting frente a base determinista | Pendiente |
+| B-27 | Carga/autoscaling/recuperación | Volumen y tiempos comprobados | Pendiente |
+| B-28 | Integración empresarial/piloto | Acuerdo y resultados observados | Pendiente |
 
 ## Documentación y skills
 

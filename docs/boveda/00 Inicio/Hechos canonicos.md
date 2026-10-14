@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 tags: [hackathon, equipo, ia]
 ---
 
@@ -108,7 +108,11 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Núcleo delgado para la demo | ADR-21 | Aceptada (difiere ADR-16 a P2) | 2026-10-13, issue #16 | Jorge, Bryan, Joseph ([[Runbook de DevOps y base de datos para la demo]]) |
 | Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
 | Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
+| Segregación de plataformas y roles | ADR-24 | Aceptada (Web vs PWA móvil de campo) | 2026-10-13, commit `733afbd` | Bryan y Alexander Martínez |
+| Ergonomía PWA y flujos por rol | ADR-25 | Aceptada (interfaz por rol, QR asimétrico, cero emojis) | 2026-10-13, commit `733afbd` | Bryan y Alexander Martínez |
 | Rol Auditor de solo lectura | ADR-26 | Aceptada (séptimo rol fijo; amplía ADR-21 sin migración) | 2026-10-13, spec 013 | Joseph Baño |
+| Integración Fullstack de Campo | ADR-27 | Aceptada (adaptadores HTTP reales, outbox hospitalario, revisiones dinámicas) | 2026-10-13, commit `0c9787d` | Bryan y Alexander Martínez |
+| Ruteo por Pedidos, Bodegas y Rebalanceo | ADR-28 | Aceptada (sourcing multialmacén, matching de flota y rebalanceo) | 2026-10-14, PR #59 (`d4f35c9`) | Bryan y Alexander Martínez |
 
 ## Nombres en código
 
@@ -152,6 +156,10 @@ Tomados de [[Modelo de datos]] y [[Contratos API y eventos]]. Ningún asistente 
 | Decisión del agente logístico | `AgentDecision` | ADR-22, spec 001/002 (⚠️ propuesta) |
 | Caché de tramos viales | `RoadMatrixEdge` (indexada por coordenadas) | ADR-23, spec 002 (⚠️ propuesta) |
 | Ejecución del agente | `AgentRun` | ADR-22, spec 003 (⚠️ propuesta) |
+| Pedido de entrega | `DeliveryOrder` | ADR-28, PR #59 |
+| Línea de pedido de entrega | `DeliveryOrderLine` | ADR-28, PR #59 |
+| Política de stock de bodega | `WarehouseStockPolicy` | ADR-28, PR #59 |
+| Sugerencia de rebalanceo | `TransferSuggestion` | ADR-28, PR #59 |
 
 ## Rutas, puertos y comandos
 
