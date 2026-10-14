@@ -26,4 +26,11 @@ public class ServicePointsController : ControllerBase
         var points = await _servicePointsService.GetAllAsync(cancellationToken);
         return Ok(points);
     }
+
+    [HttpGet("warehouses")]
+    public async Task<IActionResult> GetWarehouses(CancellationToken cancellationToken)
+    {
+        var warehouses = await _servicePointsService.GetWarehousesAsync(cancellationToken);
+        return Ok(warehouses);
+    }
 }

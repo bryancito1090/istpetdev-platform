@@ -32,6 +32,8 @@ interface ReceiptLineForm {
   quantityAccepted: number;
   quantityRejected: number;
   unit: string;
+  remainingQuantity?: number;
+  nextRequestedQuantity?: number;
 }
 
 @Component({
@@ -59,22 +61,27 @@ interface ReceiptLineForm {
   ],
   template: `
     <ion-header>
-      <ion-toolbar color="primary">
+      <ion-toolbar [color]="delivery()?.kind === 'Pickup' ? 'warning' : 'primary'">
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/home"></ion-back-button>
         </ion-buttons>
-        <ion-title>Recepción en Campo</ion-title>
+        <ion-title>{{ delivery()?.kind === 'Pickup' ? 'Carga / Retiro en Bodega' : 'Recepción en Campo' }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding">
       @if (delivery(); as del) {
-        <!-- Tarjeta de Información de Entrega -->
-        <ion-card class="mb-4">
+        <!-- Tarjeta de Información de Entrega / Recogida -->
+        <ion-card class="mb-4" [class.border-amber-300]="del.kind === 'Pickup'">
           <ion-card-header>
             <div class="flex items-center justify-between mb-1">
               <span class="text-xs font-mono text-slate-500">{{ del.deliveryId }}</span>
-              <ion-badge color="primary">Secuencia {{ del.sequence }}</ion-badge>
+              <div class="flex items-center gap-1">
+                <ion-badge [color]="del.kind === 'Pickup' ? 'warning' : 'primary'">
+                  {{ del.kind === 'Pickup' ? '📦 Retiro en Bodega' : '🏥 Entrega en Destino' }}
+                </ion-badge>
+                <ion-badge color="medium">#{{ del.sequence }}</ion-badge>
+              </div>
             </div>
             <ion-card-title class="text-lg">{{ del.pointName }}</ion-card-title>
             <ion-card-subtitle>{{ del.address }}</ion-card-subtitle>
@@ -84,8 +91,12 @@ interface ReceiptLineForm {
         <!-- Formulario de Líneas y Cantidades -->
         <ion-card class="mb-4">
           <ion-card-header>
-            <ion-card-title class="text-base">Cantidades por Lote e Insumo</ion-card-title>
-            <ion-card-subtitle>Ajuste aceptados o rechazados según verificación física</ion-card-subtitle>
+            <ion-card-title class="text-base">
+              {{ del.kind === 'Pickup' ? 'Bultos a Retirar e Ingresar al Vehículo' : 'Cantidades por Lote e Insumo' }}
+            </ion-card-title>
+            <ion-card-subtitle>
+              {{ del.kind === 'Pickup' ? 'Verifique unidades cargadas desde la bodega emisora' : 'Ajuste aceptados o rechazados según verificación física' }}
+            </ion-card-subtitle>
           </ion-card-header>
           <ion-card-content class="space-y-4">
             @for (line of lines(); track line.deliveryLineId) {
@@ -144,6 +155,28 @@ interface ReceiptLineForm {
                         +
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Reconciliación física y pedido futuro -->
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
+                  <div class="bg-white p-2 rounded border border-slate-200">
+                    <span class="text-[11px] font-semibold text-slate-700 block mb-1">Stock en percha:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      [(ngModel)]="line.remainingQuantity"
+                      placeholder="Ej: 10"
+                      class="w-full px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 bg-white" />
+                  </div>
+                  <div class="bg-white p-2 rounded border border-blue-200">
+                    <span class="text-[11px] font-semibold text-blue-800 block mb-1">Pedir próx. visita:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      [(ngModel)]="line.nextRequestedQuantity"
+                      placeholder="Ej: 50"
+                      class="w-full px-2 py-1 border border-blue-300 rounded text-xs text-blue-900 bg-white" />
                   </div>
                 </div>
 
@@ -510,7 +543,9 @@ export class ReceiptPage implements OnInit {
           lotId: l.lotId,
           quantityAccepted: l.quantityAccepted,
           quantityRejected: l.quantityRejected,
-          unit: l.unit
+          unit: l.unit,
+          remainingQuantity: l.remainingQuantity != null && l.remainingQuantity !== ('' as any) ? Number(l.remainingQuantity) : undefined,
+          nextRequestedQuantity: l.nextRequestedQuantity != null && l.nextRequestedQuantity !== ('' as any) ? Number(l.nextRequestedQuantity) : undefined
         })),
         photoBlob: this.photoBlob() ?? undefined,
         signatureBlob

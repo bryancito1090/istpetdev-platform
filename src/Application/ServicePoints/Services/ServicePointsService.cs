@@ -28,4 +28,25 @@ public sealed class ServicePointsService(IApplicationDbContext _context) : IServ
             IsActive = p.IsActive
         }).ToList();
     }
+
+    public async Task<IReadOnlyList<ServicePointDto>> GetWarehousesAsync(CancellationToken cancellationToken = default)
+    {
+        var warehouses = await _context.Locations
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse)
+            .AsNoTracking()
+            .OrderBy(l => l.Code)
+            .Select(l => new { l.Id, l.Code, l.Name, l.Position, l.IsActive })
+            .ToListAsync(cancellationToken);
+
+        return warehouses.Select(w => new ServicePointDto
+        {
+            Id = w.Id,
+            Code = w.Code,
+            Name = w.Name,
+            Type = "Bodega",
+            Latitude = w.Position?.Y,
+            Longitude = w.Position?.X,
+            IsActive = w.IsActive
+        }).ToList();
+    }
 }
