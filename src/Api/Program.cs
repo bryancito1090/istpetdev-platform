@@ -123,7 +123,7 @@ if (provisionAt >= 0)
     return;
 }
 
-if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", true))
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", false))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
