@@ -50,8 +50,20 @@ resource "aws_cognito_user_pool_client" "human" {
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["openid", "email", "profile", "${aws_cognito_resource_server.api.identifier}/access"]
-  callback_urls                        = ["http://localhost:${each.value}/auth/callback"]
-  logout_urls                          = ["http://localhost:${each.value}"]
+  callback_urls = each.key == "web" ? [
+    "http://localhost:4200/auth/callback",
+    "https://istpetdev.doicela.dev/auth/callback"
+  ] : [
+    "http://localhost:8100/auth/callback",
+    "https://istpetdev.doicela.dev/campo/auth/callback"
+  ]
+  logout_urls = each.key == "web" ? [
+    "http://localhost:4200",
+    "https://istpetdev.doicela.dev"
+  ] : [
+    "http://localhost:8100",
+    "https://istpetdev.doicela.dev/campo/"
+  ]
   explicit_auth_flows                  = []
   prevent_user_existence_errors        = "ENABLED"
   enable_token_revocation              = true
