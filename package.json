@@ -8,6 +8,10 @@
     "apps/web",
     "apps/mobile"
   ],
+  "engines": {
+    "node": "^22.23.3",
+    "npm": "10.9.9"
+  },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "docker:up": "docker compose -f infra/compose/docker-compose.local.yml up -d",
@@ -44,5 +48,9 @@
     "eslint-plugin-boundaries": "^7.2.0",
     "nx": "^23.3.0",
     "typescript": "6.0.3"
+  },
+  "overrides": {
+    "undici": "^7.30.0",
+    "handlebars": "^4.7.10"
   }
 }

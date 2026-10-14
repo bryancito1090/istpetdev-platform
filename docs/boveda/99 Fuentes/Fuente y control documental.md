@@ -299,6 +299,10 @@ Verificación documental de esta actualización: **83 notas Markdown**, **812 en
 
 Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y Móvil (PWA de Campo), incorporar el rol y flujo ágil de Receptor Hospitalario y retirar accesos públicos prematuros. Se actualiza [[Usuarios y flujos]], [[Decisiones de arquitectura]] con ADR-24 y ADR-25, y se genera [[2026-10-13-informe-segregacion-roles-y-plataformas]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
+## Saneamiento de dependencias y ADR-04 — 14 de octubre de 2026
+
+Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
+
+Verificación documental de esta actualización: **84 notas Markdown**, **815 enlaces internos resueltos**, **0 errores**.
 
 

@@ -57,6 +57,7 @@ No tomar orden UUID como orden de recepción offline; conservar fechas y secuenc
 3. **Monorepo Shared Core (`libs/shared-core`):** Librería compartida para tipos TypeScript de dominio, DTOs de API, validadores de esquemas y utilidades de conversión de unidades logísticas (litros, kilos, cajas), consumida por `apps/web` y `apps/mobile`.
 4. **Desacoplamiento de mapas:** Componente `shared/ui/map-view` puramente visual y agnóstico a lógica de negocio, orquestado desde `widgets/route-map`.
 5. **Carga ultraligera de QR:** Ruta `/trace/:id` aislada en lazy loading (< 150 KB gzip) para una carga rápida en el teléfono del jurado (objetivo sin medir).
+6. **Iconos y dependencias de UI:** Se adopta `@lucide/angular` como el único paquete oficial de iconos técnicos. Se prohíbe el uso de `lucide-angular` (deprecado/duplicado) y `@angular/animations` (innecesario al usar utilidades CSS de Tailwind). Política de control de dependencias auditada bajo [[Verificacion de seguridad antes del lanzamiento]].
 
 Detalles en [[Frontend y componentes]], [[Sistema de diseno y colores]] y [[Frontend con Feature-Sliced Design]].
 
