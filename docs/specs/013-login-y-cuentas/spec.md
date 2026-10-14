@@ -3,7 +3,7 @@ id: "013"
 titulo: Login real y gestión de cuentas por Gerencia
 estado: borrador
 creado: 2026-10-13
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 responsable: Alexander Martínez y Joseph Baño   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # diseño acordado con Joseph Baño en la sesión del 13-oct (Auditor, H4 en P2 y revisor); PA-04 abierta
 revisor: revisión cruzada (Alexander revisa los PR de Joseph y Joseph los de Alexander; nadie aprueba su propio PR)
@@ -17,6 +17,8 @@ boveda:
 ---
 
 # 013 — Login real y gestión de cuentas por Gerencia
+
+> **Nota de estado (14-oct-2026):** Implementado en `develop` mediante PR #56 (T1–T9) y PR #65 (T11–T13). Pendiente de validación E2E en entorno HTTPS con cuentas reales (E2E-01 a E2E-13, issue #55) y tareas de infraestructura (T10, issue #43). Spec no cerrado.
 
 ## Contexto
 
@@ -81,7 +83,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 
 **Como** Gerencia, **quiero** gestionar las cuentas desde la web, **para** incorporar o retirar personal sin pedir ayuda técnica.
 
-**Por qué esta prioridad:** el jurado no la ve en el recorrido principal (filtro 1 del objetivo norte); se construye después de H1–H3 y, si no está lista en H4 del plan, se presenta como propuesta (ver Contradicciones).
+**Por qué esta prioridad:** el jurado no la ve en el recorrido principal (filtro 1 del objetivo norte); se implementó antes del congelamiento (PR #65). FR-18 y H4-6 siguen pospuestos hasta después del 17-oct.
 
 **Escenarios de aceptación:**
 
@@ -183,7 +185,7 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 
 > **⚠️ Contradicción detectada** — Hecho nuevo: tokens solo en memoria. · Hecho establecido: el [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2) admite «memoria volátil o `sessionStorage`»; la nota [Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md) exige memoria. · Impacto: `sessionStorage` es accesible a cualquier script de la página. · Propuesta: seguir la bóveda (memoria). El informe es de Alexander: su corrección queda como tarea en el issue de este spec.
 
-> **⚠️ Contradicción detectada** — Hecho nuevo: la PWA solo admite Bodega, Conductor y Receptor; Gerencia y Planificador operan en la web. · Hecho establecido: [ADR-25](../../boveda/03%20Arquitectura/Decisiones%20de%20arquitectura.md) (punto 5) describe un «Supervisor de Logística» con tres módulos dentro de la PWA, y el frontend actual tiene el perfil `LogisticsManager` en `apps/mobile`; ADR-24 asigna la supervisión a la web. · Impacto: con 013 una cuenta de Gerencia o Planificador en la PWA ve «Tu cuenta opera en la plataforma web» y los módulos de supervisión móvil quedan inaccesibles. · Opciones: (a) seguir ADR-24 y retirar el perfil de supervisión de la PWA; (b) admitir Gerencia/Planificador también en la PWA. · Propuesta: (a), porque ADR-24 y ADR-26 fijan la plataforma por rol y el panel web ya cubre esos módulos. Decide: Joseph Baño con Alexander (autor de ADR-25); si se elige (b), cambian FR-07 y `Roles.PlatformOf`.
+> **✅ Resuelta (14-oct)** — ADR-25 frente a ADR-24 (roles en PWA). Se aplicó la opción (a): la PWA solo admite Bodega, Conductor y Receptor, alineada con ADR-24 y ADR-26. El perfil `LogisticsManager` se retiró en T7 (PR #56). Gerencia y Planificador operan exclusivamente en la plataforma web.
 
 Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅), RBAC y configuracion del sistema (roles fijos dentro del diseño diferido), Seguridad y evidencias, Runbook de DevOps y base de datos (sin migraciones nuevas), Credenciales y acceso del equipo.
 
@@ -197,6 +199,7 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 | El contenedor no obtiene credenciales del perfil de instancia (hop limit 1) | Media | Medio | `HttpPutResponseHopLimit = 2`; probar `GET /accounts` en producción antes de H4 |
 | Cognito envía como máximo unos 50 correos al día con su configuración por defecto | Baja | Medio | Evitar reenvíos masivos; crear las cuentas de demo en un solo lote |
 | El MFA obligatorio frena al conductor en la demo | Media | Medio | MFA configurado antes del evento en los teléfonos de la demo; sesiones ya iniciadas (D3) |
+| Recarga o reinicio de la PWA sin señal deja la sesión anónima y no se puede capturar hasta tener red (tokens solo en memoria, FR-03). Enlaza con la [contradicción del reinicio de la PWA sin señal](plan.md#contradicciones-detectadas-al-planificar). Las capturas ya guardadas no se pierden (CE-04). | Media | Alto | En la demo no se reinicia la PWA en modo avión; capturas persisten en outbox. Decide: Joseph Baño con Alexander |
 | Se presenta H4 como funcionando sin estarlo | Baja | Alto | Regla del 006: solo se muestra lo probado en `test-e2e.md` |
 
 ## Criterios de éxito
@@ -209,8 +212,25 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 - CE-06 (H4): Gerencia crea un Conductor desde la web y esa persona completa su primer ingreso y ve solo sus entregas en la PWA.
 - CE-07: con un token de Auditor, todos los endpoints de lectura de la web responden 200 y todos los de escritura responden 403.
 
+## Estado de implementación
+
+- **PR #56** (T1–T9): implementación de roles (`Auditor`), `GET /api/v1/me`, script de aprovisionamiento idempotente (`--provision-accounts`), lógica de sesión OIDC en `shared-core`, integración real en web y PWA (con retiro de mocks y guards) y guardián de CI.
+- **PR #65** (T11–T13): API y web de gestión de cuentas por Gerencia (H4) — listado, alta, edición, desactivación/reactivación y reenvío de invitación, junto con la pantalla «Usuarios».
+- **Desviaciones relevantes:** documentadas en las secciones correspondientes de [task.md](task.md):
+  - [Desviaciones de T1–T9](task.md#desviaciones) (manejo de claims, almacenamiento en memoria y guards).
+  - [Desviaciones de T11–T13](task.md#desviaciones-1) (confirmación de desactivación en UI, insignias de sincronización y pruebas adicionales).
+- **Pendiente para cierre completo:**
+  - T10: configuración de infraestructura en AWS/Cognito (callbacks HTTPS, marca, IAM y hop limit, issue [#43](https://github.com/bryancito1090/istpetdev-platform/issues/43)).
+  - PWA en `/campo/`: despliegue y validación de la app móvil en subdirectorio (issue [#52](https://github.com/bryancito1090/istpetdev-platform/issues/52)).
+  - E2E-01 a E2E-13: ejecución de pruebas de punta a punta en entorno HTTPS con cuentas reales (issue [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55)).
+
 ## Preguntas abiertas
 
-- PA-04: ¿Quién será la Gerencia inicial y quién guarda el archivo de entrada del script (fuera del repositorio)? Decide: equipo.
+Ninguna abierta.
 
-Resueltas el 13-oct por Joseph Baño: PA-01 (rol Auditor → se agrega, ADR-26), PA-02 (H4 en P2 → aceptado), PA-03 (revisor → Joseph Baño).
+Resueltas:
+- PA-01 (13-oct, Joseph Baño): rol Auditor → se agrega, ADR-26.
+- PA-02 (13-oct, Joseph Baño): H4 en P2 → aceptado.
+- PA-03 (13-oct, Joseph Baño): revisor → Joseph Baño.
+- PA-04 (14-oct, en #55): Gerencia inicial: Bryan; el CSV de cuentas lo guarda Jorge fuera del repositorio (G1).
+
