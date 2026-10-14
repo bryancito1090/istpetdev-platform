@@ -282,7 +282,7 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME || 'istpetdev_integration' }}
           DB_USER: ${{ secrets.DB_USER || 'migrator_integration' }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_SSL_MODE: ${{ secrets.DB_SSL_MODE || 'Require' }}
+          DB_SSL_MODE: ${{ secrets.DB_SSL_MODE || 'VerifyFull' }}
           COGNITO_AUTHORITY: ${{ vars.COGNITO_AUTHORITY }}
           COGNITO_WEB_CLIENT_ID: ${{ vars.COGNITO_WEB_CLIENT_ID }}
           COGNITO_MOBILE_CLIENT_ID: ${{ vars.COGNITO_MOBILE_CLIENT_ID }}
@@ -334,7 +334,7 @@ jobs:
             export DB_NAME="${DB_NAME:-istpetdev_integration}"
             export DB_USER="${DB_USER:-migrator_integration}"
             export DB_PASSWORD="$DB_PASSWORD"
-            export DB_SSL_MODE="${DB_SSL_MODE:-Require}"
+            export DB_SSL_MODE="${DB_SSL_MODE:-VerifyFull}"
             export APPLY_MIGRATIONS="${APPLY_MIGRATIONS:-true}"
 
             # 4. Descarga de imágenes requeridas

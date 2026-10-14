@@ -26,8 +26,13 @@ RUN dotnet publish "IstpetDev.Api.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 WORKDIR /app
 
-# Instalar utilidades de diagnóstico mínimas requeridas
-RUN apk add --no-cache curl tzdata
+# Instalar utilidades de diagnóstico mínimas requeridas y certificados CA de Amazon RDS
+RUN apk add --no-cache curl tzdata ca-certificates && \
+    mkdir -p /etc/ssl/rds /usr/local/share/ca-certificates && \
+    curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /etc/ssl/rds/global-bundle.pem && \
+    chmod 644 /etc/ssl/rds/global-bundle.pem && \
+    cp /etc/ssl/rds/global-bundle.pem /usr/local/share/ca-certificates/aws-rds-ca.crt && \
+    update-ca-certificates
 
 # Variables de entorno operativas
 ENV ASPNETCORE_URLS=http://+:5000 \
