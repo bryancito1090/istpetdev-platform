@@ -72,6 +72,7 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
     [Theory]
     [InlineData("5,0", "Llm")]
     [InlineData("9999", "Template")]
+    [InlineData("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "Template")]
     public async Task Submit_result_requires_automation_role_and_updates_decisions(string driverNumber, string expectedSource)
     {
         var connection = postgres.NewDatabase();
@@ -175,7 +176,8 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
             {
                 Assert.Equal("Plantilla inicial", updatedDec.Rationale);
                 Assert.DoesNotContain(driverNumber, updatedDec.DriverMessage);
-                Assert.Contains(driverNumber, updatedDec.ExplanationMismatch);
+                Assert.Contains(driverNumber.Length > 160 ? "driver_message_too_long" : driverNumber, updatedDec.ExplanationMismatch);
+                Assert.NotEmpty(updatedDec.DriverMessage);
             }
         }
 

@@ -26,6 +26,27 @@ process.stdout.write(JSON.stringify(output.json));
 
 
 class WorkflowContextTests(unittest.TestCase):
+    def test_oversized_driver_message_is_left_for_backend_validation(self):
+        runner = """
+const vm = require('vm');
+const fs = require('fs');
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+const output = vm.runInNewContext('(function () {' + input.code + '\\n})()', {
+  $json: { output: input.output }, $execution: { id: 'test-execution' }
+});
+process.stdout.write(JSON.stringify(output.json));
+"""
+        for path in (ROOT / "automation/n8n/workflows").glob("*.json"):
+            workflow = json.loads(path.read_text())
+            prepare = next(n for n in workflow["nodes"] if n["name"] == "Prepare Result")
+            output = {"decisions": [{"agentDecisionId": "00000000-0000-4000-8000-000000000001",
+                                     "explanation": "Propuesta del motor", "driverMessage": "x" * 161}],
+                      "summary": "Resultado"}
+            result = json.loads(subprocess.check_output(["node", "-e", runner], text=True,
+                                input=json.dumps({"code": prepare["parameters"]["jsCode"], "output": output})))
+            self.assertIsNone(result["agentError"])
+            self.assertEqual("x" * 161, result["decisions"][0]["driverMessage"])
+
     def test_model_cannot_change_origin_run_incident_or_deadline(self):
         for path in (ROOT / "automation/n8n/workflows").glob("*.json"):
             workflow = json.loads(path.read_text())

@@ -247,3 +247,8 @@ Durante la validación de PR #74, `develop` avanzó a `fd22f54` (CI/runbook #35
 y kit/guion #46). Se conservan esos cambios; el cambio de `Program.cs` es solo
 un comentario, y el conteo de migraciones coincide con la corrección ya aplicada.
 No cambian agente, workflows, prompt ni umbrales de la matriz en ejecución.
+
+La matriz del árbol `5d7a805` detectó un gap adicional: fallback de Watch tras
+propuestas duplicaba decisiones (inyección 9/10). Se corrige y se registra
+regresión en `AgentJourneyTests`; el cierre sigue condicionado a nueva matriz
+10/10 y CI del SHA posterior. Los intentos fallidos permanecen en la evidencia.

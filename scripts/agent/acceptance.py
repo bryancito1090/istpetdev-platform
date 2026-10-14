@@ -142,6 +142,7 @@ def summarize_run(scenario: str, value: dict):
         "n8nExecutionId": value.get("n8nExecutionId"),
         "promptVersion": value.get("promptVersion"),
         "status": str(value.get("status", "unknown")),
+        "fallbackReason": value.get("fallbackReason"),
         "latencyMs": int(value.get("latencyMs") or 0),
         "model": value.get("model"),
         "toolCalls": calls,

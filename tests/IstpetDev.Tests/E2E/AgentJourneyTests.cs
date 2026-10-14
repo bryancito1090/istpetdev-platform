@@ -63,6 +63,7 @@ public sealed class AgentJourneyTests(PostgisContainer postgres)
     [Theory]
     [InlineData("unreachable", "n8n_unreachable")]
     [InlineData("silent", "timeout")]
+    [InlineData("partial_watch", "timeout")]
     [InlineData("agent_error", "agent_error")]
     [InlineData("invalid", "invalid_result")]
     [InlineData("disabled", "agent_disabled")]
@@ -184,6 +185,7 @@ public sealed class AgentJourneyTests(PostgisContainer postgres)
                 using var risks = await ToolAsync(HttpMethod.Get, "/api/v1/risks", runId);
                 using var routes = await ToolAsync(HttpMethod.Post, "/api/v1/route-plans", runId, new { includeConsolidation = true });
                 ids.AddRange(routes.RootElement.GetProperty("routes").EnumerateArray().Select(p => p.GetProperty("agentDecisionId").GetGuid()));
+                if (Mode == "partial_watch") return;
             }
             else if (Mode != "agent_error")
             {

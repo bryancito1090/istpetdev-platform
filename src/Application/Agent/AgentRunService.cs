@@ -249,6 +249,17 @@ public sealed class AgentRunService(
     {
         if (string.Equals(run.Kind, AgentRunKind.Watch.ToString(), StringComparison.OrdinalIgnoreCase))
         {
+            var existing = await db.AgentDecisions.Where(d => d.CorrelationId == run.Id).ToListAsync(ct);
+            if (existing.Count > 0)
+            {
+                foreach (var decision in existing)
+                {
+                    decision.ExplanationSource = "Template";
+                    decision.DriverMessage = "Consulta la propuesta de ruta antes de continuar.";
+                }
+                await db.SaveChangesAsync(ct);
+                return;
+            }
             var risks = await riskCalculator.CalculateAsync(persistSnapshots: false, ct);
             var plan = await routePlanner.PlanAsync(new PlanRequest(null, null, true), ct);
             if (plan.Routes.Count == 0)

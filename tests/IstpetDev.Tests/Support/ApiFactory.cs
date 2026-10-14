@@ -35,6 +35,8 @@ public class ApiFactory(string connectionString, bool demoEnabled = true, IReadO
             ["Demo:Accounts:1:DisplayName"] = "Conductor de prueba",
             ["Demo:Accounts:1:Role"] = Roles.Conductor,
             ["Demo:Accounts:4:Subject"] = "driver-fixture-duplicate",
+            ["Demo:Accounts:4:DisplayName"] = "Conductor adicional de prueba",
+            ["Demo:Accounts:4:Role"] = Roles.Conductor,
         }).AddInMemoryCollection(overrides ?? new Dictionary<string, string?>()));
         builder.ConfigureTestServices(services =>
         {

@@ -78,3 +78,11 @@ del simulador integrado. Prueba real inicial con exports corregidos: Completed,
 2/2 herramientas 2xx, 2/2 decisiones LLM y 7456 ms. La matriz final sigue en curso.
 Auditoría NuGet sin paquetes vulnerables; `npm run audit:check` pasa con las
 7 excepciones vigentes del spec 000. No se acredita escaneo de imagen n8n.
+
+La primera matriz sobre exports corregidos
+(`artifacts/agent-acceptance/20261014-154851-878754/report.md`) tuvo herramientas
+60/60, p95 8422 ms y LLM 47/52, pero inyección 9/10. Watch-10 cayó a fallback
+tras obtener propuestas y duplicó dos decisiones. Se corrige reutilizando las
+propuestas ya correlacionadas; una regresión de Watch parcial comprueba que
+el timeout conserva dos decisiones. La longitud del mensaje se valida por
+decisión en backend, sin truncado ni conversión de todo el run a error.
