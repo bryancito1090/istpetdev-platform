@@ -363,3 +363,13 @@ Fuente: issue #46 (fase 1), pedido de Joseph Baño; trabajo hecho por IA (Claude
 - Seguimiento en [[Registro de trabajo previo y del evento]], [[Backlog]] (B-45) y, fuera de la bóveda, `task.md` (T1) y `test-e2e.md` (E2E-01) del spec 006. CE-01 queda pendiente de la revisión humana de unos 15 min.
 
 Verificación documental de esta actualización: **85 notas Markdown**, **867 enlaces internos resueltos**, **0 errores**.
+
+## T2 del spec 006: matriz de afirmaciones y guion — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 2), pedido de Joseph Baño; borrador hecho por IA (Claude Code, Opus 5.5) sobre `develop` en `7aed1eb`, rama `feature/46-fase2-guion-auditoria`. Sin entrevistas, ensayos, cronometrajes ni aprobaciones nuevas.
+- [[Guion del pitch]]: «Versión de trabajo T2» con cortes 3/5/7 (metas internas 160/280/400 s), cinco papeles, etiquetas vivo previsto/grabado/simulado/propuesto, frases retiradas y estructura de siete diapositivas sin archivo.
+- [[Consultas para la organizacion]]: O-04 y O-06 revisadas de nuevo; siguen sin respuesta con fuente.
+- [[Registro de trabajo previo y del evento]]: fila del borrador T2.
+- Fuera de la bóveda: `matriz-afirmaciones.md` y `evidencia/2026-10-14-suites-fase2.md` del spec 006 (105 pruebas automatizadas, todas pasaron); `task.md` (T2) y `test-e2e.md` (E2E-03 y E2E-05) con estado. La matriz registra dos contradicciones: 005 figura cerrado sin corrida oficial ni ZIP, y 004 figura concluido sin prueba de integración de despacho/recepción ni ensayo en teléfono.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **872 enlaces internos resueltos**, **0 errores**.

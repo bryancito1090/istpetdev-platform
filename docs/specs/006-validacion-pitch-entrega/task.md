@@ -5,7 +5,7 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 | ID | Entregable | Depende de | Fecha límite | Estado |
 |---|---|---|---|---|
 | T1 | Kit previo y revisión humana | — | 15-oct | kit preparado por IA el 14-oct; revisión humana pendiente |
-| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | pendiente |
+| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | borrador preparado por IA el 14-oct; T1 sin revisión humana, matriz sin revisores, O-04/O-06 pendientes |
 | T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente |
 | T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente |
 | T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente |
@@ -56,6 +56,17 @@ Debe hacerla una persona del equipo con la versión del kit indicada en el PR. A
 - [ ] Crear tarjeta por afirmación: frase, spec/CE, enlace de ejecución, límite y sustitución. Si falta ejecución, cambiar a `[PENDIENTE: evidencia]` en material de trabajo y retirar la frase del guion de escena.
 - [ ] Inspeccionar el flujo Artifacts/Slides del entorno antes de crear el archivo; con O-06 resuelto, crear editable y PDF local de la misma versión. En esta sesión no hay sesión PowerPoint conectada; el archivo de slides queda pendiente.
 - [ ] Releer la tabla cruzada del [spec](spec.md) y los «fuera de alcance» de 001–005 después de cualquier recorte de alcance.
+
+**Estado al 14-oct-2026 (issue #46, fase 2):** Claude Code (Opus 5.5), a pedido de Joseph Baño, preparó T2 como **borrador** en la rama `feature/46-fase2-guion-auditoria`, desde `develop` en `7aed1eb` (PR #71 ya fusionado). Las casillas de arriba siguen sin marcar: T1 no tiene revisión humana registrada (la hoja de T1 sigue con todos los campos en `[PENDIENTE]`, sin comentarios en el issue #46 ni revisiones en el PR #71) y la matriz necesita dos revisores. **T2 no está cerrado.**
+
+| Casilla | Qué se hizo | Qué falta |
+|---|---|---|
+| O-04 y corte | O-04 y O-06 revisados de nuevo: sin respuesta con fuente ([Consultas](../../boveda/01%20Oficial/Consultas%20para%20la%20organizacion.md)). Cortes 3/5/7 con metas internas 160/280/400 s y siete bloques en orden en «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md); estructura de siete diapositivas, una por bloque | Respuesta oficial de O-04; elegir corte; nombres de los cinco papeles (PA-01) |
+| Tarjetas de afirmación | [Matriz de afirmaciones](matriz-afirmaciones.md): 33 frases o cifras con spec/CE, ejecución, límite, estado y sustitución. Se ejecutaron 105 pruebas automatizadas sobre `7aed1eb` (12 + 93, todas pasaron) para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Resultado: 12 usables con límite, 10 solo como propuesta y 11 retiradas | Dos revisores (E2E-05); repetir sobre el commit congelado |
+| Slides | No se creó editable ni PDF: O-06 sin respuesta y formato sin confirmar | O-06; elegir herramienta; editable y PDF de la misma versión |
+| Releer cruce del spec | La matriz sustituye en la práctica la tabla cruzada del spec para el guion; registra dos contradicciones (005 «cerrado» sin corrida oficial; 004 «concluido» sin prueba de integración ni teléfono) | Respuesta de los responsables de 004/005 |
+
+No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 
 ## T3 — Entrevistas, mentoría y corrida
 

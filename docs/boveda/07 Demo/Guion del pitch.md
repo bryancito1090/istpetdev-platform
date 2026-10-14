@@ -9,6 +9,9 @@ tags: [demo, validacion, istpetdev]
 
 **Meta interna:** tres minutos. Duración oficial y tiempo de preguntas pendientes de confirmar en [[Consultas para la organizacion]]. Ajustar este guion a lo que informe la organización.
 
+> [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
+> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. Es un borrador: la revisión humana de T1 y de la matriz siguen pendientes y O-04 no tiene respuesta.
+
 > [!warning] Lectura del kit previo (14-oct-2026)
 > La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
 
@@ -124,3 +127,73 @@ El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → i
 El banco cubre las «Preguntas previsibles» de arriba (escalabilidad en la 11, privacidad del QR en la 10); la parte de auditoría append-only sigue solo en esa lista. La pregunta 11 sustituyó el 14-oct a «¿Por qué el jurado escanea y no solo mira pantalla?», cuya condición pasó a la 10; queda sujeto a la revisión humana del kit.
 
 La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no tenemos una medición/precio validado» y se explica el paso de piloto. Ensayar cada respuesta con cronómetro, ≤30 s; no convertir un borrador en hecho técnico hasta enlazar CE y ejecución.
+
+## Versión de trabajo T2 — 14-oct-2026 (fase 2 del issue #46)
+
+**Borrador sin aprobar.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. Revisión humana de T1 y de la matriz: [PENDIENTE]. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). O-04 sigue pendiente: **160/280/400 s son metas internas, no tiempo oficial**. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
+
+**Etiquetas de escena.** `VIVO PREVISTO`: capacidad probada en pruebas automatizadas (EJ-07/08); la escena en pantalla no se ha ensayado y no se anuncia como «en vivo» hasta pasar E2E-04 del 006; si falla, se dice la sustitución. `GRABADO`: video del 15-oct, aún no existe; si se usa, se dice «esto es una grabación». `SIMULADO`: 005, datos sintéticos. `PROPUESTO`: diseño o plan, no demostrado.
+
+**Papeles visibles:** narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre]. Cada uno habla al menos una vez en los tres cortes.
+
+### Guion maestro de 5 min (meta 280 s)
+
+| Bloque (Anexo 5.7) | Reparto | Papel | Etiqueta | Lo que se dice | Matriz |
+|---|---|---|---|---|---|
+| 1. Problema | 0–30 | Narración | PROPUESTO + fuente | «En contratos públicos de limpieza hospitalaria, el proveedor está obligado a mantener los químicos de desinfección y los insumos con frecuencias de reposición definidas por el hospital. Nuestra hipótesis es que hoy la reposición empieza cuando el hospital ya avisó la falta. Les mostramos un caso sintético: una caja de desinfectante que va a un hospital.» | A-01, A-02 |
+| 2. Solución | 30–65 | Narración → web | PROPUESTO | «Nuestra plataforma calcula qué punto se va a quedar sin producto y por qué, propone la ruta y deja a una persona la decisión cuando un cambio supera los límites. El cálculo es una regla verificable; la IA no aprueba nada.» | A-06, A-10 (sustitución), A-11 (sustitución) |
+| 3. Demo — riesgo | 65–95 | Web | VIVO PREVISTO | «En nuestro escenario sintético hay una bodega, 15 puntos y dos vehículos. El hospital norte tiene cinco días de cobertura de desinfectante: riesgo alto. Aquí están los datos que lo explican: stock, consumo y días.» | A-03 (sustitución), A-04, A-06 |
+| 3. Demo — ruta | 95–125 | Web | VIVO PREVISTO | «Propone una ruta para cada vehículo respetando capacidad, horarios de atención y jornada.» | A-07 |
+| 3. Demo — incidente | 125–150 | Técnica | VIVO PREVISTO | «Cerramos una vía. Las paradas ya hechas se conservan y se crea una nueva versión de la ruta. Si el cambio supera los límites de costo o retraso, no se ejecuta: espera la aprobación de una persona.» | A-09, A-10 (sustitución) |
+| 3. Demo — caja | 150–190 | Móvil | PROPUESTO (VIVO solo si E2E-04 pasa) | «Así se prepara la caja: queda ligada a su lote y a la entrega. El conductor registra la recepción en la app.» Si E2E-04 no pasa: mostrar la etiqueta como diseño propuesto y no simular despacho. | A-13, A-15 (sustitución) |
+| 3. Demo — trazabilidad | 190–210 | Móvil → web | VIVO PREVISTO (API) | «En pantalla, lo que vería quien escanea la caja: producto, estado e hitos, sin datos privados; un código alterado no muestra nada.» Sin invitar al jurado a escanear. | A-16 (sustitución) |
+| 4. Impacto | 210–235 | Web → narración | SIMULADO / PROPUESTO | «Diseñamos la comparación antes de ver resultados: 90 días sintéticos, tres semillas y un escenario adverso aparte, contra reposición reactiva y calendario fijo. Contamos los quiebres evitados y también los nuevos. El resultado solo lo mostraremos con su archivo verificable.» `[RESULTADO DEL SIMULADOR]` no se pronuncia. | A-19, A-20, A-21 |
+| 5. Viabilidad | 235–250 | Técnica | VIVO PREVISTO (pruebas) | «Usa datos que una empresa ya tiene; un archivo con otro formato se carga escribiendo solo un perfil. En prueba local, la ruta de 80 puntos se calcula en menos de cinco segundos. No prometemos la ruta óptima.» | A-22, A-24, A-33 |
+| 6. Modelo de negocio | 250–267 | Negocio | PROPUESTO | «Nuestro cliente por validar es la empresa de limpieza. Cobraríamos implementación y una suscripción; el precio lo definiremos con costos reales del piloto.» `[PRECIO]` no se pronuncia. | A-26, A-30, A-31 |
+| 7. Próximo paso | 267–280 | Negocio → narración (cierre) | PROPUESTO | «Proponemos un piloto de cuatro semanas con una bodega y un grupo de puntos acordados. Buscamos una empresa que quiera medirlo con nosotros.» | A-32 |
+
+### Corte de 3 min (meta 160 s)
+
+Mismo orden y mismos cinco papeles; una acción por sistema.
+
+| Bloque | Reparto | Papel | Qué se conserva |
+|---|---|---|---|
+| 1. Problema | 0–18 | Narración | A-01 + hipótesis A-02 en una frase |
+| 2. Solución | 18–38 | Narración → web | Calcula, propone, una persona aprueba; la IA no aprueba |
+| 3. Demo | 38–112 | Web (riesgo + ruta), técnica (incidente, una frase), móvil (caja o vista pública, solo una) | A-04, A-07, A-09/A-10 sustitución, A-13 o A-16 sustitución |
+| 4. Impacto | 112–130 | Web | A-19 sustitución, sin cifras |
+| 5. Viabilidad | 130–142 | Técnica | A-22 o A-24, una frase, + «no prometemos la ruta óptima» |
+| 6. Modelo de negocio | 142–152 | Negocio | A-31 sustitución, sin precio |
+| 7. Próximo paso | 152–160 | Negocio → narración | A-32 |
+
+### Corte de 7 min (meta 400 s)
+
+Mismo relato; se amplían supuestos y límites, no se añade otra historia.
+
+| Bloque | Reparto | Papel | Qué se añade al maestro |
+|---|---|---|---|
+| 1. Problema | 0–45 | Narración | `[CITA DE LA FERIA]` **solo** si CE-02 del 006 y el permiso de cita existen; si no, «es una hipótesis que estamos validando con expositores de la feria» (A-29) |
+| 2. Solución | 45–95 | Narración → web | Qué decide la regla y qué decide una persona |
+| 3. Demo | 95–300 | Web, técnica, móvil | Distribución de riesgos 1/4/3/1/6 (A-05); los límites de autonomía (A-10 sustitución); vista pública con token alterado (A-16 sustitución) |
+| 4. Impacto | 300–335 | Web → narración | Por qué dos baselines y por qué quiebres nuevos (A-19, A-20); sin cifras |
+| 5. Viabilidad | 335–360 | Técnica | Un límite real: heurística, no óptimo; agente con IA en preparación (A-11 sustitución) |
+| 6. Modelo de negocio | 360–382 | Negocio | Costos por medir en el piloto (A-26 sustitución) |
+| 7. Próximo paso | 382–400 | Negocio → narración | Semanas 1–4 de la ficha de piloto (plan del 006) |
+
+### Frases que salen del texto anterior
+
+Del recorrido de 180 s, del texto base y del complemento del 12-oct se retiran: «80 puntos del país» (A-03), «la IA detecta/propone» (A-11), «el conductor puede capturar la recepción sin señal» y «sincroniza una sola vez» (A-15), la invitación al jurado a escanear (A-16), «una decisión se ejecuta sola y otra espera aprobación» (A-10, pasa a sustitución), «los resultados de esta ejecución son los que aparecen en pantalla» (A-21), «Cuesta [costo verificado]» (A-26) y «lo paga [cliente]» (A-31). Esas secciones quedan como antecedente.
+
+### Estructura de las siete diapositivas (sin archivo)
+
+O-06 sigue sin respuesta: no se crea editable ni PDF. Esta es la estructura para cuando se confirme el formato.
+
+| # | Bloque | Título de trabajo | Contenido | Rótulo visible |
+|---|---|---|---|---|
+| 1 | Problema | Reponer antes de la llamada | Frase SERCOP con fuente; hipótesis del equipo; ícono de caja → hospital | «Caso sintético» |
+| 2 | Solución | Calcula, propone, una persona decide | Tres pasos: riesgo explicado → ruta → aprobación humana; «la IA no aprueba» | — |
+| 3 | Demo | Una caja hacia el hospital norte | Pantalla de la demo; si falla, captura con su rótulo; orden riesgo → ruta → incidente → caja | «Demo» o «Captura» / «Grabación» según lo que se muestre |
+| 4 | Impacto | Cómo mediremos el impacto | Diseño de la comparación (90 días, tres semillas + adverso, dos baselines, evitados y nuevos); hueco de resultado vacío y rotulado | «Simulación — resultado pendiente» |
+| 5 | Viabilidad | Qué ya funciona y qué no | Dos capacidades usables con su límite (A-22, A-24); un límite honesto | «Prueba local» |
+| 6 | Modelo de negocio | Quién paga y por qué | Cliente por validar, implementación + suscripción; sin precio | «Hipótesis» |
+| 7 | Próximo paso | Piloto de cuatro semanas | Semanas 1–4 y lo que pedimos | «Propuesta» |

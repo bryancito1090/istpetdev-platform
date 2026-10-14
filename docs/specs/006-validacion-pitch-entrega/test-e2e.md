@@ -41,6 +41,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** orden Anexo 5.7 exacto; 160/280/400 s o tiempo oficial −20 s tras O-04; nombres solo si el equipo los asignó. **Evidencia:** hoja de cronometraje y video interno permitido.
 
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar. Los cortes 3/5/7 y el reparto por bloque y papel están redactados en la «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), pero nadie los ha leído en voz alta ni cronometrado. Los segundos del guion son reparto planificado.
+
 ### E2E-04 — Demo y plan B en escena
 
 **Pasos:** ejecutar reset, riesgo, ruta, incidente, despacho/recepción y QR; luego repetir simulando por separado caída de DeepSeek, ausencia de mapa, falta de wifi, fallo de cámara/QR y ZIP de simulación no importable. La persona responsable dice la línea de contingencia y pasa al siguiente hito sin detener cronómetro.
@@ -52,6 +54,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 **Pasos:** dos revisores subrayan cifras, citas y verbos de capacidad en PDF y guion; para cada uno buscan tarjeta de afirmación, ejecución y fuera de alcance del spec productor. Intentan deliberadamente una cita sin consentimiento, un «ahorro» sin ZIP, «IA replanifica sola» y «QR del jurado» sin HTTPS externo.
 
 **Resultado:** cuatro afirmaciones rechazadas o corregidas cuando falta soporte; cero números de resultado huérfanos en versión congelada. Mostrar min/max de seeds solo con denominadores y etiqueta de simulación. **Evidencia:** matriz firmada por revisores y hashes de materiales auditados.
+
+**Estado al 14-oct-2026 (fase 2):** sin ejecutar. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Faltan los dos revisores humanos, el PDF y la versión congelada; las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye la revisión.
 
 ### E2E-06 — Racha real
 
