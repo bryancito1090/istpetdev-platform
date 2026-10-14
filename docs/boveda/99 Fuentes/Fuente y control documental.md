@@ -388,3 +388,5 @@ Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (C
 - [[Consultas para la organizacion]]: O-04 y O-06 revisadas en la fase 3; siguen sin respuesta con fuente.
 - [[Registro de trabajo previo y del evento]] y [[Backlog]] (B-46): fila y estado de la preparación.
 - Fuera de la bóveda: `escena-y-contingencias.md`, `hojas-feria.md` y `registro-ensayos.md` del spec 006, hoja de segunda revisión en `matriz-afirmaciones.md`, y estado en `task.md` y `test-e2e.md`.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **885 enlaces internos resueltos**, **0 errores**.
