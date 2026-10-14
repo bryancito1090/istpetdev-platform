@@ -15,7 +15,7 @@
 | T6 | Endpoints, correlación y disparo por incidente | T5 | — | completada |
 | T7 | Prompt, workflows y control de credenciales | T6 | — | completada |
 | T8 | Copia local de n8n | T7 | [P] con T9 | completada |
-| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | completada |
+| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | código y ensayo local histórico; corrida oficial de producción pendiente (#39) |
 | T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada localmente (producción en #39) |
 
 `[P]` indica archivos distintos; integrar los commits antes de T5 o T10. Las firmas de `AgentRunView`, `IAgentRunService`, `IN8nTrigger` e `IExplanationValidator` son las de [Componentes de la API](plan.md#componentes-de-la-api). Si 001/002 integrados cambian sus nombres, documentar el ajuste en el PR junto con las pruebas consumidoras.
@@ -252,3 +252,90 @@ La matriz del árbol `5d7a805` detectó un gap adicional: fallback de Watch tras
 propuestas duplicaba decisiones (inyección 9/10). Se corrige y se registra
 regresión en `AgentJourneyTests`; el cierre sigue condicionado a nueva matriz
 10/10 y CI del SHA posterior. Los intentos fallidos permanecen en la evidencia.
+
+## Plan y entrega de producción #39 — 14-oct-2026
+
+Por solicitud de Bryan, Codex amplió
+[plan-cierre-39-produccion.md](plan-cierre-39-produccion.md) para Antigravity,
+con los ocho pasos de la issue, dependencias, contrato efectivo, controles
+prelaunch, evidencia, recuperación y revisión posterior. Rama preparada:
+`chore/39-n8n-produccion`, desde `develop` actualizado en
+`8c99a71c5a0017e769af4d7e40666565d684117d` (PR #74 ya fusionado).
+
+| Área | Estado de esta revisión | Pendiente |
+|---|---|---|
+| Plan / delegación | Plan operativo detallado preparado; sin cambios de software. Sesión dedicada de Antigravity abierta en Orca; dos comprobaciones de readiness terminaron en timeout, sin enviar el prompt | Entrega manual mediante el prompt del plan; ejecución todavía no iniciada por Codex |
+| T9 producción | No ejecutada por preparar el plan | Matriz oficial 10 Watch + 10 Incident + 10 Injection y reporte saneado |
+| T10 producción | No ejecutada | Completed/Fallback, HMAC, M2M, incidente de dos decisiones, E2E y PA-01 reales |
+| #38 | Cliente M2M creado; 200/403 locales registrados | Transporte Compose/CD, cuenta técnica, secretos y pruebas en producción |
+| Release | main consultado en `fac9c6e`; #37 todavía no promovida | Release de Jorge por PR develop → main, antes del ensayo |
+| Última matriz local disponible | Informe `artifacts/agent-acceptance/20261014-160708-465112/report.md`, árbol `4742f3b`: p95 10001 ms, herramientas 60/60, LLM 47/50 e inyección 10/10 | Falló latencia; conservar el intento y no sustituirlo por el reporte inicial aprobado |
+| CE-03 | Registro antiguo describe una sola ruta afectada | Verificar fixture/preparación actual y dos decisiones AutoExecuted/Escalated |
+| Publicación Git | Autorización de Bryan registrada para después de la entrega | Codex revisa, prueba, resuelve conflictos, sube la rama y abre PR a develop |
+
+La entrega de Antigravity debe actualizar T9/T10 por avance, distinguir
+código/pruebas locales/runtime/despliegue y registrar evidencia con SHA de
+API, workflows y harness por separado. El reporte de entrega se creará al
+terminar; no se acreditan producción ni cierre con la sola existencia del plan.
+Antigravity no hará push/PR/merge; Codex retomará cuando Bryan avise que terminó.
+No se habilita una automatización nueva ni se promueve a main por este registro.
+El plan se abrió en el editor de Orca; la sesión dedicada se llama
+`Antigravity · issue #39 · n8n producción`. El envío no se declara realizado
+por la sola existencia de esa sesión.
+
+## Ejecución y estado de entrega de Antigravity (#39) — 14-oct-2026
+
+Antigravity ejecutó la revisión operativa completa y preparación de software según
+[plan-cierre-39-produccion.md](plan-cierre-39-produccion.md). Estado: **checkpoint
+de dependencias preparado; pruebas locales y diff de transporte completados;
+operación remota bloqueada por dependencias G1–G4 de servidor y release**.
+
+### 1. Estado por área de trabajo
+
+| Área | Estado en esta ejecución | Evidencia / Bloqueo |
+|---|---|---|
+| Workflows y reproducibilidad | Verificado | `build-workflows.py --check` idéntico. Hashes verificados contra commit `8c99a71`: vigia `fb1528b...`, incidente `83e56f3...`, prompt `25c727e...`. |
+| Pruebas de software | Verificado localmente | 12/12 tests Python pasados; 11/11 tests .NET de agente (`WorkflowSecretsTests`, `N8nTriggerTests`) pasados; `check_vault.py` 0 errores; `branch-policy.sh` pasa. |
+| Transporte Compose/CD (#38) | Implementado en rama | `docker-compose.prod.yml` actualizado con `AllowedClientIds__2`, `TechnicalClientIds__0`, `TechnicalReadScope` y `Agent__*` (seguro: `Agent__Enabled=false` por defecto). `deploy.yml` configurado para exportar variables a host EC2. `.env.example` actualizado con placeholders. `docker compose config --quiet` verificado. |
+| Paso 1 (Versión n8n remota) | Pendiente de Bryan | Digest local `cfa0478...` coincide con imagen `docker.n8n.io/n8nio/n8n:2.39.5`. Servidor `n8n.bryan-bano.com` reportado como `latest`; fijación en el servidor administrado por Bryan pendiente. |
+| Paso 2 (Conectividad HTTPS) | Parcialmente verificado | `https://istpetdev.doicela.dev/health/ready` responde HTTP 200 Healthy. `https://n8n.bryan-bano.com` responde HTTPS válido. Verificación de salida desde contenedor remoto pendiente de acceso al servidor. |
+| Paso 3 (M2M en Cognito y API) | Token emitido; 401 en API | Token M2M emitido por Cognito con HTTP 200, scope `istpetdev-api/automation`, client `7h8pau7hu9pa40k85idbi7rgn4`. `GET /api/v1/risks` en producción responde 401 (`invalid_token`) con diagnóstico de configuración M2M ausente, pendiente de inspección del runtime. |
+| Paso 4 (Release de API de #38/#37) | Bloqueado / En curso | PR #78 fusionado; Codex confirmó `9d1a3d9` el 14-oct. El transporte preparado aún requiere PR a develop, promoción y deploy; Jorge debe provisionar la cuenta técnica. |
+| Paso 5 (Webhooks remotos) | Pendiente de servidor | `POST /webhook/istpetdev/agent/watch` e `incident` en `n8n.bryan-bano.com` devuelven HTTP 404 (borradores inactivos en proyecto de Bryan). Importación oficial del SHA `8c99a71` y publicación pendientes de acceso al servidor. |
+| Paso 6 (Completed / Fallback) | Bloqueado | Requiere release de API, despliegue de variables, webhooks publicados y ventana de prueba. |
+| Paso 7 (Aceptación 30 muestras) | Bloqueado | Token humano de Planificador refrescado con éxito (HTTP 200 en Cognito); producción responde HTTP 403 con diagnóstico de cuenta ausente/inactiva por comprobar en RDS. Requiere ventana de demo acordada por reseteo. |
+| Paso 8 (Incidente CE-03) | Bloqueado | Requiere superación de Pasos 6 y 7. |
+| Handover a Codex | Completado | Diff mínimo en rama, sin push ni PR de Antigravity; `entrega-39-antigravity.md` y marcador `.git/istpetdev-39-ready.json` listos para revisión. |
+
+## Revisión de Codex del checkpoint #39 — 14-oct-2026
+
+Entrega preservada en `7b58243`; develop @ `51c3b30` integrado en `067dc62`
+sin conflictos de contenido. Transporte completo de GitHub hacia SSH/Compose
+para el agente, incluido rollback; HMAC solo desde GitHub Secrets, client ID
+explícito, default deshabilitado y rechazo de activación incompleta. No cambian
+workflows, prompt, modelo, timeout de 10 s ni políticas del backend.
+
+| Dimensión | Estado |
+|---|---|
+| Código/configuración | Revisados y corregidos localmente; cambios de deploy/rollback/Compose y placeholders |
+| Pruebas locales | Python 16/16, .NET HMAC/secretos 11/11, npm run check, generación, YAML/shell y actionlint en verde; gitleaks sin secretos en el rango propio (falso positivo de UUID documentado) |
+| Integración | develop actualizado incorporado; revisión local completada, preparada para push/PR; CI del SHA publicado se consulta en el PR |
+| Runtime/producción | Diagnósticos de Antigravity 200/401/403/404 registrados como observaciones; causas requieren contrastar configuración/cuentas |
+| Release | PR #78 fusionado; no incluye este checkpoint, que debe entrar por otro PR a develop antes de promoción autorizada |
+| T9/T10/PA-01/CE-01/CE-03 | Siguen pendientes de credenciales/configuración remota, cuentas, publicación de webhooks y ventana real de ensayo |
+
+Registro detallado y fuentes:
+[entrega-39-antigravity.md](entrega-39-antigravity.md). La revisión prepara un
+PR de configuración; no ejecuta deploy, siembra en RDS ni reset de demo.
+
+Metadatos del flujo: issue #39 con `type::chore` y milestone H5 del
+15-oct-2026, con la hora 14:00 America/Guayaquil en su descripción. El PR del
+checkpoint referencia la issue sin cerrarla; la operación productiva sigue
+pendiente y debe registrarse después del despliegue autorizado.
+
+Publicación del checkpoint: rama subida y
+[PR #81](https://github.com/bryancito1090/istpetdev-platform/pull/81) abierto
+hacia `develop`, listo para revisión de su configuración por Jorge Doicela.
+Se incorporó también `develop` @ `3936399` (PR #80, solo documentación), sin
+conflictos. El estado de CI del HEAD final se consulta en el PR; #39 sigue
+abierta y la aceptación/despliegue productivos permanecen pendientes.
