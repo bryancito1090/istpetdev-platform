@@ -4,6 +4,8 @@
 **Base:** `develop`  
 **Pull Request:** [Crear PR hacia develop](https://github.com/bryancito1090/istpetdev-platform/pull/new/feature/004-campo-qr-custodia-offline)
 
+> **Nota de vigencia (spec 013):** el selector rápido de perfiles demo y el login simulado descritos en este informe pertenecen a la entrega histórica de 004. El acceso vigente usa Cognito con Authorization Code + PKCE y no guarda contraseñas de demo en el repositorio.
+
 ---
 
 ## 1. Resumen Ejecutivo de la Implementación (Spec 004)

@@ -40,8 +40,21 @@ npm run check
 
 ## 3. Modos de Ejecución Local
 
-### Modo A: Desarrollo Local con Dependencias Docker (Sin AWS)
-Si desea trabajar de manera completamente local y desconectada de AWS:
+### Modo A: API y datos locales con Docker
+Este modo mantiene la API y PostgreSQL localmente. El inicio de sesión de las aplicaciones web y móvil sí usa el User Pool real de Cognito; no hay un login simulado ni contraseñas de demo en el repositorio. Las contraseñas se introducen únicamente en la página administrada de Cognito.
+
+Al ejecutar la API con `ASPNETCORE_ENVIRONMENT=Development`, no configures `Authentication__Authority`, `Authentication__AllowedClientIds__0` ni `Authentication__AllowedClientIds__1` para conectarla al User Pool real. La API local conserva su configuración de desarrollo y no valida los tokens reales de Cognito; por eso este modo permite desarrollar la API y revisar el flujo de inicio de sesión de las apps, pero no completar llamadas autenticadas desde esas apps hacia la API local.
+
+Las aplicaciones usan los clientes públicos y retornos locales registrados para Cognito:
+
+| Aplicación | URL local | Cliente Cognito |
+|---|---|---|
+| Web | `http://localhost:4200` | Web (`6ejhdau47gad74id7id1l7ugln`) |
+| PWA | `http://localhost:8100` | Móvil (`3k59rv5cov1sinllgd7igmpe1a`) |
+
+El issuer y los clientes provienen de `docs/deployment-status.md` (8-oct); confirma los valores con `terraform output -json cognito` al renovar el entorno.
+
+Si desea trabajar con API y base de datos sin servicios de AWS:
 
 1. Inicie los contenedores de dependencias locales (PostgreSQL 16 con PostGIS y Redis 7):
    ```bash
@@ -51,10 +64,10 @@ Si desea trabajar de manera completamente local y desconectada de AWS:
    ```bash
    dotnet user-secrets set "ConnectionStrings:Main" "Host=localhost;Port=15432;Database=postgres;Username=postgres;Password=postgres_dev_password_local;" --project src/Api
    ```
-3. Inicie los servicios:
-   - **Backend API**: `npm run dev:api` (disponible en `http://localhost:5000`)
-   - **Frontend Web**: `npm run dev:web` (disponible en `http://localhost:4200`)
-   - **Móvil PWA**: `npm run dev:mobile` (disponible en `http://localhost:8100`)
+3. Inicie los servicios que necesite:
+   - **Backend API**: `npm run dev:api` (disponible en `http://localhost:5000`, modo de desarrollo local)
+   - **Frontend Web**: `npm run dev:web` (disponible en `http://localhost:4200`, login real de Cognito)
+   - **Móvil PWA**: `npm run dev:mobile` (disponible en `http://localhost:8100`, login real de Cognito)
 
 ---
 

@@ -32,9 +32,9 @@ services:
       ApplyMigrations: ${APPLY_MIGRATIONS:-true}
       Demo__Enabled: ${DEMO_ENABLED:-false}
       Demo__FixturePath: /app/data/fixtures/demo-base
-      Authentication__Authority: ${COGNITO_AUTHORITY:-}
-      Authentication__AllowedClientIds__0: ${COGNITO_WEB_CLIENT_ID:-}
-      Authentication__AllowedClientIds__1: ${COGNITO_MOBILE_CLIENT_ID:-}
+      Authentication__Authority: ${COGNITO_AUTHORITY:?Define COGNITO_AUTHORITY con el issuer del User Pool}
+      Authentication__AllowedClientIds__0: ${COGNITO_WEB_CLIENT_ID:?Define COGNITO_WEB_CLIENT_ID para el cliente web}
+      Authentication__AllowedClientIds__1: ${COGNITO_MOBILE_CLIENT_ID:?Define COGNITO_MOBILE_CLIENT_ID para el cliente móvil}
       EnableSwagger: "true"
     depends_on:
       istpetdev-redis:

@@ -3058,6 +3058,13 @@ En la suite de mobile, el runner Angular seguía advirtiendo sobre `vi.mock` aun
 - Las pruebas de integración cubren los siete endpoints de campo que recibían una resolución de cuenta y verifican 403 sin aprovisionar al sujeto ni devolver contenido.
 - Desviación respecto al código de 004: `MobileAssignmentsController` tenía el mismo fallback inseguro que las tres clases indicadas en el bloque, por lo que también se actualizó. Las pruebas unitarias existentes se ajustaron al nuevo constructor sin reducir sus expectativas.
 
+### Configuración de Cognito y setup local (Bloque C)
+
+- `appsettings.example.json` usa el issuer `https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4Y2j5DINp` y los clientes públicos web `6ejhdau47gad74id7id1l7ugln` y móvil `3k59rv5cov1sinllgd7igmpe1a`. Fuente: `docs/deployment-status.md` (8-oct); confirmar con `terraform output -json cognito`.
+- Compose de producción exige `COGNITO_AUTHORITY`, `COGNITO_WEB_CLIENT_ID` y `COGNITO_MOBILE_CLIENT_ID`. El paso de despliegue SSH las recibe desde variables de repositorio `vars.COGNITO_*`; hay que crearlas en GitHub antes de desplegar.
+- El onboarding explica que web (`localhost:4200`) y PWA (`localhost:8100`) inician sesión con Cognito real; la API local en Development no se configura con el issuer/client IDs reales y ya no existe login simulado.
+- La guía 004 aclara que, en el flujo de demo sin sesión independiente del Receptor, este valida y firma en el dispositivo del Conductor asignado; el `POST /api/v1/deliveries/{id}/receipts` se envía bajo la sesión del Conductor y las evidencias quedan asociadas a esa recepción.
+
 ---
 
 ### Task 10: Infraestructura — callbacks HTTPS, marca, IAM y hop limit (Jorge)

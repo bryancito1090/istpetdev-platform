@@ -38,22 +38,26 @@ dotnet run --project src/Api
 
 ## 2. Autenticación y Matriz de Roles (ADR-10)
 
+Los clientes web (`http://localhost:4200`) y PWA (`http://localhost:8100`) usan el login administrado de Cognito con Authorization Code + PKCE; ya no existe el login simulado ni una ruta `/auth/login`. En modo Development, la API local no se conecta al User Pool real y no valida esos tokens. No configures `Authentication__Authority` ni `Authentication__AllowedClientIds__0/1` para apuntar la API local a Cognito; las llamadas autenticadas de punta a punta requieren una API desplegada y conectada al User Pool.
+
 Todos los endpoints privados exigen la cabecera HTTP:
 ```http
 Authorization: Bearer <token>
 ```
 
-Los roles autorizados en el sistema son:
-* `Planificador`: Planifica rutas, publica planes, reasigna incidentes y solicita ejecuciones al agente.
-* `Conductor`: Consulta sus paradas asignadas y marca entregas/recepciones como completadas.
-* `Gerencia`: Monitorea paneles y es el **único rol autorizado** para modificar el modo de autonomía (`PUT /autonomy/mode`).
-* `Automatizacion`: Rol exclusivo para clientes máquina a máquina (M2M) como n8n (`istpetdev-api/automation`). Puede disparar replanificaciones, registrar incidentes y consultar riesgos/inventario. **Tiene prohibido explícitamente (403 Forbidden)**:
+Los roles son seis humanos y uno técnico:
+* `Gerencia`: Supervisa la operación y es el **único rol autorizado** para modificar el modo de autonomía (`PUT /api/v1/autonomy/mode`).
+* `Planificador`: Planifica y publica rutas, reasigna incidentes y solicita ejecuciones al agente.
+* `Auditor`: Consulta información operativa en modo de solo lectura.
+* `Bodega`: Prepara unidades, administra el despacho y registra la custodia desde bodega.
+* `Conductor`: Consulta sus asignaciones y registra entregas y recepciones.
+* `Receptor`: En el flujo de demo no inicia una sesión independiente; valida y firma la recepción en el dispositivo del Conductor asignado. La PWA envía `POST /api/v1/deliveries/{id}/receipts` bajo la sesión de Cognito del Conductor y asocia a esa recepción su firma y evidencias.
+* `Automatizacion`: Rol técnico exclusivo para clientes máquina a máquina (M2M) como n8n (`istpetdev-api/automation`). Puede disparar replanificaciones, registrar incidentes y consultar riesgos/inventario. **Tiene prohibido explícitamente (403 Forbidden)**:
   1. `POST /api/v1/route-plans/{id}/publish` (publicación de planes)
   2. `POST /api/v1/agent-decisions/{id}/approve` (aprobación humana)
   3. `POST /api/v1/agent-decisions/{id}/reject` (rechazo de decisiones)
   4. `POST /api/v1/route-plans/{id}/revert` (reversión de revisiones)
   5. `PUT /api/v1/autonomy/mode` (cambio de modo de autonomía)
-* `Administrador`: Acceso de gestión y mantenimiento.
 
 ---
 
@@ -83,7 +87,7 @@ Invoke-RestMethod -Uri "http://localhost:5000/health/live" -Method Get
 
 ### 3.2. Cargar Fixture Regional (`POST /api/v1/demo/reset?fixture=demo-region`)
 Inicializa la base de datos con 1 bodega, 15 puntos, 2 vehículos, 3 SKUs, consumos históricos y 240 tramos viales dirigidos.
-* **Rol requerido:** `Planificador` o `Administrador`
+* **Rol requerido:** `Gerencia` o `Planificador` (y `Demo:Enabled=true` en el entorno)
 ```bash
 curl -X POST "http://localhost:5000/api/v1/demo/reset?fixture=demo-region" \
   -H "Authorization: Bearer $PLANNER_TOKEN"
@@ -101,7 +105,7 @@ curl -X POST "http://localhost:5000/api/v1/demo/reset?fixture=demo-region" \
 
 ### 3.3. Consultar Riesgos de Abastecimiento (`GET /api/v1/risks`)
 Calcula coberturas de stock hospitalario y niveles de severidad (`Critico`, `Alto`, `Vigilar`, `Normal`, `SinDatos`) con sus hechos asociados.
-* **Rol requerido:** `Planificador`, `Gerencia`, `OperadorLogistico` o `Automatizacion`
+* **Rol requerido:** Cualquier rol autenticado (humano o técnico)
 * **Filtros query opcionales:** `?level=Alto` o `?level=Critico`
 ```bash
 curl -X GET "http://localhost:5000/api/v1/risks?level=Alto" \
@@ -459,4 +463,3 @@ Cualquier llamada que realice n8n (rol `Automatizacion`) a endpoints de la API p
 X-Agent-Run-Id: <Guid-del-Run>
 ```
 El middleware `AgentRunTraceMiddleware` captura automáticamente el método, ruta, status code y tiempo en milisegundos y lo adjunta de forma duradera a `AgentRun.ToolCallsJson` para auditoría total en el panel de control.
-
