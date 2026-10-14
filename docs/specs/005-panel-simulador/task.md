@@ -11,7 +11,7 @@
 | T2 | Generador canónico y calendario exógeno | T0, 001 | [P] con T1 | hecho |
 | T3 | Base aislada, importador y migración única | T2, 001/002 | — | pendiente |
 | T4 | Políticas reactiva y fija | T2–T3 | [P] con T5 | hecho |
-| T5 | Adaptador IstpetDev y ciclo horario regional | T2–T3, 002 | [P] con T4 | pendiente |
+| T5 | Adaptador IstpetDev y ciclo horario regional | T2–T3, 002 | [P] con T4 | hecho |
 | T6 | Métricas, invariantes y agregación | T4–T5 | — | hecho |
 | T7 | Worker, API, progreso y exportación | T3, T6 | — | pendiente |
 | T8 | Benchmark de corrida completa y corrección medida | T7 | [P] con T9 | pendiente |
@@ -117,10 +117,10 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 
 **Archivos:** crear `src/Application/Simulation/{IstpetDevPolicy,SimulationClock,DailySimulationEngine}.cs`, `src/Infrastructure/Simulation/LogisticsPlannerAdapter.cs`; pruebas `tests/IstpetDev.Tests/Unit/Simulation/{DailySimulationEngineTests,IstpetDevPolicyTests}.cs`.
 
-- [ ] Prueba roja: demanda de 5 L a las 10:00, entrega a las 12:00 y stock inicial 0 dejan quiebre a las 10:00 aunque luego se entreguen 5 L; entrega a las 09:00 evita ese quiebre. Un incidente ocurrido a las 08:00 pero conocido a las 11:00 no afecta la decisión de las 09:00.
-- [ ] Implementar reloj fijo de simulación en `America/Guayaquil`: 06:00 observación/avisos, 06:05 riesgo/plan/reserva, ETA real para entrega y demanda a su hora exógena, conciliación al cierre. Cada evento tiene secuencia determinista. Una región/día usa una bodega y vehículos locales; seis regiones de ≤15 puntos no comparten stock ni rutas y sus métricas se suman después.
-- [ ] Prueba roja `IstpetDevPolicyTests`: el adaptador llama exactamente una vez por región/día con pedidos a riesgo, cantidad, planificador y costo **de 002**, y devuelve no atendidos; una matriz incompleta con `Road` falla el run, mientras modo `Approximation` usa todas las aristas aproximadas y etiqueta supuestos. Ninguna llamada HTTP interna, LLM ni n8n.
-- [ ] Implementar `LogisticsPlannerAdapter` sobre servicios de aplicación de 002 y pasar reloj/contexto de simulación; las conversiones de respuesta quedan en el adaptador. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~DailySimulationEngineTests|FullyQualifiedName~IstpetDevPolicyTests"`; esperado `Failed: 0`. Commit `feat(simulation): reutilizar motor logístico por región y hora` con trailer.
+- [x] Prueba roja: demanda de 5 L a las 10:00, entrega a las 12:00 y stock inicial 0 dejan quiebre a las 10:00 aunque luego se entreguen 5 L; entrega a las 09:00 evita ese quiebre. Un incidente ocurrido a las 08:00 pero conocido a las 11:00 no afecta la decisión de las 09:00.
+- [x] Implementar reloj fijo de simulación en `America/Guayaquil`: 06:00 observación/avisos, 06:05 riesgo/plan/reserva, ETA real para entrega y demanda a su hora exógena, conciliación al cierre. Cada evento tiene secuencia determinista. Una región/día usa una bodega y vehículos locales; seis regiones de ≤15 puntos no comparten stock ni rutas y sus métricas se suman después.
+- [x] Prueba roja `IstpetDevPolicyTests`: el adaptador llama exactamente una vez por región/día con pedidos a riesgo, cantidad, planificador y costo **de 002**, y devuelve no atendidos; una matriz incompleta con `Road` falla el run, mientras modo `Approximation` usa todas las aristas aproximadas y etiqueta supuestos. Ninguna llamada HTTP interna, LLM ni n8n.
+- [x] Implementar `LogisticsPlannerAdapter` sobre servicios de aplicación de 002 y pasar reloj/contexto de simulación; las conversiones de respuesta quedan en el adaptador. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~DailySimulationEngineTests|FullyQualifiedName~IstpetDevPolicyTests"`; esperado `Failed: 0`. Commit `feat(simulation): reutilizar motor logístico por región y hora` con trailer.
 
 ### T6 — Invariantes y métricas comparables
 
