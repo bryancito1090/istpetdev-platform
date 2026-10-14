@@ -87,17 +87,22 @@ La especificación 013 implementó el flujo OIDC PKCE real con Cognito User Pool
      - `LogoutURLs`: `http://localhost:8100` y `https://istpetdev.doicela.dev/campo/`
    - Sincronizados en AWS Cognito y formalizados en `infra/terraform/environments/dev/identity.tf`.
 
-2. **Resolución de Token Endpoint y Almacenamiento Libre de Tokens (`TokenFreeStorage`)**:
-   - `TokenFreeStorage` en `@istpetdev/shared-core` restringe la persistencia en `sessionStorage` exclusivamente a las claves del flujo PKCE para que ningún token sensible (`access_token`, `refresh_token`, `id_token`) resida en el almacenamiento del navegador.
-   - Para que el cliente `angular-auth-oidc-client` pueda canjear el código de autorización por el Access Token tras la redirección externa desde Cognito, `AUTH_FLOW_KEYS` incluye:
-     - `codeVerifier`: Verificador criptográfico PKCE S256.
-     - `authStateControl`: Control de estado contra CSRF.
-     - `authNonce`: Nonce de validación de replay.
-     - `authWellKnownEndPoints`: Metadata pública de los endpoints del proveedor (requerida para ubicar `/oauth2/token`).
-     - `storageCodeFlowInProgress`: Indicador de intercambio de código en progreso.
-   - Adicionalmente, `auth.config.ts` en Web y Móvil define `authWellknownEndpoints` estáticos explícitos para garantizar la resolución inmediata de endpoints sin depender exclusivamente del caché en almacenamiento.
+2. **Persistencia Efímera de Sesión OIDC (`TokenFreeStorage`)**:
+   - Inicialmente, la especificación 013 restringía los tokens a memoria JavaScript estricta, persistiendo únicamente los verificadores PKCE (`AUTH_FLOW_KEYS`) en `sessionStorage`.
+   - **Diagnóstico de Causa Raíz**: Los navegadores modernos bloquean el uso de cookies de terceros dentro de iframes de orígenes cruzados (`amazoncognito.com`), lo que impide la renovación silenciosa (*silent renew*) al recargar la página. Como consecuencia, cualquier actualización de página (`F5`) o navegación directa por la barra de direcciones (por ejemplo, a `/inicio`) perdía los tokens en memoria y expulsaba al usuario al login.
+   - **Resolución bajo IETF OAuth 2.0 BCP**: Conforme a la recomendación IETF OAuth 2.0 Security Best Current Practice para Browser-Based Apps, `TokenFreeStorage` persiste la sesión OIDC en `sessionStorage`. Esta capa provee aislamiento estricto por pestaña, eliminación automática al cerrar la pestaña y protección contra ataques CSRF (al no depender de cookies ambientales), permitiendo la rehidratación inmediata de la sesión en recargas y navegación interna directa. Los tokens continúan excluidos de `localStorage` e `IndexedDB`.
+   - En `auth.config.ts` (Web y Móvil) se configuró `disableRefreshTokenOfflineAccessScopeWarning: true` para suprimir la advertencia sobre el scope `offline_access`, no requerido por AWS Cognito.
 
 3. **Validación de Identidad y Claims en API**:
    - Despliegue en EC2 parametriza `Authentication__Authority`, `Authentication__AllowedClientIds__0` y `Authentication__AllowedClientIds__1` desde variables de repositorio en GitHub Actions (`deploy.yml`).
    - Endpoint `GET /api/v1/me` resuelve la identidad autenticada contra la tabla `Account` en PostgreSQL (`istpetdev_integration`), validando rol institucional y plataforma autorizada (`web` o `field`).
+
+4. **Aprovisionamiento y Sincronización del Equipo**:
+   - Cuentas aprovisionadas y validadas en AWS Cognito User Pool (`us-east-1_4Y2j5DINp`) y en las bases de datos de desarrollo y producción RDS:
+     - `ismael02doicela@gmail.com`: Rol `Gerencia` (`sub: e4780498-b031-701f-4553-6037c59e69ee`)
+     - `joseph.bano@istpet.edu.ec`: Rol `Planificador` (`sub: c4e844f8-d061-70ef-58fd-641218081778`)
+     - `anthony.pilatasig@istpet.edu.ec`: Rol `Auditor` (`sub: f4385408-9011-7031-dbef-8b1c77a0459e`)
+     - `alkut202@gmail.com`: Rol `Conductor` (`sub: 94a85418-50b1-7067-3252-76ff8425cc4c`, plataforma `field`)
+   - Navegación superior (`HeaderWidget`) adaptada por rol, habilitando `/users` para Gerencia y manteniendo los enlaces accesibles durante toda la sesión autenticada.
+
 

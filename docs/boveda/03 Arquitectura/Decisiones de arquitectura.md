@@ -96,7 +96,7 @@ Detalles en [[Frontend y componentes]], [[Sistema de diseno y colores]] y [[Fron
 **Decisión:**
 1. **Flujo de autorización:** Flujo **Authorization Code con PKCE (Proof Key for Code Exchange) S256** nativo o mediante librería estándar OIDC, almacenando el `code_verifier` temporalmente en `sessionStorage`.
 2. **Inyección de credenciales:** Creación de un `AuthInterceptor` en `apps/web/src/shared/api/` que intercepta peticiones HTTP salientes y adjunta la cabecera `Authorization: Bearer <accessToken>`.
-3. **Manejo de tokens:** Tokens de acceso con expiración de 15 minutos; refresco silencioso con rotación de refresh tokens. Si la sesión caduca offline, la cola local no se borra y solicita reautenticación al recuperar red sin perder las entregas capturadas.
+3. **Manejo de tokens:** Conforme a IETF OAuth 2.0 Security BCP para Browser-Based Apps, la sesión OIDC reside en `sessionStorage` (aislada por pestaña), permitiendo rehidratar la sesión ante recargas (F5) o navegación directa sin depender de cookies de terceros en iframes (bloqueadas por navegadores modernos). Se descarta `localStorage` e `IndexedDB`. Si la sesión caduca offline en la app móvil, la cola local no se borra y solicita reautenticación al recuperar red sin perder las entregas capturadas.
 
 ## Aceptar una decisión
 
