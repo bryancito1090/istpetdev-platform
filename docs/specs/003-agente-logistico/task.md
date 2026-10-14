@@ -339,3 +339,32 @@ hacia `develop`, listo para revisión de su configuración por Jorge Doicela.
 Se incorporó también `develop` @ `3936399` (PR #80, solo documentación), sin
 conflictos. El estado de CI del HEAD final se consulta en el PR; #39 sigue
 abierta y la aceptación/despliegue productivos permanecen pendientes.
+
+
+## Verificación previa al cierre de #39 — 14-oct-2026
+
+Bryan fusionó PR #81 y solicitó cerrar #39 únicamente tras comprobar sus
+criterios. Codex confirmó el merge `730d90c` en develop y los cuatro checks de
+PR #81 verdes (backend, frontend, política de ramas y bóveda).
+
+| Criterio / comprobación | Resultado real de la revisión | Estado |
+|---|---|---|
+| Despliegue del checkpoint | main permanece en `9d1a3d9`; no existe CD exitoso que incluya el transporte de #81 | Pendiente de promoción/deploy autorizado |
+| Salud API | `https://istpetdev.doicela.dev/health/ready` responde 200 Healthy desde el cliente de revisión | Verificado; no acredita conectividad desde el servidor n8n |
+| Versión n8n fijada | 2.39.5 informada previamente; no se verificó la fuente persistente del servidor | Pendiente |
+| Credenciales | MCP lista IstpetDev M2M y DeepSeek; existencia no acredita funcionamiento/presupuesto | Parcial |
+| M2M real | Cognito emite token 200, client ID y scope correctos; GET productivo /api/v1/risks responde 403 | Falló acceso requerido; causa por contrastar con configuración/cuenta |
+| Vigía remoto | MCP confirma publicado/activo y Schedule deshabilitado, con referencias a credenciales nuevas | Parcial; falta acreditar SHA/importación y ejecución completa |
+| Incidente remoto | MCP confirma inactivo, sin versión publicada y referencias OAuth2 del export todavía sin remapear | Pendiente; no cumple publicación de ambos workflows |
+| Firma inválida | HTTP 403 con Server cloudflare, también en /healthz; no acredita rechazo HMAC por n8n | Pendiente de prueba desde origen autorizado |
+| Completed/Fallback | Sin evidencia productiva de las dos pruebas en esta entrega | Pendiente |
+| Aceptación oficial | No existe informe de producción; último local conocido tiene p95 10001 ms | Pendiente / fallo local conservado |
+| CE-03 y E2E-07 | Sin registro real de dos decisiones productivas ni matriz oficial | Pendiente |
+| Secretos del checkpoint | Revisión y gitleaks del rango propio completados; UUID público excluido por fingerprint | Verificado para el código; runtime por verificar |
+
+Consulta MCP de ambos workflows y lista de ejecuciones (sin resultados)
+utilizadas como diagnóstico. La ausencia de historial no se interpreta como
+prueba de que nunca se ejecutó: se exige evidencia API/informe del ensayo.
+No se modificaron workflows, cuentas, credenciales ni configuración remota en
+esta revisión, ni se ejecutaron resets. La issue **permanece abierta** porque
+la solicitud de cierre exige cumplimiento completo, no solo merge a develop.
