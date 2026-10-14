@@ -2,7 +2,7 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, NavigationEnd, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { SessionStore } from '@entities/session';
+import { AuthSession } from '@entities/session';
 
 interface NavItem {
   path: string;
@@ -19,12 +19,15 @@ const PLANNER_NAV: NavItem[] = [
 
 const MANAGER_NAV: NavItem[] = [
   { path: '/inicio', label: 'Inicio' },
+  { path: '/datos', label: 'Datos' },
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' }
 ];
 
 const AUDITOR_NAV: NavItem[] = [
-  { path: '/public-trace', label: 'Trazabilidad QR' }
+  { path: '/inicio', label: 'Inicio' },
+  { path: '/alertas', label: 'Alertas' },
+  { path: '/rutas', label: 'Rutas' }
 ];
 
 @Component({
@@ -40,7 +43,7 @@ const AUDITOR_NAV: NavItem[] = [
             <span class="h-1.5 w-1.5 rounded-full bg-primary-500 inline-block mb-1"></span>
           </a>
 
-          @if (isSystemArea() && sessionStore.isAuthenticated()) {
+          @if (isSystemArea() && session.status() === 'authenticated') {
             <nav class="flex items-center gap-1 text-sm overflow-x-auto">
               @for (item of navItems(); track item.path) {
                 <a
@@ -55,9 +58,9 @@ const AUDITOR_NAV: NavItem[] = [
         </div>
 
         <div class="flex items-center gap-4 shrink-0 text-sm">
-          @if (sessionStore.isAuthenticated()) {
+          @if (session.status() === 'authenticated') {
             <span class="hidden sm:inline text-slate-700">
-              {{ sessionStore.currentUser()?.name }}
+              {{ session.me()?.displayName }}
               <span class="text-slate-400">· {{ roleName() }}</span>
             </span>
             <button type="button" (click)="logout()" class="text-slate-500 hover:text-rose-600">
@@ -76,7 +79,7 @@ const AUDITOR_NAV: NavItem[] = [
   `
 })
 export class HeaderWidget {
-  readonly sessionStore = inject(SessionStore);
+  readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
   readonly currentUrl = signal(this.router.url);
@@ -95,22 +98,17 @@ export class HeaderWidget {
   });
 
   readonly navItems = computed<NavItem[]>(() => {
-    const role = this.sessionStore.userRole();
-    if (role === 'SUPERVISOR') return PLANNER_NAV;
-    if (role === 'ADMIN') return MANAGER_NAV;
+    const role = this.session.role();
+    if (role === 'Planificador') return PLANNER_NAV;
+    if (role === 'Gerencia') return MANAGER_NAV;
     return AUDITOR_NAV;
   });
 
   readonly roleName = computed(() => {
-    const role = this.sessionStore.userRole();
-    if (role === 'SUPERVISOR') return 'Planificador';
-    if (role === 'ADMIN') return 'Gerencia';
-    if (role === 'AUDITOR') return 'Auditor';
-    return 'Usuario';
+    return this.session.role() ?? 'Usuario';
   });
 
   logout(): void {
-    this.sessionStore.logout();
-    this.router.navigate(['/']);
+    this.session.logout();
   }
 }

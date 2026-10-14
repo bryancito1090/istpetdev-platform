@@ -2,7 +2,6 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '@shared/api';
-import { SessionStore } from '@entities/session';
 
 interface StepStatus {
   id: number;
@@ -84,7 +83,6 @@ interface StepStatus {
 })
 export class InicioPage implements OnInit {
   private readonly apiService = inject(ApiService);
-  readonly sessionStore = inject(SessionStore);
 
   readonly steps = signal<StepStatus[]>([
     {

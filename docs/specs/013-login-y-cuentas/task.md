@@ -15,7 +15,7 @@
 | T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | hecho |
 | T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | hecho |
 | T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | hecho |
-| T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | pendiente |
+| T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | hecho |
 | T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | pendiente |
 | T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | pendiente |
 | T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | pendiente |
@@ -1493,15 +1493,16 @@ git commit -m "feat(shared-core): almacenamiento sin tokens y reglas de sesion (
 - Create: `apps/web/src/shared/api/api-auth.interceptor.ts` (+ `.spec.ts`); Modify: `apps/web/src/shared/api/index.ts`
 - Create: `apps/web/src/entities/session/model/auth-session.ts` (+ `.spec.ts`), `apps/web/src/entities/session/lib/navigate-external.ts`, `apps/web/src/entities/session/lib/auth.guard.ts`, `apps/web/src/entities/session/lib/role.guard.ts`, `apps/web/src/entities/session/lib/guards.spec.ts`
 - Modify: `apps/web/src/entities/session/index.ts`
-- Delete: `apps/web/src/entities/session/model/session.store.ts`, `apps/web/src/entities/session/model/session.model.ts`, `apps/web/src/features/login-form/`, `apps/web/src/pages/warehouse/`
+- Delete: `apps/web/src/entities/session/model/session.store.ts`, `apps/web/src/entities/session/model/session.model.ts`, `apps/web/src/features/login-form/`, `apps/web/src/app/providers/auth.interceptor.ts`, `apps/web/src/app/providers/role.guard.ts`, `apps/web/src/shared/api/mock/`
 - Create: `apps/web/src/pages/auth-callback/auth-callback.page.ts`, `apps/web/src/pages/auth-callback/index.ts`
-- Modify: `apps/web/src/app/app.config.ts`, `apps/web/src/app/app.routes.ts`, `apps/web/src/pages/index.ts`, `apps/web/src/pages/login/login.page.ts`, `apps/web/src/widgets/header/header.widget.ts`, `apps/web/src/pages/operations-dashboard/operations-dashboard.page.ts`
+- Modify: `apps/web/src/app/app.config.ts`, `apps/web/src/app/app.routes.ts`, `apps/web/src/pages/index.ts`, `apps/web/src/pages/login/login.page.ts`, `apps/web/src/pages/inicio/inicio.page.ts`, `apps/web/src/pages/datos/datos.page.ts`, `apps/web/src/pages/rutas/rutas.page.ts`, `apps/web/src/widgets/header/header.widget.ts`
+- Test: `apps/web/src/pages/rutas/rutas.page.spec.ts`, `apps/web/src/widgets/header/header.widget.spec.ts`
 
 **Interfaces:**
 - Consumes: `TokenFreeStorage`, `isPrivateApiRequest`, `safeReturnUrl`, `cognitoLogoutUrl`, `MeResponse`, `HumanRole` (T2, T5); `GET /api/v1/me`.
 - Produces: `AuthSession` con `status: Signal<SessionStatus>`, `me: Signal<MeResponse | null>`, `role: Signal<HumanRole | null>`, `canWrite: Signal<boolean>`, `bootstrap(): Promise<void>`, `login(returnUrl?: string | null): void`, `takeReturnUrl(): string`, `logout(): void`; `SessionStatus = 'loading' | 'anonymous' | 'authenticated' | 'wrong-platform' | 'disabled' | 'error'`; `authGuard`, `roleGuard` (lee `route.data['roles']: HumanRole[]`); `NAVIGATE_EXTERNAL`; `apiAuthInterceptor`; `environment.oidc { authority, cognitoDomain, clientId, redirectUrl, postLogoutRedirectUri }`.
 
-- [ ] **Step 1: Habilitar el runner de pruebas**
+- [x] **Step 1: Habilitar el runner de pruebas**
 
 Run: `npm install -D -E vitest@4 jsdom@27 --workspace=apps/web`
 
@@ -1541,7 +1542,7 @@ Crear `apps/web/tsconfig.spec.json`:
 
 En `apps/web/tsconfig.app.json` añadir `"exclude": ["src/**/*.spec.ts"]`.
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `apps/web/src/shared/config/environment.spec.ts`:
 
@@ -1691,10 +1692,24 @@ describe('AuthSession', () => {
     const { session, oidc } = setup(false);
     session.login('//evil.example');
     expect(sessionStorage.length).toBe(0);
+    expect(localStorage.length).toBe(0);
     session.login('/dashboard?vista=mapa');
+    expect(localStorage.getItem('istpetdev.returnUrl')).toBe('/dashboard?vista=mapa');
+    expect(sessionStorage.length).toBe(0);
     expect(session.takeReturnUrl()).toBe('/dashboard?vista=mapa');
+    expect(localStorage.length).toBe(0);
     expect(session.takeReturnUrl()).toBe('/dashboard');
     expect(oidc.authorize).toHaveBeenCalledTimes(2);
+  });
+
+  it('usa /dashboard tras Cognito si el returnUrl apuntaba a otro origen (Review Focus 1)', async () => {
+    const { session, backend } = setup(true);
+    session.login('https://evil.example/dashboard');
+    expect(localStorage.length).toBe(0);
+    const done = session.bootstrap();
+    await answerMe(backend, { accountId: 'a-1', displayName: 'Planificación', role: 'Planificador', platform: 'web' });
+    await done;
+    expect(session.takeReturnUrl()).toBe('/dashboard');
   });
 
   it('logout borra la sesión local y cierra la de Cognito', async () => {
@@ -1764,12 +1779,12 @@ describe('roleGuard', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:web`
 Expected: FAIL con «Could not resolve "./auth-session"» y, en `environment.spec.ts`, «Cannot read properties of undefined (reading 'authority')».
 
-- [ ] **Step 4: Configuración pública por entorno**
+- [x] **Step 4: Configuración pública por entorno**
 
 Leer los valores: `terraform -chdir=infra/terraform/environments/dev output -json cognito`. Copiar `issuer` en `authority`, `domain` en `cognitoDomain` y `client_ids.web` en `clientId` en **ambos** archivos (el pool de dev sirve a local y a la demo).
 
@@ -1834,12 +1849,12 @@ export const webOidcConfig: PassedInitialConfig = {
 };
 ```
 
-- [ ] **Step 5: Comprobar cómo escribe la librería en el almacenamiento**
+- [x] **Step 5: Comprobar cómo escribe la librería en el almacenamiento**
 
 Run: `grep -n "write(" node_modules/angular-auth-oidc-client/fesm2022/angular-auth-oidc-client.mjs | grep -i "storage" | head`
 Expected: la escritura usa la clave de configuración y un JSON con todas las claves (`this.abstractSecurityStorage.write(configId, JSON.stringify(...))` o equivalente). `TokenFreeStorage` cubre ese formato y el de clave suelta; si aparece un tercer formato, añadir su caso a `token-free-storage.spec.ts` antes de seguir.
 
-- [ ] **Step 6: Sesión, guards e interceptor**
+- [x] **Step 6: Sesión, guards e interceptor**
 
 `apps/web/src/entities/session/lib/navigate-external.ts`:
 
@@ -1899,10 +1914,10 @@ export class AuthSession {
   login(returnUrl?: string | null): void {
     const target = safeReturnUrl(returnUrl);
     try {
-      if (target) sessionStorage.setItem(RETURN_URL_KEY, target);
-      else sessionStorage.removeItem(RETURN_URL_KEY);
+      if (target) localStorage.setItem(RETURN_URL_KEY, target);
+      else localStorage.removeItem(RETURN_URL_KEY);
     } catch {
-      // Sin sessionStorage se vuelve al panel.
+      // Sin localStorage se vuelve al panel.
     }
     this.oidc.authorize();
   }
@@ -1910,10 +1925,10 @@ export class AuthSession {
   takeReturnUrl(): string {
     let stored: string | null = null;
     try {
-      stored = sessionStorage.getItem(RETURN_URL_KEY);
-      sessionStorage.removeItem(RETURN_URL_KEY);
+      stored = localStorage.getItem(RETURN_URL_KEY);
+      localStorage.removeItem(RETURN_URL_KEY);
     } catch {
-      // Sin sessionStorage se vuelve al panel.
+      // Sin localStorage se vuelve al panel.
     }
     return safeReturnUrl(stored) ?? '/dashboard';
   }
@@ -1996,14 +2011,14 @@ Añadir a `apps/web/src/shared/api/index.ts`:
 export * from './api-auth.interceptor';
 ```
 
-- [ ] **Step 7: Ejecutar y verificar que pasan las pruebas de lógica**
+- [x] **Step 7: Ejecutar y verificar que pasan las pruebas de lógica**
 
 Run: `npm run test:web`
 Expected: PASS en `environment.spec.ts` (si siguen los `«…»`, FAIL con el regex de `authority`: completar Step 4), `api-auth.interceptor.spec.ts`, `auth-session.spec.ts` y `guards.spec.ts`.
 
-- [ ] **Step 8: Conectar la app, retirar mocks y `/warehouse`**
+- [x] **Step 8: Conectar la app, retirar sesión y mocks simulados**
 
-Run: `git rm -r apps/web/src/entities/session/model/session.store.ts apps/web/src/entities/session/model/session.model.ts apps/web/src/features/login-form apps/web/src/pages/warehouse`
+Run: `git rm -r apps/web/src/entities/session/model/session.store.ts apps/web/src/entities/session/model/session.model.ts apps/web/src/features/login-form apps/web/src/app/providers/auth.interceptor.ts apps/web/src/app/providers/role.guard.ts apps/web/src/shared/api/mock`
 
 Reemplazar `apps/web/src/app/app.config.ts`:
 
@@ -2015,7 +2030,7 @@ import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';
 import { TokenFreeStorage } from '@istpetdev/shared-core';
 import { routes } from './app.routes';
 import { webOidcConfig } from '@shared/config';
-import { WEB_FIELD_API, MockWebFieldApiService, apiAuthInterceptor } from '@shared/api';
+import { WEB_FIELD_API, HttpWebFieldApiService, apiAuthInterceptor } from '@shared/api';
 import { AuthSession } from '@entities/session';
 
 export const appConfig: ApplicationConfig = {
@@ -2036,44 +2051,79 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AuthSession).bootstrap()),
     {
       provide: WEB_FIELD_API,
-      useClass: MockWebFieldApiService
+      useClass: HttpWebFieldApiService
     }
   ]
 };
 ```
 
-Reemplazar `apps/web/src/app/app.routes.ts`:
+Adaptar `apps/web/src/app/app.routes.ts` al orden de proceso de la web vigente:
 
 ```ts
 import { Routes } from '@angular/router';
-import { authGuard } from '@entities/session';
+import { authGuard, homeRedirectGuard, roleGuard } from '@entities/session';
+
+const WEB_READ_ROLES = ['Gerencia', 'Planificador', 'Auditor'] as const;
+const WEB_WRITE_ROLES = ['Gerencia', 'Planificador'] as const;
 
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('@pages/landing').then(m => m.LandingPage),
-    title: 'IstpetDev — Plataforma Logística y Abastecimiento Hospitalario'
+    title: 'IstpetDev'
   },
   {
     path: 'login',
     loadComponent: () => import('@pages/login').then(m => m.LoginPage),
-    title: 'Iniciar Sesión — IstpetDev Logistics'
+    title: 'Iniciar sesión — IstpetDev'
   },
   {
     path: 'auth/callback',
     loadComponent: () => import('@pages/auth-callback').then(m => m.AuthCallbackPage),
-    title: 'Verificando sesión — IstpetDev Logistics'
+    title: 'Verificando sesión — IstpetDev'
   },
   {
-    path: 'dashboard',
-    canActivate: [authGuard],
-    loadComponent: () => import('@pages/operations-dashboard').then(m => m.OperationsDashboardPage),
-    title: 'Panel Operativo — IstpetDev Logistics'
+    path: 'inicio',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/inicio').then(m => m.InicioPage),
+    title: 'Inicio — IstpetDev'
+  },
+  {
+    path: 'datos',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_WRITE_ROLES },
+    loadComponent: () => import('@pages/datos').then(m => m.DatosPage),
+    title: 'Cargar datos — IstpetDev'
+  },
+  {
+    path: 'alertas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/alertas').then(m => m.AlertasPage),
+    title: 'Alertas — IstpetDev'
+  },
+  {
+    path: 'rutas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/rutas').then(m => m.RutasPage),
+    title: 'Rutas — IstpetDev'
   },
   {
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
-    title: 'Trazabilidad Pública — IstpetDev Logistics'
+    title: 'Trazabilidad QR — IstpetDev'
+  },
+  {
+    path: 'public-trace/:unitId',
+    loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
+    title: 'Trazabilidad QR — IstpetDev'
+  },
+  {
+    path: 'dashboard',
+    canActivate: [homeRedirectGuard],
+    children: []
   },
   {
     path: '**',
@@ -2082,7 +2132,7 @@ export const routes: Routes = [
 ];
 ```
 
-En `apps/web/src/pages/index.ts`, reemplazar la línea de `warehouse` por `export * from './auth-callback/auth-callback.page';`.
+En `apps/web/src/pages/index.ts`, añadir `export * from './auth-callback/auth-callback.page';`.
 
 `apps/web/src/pages/auth-callback/auth-callback.page.ts`:
 
@@ -2176,45 +2226,27 @@ export class LoginPage implements OnInit {
 }
 ```
 
-En `apps/web/src/widgets/header/header.widget.ts`:
-- reemplazar `import { SessionStore } from '@entities/session';` por `import { AuthSession } from '@entities/session';`;
-- reemplazar `readonly sessionStore = inject(SessionStore);` por `readonly session = inject(AuthSession);`;
-- en la plantilla, `sessionStore.isAuthenticated()` → `session.status() === 'authenticated'` y `sessionStore.currentUser()?.name` → `session.me()?.displayName`;
-- reemplazar el cálculo de auditor y el logout por:
+En `apps/web/src/widgets/header/header.widget.ts`, usar `AuthSession` y los nombres de `HumanRole`. Mostrar Datos a Gerencia y Planificador; Auditor ve Inicio, Alertas y Rutas en solo lectura. El logout llama a `session.logout()`.
 
-```ts
-  readonly isAuditor = computed(() => this.session.role() === 'Auditor');
+En `rutas.page.ts` y `datos.page.ts`, proteger la UI y los métodos de escritura con `session.canWrite()`. No hay acciones de escritura en `alertas.page.ts`.
 
-  logout(): void {
-    this.session.logout();
-  }
-```
+- [x] **Step 9: Verificar build, lint y que no quedan restos del mock**
 
-En `apps/web/src/pages/operations-dashboard/operations-dashboard.page.ts`:
-- reemplazar la importación y la inyección de `SessionStore` por `AuthSession` (`readonly session = inject(AuthSession);`);
-- en la plantilla, `sessionStore.isAuthenticated()` → `session.status() === 'authenticated'` y `sessionStore.currentUser()?.roleLabel ?? 'Operador'` → `session.me()?.role ?? ''`;
-- reemplazar las cuatro señales de rol por:
+Run: `npm run test:web && npm run build:web && grep -rnE "SessionStore|DEMO_PROFILES|loginWithCredentials|jwt-mock" apps/web/src; echo "grep=$?"` y `grep -rnE "SessionStore|UserRole|'SUPERVISOR'|'ADMIN'|'AUDITOR'|auth/login|MockWebFieldApiService" apps/web/src`
+Expected: pruebas PASS, build y lint sin errores; ambos greps sin coincidencias (el primero devuelve `grep=1`). La importación conserva `warehouses.csv` en la guía de Datos; no es una página `pages/warehouse` ni un resto de la sesión simulada.
 
-```ts
-  readonly userRole = computed(() => this.session.role());
-  readonly isPlanificador = computed(() => this.userRole() === 'Planificador');
-  readonly isAuditor = computed(() => this.userRole() === 'Auditor');
-  readonly isGerencia = computed(() => this.userRole() === 'Gerencia');
-```
-
-Regla para 005 (FR-21): todo botón de escritura que se añada al panel va dentro de `@if (session.canWrite())`.
-
-- [ ] **Step 9: Verificar build, lint y que no quedan restos del mock**
-
-Run: `npm run test:web && npm run build:web && grep -rnE "SessionStore|DEMO_PROFILES|loginWithCredentials|jwt-mock|/warehouse" apps/web/src; echo "grep=$?"`
-Expected: pruebas PASS, build y lint sin errores, `grep=1` (sin coincidencias).
-
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A apps/web package-lock.json
-git commit -m "feat(web): login real con cognito pkce y sesion desde /me (spec 013 h1)"
+git commit -m "feat(web): integrar Cognito PKCE y sesión real desde /me (#42)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
+
+### Desviaciones
+
+La web se adaptó al estado posterior a `498edcf`: sus páginas reales son landing, login, inicio, datos, alertas, rutas y public-trace, con `/dashboard` como redirección condicional. `pages/warehouse` y `pages/operations-dashboard` no existían, por lo que no se recrearon ni se borraron; se conservaron las páginas y el orden de proceso diseñados por Alexander. Se retiraron el store, el formulario de login, el interceptor y guard simulados, y el mock de `WEB_FIELD_API`. `AuthSession.canWrite()` protege la importación y las acciones de generación/publicación; Auditor mantiene lectura en Inicio, Alertas y Rutas.
+
+El returnUrl interno validado vive en una clave de un solo uso en `localStorage` y se elimina al consumirlo. Así `sessionStorage` queda reservado a las claves PKCE de OIDC y no se modifica el formato de `authStateControl` que valida la librería. La configuración de producción declara los valores del pool directamente porque el reemplazo de Angular convertiría una importación de `environment.ts` en una autoimportación.
 
 ---
 
