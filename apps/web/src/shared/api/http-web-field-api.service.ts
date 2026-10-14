@@ -19,7 +19,7 @@ import { environment } from '../config/environment';
 })
 export class HttpWebFieldApiService implements IWebFieldApi {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl || 'http://localhost:5000';
+  private readonly baseUrl = environment.apiUrl ?? '';
 
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse> {
     return this.http.post<HandlingUnitResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/handling-units`, req);
