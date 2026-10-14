@@ -326,3 +326,9 @@ Verificación documental de esta actualización: **84 notas Markdown**, **829 en
 Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
 
 Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.
+
+## Saneamiento de credenciales versionadas y defaults locales — 14 de octubre de 2026
+
+Fuente: atención a Issue #34 e Issue #35 (punto 7) por Joseph Baño. Se retira `POSTGRES_PASSWORD: 12345` de `infra/compose/docker-compose.lab.yml`, forzando su definición mediante variable de entorno obligatoria desde `.env` no versionado. Se restituye `src/Api/appsettings.Development.json` configurado exclusivamente con los parámetros por defecto de Docker local (`localhost:15432`, base `postgres`, usuario `postgres`, contraseña `postgres_dev_password_local`) permitiendo compilación y ejecución offline inmediata sin credenciales sensibles. Se refactoriza `scripts/ops/switch-db.mjs` y `.env.example` para sincronizar los parámetros locales sin contraseñas fijas en el código.
+
+Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.

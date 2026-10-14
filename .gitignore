@@ -5,6 +5,7 @@
 **/appsettings.json
 **/appsettings.*.json
 !**/appsettings.example.json
+!src/Api/appsettings.Development.json
 *.pem
 *.key
 *.pfx

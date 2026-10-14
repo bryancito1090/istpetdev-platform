@@ -1,7 +1,8 @@
 # ==============================================================================
-# docker-compose.server.yml
+# docker-compose.lab.yml
 # Servidor de pruebas del laboratorio ISTPET (IP: 192.168.7.50).
-# Uso en el servidor: docker compose -f docker-compose.server.yml up -d
+# Uso en el servidor: docker compose -f docker-compose.lab.yml up -d
+# NOTA: Las credenciales deben definirse en un archivo .env local no versionado.
 # ==============================================================================
 
 services:
@@ -12,13 +13,13 @@ services:
     ports:
       - "15432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: istpetdev_dev_01
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Error: Variable POSTGRES_PASSWORD requerida en archivo .env}"
+      POSTGRES_DB: "${POSTGRES_DB:-istpetdev_dev_01}"
     volumes:
       - team_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d istpetdev_dev_01"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-istpetdev_dev_01}"]
       interval: 5s
       timeout: 5s
       retries: 5
