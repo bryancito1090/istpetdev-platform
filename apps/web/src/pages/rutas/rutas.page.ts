@@ -29,7 +29,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             </h1>
             @if (isAuditor()) {
               <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                🔎 Panel de Auditoría (Solo Lectura)
+                Panel de Auditoría (Solo Lectura)
               </span>
             }
           </div>
@@ -50,7 +50,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
               (click)="triggerEmergencyFlow()"
               [disabled]="actionLoading()"
               class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
-              <span>🚨 Proponer Ruta de Emergencia</span>
+              <span>Proponer Ruta de Emergencia</span>
             </button>
 
             <!-- Botón Nueva Ruta por Pedidos -->
@@ -70,10 +70,10 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
           class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
           [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
           <div class="flex items-center gap-2">
-            <span>{{ feedbackMessage()!.type === 'success' ? '✓' : '⚠' }}</span>
+            <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">✕</button>
+          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
         </div>
       }
 
@@ -172,7 +172,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                         (click)="publishPlan(selectedDetail()!.id)"
                         [disabled]="actionLoading()"
                         class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                        {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
+                        {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
                       </button>
                     } @else {
                       <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
@@ -181,7 +181,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     }
                   } @else {
                     <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                      ✓ Ruta Publicada al Conductor
+                      Ruta Publicada al Conductor
                     </span>
                   }
                 </div>
@@ -285,7 +285,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
               </p>
             </div>
 
-            <button type="button" (click)="closeWizard()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            <button type="button" (click)="closeWizard()" class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors">Cerrar</button>
           </div>
 
           <!-- Cuerpo Asistente -->
@@ -303,7 +303,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                       type="button"
                       (click)="showNewOrderForm.set(!showNewOrderForm())"
                       class="text-[11px] font-semibold text-primary-600 hover:underline">
-                      {{ showNewOrderForm() ? '✕ Cancelar nuevo' : '+ Crear Pedido Manual' }}
+                      {{ showNewOrderForm() ? 'Cancelar nuevo' : '+ Crear Pedido Manual' }}
                     </button>
                   </div>
 
@@ -401,7 +401,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                             <div class="text-[10px] text-slate-500">Para: {{ l.destinationName }}</div>
                             <div class="mt-1 text-[10px] text-emerald-700 font-mono">
                               @for (a of l.allocations; track a.warehouseId) {
-                                <div>✓ De {{ a.warehouseCode }}: {{ a.quantity }} u</div>
+                                <div>Origen {{ a.warehouseCode }}: {{ a.quantity }} u</div>
                               }
                             </div>
                           </div>
@@ -465,10 +465,10 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
                           <div class="flex items-center gap-1">
                             @if (idx > 0) {
-                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↑</button>
+                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
                             }
                             @if (idx < editableStops().length - 1) {
-                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↓</button>
+                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
                             }
                           </div>
                         </div>
@@ -478,7 +478,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     @if (currentEvaluation()?.validationErrors?.length) {
                       <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
                         @for (err of currentEvaluation()!.validationErrors; track err) {
-                          <div>⚠ {{ err }}</div>
+                          <div>[Aviso] {{ err }}</div>
                         }
                       </div>
                     }
@@ -558,7 +558,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     (click)="confirmAndSavePlan()"
                     [disabled]="!selectedVehicleId() || actionLoading()"
                     class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50">
-                    {{ actionLoading() ? 'Creando Ruta...' : '✓ Confirmar y Crear Ruta' }}
+                    {{ actionLoading() ? 'Creando Ruta...' : 'Confirmar y Crear Ruta' }}
                   </button>
                 }
               </div>

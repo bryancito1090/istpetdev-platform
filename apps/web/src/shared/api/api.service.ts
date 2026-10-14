@@ -8,9 +8,12 @@ export type { ServicePoint } from '@istpetdev/shared-core';
 export interface RiskItemDto {
   servicePointId: string;
   servicePointCode: string;
+  criticality?: string;
   productId: string;
   sku: string;
+  baseUnit?: string;
   availableQuantity: number;
+  inTransitQuantity?: number;
   dailyDemand: number;
   coverageDays: number;
   leadTimeDays: number;
@@ -314,8 +317,12 @@ export class ApiService {
   // 4. MATRIZ DE RIESGOS Y AUTONOMÍA (GET /risks)
   // ==========================================
 
-  getRisks(level?: string): Observable<RisksResponseDto | null> {
-    const url = level ? `${this.baseUrl}/api/v1/risks?level=${encodeURIComponent(level)}` : `${this.baseUrl}/api/v1/risks`;
+  getRisks(level?: string, refresh = false): Observable<RisksResponseDto | null> {
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    if (refresh) params.append('refresh', 'true');
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const url = `${this.baseUrl}/api/v1/risks${qs}`;
     return this.http.get<RisksResponseDto>(url).pipe(
       catchError(err => {
         console.warn('Get risks failed', err);
