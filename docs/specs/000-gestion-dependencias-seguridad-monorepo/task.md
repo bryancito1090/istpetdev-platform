@@ -12,8 +12,8 @@
 | T0 | Fijar Node/npm, validar entorno y red | — | — | completada |
 | T1 | Instalar lockfile y capturar inventario inicial versionado | T0 | — | completada |
 | T2 | Limpiar dependencias directas de Web y validar builds | T1 | — | completada |
-| T3 | Remediación de vulnerabilidades, evaluación de overrides y excepciones temporales | T1, T2 | — | pendiente |
-| T4 | Automatización del control de seguridad en CI/CD y política de Node | T3 | — | pendiente |
+| T3 | Remediación de vulnerabilidades, evaluación de overrides y excepciones temporales | T1, T2 | — | completada |
+| T4 | Automatización del control de seguridad en CI/CD y política de Node | T3 | — | completada |
 | T5 | Conciliación documental, actualización de ADR-04 y checklist prelaunch | T2, T4 | [P] con T6 | pendiente |
 | T6 | Evaluación experimental de pnpm (P2 condicional e independiente) | T4 | — | pendiente |
 

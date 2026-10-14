@@ -131,14 +131,22 @@ jobs:
       - name: "Checkout del código"
         uses: actions/checkout@v4
 
-      - name: "Configurar Node.js 22 LTS"
+      - name: "Configurar Node.js desde .nvmrc"
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: "npm"
+
+      - name: "Validar versiones fijadas de Node y npm"
+        run: |
+          test "$(node --version)" = "v$(cat .nvmrc)"
+          test "$(npm --version)" = "$(cat .npm-version)"
 
       - name: "Instalar dependencias npm"
         run: npm ci
+
+      - name: "Verificar auditoría de dependencias y vulnerabilidades"
+        run: npm run audit:check
 
       - name: "Compilar librería compartida"
         run: npm run build:shared
@@ -148,6 +156,17 @@ jobs:
 
       - name: "Compilar aplicación Web en Producción"
         run: npm run build:web
+
+      - name: "Compilar aplicación Mobile en Producción"
+        run: npm run build:mobile
+
+      - name: "Conservar el reporte de auditoría"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ github.run_id }}-${{ github.job }}
+          path: artifacts/spec000/audit-ci.json
+          if-no-files-found: warn
 
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"

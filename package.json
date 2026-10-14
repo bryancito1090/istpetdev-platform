@@ -37,7 +37,8 @@
     "check:api": "dotnet build",
     "check:shared": "npm run build:shared",
     "check:web": "npm run build:web",
-    "check:mobile": "npm run build:mobile"
+    "check:mobile": "npm run build:mobile",
+    "audit:check": "node .github/scripts/audit-check.mjs"
   },
   "devDependencies": {
     "@nx/eslint-plugin": "^23.3.0",
