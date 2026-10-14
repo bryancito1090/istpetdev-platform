@@ -36,6 +36,16 @@ services:
       Authentication__Authority: ${COGNITO_AUTHORITY:?Define COGNITO_AUTHORITY con el issuer del User Pool}
       Authentication__AllowedClientIds__0: ${COGNITO_WEB_CLIENT_ID:?Define COGNITO_WEB_CLIENT_ID para el cliente web}
       Authentication__AllowedClientIds__1: ${COGNITO_MOBILE_CLIENT_ID:?Define COGNITO_MOBILE_CLIENT_ID para el cliente móvil}
+      Authentication__AllowedClientIds__2: ${COGNITO_M2M_CLIENT_ID:-7h8pau7hu9pa40k85idbi7rgn4}
+      Authentication__TechnicalClientIds__0: ${COGNITO_M2M_CLIENT_ID:-7h8pau7hu9pa40k85idbi7rgn4}
+      Authentication__TechnicalReadScope: ${AUTHENTICATION_TECHNICAL_READ_SCOPE:-istpetdev-api/automation}
+      Agent__Enabled: ${AGENT_ENABLED:-false}
+      Agent__AutoOnIncident: ${AGENT_AUTO_ON_INCIDENT:-true}
+      Agent__TimeoutSeconds: ${AGENT_TIMEOUT_SECONDS:-10}
+      Agent__PollMilliseconds: ${AGENT_POLL_MILLISECONDS:-250}
+      Agent__N8n__WebhookUrl: ${AGENT_N8N_WEBHOOK_URL:-https://n8n.bryan-bano.com/webhook/istpetdev/agent}
+      Agent__N8n__WebhookSecret: ${AGENT_N8N_WEBHOOK_SECRET:-}
+      Agent__N8n__ApiBaseUrl: ${AGENT_N8N_API_BASE_URL:-https://istpetdev.doicela.dev/api/v1}
       EnableSwagger: ${ENABLE_SWAGGER:-false}
     depends_on:
       istpetdev-redis:

@@ -312,11 +312,16 @@ jobs:
           COGNITO_AUTHORITY: ${{ vars.COGNITO_AUTHORITY }}
           COGNITO_WEB_CLIENT_ID: ${{ vars.COGNITO_WEB_CLIENT_ID }}
           COGNITO_MOBILE_CLIENT_ID: ${{ vars.COGNITO_MOBILE_CLIENT_ID }}
+          COGNITO_M2M_CLIENT_ID: ${{ vars.COGNITO_M2M_CLIENT_ID || '7h8pau7hu9pa40k85idbi7rgn4' }}
+          AGENT_ENABLED: ${{ vars.AGENT_ENABLED || 'false' }}
+          AGENT_N8N_WEBHOOK_URL: ${{ vars.AGENT_N8N_WEBHOOK_URL || 'https://n8n.bryan-bano.com/webhook/istpetdev/agent' }}
+          AGENT_N8N_WEBHOOK_SECRET: ${{ secrets.AGENT_N8N_WEBHOOK_SECRET }}
+          AGENT_N8N_API_BASE_URL: ${{ vars.AGENT_N8N_API_BASE_URL || 'https://istpetdev.doicela.dev/api/v1' }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER || 'admin' }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_HOST,DB_PORT,DB_NAME,DB_USER,DB_PASSWORD,DB_SSL_MODE,COGNITO_AUTHORITY,COGNITO_WEB_CLIENT_ID,COGNITO_MOBILE_CLIENT_ID
+          envs: OWNER,COMMIT_SHA,GH_ACTOR,GH_TOKEN,DB_HOST,DB_PORT,DB_NAME,DB_USER,DB_PASSWORD,DB_SSL_MODE,COGNITO_AUTHORITY,COGNITO_WEB_CLIENT_ID,COGNITO_MOBILE_CLIENT_ID,COGNITO_M2M_CLIENT_ID,AGENT_ENABLED,AGENT_N8N_WEBHOOK_URL,AGENT_N8N_WEBHOOK_SECRET,AGENT_N8N_API_BASE_URL
           script: |
             set -e
             cd /var/www/istpetdev
@@ -362,6 +367,14 @@ jobs:
             export DB_PASSWORD="$DB_PASSWORD"
             export DB_SSL_MODE="${DB_SSL_MODE:-VerifyFull}"
             export APPLY_MIGRATIONS="${APPLY_MIGRATIONS:-true}"
+            export COGNITO_M2M_CLIENT_ID="${COGNITO_M2M_CLIENT_ID:-7h8pau7hu9pa40k85idbi7rgn4}"
+            export AGENT_ENABLED="${AGENT_ENABLED:-false}"
+            export AGENT_N8N_WEBHOOK_URL="${AGENT_N8N_WEBHOOK_URL:-https://n8n.bryan-bano.com/webhook/istpetdev/agent}"
+            if [ -z "$AGENT_N8N_WEBHOOK_SECRET" ] && [ -f .env ]; then
+              export AGENT_N8N_WEBHOOK_SECRET=$(grep '^AGENT_N8N_WEBHOOK_SECRET=' .env | cut -d '=' -f2- || grep '^ISTPETDEV_WEBHOOK_SECRET=' .env | cut -d '=' -f2- || true)
+            fi
+            export AGENT_N8N_WEBHOOK_SECRET="$AGENT_N8N_WEBHOOK_SECRET"
+            export AGENT_N8N_API_BASE_URL="${AGENT_N8N_API_BASE_URL:-https://istpetdev.doicela.dev/api/v1}"
 
             # 4. Descarga de imágenes requeridas
             echo "Descargando imágenes inmutables..."
