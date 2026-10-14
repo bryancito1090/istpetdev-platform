@@ -10,8 +10,8 @@
 
 | ID | Tarea | Historia / requisito | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|---|
-| T1 | Rol Auditor y matriz lectura/escritura | FR-21, CE-07 | — | — | pendiente |
-| T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | pendiente |
+| T1 | Rol Auditor y matriz lectura/escritura | FR-21, CE-07 | — | — | hecho |
+| T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | hecho |
 | T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | pendiente |
 | T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | pendiente |
 | T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | pendiente |
@@ -29,9 +29,9 @@
 
 ## Preparación común
 
-- [ ] Crear la rama: `git switch develop && git pull && git switch -c feature/013-login-y-cuentas`.
-- [ ] Comprobar Docker para Testcontainers: `docker info >/dev/null && echo ok`.
-- [ ] `npm ci` en la raíz.
+- [x] Crear la rama: `git switch develop && git pull && git switch -c feature/013-login-y-cuentas`.
+- [x] Comprobar Docker para Testcontainers: `docker info >/dev/null && echo ok`.
+- [x] `npm ci` en la raíz.
 
 ---
 
@@ -46,7 +46,7 @@
 - Consumes: `ApiFactory`, `TestTokens`, `TestDb` existentes.
 - Produces: `Roles.Auditor`, `Roles.Human` (cadena para `[Authorize]`), `Roles.HumanRoles`, `Roles.IsHuman(string?)`, `Roles.PlatformOf(string?) : string?` (`"web"`, `"field"` o `null`); `TestAccounts.SetRoleAsync(string connection, string subject, string role, bool active = true) : Task<Guid>`.
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Support/TestAccounts.cs`:
 
@@ -152,12 +152,12 @@ public sealed class AuditorRoleTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RolesTests|FullyQualifiedName~AuditorRoleTests"`
 Expected: FAIL de compilación con «'Roles' does not contain a definition for 'Auditor'».
 
-- [ ] **Step 3: Implementación mínima** — reemplazar `src/Domain/Common/Roles.cs`:
+- [x] **Step 3: Implementación mínima** — reemplazar `src/Domain/Common/Roles.cs`:
 
 ```csharp
 namespace IstpetDev.Domain.Common;
@@ -195,12 +195,12 @@ public static class Roles
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan, sin romper la matriz existente**
+- [x] **Step 4: Ejecutar y verificar que pasan, sin romper la matriz existente**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RolesTests|FullyQualifiedName~AuditorRoleTests|FullyQualifiedName~AuthorizationSafetyTests"`
 Expected: PASS (todas).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Domain/Common/Roles.cs tests/IstpetDev.Tests/Support/TestAccounts.cs tests/IstpetDev.Tests/Unit/Identity/RolesTests.cs tests/IstpetDev.Tests/Integration/Api/AuditorRoleTests.cs
@@ -220,7 +220,7 @@ git commit -m "feat(api): rol auditor de solo lectura (adr-26, spec 013)"
 - Consumes: `Roles.Human`, `Roles.PlatformOf` (T1); `ClaimsPrincipalExtensions.AccountId()` (001).
 - Produces: `GET /api/v1/me` → `MeResponse(Guid AccountId, string DisplayName, string Role, string Platform)` en JSON camelCase; TS `MeResponse`, `HumanRole`, `Platform`, `WEB_ROLES`, `FIELD_ROLES`, `HUMAN_ROLES`, `AccountItem`, `InvitationStatus`, `CreateAccountRequest`, `UpdateAccountRequest`.
 
-- [ ] **Step 1: Escribir la prueba que falla** — `tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs`:
+- [x] **Step 1: Escribir la prueba que falla** — `tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs`:
 
 ```csharp
 using System.Net;
@@ -273,12 +273,12 @@ public sealed class MeEndpointTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla**
+- [x] **Step 2: Ejecutar y verificar que falla**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~MeEndpointTests"`
 Expected: FAIL — `GetFromJsonAsync` lanza `HttpRequestException` con «404 (Not Found)».
 
-- [ ] **Step 3: Implementación mínima** — `src/Api/Controllers/MeController.cs`:
+- [x] **Step 3: Implementación mínima** — `src/Api/Controllers/MeController.cs`:
 
 ```csharp
 using IstpetDev.Api.Authentication;
@@ -363,12 +363,12 @@ Añadir al final de `libs/shared-core/src/contracts/index.ts`:
 export * from './account.contract';
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasa**
+- [x] **Step 4: Ejecutar y verificar que pasa**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~MeEndpointTests" && npm run build:shared`
 Expected: PASS (8 casos) y build de `shared-core` sin errores.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Api/Controllers/MeController.cs tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs libs/shared-core/src/contracts/account.contract.ts libs/shared-core/src/contracts/index.ts
