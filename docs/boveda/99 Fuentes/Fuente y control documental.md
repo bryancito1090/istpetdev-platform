@@ -427,4 +427,4 @@ Verificación documental de esta actualización: **85 notas Markdown**, **885 en
 
 Fuente: issue #46 (fase final), pedido de Joseph Baño; IA (Claude Code, Opus 5.5) en el PR #76. Se crearon `manifiesto-paquete.md` y `materiales/` (pptx y PDF provisionales con su generador y SHA-256 en el manifiesto) del spec 006. [[Registro de trabajo previo y del evento]] añade la tabla del tag `pre-evento` y la sección «Cambios durante el evento», vacías. En [[Consultas para la organizacion]], O-04/O-06 siguen pendientes. Sin ensayos, entrevistas, video, tag ni entrega.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **887 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **888 enlaces internos resueltos**, **0 errores**.
