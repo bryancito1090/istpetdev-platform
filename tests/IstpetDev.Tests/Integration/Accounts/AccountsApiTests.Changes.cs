@@ -70,6 +70,33 @@ public sealed partial class AccountsApiTests
     }
 
     [Fact]
+    public async Task Pending_revocation_survives_a_new_administration_and_directory_instance()
+    {
+        var (api, manager, managerId, connection) = await ManagerAsync();
+        await using var _api = api;
+        var id = await IdOf(connection, TestTokens.Driver);
+        api.Directory.SignOutUnavailable = true;
+        var failed = await manager.PostAsync($"{Accounts}/{id}/deactivate", null);
+        Assert.Equal(HttpStatusCode.OK, failed.StatusCode);
+
+        var replacementDirectory = new FakeIdentityDirectory();
+        replacementDirectory.Add(TestTokens.Planner, "gerencia@ejemplo.test");
+        replacementDirectory.Add(TestTokens.Driver, "conductor@ejemplo.test", enabled: false);
+        await using var db = TestDb.Context(connection);
+        var replacement = new AccountAdministration(db, replacementDirectory, new AccountProvisioning(db, replacementDirectory));
+        var pending = (await replacement.ListAsync(default)).Single(a => a.Id == id);
+        Assert.True(pending.OutOfSync);
+        Assert.False(pending.IsActive);
+        Assert.True(await db.IdempotencyRecords.AnyAsync(r => r.AccountId == id && r.ActionCode == "accounts.revoke_sessions" && r.CompletedAtUtc == null));
+
+        var retried = await replacement.DeactivateAsync(managerId, id, default);
+        Assert.False(retried.OutOfSync);
+        Assert.Contains(TestTokens.Driver, replacementDirectory.SignedOut);
+        Assert.False((await replacement.ListAsync(default)).Single(a => a.Id == id).OutOfSync);
+        Assert.False(await db.IdempotencyRecords.AnyAsync(r => r.AccountId == id && r.ActionCode == "accounts.revoke_sessions" && r.CompletedAtUtc == null));
+    }
+
+    [Fact]
     public async Task Last_manager_maps_to_conflict_problem_details_at_controller_boundary()
     {
         var connection = postgres.NewDatabase();

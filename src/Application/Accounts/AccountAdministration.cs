@@ -23,7 +23,8 @@ public sealed partial class AccountAdministration(IApplicationDbContext database
         var accounts = await database.Accounts.AsNoTracking()
             .Where(a => a.Kind == "human" && a.Issuer == directory.Issuer)
             .OrderBy(a => a.DisplayName).ToListAsync(ct);
-        return accounts.Select(a => ToManagedItem(a, users.GetValueOrDefault(a.Subject))).ToList();
+        var pending = await PendingRevocationIdsAsync(ct);
+        return accounts.Select(a => ToManagedItem(a, users.GetValueOrDefault(a.Subject), pending.Contains(a.Id))).ToList();
     }
 
     public async Task<AccountItem> CreateAsync(CreateAccountInput input, CancellationToken ct)
