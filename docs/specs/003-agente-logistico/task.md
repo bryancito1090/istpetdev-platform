@@ -58,7 +58,7 @@ En el fixture `demo-region`, las 8 órdenes de clientes acumulan ~500 kg de dema
 
 1. **ExplanationValidator estricto:** Se eliminó la relajación `Math.Abs(fact) == Math.Abs(number)` para evitar inversión espuria de signos. La coherencia semántica se garantiza enriqueciendo facts positivos en el backend (`cost_reduction_pct` cuando hay ahorro, `advance_minutes` cuando hay adelanto), preservando la integridad del contrato.
 2. **AutonomyPolicy sin redondeo prematuro:** El cálculo de desvío `(decimal)(stop.ArrivalUtc - prevArr).TotalMinutes` se evalúa directamente contra `MaxDelayMinutes` sin redondeos previos que alteren la decisión de publicación automática.
-3. **Persistencia atómica de decisiones:** En `AgentRunService.SubmitResultAsync`, las entidades `AgentDecision` se validan y guardan con `SaveChangesAsync` antes de la actualización atómica SQL de `AgentRun.Status = 'Completed'`, garantizando lectura consistente e inmediata de decisiones LLM.
+3. **Persistencia atómica de decisiones:** En `AgentRunService.SubmitResultAsync`, la transición condicional a `Completed` y el guardado de decisiones se confirman en una sola transacción; el callback que pierde no altera decisiones y los lectores observan ambos cambios juntos. La prueba de carrera se incorpora en la revisión de Codex.
 4. **Estado de working tree y versión n8n dinámicos:** El harness reporta commit con estado (`working tree con cambios sin commit`) y la imagen inspeccionada de Docker.
 5. **Calentamiento (warmup):** Inicializa conexiones HTTP/TLS y EF Core antes de las 30 corridas para evitar fallos espurios por cold start en la primera ejecución.
 
@@ -166,7 +166,7 @@ Pasos y obtención de credenciales: [guia-cierre-37.md](guia-cierre-37.md).
 
 **Archivos:** crear `tests/IstpetDev.Tests/E2E/AgentJourneyTests.cs`; actualizar `docs/boveda/05 Automatizacion/n8n e IA.md`, `docs/boveda/03 Arquitectura/Decisiones de arquitectura.md` conforme al protocolo y el registro de [test-e2e.md](test-e2e.md) solo con ejecuciones reales.
 
-- [x] Automatizar [E2E-01 a E2E-05](test-e2e.md) sobre API + base con n8n falso: vigía, incidente, fallback, carrera, explicación inventada, traza, scopes/roles e inyección. Separar las pruebas con DeepSeek real y plan B local (E2E-06/07) para no hacer que CI dependa de credenciales externas.
+- [ ] Automatizar [E2E-01 a E2E-05](test-e2e.md) sobre API + base con n8n falso: vigía, incidente, fallback, carrera, explicación inventada, traza, scopes/roles e inyección. Separar las pruebas con DeepSeek real y plan B local (E2E-06/07) para no hacer que CI dependa de credenciales externas.
 - [x] Ejecutar `dotnet test tests/IstpetDev.Tests` y `dotnet build IstpetDev.sln`: 227/227 pruebas pasadas (0 fallos). Ejecutar pruebas Python de scripts (10/10 pasadas) y el informe de aceptación (30/30 pasadas).
 - [x] Revisar uno por uno FR-01–FR-16 incluido FR-06b, NFR-01–05 y CE-01–06 con la matriz; registrar gaps como abiertos. Actualizar la bóveda con las decisiones de DeepSeek, scopes y herramientas; 0 errores en `check_vault.py`. Producción y reset de base compartida pendientes y delegados a [#39](plan-cierre-39-produccion.md).
 - [x] Dejar `estado` completado para handoff local; transferir a Codex mediante `.git/istpetdev-37-ready.json` para revisión e integración en develop.
@@ -218,3 +218,15 @@ y ruteo que deben conciliarse antes del PR. Todavía no se realizó esa integrac
 #39 continúa pendiente y solo planificada en
 [plan-cierre-39-produccion.md](plan-cierre-39-produccion.md). Esta autorización
 no promueve a `main`, no activa el agente remoto ni inicia la ronda informativa #55.
+
+## Revisión activa de Codex — 14-oct-2026
+
+Entrega conservada en `1b98954`; conciliación con `origin/develop` `255ac60`
+en `089bbf8`. Hallazgos, correcciones, controles prelaunch y evidencia vigente:
+[revision-integracion-37.md](revision-integracion-37.md). Aceptación del árbol
+conciliado y CI todavía pendientes; #39 no se ejecuta.
+
+Corrección del registro anterior: `AgentJourneyTests.cs` y
+`LocalWorkflowSmokeTests.cs` no existen; `AgentRunServiceTests.cs` se añade
+en esta revisión para cubrir la transacción de callback. No se considera
+automatizado E2E-01–05 por la sola existencia de pruebas HTTP parciales.

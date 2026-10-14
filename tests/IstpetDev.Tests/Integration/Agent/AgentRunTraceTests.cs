@@ -302,5 +302,17 @@ public sealed class AgentRunTraceTests(PostgisContainer postgres)
         Assert.NotNull(view);
         Assert.Equal(AgentRunStatus.Completed, view.Status);
         Assert.Contains(view.Decisions, decision => decision.AgentDecisionId == decisionId && decision.Source == ExplanationSource.Llm);
+
+        // Human approval resolves the proposed plan from ProposalJson even when
+        // CorrelationId now points to the agent run. Repeating it is idempotent.
+        await using var approvalDb = TestDb.Context(connection);
+        var decision = await approvalDb.AgentDecisions.SingleAsync(d => d.Id == decisionId);
+        using var proposal = JsonDocument.Parse(decision.ProposalJson);
+        var proposedPlanId = proposal.RootElement.GetProperty("proposedRoutePlanId").GetGuid();
+        var approval = await planner.PostAsJsonAsync($"/api/v1/agent-decisions/{decisionId}/approve", new { option = "A" });
+        Assert.Equal(HttpStatusCode.OK, approval.StatusCode);
+        var repeated = await planner.PostAsJsonAsync($"/api/v1/agent-decisions/{decisionId}/approve", new { option = "A" });
+        Assert.Equal(HttpStatusCode.OK, repeated.StatusCode);
+        Assert.Equal("Published", (await approvalDb.RoutePlans.AsNoTracking().SingleAsync(p => p.Id == proposedPlanId)).Status);
     }
 }

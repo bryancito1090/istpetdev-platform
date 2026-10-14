@@ -360,10 +360,13 @@ public sealed class Replanner(
             .FirstOrDefaultAsync(d => d.Id == request.AgentDecisionId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"AgentDecision {request.AgentDecisionId} no encontrada.");
 
+        using var proposal = JsonDocument.Parse(decision.ProposalJson);
+        var proposedRoutePlanId = proposal.RootElement.GetProperty("proposedRoutePlanId").GetGuid();
+
         if (decision.Status == "Approved")
         {
             // Idempotencia: ya aprobada, devolver el plan asociado
-            var existingPlan = await db.RoutePlans.FirstAsync(p => p.Id == decision.CorrelationId, ct);
+            var existingPlan = await db.RoutePlans.FirstAsync(p => p.Id == proposedRoutePlanId, ct);
             return existingPlan;
         }
 
@@ -371,7 +374,7 @@ public sealed class Replanner(
         decision.DecidedByAccountId = request.DecidedByAccountId;
         decision.DecidedAtUtc = DateTime.UtcNow;
 
-        var plan = await db.RoutePlans.FirstAsync(p => p.Id == decision.CorrelationId, ct);
+        var plan = await db.RoutePlans.FirstAsync(p => p.Id == proposedRoutePlanId, ct);
         await routePublisher.PublishAsync(new PublishRequest(plan.Id, null, request.DecidedByAccountId), ct);
 
         await db.SaveChangesAsync(ct);

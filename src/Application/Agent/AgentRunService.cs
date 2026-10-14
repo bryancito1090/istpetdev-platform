@@ -150,6 +150,16 @@ public sealed class AgentRunService(
             return ResultOutcome.Late;
         }
 
+        // The conditional transition and decision updates commit together. A losing
+        // callback must not modify decisions, and readers must see complete results.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var completedAt = DateTime.UtcNow;
+        var latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
+        var rows = await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"AgentRun\" SET \"Status\" = 'Completed', \"Model\" = {result.Model}, \"PromptVersion\" = {result.PromptVersion}, \"N8nExecutionId\" = {result.N8nExecutionId}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
+            ct);
+        if (rows == 0) return ResultOutcome.Late;
+
         // Update decisions with validated LLM text
         foreach (var item in result.Decisions)
         {
@@ -160,7 +170,9 @@ public sealed class AgentRunService(
             var facts = ExtractFacts(decision.ProposalJson);
             var validation = explanationValidator.Validate(item.Explanation, facts);
 
-            var driverMsgValid = string.IsNullOrWhiteSpace(item.DriverMessage) || item.DriverMessage.Length <= 160;
+            var driverMessage = item.DriverMessage ?? string.Empty;
+            var driverValidation = explanationValidator.Validate(driverMessage, facts);
+            var driverMsgValid = driverMessage.Length <= 160 && driverValidation.IsValid;
 
             if (validation.IsValid && driverMsgValid)
             {
@@ -174,7 +186,7 @@ public sealed class AgentRunService(
                 decision.ExplanationSource = "Template";
                 decision.ExplanationMismatch = !validation.IsValid
                     ? validation.MismatchReason
-                    : "driver_message_too_long";
+                    : !driverValidation.IsValid ? driverValidation.MismatchReason : "driver_message_too_long";
                 // Keep existing template explanation if invalid
             }
             decision.Model = result.Model;
@@ -182,18 +194,7 @@ public sealed class AgentRunService(
         }
 
         await db.SaveChangesAsync(ct);
-
-        var completedAt = DateTime.UtcNow;
-        var latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
-
-        var rows = await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"AgentRun\" SET \"Status\" = 'Completed', \"Model\" = {result.Model}, \"PromptVersion\" = {result.PromptVersion}, \"N8nExecutionId\" = {result.N8nExecutionId}, \"CompletedAtUtc\" = {completedAt}, \"LatencyMs\" = {latencyMs} WHERE \"Id\" = {runId} AND \"Status\" = 'Running'",
-            ct);
-
-        if (rows == 0)
-        {
-            return ResultOutcome.Late;
-        }
+        await transaction.CommitAsync(ct);
 
         return ResultOutcome.Accepted;
     }

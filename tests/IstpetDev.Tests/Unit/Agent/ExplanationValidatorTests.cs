@@ -4,9 +4,18 @@ using Xunit;
 
 namespace IstpetDev.Tests.Unit.Agent;
 
+[Trait("Category", "Unit")]
 public class ExplanationValidatorTests
 {
     private readonly IExplanationValidator _validator = new ExplanationValidator();
+
+    [Fact]
+    public void Opposite_sign_without_semantic_magnitude_fact_is_rejected()
+    {
+        Fact[] facts = [new("cost_increase_pct", "route", -1.36m, "%")];
+        Assert.False(_validator.Validate("Incremento del 1.36 %", facts).IsValid);
+        Assert.False(_validator.Validate("Cambio de 1.36", facts).IsValid);
+    }
 
     [Fact]
     public void Matching_decimals_and_rounding_pass_validation()

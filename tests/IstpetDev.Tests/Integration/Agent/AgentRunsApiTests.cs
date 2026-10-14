@@ -57,8 +57,10 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
         Assert.Equal(HttpStatusCode.OK, listResp.StatusCode);
     }
 
-    [Fact]
-    public async Task Submit_result_requires_automation_role_and_updates_decisions()
+    [Theory]
+    [InlineData("5,0", "Llm")]
+    [InlineData("9999", "Template")]
+    public async Task Submit_result_requires_automation_role_and_updates_decisions(string driverNumber, string expectedSource)
     {
         var connection = postgres.NewDatabase();
         await using var api = new ApiFactory(connection, overrides: new Dictionary<string, string?>
@@ -124,7 +126,7 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
         }
 
         var resultPayload = new AgentResult(
-            Decisions: [new DecisionText(decisionId, "Cobertura en HOS-N01 es 5,0 dias para DES-01", "Alerta de stock: 5,0 dias")],
+            Decisions: [new DecisionText(decisionId, "Cobertura en HOS-N01 es 5,0 dias para DES-01", $"Alerta de stock: {driverNumber} dias")],
             Summary: "Monitoreo completado",
             Model: "gpt-4o",
             PromptVersion: "v1.2",
@@ -151,9 +153,18 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
             Assert.Equal("gpt-4o", updatedRun.Model);
 
             var updatedDec = await db.AgentDecisions.SingleAsync(d => d.Id == decisionId);
-            Assert.Equal("Llm", updatedDec.ExplanationSource);
-            Assert.Equal("Cobertura en HOS-N01 es 5,0 dias para DES-01", updatedDec.Rationale);
-            Assert.Null(updatedDec.ExplanationMismatch);
+            Assert.Equal(expectedSource, updatedDec.ExplanationSource);
+            if (expectedSource == "Llm")
+            {
+                Assert.Equal("Cobertura en HOS-N01 es 5,0 dias para DES-01", updatedDec.Rationale);
+                Assert.Null(updatedDec.ExplanationMismatch);
+            }
+            else
+            {
+                Assert.Equal("Plantilla inicial", updatedDec.Rationale);
+                Assert.DoesNotContain(driverNumber, updatedDec.DriverMessage);
+                Assert.Contains(driverNumber, updatedDec.ExplanationMismatch);
+            }
         }
 
         // 3. Resubmitting result after completion -> 409 Conflict (Late)

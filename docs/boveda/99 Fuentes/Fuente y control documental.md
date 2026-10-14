@@ -364,6 +364,4 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 - Blindaje de pruebas de persistencia: actualización de `LeanSchemaTests` (36 tablas núcleo) y `MigrationSafetyTests` (7 migraciones consecutivas validadas sin DDL en runtime).
 - Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
-
-
+Verificación documental de esta actualización: **84 notas Markdown**, **848 enlaces internos resueltos**, **0 errores**.

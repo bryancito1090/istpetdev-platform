@@ -138,6 +138,9 @@ def summarize_run(scenario: str, value: dict):
     llm_count = sum(normalize_source(decision.get("source", "")) == "llm" for decision in decisions)
     return {
         "scenario": scenario,
+        "runId": value.get("runId"),
+        "n8nExecutionId": value.get("n8nExecutionId"),
+        "promptVersion": value.get("promptVersion"),
         "status": str(value.get("status", "unknown")),
         "latencyMs": int(value.get("latencyMs") or 0),
         "model": value.get("model"),
@@ -267,6 +270,10 @@ def write_report(args, runs, injection_checks, metrics, failures):
         lines.extend(["", "## Umbrales incumplidos", ""])
         lines.extend(f"- {failure}" for failure in failures)
     target.joinpath("report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    target.joinpath("runs.json").write_text(
+        json.dumps({"runs": runs, "injectionChecks": injection_checks, "metrics": metrics}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return target / "report.md"
 
 
