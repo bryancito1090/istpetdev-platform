@@ -15,5 +15,14 @@ export const mobileOidcConfig: PassedInitialConfig = {
     renewTimeBeforeTokenExpiresInSeconds: 60,
     ignoreNonceAfterRefresh: true,
     logLevel: LogLevel.Warn,
+    authWellknownEndpoints: {
+      issuer: environment.oidc.authority,
+      tokenEndpoint: `${environment.oidc.cognitoDomain}/oauth2/token`,
+      authorizationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/authorize`,
+      jwksUri: `${environment.oidc.authority}/.well-known/jwks.json`,
+      userInfoEndpoint: `${environment.oidc.cognitoDomain}/oauth2/userInfo`,
+      endSessionEndpoint: `${environment.oidc.cognitoDomain}/logout`,
+      revocationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/revoke`
+    }
   },
 };
