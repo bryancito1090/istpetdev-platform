@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [istpetdev, documentacion]
 ---
 
@@ -333,8 +333,22 @@ Fuente: atención a Issue #34 e Issue #35 (punto 7) por Joseph Baño. Se retira 
 
 Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.
 
+## Ruteo por pedidos, bodegas, rebalanceo y ADR-28 — 14 de octubre de 2026
+
+Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la rama `develop` a través del PR #59 (commits `370ffa1` y `22d7985`, merge `d4f35c9`):
+- Formalización de **ADR-28** (Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo) en [[Decisiones de arquitectura]], con soporte multialmacén y optimización física de flota.
+- Migración EF Core `20261014144239_OrderBasedRoutingAndWarehouseStock` incorporando las entidades `DeliveryOrder`, `DeliveryOrderLine`, `WarehouseStockPolicy` y `TransferSuggestion`.
+- Servicios de aplicación de lógica determinista: `SourcingService`, `VehicleMatcher`, `RouteEvaluator`, `RebalancingAdvisor` y `EmergencyPlanner`.
+- Controladores y endpoints expuestos en API: `DeliveryOrdersController`, `WarehousesController` y ampliación de `RoutePlansController`.
+- Interfaces de usuario en Angular FSD: nueva página `/bodegas` (`bodegas.page.ts`), rediseño guiado de `/rutas` (`rutas.page.ts`) con Leaflet y ampliación de `/datos`.
+- Blindaje de pruebas de persistencia: actualización de `LeanSchemaTests` (36 tablas núcleo) y `MigrationSafetyTests` (7 migraciones consecutivas validadas sin DDL en runtime).
+- Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
+
+Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
+
 ## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
 
 Fuente: atención a Issue #35 por Joseph Baño. Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para detener el proceso si las migraciones fallan en arranque. En [[Runbook de DevOps y base de datos para la demo]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN.
 
-Verificación documental de esta actualización: **85 notas Markdown**, **835 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **85 notas Markdown**, **850 enlaces internos resueltos**, **0 errores**.
+

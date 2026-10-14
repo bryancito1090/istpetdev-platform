@@ -53,7 +53,11 @@ export interface MapPolyline {
             </div>
             <div class="flex items-center gap-1.5">
               <span class="w-4 h-0.5 bg-primary-600 inline-block"></span>
-              <span class="font-medium">Ruta Optimizada</span>
+              <span class="font-medium">Vial continuo</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-4 h-0.5 border-b-2 border-dashed border-primary-500 inline-block"></span>
+              <span class="font-medium">Aproximación punteada</span>
             </div>
           </div>
         </div>

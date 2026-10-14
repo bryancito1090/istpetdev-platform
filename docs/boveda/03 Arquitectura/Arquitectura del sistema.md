@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-14
 tags: [arquitectura, implementacion]
 ---
 
@@ -39,8 +39,8 @@ flowchart LR
 |---|---|---|
 | Inventario | SKU, lotes, reservas, consumos, movimientos | [[Modelo de datos]] |
 | Riesgo | Cobertura, faltantes y anomalías | [[Inventario y prediccion]] |
-| Logística | Solicitudes, vehículos, rutas y paradas | [[Rutas y sobrecostos]] |
-| Custodia | QR, despacho, recepción y evidencia | [[Seguridad y evidencias]] |
+| Logística y Sourcing | Pedidos de entrega (`DeliveryOrder`), abastecimiento multialmacén (`SourcingService`), asignación de flota (`VehicleMatcher`), evaluación multiparada (`RouteEvaluator`), rebalanceo preventivo (`RebalancingAdvisor`) y pedidos de emergencia | [[Rutas y sobrecostos]], [[Decisiones de arquitectura#ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo|ADR-28]] |
+| Custodia | QR, despacho, recepción y evidencia | [[Seguridad y evidencias]], [[Decisiones de arquitectura#ADR-27 — Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas|ADR-27]] |
 | Comunicación | Alertas, incidentes y chat durable | [[Backend y tiempo real]] |
 | Evaluación | Simulador, resultados y exportaciones | [[Simulador y metricas]] |
 

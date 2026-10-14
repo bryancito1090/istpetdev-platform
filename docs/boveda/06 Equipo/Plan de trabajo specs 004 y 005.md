@@ -1,15 +1,16 @@
 ---
 tipo: plan-ejecucion
 estado: vigente
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 ---
 
 # Plan de trabajo e integración: Specs 004 y 005
 
-> [!important] Spec 004 Concluido — Spec 005 en ejecución por Alexander Martínez
+> [!important] Spec 004 Concluido — Spec 005 con avances clave en Develop (PR #59)
 > Este documento centraliza el desglose operativo de los **Specs 004 (Campo, QR y PWA Offline)** y **005 (Panel Web y Simulador 90 Días)**. Las tareas han sido cargadas en el workspace de Linear (equipo **Alkuy - ALK**).
-> **Spec 004 ha culminado su implementación fullstack e integración**, con migración EF Core `FieldOperations`, endpoints C# .NET, frontend web de bodega, PWA móvil offline con outbox durable, trazabilidad pública QR y suite de pruebas en verde.
+> **Spec 004 ha culminado su implementación fullstack e integración** (PR #30).
+> **Spec 005 integró en develop el ruteo multiparada por pedidos, bodegas, rebalanceo y mapa interactivo** (PR #59, commits `370ffa1` y `22d7985`), quedando pendiente el motor de simulación de 90 días (T2 a T8).
 
 ---
 
@@ -18,7 +19,7 @@ tags: [equipo, linear, spec004, spec005, tareas, campo, simulador]
 | Proyecto Linear | Identificador | Tareas Asociadas | Foco Principal | Estado |
 |---|---|---|---|---|
 | **Spec 004: Campo, QR, Custodia y PWA Offline** | `43d9562c` | [`ALK-12` a `ALK-23`](https://linear.app/alkuy/project/spec-004-campo-qr-custodia-y-pwa-offline-43d9562c-e23e-47cc-85ac-e7f5e5e55356) | Operaciones físicas: etiquetado QR, despacho de bodega, custodia atómica, PWA offline y conciliación de entrega. | **✅ Concluido** (PR #30, migración `FieldOperations`, API C# y PWA) |
-| **Spec 005: Panel Web y Simulador 90 Días** | `da2aa954` | [`ALK-24` a `ALK-35`](https://linear.app/alkuy/project/spec-005-panel-web-y-simulador-90-dias-da2aa954-7136-4c01-a6d7-a4ab2c437b56) | Panel web Angular FSD, visualización de rutas/decisiones de agente, simulador de 90 días, baselines y reporte de impacto reproducible. | **En curso** (Rutas y controladores integrados) |
+| **Spec 005: Panel Web y Simulador 90 Días** | `da2aa954` | [`ALK-24` a `ALK-35`](https://linear.app/alkuy/project/spec-005-panel-web-y-simulador-90-dias-da2aa954-7136-4c01-a6d7-a4ab2c437b56) | Panel web Angular FSD, visualización de rutas/decisiones de agente, simulador de 90 días, baselines y reporte de impacto reproducible. | **En curso** (Ruteo por pedidos, bodegas, rebalanceo y mapas integrados en develop) |
 
 ---
 

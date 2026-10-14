@@ -23,7 +23,7 @@
 | T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | hecho (P2) |
 | T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | hecho (P2) |
 | T13 | Web H4: pantalla «Usuarios» | FR-19 | T12, T6 | — | hecho (P2) |
-| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | pendiente |
+| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | en curso (fase A hecha) |
 
 `[P]` = puede ejecutarse en paralelo con otras `[P]` del mismo nivel porque no toca los mismos archivos.
 
@@ -4253,25 +4253,34 @@ git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 - Consumes: T1–T10 en `develop` (y T11–T13 si H4 entra).
 - Produces: registro de ejecuciones con evidencia; spec en estado `cerrado` o con H4 declarada como propuesta.
 
-- [ ] **Step 1: Verificación completa local**
+- [x] **Step 1: Verificación completa local**
 
 Run: `npm run check && npm run test:frontend && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
-Expected: todo verde; cero coincidencias del guardián.
+Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
 
-- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-12 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA.
+- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55).
 
-- [ ] **Step 3: Actualizar el spec** (coordinar con quien lo esté editando): FR-18 y H4-6 ya figuran como pospuestos desde el 13-oct; si H4 no entró antes del congelamiento, anotar «H4 se presenta como propuesta»; registrar la decisión sobre ADR-25 (Supervisor en la PWA); estado `cerrado` solo con E2E obligatorios aprobados.
+- [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
-- [ ] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`.
+- [x] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`; fila D3 de login Cognito actualizada.
 
-- [ ] **Step 5: Bóveda (G8)** — en «Registro de trabajo previo y del evento», las cuentas creadas antes del 16-oct por rol y fecha, sin correos personales; registrar la contradicción del reinicio de la PWA sin señal si Joseph y Alexander la resuelven.
+- [ ] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
 
-- [ ] **Step 6: Commit y PR**
+- [ ] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
 
-```bash
-git add docs/specs/013-login-y-cuentas docs/specs/README.md "docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md"
-git commit -m "docs(specs): cierre de spec 013 con evidencia e2e"
-git push -u origin feature/013-login-y-cuentas
-```
+### Desviaciones / estado fase A
 
-Abrir PR a `develop` con revisor Joseph Baño.
+- **Fase A realizada (cierre documental y validación local de suites):**
+  - **Step 1 (E2E-00):** Se ejecutaron completamente `npm run check`, `npm run test:frontend` (87 pruebas pasadas en 18 archivos) y `dotnet test` por categoría (Unit: 145 pasadas; Integration: 146 pasadas; E2E: 6 pasadas; total backend 297 pasadas). Guardián de CI contra login simulado verificado con cero coincidencias (`grep=1`). Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
+  - **Step 3:** Spec 013 actualizado sin cerrar (`estado: borrador` con nota explicativa al inicio). Se resolvió la contradicción ADR-25 vs ADR-24 adoptando la opción (a) (la PWA solo admite Bodega, Conductor y Receptor; `LogisticsManager` retirado en T7 de PR #56). Se marcó PA-04 como resuelta en #55 (Bryan Gerencia inicial, Jorge custodia el CSV fuera del repo). Se documentó H4 como implementada antes del congelamiento (PR #65). Se agregó la sección «Estado de implementación» enlazando las desviaciones de task.md y los pendientes. Se registró el riesgo abierto de recarga offline (tokens en memoria, FR-03; decide Joseph Baño con Alexander).
+  - **Step 4:** Fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md` y `test-e2e.md`. Se actualizó la fila D3 para reflejar que H1–H4 están implementados en `develop`.
+  - **Step 5 (parcial):** Se documentaron los PR #56 y #65 en `docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md`. Se dejó una línea pendiente para el registro de cuentas de demo creadas por rol y fecha.
+  - **Spec 004:** Se sincronizó la decisión 2 de `informe-entrega-spec-004-y-decisiones.md` para exigir tokens solo en memoria (ref. 013 FR-03, eliminando `sessionStorage`), y se actualizó T1b en `docs/specs/004-campo-qr-custodia-offline/task.md` indicando la absorción del login PKCE por 013 (PR #56) y el retiro de la «dev auth API».
+
+- **Pendiente para la Fase B (cierre técnico y validación E2E en vivo):**
+  - Configuración y validación de infraestructura (T10, issue #43): callbacks HTTPS de Cognito, marca ISTPET en Hosted UI, políticas IAM y hop limit = 2.
+  - Publicación y routing de la PWA bajo `/campo/` (issue #52).
+  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55).
+  - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
+  - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
+

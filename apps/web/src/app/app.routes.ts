@@ -68,6 +68,13 @@ export const routes: Routes = [
     title: 'Bodegas & Rebalanceo — IstpetDev'
   },
   {
+    path: 'simulation',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/simulation').then(m => m.SimulationPage),
+    title: 'Simulador 90 Días — IstpetDev'
+  },
+  {
     // Pública: el QR impreso en el bulto apunta aquí.
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
