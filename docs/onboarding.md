@@ -40,8 +40,29 @@ npm run check
 
 ## 3. Modos de Ejecución Local
 
-### Modo A: Desarrollo Local con Dependencias Docker (Sin AWS)
-Si desea trabajar de manera completamente local y desconectada de AWS:
+### Modo A: API y datos locales con Docker
+Este modo mantiene la API y PostgreSQL localmente. El inicio de sesión de las aplicaciones web y móvil sí usa el User Pool real de Cognito; no hay un login simulado ni contraseñas de demo en el repositorio. Las contraseñas se introducen únicamente en la página administrada de Cognito.
+
+Si la API corre con `ASPNETCORE_ENVIRONMENT=Development` y sin `Authentication__Authority`, usa la configuración de desarrollo y **rechaza los tokens reales de Cognito**: sirve para desarrollar la API, pero las apps no pueden hacer llamadas autenticadas contra ella. Para probar el flujo completo, exporta el issuer y los dos clientes antes de iniciar la API:
+
+```bash
+export Authentication__Authority=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4Y2j5DINp
+export Authentication__AllowedClientIds__0=6ejhdau47gad74id7id1l7ugln
+export Authentication__AllowedClientIds__1=3k59rv5cov1sinllgd7igmpe1a
+```
+
+Con eso la API local valida los tokens de Cognito. Tu usuario de Cognito también necesita una `Account` en **tu** base local (`--provision-accounts`, ver `docs/specs/013-login-y-cuentas/test-e2e.md`); sin ella, `/api/v1/me` responde 403 y la app muestra «Tu cuenta no está habilitada; contacta a Gerencia».
+
+Las aplicaciones usan los clientes públicos y retornos locales registrados para Cognito:
+
+| Aplicación | URL local | Cliente Cognito |
+|---|---|---|
+| Web | `http://localhost:4200` | Web (`6ejhdau47gad74id7id1l7ugln`) |
+| PWA | `http://localhost:8100` | Móvil (`3k59rv5cov1sinllgd7igmpe1a`) |
+
+El issuer y los clientes provienen de `docs/deployment-status.md` (8-oct); confirma los valores con `terraform output -json cognito` al renovar el entorno.
+
+Si desea trabajar con API y base de datos sin servicios de AWS:
 
 1. Inicie los contenedores de dependencias locales (PostgreSQL 16 con PostGIS y Redis 7):
    ```bash
@@ -51,10 +72,10 @@ Si desea trabajar de manera completamente local y desconectada de AWS:
    ```bash
    dotnet user-secrets set "ConnectionStrings:Main" "Host=localhost;Port=15432;Database=postgres;Username=postgres;Password=postgres_dev_password_local;" --project src/Api
    ```
-3. Inicie los servicios:
-   - **Backend API**: `npm run dev:api` (disponible en `http://localhost:5000`)
-   - **Frontend Web**: `npm run dev:web` (disponible en `http://localhost:4200`)
-   - **Móvil PWA**: `npm run dev:mobile` (disponible en `http://localhost:8100`)
+3. Inicie los servicios que necesite:
+   - **Backend API**: `npm run dev:api` (disponible en `http://localhost:5000`, modo de desarrollo local)
+   - **Frontend Web**: `npm run dev:web` (disponible en `http://localhost:4200`, login real de Cognito)
+   - **Móvil PWA**: `npm run dev:mobile` (disponible en `http://localhost:8100`, login real de Cognito)
 
 ---
 

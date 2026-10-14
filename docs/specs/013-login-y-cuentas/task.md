@@ -10,28 +10,28 @@
 
 | ID | Tarea | Historia / requisito | Depende de | Paralelizable | Estado |
 |---|---|---|---|---|---|
-| T1 | Rol Auditor y matriz lectura/escritura | FR-21, CE-07 | — | — | pendiente |
-| T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | pendiente |
-| T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | pendiente |
-| T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | pendiente |
-| T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | pendiente |
-| T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | pendiente |
-| T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | pendiente |
-| T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | pendiente |
-| T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | pendiente |
+| T1 | Rol Auditor y matriz lectura/escritura | FR-21, CE-07 | — | — | hecho |
+| T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | hecho |
+| T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | hecho |
+| T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | hecho |
+| T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | hecho |
+| T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | hecho |
+| T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | hecho |
+| T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | hecho |
+| T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | hecho |
 | T10 | Infraestructura: callbacks HTTPS, marca, IAM y hop limit (Jorge) | FR-20, NFR-02, #14 | — | [P] con todo | pendiente |
-| T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | pendiente (P2) |
-| T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | pendiente (P2) |
-| T13 | Web H4: pantalla «Usuarios» | FR-19 | T12, T6 | — | pendiente (P2) |
-| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | pendiente |
+| T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | hecho (P2) |
+| T12 | API H4: editar, desactivar, reactivar y reenviar | FR-14–FR-17, NFR-01, CE-05 | T11 | — | hecho (P2) |
+| T13 | Web H4: pantalla «Usuarios» | FR-19 | T12, T6 | — | hecho (P2) |
+| T14 | Cierre: E2E, spec, README, bóveda | CE-01–CE-07 | T9, T10 (T13 si H4 entra) | — | en curso (fase A hecha) |
 
 `[P]` = puede ejecutarse en paralelo con otras `[P]` del mismo nivel porque no toca los mismos archivos.
 
 ## Preparación común
 
-- [ ] Crear la rama: `git switch develop && git pull && git switch -c feature/013-login-y-cuentas`.
-- [ ] Comprobar Docker para Testcontainers: `docker info >/dev/null && echo ok`.
-- [ ] `npm ci` en la raíz.
+- [x] Crear la rama: `git switch develop && git pull && git switch -c feature/013-login-y-cuentas`.
+- [x] Comprobar Docker para Testcontainers: `docker info >/dev/null && echo ok`.
+- [x] `npm ci` en la raíz.
 
 ---
 
@@ -46,7 +46,7 @@
 - Consumes: `ApiFactory`, `TestTokens`, `TestDb` existentes.
 - Produces: `Roles.Auditor`, `Roles.Human` (cadena para `[Authorize]`), `Roles.HumanRoles`, `Roles.IsHuman(string?)`, `Roles.PlatformOf(string?) : string?` (`"web"`, `"field"` o `null`); `TestAccounts.SetRoleAsync(string connection, string subject, string role, bool active = true) : Task<Guid>`.
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Support/TestAccounts.cs`:
 
@@ -152,12 +152,12 @@ public sealed class AuditorRoleTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RolesTests|FullyQualifiedName~AuditorRoleTests"`
 Expected: FAIL de compilación con «'Roles' does not contain a definition for 'Auditor'».
 
-- [ ] **Step 3: Implementación mínima** — reemplazar `src/Domain/Common/Roles.cs`:
+- [x] **Step 3: Implementación mínima** — reemplazar `src/Domain/Common/Roles.cs`:
 
 ```csharp
 namespace IstpetDev.Domain.Common;
@@ -195,12 +195,12 @@ public static class Roles
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan, sin romper la matriz existente**
+- [x] **Step 4: Ejecutar y verificar que pasan, sin romper la matriz existente**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RolesTests|FullyQualifiedName~AuditorRoleTests|FullyQualifiedName~AuthorizationSafetyTests"`
 Expected: PASS (todas).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Domain/Common/Roles.cs tests/IstpetDev.Tests/Support/TestAccounts.cs tests/IstpetDev.Tests/Unit/Identity/RolesTests.cs tests/IstpetDev.Tests/Integration/Api/AuditorRoleTests.cs
@@ -220,7 +220,7 @@ git commit -m "feat(api): rol auditor de solo lectura (adr-26, spec 013)"
 - Consumes: `Roles.Human`, `Roles.PlatformOf` (T1); `ClaimsPrincipalExtensions.AccountId()` (001).
 - Produces: `GET /api/v1/me` → `MeResponse(Guid AccountId, string DisplayName, string Role, string Platform)` en JSON camelCase; TS `MeResponse`, `HumanRole`, `Platform`, `WEB_ROLES`, `FIELD_ROLES`, `HUMAN_ROLES`, `AccountItem`, `InvitationStatus`, `CreateAccountRequest`, `UpdateAccountRequest`.
 
-- [ ] **Step 1: Escribir la prueba que falla** — `tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs`:
+- [x] **Step 1: Escribir la prueba que falla** — `tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs`:
 
 ```csharp
 using System.Net;
@@ -273,12 +273,12 @@ public sealed class MeEndpointTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla**
+- [x] **Step 2: Ejecutar y verificar que falla**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~MeEndpointTests"`
 Expected: FAIL — `GetFromJsonAsync` lanza `HttpRequestException` con «404 (Not Found)».
 
-- [ ] **Step 3: Implementación mínima** — `src/Api/Controllers/MeController.cs`:
+- [x] **Step 3: Implementación mínima** — `src/Api/Controllers/MeController.cs`:
 
 ```csharp
 using IstpetDev.Api.Authentication;
@@ -363,12 +363,12 @@ Añadir al final de `libs/shared-core/src/contracts/index.ts`:
 export * from './account.contract';
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasa**
+- [x] **Step 4: Ejecutar y verificar que pasa**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~MeEndpointTests" && npm run build:shared`
 Expected: PASS (8 casos) y build de `shared-core` sin errores.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Api/Controllers/MeController.cs tests/IstpetDev.Tests/Integration/Api/MeEndpointTests.cs libs/shared-core/src/contracts/account.contract.ts libs/shared-core/src/contracts/index.ts
@@ -396,12 +396,12 @@ git commit -m "feat(api): endpoint /me con rol y plataforma (spec 013 fr-05)"
   - `CognitoPool.FromAuthority(string?) : CognitoPool?` con `Region`, `UserPoolId`, `Issuer`
   - `ApiFactory.Directory : FakeIdentityDirectory`; `FakeIdentityDirectory.Add(...)`, `.Confirm(subject)`, `.Users`, `.Unavailable`, `.Invitations`, `.Resends`, `.SignedOut`
 
-- [ ] **Step 1: Añadir el paquete del SDK**
+- [x] **Step 1: Añadir el paquete del SDK**
 
 Run: `dotnet add src/Infrastructure package AWSSDK.CognitoIdentityProvider`
 Expected: `PackageReference` con versión 4.x en `IstpetDev.Infrastructure.csproj`. Si resolviera 3.x, repetir con `--version` de la última 4.x publicada en nuget.org. Anotar la versión exacta en la tabla de dependencias de `plan.md`.
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Unit/Identity/CognitoPoolTests.cs`:
 
@@ -639,12 +639,12 @@ public sealed class AccountProvisioningTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~CognitoPoolTests|FullyQualifiedName~AccountProvisioningTests"`
 Expected: FAIL de compilación con «The type or namespace name 'Accounts' does not exist in the namespace 'IstpetDev.Application'».
 
-- [ ] **Step 4: Implementar el puerto y el alta**
+- [x] **Step 4: Implementar el puerto y el alta**
 
 `src/Application/Accounts/IIdentityDirectory.cs`:
 
@@ -777,7 +777,7 @@ Registrar en `src/Application/DependencyInjection.cs`, dentro de `AddApplication
 
 y añadir `using IstpetDev.Application.Accounts;` al inicio.
 
-- [ ] **Step 5: Implementar el adaptador de Cognito**
+- [x] **Step 5: Implementar el adaptador de Cognito**
 
 `src/Infrastructure/Identity/CognitoPool.cs`:
 
@@ -957,12 +957,12 @@ En `tests/IstpetDev.Tests/Support/ApiFactory.cs`: añadir `using IstpetDev.Appli
         });
 ```
 
-- [ ] **Step 6: Ejecutar y verificar que pasan**
+- [x] **Step 6: Ejecutar y verificar que pasan**
 
 Run: `dotnet build IstpetDev.sln && dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~CognitoPoolTests|FullyQualifiedName~AccountProvisioningTests"`
 Expected: build sin advertencias nuevas; PASS (7 + 11 casos).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/Application/Accounts src/Application/DependencyInjection.cs src/Infrastructure/Identity src/Infrastructure/DependencyInjection.cs src/Infrastructure/IstpetDev.Infrastructure.csproj tests/IstpetDev.Tests/Support/FakeIdentityDirectory.cs tests/IstpetDev.Tests/Support/ApiFactory.cs tests/IstpetDev.Tests/Unit/Identity/CognitoPoolTests.cs tests/IstpetDev.Tests/Integration/Accounts/AccountProvisioningTests.cs
@@ -982,7 +982,7 @@ git commit -m "feat(identidad): directorio cognito y alta idempotente de cuentas
 - Consumes: `AccountProvisioning.ProvisionAsync`, `ProvisionOutcome`, `AccountRuleException`, `IdentityDirectoryUnavailableException` (T3).
 - Produces: `ProvisioningInput.Parse(TextReader) : ProvisioningInput(Rows, Errors)`; `ProvisioningRow(int Line, string Email, string DisplayName, string Role)`; `ProvisionAccountsCommand.Argument = "--provision-accounts"`; `ProvisionAccountsCommand.RunAsync(IServiceProvider, string path, TextWriter output, CancellationToken) : Task<int>` (0 todo bien, 1 alguna fila falló, 2 archivo inválido).
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Unit/Identity/ProvisioningInputTests.cs`:
 
@@ -1075,12 +1075,12 @@ public sealed class ProvisionAccountsCommandTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ProvisioningInputTests|FullyQualifiedName~ProvisionAccountsCommandTests"`
 Expected: FAIL de compilación con «The type or namespace name 'ProvisioningInput' could not be found».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/ProvisioningInput.cs`:
 
@@ -1195,17 +1195,17 @@ if (provisionAt >= 0)
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ProvisioningInputTests|FullyQualifiedName~ProvisionAccountsCommandTests"`
 Expected: PASS (5 + 2 casos).
 
-- [ ] **Step 5: Comprobar el uso sin archivo**
+- [x] **Step 5: Comprobar el uso sin archivo**
 
 Run: `dotnet run --project src/Api -- --provision-accounts; echo "salida=$?"`
 Expected: «Uso: --provision-accounts <archivo.csv con email,displayName,role>» y `salida=2`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Application/Accounts/ProvisioningInput.cs src/Api/Accounts/ProvisionAccountsCommand.cs src/Api/Program.cs tests/IstpetDev.Tests/Unit/Identity/ProvisioningInputTests.cs tests/IstpetDev.Tests/Integration/Accounts/ProvisionAccountsCommandTests.cs
@@ -1225,7 +1225,7 @@ git commit -m "feat(identidad): script idempotente de cuentas de demo (spec 013 
 - Consumes: —
 - Produces: `class TokenFreeStorage { read(key): string | null; write(key, value): void; remove(key): void; clear(): void }` (constructor opcional `flowStore: KeyValueStore | null`); `AUTH_FLOW_KEYS`; `isPrivateApiRequest(url: string, apiUrl: string): boolean`; `safeReturnUrl(value: string | null | undefined): string | null`; `cognitoLogoutUrl(cognitoDomain: string, clientId: string, logoutUri: string): string`; scripts raíz `test:shared`, `test:frontend`.
 
-- [ ] **Step 1: Instalar Vitest en `shared-core` y excluir specs del build**
+- [x] **Step 1: Instalar Vitest en `shared-core` y excluir specs del build**
 
 Run: `npm install -D -E vitest@4 --workspace=libs/shared-core`
 
@@ -1238,7 +1238,7 @@ En `libs/shared-core/package.json`, dentro de `scripts`, añadir `"test": "vites
     "test:frontend": "npm run test:shared && npm run test:web && npm run test:mobile",
 ```
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `libs/shared-core/src/auth/token-free-storage.spec.ts`:
 
@@ -1357,12 +1357,12 @@ describe('cognitoLogoutUrl', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:shared`
 Expected: FAIL con «Failed to resolve import "./token-free-storage"».
 
-- [ ] **Step 4: Implementación mínima**
+- [x] **Step 4: Implementación mínima**
 
 `libs/shared-core/src/auth/token-free-storage.ts`:
 
@@ -1471,12 +1471,12 @@ Añadir al final de `libs/shared-core/src/index.ts`:
 export * from './auth';
 ```
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:shared && npm run build:shared`
 Expected: PASS (4 + 19 casos) y `dist/` sin archivos `.spec`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/shared-core package.json package-lock.json
@@ -1493,15 +1493,16 @@ git commit -m "feat(shared-core): almacenamiento sin tokens y reglas de sesion (
 - Create: `apps/web/src/shared/api/api-auth.interceptor.ts` (+ `.spec.ts`); Modify: `apps/web/src/shared/api/index.ts`
 - Create: `apps/web/src/entities/session/model/auth-session.ts` (+ `.spec.ts`), `apps/web/src/entities/session/lib/navigate-external.ts`, `apps/web/src/entities/session/lib/auth.guard.ts`, `apps/web/src/entities/session/lib/role.guard.ts`, `apps/web/src/entities/session/lib/guards.spec.ts`
 - Modify: `apps/web/src/entities/session/index.ts`
-- Delete: `apps/web/src/entities/session/model/session.store.ts`, `apps/web/src/entities/session/model/session.model.ts`, `apps/web/src/features/login-form/`, `apps/web/src/pages/warehouse/`
+- Delete: `apps/web/src/entities/session/model/session.store.ts`, `apps/web/src/entities/session/model/session.model.ts`, `apps/web/src/features/login-form/`, `apps/web/src/app/providers/auth.interceptor.ts`, `apps/web/src/app/providers/role.guard.ts`, `apps/web/src/shared/api/mock/`
 - Create: `apps/web/src/pages/auth-callback/auth-callback.page.ts`, `apps/web/src/pages/auth-callback/index.ts`
-- Modify: `apps/web/src/app/app.config.ts`, `apps/web/src/app/app.routes.ts`, `apps/web/src/pages/index.ts`, `apps/web/src/pages/login/login.page.ts`, `apps/web/src/widgets/header/header.widget.ts`, `apps/web/src/pages/operations-dashboard/operations-dashboard.page.ts`
+- Modify: `apps/web/src/app/app.config.ts`, `apps/web/src/app/app.routes.ts`, `apps/web/src/pages/index.ts`, `apps/web/src/pages/login/login.page.ts`, `apps/web/src/pages/inicio/inicio.page.ts`, `apps/web/src/pages/datos/datos.page.ts`, `apps/web/src/pages/rutas/rutas.page.ts`, `apps/web/src/widgets/header/header.widget.ts`
+- Test: `apps/web/src/pages/rutas/rutas.page.spec.ts`, `apps/web/src/widgets/header/header.widget.spec.ts`
 
 **Interfaces:**
 - Consumes: `TokenFreeStorage`, `isPrivateApiRequest`, `safeReturnUrl`, `cognitoLogoutUrl`, `MeResponse`, `HumanRole` (T2, T5); `GET /api/v1/me`.
 - Produces: `AuthSession` con `status: Signal<SessionStatus>`, `me: Signal<MeResponse | null>`, `role: Signal<HumanRole | null>`, `canWrite: Signal<boolean>`, `bootstrap(): Promise<void>`, `login(returnUrl?: string | null): void`, `takeReturnUrl(): string`, `logout(): void`; `SessionStatus = 'loading' | 'anonymous' | 'authenticated' | 'wrong-platform' | 'disabled' | 'error'`; `authGuard`, `roleGuard` (lee `route.data['roles']: HumanRole[]`); `NAVIGATE_EXTERNAL`; `apiAuthInterceptor`; `environment.oidc { authority, cognitoDomain, clientId, redirectUrl, postLogoutRedirectUri }`.
 
-- [ ] **Step 1: Habilitar el runner de pruebas**
+- [x] **Step 1: Habilitar el runner de pruebas**
 
 Run: `npm install -D -E vitest@4 jsdom@27 --workspace=apps/web`
 
@@ -1541,7 +1542,7 @@ Crear `apps/web/tsconfig.spec.json`:
 
 En `apps/web/tsconfig.app.json` añadir `"exclude": ["src/**/*.spec.ts"]`.
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `apps/web/src/shared/config/environment.spec.ts`:
 
@@ -1691,10 +1692,24 @@ describe('AuthSession', () => {
     const { session, oidc } = setup(false);
     session.login('//evil.example');
     expect(sessionStorage.length).toBe(0);
+    expect(localStorage.length).toBe(0);
     session.login('/dashboard?vista=mapa');
+    expect(localStorage.getItem('istpetdev.returnUrl')).toBe('/dashboard?vista=mapa');
+    expect(sessionStorage.length).toBe(0);
     expect(session.takeReturnUrl()).toBe('/dashboard?vista=mapa');
+    expect(localStorage.length).toBe(0);
     expect(session.takeReturnUrl()).toBe('/dashboard');
     expect(oidc.authorize).toHaveBeenCalledTimes(2);
+  });
+
+  it('usa /dashboard tras Cognito si el returnUrl apuntaba a otro origen (Review Focus 1)', async () => {
+    const { session, backend } = setup(true);
+    session.login('https://evil.example/dashboard');
+    expect(localStorage.length).toBe(0);
+    const done = session.bootstrap();
+    await answerMe(backend, { accountId: 'a-1', displayName: 'Planificación', role: 'Planificador', platform: 'web' });
+    await done;
+    expect(session.takeReturnUrl()).toBe('/dashboard');
   });
 
   it('logout borra la sesión local y cierra la de Cognito', async () => {
@@ -1764,12 +1779,12 @@ describe('roleGuard', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:web`
 Expected: FAIL con «Could not resolve "./auth-session"» y, en `environment.spec.ts`, «Cannot read properties of undefined (reading 'authority')».
 
-- [ ] **Step 4: Configuración pública por entorno**
+- [x] **Step 4: Configuración pública por entorno**
 
 Leer los valores: `terraform -chdir=infra/terraform/environments/dev output -json cognito`. Copiar `issuer` en `authority`, `domain` en `cognitoDomain` y `client_ids.web` en `clientId` en **ambos** archivos (el pool de dev sirve a local y a la demo).
 
@@ -1834,12 +1849,12 @@ export const webOidcConfig: PassedInitialConfig = {
 };
 ```
 
-- [ ] **Step 5: Comprobar cómo escribe la librería en el almacenamiento**
+- [x] **Step 5: Comprobar cómo escribe la librería en el almacenamiento**
 
 Run: `grep -n "write(" node_modules/angular-auth-oidc-client/fesm2022/angular-auth-oidc-client.mjs | grep -i "storage" | head`
 Expected: la escritura usa la clave de configuración y un JSON con todas las claves (`this.abstractSecurityStorage.write(configId, JSON.stringify(...))` o equivalente). `TokenFreeStorage` cubre ese formato y el de clave suelta; si aparece un tercer formato, añadir su caso a `token-free-storage.spec.ts` antes de seguir.
 
-- [ ] **Step 6: Sesión, guards e interceptor**
+- [x] **Step 6: Sesión, guards e interceptor**
 
 `apps/web/src/entities/session/lib/navigate-external.ts`:
 
@@ -1899,10 +1914,10 @@ export class AuthSession {
   login(returnUrl?: string | null): void {
     const target = safeReturnUrl(returnUrl);
     try {
-      if (target) sessionStorage.setItem(RETURN_URL_KEY, target);
-      else sessionStorage.removeItem(RETURN_URL_KEY);
+      if (target) localStorage.setItem(RETURN_URL_KEY, target);
+      else localStorage.removeItem(RETURN_URL_KEY);
     } catch {
-      // Sin sessionStorage se vuelve al panel.
+      // Sin localStorage se vuelve al panel.
     }
     this.oidc.authorize();
   }
@@ -1910,10 +1925,10 @@ export class AuthSession {
   takeReturnUrl(): string {
     let stored: string | null = null;
     try {
-      stored = sessionStorage.getItem(RETURN_URL_KEY);
-      sessionStorage.removeItem(RETURN_URL_KEY);
+      stored = localStorage.getItem(RETURN_URL_KEY);
+      localStorage.removeItem(RETURN_URL_KEY);
     } catch {
-      // Sin sessionStorage se vuelve al panel.
+      // Sin localStorage se vuelve al panel.
     }
     return safeReturnUrl(stored) ?? '/dashboard';
   }
@@ -1996,14 +2011,14 @@ Añadir a `apps/web/src/shared/api/index.ts`:
 export * from './api-auth.interceptor';
 ```
 
-- [ ] **Step 7: Ejecutar y verificar que pasan las pruebas de lógica**
+- [x] **Step 7: Ejecutar y verificar que pasan las pruebas de lógica**
 
 Run: `npm run test:web`
 Expected: PASS en `environment.spec.ts` (si siguen los `«…»`, FAIL con el regex de `authority`: completar Step 4), `api-auth.interceptor.spec.ts`, `auth-session.spec.ts` y `guards.spec.ts`.
 
-- [ ] **Step 8: Conectar la app, retirar mocks y `/warehouse`**
+- [x] **Step 8: Conectar la app, retirar sesión y mocks simulados**
 
-Run: `git rm -r apps/web/src/entities/session/model/session.store.ts apps/web/src/entities/session/model/session.model.ts apps/web/src/features/login-form apps/web/src/pages/warehouse`
+Run: `git rm -r apps/web/src/entities/session/model/session.store.ts apps/web/src/entities/session/model/session.model.ts apps/web/src/features/login-form apps/web/src/app/providers/auth.interceptor.ts apps/web/src/app/providers/role.guard.ts apps/web/src/shared/api/mock`
 
 Reemplazar `apps/web/src/app/app.config.ts`:
 
@@ -2015,7 +2030,7 @@ import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';
 import { TokenFreeStorage } from '@istpetdev/shared-core';
 import { routes } from './app.routes';
 import { webOidcConfig } from '@shared/config';
-import { WEB_FIELD_API, MockWebFieldApiService, apiAuthInterceptor } from '@shared/api';
+import { WEB_FIELD_API, HttpWebFieldApiService, apiAuthInterceptor } from '@shared/api';
 import { AuthSession } from '@entities/session';
 
 export const appConfig: ApplicationConfig = {
@@ -2036,44 +2051,79 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AuthSession).bootstrap()),
     {
       provide: WEB_FIELD_API,
-      useClass: MockWebFieldApiService
+      useClass: HttpWebFieldApiService
     }
   ]
 };
 ```
 
-Reemplazar `apps/web/src/app/app.routes.ts`:
+Adaptar `apps/web/src/app/app.routes.ts` al orden de proceso de la web vigente:
 
 ```ts
 import { Routes } from '@angular/router';
-import { authGuard } from '@entities/session';
+import { authGuard, homeRedirectGuard, roleGuard } from '@entities/session';
+
+const WEB_READ_ROLES = ['Gerencia', 'Planificador', 'Auditor'] as const;
+const WEB_WRITE_ROLES = ['Gerencia', 'Planificador'] as const;
 
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('@pages/landing').then(m => m.LandingPage),
-    title: 'IstpetDev — Plataforma Logística y Abastecimiento Hospitalario'
+    title: 'IstpetDev'
   },
   {
     path: 'login',
     loadComponent: () => import('@pages/login').then(m => m.LoginPage),
-    title: 'Iniciar Sesión — IstpetDev Logistics'
+    title: 'Iniciar sesión — IstpetDev'
   },
   {
     path: 'auth/callback',
     loadComponent: () => import('@pages/auth-callback').then(m => m.AuthCallbackPage),
-    title: 'Verificando sesión — IstpetDev Logistics'
+    title: 'Verificando sesión — IstpetDev'
   },
   {
-    path: 'dashboard',
-    canActivate: [authGuard],
-    loadComponent: () => import('@pages/operations-dashboard').then(m => m.OperationsDashboardPage),
-    title: 'Panel Operativo — IstpetDev Logistics'
+    path: 'inicio',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/inicio').then(m => m.InicioPage),
+    title: 'Inicio — IstpetDev'
+  },
+  {
+    path: 'datos',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_WRITE_ROLES },
+    loadComponent: () => import('@pages/datos').then(m => m.DatosPage),
+    title: 'Cargar datos — IstpetDev'
+  },
+  {
+    path: 'alertas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/alertas').then(m => m.AlertasPage),
+    title: 'Alertas — IstpetDev'
+  },
+  {
+    path: 'rutas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/rutas').then(m => m.RutasPage),
+    title: 'Rutas — IstpetDev'
   },
   {
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
-    title: 'Trazabilidad Pública — IstpetDev Logistics'
+    title: 'Trazabilidad QR — IstpetDev'
+  },
+  {
+    path: 'public-trace/:unitId',
+    loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
+    title: 'Trazabilidad QR — IstpetDev'
+  },
+  {
+    path: 'dashboard',
+    canActivate: [homeRedirectGuard],
+    children: []
   },
   {
     path: '**',
@@ -2082,7 +2132,7 @@ export const routes: Routes = [
 ];
 ```
 
-En `apps/web/src/pages/index.ts`, reemplazar la línea de `warehouse` por `export * from './auth-callback/auth-callback.page';`.
+En `apps/web/src/pages/index.ts`, añadir `export * from './auth-callback/auth-callback.page';`.
 
 `apps/web/src/pages/auth-callback/auth-callback.page.ts`:
 
@@ -2176,45 +2226,27 @@ export class LoginPage implements OnInit {
 }
 ```
 
-En `apps/web/src/widgets/header/header.widget.ts`:
-- reemplazar `import { SessionStore } from '@entities/session';` por `import { AuthSession } from '@entities/session';`;
-- reemplazar `readonly sessionStore = inject(SessionStore);` por `readonly session = inject(AuthSession);`;
-- en la plantilla, `sessionStore.isAuthenticated()` → `session.status() === 'authenticated'` y `sessionStore.currentUser()?.name` → `session.me()?.displayName`;
-- reemplazar el cálculo de auditor y el logout por:
+En `apps/web/src/widgets/header/header.widget.ts`, usar `AuthSession` y los nombres de `HumanRole`. Mostrar Datos a Gerencia y Planificador; Auditor ve Inicio, Alertas y Rutas en solo lectura. El logout llama a `session.logout()`.
 
-```ts
-  readonly isAuditor = computed(() => this.session.role() === 'Auditor');
+En `rutas.page.ts` y `datos.page.ts`, proteger la UI y los métodos de escritura con `session.canWrite()`. No hay acciones de escritura en `alertas.page.ts`.
 
-  logout(): void {
-    this.session.logout();
-  }
-```
+- [x] **Step 9: Verificar build, lint y que no quedan restos del mock**
 
-En `apps/web/src/pages/operations-dashboard/operations-dashboard.page.ts`:
-- reemplazar la importación y la inyección de `SessionStore` por `AuthSession` (`readonly session = inject(AuthSession);`);
-- en la plantilla, `sessionStore.isAuthenticated()` → `session.status() === 'authenticated'` y `sessionStore.currentUser()?.roleLabel ?? 'Operador'` → `session.me()?.role ?? ''`;
-- reemplazar las cuatro señales de rol por:
+Run: `npm run test:web && npm run build:web && grep -rnE "SessionStore|DEMO_PROFILES|loginWithCredentials|jwt-mock" apps/web/src; echo "grep=$?"` y `grep -rnE "SessionStore|UserRole|'SUPERVISOR'|'ADMIN'|'AUDITOR'|auth/login|MockWebFieldApiService" apps/web/src`
+Expected: pruebas PASS, build y lint sin errores; ambos greps sin coincidencias (el primero devuelve `grep=1`). La importación conserva `warehouses.csv` en la guía de Datos; no es una página `pages/warehouse` ni un resto de la sesión simulada.
 
-```ts
-  readonly userRole = computed(() => this.session.role());
-  readonly isPlanificador = computed(() => this.userRole() === 'Planificador');
-  readonly isAuditor = computed(() => this.userRole() === 'Auditor');
-  readonly isGerencia = computed(() => this.userRole() === 'Gerencia');
-```
-
-Regla para 005 (FR-21): todo botón de escritura que se añada al panel va dentro de `@if (session.canWrite())`.
-
-- [ ] **Step 9: Verificar build, lint y que no quedan restos del mock**
-
-Run: `npm run test:web && npm run build:web && grep -rnE "SessionStore|DEMO_PROFILES|loginWithCredentials|jwt-mock|/warehouse" apps/web/src; echo "grep=$?"`
-Expected: pruebas PASS, build y lint sin errores, `grep=1` (sin coincidencias).
-
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A apps/web package-lock.json
-git commit -m "feat(web): login real con cognito pkce y sesion desde /me (spec 013 h1)"
+git commit -m "feat(web): integrar Cognito PKCE y sesión real desde /me (#42)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
+
+### Desviaciones
+
+La web se adaptó al estado posterior a `498edcf`: sus páginas reales son landing, login, inicio, datos, alertas, rutas y public-trace, con `/dashboard` como redirección condicional. `pages/warehouse` y `pages/operations-dashboard` no existían, por lo que no se recrearon ni se borraron; se conservaron las páginas y el orden de proceso diseñados por Alexander. Se retiraron el store, el formulario de login, el interceptor y guard simulados, y el mock de `WEB_FIELD_API`. `AuthSession.canWrite()` protege la importación y las acciones de generación/publicación; Auditor mantiene lectura en Inicio, Alertas y Rutas.
+
+El returnUrl interno validado vive en una clave de un solo uso en `localStorage` y se elimina al consumirlo. Así `sessionStorage` queda reservado a las claves PKCE de OIDC y no se modifica el formato de `authStateControl` que valida la librería. La configuración de producción declara los valores del pool directamente porque el reemplazo de Angular convertiría una importación de `environment.ts` en una autoimportación.
 
 ---
 
@@ -2231,7 +2263,7 @@ git commit -m "feat(web): login real con cognito pkce y sesion desde /me (spec 0
 - Consumes: igual que T6 en `shared-core`; `GET /api/v1/me`.
 - Produces: `MobileAuthService` con `status`, `me`, `currentRole: Signal<FieldRole | null>`, `bootstrap()`, `login(returnUrl?)`, `takeReturnUrl()` (por defecto `/home`), `logout(): Promise<void>`; `FieldRole = 'Bodega' | 'Conductor' | 'Receptor'`; `FIELD_ROLE_LABELS`; `roleGuard`; `authInterceptor`.
 
-- [ ] **Step 1: Habilitar el runner con IndexedDB falso**
+- [x] **Step 1: Habilitar el runner con IndexedDB falso**
 
 Run: `npm install -D -E vitest@4 jsdom@27 fake-indexeddb@6 --workspace=apps/mobile`
 
@@ -2265,7 +2297,7 @@ y en `architect.build.configurations.production`:
 import 'fake-indexeddb/auto';
 ```
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `apps/mobile/src/app/config/environment.spec.ts`:
 
@@ -2365,12 +2397,12 @@ describe('MobileAuthService', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:mobile`
 Expected: FAIL con «Could not resolve "../config/environment"» y «Could not resolve "./navigate-external"».
 
-- [ ] **Step 4: Configuración, sesión, guard e interceptor**
+- [x] **Step 4: Configuración, sesión, guard e interceptor**
 
 `apps/mobile/src/app/config/environment.ts` (valores de `terraform output -json cognito`, `client_ids.mobile`):
 
@@ -2579,12 +2611,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
 En `apps/mobile/src/app/auth/index.ts` añadir `export * from './navigate-external';` y `export * from './pages/callback/callback.page';`.
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:mobile`
 Expected: PASS en `environment.spec.ts` (tras pegar los valores de Terraform) y `auth.service.spec.ts`.
 
-- [ ] **Step 6: Conectar la PWA y reemplazar el login simulado**
+- [x] **Step 6: Conectar la PWA y reemplazar el login simulado**
 
 En `apps/mobile/src/app/app.config.ts`: cambiar la importación de Angular a `import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';`, la de la librería a `import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';`, añadir `import { TokenFreeStorage } from '@istpetdev/shared-core';` y `import { MobileAuthService } from './auth';`, y añadir después de `provideAuth(mobileOidcConfig),`:
 
@@ -2711,17 +2743,22 @@ y reemplazar los bloques `roleSubtitle`, `roleEntityBadge` y `roleBadgeColor` po
 
 con `import { FIELD_ROLE_LABELS } from '../auth';` (o ampliar la importación existente de `../auth`).
 
-- [ ] **Step 7: Verificar build, pruebas y que no quedan restos del mock**
+- [x] **Step 7: Verificar build, pruebas y que no quedan restos del mock**
 
 Run: `npm run test:mobile && npm run build:mobile && grep -rnE "useMockSession|loginWithCredentials|loginAs(Driver|Warehouse|Receiver|Manager)|DEMO_[A-Z]+_PROFILE|mock-bearer-token|istpetdev_volatile_mobile_session|CarrierDriver|LogisticsManager" apps/mobile/src; echo "grep=$?"`
 Expected: pruebas PASS, build sin errores, `grep=1`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A apps/mobile package-lock.json
 git commit -m "feat(campo): login real con cognito pkce y sesion desde /me en la pwa (spec 013 h1)"
 ```
+
+### Desviaciones
+
+La PWA se adaptó a los roles reales (`Bodega`, `Conductor`, `Receptor`), retirando completamente `LogisticsManager` (ADR-24) y los nombres legados (`CarrierDriver`, `WarehouseOperator`, `HospitalReceiver`) en rutas, servicios y `home.page.ts`. A la ruta `/home` se le asignaron explícitamente los tres roles de campo en `data.roles`.
+`MockFieldApiService` se desacopló mediante la función `shouldMockFieldApi(isDev, search)` y se condicionó estrictamente a `isDevMode() && ?mock=true`, con pruebas unitarias que comprueban que nunca se activa en producción. Se añadieron pruebas dedicadas para Review Focus 1 (retorno seguro a `/home` ante URLs maliciosas) y Review Focus 4 (ausencia absoluta de tokens en `localStorage` y `sessionStorage`).
 
 ---
 
@@ -2735,7 +2772,7 @@ git commit -m "feat(campo): login real con cognito pkce y sesion desde /me en la
 - Consumes: `MobileAuthService` (T7), `FIELD_API` (004).
 - Produces: `OutboxItem.ownerAccountId: string`; `FieldOutboxService.setOwner(accountId: string | null): Promise<void>`; `FieldOutboxService.pendingCount: Signal<number>`; `MobileAuthService` llama a `setOwner` tras `/me` y en `logout()`.
 
-- [ ] **Step 1: Escribir la prueba que falla** — `apps/mobile/src/app/field/outbox/field-outbox.service.spec.ts`:
+- [x] **Step 1: Escribir la prueba que falla** — `apps/mobile/src/app/field/outbox/field-outbox.service.spec.ts`:
 
 ```ts
 import { TestBed } from '@angular/core/testing';
@@ -2794,12 +2831,12 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla**
+- [x] **Step 2: Ejecutar y verificar que falla**
 
 Run: `npm run test:mobile`
 Expected: FAIL con «outbox.setOwner is not a function».
 
-- [ ] **Step 3: Implementación mínima en `field-outbox.service.ts`**
+- [x] **Step 3: Implementación mínima en `field-outbox.service.ts`**
 
 1. Cambiar la importación de Angular a `import { Injectable, computed, inject, signal } from '@angular/core';`.
 2. En `OutboxItem`, después de `operationId: string; // UUID v7`, añadir:
@@ -2865,7 +2902,7 @@ y en el literal `const outboxItem: OutboxItem = {` añadir `ownerAccountId,` des
     }
 ```
 
-- [ ] **Step 4: Conectar el dueño desde la sesión y avisar al cerrar sesión**
+- [x] **Step 4: Conectar el dueño desde la sesión y avisar al cerrar sesión**
 
 En `apps/mobile/src/app/auth/auth.service.ts`: añadir `import { FieldOutboxService } from '../field/outbox/field-outbox.service';`, el campo `private readonly outbox = inject(FieldOutboxService);`, y:
 - en `bootstrap()`, dentro del `try`, después de `this.state.set(…)`: `await this.outbox.setOwner(me.platform === 'field' ? me.accountId : null);`
@@ -2891,17 +2928,21 @@ En `apps/mobile/src/app/home/home.page.ts`: añadir `AlertController` a la impor
   }
 ```
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:mobile && npm run build:mobile`
 Expected: PASS (outbox 2 casos, sesión 5 casos) y build sin errores.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/mobile/src/app/field/outbox apps/mobile/src/app/auth/auth.service.ts apps/mobile/src/app/auth/auth.service.spec.ts apps/mobile/src/app/home/home.page.ts
 git commit -m "feat(campo): outbox aislado por cuenta y logout que conserva capturas (spec 013 h2)"
 ```
+
+### Desviaciones
+
+Para el outbox en IndexedDB, se incrementó `DB_VERSION` a 2 con un `upgrade` no destructivo que preserva los datos existentes y crea el índice `by_owner` sobre `ownerAccountId`. Las capturas legadas previas sin dueño (`ownerAccountId` indefinido) se conservan en la base sin borrarse (CE-04), se contabilizan en `pendingCount` mediante `legacyPendingCount` para alertar en logout de que existen capturas retenidas, y se prohíbe su sincronización con cualquier otra cuenta. Se añadió una prueba específica para Review Focus 4 que inspecciona exhaustivamente tanto en memoria como en IndexedDB que ningún `OutboxItem` guarde tokens (`access_token`, `id_token`, `refresh_token`, etc.). En `home.page.ts`, se conectó `AlertController` con los textos exactos fijados por las Global Constraints.
 
 ---
 
@@ -2909,13 +2950,14 @@ git commit -m "feat(campo): outbox aislado por cuenta y logout que conserva capt
 
 **Files:**
 - Create: `scripts/ci/check-no-mock-login.mjs`
-- Modify: `package.json`, `.github/workflows/ci.yml`
+- Modify: `package.json`, `.github/workflows/ci.yml`, `apps/mobile/src/test-setup.ts`, `apps/mobile/src/app/home/home.page.spec.ts`
+- Update: `docs/specs/013-login-y-cuentas/task.md`
 
 **Interfaces:**
 - Consumes: T6 y T8 (sin restos de mock).
 - Produces: `npm run check:no-mock-login` (sale 1 con la lista de coincidencias); CI ejecuta `test:frontend`, el guardián y `build:mobile`.
 
-- [ ] **Step 1: Escribir la prueba que falla** (fixture temporal fuera del repo)
+- [x] **Step 1: Escribir la prueba que falla** (fixture temporal fuera del repo)
 
 Run:
 
@@ -2926,7 +2968,7 @@ node scripts/ci/check-no-mock-login.mjs "$tmp"; echo "salida=$?"
 
 Expected: FAIL con «Cannot find module …/scripts/ci/check-no-mock-login.mjs» y `salida=1`.
 
-- [ ] **Step 2: Implementación mínima** — `scripts/ci/check-no-mock-login.mjs`:
+- [x] **Step 2: Implementación mínima** — `scripts/ci/check-no-mock-login.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -2934,7 +2976,10 @@ Expected: FAIL con «Cannot find module …/scripts/ci/check-no-mock-login.mjs»
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const FORBIDDEN = [/loginWithCredentials/, /useMockSession/, /jwt-mock/, /mock-bearer-token/, /loginAsDemo/, /DEMO_PROFILES/];
+const FORBIDDEN = [
+  /loginWithCredentials/, /useMockSession/, /jwt-mock/, /mock-bearer-token/, /loginAsDemo/, /DEMO_PROFILES/,
+  /\/api\/v1\/auth\/login/, /auth\/login'/
+];
 const SKIP = new Set(['node_modules', 'dist', '.angular', 'www', 'coverage']);
 const EXTENSIONS = new Set(['.ts', '.html', '.js', '.mjs']);
 const roots = process.argv.slice(2).length > 0 ? process.argv.slice(2) : ['apps'];
@@ -2981,7 +3026,7 @@ En `.github/workflows/ci.yml`, en el trabajo «QA Frontend (Angular 22)», despu
         run: npm run build:mobile
 ```
 
-- [ ] **Step 3: Ejecutar y verificar**
+- [x] **Step 3: Ejecutar y verificar**
 
 Run:
 
@@ -2993,12 +3038,32 @@ rm -rf "$tmp"
 
 Expected: `fixture=1` con la línea `…/app/x.ts:1`; `apps=0` con «Sin login simulado en apps».
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
-git add scripts/ci/check-no-mock-login.mjs package.json .github/workflows/ci.yml
-git commit -m "ci: guardian contra login simulado y pruebas frontend (spec 013 nfr-04)"
+git add scripts/ci/check-no-mock-login.mjs package.json .github/workflows/ci.yml apps/mobile/src/test-setup.ts apps/mobile/src/app/home/home.page.spec.ts docs/specs/013-login-y-cuentas/task.md
+git commit -m "ci: añade guardián del login simulado y pruebas frontend (#42)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
+
+### Desviaciones
+
+En la suite de mobile, el runner Angular seguía advirtiendo sobre `vi.mock` aun cuando estaba al nivel del módulo en el spec. Se registró el mock desde `src/test-setup.ts` con una referencia de ejecución a `vi.mock`, antes de cargar los specs; `npm run test:mobile` pasa con 22 pruebas y sin el warning. El guardián también detecta la ruta retirada `/api/v1/auth/login` y la forma `auth/login'`.
+
+### Cierre del login simulado en la API (Bloque B)
+
+- Se retiró `AuthController` y se añadieron pruebas de integración para confirmar que `/api/v1/auth/login` y `/api/v1/auth/me` responden 404; `/api/v1/me` queda como el único endpoint «quién soy».
+- `DevJwtSecurity` conserva únicamente la clave y autoridad del validador local; la API ya no crea ni firma JWT.
+- `CognitoJwtExtensions` valida al arrancar que Production tenga `Authentication:Authority` y `Authentication:AllowedClientIds`; Development/Testing conservan el modo local y no hay una lista predeterminada de clientes.
+- `AccountRoleClaimsTransformation` solo agrega rol y `accountId` después de encontrar una cuenta activa y aprovisionada. Las operaciones de campo reutilizan `ClaimsPrincipal.AccountId()` y responden 403 si falta; se eliminaron los fallbacks por rol, `sub` y `DemoOrganization.Id`.
+- Las pruebas de integración cubren los siete endpoints de campo que recibían una resolución de cuenta y verifican 403 sin aprovisionar al sujeto ni devolver contenido.
+- Desviación respecto al código de 004: `MobileAssignmentsController` tenía el mismo fallback inseguro que las tres clases indicadas en el bloque, por lo que también se actualizó. Las pruebas unitarias existentes se ajustaron al nuevo constructor sin reducir sus expectativas.
+
+### Configuración de Cognito y setup local (Bloque C)
+
+- `appsettings.example.json` usa el issuer `https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4Y2j5DINp` y los clientes públicos web `6ejhdau47gad74id7id1l7ugln` y móvil `3k59rv5cov1sinllgd7igmpe1a`. Fuente: `docs/deployment-status.md` (8-oct); confirmar con `terraform output -json cognito`.
+- Compose de producción exige `COGNITO_AUTHORITY`, `COGNITO_WEB_CLIENT_ID` y `COGNITO_MOBILE_CLIENT_ID`. El paso de despliegue SSH las recibe desde variables de repositorio `vars.COGNITO_*`; hay que crearlas en GitHub antes de desplegar.
+- El onboarding explica que web (`localhost:4200`) y PWA (`localhost:8100`) inician sesión con Cognito real; la API local en Development no se configura con el issuer/client IDs reales y ya no existe login simulado.
+- La guía 004 aclara que, en el flujo de demo sin sesión independiente del Receptor, este valida y firma en el dispositivo del Conductor asignado; el `POST /api/v1/deliveries/{id}/receipts` se envía bajo la sesión del Conductor y las evidencias quedan asociadas a esa recepción.
 
 ---
 
@@ -3233,7 +3298,7 @@ git commit -m "infra(cognito): callbacks https, marca y permiso de cuentas del h
 - Consumes: `AccountProvisioning`, `IIdentityDirectory`, `AccountRuleException`, `IdentityDirectoryUnavailableException` (T3); `TestAccounts.SetRoleAsync` (T1); `ApiFactory.Directory` (T3).
 - Produces: `AccountItem(Guid Id, string DisplayName, string Role, bool IsActive, string? Email, string InvitationStatus, bool? DirectoryEnabled, bool OutOfSync)`; `CreateAccountInput(string Email, string DisplayName, string Role)`; `UpdateAccountInput(string? DisplayName, string? Role)`; `AccountAdministration.ListAsync`, `CreateAsync`; `GET` y `POST /api/v1/accounts`; `AccountsController.Fail(int, string, string)` con Problem Details y `code`.
 
-- [ ] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs`:
+- [x] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs`:
 
 ```csharp
 using System.Net;
@@ -3352,12 +3417,12 @@ public sealed partial class AccountsApiTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: FAIL de compilación con «The type or namespace name 'AccountItem' could not be found».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/AccountAdministration.cs`:
 
@@ -3470,17 +3535,24 @@ public sealed partial class AccountsController(AccountAdministration accounts) :
 
 En `src/Application/DependencyInjection.cs`, junto a `AccountProvisioning`: `services.AddScoped<AccountAdministration>();`.
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: PASS (3 + 1 + 1 + 2 + 1 casos). `Actor` aún no se usa; lo consumen los endpoints de T12.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Application/Accounts/AccountAdministration.cs src/Api/Controllers/AccountsController.cs src/Application/DependencyInjection.cs tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.cs
 git commit -m "feat(cuentas): listar y crear cuentas desde gerencia (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- `POST /api/v1/accounts` responde 201 con el `AccountItem` y sin cabecera `Location` (no existe `GET /accounts/{id}`).
+- Una identidad sin cuenta resoluble recibe 403 en todas las rutas (`User.AccountId()`), sin fallback.
+- Entradas ausentes o nulas devuelven 422 con el `code` de dominio (`invalid_email`, `invalid_display_name`, `invalid_role`).
+- .NET tras T11–T12: 312 pruebas (35 de `AccountsApiTests`).
 
 ---
 
@@ -3494,7 +3566,7 @@ git commit -m "feat(cuentas): listar y crear cuentas desde gerencia (spec 013 h4
 - Consumes: T11 (`AccountAdministration`, `AccountsController.Run`, `Actor`, `ToItem`).
 - Produces: `UpdateAsync(Guid actorId, Guid id, UpdateAccountInput, ct)`, `DeactivateAsync(Guid actorId, Guid id, ct)`, `ReactivateAsync(Guid id, ct)`, `ResendInvitationAsync(Guid id, ct)`; `PATCH /api/v1/accounts/{id}`, `POST …/{id}/deactivate`, `…/reactivate`, `…/resend-invitation` (204).
 
-- [ ] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs`:
+- [x] **Step 1: Escribir las pruebas que fallan** — `tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs`:
 
 ```csharp
 using System.Net;
@@ -3639,12 +3711,12 @@ public sealed partial class AccountsApiTests
 
 Añadir `using Microsoft.Extensions.DependencyInjection;` al inicio del archivo (para `CreateScope` y `GetRequiredService`).
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests"`
 Expected: FAIL de compilación con «'AccountAdministration' does not contain a definition for 'DeactivateAsync'».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/AccountAdministration.Changes.cs`:
 
@@ -3780,17 +3852,25 @@ public sealed partial class AccountsController
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan, más toda la suite**
+- [x] **Step 4: Ejecutar y verificar que pasan, más toda la suite**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests" && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
 Expected: PASS (7 casos nuevos) y las tres categorías verdes, incluido `LeanSchemaTests` (29 tablas: no hubo migración).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Application/Accounts/AccountAdministration.Changes.cs src/Api/Controllers/AccountsController.Changes.cs tests/IstpetDev.Tests/Integration/Accounts/AccountsApiTests.Changes.cs
 git commit -m "feat(cuentas): editar, desactivar con revocacion y reenviar invitacion (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- **PATCH con Cognito caído (NFR-05):** consulta Cognito (`FindBySubjectAsync`) antes de guardar; si falla, responde 503 `identity_unavailable` sin cambios en la base (el borrador guardaba primero y devolvía `outOfSync`).
+- **Revocación pendiente durable (FR-15, NFR-01):** si `DisableAsync` o `SignOutEverywhereAsync` fallan tras guardar `IsActive = false`, queda una fila en `IdempotencyRecord` con `ActionCode = "accounts.revoke_sessions"` (sin migración nueva). `GET /accounts` y la respuesta la suman a `outOfSync`; un reintento de desactivación o una reactivación exitosa la borran. `FieldService` solo consulta `ActionCode` `Dispatch` y `Receipt`, así que no interfiere.
+- **Reactivación con Cognito caído:** una transacción compensatoria devuelve `IsActive = false` y responde 503.
+- Prueba extra `Last_manager_maps_to_conflict_problem_details_at_controller_boundary` para el 409 `last_manager` en el borde HTTP.
+- Sugerencias no implementadas (después del congelamiento): `if` explícito antes de `ClearPendingRevocationAsync` y un índice parcial sobre `IdempotencyRecord` para las marcas pendientes.
 
 ---
 
@@ -3805,7 +3885,7 @@ git commit -m "feat(cuentas): editar, desactivar con revocacion y reenviar invit
 - Consumes: endpoints de T11–T12; `AccountItem`, `CreateAccountRequest`, `UpdateAccountRequest`, `HUMAN_ROLES` (T2); `AuthSession`, `authGuard`, `roleGuard` (T6).
 - Produces: `AccountsApi { list, create, update, deactivate, reactivate, resendInvitation }`; `accountErrorMessage(error: unknown): string`; `accountStatusLabel(item: AccountItem): string`; ruta `/users` solo Gerencia.
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `apps/web/src/entities/account/api/accounts.api.spec.ts`:
 
@@ -3911,12 +3991,12 @@ describe('UsersPage (FR-19)', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `npm run test:web`
 Expected: FAIL con «Could not resolve "./accounts.api"».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `apps/web/src/entities/account/model/account-messages.ts`:
 
@@ -4142,17 +4222,24 @@ En la plantilla de `apps/web/src/widgets/header/header.widget.ts`, antes del nom
                 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `npm run test:web && npm run build:web`
 Expected: PASS (`accounts.api.spec.ts` 2 casos, `users.page.spec.ts` 2 casos) y build sin errores.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/entities/account apps/web/src/pages/users apps/web/src/pages/index.ts apps/web/src/app/app.routes.ts apps/web/src/widgets/header/header.widget.ts
 git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 ```
+
+### Desviaciones
+
+- Antes de desactivar se pide confirmación (`window.confirm`); reactivar no la pide. La UI no ofrece acciones sobre la propia cuenta y «Reenviar invitación» solo aparece con `invitationStatus = 'pending'`.
+- `directoryEnabled` y `outOfSync` se muestran con insignias visibles («Revisar en Cognito»); el formulario usa `label for`, `role="alert"` y `aria-live`.
+- Pruebas añadidas fuera del plan: guard de `/users` (Planificador y Auditor redirigidos) y enlace del header solo para Gerencia. Web: 40 pruebas (27 + 13).
+- Sugerencia no implementada: reemplazar `window.confirm` por un modal propio de la UI.
 
 ---
 
@@ -4166,25 +4253,34 @@ git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 - Consumes: T1–T10 en `develop` (y T11–T13 si H4 entra).
 - Produces: registro de ejecuciones con evidencia; spec en estado `cerrado` o con H4 declarada como propuesta.
 
-- [ ] **Step 1: Verificación completa local**
+- [x] **Step 1: Verificación completa local**
 
 Run: `npm run check && npm run test:frontend && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
-Expected: todo verde; cero coincidencias del guardián.
+Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
 
-- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-12 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA.
+- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55).
 
-- [ ] **Step 3: Actualizar el spec** (coordinar con quien lo esté editando): FR-18 y H4-6 ya figuran como pospuestos desde el 13-oct; si H4 no entró antes del congelamiento, anotar «H4 se presenta como propuesta»; registrar la decisión sobre ADR-25 (Supervisor en la PWA); estado `cerrado` solo con E2E obligatorios aprobados.
+- [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
-- [ ] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`.
+- [x] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`; fila D3 de login Cognito actualizada.
 
-- [ ] **Step 5: Bóveda (G8)** — en «Registro de trabajo previo y del evento», las cuentas creadas antes del 16-oct por rol y fecha, sin correos personales; registrar la contradicción del reinicio de la PWA sin señal si Joseph y Alexander la resuelven.
+- [ ] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
 
-- [ ] **Step 6: Commit y PR**
+- [ ] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
 
-```bash
-git add docs/specs/013-login-y-cuentas docs/specs/README.md "docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md"
-git commit -m "docs(specs): cierre de spec 013 con evidencia e2e"
-git push -u origin feature/013-login-y-cuentas
-```
+### Desviaciones / estado fase A
 
-Abrir PR a `develop` con revisor Joseph Baño.
+- **Fase A realizada (cierre documental y validación local de suites):**
+  - **Step 1 (E2E-00):** Se ejecutaron completamente `npm run check`, `npm run test:frontend` (87 pruebas pasadas en 18 archivos) y `dotnet test` por categoría (Unit: 145 pasadas; Integration: 146 pasadas; E2E: 6 pasadas; total backend 297 pasadas). Guardián de CI contra login simulado verificado con cero coincidencias (`grep=1`). Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
+  - **Step 3:** Spec 013 actualizado sin cerrar (`estado: borrador` con nota explicativa al inicio). Se resolvió la contradicción ADR-25 vs ADR-24 adoptando la opción (a) (la PWA solo admite Bodega, Conductor y Receptor; `LogisticsManager` retirado en T7 de PR #56). Se marcó PA-04 como resuelta en #55 (Bryan Gerencia inicial, Jorge custodia el CSV fuera del repo). Se documentó H4 como implementada antes del congelamiento (PR #65). Se agregó la sección «Estado de implementación» enlazando las desviaciones de task.md y los pendientes. Se registró el riesgo abierto de recarga offline (tokens en memoria, FR-03; decide Joseph Baño con Alexander).
+  - **Step 4:** Fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md` y `test-e2e.md`. Se actualizó la fila D3 para reflejar que H1–H4 están implementados en `develop`.
+  - **Step 5 (parcial):** Se documentaron los PR #56 y #65 en `docs/boveda/06 Equipo/Registro de trabajo previo y del evento.md`. Se dejó una línea pendiente para el registro de cuentas de demo creadas por rol y fecha.
+  - **Spec 004:** Se sincronizó la decisión 2 de `informe-entrega-spec-004-y-decisiones.md` para exigir tokens solo en memoria (ref. 013 FR-03, eliminando `sessionStorage`), y se actualizó T1b en `docs/specs/004-campo-qr-custodia-offline/task.md` indicando la absorción del login PKCE por 013 (PR #56) y el retiro de la «dev auth API».
+
+- **Pendiente para la Fase B (cierre técnico y validación E2E en vivo):**
+  - Configuración y validación de infraestructura (T10, issue #43): callbacks HTTPS de Cognito, marca ISTPET en Hosted UI, políticas IAM y hop limit = 2.
+  - Publicación y routing de la PWA bajo `/campo/` (issue #52).
+  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55).
+  - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
+  - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
+

@@ -14,9 +14,10 @@ import {
   IonCardContent,
   IonButton,
   IonBadge,
-  IonButtons
+  IonButtons,
+  AlertController
 } from '@ionic/angular/standalone';
-import { MobileAuthService } from '../auth/auth.service';
+import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi } from '../field/field-api.interface';
 
@@ -90,7 +91,7 @@ interface ReceiverScanSample {
             </ion-badge>
           </div>
           <ion-card-title class="text-lg text-slate-900 font-bold">
-            {{ authService.currentUser()?.name || 'Usuario Móvil' }}
+            {{ authService.me()?.displayName ?? '' }}
           </ion-card-title>
         </ion-card-header>
       </ion-card>
@@ -98,20 +99,17 @@ interface ReceiverScanSample {
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
-      @if (authService.currentRole() === 'HospitalReceiver') {
+      @if (authService.currentRole() === 'Receptor') {
         <div class="space-y-4">
           <ion-card class="m-0 border border-emerald-200 bg-white shadow-sm overflow-hidden">
             <div class="p-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">📦</span>
-                <div>
-                  <h3 class="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                    Recepción de Custodia en Hospital
-                  </h3>
-                  <p class="text-[11px] text-emerald-700">
-                    Escanea el QR del bulto y reporta si llegó bien o si hubo novedades
-                  </p>
-                </div>
+              <div>
+                <h3 class="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                  Recepción de Custodia en Hospital
+                </h3>
+                <p class="text-[11px] text-emerald-700">
+                  Escanea el QR del bulto y reporta si llegó bien o si hubo novedades
+                </p>
               </div>
             </div>
 
@@ -119,13 +117,13 @@ interface ReceiverScanSample {
               <!-- Botones de Escaneo -->
               <div class="flex gap-2">
                 <ion-button expand="block" size="default" color="primary" class="flex-1 font-bold" (click)="openScan()">
-                  📷 Escanear QR con Cámara
+                  Escanear QR con Cámara
                 </ion-button>
                 <button
                   type="button"
                   (click)="cycleSampleBox()"
                   class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-200 transition">
-                  🔄 Simular Bulto
+                  Simular Bulto
                 </button>
               </div>
 
@@ -167,7 +165,9 @@ interface ReceiverScanSample {
                       [class.text-emerald-900]="receiverStatus() !== 'conforme'"
                       [class.border-emerald-300]="receiverStatus() !== 'conforme'"
                       class="p-3 rounded-xl border text-left transition flex flex-col justify-between shadow-sm">
-                      <div class="text-lg">✓</div>
+                      <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                       <div>
                         <div class="text-xs font-bold">Todo Conforme</div>
                         <div class="text-[10px] opacity-80">Sin daños ni faltantes</div>
@@ -185,7 +185,9 @@ interface ReceiverScanSample {
                       [class.text-rose-900]="receiverStatus() !== 'problema'"
                       [class.border-rose-300]="receiverStatus() !== 'problema'"
                       class="p-3 rounded-xl border text-left transition flex flex-col justify-between shadow-sm">
-                      <div class="text-lg">⚠️</div>
+                      <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
                       <div>
                         <div class="text-xs font-bold">Pasó algo malo</div>
                         <div class="text-[10px] opacity-80">Reportar daño o faltante</div>
@@ -245,7 +247,9 @@ interface ReceiverScanSample {
               @if (receiverConfirmedMessage()) {
                 <div class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 space-y-1">
                   <div class="font-bold flex items-center gap-1.5">
-                    <span>✓</span>
+                    <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                     <span>Recepción Registrada Exitosamente</span>
                   </div>
                   <p class="text-[11px] leading-relaxed">{{ receiverConfirmedMessage() }}</p>
@@ -259,13 +263,12 @@ interface ReceiverScanSample {
       <!-- ======================================================== -->
       <!-- CASO 2: OPERADOR DE BODEGA (Móvil)                       -->
       <!-- ======================================================== -->
-      @else if (authService.currentRole() === 'WarehouseOperator') {
+      @else if (authService.currentRole() === 'Bodega') {
         <div class="space-y-4">
           <ion-card class="m-0 border border-sky-200 bg-white shadow-sm">
             <ion-card-header class="pb-2 bg-sky-50 border-b border-sky-100">
-              <ion-card-title class="text-base text-sky-950 font-bold flex items-center gap-2">
-                <span>🏭</span>
-                <span>Despacho y Preparación de Bultos</span>
+              <ion-card-title class="text-base text-sky-950 font-bold">
+                Despacho y Preparación de Bultos
               </ion-card-title>
               <ion-card-subtitle class="text-xs text-sky-700">
                 Punto Central: WH-CENTRAL-01
@@ -279,10 +282,10 @@ interface ReceiverScanSample {
 
               <div class="grid grid-cols-2 gap-2 pt-1">
                 <ion-button expand="block" size="small" color="primary" class="font-bold" (click)="openScan()">
-                  📷 Escanear Salida QR
+                  Escanear Salida QR
                 </ion-button>
                 <ion-button expand="block" size="small" fill="outline" color="primary" class="font-bold" (click)="openSyncQueue()">
-                  📦 Cola de Despacho
+                  Cola de Despacho
                 </ion-button>
               </div>
             </ion-card-content>
@@ -322,7 +325,9 @@ interface ReceiverScanSample {
         <!-- Banner de Aviso de Revisión de Ruta (PA-02 / FR-12 / F5) -->
         @if (outboxService.activeDriverNotice(); as notice) {
           <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-950 rounded-xl shadow-sm flex items-start gap-3">
-            <span class="text-2xl mt-0.5">⚠️</span>
+            <svg class="w-6 h-6 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <div class="flex-1">
               <div class="flex items-center justify-between mb-1">
                 <span class="font-black text-xs uppercase tracking-wider text-amber-900">
@@ -338,7 +343,7 @@ interface ReceiverScanSample {
                   type="button"
                   (click)="outboxService.acknowledgeNotice(notice.revision)"
                   class="text-xs font-bold px-3 py-1.5 bg-amber-900 text-white rounded-lg active:bg-amber-950 transition shadow-sm">
-                  ✓ Entendido / Reconocer Aviso
+                  Entendido / Reconocer Aviso
                 </button>
               </div>
             </div>
@@ -350,7 +355,7 @@ interface ReceiverScanSample {
           <ion-card-content class="p-3">
             <div class="flex gap-2">
               <ion-button expand="block" size="small" class="flex-1 font-bold" (click)="openScan()">
-                📷 Escanear QR
+                Escanear QR
               </ion-button>
               <ion-button
                 expand="block"
@@ -359,7 +364,7 @@ interface ReceiverScanSample {
                 class="flex-1 font-bold"
                 [disabled]="loadingRoute()"
                 (click)="downloadRoute()">
-                {{ loadingRoute() ? 'Cargando...' : '🔄 Descargar Ruta' }}
+                {{ loadingRoute() ? 'Cargando...' : 'Descargar Ruta' }}
               </ion-button>
             </div>
           </ion-card-content>
@@ -392,10 +397,17 @@ interface ReceiverScanSample {
                 </div>
 
                 @for (del of route.deliveries; track del.deliveryId) {
-                  <ion-card class="m-0 border shadow-sm">
+                  <ion-card class="m-0 border shadow-sm" [class.border-amber-300]="del.kind === 'Pickup'">
                     <ion-card-header class="pb-2">
                       <div class="flex items-center justify-between">
-                        <ion-badge color="medium">Parada {{ del.sequence }}</ion-badge>
+                        <div class="flex items-center gap-1.5">
+                          <ion-badge [color]="del.kind === 'Pickup' ? 'warning' : 'primary'">
+                            #{{ del.sequence }} {{ del.kind === 'Pickup' ? '📦 Recogida' : '🏥 Entrega' }}
+                          </ion-badge>
+                          @if (del.kind === 'Pickup') {
+                            <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Bodega</span>
+                          }
+                        </div>
                         <span class="text-xs font-semibold text-slate-500">ID: {{ del.pointCode }}</span>
                       </div>
                       <ion-card-title class="text-base">{{ del.pointName }}</ion-card-title>
@@ -403,17 +415,25 @@ interface ReceiverScanSample {
                     </ion-card-header>
 
                     <ion-card-content class="pt-0 space-y-2">
-                      <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                      <div class="p-2.5 rounded-lg border flex items-center justify-between"
+                           [class.bg-amber-50]="del.kind === 'Pickup'"
+                           [class.border-amber-200]="del.kind === 'Pickup'"
+                           [class.bg-slate-50]="del.kind !== 'Pickup'"
+                           [class.border-slate-200]="del.kind !== 'Pickup'">
                         <div>
-                          <span class="text-xs font-bold text-slate-800 block">Entrega {{ del.deliveryId }}</span>
-                          <span class="text-[11px] text-slate-500">Bultos HU: {{ del.handlingUnits.length }} • Estado: {{ del.status }}</span>
+                          <span class="text-xs font-bold block" [class.text-amber-950]="del.kind === 'Pickup'" [class.text-slate-800]="del.kind !== 'Pickup'">
+                            {{ del.kind === 'Pickup' ? 'Carga / Retiro' : 'Entrega' }} {{ del.deliveryId }}
+                          </span>
+                          <span class="text-[11px] text-slate-500">
+                            Bultos HU: {{ del.handlingUnits.length }} • Estado: {{ del.status }}
+                          </span>
                         </div>
 
                         <ion-button
                           size="small"
-                          color="primary"
+                          [color]="del.kind === 'Pickup' ? 'warning' : 'primary'"
                           (click)="goToDelivery(del.deliveryId)">
-                          Recibir →
+                          {{ del.kind === 'Pickup' ? 'Cargar →' : 'Recibir →' }}
                         </ion-button>
                       </div>
                     </ion-card-content>
@@ -440,6 +460,7 @@ export class HomePage implements OnInit {
   readonly authService = inject(MobileAuthService);
   readonly outboxService = inject(FieldOutboxService);
   private readonly router = inject(Router);
+  private readonly alerts = inject(AlertController);
 
   readonly loadingRoute = signal<boolean>(false);
   readonly downloadMessage = signal<string | null>(null);
@@ -486,9 +507,7 @@ export class HomePage implements OnInit {
     { id: 'lot_mismatch', label: 'Lote o fecha no coincide' }
   ];
 
-  readonly pendingCount = computed(() => {
-    return this.outboxService.outboxItems().filter((i) => i.status !== 'Complete').length;
-  });
+  readonly pendingCount = this.outboxService.pendingCount;
 
   readonly totalDeliveries = computed(() => {
     const a = this.outboxService.activeAssignment();
@@ -498,31 +517,21 @@ export class HomePage implements OnInit {
 
   readonly roleSubtitle = computed(() => {
     const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'Receptor Hospitalario';
-    if (role === 'WarehouseOperator') return 'Operador de Bodega Central';
-    if (role === 'LogisticsManager') return 'Supervisor Logístico';
-    return 'Conductor de Custodia';
+    return role ? FIELD_ROLE_LABELS[role] : '';
   });
 
-  readonly roleEntityBadge = computed(() => {
-    const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'Hospital Ambato';
-    if (role === 'WarehouseOperator') return 'Bodega: WH-CENTRAL-01';
-    if (role === 'LogisticsManager') return 'Torre de Control';
-    return `Vehículo: ${this.authService.currentVehicleId() || 'VH-EC-101'}`;
-  });
+  readonly roleEntityBadge = computed(() => this.roleSubtitle());
 
   readonly roleBadgeColor = computed(() => {
     const role = this.authService.currentRole();
-    if (role === 'HospitalReceiver') return 'success';
-    if (role === 'WarehouseOperator') return 'tertiary';
-    if (role === 'LogisticsManager') return 'warning';
+    if (role === 'Receptor') return 'success';
+    if (role === 'Bodega') return 'tertiary';
     return 'primary';
   });
 
   async ngOnInit(): Promise<void> {
     // Si es conductor y no hay ruta en caché, intentar descargarla
-    if (this.authService.currentRole() === 'CarrierDriver' && !this.outboxService.activeAssignment()) {
+    if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
   }
@@ -605,7 +614,7 @@ export class HomePage implements OnInit {
       const assignment = await this.outboxService.downloadRouteAssignment();
       const total = assignment.routes ? assignment.routes.reduce((sum: number, r) => sum + r.deliveries.length, 0) : 0;
       this.downloadMessage.set(
-        `✓ Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`
+        `Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`
       );
     } catch {
       this.downloadMessage.set('Aviso: Utilizando asignación almacenada localmente.');
@@ -626,8 +635,17 @@ export class HomePage implements OnInit {
     this.router.navigate(['/receipt', deliveryId]);
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+  async logout(): Promise<void> {
+    const pending = this.outboxService.pendingCount();
+    if (pending > 0) {
+      const alert = await this.alerts.create({
+        header: 'Capturas sin sincronizar',
+        message: `Tienes ${pending} ${pending === 1 ? 'captura pendiente' : 'capturas pendientes'}. Se guardarán en este teléfono para tu cuenta y se enviarán cuando vuelvas a entrar.`,
+        buttons: [{ text: 'Cancelar', role: 'cancel' }, { text: 'Cerrar sesión', role: 'confirm' }],
+      });
+      await alert.present();
+      if ((await alert.onDidDismiss()).role !== 'confirm') return;
+    }
+    await this.authService.logout();
   }
 }

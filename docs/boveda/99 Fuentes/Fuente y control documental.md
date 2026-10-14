@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [istpetdev, documentacion]
 ---
 
@@ -299,8 +299,6 @@ Verificación documental de esta actualización: **83 notas Markdown**, **812 en
 
 Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y Móvil (PWA de Campo), incorporar el rol y flujo ágil de Receptor Hospitalario y retirar accesos públicos prematuros. Se actualiza [[Usuarios y flujos]], [[Decisiones de arquitectura]] con ADR-24 y ADR-25, y se genera [[2026-10-13-informe-segregacion-roles-y-plataformas]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
-
 ## Culminación e integración fullstack de Spec 004 y rutas dinámicas — 13 de octubre de 2026
 
 Fuente: solicitud de Alexander Martínez de actualizar la Bóveda con la finalización del Spec 004 y los avances de la rama `test` / `feature/004-campo-qr-custodia-offline`:
@@ -343,3 +341,29 @@ Seguimiento: [task.md](../../specs/003-agente-logistico/task.md),
 hasta aprobación del equipo; no se declara el proveedor ni producción validados.
 
 Verificación documental: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**; un aviso previo de lenguaje, sin modificar su alcance.
+## Saneamiento de dependencias y ADR-04 — 14 de octubre de 2026
+
+Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
+
+Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.
+
+## Saneamiento de credenciales versionadas y defaults locales — 14 de octubre de 2026
+
+Fuente: atención a Issue #34 e Issue #35 (punto 7) por Joseph Baño. Se retira `POSTGRES_PASSWORD: 12345` de `infra/compose/docker-compose.lab.yml`, forzando su definición mediante variable de entorno obligatoria desde `.env` no versionado. Se restituye `src/Api/appsettings.Development.json` configurado exclusivamente con los parámetros por defecto de Docker local (`localhost:15432`, base `postgres`, usuario `postgres`, contraseña `postgres_dev_password_local`) permitiendo compilación y ejecución offline inmediata sin credenciales sensibles. Se refactoriza `scripts/ops/switch-db.mjs` y `.env.example` para sincronizar los parámetros locales sin contraseñas fijas en el código.
+
+Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.
+
+## Ruteo por pedidos, bodegas, rebalanceo y ADR-28 — 14 de octubre de 2026
+
+Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la rama `develop` a través del PR #59 (commits `370ffa1` y `22d7985`, merge `d4f35c9`):
+- Formalización de **ADR-28** (Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo) en [[Decisiones de arquitectura]], con soporte multialmacén y optimización física de flota.
+- Migración EF Core `20261014144239_OrderBasedRoutingAndWarehouseStock` incorporando las entidades `DeliveryOrder`, `DeliveryOrderLine`, `WarehouseStockPolicy` y `TransferSuggestion`.
+- Servicios de aplicación de lógica determinista: `SourcingService`, `VehicleMatcher`, `RouteEvaluator`, `RebalancingAdvisor` y `EmergencyPlanner`.
+- Controladores y endpoints expuestos en API: `DeliveryOrdersController`, `WarehousesController` y ampliación de `RoutePlansController`.
+- Interfaces de usuario en Angular FSD: nueva página `/bodegas` (`bodegas.page.ts`), rediseño guiado de `/rutas` (`rutas.page.ts`) con Leaflet y ampliación de `/datos`.
+- Blindaje de pruebas de persistencia: actualización de `LeanSchemaTests` (36 tablas núcleo) y `MigrationSafetyTests` (7 migraciones consecutivas validadas sin DDL en runtime).
+- Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
+
+Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
+
+

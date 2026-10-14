@@ -35,9 +35,15 @@ public interface IApplicationDbContext
     DbSet<AgentDecision> AgentDecisions { get; }
     DbSet<SimulationRun> SimulationRuns { get; }
     DbSet<SimulationMetric> SimulationMetrics { get; }
+    DbSet<SimulationEvent> SimulationEvents { get; }
     DbSet<RoadMatrixEdge> RoadMatrixEdges { get; }
     DbSet<RouteStockReservation> RouteStockReservations { get; }
     DbSet<QrAccessToken> QrAccessTokens { get; }
+    DbSet<RouteStopLine> RouteStopLines { get; }
+    DbSet<DeliveryOrder> DeliveryOrders { get; }
+    DbSet<DeliveryOrderLine> DeliveryOrderLines { get; }
+    DbSet<WarehouseStockPolicy> WarehouseStockPolicies { get; }
+    DbSet<TransferSuggestion> TransferSuggestions { get; }
     DatabaseFacade Database { get; }
     ChangeTracker ChangeTracker { get; }
     Task LockOrganizationAsync(CancellationToken cancellationToken = default);

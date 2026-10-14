@@ -161,4 +161,14 @@ samp {
   box-shadow: 0 8px 20px rgba(234, 96, 31, 0.45);
 }
 
+/* Ocultar barra de desplazamiento nativa manteniendo scroll funcional */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
 

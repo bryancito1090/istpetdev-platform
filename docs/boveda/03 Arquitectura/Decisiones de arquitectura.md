@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-13
+actualizado: 2026-10-14
 tags: [arquitectura, contratos]
 ---
 
@@ -38,6 +38,7 @@ tags: [arquitectura, contratos]
 | ADR-25 | Ergonomía PWA y flujos por rol | Roles segregados, entrega desde ruta, lectura asimétrica QR y cero emojis | **Aceptada por Bryan y equipo, 2026-10-13**: Vistas exclusivas por rol (Chofer, Bodega, Supervisor); chofer simplificado a 3 botones; entrega iniciada desde parada en «Ver Ruta Hoy»; lectura asimétrica de QR (chofer lee caja en bodega, hospital lee al chofer); incidencias en entrega conectadas a alertas de supervisión; prohibición estricta de emojis por SVGs técnicos. |
 | ADR-26 | Rol Auditor de solo lectura | Séptimo rol fijo, humano, con lectura total en la web y ninguna escritura | **Aceptada por Joseph Baño, 2026-10-13** (sesión de definición del spec 013): formaliza el Auditor que ADR-24 ya asigna a la web; amplía los roles fijos de ADR-21 sin migración; [ADR-26](#adr-26--rol-auditor-de-solo-lectura) |
 | ADR-27 | Integración Fullstack de Campo y Revisiones Dinámicas | Adaptadores HTTP reales, outbox hospitalario y cálculo dinámico de revisiones | **Aceptada por Bryan y Alexander Martínez, 2026-10-13**: Migración EF Core FieldOperations aplicada, endpoints C# (Deliveries, HandlingUnits, Evidence, PublicTrace con rate limiter, Demo Advance), adaptadores HttpFieldApiService en móvil/web, outbox hospitalario atómico y cálculo dinámico de revisiones en RoutePlansController. |
+| ADR-28 | Ruteo por Pedidos, Bodegas y Rebalanceo | Sourcing multialmacén, emparejamiento de vehículos, evaluación multiparada y rebalanceo de stock | **Aceptada por Bryan y Alexander Martínez, 2026-10-14**: Migración EF Core `OrderBasedRoutingAndWarehouseStock` (tablas `DeliveryOrder`, `DeliveryOrderLine`, `WarehouseStockPolicy`, `TransferSuggestion`), servicios de dominio (`SourcingService`, `VehicleMatcher`, `RouteEvaluator`, `RebalancingAdvisor`, `EmergencyPlanner`), endpoints en `DeliveryOrdersController`, `WarehousesController` y `RoutePlansController`, e interfaces en Angular para gestión de bodegas y ruteo dinámico con Leaflet. |
 
 ## ADR-01 — versión de backend
 
@@ -59,6 +60,7 @@ No tomar orden UUID como orden de recepción offline; conservar fechas y secuenc
 3. **Monorepo Shared Core (`libs/shared-core`):** Librería compartida para tipos TypeScript de dominio, DTOs de API, validadores de esquemas y utilidades de conversión de unidades logísticas (litros, kilos, cajas), consumida por `apps/web` y `apps/mobile`.
 4. **Desacoplamiento de mapas:** Componente `shared/ui/map-view` puramente visual y agnóstico a lógica de negocio, orquestado desde `widgets/route-map`.
 5. **Carga ultraligera de QR:** Ruta `/trace/:id` aislada en lazy loading (< 150 KB gzip) para una carga rápida en el teléfono del jurado (objetivo sin medir).
+6. **Iconos y dependencias de UI:** Se adopta `@lucide/angular` como el único paquete oficial de iconos técnicos. Se prohíbe el uso de `lucide-angular` (deprecado/duplicado) y `@angular/animations` (innecesario al usar utilidades CSS de Tailwind). Política de control de dependencias auditada bajo [[Verificacion de seguridad antes del lanzamiento]].
 
 Detalles en [[Frontend y componentes]], [[Sistema de diseno y colores]] y [[Frontend con Feature-Sliced Design]].
 
@@ -394,4 +396,59 @@ Tras validar la lógica de interfaces y outbox offline bajo arquitectura fronten
 
 ### Verificación
 - Suite unitaria .NET: 116 pruebas aprobadas con 0 fallos (`FieldUnitTests`, `PublicTraceUnitTests`).
+- Verificación frontend (`npm run check`): 0 errores de ESLint, TypeScript y Angular build tanto en `@istpetdev/web` como en `@istpetdev/mobile`.
+
+## ADR-28 — Ruteo Logístico Multiparada basado en Pedidos, Abastecimiento Multialmacén y Asesor de Rebalanceo
+
+- **Estado:** aceptada. **Fecha:** 2026-10-14. **Deciders:** Bryan y Alexander Martínez. **Origen:** Evolución del motor logístico (002) y panel de rutas (005) hacia ruteo guiado por pedidos de clientes, sourcing desde múltiples bodegas según stock y cercanía, emparejamiento de vehículos por capacidad física y rebalanceo proactivo inter-almacén. **Complementa:** ADR-02, ADR-04, ADR-05, ADR-21, ADR-22, ADR-24 y ADR-27.
+
+### Contexto y requisito
+En la fase inicial de la demo (Spec 002), las rutas se planificaban de manera agregada desde un único depósito preconcebido hacia puntos de servicio con riesgo de desabastecimiento, sin formalizar pedidos específicos de clientes ni contemplar múltiples bodegas de origen con inventario diferenciado.
+
+Para la operativa completa y el control visual en la consola web:
+1. **Pedidos formales de entrega:** Se requiere vincular las líneas de despacho a pedidos explícitos (`DeliveryOrder` / `DeliveryOrderLine`) emitidos hacia puntos de servicio o bodegas secundarias.
+2. **Abastecimiento multialmacén (Sourcing):** Dada una lista de pedidos y productos requeridos, el sistema debe determinar de forma determinista la bodega más cercana que posea stock utilizable suficiente (respetando el stock de seguridad), asignando lotes según política FEFO y proponiendo opciones consolidadas o divididas.
+3. **Emparejamiento de vehículos (Vehicle Matching):** La selección de flota no puede ser manual o arbitraria; debe validar restricciones físicas duras (capacidad en kilogramos, volumen en m³, duración máxima de la jornada del conductor y ventanas horarias de atención).
+4. **Evaluación de secuencia multiparada (Route Evaluator):** Toda ruta debe estructurarse garantizando precedencia estricta (las paradas de recolección/pickup en bodega deben preceder cronológicamente a las entregas/deliveries), calculando la carga acumulada en tránsito y los tiempos de servicio en cada parada.
+5. **Rebalanceo proactivo entre bodegas:** Prevenir quiebres de inventario proyectando el consumo diario y días de cobertura, recomendando transferencias preventivas entre almacenes con excedentes y aquellos con déficit.
+6. **Planificación de emergencias:** Detección de demandas críticas que requieran pedidos prioritarios inmediatos.
+
+### Decisión
+1. **Modelo de Datos y Migración EF Core `OrderBasedRoutingAndWarehouseStock` (`20261014144239`):**
+   - Nuevas entidades en `src/Domain/Entities/LogisticsEntities.cs`:
+     - `DeliveryOrder` y `DeliveryOrderLine`: representan pedidos de entrega con estado, cliente/destino, líneas de producto, cantidad solicitada y cantidad despachada.
+     - `WarehouseStockPolicy`: define políticas de inventario por almacén y producto (stock mínimo, stock de seguridad, lote de reorden).
+     - `TransferSuggestion`: sugerencias de rebalanceo auditables con estado (`Suggested`, `Accepted`, `Dismissed`), justificación, días de cobertura antes/después y trazabilidad del revisor humano.
+   - Columnas complementarias en entidades existentes:
+     - `ServicePoint.ServingWarehouseLocationId`: bodega asignada por defecto.
+     - `RouteStop.Kind`: discriminador `"Pickup"` o `"Delivery"`.
+     - `RouteStop.LocationId`: enlace directo a la bodega cuando la parada es de recolección.
+     - `ReceiptLine.NextRequestedQuantity` y `RemainingQuantity`: proyección de demanda y saldo remanente.
+     - `Delivery.DeliveryOrderId` y `DestinationLocationId`: vinculación directa de la entrega al pedido original.
+   - Registro en `LeanSchema.cs` y concesión de permisos en `DemoGrants.Sql` para asegurar la compatibilidad con los roles de base de datos de RDS y entornos locales.
+2. **Servicios de Aplicación en `src/Application/Logistics/`:**
+   - `SourcingService`: servicio determinista que inspecciona lotes utilizables (FEFO) y distancias geodésicas para asignar líneas de pedido a las bodegas idóneas.
+   - `VehicleMatcher`: empareja paradas candidatas contra la flota activa, calculando porcentajes de utilización de peso/volumen y emitiendo causas deterministas de descarte (`excede_peso`, `excede_volumen`, `jornada_excedida`).
+   - `RouteEvaluator`: valida el cumplimiento de ventanas de servicio, descansos, precedencia y costos de transporte ($/km y $/hora).
+   - `RebalancingAdvisor`: motor analítico que cruza consumo promedio y stock disponible para generar sugerencias de transferencia inter-bodegas.
+   - `EmergencyPlanner`: generador automático de pedidos ante niveles de cobertura críticos.
+3. **Endpoints de API REST en C# .NET:**
+   - `DeliveryOrdersController`: `GET /api/v1/delivery-orders`, `POST /api/v1/delivery-orders`, `POST /api/v1/delivery-orders/plan-sourcing`.
+   - `WarehousesController`: `GET /api/v1/warehouses`, `GET /api/v1/warehouses/{id}/stock`, `GET /api/v1/warehouses/transfer-suggestions`, `POST /api/v1/warehouses/transfer-suggestions/{id}/accept`.
+   - `RoutePlansController`: enriquecido con endpoints para evaluar secuencias de paradas (`POST /api/v1/route-plans/evaluate`), emparejar flota (`POST /api/v1/route-plans/match-vehicles`) y generar planes ordenados por pedidos.
+4. **Interfaces de Usuario en Angular (`apps/web`):**
+   - Nueva página `/bodegas` (`apps/web/src/pages/bodegas/bodegas.page.ts`): tablero de inventario por almacén, semaforización de stock, visualización de políticas y aceptación/descarte de sugerencias de rebalanceo.
+   - Rediseño de `/rutas` (`apps/web/src/pages/rutas/rutas.page.ts`): flujo asistido para seleccionar pedidos, identificar la bodega más cercana con stock, emparejar vehículos con validación de peso/volumen, trazar la ruta en mapa Leaflet con iconos diferenciados (pickup en bodega vs delivery en punto) y publicar la ruta hacia los conductores.
+   - Pantalla de Datos (`apps/web/src/pages/datos/datos.page.ts`): importación por CSV y carga manual de stock directamente asignable a cada bodega.
+   - Corrección de la cabecera institucional en `header.widget.ts` eliminando desbordamientos en resoluciones estándar.
+
+### Consecuencias
+- La plataforma soporta topologías logísticas reales con múltiples bodegas de distribución regional y abastecimiento inteligente.
+- Las rutas generadas son físicamente ejecutables: garantizan que el vehículo pase primero por el almacén para cargar la mercancía requerida antes de dirigirse a los puntos de entrega hospitalarios.
+- La base de datos mantiene integridad referencial estricta y auditoría completa de transferencias e inventarios sin romper el aislamiento multiempresa.
+- Se preserva la compatibilidad con el pipeline de CI/CD: 36 tablas núcleo registradas en `LeanSchemaTests` y 7 migraciones de EF Core validadas con `MigrationSafetyTests`.
+
+### Verificación
+- Suite unitaria .NET: 145 pruebas aprobadas con 0 fallos (`RebalancingAdvisorTests`, `RouteEvaluatorTests`, etc.).
+- Suite de integración .NET: 111 pruebas aprobadas con 0 fallos (`LeanSchemaTests`, `MigrationSafetyTests`, `LogisticsApiTests`).
 - Verificación frontend (`npm run check`): 0 errores de ESLint, TypeScript y Angular build tanto en `@istpetdev/web` como en `@istpetdev/mobile`.

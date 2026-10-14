@@ -69,7 +69,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 | Pronóstico con ML entrenado | Media móvil declarada ([Inventario y prediccion](../boveda/04%20Datos%20y%20algoritmos/Inventario%20y%20prediccion.md)) |
 | App nativa (build de Capacitor) | PWA instalada |
 | Matriz vial de pago | Fuente abierta o aproximación **declarada** como tal |
-| Login de Cognito visible en la demo *(corte por carga del equipo, no técnico; revisado el 13-oct)* | Sesiones ya iniciadas en los dispositivos de la demo. El login real ([013](013-login-y-cuentas/spec.md) H1–H3) es requisito de esas sesiones y de la integración 004/005; mostrarlo en el pitch se permite si 013 H1–H3 cierra antes del congelamiento. La gestión de cuentas (013 H4) es P2 |
+| Login de Cognito visible en la demo *(corte por carga del equipo, no técnico; revisado el 14-oct)* | Sesiones ya iniciadas en los dispositivos de la demo. El login real ([013](013-login-y-cuentas/spec.md) H1–H3) y la gestión de cuentas (H4) están implementados en `develop` (PR #56 y #65); mostrar el login en el pitch se permite si se completa la validación E2E antes del congelamiento |
 | Más de un caso en el pitch | La historia del hospital; los demás casos, para las preguntas |
 | Blockchain, sensores IoT simulados, varios agentes | — |
 
@@ -77,15 +77,15 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 
 | ID | Spec | Criterio de nota que sostiene | Depende de | Estado |
 |---|---|---|---|---|
-| 000 | [Gestión verificable de dependencias y vulnerabilidades del monorepo Node](000-gestion-dependencias-seguridad-monorepo/spec.md) | Seguridad, viabilidad, estabilidad CI/CD | — | borrador (spec, plan, tareas y E2E redactados; auditoría vigente y ejecución pendientes) |
-| 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | borrador |
-| 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
-| 003 | [Agente logístico con n8n](003-agente-logistico/spec.md) (herramientas sobre 002, autonomía con límites, DeepSeek) | Innovación, demo | 002 | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
-| 004 | [Campo: QR, custodia, despacho/recepción y PWA offline](004-campo-qr-custodia-offline/spec.md) | Demo (momento físico), viabilidad | 001, 002 (avisos de 003 al integrar), 013 parcial (H1–H3, solo la PWA) | borrador (spec, plan, tareas y E2E redactados; aprobación pendiente) |
-| 005 | [Panel web y simulador comparativo de 90 días con KPIs](005-panel-simulador/spec.md) | Impacto, presentación, demo | 001–004, 013 parcial (H1–H3, solo el panel) | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
+| 000 | [Gestión verificable de dependencias y vulnerabilidades del monorepo Node](000-gestion-dependencias-seguridad-monorepo/spec.md) | Seguridad, viabilidad, estabilidad CI/CD | — | cerrado / integrado en develop (auditoría automatizada y excepciones acotadas) |
+| 001 | [Núcleo delgado e importador genérico](001-nucleo-delgado-importador/spec.md) | Viabilidad, demo (base de todo) | — | cerrado / integrado en develop (esquema lean, roles fijos e importador canónico) |
+| 002 | [Motor logístico determinista](002-motor-logistico/spec.md): riesgo, ruteo, replanificación y política de autonomía | Demo, impacto, innovación | 001 | cerrado / integrado en develop (reloj, riesgo, matriz vial, publicación FEFO y replanificación) |
+| 003 | [Agente logístico con n8n](003-agente-logistico/spec.md) (herramientas sobre 002, autonomía con límites, DeepSeek) | Innovación, demo | 002 | cerrado / integrado en develop (persistencia AgentRun, validación de cifras, trigger HMAC y fallback) |
+| 004 | [Campo: QR, custodia, despacho/recepción y PWA offline](004-campo-qr-custodia-offline/spec.md) | Demo (momento físico), viabilidad | 001, 002 (avisos de 003 al integrar), 013 parcial (H1–H3, solo la PWA) | cerrado / integrado en develop (PR #30 y PR #47: API C#, PWA offline, custodia y traza pública QR) |
+| 005 | [Panel web y simulador comparativo de 90 días con KPIs](005-panel-simulador/spec.md) | Impacto, presentación, demo | 001–004, 013 parcial (H1–H3, solo el panel) | en curso (PR #59: ruteo por pedidos, bodegas, rebalanceo y mapas Leaflet integrados; simulación 90d en curso) |
 | 006 | [Validación, pitch y paquete de entrega](006-validacion-pitch-entrega/spec.md) (no es código) | Comprensión, presentación, equipo, demo e impacto trazables | 001–005 | borrador (cuatro archivos redactados; Deciders, revisión, ensayos y entrega pendientes) |
 | 007 | [Inventario cotidiano y conciliación para un piloto](007-inventario-cotidiano-conciliacion/spec.md) | Operación diaria, saldos auditables y riesgo con consumos reales | 001, 002, 004; pase técnico | borrador (spec, plan, tareas y E2E redactados; reglas del piloto, aprobación y ejecución pendientes) |
-| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) | Viabilidad, demo (desbloquea 004/005) | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
+| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) ([plan](013-login-y-cuentas/plan.md), [tareas](013-login-y-cuentas/task.md), [E2E](013-login-y-cuentas/test-e2e.md)) | Viabilidad, demo (desbloquea 004/005) | 001 | en curso (implementado en develop vía PR #56 y #65; E2E-00 verde; validación E2E en #55 e infra T10 en #43 pendientes) |
 
 ```mermaid
 flowchart LR

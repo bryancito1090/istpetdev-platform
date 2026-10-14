@@ -6,6 +6,8 @@
 - **Ámbito:** `apps/mobile` (Angular 22 Standalone, Ionic 8, Tailwind CSS)
 - **ADRs Vinculadas:** [[ADR-04]], [[ADR-14]], [[ADR-17]], [[ADR-24]], [[ADR-25]]
 
+> **Nota de vigencia (spec 013):** las referencias de este registro a un formulario, credenciales o selector de perfiles demo describen el diseño previo a Cognito. El flujo vigente usa Authorization Code + PKCE y la página administrada de Cognito; no hay usuarios demo con contraseñas locales.
+
 ---
 
 ## 1. Resumen Ejecutivo

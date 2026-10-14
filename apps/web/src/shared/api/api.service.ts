@@ -3,28 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../config/environment';
 import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
-
-export interface AuthLoginResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresIn: number;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    roleLabel: string;
-    facility: string;
-  };
-}
-
-export interface CurrentUserDto {
-  id: string;
-  subject: string;
-  role: string;
-  roleLabel: string;
-  clientId?: string;
-}
+export type { ServicePoint } from '@istpetdev/shared-core';
 
 export interface RiskItemDto {
   servicePointId: string;
@@ -110,6 +89,138 @@ export interface RoutePlanDetailDto {
   }>;
 }
 
+export interface CreateManualRoutePlanRequest {
+  code?: string;
+  vehicleId?: string;
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+  plannedStartUtc?: string;
+  polyline?: string;
+  coordinates?: [number, number][];
+  stops: Array<{
+    servicePointId: string;
+    code?: string;
+    name?: string;
+    sequence: number;
+    plannedArrivalUtc?: string;
+  }>;
+}
+
+export interface DeliveryOrderDto {
+  id: string;
+  orderNumber: string;
+  destinationServicePointId?: string;
+  destinationLocationId?: string;
+  destinationCode: string;
+  destinationName: string;
+  isWarehouse: boolean;
+  requiredDateUtc: string;
+  priority: string;
+  status: string;
+  sourceType: string;
+  notes?: string;
+  createdAtUtc: string;
+  lines: Array<{
+    id: string;
+    productId: string;
+    sku: string;
+    productName: string;
+    requestedQuantity: number;
+    plannedQuantity: number;
+    deliveredQuantity: number;
+  }>;
+}
+
+export interface WarehouseAnalysisDto {
+  locationId: string;
+  locationCode: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  totalConsumedInWindow: number;
+  windowDays: number;
+  dailyConsumptionRate: number;
+  monthlyConsumptionRate: number;
+  quantityOnHand: number;
+  quantityReserved: number;
+  availableQuantity: number;
+  coverageDays: number;
+  confidenceLevel: string;
+  minStock: number;
+  maxStock: number;
+  status: 'Normal' | 'Critico' | 'Exceso' | 'SinStock';
+}
+
+export interface TransferSuggestionDto {
+  id: string;
+  sourceLocationId: string;
+  sourceLocationCode: string;
+  sourceLocationName: string;
+  targetLocationId: string;
+  targetLocationCode: string;
+  targetLocationName: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  suggestedQuantity: number;
+  acceptedQuantity?: number;
+  sourceCoverageDaysBefore: number;
+  sourceCoverageDaysAfter: number;
+  targetCoverageDaysBefore: number;
+  targetCoverageDaysAfter: number;
+  status: string;
+  rationale: string;
+  createdAtUtc: string;
+}
+
+export interface RouteCandidateStop {
+  sequence: number;
+  kind: 'Pickup' | 'Delivery';
+  servicePointId?: string;
+  locationId?: string;
+  code: string;
+  name: string;
+  position: { lat: number; lon: number };
+  deltaWeight: number;
+  deltaVolume: number;
+  windowStart: string;
+  windowEnd: string;
+  serviceMinutes: number;
+}
+
+export interface RouteSuggestionOptionDto {
+  optionId: string;
+  title: string;
+  description: string;
+  isRecommended: boolean;
+  evaluation: {
+    isValid: boolean;
+    totalDistanceKm: number;
+    totalDurationMinutes: number;
+    totalCost: number;
+    maxWeightOnRoute: number;
+    maxVolumeOnRoute: number;
+    stops: any[];
+    validationErrors: string[];
+    warnings: string[];
+    coordinates: [number, number][];
+  };
+  stops: RouteCandidateStop[];
+  sourcingLines: any[];
+  vehicleMatches: Array<{
+    vehicleId: string;
+    vehicleCode: string;
+    maxWeight: number;
+    maxVolume?: number;
+    isMatch: boolean;
+    discardReason?: string;
+    weightUtilizationPct: number;
+    volumeUtilizationPct: number;
+    estimatedCost: number;
+    distanceToFirstPickupKm: number;
+  }>;
+}
+
 export interface AgentDecisionDto {
   id: string;
   incidentId: string;
@@ -171,36 +282,6 @@ export class ApiService {
   }
 
   // ==========================================
-  // 2. AUTENTICACIÓN Y SESIÓN (POST /auth/login, GET /auth/me)
-  // ==========================================
-
-  login(credentials: { email?: string; password?: string; role?: string }): Observable<AuthLoginResponse | null> {
-    return this.http.post<AuthLoginResponse>(`${this.baseUrl}/api/v1/auth/login`, credentials).pipe(
-      tap(() => this.apiLiveStatus.set('online')),
-      catchError(err => {
-        console.warn('API login failed', err);
-        return of(null);
-      })
-    );
-  }
-
-  getCurrentUser(): Observable<CurrentUserDto | null> {
-    return this.http.get<CurrentUserDto>(`${this.baseUrl}/api/v1/auth/me`).pipe(
-      catchError(err => {
-        console.warn('Get current user failed', err);
-        return of(null);
-      })
-    );
-  }
-
-  logout(): Observable<boolean> {
-    return this.http.post<{ success: boolean }>(`${this.baseUrl}/api/v1/auth/logout`, {}).pipe(
-      map(res => res.success),
-      catchError(() => of(true))
-    );
-  }
-
-  // ==========================================
   // 3. PUNTOS DE SERVICIO (GET /service-points)
   // ==========================================
 
@@ -209,6 +290,16 @@ export class ApiService {
       tap(() => this.apiLiveStatus.set('online')),
       catchError(err => {
         console.warn('Get service points failed', err);
+        return of([]);
+      })
+    );
+  }
+
+  getWarehouses(): Observable<ServicePoint[]> {
+    return this.http.get<ServicePoint[]>(`${this.baseUrl}/api/v1/service-points/warehouses`).pipe(
+      tap(() => this.apiLiveStatus.set('online')),
+      catchError(err => {
+        console.warn('Get warehouses failed', err);
         return of([]);
       })
     );
@@ -296,6 +387,109 @@ export class ApiService {
 
   createRoutePlan(req: { date?: string; vehicleCodes?: string[]; includeConsolidation?: boolean } = {}): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/route-plans`, req);
+  }
+
+  createManualRoutePlan(req: CreateManualRoutePlanRequest): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/manual`, req);
+  }
+
+  // --- MÉTODOS DE RUTAS POR PEDIDOS & VEHÍCULOS ---
+  suggestRoutes(orderIds: string[], plannedDate?: string): Observable<{ options: RouteSuggestionOptionDto[] }> {
+    return this.http.post<{ options: RouteSuggestionOptionDto[] }>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
+      orderIds,
+      plannedDate
+    });
+  }
+
+  evaluateRouteSequence(stops: RouteCandidateStop[], vehicleId?: string, plannedStartUtc?: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/evaluate`, {
+      stops,
+      vehicleId,
+      plannedStartUtc
+    });
+  }
+
+  confirmRoutePlan(req: {
+    code?: string;
+    vehicleId?: string;
+    totalDistanceKm: number;
+    totalDurationMinutes: number;
+    totalCost: number;
+    plannedStartUtc?: string;
+    orderIds?: string[];
+    stops: RouteCandidateStop[];
+    polyline?: string;
+    coordinates?: [number, number][];
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/confirm`, req);
+  }
+
+  getEmergencyRoutes(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/emergency`, {});
+  }
+
+  // --- MÉTODOS DE PEDIDOS (DELIVERY ORDERS) ---
+  getDeliveryOrders(status?: string, priority?: string): Observable<DeliveryOrderDto[]> {
+    let url = `${this.baseUrl}/api/v1/delivery-orders`;
+    const params: string[] = [];
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (priority) params.push(`priority=${encodeURIComponent(priority)}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return this.http.get<DeliveryOrderDto[]>(url);
+  }
+
+  createDeliveryOrder(order: {
+    destinationServicePointId?: string;
+    destinationLocationId?: string;
+    requiredDateUtc?: string;
+    priority?: string;
+    sourceType?: string;
+    notes?: string;
+    lines: Array<{ productId: string; quantity: number }>;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/delivery-orders`, order);
+  }
+
+  cancelDeliveryOrder(id: string): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/api/v1/delivery-orders/${encodeURIComponent(id)}/cancel`, {});
+  }
+
+  // --- MÉTODOS DE BODEGAS & REBALANCEO ---
+  getWarehouseAnalysis(): Observable<WarehouseAnalysisDto[]> {
+    return this.http.get<WarehouseAnalysisDto[]>(`${this.baseUrl}/api/v1/warehouses/analysis`);
+  }
+
+  getWarehousePolicies(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/api/v1/warehouses/policies`);
+  }
+
+  updateWarehousePolicy(locationId: string, productId: string, policy: {
+    minStock: number;
+    maxStock: number;
+    leadTimeDays: number;
+    targetCoverageDays: number;
+    isManual: boolean;
+  }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/api/v1/warehouses/${encodeURIComponent(locationId)}/policies/${encodeURIComponent(productId)}`, policy);
+  }
+
+  generateRebalancingSuggestions(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/warehouses/rebalancing/generate`, {});
+  }
+
+  getTransferSuggestions(status?: string): Observable<TransferSuggestionDto[]> {
+    const url = status
+      ? `${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions?status=${encodeURIComponent(status)}`
+      : `${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions`;
+    return this.http.get<TransferSuggestionDto[]>(url);
+  }
+
+  acceptTransferSuggestion(id: string, acceptedQuantity?: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions/${encodeURIComponent(id)}/accept`, { acceptedQuantity });
+  }
+
+  dismissTransferSuggestion(id: string, reason: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions/${encodeURIComponent(id)}/dismiss`, { reason });
   }
 
   publishRoutePlan(id: string): Observable<any> {
@@ -410,6 +604,15 @@ export class ApiService {
         }
         console.warn('Import data failed', err);
         return of(null);
+      })
+    );
+  }
+
+  getEntityData(entityKey: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/api/v1/imports/data/${encodeURIComponent(entityKey)}`).pipe(
+      catchError(err => {
+        console.warn(`Get entity data for ${entityKey} failed`, err);
+        return of([]);
       })
     );
   }

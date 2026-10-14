@@ -4,6 +4,8 @@
 **Base:** `develop`  
 **Pull Request:** [Crear PR hacia develop](https://github.com/bryancito1090/istpetdev-platform/pull/new/feature/004-campo-qr-custodia-offline)
 
+> **Nota de vigencia (spec 013):** el selector rápido de perfiles demo y el login simulado descritos en este informe pertenecen a la entrega histórica de 004. El acceso vigente usa Cognito con Authorization Code + PKCE y no guarda contraseñas de demo en el repositorio.
+
 ---
 
 ## 1. Resumen Ejecutivo de la Implementación (Spec 004)
@@ -33,7 +35,7 @@ Se ha implementado en su totalidad la funcionalidad de **frontend de campo (Web 
 | Decisión Arquitectónica | Justificación y Racional Técnico | Norma / Requisito |
 |---|---|---|
 | **1. Backend Simulado In-Browser (`IndexedDB`)** | Permite construir y probar el 100% de los flujos de usuario, diseño institucional, accesibilidad y lógica offline de inmediato, cumpliendo la regla estricta de no tocar el backend C# (.NET). | Restricción de Proyecto |
-| **2. Exclusión Absoluta de Tokens OIDC en Persistencia** | Los Bearer tokens OIDC/PKCE residen estrictamente en memoria volátil o `sessionStorage`. En ningún caso se escriben en IndexedDB ni en el outbox durable, garantizando que un dispositivo confiscado o inspeccionado offline no exponga credenciales de acceso. | NFR-03 / Seguridad OIDC |
+| **2. Exclusión Absoluta de Tokens OIDC en Persistencia** | Los Bearer tokens OIDC/PKCE residen estrictamente solo en memoria (nunca en almacenamiento web como sessionStorage o localStorage; ref. spec 013 FR-03). En ningún caso se escriben en IndexedDB ni en el outbox durable, garantizando que un dispositivo confiscado o inspeccionado offline no exponga credenciales de acceso. | NFR-03 / 013 FR-03 / Seguridad OIDC |
 | **3. Sanitización de Token QR en Fragmento Hash (`#t=`)** | El token efímero de traza viaja en el fragmento `#t=TOKEN`. Al cargar la página de traza pública, el cliente lo extrae y lo borra inmediatamente con `history.replaceState`. Esto evita que el secreto quede expuesto en URLs compartidas, historial del navegador o logs de servidores proxy. | S-07 / Privacidad |
 | **4. Protección de Datos Clínicos en Traza Pública** | La proyección de datos expone únicamente el código del bulto, tipo de insumo y tres hitos de custodia (`PREPARADA`, `DESPACHADA`, `RECIBIDA`). No expone pacientes, recetas, fotos privadas, firmas ni geolocalizaciones. | ADR-10 / HIPAA / GDPR |
 | **5. Subida Desacoplada de Evidencias con Reintentos** | El recibo contable de inventario se sincroniza e impacta primero; las evidencias pesadas (foto y firma) se procesan independientemente contra URLs presignadas con retroceso exponencial (*exponential backoff*). Una falla de red o de S3 no invalida ni duplica el recibo. | S-06 / NFR-04 |

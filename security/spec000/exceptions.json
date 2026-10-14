@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "exceptions": [
+    {
+      "status": "approved",
+      "advisoryId": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "vulnerableRange": "<=3.0.3",
+      "nodePath": "node_modules/braces",
+      "installedVersion": "3.0.3",
+      "scope": "development-build",
+      "rationale": "braces <=3.0.3 no cuenta con version corregida en la rama 3.x aguas arriba. Es requerido transitivamente por micromatch y chokidar bajo tailwindcss@3.4.19 y eslint-plugin-boundaries@7.2.0. Actualizar forzosamente a tailwindcss@4 implicaria una migracion breaking mayor no autorizada para el hackathon. El paquete opera exclusivamente durante el proceso de build/transpilacion y nunca en runtime ni en produccion (audit-runtime-before.json reporta 0 vulnerabilidades).",
+      "mitigations": [
+        "El build se ejecuta de forma aislada en GitHub Actions runners sin exposicion a inputs externos de usuarios.",
+        "Los patrones de archivos de entrada para Tailwind y ESLint son definidos internamente en codigo estatico y repositorios confiables.",
+        "La compilacion web y movil no incluye el paquete braces en los bundles emitidos a produccion."
+      ],
+      "approvedBy": "Anthony Pilatasig",
+      "approvalReference": "Issue #44 / Spec 000 ADR-04",
+      "approvedAt": "2026-10-14T11:40:00Z",
+      "expiresAt": "2026-11-30T23:59:59Z"
+    }
+  ]
+}

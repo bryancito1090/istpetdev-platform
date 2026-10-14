@@ -28,6 +28,9 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                { "replace": "src/shared/config/environment.ts", "with": "src/shared/config/environment.production.ts" }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -63,6 +66,14 @@
           "defaultConfiguration": "development",
           "options": {
             "port": 4200
+          }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "web:build:development",
+            "tsConfig": "tsconfig.spec.json",
+            "runner": "vitest"
           }
         }
       }

@@ -86,7 +86,7 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 | **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
 | **003** | Cliente M2M en Cognito (`client_credentials`) para integraciones | Terraform `identity.tf` | Jorge Doicela | H4 (15-oct) | Pendiente |
 | **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
-| **Seguridad (#14)** | TLS con `VerifyFull` y CA oficial de RDS, Swagger restringido y SSH 22 cerrado | Compose / Nginx / Terraform | Jorge Doicela | H5 (15-oct) | Pendiente |
+| **Seguridad (#14)** | TLS con `VerifyFull` + CA oficial de RDS y Swagger restringido por defecto. SSH 22 mitigado con UFW/fail2ban (cierre y Terraform diferidos a P2) | Dockerfile / Compose / Nginx / Program.cs / Deploy workflow | Jorge Doicela | Antes de H4 (14-oct) | **Completado** |
 
 ## 7. Checklist de Control Día por Día
 

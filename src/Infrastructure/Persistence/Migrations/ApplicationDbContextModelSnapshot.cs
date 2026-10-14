@@ -384,6 +384,12 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("DeliveryOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DestinationLocationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("DispatchedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -417,6 +423,10 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Code")
                         .IsUnique();
+
+                    b.HasIndex("OrganizationId", "DeliveryOrderId");
+
+                    b.HasIndex("OrganizationId", "DestinationLocationId");
 
                     b.HasIndex("OrganizationId", "OriginLocationId");
 
@@ -480,6 +490,124 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "LotId");
 
                     b.ToTable("DeliveryLine");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DestinationLocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DestinationServicePointId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("RequiredDateUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("TransferSuggestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "DestinationLocationId");
+
+                    b.HasIndex("OrganizationId", "DestinationServicePointId");
+
+                    b.HasIndex("OrganizationId", "OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId", "TransferSuggestionId");
+
+                    b.ToTable("DeliveryOrder");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.DeliveryOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("DeliveredQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("DeliveryOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RequestedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OrganizationId", "Id");
+
+                    b.HasIndex("OrganizationId", "DeliveryOrderId");
+
+                    b.HasIndex("OrganizationId", "ProductId");
+
+                    b.ToTable("DeliveryOrderLine");
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.Evidence", b =>
@@ -1234,6 +1362,10 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DeliveryLineId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("NextRequestedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
@@ -1250,6 +1382,10 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("RejectionReason")
                         .HasColumnType("text");
+
+                    b.Property<decimal?>("RemainingQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1579,6 +1715,14 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
 
@@ -1614,6 +1758,8 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrganizationId", "LocationId");
+
                     b.HasIndex("OrganizationId", "RoutePlanId");
 
                     b.HasIndex("OrganizationId", "ServicePointId");
@@ -1622,6 +1768,65 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("RouteStop");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.RouteStopLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal>("ActualQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeliveryOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RouteStopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OrganizationId", "Id");
+
+                    b.HasIndex("OrganizationId", "DeliveryOrderId");
+
+                    b.HasIndex("OrganizationId", "LotId");
+
+                    b.HasIndex("OrganizationId", "ProductId");
+
+                    b.HasIndex("OrganizationId", "RouteStopId");
+
+                    b.ToTable("RouteStopLine");
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.ServicePoint", b =>
@@ -1672,6 +1877,9 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ServiceMinutes")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("ServingWarehouseLocationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1690,7 +1898,80 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "Code")
                         .IsUnique();
 
+                    b.HasIndex("OrganizationId", "ServingWarehouseLocationId");
+
                     b.ToTable("ServicePoint");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.SimulationEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PointCode")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RegionCode")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal?>("Requested")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal?>("Satisfied")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SimulationRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OrganizationId", "Id");
+
+                    b.HasIndex("OrganizationId", "SimulationRunId");
+
+                    b.HasIndex("SimulationRunId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("SimulationEvent");
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.SimulationMetric", b =>
@@ -1764,6 +2045,18 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CalendarHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("CommitHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("ComparisonId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("CompletedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1775,14 +2068,49 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("DatasetVersion")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HostName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ManifestHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("ParametersJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<string>("PolicyCode")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("PolicyVersion")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("ProgressPercentage")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ScenarioCode")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1806,6 +2134,10 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "ComparisonId");
+
+                    b.HasIndex("OrganizationId", "Seed", "ScenarioCode", "PolicyCode");
 
                     b.ToTable("SimulationRun");
                 });
@@ -1858,6 +2190,92 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("IstpetDev.Domain.Entities.TransferSuggestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("AcceptedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DismissReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("SourceCoverageDaysAfter")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("SourceCoverageDaysBefore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("SourceLocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal>("SuggestedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("TargetCoverageDaysAfter")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("TargetCoverageDaysBefore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("TargetLocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "ProductId");
+
+                    b.HasIndex("OrganizationId", "ReviewedByAccountId");
+
+                    b.HasIndex("OrganizationId", "SourceLocationId");
+
+                    b.HasIndex("OrganizationId", "Status");
+
+                    b.HasIndex("OrganizationId", "TargetLocationId");
+
+                    b.ToTable("TransferSuggestion");
+                });
+
             modelBuilder.Entity("IstpetDev.Domain.Entities.Vehicle", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1908,6 +2326,72 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "DepotLocationId");
 
                     b.ToTable("Vehicle");
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.WarehouseStockPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsManual")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastCalculatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("MaxStock")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("MinStock")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("SuggestedMaxStock")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal?>("SuggestedMinStock")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("TargetCoverageDays")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OrganizationId", "Id");
+
+                    b.HasIndex("OrganizationId", "ProductId");
+
+                    b.HasIndex("OrganizationId", "LocationId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("WarehouseStockPolicy");
                 });
 
             modelBuilder.Entity("IstpetDev.Domain.Entities.Account", b =>
@@ -2003,6 +2487,18 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("OrganizationId", "Id")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.HasOne("IstpetDev.Domain.Entities.DeliveryOrder", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DeliveryOrderId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DestinationLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IstpetDev.Domain.Entities.Location", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId", "OriginLocationId")
@@ -2048,6 +2544,56 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasOne("IstpetDev.Domain.Entities.Lot", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId", "LotId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DestinationLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.ServicePoint", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DestinationServicePointId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.TransferSuggestion", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "TransferSuggestionId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.DeliveryOrderLine", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.DeliveryOrder", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DeliveryOrderId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProductId")
                         .HasPrincipalKey("OrganizationId", "Id")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
@@ -2432,6 +2978,12 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "LocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IstpetDev.Domain.Entities.RoutePlan", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId", "RoutePlanId")
@@ -2447,11 +2999,68 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("IstpetDev.Domain.Entities.RouteStopLine", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.DeliveryOrder", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "DeliveryOrderId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.Lot", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "LotId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProductId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.RouteStop", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "RouteStopId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("IstpetDev.Domain.Entities.ServicePoint", b =>
                 {
                     b.HasOne("IstpetDev.Domain.Entities.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ServingWarehouseLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.SimulationEvent", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.SimulationRun", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "SimulationRunId")
+                        .HasPrincipalKey("OrganizationId", "Id")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
                 });
@@ -2504,6 +3113,42 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("IstpetDev.Domain.Entities.TransferSuggestion", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProductId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ReviewedByAccountId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "SourceLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "TargetLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("IstpetDev.Domain.Entities.Vehicle", b =>
                 {
                     b.HasOne("IstpetDev.Domain.Entities.Organization", null)
@@ -2515,6 +3160,29 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.HasOne("IstpetDev.Domain.Entities.Location", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId", "DepotLocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("IstpetDev.Domain.Entities.WarehouseStockPolicy", b =>
+                {
+                    b.HasOne("IstpetDev.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Location", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "LocationId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IstpetDev.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProductId")
                         .HasPrincipalKey("OrganizationId", "Id")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();

@@ -1,11 +1,13 @@
 import { Routes } from '@angular/router';
-import { roleGuard, homeRedirectGuard } from './providers/role.guard';
+import { authGuard, homeRedirectGuard, roleGuard } from '@entities/session';
+
+const WEB_READ_ROLES = ['Gerencia', 'Planificador', 'Auditor'] as const;
+const WEB_WRITE_ROLES = ['Gerencia', 'Planificador'] as const;
 
 /**
  * Rutas de la web.
- * - Planificador (SUPERVISOR): Inicio → Datos → Alertas → Rutas, en el orden del proceso.
- * - Gerencia (ADMIN): mismas páginas en solo lectura (sin Datos).
- * - Auditor: solo Trazabilidad QR.
+ * - Planificador: Inicio → Datos → Alertas → Rutas, en el orden del proceso.
+ * - Gerencia y Auditor leen Inicio, Alertas y Rutas; Auditor no escribe (FR-21).
  */
 export const routes: Routes = [
   {
@@ -19,28 +21,58 @@ export const routes: Routes = [
     title: 'Iniciar sesión — IstpetDev'
   },
   {
+    path: 'auth/callback',
+    loadComponent: () => import('@pages/auth-callback').then(m => m.AuthCallbackPage),
+    title: 'Verificando sesión — IstpetDev'
+  },
+  {
     path: 'inicio',
-    canActivate: [roleGuard(['SUPERVISOR', 'ADMIN'])],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/inicio').then(m => m.InicioPage),
     title: 'Inicio — IstpetDev'
   },
   {
     path: 'datos',
-    canActivate: [roleGuard(['SUPERVISOR'])],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_WRITE_ROLES },
     loadComponent: () => import('@pages/datos').then(m => m.DatosPage),
     title: 'Cargar datos — IstpetDev'
   },
   {
     path: 'alertas',
-    canActivate: [roleGuard(['SUPERVISOR', 'ADMIN'])],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/alertas').then(m => m.AlertasPage),
     title: 'Alertas — IstpetDev'
   },
   {
     path: 'rutas',
-    canActivate: [roleGuard(['SUPERVISOR', 'ADMIN'])],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/rutas').then(m => m.RutasPage),
     title: 'Rutas — IstpetDev'
+  },
+  {
+    path: 'users',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['Gerencia'] },
+    loadComponent: () => import('@pages/users').then(m => m.UsersPage),
+    title: 'Usuarios — IstpetDev'
+  },
+  {
+    path: 'bodegas',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_WRITE_ROLES },
+    loadComponent: () => import('@pages/bodegas').then(m => m.BodegasPage),
+    title: 'Bodegas & Rebalanceo — IstpetDev'
+  },
+  {
+    path: 'simulation',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/simulation').then(m => m.SimulationPage),
+    title: 'Simulador 90 Días — IstpetDev'
   },
   {
     // Pública: el QR impreso en el bulto apunta aquí.
@@ -54,7 +86,7 @@ export const routes: Routes = [
     title: 'Trazabilidad QR — IstpetDev'
   },
   {
-    // Compatibilidad con enlaces antiguos: envía a la página de inicio del rol.
+    // Compatibilidad con enlaces antiguos: una sesión va a Inicio; una visita anónima va al login.
     path: 'dashboard',
     canActivate: [homeRedirectGuard],
     children: []

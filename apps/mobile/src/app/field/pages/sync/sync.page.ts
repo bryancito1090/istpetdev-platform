@@ -82,7 +82,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
               class="flex-1"
               [disabled]="outboxService.isSyncing() || outboxService.isSimulatingOffline()"
               (click)="syncAll()">
-              {{ outboxService.isSyncing() ? 'Sincronizando...' : '🔄 Sincronizar Todo Ahora' }}
+              {{ outboxService.isSyncing() ? 'Sincronizando...' : 'Sincronizar Todo Ahora' }}
             </ion-button>
           </div>
         </ion-card-content>
@@ -154,7 +154,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                   </div>
                   <p class="text-[11px] leading-relaxed">{{ item.errorMessage }}</p>
                   <p class="text-[10px] text-rose-700 italic">
-                    ✓ La firma y foto capturadas en campo no se han perdido. Puede resolver adaptando a la versión de ruta activa.
+                    La firma y foto capturadas en campo no se han perdido. Puede resolver adaptando a la versión de ruta activa.
                   </p>
                 </div>
               }
@@ -167,7 +167,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                     color="warning"
                     class="flex-1"
                     (click)="resolveConflict(item)">
-                    ⚡ Resolver con Nueva Versión y Reintentar
+                    Resolver con Nueva Versión y Reintentar
                   </ion-button>
                 }
 
@@ -221,9 +221,9 @@ export class SyncPage {
       case 'EvidencePending':
         return 'Subiendo Evidencias...';
       case 'Complete':
-        return '✓ Completo';
+        return 'Completo';
       case 'Conflict':
-        return '⚠ Conflicto 409';
+        return 'Conflicto 409';
       default:
         return status;
     }

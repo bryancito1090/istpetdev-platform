@@ -1,33 +1,56 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ApiService, RoutePlanSummaryDto, RoutePlanDetailDto } from '@shared/api';
+import { AuthSession } from '@entities/session';
+import {
+  ApiService,
+  RoutePlanSummaryDto,
+  RoutePlanDetailDto,
+  DeliveryOrderDto,
+  RouteSuggestionOptionDto,
+  RouteCandidateStop,
+  ServicePoint
+} from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
 @Component({
   selector: 'page-rutas',
   standalone: true,
-  imports: [CommonModule, RouterLink, MapViewComponent],
+  imports: [CommonModule, FormsModule, MapViewComponent],
   template: `
-    <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      <!-- Encabezado -->
+    <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <!-- Encabezado Principal -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-            Planificación y Publicación de Rutas
+            Planificación y Asignación de Rutas
           </h1>
           <p class="text-sm text-slate-500 mt-1">
-            Revisa las rutas generadas para atender los pedidos de reabastecimiento y publícalas a los conductores.
+            Genera rutas basadas en pedidos con abastecimiento automático desde la bodega más cercana, opciones multi-recogida y selección de vehículos.
           </p>
         </div>
 
-        <button 
-          type="button"
-          (click)="generatePlan()"
-          [disabled]="actionLoading()"
-          class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
-          {{ actionLoading() ? 'Calculando...' : '➕ Generar Nueva Ruta' }}
-        </button>
+        @if (session.canWrite()) {
+          <div class="flex items-center gap-2">
+            <!-- Botón de Emergencia -->
+            <button
+              type="button"
+              (click)="triggerEmergencyFlow()"
+              [disabled]="actionLoading()"
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
+              <span>🚨 Proponer Ruta de Emergencia</span>
+            </button>
+
+            <!-- Botón Nueva Ruta por Pedidos -->
+            <button
+              type="button"
+              (click)="openOrderRoutingModal()"
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm">
+              <span>+ Nueva Ruta por Pedidos</span>
+            </button>
+          </div>
+        }
       </div>
 
       <!-- Banner de retroalimentación -->
@@ -39,36 +62,36 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             <span>{{ feedbackMessage()!.type === 'success' ? '✓' : '⚠' }}</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button 
-            type="button" 
-            (click)="feedbackMessage.set(null)" 
-            class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">
-            ✕
-          </button>
+          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">✕</button>
         </div>
       }
 
       <!-- Estado cargando -->
       @if (loading()) {
         <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
-          Cargando rutas de despacho...
+          Cargando rutas de distribución...
         </div>
       }
 
       <!-- Estado vacío -->
       @if (!loading() && routePlans().length === 0) {
         <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-3">
-          <p class="text-slate-600 text-sm">
-            No hay rutas creadas en el sistema todavía.
-          </p>
+          <p class="text-slate-600 text-sm">No hay rutas planificadas todavía.</p>
           <div class="flex justify-center gap-3">
-            <button 
-              type="button"
-              (click)="generatePlan()"
-              [disabled]="actionLoading()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50">
-              {{ actionLoading() ? 'Calculando...' : 'Generar primera ruta ahora' }}
-            </button>
+            @if (session.canWrite()) {
+              <button
+                type="button"
+                (click)="openOrderRoutingModal()"
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
+                Crear primera ruta por pedidos
+              </button>
+              <button
+                type="button"
+                (click)="triggerEmergencyFlow()"
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+                Evaluar requerimientos de emergencia
+              </button>
+            }
             <a 
               routerLink="/alertas" 
               class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
@@ -84,7 +107,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
           <!-- Columna izquierda: Lista de rutas -->
           <div class="space-y-3">
             <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Rutas encontradas ({{ routePlans().length }})
+              Rutas registradas ({{ routePlans().length }})
             </h2>
             <div class="space-y-2">
               @for (plan of routePlans(); track plan.id) {
@@ -121,28 +144,34 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                   <div>
                     <h3 class="font-bold text-slate-900 text-base">{{ selectedDetail()!.code }}</h3>
                     <p class="text-xs text-slate-500 font-mono mt-0.5">
-                      Distancia: {{ selectedDetail()!.totalDistanceKm }} km | Tiempo: {{ selectedDetail()!.totalDurationMinutes }} min
+                      Distancia: {{ selectedDetail()!.totalDistanceKm }} km | Tiempo estimado: {{ selectedDetail()!.totalDurationMinutes }} min | Vehículo: {{ selectedDetail()!.vehicleCode }}
                     </p>
                   </div>
 
                   @if (selectedDetail()!.status !== 'Published') {
-                    <button 
-                      type="button"
-                      (click)="publishPlan(selectedDetail()!.id)"
-                      [disabled]="actionLoading()"
-                      class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                      {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
-                    </button>
+                    @if (session.canWrite()) {
+                      <button
+                        type="button"
+                        (click)="publishPlan(selectedDetail()!.id)"
+                        [disabled]="actionLoading()"
+                        class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                        {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
+                      </button>
+                    } @else {
+                      <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                        Pendiente de publicación
+                      </span>
+                    }
                   } @else {
                     <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                      ✓ Ruta en Ejecución
+                      ✓ Ruta Publicada al Conductor
                     </span>
                   }
                 </div>
 
-                <!-- Mapa simple con los puntos -->
+                <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
-                  <div class="h-64 rounded-lg overflow-hidden border border-slate-200">
+                  <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
                     <ui-map-view 
                       [markers]="mapMarkers()" 
                       [polylines]="mapPolylines()"
@@ -151,7 +180,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                   </div>
                 }
 
-                <!-- Tabla de paradas ordenadas -->
+                <!-- Itinerario de Paradas (Pickups & Deliveries) -->
                 <div>
                   <h4 class="text-xs font-bold text-slate-700 uppercase mb-2">
                     Itinerario de Paradas
@@ -161,7 +190,8 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                       <thead class="bg-slate-50 text-[11px] text-slate-500 uppercase border-b border-slate-200">
                         <tr>
                           <th class="p-2.5">#</th>
-                          <th class="p-2.5">Punto de Entrega</th>
+                          <th class="p-2.5">Tipo</th>
+                          <th class="p-2.5">Punto / Bodega</th>
                           <th class="p-2.5">Hora ETA</th>
                           <th class="p-2.5 text-right">Estado</th>
                         </tr>
@@ -170,6 +200,12 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                         @for (stop of selectedDetail()!.stops; track stop.sequence) {
                           <tr>
                             <td class="p-2.5 font-bold font-mono">{{ stop.sequence }}</td>
+                            <td class="p-2.5 font-bold">
+                              <span class="px-2 py-0.5 rounded text-[10px]"
+                                [ngClass]="stop.sequence === 1 ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'">
+                                {{ stop.sequence === 1 ? 'RECOGIDA' : 'ENTREGA' }}
+                              </span>
+                            </td>
                             <td class="p-2.5 font-semibold text-slate-800">
                               {{ stop.servicePointName || stop.servicePointCode }}
                             </td>
@@ -186,19 +222,335 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                   </div>
                 </div>
               </div>
-            } @else {
-              <div class="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-xs text-slate-500">
-                Selecciona una ruta de la izquierda para ver su itinerario y mapa.
-              </div>
             }
           </div>
         </div>
       }
     </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL ASISTENTE DE RUTAS POR PEDIDOS (4 PASOS) -->
+    <!-- ======================================================== -->
+    @if (isWizardOpen()) {
+      <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white w-full max-w-7xl h-[94vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+          
+          <!-- Header Asistente -->
+          <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold">Planificador de Rutas por Pedidos y Abastecimiento</h2>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Paso {{ wizardStep() }} de 4
+                </span>
+              </div>
+              <p class="text-xs text-slate-300 mt-0.5">
+                @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
+                @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
+                @if (wizardStep() === 3) { Evalúa las opciones de viaje (A: Consolidado vs B: Escalonado) y valida el orden de paradas. }
+                @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
+              </p>
+            </div>
+
+            <button type="button" (click)="closeWizard()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+          </div>
+
+          <!-- Cuerpo Asistente -->
+          <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+            
+            <!-- Columna Izquierda: Formulario y Pasos (5 Cols) -->
+            <div class="lg:col-span-5 p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto">
+              
+              <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
+              @if (wizardStep() === 1) {
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700 uppercase">Pedidos Pendientes de Despacho</span>
+                    <button
+                      type="button"
+                      (click)="showNewOrderForm.set(!showNewOrderForm())"
+                      class="text-[11px] font-semibold text-primary-600 hover:underline">
+                      {{ showNewOrderForm() ? '✕ Cancelar nuevo' : '+ Crear Pedido Manual' }}
+                    </button>
+                  </div>
+
+                  <!-- Formulario Nuevo Pedido Rápido -->
+                  @if (showNewOrderForm()) {
+                    <div class="p-3 bg-white rounded-xl border border-primary-200 shadow-sm space-y-2 text-xs">
+                      <span class="font-bold text-slate-800 block text-[11px] uppercase">Nuevo Pedido</span>
+                      
+                      <div>
+                        <label class="text-[10px] text-slate-500 block">Destino (Punto de Entrega o Bodega)</label>
+                        <select [(ngModel)]="newOrderDestId" class="w-full text-xs p-1.5 border rounded">
+                          <option value="">Selecciona destino...</option>
+                          @for (loc of availableLocations(); track loc.id) {
+                            <option [value]="loc.id">{{ loc.name }} ({{ loc.code }})</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <label class="text-[10px] text-slate-500 block">Producto</label>
+                          <select [(ngModel)]="newOrderProdId" class="w-full text-xs p-1.5 border rounded">
+                            <option value="">Selecciona...</option>
+                            @for (p of availableProducts(); track p.id) {
+                              <option [value]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                            }
+                          </select>
+                        </div>
+                        <div>
+                          <label class="text-[10px] text-slate-500 block">Cantidad Requerida</label>
+                          <input type="number" [(ngModel)]="newOrderQty" min="1" class="w-full text-xs p-1.5 border rounded font-mono" />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        (click)="submitNewOrder()"
+                        [disabled]="!newOrderDestId || !newOrderProdId || newOrderQty <= 0"
+                        class="w-full py-1.5 rounded bg-primary-600 text-white font-bold hover:bg-primary-700 disabled:opacity-50">
+                        Guardar Pedido
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Lista de Pedidos Disponibles con Checkbox -->
+                  <div class="space-y-2">
+                    @for (ord of pendingOrders(); track ord.id) {
+                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2 text-xs cursor-pointer"
+                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200'"
+                        (click)="toggleOrderSelection(ord.id)">
+                        <input
+                          type="checkbox"
+                          [checked]="selectedOrderIds().has(ord.id)"
+                          (click)="$event.stopPropagation()"
+                          (change)="toggleOrderSelection(ord.id)"
+                          class="mt-0.5 rounded text-primary-600" />
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900">{{ ord.orderNumber }}</span>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold"
+                              [ngClass]="ord.priority === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'">
+                              {{ ord.priority }}
+                            </span>
+                          </div>
+                          <p class="text-[11px] font-semibold text-primary-700 mt-0.5">Destino: {{ ord.destinationName }}</p>
+                          <div class="mt-1 space-y-0.5 text-[10px] text-slate-500 font-mono">
+                            @for (l of ord.lines; track l.id) {
+                              <div>• {{ l.productName }}: <strong>{{ l.requestedQuantity }} u</strong></div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- PASO 2: REVISIÓN DE ABASTECIMIENTO -->
+              @if (wizardStep() === 2) {
+                <div class="space-y-3">
+                  <span class="text-xs font-bold text-slate-700 uppercase">Asignación de Bodegas por Cercanía</span>
+                  <p class="text-xs text-slate-500">
+                    El sistema verificó el stock FEFO disponible y asignó automáticamente la bodega más próxima:
+                  </p>
+
+                  @for (opt of routeOptions(); track opt.optionId) {
+                    <div class="p-3 rounded-xl border bg-white space-y-2 text-xs">
+                      <span class="font-bold text-slate-800 block text-xs">{{ opt.title }}</span>
+                      <p class="text-[11px] text-slate-500">{{ opt.description }}</p>
+
+                      <div class="border border-slate-100 rounded-lg p-2 bg-slate-50 space-y-1">
+                        @for (l of opt.sourcingLines; track l.orderId) {
+                          <div class="border-b border-slate-200/60 pb-1 last:border-0 last:pb-0">
+                            <div class="font-semibold text-slate-800">{{ l.productName }} ({{ l.requestedQuantity }} u)</div>
+                            <div class="text-[10px] text-slate-500">Para: {{ l.destinationName }}</div>
+                            <div class="mt-1 text-[10px] text-emerald-700 font-mono">
+                              @for (a of l.allocations; track a.warehouseId) {
+                                <div>✓ De {{ a.warehouseCode }}: {{ a.quantity }} u</div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- PASO 3: OPCIONES A/B & REORDENAR PARADAS -->
+              @if (wizardStep() === 3) {
+                <div class="space-y-3">
+                  <span class="text-xs font-bold text-slate-700 uppercase">Opciones de Ruta & Secuencia de Paradas</span>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    @for (opt of routeOptions(); track opt.optionId) {
+                      <div
+                        (click)="selectedOptionId.set(opt.optionId); onOptionSelected(opt)"
+                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all"
+                        [ngClass]="selectedOptionId() === opt.optionId ? 'border-primary-600 ring-2 ring-primary-100 bg-white' : 'border-slate-200 bg-white/70'">
+                        <div class="flex items-center justify-between">
+                          <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
+                          @if (opt.isRecommended) {
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
+                          }
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
+                        <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
+                          {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Lista interactiva de paradas con reordenamiento -->
+                  <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[11px] font-bold text-slate-700 uppercase">Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
+                      <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
+                        Restaurar orden óptimo
+                      </button>
+                    </div>
+
+                    <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                      @for (s of editableStops(); track s.sequence; let idx = $index) {
+                        <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
+                          [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
+                          <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
+                              [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
+                              {{ idx + 1 }}
+                            </span>
+                            <div class="min-w-0">
+                              <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
+                              <p class="text-[9px] font-mono text-slate-500">
+                                {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div class="flex items-center gap-1">
+                            @if (idx > 0) {
+                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↑</button>
+                            }
+                            @if (idx < editableStops().length - 1) {
+                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↓</button>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    @if (currentEvaluation()?.validationErrors?.length) {
+                      <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
+                        @for (err of currentEvaluation()!.validationErrors; track err) {
+                          <div>⚠ {{ err }}</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- PASO 4: SELECCIÓN DE VEHÍCULO & CONFIRMACIÓN -->
+              @if (wizardStep() === 4) {
+                <div class="space-y-3">
+                  <span class="text-xs font-bold text-slate-700 uppercase">Vehículos Compatibles con la Carga</span>
+                  <p class="text-xs text-slate-500">
+                    El sistema calculó el perfil de carga tramo a tramo para descartar vehículos que no soportan el peso o volumen:
+                  </p>
+
+                  <div class="space-y-2">
+                    @for (vm of availableVehicleMatches(); track vm.vehicleId) {
+                      <div
+                        (click)="vm.isMatch ? selectedVehicleId.set(vm.vehicleId) : null"
+                        class="p-3 rounded-xl border text-xs transition-all"
+                        [ngClass]="{
+                          'border-primary-600 ring-2 ring-primary-100 bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
+                          'border-slate-200 bg-white hover:border-slate-300 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
+                          'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed': !vm.isMatch
+                        }">
+                        <div class="flex items-center justify-between">
+                          <span class="font-bold text-slate-900 text-sm">{{ vm.vehicleCode }}</span>
+                          @if (vm.isMatch) {
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">COMPATIBLE</span>
+                          } @else {
+                            <span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">NO COMPATIBLE</span>
+                          }
+                        </div>
+
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-600">
+                          <div>Capacidad: <strong>{{ vm.maxWeight }} kg</strong></div>
+                          <div>Uso estimado: <strong>{{ vm.weightUtilizationPct }}%</strong></div>
+                          <div>Depósito base: <strong>{{ vm.distanceToFirstPickupKm }} km</strong></div>
+                          <div>Costo estimado: <strong>USD {{ vm.estimatedCost }}</strong></div>
+                        </div>
+
+                        @if (!vm.isMatch) {
+                          <p class="text-[10px] text-rose-600 mt-2 font-semibold">
+                            Motivo descarte: {{ vm.discardReason }}
+                          </p>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Botones de Navegación del Asistente -->
+              <div class="mt-auto pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                @if (wizardStep() > 1) {
+                  <button
+                    type="button"
+                    (click)="stepBack()"
+                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    ← Anterior
+                  </button>
+                } @else {
+                  <div></div>
+                }
+
+                @if (wizardStep() < 4) {
+                  <button
+                    type="button"
+                    (click)="advanceWizardStep()"
+                    [disabled]="selectedOrderIds().size === 0 || actionLoading()"
+                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50">
+                    Siguiente →
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    (click)="confirmAndSavePlan()"
+                    [disabled]="!selectedVehicleId() || actionLoading()"
+                    class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50">
+                    {{ actionLoading() ? 'Creando Ruta...' : '✓ Confirmar y Crear Ruta' }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Mapa (7 Cols) -->
+            <div class="lg:col-span-7 relative h-full min-h-[450px]">
+              <ui-map-view
+                #wizardMapView
+                [markers]="wizardMarkers()"
+                [polylines]="wizardPolylines()"
+                [zoom]="8">
+              </ui-map-view>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
   `
 })
 export class RutasPage implements OnInit {
   private readonly apiService = inject(ApiService);
+  readonly session = inject(AuthSession);
+
+  @ViewChild('wizardMapView') wizardMapView?: MapViewComponent;
 
   readonly routePlans = signal<RoutePlanSummaryDto[]>([]);
   readonly selectedPlanId = signal<string | null>(null);
@@ -210,8 +562,35 @@ export class RutasPage implements OnInit {
   readonly mapMarkers = signal<MapMarker[]>([]);
   readonly mapPolylines = signal<MapPolyline[]>([]);
 
+  // Estado del Asistente de Rutas por Pedidos
+  readonly isWizardOpen = signal(false);
+  readonly wizardStep = signal<1 | 2 | 3 | 4>(1);
+  readonly pendingOrders = signal<DeliveryOrderDto[]>([]);
+  readonly selectedOrderIds = signal<Set<string>>(new Set());
+
+  // Formulario rápido nuevo pedido
+  readonly showNewOrderForm = signal(false);
+  newOrderDestId = '';
+  newOrderProdId = '';
+  newOrderQty = 10;
+  readonly availableLocations = signal<ServicePoint[]>([]);
+  readonly availableProducts = signal<any[]>([]);
+
+  // Opciones de Sourcing y Vehículos
+  readonly routeOptions = signal<RouteSuggestionOptionDto[]>([]);
+  readonly selectedOptionId = signal<string>('A');
+  readonly editableStops = signal<RouteCandidateStop[]>([]);
+  readonly currentEvaluation = signal<any>(null);
+  readonly availableVehicleMatches = signal<any[]>([]);
+  readonly selectedVehicleId = signal<string | null>(null);
+
+  readonly wizardMarkers = signal<MapMarker[]>([]);
+  readonly wizardPolylines = signal<MapPolyline[]>([]);
+
   ngOnInit(): void {
     this.loadPlans();
+    this.loadPendingOrders();
+    this.loadCatalogData();
   }
 
   loadPlans(): void {
@@ -239,6 +618,7 @@ export class RutasPage implements OnInit {
   }
 
   generatePlan(): void {
+    if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
     this.feedbackMessage.set(null);
     this.apiService.createRoutePlan({}).subscribe({
@@ -271,28 +651,270 @@ export class RutasPage implements OnInit {
     });
   }
 
+  loadPendingOrders(): void {
+    this.apiService.getDeliveryOrders('Pending').subscribe(orders => {
+      this.pendingOrders.set(orders || []);
+      // Seleccionar automáticamente los primeros para comodidad
+      if (orders && orders.length > 0 && this.selectedOrderIds().size === 0) {
+        this.selectedOrderIds.set(new Set([orders[0].id]));
+      }
+    });
+  }
+
+  loadCatalogData(): void {
+    this.apiService.getServicePoints().subscribe(sps => {
+      this.apiService.getWarehouses().subscribe(whs => {
+        this.availableLocations.set([...whs, ...sps]);
+      });
+    });
+
+    this.apiService.getEntityData('products').subscribe(prods => {
+      this.availableProducts.set(prods || []);
+    });
+  }
+
   publishPlan(id: string): void {
+    if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
-    this.feedbackMessage.set(null);
     this.apiService.publishRoutePlan(id).subscribe({
       next: () => {
         this.actionLoading.set(false);
         this.feedbackMessage.set({
           type: 'success',
-          text: 'Ruta publicada al conductor exitosamente.'
+          text: 'Ruta publicada exitosamente al conductor.'
         });
         this.selectPlan(id);
         this.loadPlans();
       },
       error: (err) => {
         this.actionLoading.set(false);
-        const errMsg = err?.error?.message || err?.message || 'Error al publicar la ruta.';
         this.feedbackMessage.set({
           type: 'error',
-          text: errMsg
+          text: err?.error?.message || 'Error al publicar la ruta.'
         });
       }
     });
+  }
+
+  // ========================================================
+  // FLUJO DE ASISTENTE DE RUTAS POR PEDIDOS
+  // ========================================================
+
+  openOrderRoutingModal(): void {
+    this.isWizardOpen.set(true);
+    this.wizardStep.set(1);
+    this.loadPendingOrders();
+    setTimeout(() => this.wizardMapView?.invalidateSize(), 200);
+  }
+
+  closeWizard(): void {
+    this.isWizardOpen.set(false);
+  }
+
+  stepBack(): void {
+    const cur = this.wizardStep();
+    if (cur === 4) this.wizardStep.set(3);
+    else if (cur === 3) this.wizardStep.set(2);
+    else if (cur === 2) this.wizardStep.set(1);
+  }
+
+  toggleOrderSelection(id: string): void {
+    const set = new Set(this.selectedOrderIds());
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    this.selectedOrderIds.set(set);
+  }
+
+  submitNewOrder(): void {
+    const isWh = this.availableLocations().find(l => l.id === this.newOrderDestId)?.type === 'Bodega';
+
+    this.apiService.createDeliveryOrder({
+      destinationServicePointId: !isWh ? this.newOrderDestId : undefined,
+      destinationLocationId: isWh ? this.newOrderDestId : undefined,
+      lines: [{ productId: this.newOrderProdId, quantity: this.newOrderQty }]
+    }).subscribe({
+      next: (res) => {
+        this.showNewOrderForm.set(false);
+        this.loadPendingOrders();
+        if (res?.id) {
+          const set = new Set(this.selectedOrderIds());
+          set.add(res.id);
+          this.selectedOrderIds.set(set);
+        }
+      }
+    });
+  }
+
+  advanceWizardStep(): void {
+    const current = this.wizardStep();
+    if (current === 1) {
+      this.actionLoading.set(true);
+      const orderIds = Array.from(this.selectedOrderIds());
+
+      this.apiService.suggestRoutes(orderIds).subscribe({
+        next: (res) => {
+          this.actionLoading.set(false);
+          const opts = res?.options || [];
+          this.routeOptions.set(opts);
+
+          if (opts.length > 0) {
+            this.selectedOptionId.set(opts[0].optionId);
+            this.onOptionSelected(opts[0]);
+          }
+
+          this.wizardStep.set(2);
+        },
+        error: (err) => {
+          this.actionLoading.set(false);
+          this.feedbackMessage.set({
+            type: 'error',
+            text: err?.error?.message || 'Error al calcular opciones de abastecimiento.'
+          });
+        }
+      });
+    } else if (current === 2) {
+      this.wizardStep.set(3);
+    } else if (current === 3) {
+      this.wizardStep.set(4);
+    }
+  }
+
+  onOptionSelected(opt: RouteSuggestionOptionDto): void {
+    this.editableStops.set([...opt.stops]);
+    this.currentEvaluation.set(opt.evaluation);
+    this.availableVehicleMatches.set(opt.vehicleMatches || []);
+
+    const firstMatch = opt.vehicleMatches?.find(v => v.isMatch);
+    if (firstMatch) {
+      this.selectedVehicleId.set(firstMatch.vehicleId);
+    }
+
+    this.updateWizardMap(opt.stops, opt.evaluation.coordinates);
+  }
+
+  moveStop(index: number, direction: -1 | 1): void {
+    const stops = [...this.editableStops()];
+    const target = index + direction;
+    if (target < 0 || target >= stops.length) return;
+
+    const temp = stops[index];
+    stops[index] = stops[target];
+    stops[target] = temp;
+
+    // Renumerar secuencia
+    stops.forEach((s, i) => s.sequence = i + 1);
+    this.editableStops.set(stops);
+
+    // Reevaluar secuencia modificada por el usuario
+    this.apiService.evaluateRouteSequence(stops, this.selectedVehicleId() || undefined).subscribe(evalRes => {
+      this.currentEvaluation.set(evalRes);
+      this.updateWizardMap(stops, evalRes.coordinates);
+    });
+  }
+
+  restoreOptimalOrder(): void {
+    const opt = this.routeOptions().find(o => o.optionId === this.selectedOptionId());
+    if (opt) {
+      this.onOptionSelected(opt);
+    }
+  }
+
+  confirmAndSavePlan(): void {
+    this.actionLoading.set(true);
+    const stops = this.editableStops();
+    const evalData = this.currentEvaluation();
+
+    this.apiService.confirmRoutePlan({
+      vehicleId: this.selectedVehicleId() || undefined,
+      totalDistanceKm: evalData?.totalDistanceKm || 0,
+      totalDurationMinutes: evalData?.totalDurationMinutes || 0,
+      totalCost: evalData?.totalCost || 0,
+      orderIds: Array.from(this.selectedOrderIds()),
+      stops,
+      coordinates: evalData?.coordinates
+    }).subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        this.closeWizard();
+        this.feedbackMessage.set({
+          type: 'success',
+          text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+        });
+        if (res?.id) this.selectedPlanId.set(res.id);
+        this.loadPlans();
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({
+          type: 'error',
+          text: err?.error?.message || 'Error al confirmar la ruta.'
+        });
+      }
+    });
+  }
+
+  // ========================================================
+  // RUTA DE EMERGENCIA
+  // ========================================================
+
+  triggerEmergencyFlow(): void {
+    this.actionLoading.set(true);
+    this.feedbackMessage.set(null);
+
+    this.apiService.getEmergencyRoutes().subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        const count = res?.orders?.length || 0;
+        if (count === 0) {
+          this.feedbackMessage.set({
+            type: 'success',
+            text: res?.message || 'No hay faltantes críticos que requieran ruta de emergencia.'
+          });
+          return;
+        }
+
+        this.feedbackMessage.set({
+          type: 'success',
+          text: res?.message || `Se generaron ${count} pedidos de emergencia listos para planificar.`
+        });
+
+        // Abrir asistente con los pedidos de emergencia cargados
+        this.isWizardOpen.set(true);
+        this.wizardStep.set(1);
+        this.loadPendingOrders();
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({
+          type: 'error',
+          text: err?.error?.message || 'Error al generar requerimientos de emergencia.'
+        });
+      }
+    });
+  }
+
+  private updateWizardMap(stops: RouteCandidateStop[], coordinates?: [number, number][]): void {
+    const markers: MapMarker[] = stops.map(s => ({
+      id: s.servicePointId || s.locationId || s.code,
+      latitude: s.position.lat,
+      longitude: s.position.lon,
+      title: `#${s.sequence}. ${s.name}`,
+      badge: s.kind === 'Pickup' ? 'Bodega (Recogida)' : 'Entrega',
+      badgeColor: s.kind === 'Pickup' ? 'amber' : 'blue'
+    }));
+
+    this.wizardMarkers.set(markers);
+
+    if (coordinates && coordinates.length > 1) {
+      this.wizardPolylines.set([{
+        id: 'wizard-road-route',
+        coordinates,
+        color: '#00A7C4',
+        weight: 5
+      }]);
+    } else {
+      this.wizardPolylines.set([]);
+    }
   }
 
   private buildMap(detail: RoutePlanDetailDto | null): void {
@@ -302,36 +924,47 @@ export class RutasPage implements OnInit {
       return;
     }
 
-    // Traemos las coordenadas de los puntos de servicio
     this.apiService.getServicePoints().subscribe(points => {
-      const markers: MapMarker[] = [];
-      const coords: [number, number][] = [];
+      this.apiService.getWarehouses().subscribe(warehouses => {
+        const allLocations = [...warehouses, ...points];
+        const markers: MapMarker[] = [];
+        const coords: [number, number][] = [];
 
-      for (const stop of detail.stops) {
-        const pt = points.find(p => p.id === stop.servicePointId || p.code === stop.servicePointCode);
-        if (pt && pt.latitude && pt.longitude) {
-          markers.push({
-            id: stop.servicePointId,
-            latitude: pt.latitude,
-            longitude: pt.longitude,
-            title: `${stop.sequence}. ${pt.name || pt.code}`,
-            badge: `#${stop.sequence}`
-          });
-          coords.push([pt.latitude, pt.longitude]);
+        for (const stop of detail.stops) {
+          const pt = allLocations.find(p => p.id === stop.servicePointId || p.code === stop.servicePointCode);
+          if (pt && pt.latitude && pt.longitude) {
+            markers.push({
+              id: stop.servicePointId,
+              latitude: pt.latitude,
+              longitude: pt.longitude,
+              title: `${stop.sequence}. ${pt.name || pt.code}`,
+              badge: `#${stop.sequence}`
+            });
+            coords.push([pt.latitude, pt.longitude]);
+          }
         }
-      }
 
-      this.mapMarkers.set(markers);
-      if (coords.length > 1) {
-        this.mapPolylines.set([{
-          id: 'route-line',
-          coordinates: coords,
-          color: '#00A7C4',
-          weight: 4
-        }]);
-      } else {
-        this.mapPolylines.set([]);
-      }
+        this.mapMarkers.set(markers);
+
+        const detailCoordinates = (detail as any).coordinates;
+        if (detailCoordinates && Array.isArray(detailCoordinates) && detailCoordinates.length > 1) {
+          this.mapPolylines.set([{
+            id: 'route-line',
+            coordinates: detailCoordinates as [number, number][],
+            color: '#00A7C4',
+            weight: 5
+          }]);
+        } else if (coords.length > 1) {
+          this.mapPolylines.set([{
+            id: 'route-line',
+            coordinates: coords,
+            color: '#00A7C4',
+            weight: 4
+          }]);
+        } else {
+          this.mapPolylines.set([]);
+        }
+      });
     });
   }
 }

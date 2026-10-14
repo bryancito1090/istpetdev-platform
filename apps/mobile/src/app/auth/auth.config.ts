@@ -1,21 +1,28 @@
-import { PassedInitialConfig, LogLevel } from 'angular-auth-oidc-client';
+import { LogLevel, PassedInitialConfig } from 'angular-auth-oidc-client';
+import { environment } from '../config/environment';
 
-/**
- * Configuración OIDC con flujo PKCE (S256) para el entorno móvil/PWA.
- * S-09: Placeholders de autoridad OIDC configurados de forma desacoplada
- * para permitir sustitución directa por variables de entorno sin modificar lógica.
- */
+/** Authorization Code + PKCE S256 contra Cognito para la PWA (ADR-10, ADR-18, FR-01 de 013). */
 export const mobileOidcConfig: PassedInitialConfig = {
   config: {
-    authority: 'https://identity.istpetdev.local',
-    redirectUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4200',
-    postLogoutRedirectUri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4200',
-    clientId: 'istpetdev-mobile-pwa',
-    scope: 'openid profile email roles logistics:field',
+    authority: environment.oidc.authority,
+    clientId: environment.oidc.clientId,
+    redirectUrl: environment.oidc.redirectUrl,
+    postLogoutRedirectUri: environment.oidc.postLogoutRedirectUri,
+    scope: 'openid email profile istpetdev-api/access',
     responseType: 'code',
     silentRenew: true,
     useRefreshToken: true,
+    renewTimeBeforeTokenExpiresInSeconds: 60,
+    ignoreNonceAfterRefresh: true,
     logLevel: LogLevel.Warn,
-    secureRoutes: ['https://api.istpetdev.local/', '/api/']
-  }
+    authWellknownEndpoints: {
+      issuer: environment.oidc.authority,
+      tokenEndpoint: `${environment.oidc.cognitoDomain}/oauth2/token`,
+      authorizationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/authorize`,
+      jwksUri: `${environment.oidc.authority}/.well-known/jwks.json`,
+      userInfoEndpoint: `${environment.oidc.cognitoDomain}/oauth2/userInfo`,
+      endSessionEndpoint: `${environment.oidc.cognitoDomain}/logout`,
+      revocationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/revoke`
+    }
+  },
 };

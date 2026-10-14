@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using IstpetDev.Application.Accounts;
 using IstpetDev.Domain.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -13,6 +15,8 @@ namespace IstpetDev.Tests.Support;
 
 public sealed class ApiFactory(string connectionString, bool demoEnabled = true, IReadOnlyDictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
 {
+    public FakeIdentityDirectory Directory { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -32,13 +36,19 @@ public sealed class ApiFactory(string connectionString, bool demoEnabled = true,
             ["Demo:Accounts:1:Role"] = Roles.Conductor,
             ["Demo:Accounts:4:Subject"] = "driver-fixture-duplicate",
         }).AddInMemoryCollection(overrides ?? new Dictionary<string, string?>()));
-        builder.ConfigureTestServices(services => services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+        builder.ConfigureTestServices(services =>
         {
-            // Sustituye solo la descarga de metadatos de Cognito; se conserva toda la validación de producción.
-            var metadata = new OpenIdConnectConfiguration { Issuer = TestTokens.Issuer };
-            metadata.SigningKeys.Add(TestTokens.Key);
-            options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(metadata);
-        }));
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                // Sustituye solo la descarga de metadatos de Cognito; se conserva toda la validación de producción.
+                var metadata = new OpenIdConnectConfiguration { Issuer = TestTokens.Issuer };
+                metadata.SigningKeys.Add(TestTokens.Key);
+                options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(metadata);
+            });
+            // Ninguna prueba llama a AWS: el authority de pruebas tiene forma de Cognito real.
+            services.RemoveAll<IIdentityDirectory>();
+            services.AddSingleton<IIdentityDirectory>(Directory);
+        });
     }
 
     public HttpClient ClientFor(string? subject, string tokenUse = "access")
