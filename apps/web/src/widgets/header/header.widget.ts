@@ -25,6 +25,7 @@ const MANAGER_NAV: NavItem[] = [
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
   { path: '/bodegas', label: 'Bodegas' },
+  { path: '/users', label: 'Usuarios' },
   { path: '/simulation', label: 'Simulador 90d' }
 ];
 
@@ -47,7 +48,7 @@ const AUDITOR_NAV: NavItem[] = [
             <span class="h-1.5 w-1.5 rounded-full bg-primary-500 inline-block mb-1"></span>
           </a>
 
-          @if (isSystemArea() && session.status() === 'authenticated') {
+          @if (session.status() === 'authenticated') {
             <nav class="flex items-center gap-1 text-sm overflow-x-auto">
               @for (item of navItems(); track item.path) {
                 <a
