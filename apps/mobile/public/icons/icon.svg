@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <!-- Background covering whole canvas for safe maskable cropping -->
+  <rect width="512" height="512" fill="url(#bg-grad)" />
+
+  <!-- Logistics Box Symbol -->
+  <g id="box-symbol">
+    <!-- Top Face -->
+    <polygon points="256,120 340,168 256,216 172,168" fill="#ffffff" />
+    <!-- Tape Detail on Top Face -->
+    <polygon points="244,127 268,141 268,195 244,181" fill="#93c5fd" opacity="0.6" />
+    <!-- Left Face -->
+    <polygon points="172,180 248,224 248,314 172,270" fill="#dbeafe" />
+    <!-- Right Face -->
+    <polygon points="264,224 340,180 340,270 264,314" fill="#bfdbfe" />
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="256" y="375" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="54" fill="#ffffff" letter-spacing="4">ISTPET</text>
+  <text x="256" y="415" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="600" font-size="20" fill="#93c5fd" letter-spacing="6">CAMPO</text>
+</svg>
