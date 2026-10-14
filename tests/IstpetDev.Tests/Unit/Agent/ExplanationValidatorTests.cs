@@ -4,9 +4,18 @@ using Xunit;
 
 namespace IstpetDev.Tests.Unit.Agent;
 
+[Trait("Category", "Unit")]
 public class ExplanationValidatorTests
 {
     private readonly IExplanationValidator _validator = new ExplanationValidator();
+
+    [Fact]
+    public void Opposite_sign_without_semantic_magnitude_fact_is_rejected()
+    {
+        Fact[] facts = [new("cost_increase_pct", "route", -1.36m, "%")];
+        Assert.False(_validator.Validate("Incremento del 1.36 %", facts).IsValid);
+        Assert.False(_validator.Validate("Cambio de 1.36", facts).IsValid);
+    }
 
     [Fact]
     public void Matching_decimals_and_rounding_pass_validation()
@@ -55,6 +64,25 @@ public class ExplanationValidatorTests
         var invalid = _validator.Validate("El incremento de costo es de 8 %.", facts);
         Assert.False(invalid.IsValid);
         Assert.Contains("8 %", invalid.MismatchReason);
+    }
+
+    [Fact]
+    public void Negative_percentages_and_magnitudes_match()
+    {
+        var facts = new List<Fact>
+        {
+            new("cost_increase_pct", "VEH-01", -1.36m, "%"),
+            new("cost_reduction_pct", "VEH-01", 1.36m, "%"),
+            new("max_delay_minutes", "VEH-01", 0m, "min"),
+            new("incident_radius_km", "incident", 1.5m, "km")
+        };
+
+        // Coincide con número negativo o con su magnitud provista por fact semántico
+        var v1 = _validator.Validate("Ruta recalculada con variación de costo de -1.36 % y desvío de 0 min ante incidente de 1.5 km.", facts);
+        Assert.True(v1.IsValid, v1.MismatchReason);
+
+        var v2 = _validator.Validate("Ruta recalculada con ahorro del 1.36 % y 0 min de desvío.", facts);
+        Assert.True(v2.IsValid, v2.MismatchReason);
     }
 
     [Fact]

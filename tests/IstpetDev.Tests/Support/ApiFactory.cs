@@ -13,7 +13,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace IstpetDev.Tests.Support;
 
-public sealed class ApiFactory(string connectionString, bool demoEnabled = true, IReadOnlyDictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
+public class ApiFactory(string connectionString, bool demoEnabled = true, IReadOnlyDictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
 {
     public FakeIdentityDirectory Directory { get; } = new();
 
@@ -34,6 +34,9 @@ public sealed class ApiFactory(string connectionString, bool demoEnabled = true,
             ["Demo:Accounts:1:Subject"] = TestTokens.Driver,
             ["Demo:Accounts:1:DisplayName"] = "Conductor de prueba",
             ["Demo:Accounts:1:Role"] = Roles.Conductor,
+            ["Demo:Accounts:4:Subject"] = "driver-fixture-duplicate",
+            ["Demo:Accounts:4:DisplayName"] = "Conductor adicional de prueba",
+            ["Demo:Accounts:4:Role"] = Roles.Conductor,
         }).AddInMemoryCollection(overrides ?? new Dictionary<string, string?>()));
         builder.ConfigureTestServices(services =>
         {

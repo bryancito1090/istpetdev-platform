@@ -24,6 +24,18 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
     };
 
     [Fact]
+    public async Task Invalid_start_list_and_unknown_callback_return_client_errors()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = "Incident" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = 99 })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await planner.PostAsJsonAsync("/api/v1/agent/runs", new { kind = "Incident", incidentId = Guid.NewGuid() })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.GetAsync("/api/v1/agent/runs?limit=0")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await planner.GetAsync("/api/v1/agent/runs?limit=101")).StatusCode);
+    }
+
+    [Fact]
     public async Task Start_run_watch_with_agent_disabled_falls_back_immediately_with_200()
     {
         var connection = postgres.NewDatabase();
@@ -57,8 +69,11 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
         Assert.Equal(HttpStatusCode.OK, listResp.StatusCode);
     }
 
-    [Fact]
-    public async Task Submit_result_requires_automation_role_and_updates_decisions()
+    [Theory]
+    [InlineData("5,0", "Llm")]
+    [InlineData("9999", "Template")]
+    [InlineData("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "Template")]
+    public async Task Submit_result_requires_automation_role_and_updates_decisions(string driverNumber, string expectedSource)
     {
         var connection = postgres.NewDatabase();
         await using var api = new ApiFactory(connection, overrides: new Dictionary<string, string?>
@@ -124,7 +139,7 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
         }
 
         var resultPayload = new AgentResult(
-            Decisions: [new DecisionText(decisionId, "Cobertura en HOS-N01 es 5,0 dias para DES-01", "Alerta de stock: 5,0 dias")],
+            Decisions: [new DecisionText(decisionId, "Cobertura en HOS-N01 es 5,0 dias para DES-01", $"Alerta de stock: {driverNumber} dias")],
             Summary: "Monitoreo completado",
             Model: "gpt-4o",
             PromptVersion: "v1.2",
@@ -151,9 +166,19 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres)
             Assert.Equal("gpt-4o", updatedRun.Model);
 
             var updatedDec = await db.AgentDecisions.SingleAsync(d => d.Id == decisionId);
-            Assert.Equal("Llm", updatedDec.ExplanationSource);
-            Assert.Equal("Cobertura en HOS-N01 es 5,0 dias para DES-01", updatedDec.Rationale);
-            Assert.Null(updatedDec.ExplanationMismatch);
+            Assert.Equal(expectedSource, updatedDec.ExplanationSource);
+            if (expectedSource == "Llm")
+            {
+                Assert.Equal("Cobertura en HOS-N01 es 5,0 dias para DES-01", updatedDec.Rationale);
+                Assert.Null(updatedDec.ExplanationMismatch);
+            }
+            else
+            {
+                Assert.Equal("Plantilla inicial", updatedDec.Rationale);
+                Assert.DoesNotContain(driverNumber, updatedDec.DriverMessage);
+                Assert.Contains(driverNumber.Length > 160 ? "driver_message_too_long" : driverNumber, updatedDec.ExplanationMismatch);
+                Assert.NotEmpty(updatedDec.DriverMessage);
+            }
         }
 
         // 3. Resubmitting result after completion -> 409 Conflict (Late)

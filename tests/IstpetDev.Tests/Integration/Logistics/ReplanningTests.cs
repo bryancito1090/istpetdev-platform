@@ -266,6 +266,10 @@ public sealed class ReplanningTests(PostgisContainer postgres)
         Assert.Equal(1, result.PreviousRevision);
         Assert.Equal(2, result.ProposedRevision);
         Assert.NotNull(result.Diff);
+        Assert.NotNull(result.AgentDecisionId);
+
+        var recordedDecision = await db.AgentDecisions.FirstAsync(d => d.Id == result.AgentDecisionId);
+        Assert.Equal(result.ProposedRoutePlanId, recordedDecision.CorrelationId);
 
         // Verificar que la nueva revisión existe en BD
         var newPlan = await db.RoutePlans.FirstAsync(p => p.Id == result.ProposedRoutePlanId);

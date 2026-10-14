@@ -20,7 +20,7 @@ public sealed record AgentRunView(
     IReadOnlyList<ToolCallTrace> ToolCalls,
     IReadOnlyList<AgentDecisionView> Decisions);
 
-public sealed record ToolCallTrace(string Method, string Path, int Status, int Milliseconds, DateTime AtUtc);
+public sealed record ToolCallTrace(string Method, string Path, int Status, int Milliseconds, DateTime AtUtc, string? Event = null);
 
 public sealed record AgentDecisionView(
     Guid AgentDecisionId,
@@ -56,6 +56,7 @@ public interface IAgentRunService
 {
     Task<AgentRunView> StartAndWaitAsync(StartRunRequest request, Guid? actorAccountId, CancellationToken ct);
     Task<ResultOutcome> SubmitResultAsync(Guid runId, AgentResult result, CancellationToken ct);
+    Task<AgentRunView> ResumeAndWaitAsync(Guid runId, CancellationToken ct);
     Task<AgentRunView?> GetAsync(Guid runId, CancellationToken ct);
     Task<IReadOnlyList<AgentRunView>> ListAsync(int limit, AgentRunKind? kind, AgentRunStatus? status, CancellationToken ct);
 }
@@ -63,4 +64,6 @@ public interface IAgentRunService
 public interface IN8nTrigger
 {
     Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct);
+    Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, DateTime? deadlineUtc, CancellationToken ct)
+        => TriggerAsync(runId, kind, incidentId, ct);
 }

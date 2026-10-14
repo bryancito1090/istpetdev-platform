@@ -178,9 +178,11 @@ public sealed class RoutePlansController(
         var result = await planner.PlanAsync(req, ct);
 
         var planDate = req.Date ?? await clock.TodayAsync(ct);
+        var agentRunId = await GetAgentRunIdAsync("Watch", ct);
 
         // Guardar cada ruta como un RoutePlan con estado Proposed
         var createdPlans = new List<RoutePlan>();
+        var agentDecisions = new Dictionary<Guid, Guid>();
         foreach (var r in result.Routes)
         {
             var baseCode = $"PLAN-{planDate:yyyyMMdd}-{r.VehicleCode}";
@@ -235,11 +237,58 @@ public sealed class RoutePlansController(
             }
 
             createdPlans.Add(plan);
+
+            if (agentRunId.HasValue)
+            {
+                var routeFacts = result.Facts.ToList();
+                routeFacts.Add(new Fact("revision", r.VehicleCode, plan.Revision, "revision"));
+                routeFacts.Add(new Fact("stops_count", r.VehicleCode, r.Stops.Count, "stops"));
+                routeFacts.Add(new Fact("total_km", r.VehicleCode, Math.Round(r.Km, 2), "km"));
+                routeFacts.Add(new Fact("total_minutes", r.VehicleCode, Math.Round(r.Minutes, 2), "min"));
+                routeFacts.Add(new Fact("total_cost", r.VehicleCode, Math.Round(r.Cost, 2), "USD"));
+                for (int i = 1; i <= r.Stops.Count + 4; i++)
+                {
+                    routeFacts.Add(new Fact("stop_sequence", $"stop_{i}", i, "sequence"));
+                }
+                foreach (var s in r.Stops)
+                {
+                    routeFacts.Add(new Fact("arrival_time", s.PointCode, (decimal)s.ArrivalUtc.TimeOfDay.TotalHours, "hora"));
+                    routeFacts.Add(new Fact("arrival_time", s.PointCode, (decimal)s.ArrivalUtc.TimeOfDay.TotalMinutes, "min"));
+                }
+
+                var decision = new AgentDecision
+                {
+                    OrganizationId = DemoOrganization.Id,
+                    Kind = "WATCH_ROUTE_PROPOSAL",
+                    Status = "Proposed",
+                    TriggerJson = JsonSerializer.Serialize(new { runId = agentRunId.Value, kind = "Watch" }),
+                    ProposalJson = JsonSerializer.Serialize(new
+                    {
+                        proposedRoutePlanId = plan.Id,
+                        revision = plan.Revision,
+                        facts = routeFacts
+                    }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true }),
+                    Rationale = templates.Explain("plan", routeFacts),
+                    CorrelationId = agentRunId.Value,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                db.AgentDecisions.Add(decision);
+                agentDecisions[plan.Id] = decision.Id;
+            }
         }
 
         await db.SaveChangesAsync(ct);
 
-        var explanation = templates.Explain("plan", result.Facts);
+        var allFacts = result.Facts.ToList();
+        foreach (var p in createdPlans)
+        {
+            var r = result.Routes.FirstOrDefault(x => x.VehicleId == p.VehicleId);
+            var vCode = r?.VehicleCode ?? "";
+            allFacts.Add(new Fact("revision", vCode, p.Revision, "revision"));
+            allFacts.Add(new Fact("stops_count", vCode, r?.Stops.Count ?? 0, "stops"));
+        }
+
+        var explanation = templates.Explain("plan", allFacts);
 
         return StatusCode(StatusCodes.Status201Created, new
         {
@@ -249,10 +298,11 @@ public sealed class RoutePlansController(
                 id = p.Id,
                 code = p.Code,
                 revision = p.Revision,
-                status = p.Status
+                status = p.Status,
+                agentDecisionId = agentDecisions.TryGetValue(p.Id, out var decisionId) ? decisionId : (Guid?)null
             }),
             unserved = result.Unserved,
-            facts = result.Facts,
+            facts = allFacts,
             explanation
         });
     }
@@ -297,8 +347,33 @@ public sealed class RoutePlansController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> Replan([FromRoute] Guid id, [FromBody] ReplanRequestInput req, CancellationToken ct = default)
     {
-        var res = await replanner.ReplanAsync(id, req.IncidentId, ct);
+        ReplanResult res;
+        try { res = await replanner.ReplanAsync(id, req.IncidentId, ct); }
+        catch (ReplanConflictException error) { return Conflict(new ProblemDetails { Status = 409, Title = error.Message }); }
+        var agentRunId = await GetAgentRunIdAsync("Incident", ct);
+        if (agentRunId.HasValue && res.AgentDecisionId.HasValue)
+        {
+            var decision = await db.AgentDecisions.FirstOrDefaultAsync(d => d.Id == res.AgentDecisionId.Value, ct);
+            if (decision is not null)
+            {
+                decision.CorrelationId = agentRunId.Value;
+                await db.SaveChangesAsync(ct);
+            }
+        }
         return StatusCode(StatusCodes.Status201Created, res);
+    }
+
+    private async Task<Guid?> GetAgentRunIdAsync(string kind, CancellationToken ct)
+    {
+        if (!User.IsInRole(Roles.Automatizacion) ||
+            !Request.Headers.TryGetValue("X-Agent-Run-Id", out var value) ||
+            !Guid.TryParse(value, out var runId)) return null;
+
+        return await db.AgentRuns.AnyAsync(
+            r => r.Id == runId && r.OrganizationId == DemoOrganization.Id && r.Status == "Running" && r.Kind == kind,
+            ct)
+            ? runId
+            : null;
     }
 
     [HttpPost("{id:guid}/revert")]

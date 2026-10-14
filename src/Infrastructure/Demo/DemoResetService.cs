@@ -64,8 +64,11 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.ReceiptLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Receipts.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.InventoryMovements.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
-        await db.DeliveryLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RouteStockReservations.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.QrAccessTokens.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.HandlingUnitLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.DeliveryLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.HandlingUnits.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Deliveries.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Incidents.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RouteStops.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
@@ -76,8 +79,6 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         // Se conservan SimulationRuns y SimulationMetrics completados para spec 005
         await db.IdempotencyRecords.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.StockBalances.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
-        await db.HandlingUnitLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
-        await db.HandlingUnits.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Consumptions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Lots.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Locations.Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Vehicle).ExecuteDeleteAsync(ct);

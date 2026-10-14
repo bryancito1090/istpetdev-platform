@@ -1,7 +1,7 @@
 ---
 tipo: automatizacion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -91,3 +91,39 @@ API técnica autenticada con Cognito M2M/rol Automatización, cron `America/Guay
 ## Agente con herramientas — propuesta del 12 de octubre de 2026
 
 La sesión de definición propone que WF-01 y WF-02 evolucionen a dos workflows de agente, `vigia` e `incidente`, con un nodo AI Agent cuyas herramientas son endpoints del motor logístico (ADR-22, [[Definiciones de producto y plan hasta el pitch]]). Se conservan los principios de esta nota: la API calcula y conserva el estado; n8n coordina; el LLM no cambia stock, prioridades ni fechas; una caída del LLM no detiene la operación (la API responde a los 10 s con el camino determinista). Cambian tres cosas: el LLM elige qué herramientas llamar; la política determinista del motor decide qué se publica solo; y cada cifra del texto se valida contra los datos calculados. Proveedor: DeepSeek, con prueba de aceptación. Workflows y prompt versionados en `automation/n8n/`; detalle en el spec 003 del repositorio (`docs/specs/003-agente-logistico/`).
+
+
+## Avance verificable de #37 — 14 de octubre de 2026
+
+La rama `feature/37-n8n-workflows-local` contiene prompt, plantillas, workflows
+DeepSeek nativos, generador, perfil Docker `agent`, arranque y aceptación local.
+Todavía no está integrada en `develop`. La versión confirmada por Bryan es
+`2.39.5`; la configuración de su servidor sigue en `latest` y #39 debe fijarla.
+
+Se importaron y publicaron los workflows en el n8n local. En el servidor de
+Bryan se crearon borradores de `vigia` e `incidente` en su proyecto personal,
+ambos inactivos y con `DeepSeek account` enlazada. Parámetros y conexiones
+coinciden con el repositorio; la instalación oficial seguirá el SHA integrado
+en #39. El Schedule de vigía permanece deshabilitado.
+
+Bryan revisó y autorizó el plan dirigido de #38; se publicó su resumen y se
+aplicó: 1 recurso añadido, 1 actualizado, 0 destruidos. El cliente M2M ya existe
+y emite token con scope `istpetdev-api/automation`; el secreto está en el `.env`
+local ignorado. La configuración y validación de la API de producción siguen
+pendientes en #38. Bryan confirmó la clave DeepSeek local; su uso real se está
+verificando. No existe aún informe de 30 ejecuciones reales ni
+ensayo CE-06 registrado en la laptop (drill Plan B: fallback en 21 ms con n8n caído, Completed en 6661 ms con n8n levantado).
+
+El seguimiento y las instrucciones de obtención de credenciales se mantienen
+en [task.md](../../specs/003-agente-logistico/task.md) y
+[guia-cierre-37.md](../../specs/003-agente-logistico/guia-cierre-37.md).
+No se cambian el papel determinista de la API, las cinco herramientas, el
+control humano ni el estado de propuesta de ADR-22.
+
+El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
+1. El AI Agent y los nodos de herramientas se enlazaron con DeepSeek nativo en `build-workflows.py`.
+2. Se eliminó la carrera de lectura en `AgentRunService` persistiendo decisiones antes de marcar `Completed`.
+3. Se verificó `applied=true` en cada reset.
+4. Se ejecutó la matriz de aceptación de 30 corridas reales consecutivas en API 5017 contra DeepSeek nativo (reporte `artifacts/agent-acceptance/20261014-150147-176964/report.md`): 0 fallbacks, 100% herramientas 2xx (60/60), p95 9127 ms (<=10 s), 96% decisiones LLM (48/50) y 10/10 inyecciones neutralizadas con idéntica política y 0 herramientas prohibidas.
+
+Entrega verificada localmente y transferida a Codex para revisión e integración en `develop` vía PR; el despliegue en producción permanece planificado en [plan-cierre-39-produccion.md](../../specs/003-agente-logistico/plan-cierre-39-produccion.md).

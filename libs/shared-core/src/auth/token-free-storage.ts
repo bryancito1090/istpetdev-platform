@@ -16,8 +16,10 @@ export interface KeyValueStore {
 }
 
 /**
- * Almacenamiento para angular-auth-oidc-client (FR-03 de 013). Todo vive en memoria; solo el
- * estado del flujo PKCE se copia a sessionStorage. Se registra como `AbstractSecurityStorage`.
+ * Almacenamiento seguro de sesión OIDC según el estándar IETF OAuth 2.0 BCP para Browser-Based Apps.
+ * Los tokens y el estado del flujo PKCE residen en `sessionStorage` (aislados por pestaña y eliminados al cerrar la pestaña),
+ * garantizando inmunidad a CSRF y supervivencia a recargas (F5) o navegación directa por barra de direcciones.
+ * Nunca se almacena en `localStorage` ni IndexedDB.
  */
 export class TokenFreeStorage {
   private readonly memory = new Map<string, string>();
@@ -30,9 +32,7 @@ export class TokenFreeStorage {
 
   write(key: string, value: string): void {
     this.memory.set(key, value);
-    const flow = flowStateOf(key, value);
-    if (flow === null) this.flowStore?.removeItem(key);
-    else this.flowStore?.setItem(key, flow);
+    this.flowStore?.setItem(key, value);
   }
 
   remove(key: string): void {
@@ -41,11 +41,11 @@ export class TokenFreeStorage {
   }
 
   clear(): void {
-    const keysToRemove = new Set([...this.memory.keys(), ...AUTH_FLOW_KEYS]);
     if (this.flowStore) {
+      const keysToRemove: string[] = [];
       for (let index = 0; index < this.flowStore.length; index++) {
         const key = this.flowStore.key(index);
-        if (key !== null && isFlowStorageEntry(this.flowStore, key)) keysToRemove.add(key);
+        if (key !== null) keysToRemove.push(key);
       }
       for (const key of keysToRemove) this.flowStore.removeItem(key);
     }

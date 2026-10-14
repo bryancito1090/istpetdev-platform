@@ -321,6 +321,26 @@ Fuente: instrucción directa de Bryan/Jorge de centralizar toda la persistencia 
 
 Verificación documental de esta actualización: **84 notas Markdown**, **829 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
 
+
+## Workflows, copia local y desbloqueo M2M del spec 003 — 14 de octubre de 2026
+
+Fuente: solicitud de Bryan de terminar #37, mantener `task.md` al día y verificar
+la coherencia con la bóveda. Se documentan versión n8n 2.39.5, workflows locales,
+borradores inactivos en el servidor con DeepSeek nativo y límites de aceptación
+sin inventar resultados. Bryan revisó y autorizó el plan dirigido de #38;
+se publicó en GitHub y aplicó con 1 añadido, 1 actualizado y 0 destruidos.
+Se comprobó emisión del token automation; secretos solo en configuración local
+ignorada. La API de aceptación usa una base descartable y puerto separado para
+preservar el entorno compartido. Se detectó que Cognito no tenía usuarios humanos: Bryan autorizó crear su cuenta,
+recibió invitación y completó registro/MFA; se obtuvo token por PKCE. M2M local
+responde 200/403, pero Watch real termina Fallback agent_error. Bryan solicitó
+el plan y la delegación de #37/T0–T10 a Antigravity; aceptación real pendiente.
+
+Seguimiento: [task.md](../../specs/003-agente-logistico/task.md),
+[[n8n e IA]] y [[Registro de seguimiento y hallazgos]]. ADR-22 conserva su estado
+hasta aprobación del equipo; no se declara el proveedor ni producción validados.
+
+Verificación documental: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**; un aviso previo de lenguaje, sin modificar su alcance.
 ## Saneamiento de dependencias y ADR-04 — 14 de octubre de 2026
 
 Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
@@ -344,6 +364,67 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 - Blindaje de pruebas de persistencia: actualización de `LeanSchemaTests` (36 tablas núcleo) y `MigrationSafetyTests` (7 migraciones consecutivas validadas sin DDL en runtime).
 - Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **84 notas Markdown**, **848 enlaces internos resueltos**, **0 errores**.
+
+## Revisión e integración local de #37 — 14 de octubre de 2026
+
+Fuente: entrega de Antigravity y solicitud de Bryan de comprobar y completar
+las casillas de spec 003. Bryan confirmó la aprobación del diseño/ADR-22; se
+actualizan spec, plan, tareas y hechos canónicos. La revisión completa caminos
+locales faltantes de incidente automático, fallback, contexto firmado, traza,
+concurrencia y recorrido E2E. Evidencia y pendientes en
+[revision-integracion-37.md](../../specs/003-agente-logistico/revision-integracion-37.md).
+Producción permanece en #39; la aceptación del árbol final y CI aún se verifican.
+
+Verificación documental: **84 notas Markdown**, **847 enlaces internos resueltos**,
+**0 errores**; cuatro avisos de lenguaje previos, fuera de este cambio.
+## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
+
+Fuente: atención y cierre de Issue #35 por Joseph Baño y Jorge Doicela a través del PR #70 (commit `0c13909`, merge `d2b7850`). Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para abortar el arranque de la API ante fallos de migración. En [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN. Se sincroniza la prueba de integración `MigrationSafetyTests.cs` para validar 8 migraciones canónicas de EF Core tras la incorporación de `SimulationRunsAndEvents`.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **856 enlaces internos resueltos**, **0 errores**.
 
 
+## Kit previo T1 del spec 006 y estado de O-04/O-06 — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 1), pedido de Joseph Baño; trabajo hecho por IA (Claude Code, Opus 5.5) sobre `develop` en la rama `feature/46-kit-previo-006`. Sin entrevistas, ensayos, cifras, aprobaciones ni horas del equipo nuevas.
+- [[Registro de mentorias]]: hoja de entrevista con tres permisos separados (notas, cita sin nombre, mención de rol/organización) y preguntas 2 y 4 sin presuponer el hecho.
+- [[Guion del pitch]]: aviso de que el complemento del 006 sustituye en propuesta el recorrido de 180 s; pregunta 11 del banco sobre escala.
+- [[Modelo de negocio y piloto]]: resumen según Anexo 5.6; contradicción registrada sobre el costo de hosting (USD 37/mes sin RDS); fila de mapas alineada con ADR-05/ADR-23.
+- [[SERCOP limpieza hospitalaria y sanciones]]: URL y citas comprobadas el 14-oct; cita literal en la fila de HGDC.
+- [[Consultas para la organizacion]]: O-04 y O-06 siguen pendientes; se registra qué dice el manual y que las «Indicaciones para pitch y demostración» (§7.2, p. 7) no están en el repositorio.
+- Seguimiento en [[Registro de trabajo previo y del evento]], [[Backlog]] (B-45) y, fuera de la bóveda, `task.md` (T1) y `test-e2e.md` (E2E-01) del spec 006. CE-01 queda pendiente de la revisión humana de unos 15 min.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **867 enlaces internos resueltos**, **0 errores**.
+
+## T2 del spec 006: matriz de afirmaciones y guion — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 2), pedido de Joseph Baño; borrador hecho por IA (Claude Code, Opus 5.5) sobre `develop` en `7aed1eb`, rama `feature/46-fase2-guion-auditoria`. Sin entrevistas, ensayos, cronometrajes ni aprobaciones nuevas.
+- [[Guion del pitch]]: «Versión de trabajo T2» con cortes 3/5/7 (metas internas 160/280/400 s), cinco papeles, etiquetas vivo previsto/grabado/simulado/propuesto, frases retiradas y estructura de siete diapositivas sin archivo.
+- [[Consultas para la organizacion]]: O-04 y O-06 revisadas de nuevo; siguen sin respuesta con fuente.
+- [[Registro de trabajo previo y del evento]]: fila del borrador T2.
+- Fuera de la bóveda: `matriz-afirmaciones.md` y `evidencia/2026-10-14-suites-fase2.md` del spec 006 (105 pruebas automatizadas, todas pasaron); `task.md` (T2) y `test-e2e.md` (E2E-03 y E2E-05) con estado. La matriz registra dos contradicciones: 005 figura cerrado sin corrida oficial ni ZIP, y 004 figura concluido sin prueba de integración de despacho/recepción ni ensayo en teléfono.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **872 enlaces internos resueltos**, **0 errores**.
+
+## Revisión de Joseph para el kit y el borrador del guion — 14 de octubre de 2026
+
+Joseph Baño (Andrés) informó que revisó durante 15 minutos y aprobó los cinco componentes del kit T1 del PR #71 (`228ab72`), sin correcciones adicionales comunicadas. No informó horas de inicio y fin. CE-01 quedó registrado en `task.md` y E2E-01 del spec 006 y en [[Registro de trabajo previo y del evento]]; B-45 se actualizó en [[Backlog]]. Joseph también aprobó el borrador T2 (`8693f73`). La revisión posterior ajustó las afirmaciones A-16/A-17/A-27 de `matriz-afirmaciones.md` para limitar lo dicho a la prueba de API; faltan segundo revisor, PDF y ensayos para CE-03/CE-06.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **880 enlaces internos resueltos**, **0 errores**.
+
+## T3–T5 del spec 006: preparación de escena, feria y ensayos — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (Claude Code, Opus 5.5) en la rama `feature/46-fase3-escena-ensayos` (PR #75), sobre `f85b5e8` (PR #73 fusionado). Joseph informó que no hubo ensayos, video ni segunda revisión, y que los nombres de los papeles no están confirmados. Sin entrevistas, cronometrajes ni aprobaciones nuevas.
+- [[Guion del pitch]] y [[Checklist y contingencias]]: avisos que remiten a la escena preparada y a las contingencias C-01–C-05.
+- [[Consultas para la organizacion]]: O-04 y O-06 revisadas en la fase 3; siguen sin respuesta con fuente.
+- [[Registro de trabajo previo y del evento]] y [[Backlog]] (B-46): fila y estado de la preparación.
+- Fuera de la bóveda: `escena-y-contingencias.md`, `hojas-feria.md` y `registro-ensayos.md` del spec 006, hoja de segunda revisión en `matriz-afirmaciones.md`, y estado en `task.md` y `test-e2e.md`.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **885 enlaces internos resueltos**, **0 errores**.
+
+## T6 del spec 006: manifiesto y presentación provisional — 14 de octubre de 2026, 16:00
+
+Fuente: issue #46 (fase final), pedido de Joseph Baño; IA (Claude Code, Opus 5.5) en el PR #76. Se crearon `manifiesto-paquete.md` y `materiales/` (pptx y PDF provisionales con su generador y SHA-256 en el manifiesto) del spec 006. [[Registro de trabajo previo y del evento]] añade la tabla del tag `pre-evento` y la sección «Cambios durante el evento», vacías. En [[Consultas para la organizacion]], O-04/O-06 siguen pendientes. Sin ensayos, entrevistas, video, tag ni entrega.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **888 enlaces internos resueltos**, **0 errores**.

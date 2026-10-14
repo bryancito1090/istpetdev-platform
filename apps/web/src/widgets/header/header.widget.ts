@@ -26,6 +26,7 @@ const MANAGER_NAV: NavItem[] = [
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
   { path: '/bodegas', label: 'Bodegas' },
+  { path: '/users', label: 'Usuarios' },
   { path: '/simulation', label: 'Simulador 90d' }
 ];
 

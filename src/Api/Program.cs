@@ -52,6 +52,19 @@ if (builder.Environment.IsDevelopment())
     }
 }
 
+// Keep the local API and n8n on the same HMAC secret. An explicit Agent:N8n
+// setting still wins (as used by production); the shared local .env value is a fallback.
+if (string.IsNullOrWhiteSpace(builder.Configuration["Agent:N8n:WebhookSecret"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["ISTPETDEV_WEBHOOK_SECRET"]))
+{
+    builder.Configuration["Agent:N8n:WebhookSecret"] = builder.Configuration["ISTPETDEV_WEBHOOK_SECRET"];
+}
+if (string.IsNullOrWhiteSpace(builder.Configuration["Agent:N8n:ApiBaseUrl"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["ISTPETDEV_API_BASE_URL"]))
+{
+    builder.Configuration["Agent:N8n:ApiBaseUrl"] = builder.Configuration["ISTPETDEV_API_BASE_URL"];
+}
+
 // Safe logging: ensure no headers/tokens are leaked in logs
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -132,9 +145,9 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableS
 app.UseCors("IstpetDevCors");
 
 app.UseAuthentication();
+app.UseMiddleware<AgentRunTraceMiddleware>();
 app.UseRateLimiter();
 app.UseAuthorization();
-app.UseMiddleware<AgentRunTraceMiddleware>();
 
 // 1. Process Liveness: returns 200 OK as long as the process is alive, regardless of cloud/DB
 app.MapHealthChecks("/health/live", new HealthCheckOptions
@@ -183,7 +196,10 @@ app.MapControllers();
 
 app.Run();
 
-// Migraciones opcionales y cuentas de demo. Un fallo se registra y la API arranca; /health/ready lo reporta.
+// Migraciones y aprovisionamiento inicial de base de datos.
+// Politica Fail-Fast: Si ApplyMigrations=true o se pasa --migrate y ocurre un fallo, la excepcion se relanza (throw)
+// para forzar la detencion inmediata del contenedor y evitar que el despliegue en CI/CD reporte exito falso.
+// Cuando ApplyMigrations=false, la API inicia y delega la observabilidad de conexion a /health/ready (503 si falla).
 static async Task PrepareDatabaseAsync(WebApplication app, string[] args)
 {
     using var scope = app.Services.CreateScope();

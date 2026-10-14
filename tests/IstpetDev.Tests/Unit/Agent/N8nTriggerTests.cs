@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Tests.Unit.Agent;
 
+[Trait("Category", "Unit")]
 public sealed class N8nTriggerTests
 {
     private const string Secret = "super-secret-hmac-key";
@@ -126,6 +127,99 @@ public sealed class N8nTriggerTests
         using var doc = JsonDocument.Parse(capturedBody);
         Assert.Equal(incidentId, doc.RootElement.GetProperty("incidentId").GetGuid());
         Assert.Equal("Incident", doc.RootElement.GetProperty("kind").GetString());
+    }
+
+    [Fact]
+    public async Task WebhookUrl_configuration_targets_watch_and_incident_suffixes()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        var handler = new MockHttpHandler(req =>
+        {
+            capturedRequest = req;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+
+        var client = new HttpClient(handler);
+        var options = Options.Create(new N8nOptions
+        {
+            WebhookUrl = "http://localhost:5678/webhook/istpetdev/agent",
+            WebhookSecret = Secret,
+            ApiBaseUrl = "http://localhost:5000"
+        });
+
+        var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
+
+        // Test Watch suffix
+        await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
+        Assert.Equal("http://localhost:5678/webhook/istpetdev/agent/watch", capturedRequest?.RequestUri?.ToString());
+
+        // Test Incident suffix
+        await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Incident, Guid.NewGuid(), CancellationToken.None);
+        Assert.Equal("http://localhost:5678/webhook/istpetdev/agent/incident", capturedRequest?.RequestUri?.ToString());
+    }
+
+    [Fact]
+    public async Task TriggerAsync_with_explicit_deadline_uses_it_in_payload()
+    {
+        string? capturedBody = null;
+        var handler = new MockHttpHandler(req =>
+        {
+            capturedBody = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+
+        var client = new HttpClient(handler);
+        var options = Options.Create(new N8nOptions { WebhookSecret = Secret });
+        var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
+
+        var explicitDeadline = DateTime.SpecifyKind(new DateTime(2030, 1, 1, 12, 0, 0), DateTimeKind.Utc);
+        await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, explicitDeadline, CancellationToken.None);
+
+        Assert.NotNull(capturedBody);
+        using var doc = JsonDocument.Parse(capturedBody);
+        Assert.Equal(explicitDeadline, doc.RootElement.GetProperty("deadlineUtc").GetDateTime());
+    }
+
+    [Fact]
+    public async Task Expired_deadline_does_not_send_webhook()
+    {
+        var sent = false;
+        var handler = new MockHttpHandler(_ =>
+        {
+            sent = true;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var trigger = new N8nTrigger(
+            new HttpClient(handler),
+            Options.Create(new N8nOptions { WebhookSecret = Secret }),
+            NullLogger<N8nTrigger>.Instance);
+
+        var outcome = await trigger.TriggerAsync(
+            Guid.NewGuid(), AgentRunKind.Watch, null,
+            DateTime.UtcNow.AddMilliseconds(-1), CancellationToken.None);
+
+        Assert.Equal(TriggerOutcome.Error, outcome);
+        Assert.False(sent);
+    }
+
+    [Fact]
+    public async Task Missing_webhook_secret_does_not_send_webhook()
+    {
+        var sent = false;
+        var handler = new MockHttpHandler(_ =>
+        {
+            sent = true;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var trigger = new N8nTrigger(
+            new HttpClient(handler),
+            Options.Create(new N8nOptions()),
+            NullLogger<N8nTrigger>.Instance);
+
+        var outcome = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
+
+        Assert.Equal(TriggerOutcome.Error, outcome);
+        Assert.False(sent);
     }
 
     [Fact]

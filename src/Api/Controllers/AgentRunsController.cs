@@ -1,19 +1,28 @@
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application.Agent;
+using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/agent/runs")]
-public sealed class AgentRunsController(IAgentRunService agentRunService) : ControllerBase
+public sealed class AgentRunsController(IAgentRunService agentRunService, IApplicationDbContext db) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> StartRun([FromBody] StartRunRequest request, CancellationToken ct = default)
     {
+        if (!Enum.IsDefined(request.Kind) || (request.Kind == AgentRunKind.Incident && !request.IncidentId.HasValue))
+        {
+            ModelState.AddModelError(nameof(request.Kind), "Kind debe ser Watch o Incident; Incident requiere incidentId.");
+            return ValidationProblem(ModelState);
+        }
+        if (request.Kind == AgentRunKind.Incident && !await db.Incidents.AnyAsync(i => i.Id == request.IncidentId && i.OrganizationId == DemoOrganization.Id, ct))
+            return NotFound();
         var view = await agentRunService.StartAndWaitAsync(request, User.AccountId(), ct);
         return Ok(view);
     }
@@ -36,6 +45,11 @@ public sealed class AgentRunsController(IAgentRunService agentRunService) : Cont
         [FromQuery] string? status = null,
         CancellationToken ct = default)
     {
+        if (limit is < 1 or > 100)
+        {
+            ModelState.AddModelError(nameof(limit), "limit debe estar entre 1 y 100.");
+            return ValidationProblem(ModelState);
+        }
         AgentRunKind? parsedKind = null;
         if (!string.IsNullOrWhiteSpace(kind) && Enum.TryParse<AgentRunKind>(kind, true, out var k))
         {
@@ -56,6 +70,7 @@ public sealed class AgentRunsController(IAgentRunService agentRunService) : Cont
     [Authorize(Roles = Roles.Automatizacion)]
     public async Task<IActionResult> SubmitResult([FromRoute] Guid id, [FromBody] AgentResult result, CancellationToken ct = default)
     {
+        if (!await db.AgentRuns.AnyAsync(r => r.Id == id && r.OrganizationId == DemoOrganization.Id, ct)) return NotFound();
         var outcome = await agentRunService.SubmitResultAsync(id, result, ct);
 
         return outcome switch
