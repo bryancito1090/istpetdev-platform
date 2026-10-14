@@ -14,7 +14,7 @@
 | T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | hecho |
 | T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | hecho |
 | T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | hecho |
-| T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | pendiente |
+| T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | hecho |
 | T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | pendiente |
 | T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | pendiente |
 | T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | pendiente |
@@ -1225,7 +1225,7 @@ git commit -m "feat(identidad): script idempotente de cuentas de demo (spec 013 
 - Consumes: —
 - Produces: `class TokenFreeStorage { read(key): string | null; write(key, value): void; remove(key): void; clear(): void }` (constructor opcional `flowStore: KeyValueStore | null`); `AUTH_FLOW_KEYS`; `isPrivateApiRequest(url: string, apiUrl: string): boolean`; `safeReturnUrl(value: string | null | undefined): string | null`; `cognitoLogoutUrl(cognitoDomain: string, clientId: string, logoutUri: string): string`; scripts raíz `test:shared`, `test:frontend`.
 
-- [ ] **Step 1: Instalar Vitest en `shared-core` y excluir specs del build**
+- [x] **Step 1: Instalar Vitest en `shared-core` y excluir specs del build**
 
 Run: `npm install -D -E vitest@4 --workspace=libs/shared-core`
 
@@ -1238,7 +1238,7 @@ En `libs/shared-core/package.json`, dentro de `scripts`, añadir `"test": "vites
     "test:frontend": "npm run test:shared && npm run test:web && npm run test:mobile",
 ```
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `libs/shared-core/src/auth/token-free-storage.spec.ts`:
 
@@ -1357,12 +1357,12 @@ describe('cognitoLogoutUrl', () => {
 });
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `npm run test:shared`
 Expected: FAIL con «Failed to resolve import "./token-free-storage"».
 
-- [ ] **Step 4: Implementación mínima**
+- [x] **Step 4: Implementación mínima**
 
 `libs/shared-core/src/auth/token-free-storage.ts`:
 
@@ -1471,12 +1471,12 @@ Añadir al final de `libs/shared-core/src/index.ts`:
 export * from './auth';
 ```
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:shared && npm run build:shared`
 Expected: PASS (4 + 19 casos) y `dist/` sin archivos `.spec`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/shared-core package.json package-lock.json
