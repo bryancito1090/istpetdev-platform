@@ -53,6 +53,8 @@ Revisión documental del kit T1 del spec 006, hecha por IA sobre el repositorio 
 | Duración (O-04) | La agenda del 17-oct (§8.2, p. 8, transcrita en [[Cronograma oficial]]) fija 16:15–18:15, 120 min, para «Pitch y demostración ante jurado» de todos los equipos, sin duración por equipo ni tiempo de preguntas. §5 (p. 5) pide presentar «dentro de los tiempos establecidos» sin fijarlos. | [[Registro de mentorias]] no registra respuesta de la capacitación del 8-oct. Las notas del equipo repiten «PENDIENTE (O-04)»; 3 min es meta interna ([[Hechos canonicos]]). | Pendiente |
 | Entrega (O-06) | La entrega de materiales es el 17-oct de 16:00 a 16:15 (§8.2, p. 8); §9 (p. 8) lista los siete entregables y §16.1 (p. 14) recomienda «formatos compatibles», sin canal, plataforma, formato ni límite. | Sin respuesta registrada. | Pendiente |
 
+**Revisión del 14-oct, 16:00 (fase final del issue #46):** sin cambios en el repositorio, las issues ni el correo de Joseph. El editable y el PDF del 006 son provisionales y no se presentan como formato oficial.
+
 **Revisión del 14-oct (fase 3 del issue #46):** sin cambios. Se buscó otra vez en el repositorio, en las issues y en el correo de Joseph: no hay respuesta de la organización sobre la duración ni sobre el formato o canal de entrega. Corte y materiales no se adaptan.
 
 **Nueva revisión el 14-oct (fase 2 del issue #46):** sin cambios. No hay respuesta con fuente en esta nota, en [[Registro de mentorias]], en el issue #46 ni en el PR #71. La duración oficial y el archivo final de diapositivas siguen pendientes.

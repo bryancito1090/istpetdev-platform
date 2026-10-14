@@ -9,7 +9,7 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 | T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente: [hojas](hojas-feria.md) preparadas el 14-oct; sin conversaciones ni corrida oficial de 005 |
 | T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente: [escena y contingencias](escena-y-contingencias.md) preparadas el 14-oct; papeles sin nombres, sin ensayo funcional ni video |
 | T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente: [registro](registro-ensayos.md) preparado el 14-oct; racha 0/10, ninguna ronda de respuestas |
-| T6 | Paquete oficial y congelamiento | T3–T5 | 17-oct 15:45 | pendiente |
+| T6 | Paquete oficial y congelamiento | T3–T5 | 17-oct 15:45 | pendiente: [manifiesto](manifiesto-paquete.md) abierto y editable/PDF **provisionales** el 14-oct; sin congelar ni entregar |
 
 ## T1 — Kit previo sin horas del equipo
 
@@ -57,7 +57,7 @@ Debe hacerla una persona del equipo con la versión del kit indicada en el PR. A
 - [ ] Inspeccionar el flujo Artifacts/Slides del entorno antes de crear el archivo; con O-06 resuelto, crear editable y PDF local de la misma versión. En esta sesión no hay sesión PowerPoint conectada; el archivo de slides queda pendiente.
 - [ ] Releer la tabla cruzada del [spec](spec.md) y los «fuera de alcance» de 001–005 después de cualquier recorte de alcance.
 
-**Estado al 14-oct-2026 (issue #46, fase 2):** Claude Code (Opus 5.5), a pedido de Joseph Baño, preparó T2 como **borrador** en la rama `feature/46-fase2-guion-auditoria`, desde `develop` en `7aed1eb` (PR #71 ya fusionado). Joseph informó el mismo día que revisó y aprobó T1 y T2; su aprobación se refiere al borrador `8693f73`. Una revisión posterior ajustó A-16/A-17/A-27 para no atribuir a la pantalla ni a Cognito lo probado solo por API. Falta un segundo revisor para E2E-05, además de O-04/O-06, PDF y ensayos. **T2 no está cerrado.**
+**Estado al 14-oct-2026 (issue #46, fase 2):** Claude Code (Opus 5.5), a pedido de Joseph Baño, preparó T2 como **borrador** en la rama `feature/46-fase2-guion-auditoria`, desde `develop` en `7aed1eb` (PR #71 ya fusionado). Joseph informó el mismo día que revisó y aprobó T1 y T2; su aprobación se refiere al borrador `8693f73`. Una revisión posterior ajustó A-16/A-17/A-27 para no atribuir a la pantalla ni a Cognito lo probado solo por API. Falta un segundo revisor para E2E-05, además de O-04/O-06, PDF y ensayos. **T2 no está cerrado.** El 14-oct (fase final) se generaron un editable y un PDF **provisionales**, no oficiales ([manifiesto](manifiesto-paquete.md)).
 
 | Casilla | Qué se hizo | Qué falta |
 |---|---|---|
@@ -100,3 +100,5 @@ No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 - [ ] Crear manifiesto de siete entregables de [Evaluacion y entregables](../../boveda/01%20Oficial/Evaluacion%20y%20entregables.md): problema, solución, demo, validación, viabilidad, modelo de negocio y pitch; anotar formato, hash, estado y responsable.
 - [ ] Revisar que citas tengan consentimiento, rangos tengan ZIP/run, y que cada costo/precio tenga fuente o siga pendiente fuera del discurso. Registrar tag `pre-evento` y trabajo adaptado.
 - [ ] 17-oct 15:45: congelar editable, PDF, video, ficha y evidencias. Abrir copia local sin red. A las 16:00–16:15 entregar por canal confirmado en O-06 y guardar acuse si existe.
+
+**Estado al 14-oct-2026 16:00 (issue #46, fase final, solo lo que cabe antes del evento):** Claude Code (Opus 5.5), a pedido de Joseph Baño, abrió el [manifiesto del paquete](manifiesto-paquete.md) con los siete entregables. Los datos que aún no existen quedan vacíos. También generó una presentación **provisional** de siete bloques, con editable y PDF ([`materiales/`](materiales/)) y su SHA-256. Solo usa frases autorizadas por la matriz y lleva el rótulo «no es formato oficial · no entregado». O-04/O-06 siguen sin respuesta con fuente: se revisaron el repositorio, las issues y el correo de Joseph. Faltan por fecha o por persona: papeles confirmados, tag `pre-evento` (después del congelamiento de funcionalidades del 15-oct, 14:00), ensayo funcional y video (15-oct), entrevistas (16–17), segunda revisión, comparación final con la matriz, congelamiento (17-oct 15:45) y entrega (16:00–16:15). **Ninguna casilla de T6 se marca.**
