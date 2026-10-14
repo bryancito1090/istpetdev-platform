@@ -332,3 +332,9 @@ Verificación documental de esta actualización: **84 notas Markdown**, **831 en
 Fuente: atención a Issue #34 e Issue #35 (punto 7) por Joseph Baño. Se retira `POSTGRES_PASSWORD: 12345` de `infra/compose/docker-compose.lab.yml`, forzando su definición mediante variable de entorno obligatoria desde `.env` no versionado. Se restituye `src/Api/appsettings.Development.json` configurado exclusivamente con los parámetros por defecto de Docker local (`localhost:15432`, base `postgres`, usuario `postgres`, contraseña `postgres_dev_password_local`) permitiendo compilación y ejecución offline inmediata sin credenciales sensibles. Se refactoriza `scripts/ops/switch-db.mjs` y `.env.example` para sincronizar los parámetros locales sin contraseñas fijas en el código.
 
 Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.
+
+## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
+
+Fuente: atención a Issue #35 por Joseph Baño. Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para detener el proceso si las migraciones fallan en arranque. En [[Runbook de DevOps y base de datos para la demo]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **835 enlaces internos resueltos**, **0 errores**.
