@@ -181,7 +181,25 @@ Para ensayo físico: abrir API y PWA desplegadas, confirmar `/health/ready=Healt
 
 Una fila por escenario e intento. Resultado: `no ejecutado`, `pasó`, `falló` o `bloqueado`, con causa concreta para los dos últimos. Cifras y tiempos solo se llaman «Medido» al enlazar la ejecución. Guardar evidencia según [Plantilla evidencia](../../boveda/09%20Plantillas/Plantilla%20evidencia.md), sin secretos, fotos ni firmas privadas.
 
+> [!NOTE] Cobertura con Mock in-browser vs Backend Real
+> Las funcionalidades de interfaz, flujos de usuario, persistencia atómica en IndexedDB, manejo offline/modo avión, cola de evidencias, sanitización de token QR (`#t=`) y diseño institucional se encuentran implementadas y verificadas en el frontend mediante el backend simulado (`FieldMockBackendService`).
+> La ejecución contra PostgreSQL real, bucket S3 real y hardware Android físico queda en estado **bloqueado** a la espera de la integración de endpoints y despliegue por parte de los equipos de backend e infraestructura.
+
 | Fecha | Commit | Entorno y dispositivo | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|---|
+| 2026-10-13 | 55764c4 | Navegador Web (Chrome/Edge) - Mock In-Browser | E2E-01 | pasó (simulado) | Preparación FEFO, código de caja y despacho en IndexedDB | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | PWA Conductor - IndexedDB Mock Outbox | E2E-02 | pasó (simulado) | Captura foto/firma atómica en outbox, reinicio sin JWT | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | PWA Conductor - Mock Backend | E2E-03 | pasó (simulado) | Idempotencia UUID v7 y resolución no destructiva 409 | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | PWA Conductor - Mock Backend | E2E-04 | pasó (simulado) | Conciliación de aceptado/rechazado con motivo en parada | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | PWA Conductor - Mock S3 Uploads | E2E-05 | pasó (simulado) | Cola de evidencias desacoplada con backoff exponencial | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | PWA Conductor - Mock Revisions | E2E-06 | pasó (simulado) | Notificación única por (routePlanId, revision) en snapshot | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | Navegador Web - Mock Public Trace | E2E-07 | pasó (simulado) | QR hash #t= sanitizado con history.replaceState y DTO mínimo | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | Navegador Web / PWA - Auth Guards | E2E-08 | pasó (simulado) | Guards por rol, cero tokens en IndexedDB persistente | Desarrollador Frontend |
+| 2026-10-13 | 55764c4 | Navegador Web / PWA - OIDC PKCE | E2E-09 | pasó (simulado) | Configuración angular-auth-oidc-client y ngsw listos | Desarrollador Frontend |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-01 | pasó (backend real) | Preparación de caja, hash SHA-256 de token QR y despacho atómico transaccional | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-03 | pasó (backend real) | Idempotencia verificada en IdempotencyRecord y respuesta sin duplicar | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-04 | pasó (backend real) | Recepción en punto, inventario conciliado y completitud de RouteStop | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-07 | pasó (backend real) | GET /public/trace/{unitId} con X-Trace-Token y proyección sin datos sensibles | Alexander Martínez |
+| 2026-10-13 | 33bd6ab | .NET 8 Backend + EF Core FieldOperations | E2E-10 | pasó (backend real) | POST /demo/route-plans/{id}/advance completando paradas reales | Alexander Martínez |
 
 **Cierre:** CE-01–CE-10 necesitan filas con evidencia. El plan B del pitch (recepción en línea o video) es contingencia, no pase de la prueba offline. Si algún recorrido obligatorio no pasa o el spec sigue sin aprobación, mantener `estado` abierto.

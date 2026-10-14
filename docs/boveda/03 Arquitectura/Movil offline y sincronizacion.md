@@ -81,3 +81,37 @@ PWA primero con Angular 22/Ionic 8 e IndexedDB; Capacitor 8 recomendado para el 
 Ver [[Definiciones de producto y plan hasta el pitch]] y el [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md). El conductor asignado descarga ruta, revisión, entregas y unidades conocidas antes de salir. En modo avión captura cantidades, foto y firma voluntaria del receptor; IndexedDB debe confirmar operación y Blobs antes de mostrar «Guardado en el teléfono». El reinicio de la PWA conserva la captura.
 
 La recuperación envía primero el recibo con el mismo `operationId`/`Idempotency-Key`; después sube cada archivo a S3 privado y confirma sus metadatos. Un fallo de archivo deja «Evidencia pendiente» sin repetir el movimiento. La revisión de ruta solo causa conflicto si entrega, asignación o cantidades ya no son válidas. Lo rechazado permanece en vehículo hasta devolución física registrada. Los avisos del agente se consultan por revisión; no se usa chat ni push en esta demo.
+
+## Protocolo asimétrico de custodia QR y ergonomía de campo (ADR-25 — 13 de octubre de 2026)
+
+Para eliminar fricciones operativas y mitigar riesgos de error humano en rutas de distribución hospitalaria, se define el protocolo de custodia asimétrica y la ergonomía de interfaces segregadas:
+
+### 1. Lectura Asimétrica de Custodia QR
+- **En Bodega (Carga y Despacho):**
+  - El operador de bodega genera el paquete/unidad logística y emite su etiqueta QR (`HU-QUITO-2026-...`).
+  - El **Conductor lee el QR de la caja/bulto** con su cámara móvil antes de ingresar la mercancía a su unidad de transporte («Recibir Paquetes»). Esto carga y valida los insumos/lotes asignados a su manifiesto de carga.
+- **En Destino Hospitalario (Descarga y Entrega):**
+  - El conductor accede a «Ver Ruta Hoy» y pulsa la parada correspondiente (ej. *Hospital Gineco Obstétrico Laura*).
+  - La pantalla del conductor genera y expone el **Código QR de Custodia de Entrega** (`DELIVERY:HOSP-LAURA-...`).
+  - El **Receptor hospitalario escanea el teléfono del conductor** con su terminal o cámara para asentar la recepción formal.
+  - El conductor captura la fotografía de descargo y solo escribe si detecta alguna anomalía física.
+
+### 2. Ergonomía del Conductor (Regla de mínimo tipeo)
+- El conductor no dispone de un botón aislado y descontextualizado de «Entregar Paquete». Toda entrega se inicia seleccionando la parada activa en «Ver Ruta Hoy».
+- Operación táctil en 3 pasos: Parada → Mostrar QR / Tomar Foto → Confirmar Descargo.
+- Las incidencias registradas en la entrega se asientan localmente y elevan de inmediato una alerta al monitor de supervisión.
+
+### 3. Vistas y capacidades por rol móvil
+- **Conductor (`CarrierDriver`):** 3 botones primarios: *Descargar Ruta Hoy*, *Recibir Paquetes*, *Ver Ruta Hoy*.
+- **Operador de Bodega (`WarehouseOperator`):** 5 acciones operativas: *Generar Paquete*, *Registrar Despacho*, *Monitoreo en Tiempo Real*, *Gestión de Incidentes*, *Gestión de Rutas*.
+- **Supervisor (`LogisticsManager`):** 3 módulos: *Monitoreo en Tiempo Real*, *Alertas e Incidentes* (con contador dinámico en vivo sincronizado con las incidencias del chofer), *Gestión de Rutas*.
+
+### 4. Directriz de Interfaz Técnica
+- Prohibición estricta de emojis en la interfaz gráfica. Los elementos de navegación y estado emplean iconos SVG vectoriales precisos bajo el Arquetipo B Técnico/Minimalista.
+
+### 5. Integración Fullstack con API Real y Sincronización Hospitalaria (13-oct-2026)
+- **Conexión Predeterminada:** En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` opera por defecto a través de `HttpFieldApiService`; el modo simulado mock se conserva como fallback contingente mediante el parámetro explícito `?mock=true`.
+- **Encolamiento Atómico en Outbox:** Al dictaminar la recepción de un bulto en farmacia hospitalaria (rol `HospitalReceiver` en `HomePage`), se genera una transacción atómica mediante `saveReceiptAtomic` que persiste en IndexedDB (`istpetdev-driver-outbox-db`) el dictamen (conforme o con incidencias categorizadas y notas) y las líneas de entrega, transmitiéndolo de manera idempotente contra `POST /api/v1/deliveries/{id}/receipts` en el backend .NET.
+- **Trazabilidad Ininterrumpida:** La operación asienta la custodia física en destino tanto con conectividad activa como tras interrupciones temporales en modo avión, emitiendo el acta formal `REC-2026-XXXX`.
+
+

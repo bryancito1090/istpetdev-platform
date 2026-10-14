@@ -24,6 +24,22 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
             { report.Error(entity, row.Row, "depot_code", "unknown_reference", "La bodega no existe; inclúyala en warehouses."); ok = false; }
             if (entity == ImportEntity.Consumptions && !context.ServicePoints.ContainsKey(row.Text("point_code")!))
             { report.Error(entity, row.Row, "point_code", "unknown_reference", "El punto no existe; inclúyalo en service_points."); ok = false; }
+            if (entity == ImportEntity.RoadSegments)
+            {
+                var fromLoc = ResolveLocationByKind(ImportEntity.RoadSegments, row, row.Text("from_code")!, row.Text("from_kind"), "from_code", "from_kind");
+                var toLoc = ResolveLocationByKind(ImportEntity.RoadSegments, row, row.Text("to_code")!, row.Text("to_kind"), "to_code", "to_kind");
+                if (fromLoc is null || toLoc is null) ok = false;
+                else if (fromLoc.Position is null)
+                {
+                    report.Error(entity, row.Row, "from_code", "missing_coordinates", $"La ubicación de origen '{fromLoc.Code}' no tiene coordenadas.");
+                    ok = false;
+                }
+                else if (toLoc.Position is null)
+                {
+                    report.Error(entity, row.Row, "to_code", "missing_coordinates", $"La ubicación de destino '{toLoc.Code}' no tiene coordenadas.");
+                    ok = false;
+                }
+            }
             if (entity == ImportEntity.Stock && ok)
             {
                 var location = ResolveLocation(row, row.Text("location_code")!);
@@ -48,6 +64,7 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
             ImportEntity.Lots => (row.Text("sku"), row.Text("lot_code")),
             ImportEntity.Stock => (row.Text("location_kind"), row.Text("location_code"), row.Text("sku"), row.Text("lot_code")),
             ImportEntity.Consumptions => (row.Text("point_code"), row.Text("sku"), row.Date("date")),
+            ImportEntity.RoadSegments => (row.Text("from_code"), row.Text("to_code")),
             _ => row.Text("code")!,
         };
         foreach (var group in valid.GroupBy(Key))
@@ -93,6 +110,7 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
                 ImportEntity.Lots => Lot(row, entityReport),
                 ImportEntity.Stock => Stock(row, entityReport),
                 ImportEntity.Consumptions => Consumption(row, entityReport),
+                ImportEntity.RoadSegments => RoadSegment(row, entityReport),
                 _ => throw new ArgumentOutOfRangeException(nameof(entity)),
             };
             if (!applied) entityReport.Skipped += count;
@@ -291,9 +309,47 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
         return lot;
     }
 
-    private Location? ResolveLocation(ParsedRow row, string code)
+    private bool RoadSegment(ParsedRow row, EntityImportReport r)
     {
-        var kindText = row.Text("location_kind");
+        var fromLoc = ResolveLocationByKind(ImportEntity.RoadSegments, row, row.Text("from_code")!, row.Text("from_kind"), "from_code", "from_kind");
+        var toLoc = ResolveLocationByKind(ImportEntity.RoadSegments, row, row.Text("to_code")!, row.Text("to_kind"), "to_code", "to_kind");
+        if (fromLoc?.Position is null || toLoc?.Position is null) return false;
+
+        var fromLat = Math.Round((decimal)fromLoc.Position.Y, 5);
+        var fromLon = Math.Round((decimal)fromLoc.Position.X, 5);
+        var toLat = Math.Round((decimal)toLoc.Position.Y, 5);
+        var toLon = Math.Round((decimal)toLoc.Position.X, 5);
+        var key = (fromLat, fromLon, toLat, toLon);
+
+        if (!context.RoadEdges.TryGetValue(key, out var edge))
+        {
+            edge = new RoadMatrixEdge
+            {
+                FromLat = fromLat,
+                FromLon = fromLon,
+                ToLat = toLat,
+                ToLon = toLon,
+                Source = "imported",
+            };
+            db.RoadMatrixEdges.Add(edge);
+            context.RoadEdges[key] = edge;
+            r.Created++;
+        }
+        else
+        {
+            r.Updated++;
+            edge.Source = "imported";
+        }
+
+        edge.DistanceKm = row.Decimal("distance_km")!.Value;
+        edge.DurationMinutes = row.Decimal("duration_min")!.Value;
+        edge.EncodedPolyline = row.Text("geometry") ?? edge.EncodedPolyline;
+        edge.RetrievedAtUtc = DateTime.UtcNow;
+        return true;
+    }
+
+    private Location? ResolveLocationByKind(ImportEntity entity, ParsedRow row, string code, string? kindText, string codeCol, string kindCol)
+    {
         if (kindText is not null)
         {
             var kind = HeaderNormalizer.Normalize(kindText) switch
@@ -305,22 +361,25 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
             };
             if (kind is null)
             {
-                report.Error(ImportEntity.Stock, row.Row, "location_kind", "invalid_value",
+                report.Error(entity, row.Row, kindCol, "invalid_value",
                     $"Tipo de ubicación '{kindText}' desconocido. Use warehouse/bodega, service_point/punto o vehicle/vehiculo.");
                 return null;
             }
             if (context.Locations.TryGetValue((kind, code), out var exact)) return exact;
-            report.Error(ImportEntity.Stock, row.Row, "location_code", "unknown_reference", $"No existe {kindText} '{code}'.");
+            report.Error(entity, row.Row, codeCol, "unknown_reference", $"No existe {kindText} '{code}'.");
             return null;
         }
         var matches = LocationKinds.All.Where(k => context.Locations.ContainsKey((k, code))).ToList();
         if (matches.Count == 1) return context.Locations[(matches[0], code)];
-        report.Error(ImportEntity.Stock, row.Row, "location_code", matches.Count == 0 ? "unknown_reference" : "ambiguous_reference",
+        report.Error(entity, row.Row, codeCol, matches.Count == 0 ? "unknown_reference" : "ambiguous_reference",
             matches.Count == 0
                 ? $"La ubicación '{code}' no existe como bodega, punto ni vehículo."
-                : $"'{code}' existe como {string.Join(" y ", matches)}; añada la columna location_kind.");
+                : $"'{code}' existe como {string.Join(" y ", matches)}; añada la columna {kindCol}.");
         return null;
     }
+
+    private Location? ResolveLocation(ParsedRow row, string code) =>
+        ResolveLocationByKind(ImportEntity.Stock, row, code, row.Text("location_kind"), "location_code", "location_kind");
 
     private Location UpsertLocation(string kind, string code, string name, Point? position, EntityImportReport? r,
         Guid? servicePointId = null, Guid? vehicleId = null)

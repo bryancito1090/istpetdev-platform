@@ -83,5 +83,15 @@ public static class CanonicalSchema
                 new("quantity", FieldType.Decimal, true, ["cantidad", "consumo", "unidades"]),
                 new("period_days", FieldType.Integer, false, ["dias_periodo", "periodo_dias"], DefaultValue: "1"),
             ],
+            [ImportEntity.RoadSegments] =
+            [
+                Code("from_code", "desde", "origen", "origen_codigo", "from"),
+                Code("to_code", "hasta", "destino", "destino_codigo", "to"),
+                new("distance_km", FieldType.Decimal, true, ["distancia", "km", "distancia_km"]),
+                new("duration_min", FieldType.Decimal, true, ["duracion", "tiempo", "minutos", "duracion_min"]),
+                new("geometry", FieldType.Text, false, ["geometria", "polyline", "polilinea", "encoded_polyline", "geom"]),
+                new("from_kind", FieldType.Text, false, ["tipo_origen", "tipo_desde"]),
+                new("to_kind", FieldType.Text, false, ["tipo_destino", "tipo_hasta"]),
+            ],
         };
 }

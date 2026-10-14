@@ -9,17 +9,18 @@ tags: [producto, reto-1]
 
 ## Roles
 
-| Rol | Acciones | Restricción |
-|---|---|---|
-| Gerencia | Leer indicadores, aprobar decisiones y conversar | Consulta según organización |
-| Planificador | Revisar riesgo, planificar y publicar rutas | No confirmar recepciones ajenas |
-| Bodega | Registrar lotes, reservar, preparar y despachar | Custodia de su almacén |
-| Conductor | Ver ruta, escanear, reportar incidente y capturar entrega | Solo asignaciones autorizadas |
-| Receptor | Registrar consumo, solicitar reposición, ver resumen permitido y aceptar cantidades | Solo puntos/entregas autorizados; sin inventario general |
-| Automatización | Solicitar cálculos y registrar explicaciones/incidentes demo | Identidad técnica con permisos limitados |
-| ConfigurationAdmin (propuesto) | Administrar configuración, plantillas y acceso delegable | Cuenta humana con administración acotada a su organización; sin funciones logísticas automáticas |
+| Rol | Plataforma Asignada | Acciones y Alcance | Restricción |
+|---|---|---|---|
+| Gerencia | 🖥️ **Web** (Torre de Control) | Leer indicadores macro, KPIs ejecutivos, auditar custodia global y aprobar decisiones | Consulta agregada según organización; sin captura operativa de campo |
+| Planificador | 🖥️ **Web** (Torre de Control) | Monitorear matriz predictiva de quiebre de stock (5 días), optimizar y publicar rutas VRP en PostGIS | No confirmar recepciones físicas ajenas ni alterar lecturas QR de campo |
+| Bodega | 📱 **Móvil** (PWA de Campo) | Registrar bultos/HU físicos, escaneo QR de despacho a unidades de custodia y cola outbox | Custodia física de su almacén; no opera en consola web de escritorio |
+| Conductor | 📱 **Móvil** (PWA de Campo) | Navegar hoja de ruta offline, escanear bultos en vehículo, recibir avisos *DriverNotice* y capturar entregas | Solo rutas y vehículos asignados; 100% offline |
+| Receptor | 📱 **Móvil** (PWA de Campo) | Escaneo rápido de QR en hospital, dictamen de recepción ("Todo Conforme" o "Pasó algo malo" con novedades) | Solo recepción física de bultos recibidos en su punto; sin acceso a inventarios globales |
+| Automatización | ⚙️ **Worker** (Sin UI Humana) | Daemon en segundo plano: cálculos de demanda VRP, generación de avisos y proyecciones | Identidad técnica de fondo sin pantallas humanas |
+| Auditor | 🖥️ **Web** (Torre de Control) | Trazabilidad inmutable de unidades logísticas, inspección de eventos QR y cadena de custodia | Solo lectura y verificación forense; no emite despachos |
+| ConfigurationAdmin (propuesto) | 🖥️ **Web** (Administración) | Administrar configuración, plantillas y acceso delegable | Cuenta humana con administración acotada; sin funciones logísticas automáticas |
 
-Los seis roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14 y ampliado por ADR-16**. Desde el pedido de Bryan del 9 de octubre se pueden administrar roles/concesiones y plantillas por organización según [[RBAC y configuracion del sistema]]; ConfigurationAdmin es el seed administrativo propuesto. La matriz inicial de restricciones está en [[Seguridad y evidencias]]; la API aplica permisos y ámbito, aun para roles personalizados. Una persona puede asumir varios mediante concesiones explícitas. El QR público no concede un rol ni permite aceptar entregas.
+Los roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14, ampliado por ADR-16, segregado por plataforma en ADR-24 y refinado ergonómicamente en ADR-25**. La distribución física responde a la ergonomía operativa: los roles de movimiento físico (Bodega, Conductor, Receptor) operan exclusivamente mediante la PWA móvil con capacidad offline y lectura asimétrica QR, mientras que los roles de supervisión estratégica (Planificador, Gerencia, Auditor) operan en la consola web de escritorio. El QR público no concede un rol ni permite asentar recepciones.
 
 ## Flujo central
 
@@ -29,12 +30,12 @@ Los seis roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-1
 4. El planificador ve una alerta y revisa su explicación.
 5. El sistema propone cantidades y una ruta con restricciones.
 6. El planificador aprueba; se reservan cantidades de forma transaccional.
-7. Bodega escanea y despacha; la custodia pasa al vehículo.
-8. El conductor puede registrar ubicación y un incidente.
-9. En el punto, captura cantidades recibidas, foto y firma; funciona offline si ya descargó su asignación.
-10. Al regresar la conexión, sincroniza operaciones y archivos.
-11. El backend acepta una sola vez, actualiza saldos y muestra historial.
-12. Gerencia ve estado y métricas; el receptor consulta el QR público limitado.
+7. Bodega escanea en su terminal móvil PWA y despacha; la custodia pasa al vehículo de transporte.
+8. El conductor puede registrar ubicación y eventuales incidentes en ruta.
+9. En el punto de entrega, el conductor entrega el bulto y el receptor hospitalario escanea el código QR desde su PWA móvil, emitiendo su dictamen de recepción: "Todo Conforme" o "Pasó algo malo" (daño físico, precinto violado, faltante o inconsistencia de lote). El conductor captura la firma digital táctil de descargo.
+10. Al regresar la conexión, se sincronizan las operaciones y actas de recepción desde la cola outbox.
+11. El backend procesa de forma idempotente, actualiza inventarios y asienta la custodia final.
+12. Gerencia y Planificador auditan el cumplimiento, alertas e indicadores desde la Torre de Control Web.
 
 ## Excepciones obligatorias
 

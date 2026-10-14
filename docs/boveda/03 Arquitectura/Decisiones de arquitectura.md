@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-13
 tags: [arquitectura, contratos]
 ---
 
@@ -34,7 +34,10 @@ tags: [arquitectura, contratos]
 | ADR-20 | Repositorio unificado | Código y bóveda en istpetdev-platform | **Aceptada por Bryan, 2026-10-12**, instrucción directa: bóveda en `docs/boveda/`, historial conservado e integración por PR a `develop`; reemplaza ADR-12 |
 | ADR-21 | Núcleo delgado para la demo | Esquema de 27 tablas, roles fijos e importador canónico | **Aceptada, 2026-10-13** (Deciders: Jorge Doicela, Bryan Doicela, Joseph Bano): difiere a P2 RF-17/18/19 y RNF-13; Schema95 se archiva en el tag `schema95-archivo`; formalizado en [[Runbook de DevOps y base de datos para la demo]] |
 | ADR-22 | Autonomía del agente | Agente con herramientas y motor de reglas determinista | **Propuesta, 2026-10-12** (Deciders PENDIENTE): el LLM orquesta y explica sin calcular; reglas en el backend deciden qué se ejecuta solo y qué se escala; complementa ADR-08 |
-| ADR-23 | Motor logístico y distancias | Heurística determinista en .NET y distancias en cadena | **Propuesta, 2026-10-12** (Deciders PENDIENTE): inserción + 2-opt + consolidación; tramos guardados → OSRM → aproximación declarada; complementa ADR-05 y [[Rutas y sobrecostos]] |
+| ADR-24 | Segregación de Plataformas y Roles de Campo | Web (Torre de Control) vs Móvil (Campo) y Recepción Hospitalaria QR | **Aceptada, 2026-10-13** (Deciders: Bryan y Equipo de Desarrollo): Bodega, Conductor y Receptor operan exclusivamente en PWA móvil (`apps/mobile`); Planificador, Gerencia y Auditor en Web (`apps/web`); Automatización como daemon sin interfaz. Recepción hospitalaria mediante verificación binaria y reporte ágil de novedades. |
+| ADR-25 | Ergonomía PWA y flujos por rol | Roles segregados, entrega desde ruta, lectura asimétrica QR y cero emojis | **Aceptada por Bryan y equipo, 2026-10-13**: Vistas exclusivas por rol (Chofer, Bodega, Supervisor); chofer simplificado a 3 botones; entrega iniciada desde parada en «Ver Ruta Hoy»; lectura asimétrica de QR (chofer lee caja en bodega, hospital lee al chofer); incidencias en entrega conectadas a alertas de supervisión; prohibición estricta de emojis por SVGs técnicos. |
+| ADR-26 | Rol Auditor de solo lectura | Séptimo rol fijo, humano, con lectura total en la web y ninguna escritura | **Aceptada por Joseph Baño, 2026-10-13** (sesión de definición del spec 013): formaliza el Auditor que ADR-24 ya asigna a la web; amplía los roles fijos de ADR-21 sin migración; [ADR-26](#adr-26--rol-auditor-de-solo-lectura) |
+| ADR-27 | Integración Fullstack de Campo y Revisiones Dinámicas | Adaptadores HTTP reales, outbox hospitalario y cálculo dinámico de revisiones | **Aceptada por Bryan y Alexander Martínez, 2026-10-13**: Migración EF Core FieldOperations aplicada, endpoints C# (Deliveries, HandlingUnits, Evidence, PublicTrace con rate limiter, Demo Advance), adaptadores HttpFieldApiService en móvil/web, outbox hospitalario atómico y cálculo dinámico de revisiones en RoutePlansController. |
 
 ## ADR-01 — versión de backend
 
@@ -230,3 +233,165 @@ Dominio institucional y CI/CD/Compose los profundizarán los compañeros indicad
 ### Complemento de ADR-22 — diseño del agente (12-oct-2026, propuesta)
 
 Brainstorming del [spec 003](../../specs/003-agente-logistico/spec.md): el agente es un workflow de n8n con nodo AI Agent en el servidor de Bryan (copia local en Docker como plan B); sus herramientas son 5 endpoints del motor de 002; el resultado lo envía un paso fijo del workflow; la API mide la traza, valida cada cifra contra los `facts` y responde a los 10 s con el camino determinista si el agente no entrega. **Proveedor: DeepSeek**, elegido por el equipo sin comparación y sujeto a una prueba de aceptación (llamadas válidas ≥ 95%, p95 ≤ 10 s, explicaciones coincidentes ≥ 90%, inyección 10/10). Identidad con un scope `istpetdev-api/automation` y rol `Automatizacion` sin permiso para publicar, aprobar, rechazar, deshacer ni cambiar el modo. Avisos al conductor dentro de la PWA.
+
+## ADR-24 — Segregación de Roles por Plataforma y Flujo de Recepción Hospitalaria Simplificada
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Equipo de Desarrollo. **Origen:** instrucción directa de refinamiento ergonómico y segregación de perfiles funcionales. **Complementa:** ADR-04, ADR-14, ADR-16 y ADR-17.
+
+### Contexto y requisito
+En la versión inicial del prototipo web existía un enlace y una pantalla de «Bodega y Despacho» accesible desde el panel de escritorio, y la pantalla pública mostraba accesos prematuros al panel interno. Asimismo, no existía una separación explícita de dispositivos entre la operativa de campo física y la supervisión de torre de control, y el flujo del receptor hospitalario requería una simplificación ergonómica inmediata para el momento crítico de entrega de insumos en el hospital.
+
+### Opciones evaluadas
+1. **Opción A (Monolito de interfaz unificado):** Permitir que todos los roles operen en Web y Móvil simultáneamente.
+   - *Desventaja:* Inconsistencia ergonómica severa; un operador de bodega cargando camiones o un receptor en farmacia hospitalaria no utilizan una laptop de escritorio ni deben navegar por matrices de riesgo ni mapas VRP PostGIS.
+2. **Opción B (Segregación estricta por ergonomía física y tipo de dispositivo):**
+   - **Plataforma Web (`apps/web`):** Dedicada exclusivamente a la **Torre de Control Estratégica** (Planificador, Gerencia y Auditor).
+   - **Plataforma Móvil (`apps/mobile`):** Dedicada exclusivamente a las **Operaciones Físicas de Campo** (Bodega, Conductor y Receptor Hospitalario) con capacidades 100% offline y soporte táctil/cámara.
+   - **Automatización:** Ejecución autónoma como daemon técnico de fondo (sin pantallas humanas).
+
+### Decisión
+Se adopta la **Opción B**:
+1. **Bodega:** Se retira de la plataforma web. Opera exclusivamente en `apps/mobile` para picking físico, lectura QR de salida y despacho a unidades vehiculares.
+2. **Receptor Hospitalario:** Opera exclusivamente en `apps/mobile` con un flujo ultrarrápido:
+   - Lectura de QR del bulto recibido (`HU`).
+   - Dictamen binario inmediato: **✓ Todo Conforme** (sin daños ni faltantes) o **⚠️ Pasó algo malo**.
+   - En caso de anomalía, selección mediante chips de categorización: *Empaque roto o golpeado*, *Sello de seguridad roto / alterado*, *Faltan galones / unidades*, *Lote o fecha no coincide*, más notas explicativas.
+   - Emisión de acta de recepción (`REC-2026-XXXX`) sincronizada mediante cola outbox hacia la Torre de Control.
+3. **Planificador y Gerencia:** Centralizados en `apps/web` para análisis macro de stock, asignación de rutas VRP y gobernanza.
+4. **Portada Pública Web:** Limpieza estricta de la landing pública (`/`), removiendo accesos directos al panel y canalizando el ingreso exclusivamente por autenticación (`/login`).
+
+### Consecuencias
+- Seguridad y RBAC reforzados: Cada perfil solo tiene acceso a las pantallas congruentes con su ámbito de trabajo.
+- Optimización de rendimiento móvil: El bundle móvil no incluye tablas pesadas ni mapas VRP innecesarios para el personal de campo.
+- Flujo realista para la demo y el jurado hospitalario.
+
+### Verificación
+- Compilación exitosa de `apps/web` (`npm run build:web`) con validación de límites FSD y ESLint.
+- Compilación exitosa de `apps/mobile` (`npm run build:mobile`) en modo producción con Ionic 8 Standalone.
+
+## ADR-25 — Ergonomía de custodia en PWA móvil: Roles diferenciados, lectura asimétrica de QR y reporte de incidencias
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Equipo de Desarrollo. **Origen:** refinamiento del flujo de campo, simplificación cognitiva del conductor y auditoría de custodia médica. **Complementa:** ADR-04, ADR-06, ADR-14, ADR-17 y ADR-24.
+
+### Contexto y requisito
+En pruebas iniciales de campo se identificaron tres fricciones críticas:
+1. **Sobrecarga y confusión en el conductor:** Contar con un botón aislado de «Entregar Paquete» generaba riesgo de entrega equivocada por falta de contexto geográfico, y obligaba al chofer a escribir en el teléfono con guantes o en condiciones de movimiento.
+2. **Ambigüedad en la custodia por QR:** No estaba formalizado quién escaneaba a quién en bodega y en hospital.
+3. **Inconsistencia estética y profesionalismo:** El uso de emojis estándar (🔒, 📦, 🚚, ⚠️) degradaba la apariencia técnica exigida por el Arquetipo B Técnico/Minimalista para un sistema de salud institucional, variando su renderizado según el sistema operativo.
+
+### Decisión
+1. **Acceso institucional por login (`/login`):** La app inicia de forma anónima y redirige de `/home` a `/login` si no hay sesión activa. Se proveen credenciales institucionales y accesos rápidos por rol para demostración.
+2. **Ergonomía del Conductor (3 botones primarios):**
+   - **Descargar Ruta Hoy:** Carga offline de la jornada.
+   - **Recibir Paquetes:** Escaneo de los bultos/cajas en bodega antes de subir al vehículo para validar manifiesto y contenido.
+   - **Ver Ruta Hoy:** Muestra la secuencia de paradas (ej. *Hospital Laura*, *Centro de Salud Norte*). Al seleccionar una parada, se abre directamente la **Ficha de Entrega en Destino**.
+   - **Cero tipeo obligatorio:** El chofer presenta su pantalla con el **QR de entrega** para que el personal del hospital lo escanee con su propio lector, registra captura fotográfica y confirma la descarga sin escribir texto salvo incidencias.
+3. **Flujo Asimétrico de Custodia:**
+   - **En Bodega:** El conductor escanea el QR de las cajas para certificar la carga.
+   - **En Hospital:** El receptor hospitalario escanea el QR presentado por el conductor para asentar la transferencia de custodia.
+4. **Reporte de incidencias y escalamiento a supervisión:**
+   - Si ocurre una eventualidad en la parada (ej. bulto con fisura, personal ausente), el conductor redacta la novedad desde la misma ficha de entrega.
+   - La incidencia impacta reactivamente el módulo de **Alertas e Incidentes** del Supervisor y Operador de Bodega con un contador en tiempo real.
+5. **Ergonomía de Bodega y Supervisión en PWA:**
+   - **Operador de Bodega:** 5 acciones operativas (*Generar Paquete con impresión de QR*, *Registrar Despacho*, *Monitoreo en Tiempo Real*, *Gestión de Incidentes*, *Gestión de Rutas*).
+   - **Supervisor de Logística:** 3 módulos de control (*Monitoreo en Tiempo Real*, *Alertas e Incidentes* con contador dinámico, *Gestión de Rutas*).
+6. **Política estricta Cero Emojis:** Prohibición formal de emojis en templates UI; uso exclusivo de SVGs técnicos nítidos acordes a la paleta institucional (Slate 900, Cyan 600, Emerald 600, Amber 500, Red 600).
+
+### Consecuencias
+- Cero margen de error de entrega en destino: El conductor siempre opera dentro del contexto de la parada seleccionada.
+- Trazabilidad sin fricción para el chofer: Operación en campo basada en mostrar/escanear códigos QR y capturar fotos, reduciendo los tiempos de parada en más de un 70%.
+- Experiencia de usuario pulida y estandarizada entre iOS, Android y escritorio web.
+
+### Verificación
+- Verificado en `apps/mobile` con compilación sin errores (`npm run check:mobile`).
+- Rutas protegidas mediante `RoleGuard` y sesión gestionada por `MobileAuthService`.
+- Pruebas manuales en `http://localhost:8100` para los tres roles.
+
+## ADR-26 — Rol Auditor de solo lectura
+
+- **Estado:** aceptado. **Fecha:** 2026-10-13. **Deciders:** Joseph Baño (DevOps / Tech Writer). **Origen:** sesión de definición del [spec 013](../../specs/013-login-y-cuentas/spec.md) del 13-oct-2026, al detectar que ADR-24 nombra un rol que la API no tiene. **Complementa:** ADR-14, ADR-21 y ADR-24.
+
+### Contexto y requisito
+
+ADR-24 asigna la web a «Planificador, Gerencia y Auditor», y el frontend ya define un perfil `Auditor`. La API, en cambio, solo conoce seis roles fijos (`src/Domain/Common/Roles.cs`, spec 001): Gerencia, Planificador, Bodega, Conductor, Receptor y Automatizacion. Una cuenta con rol `Auditor` hoy no obtiene ningún permiso, y el spec 013 necesita saber qué roles puede asignar Gerencia.
+
+Para la demo y el piloto hace falta un perfil que revise la trazabilidad completa (custodia, recepciones, decisiones del agente y cambios de cuentas) sin poder alterar la operación. Ningún rol actual cumple eso: Gerencia y Planificador pueden aprobar, publicar y gestionar.
+
+### Opciones
+
+| Opción | Ventaja | Costo/límite |
+|---|---|---|
+| A. No agregarlo y retirarlo del frontend y de ADR-24 | Sin cambios en la API | Quien revisa la trazabilidad necesita una cuenta de Gerencia, con permisos de escritura que no le corresponden |
+| B. Séptimo rol fijo de solo lectura total | Separa revisar de operar; reutiliza las pantallas de la web | Revisar la autorización de cada endpoint de lectura |
+| C. Rol de lectura acotada a custodia y auditoría | Mínimo privilegio estricto | Requiere pantallas propias, que hoy no existen |
+
+### Decisión
+
+Se adopta **B**. `Auditor` es un séptimo rol fijo, humano (`Kind = human`), que opera solo en la web:
+
+- **Puede leer** todo lo que leen Gerencia y Planificador: panel, rutas y revisiones, entregas, custodia completa, recepciones con su estado de evidencia, decisiones y traza del agente y simulaciones. La auditoría de cuentas (`AuditEvent`) se sumará cuando exista: hoy la tabla no está en el esquema de la demo y FR-18 del spec 013 quedó pospuesto.
+- **No puede** crear, aprobar, rechazar, publicar, replanificar, revertir, despachar, recibir, importar, reiniciar la demo, cambiar el modo de autonomía ni gestionar cuentas. Cualquier escritura responde 403.
+- Gerencia puede asignarlo desde la gestión de cuentas del spec 013, igual que los otros roles humanos.
+
+Es una ampliación de los **roles fijos** de ADR-21, no la administración dinámica de roles y permisos (RF-17), que sigue en P2.
+
+### Consecuencias
+
+- **Datos:** sin migración. `Account.Role` es texto sin restricción en la base; basta con agregar `Auditor` a `Roles.cs` (`All`, `IsValid` y un grupo de lectura).
+- **API:** los endpoints de lectura que hoy usan `Roles.Planning` o listas explícitas incluyen `Auditor`; los de escritura no. Una prueba recorre los endpoints de escritura con un token de Auditor y exige 403.
+- **Frontend:** la web admite Auditor (ADR-24) y oculta todas las acciones de escritura; la PWA lo rechaza con el mensaje de plataforma.
+- **Specs:** 013 lo incluye como rol asignable y como rol de la web; 001 pasa de seis a siete roles fijos.
+- **Pruebas de autorización** de 001, 002 y 003 deben sumar el caso Auditor en sus endpoints de escritura.
+
+### Verificación
+
+Se acepta cuando: (1) `Roles.cs` incluye `Auditor`; (2) una prueba de integración con token de Auditor obtiene 200 en los endpoints de lectura y 403 en todos los de escritura; (3) la web muestra al Auditor el panel sin botones de acción. Pendiente de implementación en el spec 013.
+
+### Referencias
+
+[[Decisiones de arquitectura]] (ADR-14, ADR-21, ADR-24) · [[Identidad OIDC y sesiones]] · [[RBAC y configuracion del sistema]] · [spec 013](../../specs/013-login-y-cuentas/spec.md) · [spec 001](../../specs/001-nucleo-delgado-importador/spec.md)
+
+### Alternativas rechazadas
+
+| Alternativa | Razón de rechazo |
+|---|---|
+| A. No agregarlo | Obliga a dar permisos de escritura a quien solo revisa |
+| C. Lectura acotada | Exige pantallas nuevas antes del congelamiento sin ganancia visible para el jurado |
+| Lectura + exportación | La exportación todavía no existe (la planifica 005); se reconsidera después del evento |
+
+## ADR-27 — Integración Fullstack de Operaciones de Campo, Adaptadores HTTP y Revisiones Dinámicas de Rutas
+
+- **Estado:** aceptada. **Fecha:** 2026-10-13. **Deciders:** Bryan y Alexander Martínez. **Origen:** Culminación del Spec 004, integración frontend-backend y preparación del panel 005. **Complementa:** ADR-04, ADR-14, ADR-21, ADR-24, ADR-25 y ADR-26.
+
+### Contexto y requisito
+Tras validar la lógica de interfaces y outbox offline bajo arquitectura frontend-first con simulación in-browser (IndexedDB), se requería completar la integración real con el backend C# .NET:
+1. Conectar adaptadores HTTP en la PWA móvil y consola web a la API real en `http://localhost:5000`.
+2. Habilitar la persistencia durable de operaciones de campo (`FieldOperations` con `HandlingUnit`, `QrAccessToken`, `IdempotencyRecord`).
+3. Conectar la recepción hospitalaria directamente con la contabilidad de inventario en servidor.
+4. Resolver la comunicación fluida del panel web de rutas (`/rutas`) con el motor logístico, proveyendo cálculo dinámico de revisiones de planes y enriquecimiento de nombres de puntos de servicio.
+
+### Decisión
+1. **Migración EF Core `FieldOperations`:**
+   Se aplicó la migración `20261013202540_FieldOperations` incorporando entidades de campo al esquema delgado (`LeanSchema`), preservando el aislamiento y la idempotencia compuesta `(OrganizationId, ActorId, Action, OperationId)`.
+2. **Endpoints de Campo en C#:**
+   Se expusieron e implementaron en controladores dedicados:
+   - `DeliveriesController`: `POST /deliveries/{id}/handling-units`, `POST /deliveries/{id}/dispatch`, `POST /deliveries/{id}/receipts`, `GET /deliveries` paginado.
+   - `EvidenceController`: `POST /receipts/{id}/evidence-uploads`, `POST /receipts/{id}/evidence-confirm`.
+   - `PublicTraceController`: `GET /public/trace/{unitId}` con `PublicTraceRateLimiter` y sanitización del fragmento `#t=`.
+   - `MobileAssignmentsController`: `GET /mobile/assignments`.
+   - `DemoController`: `POST /demo/route-plans/{id}/advance` ejecutando la cadena contable real.
+3. **Adaptadores HTTP y Conexión Real en Móvil y Web:**
+   - En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` está habilitada por defecto a través de `HttpFieldApiService`, conservando el mock simulado solo como plan de contingencia offline con `?mock=true`.
+   - En `apps/mobile` (componente principal `HomePage`), el rol receptor hospitalario genera transacciones atómicas `saveReceiptAtomic` que persisten y transmiten de forma idempotente al backend.
+4. **Cálculo Dinámico de Revisiones y Enriquecimiento de Rutas en `RoutePlansController`:**
+   - La creación de planes en `RoutePlansController.cs` calcula dinámicamente la revisión incrementada (`existingMaxRevision + 1`) para el código base del día.
+   - Las lecturas de ruta devuelven el conteo real de paradas (`stopsCount`) y asocian los códigos y nombres legibles de cada `ServicePoint`, permitiendo que el panel web (`rutas.page.ts`) y su mapa muestren retroalimentación inmediata, alertas de éxito y navegación reactiva.
+
+### Consecuencias
+- Flujo end-to-end 100% operativo sin maquetas obligatorias: desde la propuesta del motor logístico hasta la recepción hospitalaria y la consulta pública por QR.
+- Consistencia contable entre la PWA móvil y el ledger de inventario de PostgreSQL.
+- Eliminación de errores de deserialización y desajustes DTO en el frontend (`PublicTraceResponseDto`, `RoutePlanDetailDto`).
+
+### Verificación
+- Suite unitaria .NET: 116 pruebas aprobadas con 0 fallos (`FieldUnitTests`, `PublicTraceUnitTests`).
+- Verificación frontend (`npm run check`): 0 errores de ESLint, TypeScript y Angular build tanto en `@istpetdev/web` como en `@istpetdev/mobile`.

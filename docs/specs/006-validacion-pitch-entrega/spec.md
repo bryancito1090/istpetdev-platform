@@ -3,7 +3,8 @@ id: 006
 titulo: Validación, pitch y paquete de entrega
 estado: borrador
 creado: 2026-10-12
-actualizado: 2026-10-12
+actualizado: 2026-10-13
+responsable: todo el equipo (Bryan Doicela, Jorge Doicela, Alexander Martínez, Anthony Pilatasig, Joseph Baño); quien toma una tarea la reclama en su issue   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE
 depende_de: [001, 002, 003, 004, 005]
 boveda: ["Evaluacion y entregables", "Cronograma oficial", "Consultas para la organizacion", "Guion del pitch", "Checklist y contingencias", "Plan de validacion", "Modelo de negocio y piloto", "Registro de trabajo previo y del evento"]

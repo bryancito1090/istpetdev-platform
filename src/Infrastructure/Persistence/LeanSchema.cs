@@ -12,7 +12,7 @@ internal static class LeanSchema
     private const string PointType = "geometry(Point,4326)";
 
     private static readonly HashSet<string> LongText =
-        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason"];
+        ["Description", "Rationale", "FailureReason", "PendingReason", "Reason", "RejectionReason", "EncodedPolyline", "ExplanationMismatch"];
 
     public static void Configure(ModelBuilder model)
     {
@@ -61,11 +61,13 @@ internal static class LeanSchema
         {
             e.HasIndex(h => new { h.OrganizationId, h.Code }).IsUnique();
             Fk<HandlingUnit, Location>(e, h => h.LocationId);
+            Fk<HandlingUnit, Delivery>(e, h => h.DeliveryId);
         });
         model.Entity<HandlingUnitLine>(e =>
         {
             Fk<HandlingUnitLine, HandlingUnit>(e, l => l.HandlingUnitId);
             Fk<HandlingUnitLine, Lot>(e, l => l.LotId);
+            Fk<HandlingUnitLine, DeliveryLine>(e, l => l.DeliveryLineId);
         });
 
         model.Entity<InventoryMovement>(e =>
@@ -152,11 +154,46 @@ internal static class LeanSchema
             Fk<CustodyEvent, Account>(e, c => c.ActorAccountId);
         });
 
+        model.Entity<QrAccessToken>(e =>
+        {
+            e.HasIndex(t => new { t.OrganizationId, t.TokenHash }).IsUnique();
+            Fk<QrAccessToken, HandlingUnit>(e, t => t.HandlingUnitId);
+            Fk<QrAccessToken, Account>(e, t => t.CreatedByAccountId);
+        });
+
         model.Entity<IdempotencyRecord>(e => { e.HasIndex(r => new { r.OrganizationId, r.AccountId, r.OperationId }).IsUnique(); Fk<IdempotencyRecord, Account>(e, r => r.AccountId); });
         model.Entity<ImportBatch>(e => Fk<ImportBatch, Account>(e, b => b.CreatedByAccountId));
-        model.Entity<AgentDecision>(e => e.HasIndex(d => new { d.OrganizationId, d.Status }));
+        model.Entity<AgentRun>(e => e.HasIndex(r => new { r.OrganizationId, r.StartedAtUtc }));
+        model.Entity<AgentDecision>(e =>
+        {
+            e.HasIndex(d => new { d.OrganizationId, d.Status });
+            e.Property(d => d.DriverMessage).HasMaxLength(160);
+        });
         model.Entity<SimulationRun>();
         model.Entity<SimulationMetric>(e => Fk<SimulationMetric, SimulationRun>(e, m => m.SimulationRunId));
+
+        model.Entity<RoadMatrixEdge>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.FromLat, r.FromLon, r.ToLat, r.ToLon }).IsUnique();
+            e.Property(r => r.FromLat).HasPrecision(9, 5);
+            e.Property(r => r.FromLon).HasPrecision(9, 5);
+            e.Property(r => r.ToLat).HasPrecision(9, 5);
+            e.Property(r => r.ToLon).HasPrecision(9, 5);
+            e.Property(r => r.DistanceKm).HasPrecision(18, 3);
+            e.Property(r => r.DurationMinutes).HasPrecision(18, 3);
+        });
+
+        model.Entity<RouteStockReservation>(e =>
+        {
+            e.HasIndex(r => new { r.OrganizationId, r.RoutePlanId, r.DeliveryLineId, r.LotId }).IsUnique();
+            e.HasIndex(r => new { r.OrganizationId, r.StockBalanceId, r.Status });
+            e.Property(r => r.Quantity).HasPrecision(18, 3);
+            Fk<RouteStockReservation, RoutePlan>(e, r => r.RoutePlanId);
+            Fk<RouteStockReservation, Delivery>(e, r => r.DeliveryId);
+            Fk<RouteStockReservation, DeliveryLine>(e, r => r.DeliveryLineId);
+            Fk<RouteStockReservation, Lot>(e, r => r.LotId);
+            Fk<RouteStockReservation, StockBalance>(e, r => r.StockBalanceId);
+        });
 
         foreach (var entity in model.Model.GetEntityTypes().ToList())
         {

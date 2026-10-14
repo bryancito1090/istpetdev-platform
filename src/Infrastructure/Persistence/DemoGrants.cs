@@ -14,8 +14,10 @@ public static class DemoGrants
                    OR (current_database() ~ '^istpetdev_dev_0[1-5]$' AND rolname = 'user_' || substring(current_database() from 11))
             LOOP
                 EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', role_name);
-                FOREACH table_name IN ARRAY ARRAY['Organization', 'Account', 'ServicePoint', 'Location', 'Vehicle', 'Product', 'Lot', 'HandlingUnit', 'HandlingUnitLine', 'InventoryMovement', 'StockBalance', 'Consumption', 'RoutePlan', 'RouteStop', 'Delivery', 'DeliveryLine', 'Receipt', 'ReceiptLine', 'Evidence', 'CustodyEvent', 'RiskSnapshot', 'Incident', 'IdempotencyRecord', 'ImportBatch', 'AgentDecision', 'SimulationRun', 'SimulationMetric'] LOOP
-                    EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO %I', table_name, role_name);
+                FOREACH table_name IN ARRAY ARRAY['Organization', 'Account', 'ServicePoint', 'Location', 'Vehicle', 'Product', 'Lot', 'HandlingUnit', 'HandlingUnitLine', 'InventoryMovement', 'StockBalance', 'Consumption', 'RoutePlan', 'RouteStop', 'Delivery', 'DeliveryLine', 'Receipt', 'ReceiptLine', 'Evidence', 'CustodyEvent', 'RiskSnapshot', 'Incident', 'IdempotencyRecord', 'ImportBatch', 'AgentDecision', 'SimulationRun', 'SimulationMetric', 'RoadMatrixEdge', 'RouteStockReservation', 'QrAccessToken', 'AgentRun'] LOOP
+                    IF to_regclass('public.' || quote_ident(table_name)) IS NOT NULL THEN
+                        EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO %I', table_name, role_name);
+                    END IF;
                 END LOOP;
                 EXECUTE format('REVOKE INSERT, UPDATE, DELETE ON TABLE public."Organization" FROM %I', role_name);
                 EXECUTE format('GRANT UPDATE ("Version") ON TABLE public."Organization" TO %I', role_name);

@@ -1,16 +1,34 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, isDevMode, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideIonicAngular } from '@ionic/angular/standalone';
+import { provideAuth } from 'angular-auth-oidc-client';
 import { routes } from './app.routes';
+import { authInterceptor, mobileOidcConfig } from './auth';
+import { FIELD_API } from './field/field-api.interface';
+import { MockFieldApiService } from './field/mock/mock-field-api.service';
+import { HttpFieldApiService } from './field/http-field-api.service';
+
+// Por defecto conectar con la API real en localhost:5000; solo usar mock si se pasa ?mock=true en la URL
+const useMockFieldApi = typeof window !== 'undefined' && window.location.search.includes('mock=true');
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideIonicAngular({
       mode: 'md'
-    })
+    }),
+    provideAuth(mobileOidcConfig),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    }),
+    {
+      provide: FIELD_API,
+      useClass: useMockFieldApi ? MockFieldApiService : HttpFieldApiService
+    }
   ]
 };

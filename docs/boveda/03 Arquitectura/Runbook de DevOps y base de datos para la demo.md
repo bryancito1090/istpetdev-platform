@@ -31,7 +31,7 @@ Que no haya RLS no significa que no existan roles de PostgreSQL:
 | Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA, y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
 | Host de la aplicación | `istpetdev-prod-host` (`i-0e0a979f8c0885a4f`, IP `44.204.107.167`), Debian 13, stateless. | [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] |
 | Base de datos en producción | Amazon RDS PostgreSQL 16.13 (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS. **27 tablas de `DemoCore` aplicadas y verificadas.** | [[Estrategia de tres entornos y base de datos]] |
-| Entorno de desarrollo local | Servidor de Laboratorio (`192.168.7.50:15432`) para los 5 integrantes y Docker Local (`localhost:15432`) para casa, desacoplados de RDS y conmutables mediante `scripts/ops/switch-db.mjs`. | [[Estrategia de tres entornos y base de datos]] |
+| Entorno de desarrollo | Base compartida en AWS EC2 (puerto `5432`) con usuario único `migrator_dev_01` para todo el equipo (laboratorio, casa u oficina), configurada centralizadamente en `.env`, y Docker local (`localhost:15432`) como alternativa individual. `appsettings.json` mantiene secretos limpios para no exponer credenciales en Git. | [[Estrategia de tres entornos y base de datos]] |
 | Verificación de salud | `https://istpetdev.doicela.dev/health/ready` responde `HTTP 200 Healthy` (`PostgreSQL database is available.`). | Verificación en vivo |
 
 ## 3. Secuencia Oficial de Migraciones (13–15 oct)
@@ -74,7 +74,7 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 > **Regla de Promoción:** Toda migración integrada en `develop` se promueve a `main` mediante Pull Request. El pipeline de CI/CD despliega la imagen inmutable y la API .NET aplica la migración automáticamente al iniciar en el host EC2 (`ApplyMigrations=true`).
 
 - **Justificación técnica:** Se descarta la ejecución manual por túnel SSM con `migrator_integration` para el despliegue rutinario porque introduce fricción de autenticación AWS/MFA, requiere conexión WAN interactiva del operador y genera desalineación temporal entre el código desplegado y la base de datos.
-- **En desarrollo local:** Cada desarrollador actualiza su copia de `develop` y ejecuta `npm run db:migrate` sobre el Servidor de Laboratorio (`192.168.7.50:15432`) o Docker local (`localhost:15432`).
+- **En desarrollo local:** Cada desarrollador actualiza su copia de `develop` y ejecuta `npm run db:migrate` sobre la base de desarrollo centralizada configurada en `.env` o Docker local (`localhost:15432`).
 
 ## 6. Matriz de Cambios de Infraestructura por Spec
 
@@ -96,7 +96,7 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 - [x] Tag de archivo `schema95-archivo`.
 - [x] Spec 001 (`DemoCore`) integrado en `develop` y promovido a `main`.
 - [x] Despliegue en AWS verificado: `/health/ready` responde `HTTP 200 Healthy` contra Amazon RDS.
-- [x] Persistencia de laboratorio (`192.168.7.50:15432`) y Docker local operativa para los 5 integrantes.
+- [x] Persistencia de desarrollo centralizada en AWS EC2 y Docker local operativa para los integrantes.
 
 ### 14 de octubre (Día 2) — Motor Logístico y Operación Móvil
 - [ ] Integración de migración 002 (`RoadMatrixCache`) en `develop` y promoción a `main`.
@@ -116,7 +116,7 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 
 - **Riesgo de bloqueo de EF Core:** Si una migración falla al arrancar en el EC2, el pipeline detiene el tráfico inmediatamente al no pasar el check de `/health/ready`.
 - **Procedimiento de Rollback Rápido:** Ejecutar el workflow `rollback.yml` indicando el SHA previo estable para restaurar los contenedores en <30 segundos.
-- **Riesgo de red en el evento:** Si la conectividad WAN o AWS falla durante la presentación, el sistema cuenta con el respaldo local en el Servidor de Laboratorio (`192.168.7.50:15432`) o Docker local en las laptops del equipo.
+- **Riesgo de red en el evento:** Si la conectividad WAN o AWS falla durante la presentación, el sistema cuenta con el respaldo de persistencia local mediante Docker en las laptops del equipo.
 
 ## Referencias
 

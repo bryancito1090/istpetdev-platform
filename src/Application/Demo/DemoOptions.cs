@@ -22,4 +22,5 @@ public sealed class DemoAccount
 public interface IDemoResetService
 {
     Task<ImportReport> ResetAsync(CancellationToken cancellationToken = default, Guid? actorAccountId = null);
+    Task<ImportReport> ResetAsync(string? fixture, CancellationToken cancellationToken = default, Guid? actorAccountId = null);
 }

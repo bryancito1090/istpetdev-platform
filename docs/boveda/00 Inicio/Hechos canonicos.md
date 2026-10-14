@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-13
 tags: [hackathon, equipo, ia]
 ---
 
@@ -108,6 +108,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Núcleo delgado para la demo | ADR-21 | Aceptada (difiere ADR-16 a P2) | 2026-10-13, issue #16 | Jorge, Bryan, Joseph ([[Runbook de DevOps y base de datos para la demo]]) |
 | Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
 | Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
+| Rol Auditor de solo lectura | ADR-26 | Aceptada (séptimo rol fijo; amplía ADR-21 sin migración) | 2026-10-13, spec 013 | Joseph Baño |
 
 ## Nombres en código
 
@@ -177,14 +178,15 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Papel del LLM | Solo explica (ADR-08) o propone y orquesta con autonomía decidida por reglas deterministas (ADR-22) | Equipo |
 | Scopes de automatización | Cuatro scopes finos ([[Identidad OIDC y sesiones]]) o un scope `istpetdev-api/automation` + rol `Automatizacion` (spec 003) | Equipo |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
-| Cierre de parada y QR público | El marcado provisional de 002 completa sin recibo, y la página actual consulta entregas o un registro fijo sin token; el spec 004 propone recepción real y consulta de `HandlingUnit` con token revocable; para el pitch y los recorridos de 002 y 003, el endpoint de demo `advance` completa paradas con operaciones reales | Equipo; ver [[Definiciones de producto y plan hasta el pitch]] |
-| Token del QR público | Query string `?token=` ([[Contratos API y eventos]]) o fragmento de URL `#t=` y cabecera `X-Trace-Token` (spec 004, revisión del 12-oct) | Equipo |
-| Tamaño del esquema de demo | El criterio de 001 cuenta 27 tablas antes de 004 (desde el 12-oct su prueba exige ese núcleo sin Schema95, no un conteo cerrado); la asociación de caja/entrega y el token público de 004 requieren migración posterior, frente al esquema ampliado de [[Esquema completo de base de datos]] | Equipo |
+| Cierre de parada y QR público | Cerrado el 13-oct (commit `431b792`): `advance` en `DemoController.cs` ejecuta la cadena real de preparación, despacho y recepción; paradas y stock se actualizan con efectos contables reales y trazables. | Alexander Martínez / Bryan |
+| Token del QR público | Cerrado el 13-oct: token en fragmento `#t=` sanitizado inmediatamente en cliente con `history.replaceState` y resuelto por backend vía `X-Trace-Token` con rate limiter. | Alexander Martínez / Bryan |
+| Tamaño del esquema de demo | Cerrado el 13-oct: migración EF Core `FieldOperations` (`20261013202540_FieldOperations`) incorpora `HandlingUnits`, `QrAccessTokens` e `IdempotencyRecords` manteniendo el núcleo delgado. | Alexander Martínez / Bryan |
 | **⚠️ Contradicción detectada** — Baselines del 005 | Hecho nuevo: `reactive-v1` y `fixed7-v1` fijan aviso, frecuencia y cantidades antes de correr; hecho establecido: [[Simulador y metricas]]/D7 solo nombraban dos baselines y [[Rutas y sobrecostos]] pedía frecuencia razonable; impacto: el resultado depende de estos parámetros. Opciones: aceptar/versionar reglas propuestas; esperar proceso empresarial; recalibrar después (sesgaría comparación). Propuesta: aceptar/versionar y declarar sintético | Equipo (Deciders pendientes) |
 | **⚠️ Contradicción detectada** — Cifras del panel | Hecho nuevo: spec 005 elimina valores, rutas y narración fijos del widget; hecho establecido: código actual muestra ahorro y telemetría sin medición, frente a [[Simulador y metricas]]; impacto: credibilidad del pitch. Opciones: maqueta etiquetada o datos reales de API. Propuesta: API con estado vacío; R-15 sigue abierto hasta probarlo | Equipo |
-| **⚠️ Contradicción detectada** — Lecturas para panel | Hecho nuevo: `GET /api/v1/route-plans` en 002 y `GET /api/v1/deliveries` en 004; hecho establecido: solo había ruta individual y consulta móvil; impacto: sin listas, el panel requiere IDs incrustados. Opciones: lecturas en productores, agregador 005 o IDs fijos. Propuesta: lecturas en specs productores antes de H4 | Equipo de 002/004 |
+| Lecturas para panel | Cerrado el 13-oct: `GET /api/v1/route-plans` expuesto en `RoutePlansController.cs` (con cálculo dinámico de revisiones, stopsCount y nombres de puntos) y `GET /api/v1/deliveries` con paginación expuesto en `DeliveriesController.cs`. | Equipo 002/004 |
 | **⚠️ Contradicción detectada** — Reset y evidencia del 005 | Hecho nuevo: los resultados completados deben seguir exportables tras reiniciar `demo-region`; hecho establecido: la tarea T7 de 001 borraba `SimulationMetric`/`SimulationRun` en el reset; impacto: se pierde la evidencia del pitch. Opciones: conservar completados, exportar/borrar, prohibir reset. Propuesta: conservar resultados completados; FR-15 y T7 de 001 corregidos documentalmente, E2E del 005 lo verifica | Equipo de 001/005 |
 
 Cerradas el 7 de octubre por be0b127: versión .NET (8), PostgreSQL (16), Angular (22) y Capacitor (8), móvil (PWA primero), identidad (Cognito), repositorio de código y rutas (`src/**`).
+Cerradas el 13 de octubre por Alexander Martínez: cierre de parada por advance y recepción real, sanitización de token QR en fragmento `#t=`, migración `FieldOperations` y lecturas paginadas para panel (`GET /route-plans` y `GET /deliveries`).
 
 Para modificar esta nota: cambiar primero la nota fuente o el ADR y después esta tabla. Ver [[Mapa de la boveda]].

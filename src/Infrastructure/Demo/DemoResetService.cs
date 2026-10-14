@@ -10,10 +10,18 @@ namespace IstpetDev.Infrastructure.Demo;
 
 public sealed class DemoResetService(ApplicationDbContext db, IImportService importer, IOptions<DemoOptions> options) : IDemoResetService
 {
-    public async Task<ImportReport> ResetAsync(CancellationToken cancellationToken = default, Guid? actorAccountId = null)
+    public Task<ImportReport> ResetAsync(CancellationToken cancellationToken = default, Guid? actorAccountId = null) =>
+        ResetAsync(null, cancellationToken, actorAccountId);
+
+    public async Task<ImportReport> ResetAsync(string? fixture, CancellationToken cancellationToken = default, Guid? actorAccountId = null)
     {
         if (!options.Value.Enabled) throw new InvalidOperationException("La demo está desactivada.");
-        var folder = Path.GetFullPath(options.Value.FixturePath);
+        var baseFolder = Path.GetFullPath(options.Value.FixturePath);
+        var folder = string.IsNullOrWhiteSpace(fixture)
+            ? baseFolder
+            : (Directory.Exists(fixture)
+                ? Path.GetFullPath(fixture)
+                : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(baseFolder) ?? "", fixture)));
         var files = new List<ImportFile>();
         ImportBatch? batch = null;
         ImportReport? report = null;
@@ -24,18 +32,18 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
             foreach (var (key, mapping) in profile.Files)
                 if (mapping.File is not null && ImportEntityKeys.TryParse(key, out var entity))
                     files.Add(new ImportFile(entity, mapping.File, File.OpenRead(Path.Combine(folder, mapping.File))));
-            if (files.Count != 7) throw new InvalidOperationException("El fixture debe incluir las siete entidades.");
+            if (files.Count < 7) throw new InvalidOperationException("El fixture debe incluir al menos las siete entidades.");
             await db.Database.ExecuteSqlInterpolatedAsync($"SELECT \"Id\" FROM \"Organization\" WHERE \"Id\" = {DemoOrganization.Id} FOR UPDATE", cancellationToken);
             await DeleteOperationalDataAsync(cancellationToken);
             report = await importer.RunAsync(new ImportRequest(files, profile, false, false, actorAccountId), cancellationToken);
             batch = db.ImportBatches.Local.Single(b => b.Id == report.BatchId);
             if (report.Applied) { await transaction.CommitAsync(cancellationToken); return report; }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             batch ??= new ImportBatch { ProfileName = "demo-reset", ProfileJson = "{}", CreatedByAccountId = actorAccountId };
             report ??= new ImportReport(batch.Id, batch.ProfileName, false);
-            report.Error(ImportEntity.Warehouses, 0, null, "reset_failed", "No se restauró el fixture; revise sus siete archivos y la configuración.");
+            report.Error(ImportEntity.Warehouses, 0, null, "reset_failed", $"No se restauró el fixture: {ex.Message} ({ex.GetType().Name})");
         }
         finally { foreach (var file in files) await file.Content.DisposeAsync(); }
         await transaction.RollbackAsync(CancellationToken.None);
@@ -57,10 +65,12 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.Receipts.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.InventoryMovements.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.DeliveryLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.RouteStockReservations.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Deliveries.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Incidents.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RouteStops.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RoutePlans.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.AgentRuns.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.AgentDecisions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RiskSnapshots.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         // Se conservan SimulationRuns y SimulationMetrics completados para spec 005

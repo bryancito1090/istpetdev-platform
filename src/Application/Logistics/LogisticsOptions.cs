@@ -1,0 +1,51 @@
+namespace IstpetDev.Application.Logistics;
+
+public sealed class LogisticsOptions
+{
+    public const string SectionName = "Logistics";
+
+    public ClockOptions Clock { get; set; } = new();
+    public string WorkdayStart { get; set; } = "07:00";
+    public int WorkdayHours { get; set; } = 10;
+    public int FallbackUtcOffsetHours { get; set; } = -5;
+    public int DemandWindowDays { get; set; } = 14;
+    public decimal DefaultLeadTimeDays { get; set; } = 2m;
+    public decimal SafetyMarginDays { get; set; } = 3m;
+    public decimal ConsolidationExtraDays { get; set; } = 3m;
+    public decimal TargetCoverageDays { get; set; } = 10m;
+    public decimal SafetyStockUnits { get; set; } = 0m;
+    public decimal WarehouseSafetyStockPct { get; set; } = 10m;
+    public int StaleStockDays { get; set; } = 7;
+    public string DefaultWindowStart { get; set; } = "08:00";
+    public string DefaultWindowEnd { get; set; } = "17:00";
+    public int DefaultServiceMinutes { get; set; } = 15;
+    public decimal DefaultCostPerKm { get; set; } = 0.45m;
+    public decimal CostPerHour { get; set; } = 6.00m;
+    public int MaxDetourMinutes { get; set; } = 20;
+    public decimal ApproxDetourFactor { get; set; } = 1.3m;
+    public decimal ApproxSpeedKmh { get; set; } = 40m;
+    public OsrmOptions Osrm { get; set; } = new();
+    public PolicyOptions Policy { get; set; } = new();
+}
+
+public sealed class ClockOptions
+{
+    public ClockMode Mode { get; set; } = ClockMode.Dataset;
+    public DateOnly? FixedDate { get; set; }
+}
+
+public sealed class OsrmOptions
+{
+    public string BaseUrl { get; set; } = string.Empty;
+    public int TimeoutSeconds { get; set; } = 3;
+}
+
+public sealed class PolicyOptions
+{
+    public const string SectionName = "Agent:Policy";
+
+    public string Mode { get; set; } = "AutoWithLimits";
+    public decimal MaxCostIncreasePct { get; set; } = 15m;
+    public decimal MaxDelayMinutes { get; set; } = 60m;
+    public bool AutoPublishInitialPlans { get; set; } = false;
+}

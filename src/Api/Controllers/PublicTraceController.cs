@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IstpetDev.Application.PublicTrace.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IstpetDev.Api.Controllers;
@@ -21,17 +22,28 @@ public class PublicTraceController : ControllerBase
     [HttpGet("{unitId}")]
     public async Task<IActionResult> GetTrace(string unitId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(unitId))
+        Response.Headers.CacheControl = "no-store";
+
+        // FR-13: El token nunca debe viajar en la query string. Si viene en query string, 404 inmediato.
+        if (Request.Query.ContainsKey("token"))
         {
-            return BadRequest(new { error = "Unit ID is required" });
+            return NotFound();
         }
 
-        var trace = await _traceService.GetTraceAsync(unitId, cancellationToken);
-        if (trace is null)
+        // FR-13: Requiere obligatoriamente cabecera X-Trace-Token
+        if (!Request.Headers.TryGetValue("X-Trace-Token", out var tokenValues) || string.IsNullOrWhiteSpace(tokenValues))
         {
-            return NotFound(new { error = "Unit not found" });
+            return NotFound();
         }
 
-        return Ok(trace);
+        string token = tokenValues.ToString();
+        var result = await _traceService.GetTraceAsync(unitId, token, cancellationToken);
+
+        return result switch
+        {
+            PublicTraceResult.Success success => Ok(success.Trace),
+            PublicTraceResult.RateLimited => StatusCode(StatusCodes.Status429TooManyRequests, new { error = "RATE_LIMIT_EXCEEDED" }),
+            _ => NotFound()
+        };
     }
 }

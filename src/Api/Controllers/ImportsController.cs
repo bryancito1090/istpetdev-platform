@@ -17,8 +17,8 @@ public sealed class ImportsController(IImportService importer) : ControllerBase
         var form = await Request.ReadFormAsync(cancellationToken);
         try
         {
-            if (form.Files.Count is < 1 or > 7 || form.Files.Any(f => f.Name == "profile"))
-                return Problem(statusCode: 400, title: "Envíe de uno a siete archivos; profile debe ser un campo de texto JSON.");
+            if (form.Files.Count < 1 || form.Files.Count > CanonicalSchema.Order.Length || form.Files.Any(f => f.Name == "profile"))
+                return Problem(statusCode: 400, title: $"Envíe de uno a {CanonicalSchema.Order.Length} archivos; profile debe ser un campo de texto JSON.");
             if (form.Keys.Any(k => k != "profile") || form["profile"].Count > 1)
                 return Problem(statusCode: 400, title: "El único campo de texto admitido es profile, una sola vez.");
             var profile = form.TryGetValue("profile", out var json) && !string.IsNullOrWhiteSpace(json)

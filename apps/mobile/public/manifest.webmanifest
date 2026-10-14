@@ -1,0 +1,17 @@
+{
+  "name": "IstpetDev Móvil — Logística y Campo",
+  "short_name": "IstpetDev",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/home",
+  "description": "PWA offline de custodia, escaneo QR y recepción en campo para conductores y operadores.",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

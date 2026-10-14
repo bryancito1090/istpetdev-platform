@@ -224,5 +224,6 @@ module.exports = {
 1. **Anti-invención:** Los colores no son arbitrarios; corresponden al flyer oficial de Expo Clean Ecuador 2026.
 2. **WCAG 2.2 AA:** Los pares de texto/fondo respetan contraste mínimo de 4.5:1 (ej. texto `primary-700` sobre fondos `primary-50` o texto `#FFFFFF` sobre botones `primary-600` y `accent-600`).
 3. **Coherencia Monorepo:** La misma paleta gobierna el panel Angular FSD web y la PWA móvil Ionic.
+4. **Normativa de Iconografía Técnica (Prohibición de Emojis):** Queda estrictamente prohibido el empleo de emojis Unicode (ej. 🔒, 🚚, 📦, 📷, ⚠️) como iconos en la interfaz de usuario. Todo elemento visual o de señalética debe emplear exclusivamente iconos vectoriales SVG técnicos (Lucide Icons o SVG inline `stroke-width="2"`), preservando la asepsia visual clínica, legibilidad técnica y sobriedad institucional del Arquetipo B.
 
 Documentación vinculada: [[Frontend y componentes]], [[Decisiones de arquitectura]], [[Hechos canonicos]], [[istpetdev-frontend]].
