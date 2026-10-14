@@ -1,0 +1,52 @@
+# Resumen de ejecución E2E-00 — Suites automáticas verdes
+Fecha: 2026-10-14
+Commit base (develop): 29572c39df87af65fc832e4ac191c10de8b18014
+
+## 1. Verificaciones estáticas y de compilación (npm run check)
+- check:lint: PASS (eslint apps/web/src)
+- check:no-mock-login: PASS (Sin login simulado en apps)
+- check:api: PASS (dotnet build)
+- check:shared: PASS (@istpetdev/shared-core tsc --build)
+- check:web: PASS (@istpetdev/web ng build --configuration production)
+- check:mobile: PASS (@istpetdev/mobile ng build --configuration production)
+- Guardián de CI contra login simulado en apps/: 0 coincidencias (grep=1)
+
+## 2. Pruebas de Frontend (npm run test:frontend)
+- libs/shared-core (Vitest):
+  - Archivos: 2 pasados (2)
+  - Pruebas: 25 pasadas (25)
+  - Fallos: 0
+- apps/web (Angular / Vitest):
+  - Archivos: 11 pasados (11)
+  - Pruebas: 40 pasadas (40)
+  - Fallos: 0
+- apps/mobile (Ionic Angular / Vitest):
+  - Archivos: 5 pasados (5)
+  - Pruebas: 22 pasadas (22)
+  - Fallos: 0
+Total Frontend: 87 pasadas, 0 fallidas (18 archivos de prueba)
+
+## 3. Pruebas de Backend (dotnet test tests/IstpetDev.Tests)
+- Category=Unit:
+  - Pasadas: 145
+  - Fallidas: 0
+  - Omitidas: 0
+  - Total: 145
+  - Duración: 2 s
+- Category=Integration:
+  - Pasadas: 146
+  - Fallidas: 0
+  - Omitidas: 0
+  - Total: 146
+  - Duración: 11 m 17 s
+- Category=E2E:
+  - Pasadas: 6
+  - Fallidas: 0
+  - Omitidas: 0
+  - Total: 6
+  - Duración: 35 s
+Total Backend .NET: 297 pasadas, 0 fallidas, 0 omitidas (Total general: 297)
+
+## 4. Estado de E2E-00
+Resultado: VERDE (0 fallos en frontend y backend)
+Cumplimiento de criterios: CE-02, CE-03, CE-05, CE-07, NFR-01, NFR-04, NFR-05 verificados en suite automatizada.

@@ -69,7 +69,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 | Pronóstico con ML entrenado | Media móvil declarada ([Inventario y prediccion](../boveda/04%20Datos%20y%20algoritmos/Inventario%20y%20prediccion.md)) |
 | App nativa (build de Capacitor) | PWA instalada |
 | Matriz vial de pago | Fuente abierta o aproximación **declarada** como tal |
-| Login de Cognito visible en la demo *(corte por carga del equipo, no técnico; revisado el 13-oct)* | Sesiones ya iniciadas en los dispositivos de la demo. El login real ([013](013-login-y-cuentas/spec.md) H1–H3) es requisito de esas sesiones y de la integración 004/005; mostrarlo en el pitch se permite si 013 H1–H3 cierra antes del congelamiento. La gestión de cuentas (013 H4) es P2 |
+| Login de Cognito visible en la demo *(corte por carga del equipo, no técnico; revisado el 14-oct)* | Sesiones ya iniciadas en los dispositivos de la demo. El login real ([013](013-login-y-cuentas/spec.md) H1–H3) y la gestión de cuentas (H4) están implementados en `develop` (PR #56 y #65); mostrar el login en el pitch se permite si se completa la validación E2E antes del congelamiento |
 | Más de un caso en el pitch | La historia del hospital; los demás casos, para las preguntas |
 | Blockchain, sensores IoT simulados, varios agentes | — |
 
@@ -85,7 +85,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 | 005 | [Panel web y simulador comparativo de 90 días con KPIs](005-panel-simulador/spec.md) | Impacto, presentación, demo | 001–004, 013 parcial (H1–H3, solo el panel) | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
 | 006 | [Validación, pitch y paquete de entrega](006-validacion-pitch-entrega/spec.md) (no es código) | Comprensión, presentación, equipo, demo e impacto trazables | 001–005 | borrador (cuatro archivos redactados; Deciders, revisión, ensayos y entrega pendientes) |
 | 007 | [Inventario cotidiano y conciliación para un piloto](007-inventario-cotidiano-conciliacion/spec.md) | Operación diaria, saldos auditables y riesgo con consumos reales | 001, 002, 004; pase técnico | borrador (spec, plan, tareas y E2E redactados; reglas del piloto, aprobación y ejecución pendientes) |
-| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) | Viabilidad, demo (desbloquea 004/005) | 001 | borrador (spec, plan, tareas y E2E redactados; aprobación y ejecución pendientes) |
+| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) ([plan](013-login-y-cuentas/plan.md), [tareas](013-login-y-cuentas/task.md), [E2E](013-login-y-cuentas/test-e2e.md)) | Viabilidad, demo (desbloquea 004/005) | 001 | en curso (implementado en develop vía PR #56 y #65; E2E-00 verde; validación E2E en #55 e infra T10 en #43 pendientes) |
 
 ```mermaid
 flowchart LR

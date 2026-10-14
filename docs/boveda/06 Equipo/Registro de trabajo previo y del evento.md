@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [hackathon, istpetdev]
 ---
 
@@ -70,5 +70,13 @@ Bryan confirmó recursos/versiones y delegó recomendaciones. El compañero impl
 | 2026-10-12 | Preparación | Brainstorming y propuesta documental del spec 005: panel por API, baselines congelados, simulación asíncrona aislada, matriz de dependencias 001–004 y presupuesto de corrida completa | [spec 005](../../specs/005-panel-simulador/spec.md), [plan 005](../../specs/005-panel-simulador/plan.md), PR de `docs/spec-005-panel-simulador` | Propuesta; sin implementación, corrida ni cifras medidas; Deciders pendientes; tareas y E2E se añadieron después |
 | 2026-10-12 | Preparación | Tareas T0–T11 y diez recorridos E2E del spec 005 redactados por petición posterior del usuario; la revisión detectó que T7 del 001 borraba runs/métricas al reset y corrigió ese contrato documental | [task 005](../../specs/005-panel-simulador/task.md), [test E2E 005](../../specs/005-panel-simulador/test-e2e.md), PR #11 | Documental; tareas y pruebas no ejecutadas, sin cifras medidas ni aprobación de Deciders |
 | 2026-10-12 | Preparación | Propuesta documental 006: guiones 3/5/7, entrevista consentida, piloto, banco de preguntas, auditoría CE y búsqueda SERCOP | [spec 006](../../specs/006-validacion-pitch-entrega/spec.md), [[Guion del pitch]], [[SERCOP limpieza hospitalaria y sanciones]] | Borrador redactado con IA; revisión de 15 min del equipo, video, tag, entrevistas, ensayos y entrega pendientes; Deciders pendientes |
+
+## Registro de preparación — 14 de octubre de 2026
+
+| Fecha | Fase | Resultado | Evidencia | Estado |
+|---|---|---|---|---|
+| 2026-10-14 | Preparación | Implementación de T1–T9 del spec 013: login real OIDC con Amazon Cognito (PKCE), rol Auditor (ADR-26), endpoint `/api/v1/me`, aprovisionamiento idempotente (`--provision-accounts`), lógica de sesión en `shared-core`, retiro de login simulado en web/PWA y guardián de CI | [PR #56](https://github.com/bryancito1090/istpetdev-platform/pull/56) fusionado en `develop`; suites de prueba en verde | Completado |
+| 2026-10-14 | Preparación | Implementación de T11–T13 del spec 013 (H4): API y pantalla web de gestión de cuentas por Gerencia (alta, edición, desactivación/reactivación y reenvío de invitación) | [PR #65](https://github.com/bryancito1090/istpetdev-platform/pull/65) fusionado en `develop`; 40 pruebas web y tests backend en verde | Completado |
+| Pendiente | Preparación | Cuentas creadas por rol y fecha (demo): registro de cuentas creadas en el pool antes del 16-oct | Registro sin correos personales ni identificadores sensibles (G8) | Pendiente (se completa en Fase B tras E2E-01 / aprovisionamiento) |
 
 **Asistencia de IA:** los specs, esta reestructuración y las notas asociadas se redactaron con Claude Code (modelo Opus) a partir de preguntas y decisiones de un integrante del equipo. El código incluido en los specs es un ejemplo no ejecutado hasta que una tarea lo compile y pruebe (ver [[Convenciones y estados]]).
