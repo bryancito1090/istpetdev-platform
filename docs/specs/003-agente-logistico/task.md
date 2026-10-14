@@ -332,3 +332,10 @@ Metadatos del flujo: issue #39 con `type::chore` y milestone H5 del
 15-oct-2026, con la hora 14:00 America/Guayaquil en su descripción. El PR del
 checkpoint referencia la issue sin cerrarla; la operación productiva sigue
 pendiente y debe registrarse después del despliegue autorizado.
+
+Publicación del checkpoint: rama subida y
+[PR #81](https://github.com/bryancito1090/istpetdev-platform/pull/81) abierto
+hacia `develop`, listo para revisión de su configuración por Jorge Doicela.
+Se incorporó también `develop` @ `3936399` (PR #80, solo documentación), sin
+conflictos. El estado de CI del HEAD final se consulta en el PR; #39 sigue
+abierta y la aceptación/despliegue productivos permanecen pendientes.

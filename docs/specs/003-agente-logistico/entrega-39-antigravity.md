@@ -163,3 +163,9 @@ referencia OAuth2 de n8n, no su valor cifrado ni un token. Se comprobó su
 correspondencia con el export canónico y se excluye solo ese fingerprint en
 un archivo temporal de la revisión; no se cambia la política del repositorio.
 La redacción del identificador evita reproducir el aviso en el diff nuevo.
+
+Checkpoint publicado por Codex en
+[PR #81](https://github.com/bryancito1090/istpetdev-platform/pull/81), destino
+`develop`, con Jorge Doicela como revisor. Se incorporó el avance documental
+de #80 (`3936399`) sin cambios de software adicionales. El estado de CI se
+comprueba sobre el HEAD del PR; este checkpoint no cierra #39.
