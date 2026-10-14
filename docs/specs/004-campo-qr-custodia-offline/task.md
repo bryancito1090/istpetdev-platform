@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | T0 | Contratos de 001/002 y entorno confirmados | 001, 002 | — | completado |
 | T1 | Modelo, migración y DTOs de campo | T0 | — | completado (migración FieldOperations + DTOs C#) |
-| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (auth/guards frontend + dev auth API) |
+| T1b | Login PKCE (web y PWA) y PWA publicada por HTTPS | T1 | — | completado (login PKCE asumido por spec 013 en PR #56; dev auth API retirada) |
 | T2 | Preparación de caja, QR y etiqueta | T1, T1b | [P] con T5 | completado (POST /deliveries/{id}/handling-units) |
 | T3 | Despacho atómico e idempotente | T2 | — | completado (POST /deliveries/{id}/dispatch) |
 | T4 | Recepción, parcial, conflictos y parada | T3 | — | completado (POST /deliveries/{id}/receipts y advance) |
@@ -45,6 +45,8 @@
 - [x] (verificado con mock) Fijar DTOs camelCase, UUID v7, horas UTC, cantidades decimales con unidad base, errores Problem Details con `code` y `correlationId`; compartir tipos TypeScript del contrato (`libs/shared-core/src/contracts/field.contract.ts`), sin incluir tokens OIDC en el outbox. Verificado con `npm run check` (0 fallos). Commit `ef87213`.
 
 ### T1b — Login PKCE y PWA por HTTPS
+
+> **Nota de vigencia (spec 013):** La implementación definitiva del login PKCE mediante Cognito, guards de rol, interceptor HTTP y retiro del login simulado fue asumida por el spec 013 (PR #56). La «dev auth API» y perfiles demo locales fueron retirados. La publicación de la PWA bajo `/campo/` queda registrada en el issue #52.
 
 **Archivos:** crear `apps/web/src/app/auth/{auth.config.ts,auth.guard.ts}` y `apps/mobile/src/app/auth/{auth.config.ts,auth.guard.ts}`; modificar `apps/web/src/app/app.config.ts`, `apps/mobile/src/app/app.config.ts`, `apps/mobile/angular.json` (base `/campo/`); crear `infra/docker/mobile/Dockerfile`; modificar `infra/nginx/istpetdev.conf`, `infra/compose/docker-compose.prod.yml`, `infra/terraform/environments/dev/identity.tf`; añadir `angular-auth-oidc-client@22.0.1` a ambas apps.
 
