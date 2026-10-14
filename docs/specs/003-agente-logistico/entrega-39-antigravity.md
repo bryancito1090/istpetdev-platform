@@ -147,8 +147,9 @@ Validaciones de Codex: 16/16 pruebas Python (4 nuevas de transporte), 11/11
 pruebas .NET de HMAC/secretos, generación reproducible, sintaxis shell/YAML,
 `actionlint 1.7.12` y `npm run check` completos en verde. Pruebas .NET:
 `artifacts/agent-review/checkpoint-39.trx`; build/check:
-`/tmp/istpetdev-39-npm-check.log`. El escaneo del rango Git y CI del PR se
-registrarán tras el commit final. Estas pruebas no acreditan habilitación,
+`/tmp/istpetdev-39-npm-check.log`. El escaneo del rango Git propio con gitleaks 8.30.1 concluyó sin secretos
+detectados, con la exclusión acotada documentada abajo. Los checks del SHA
+publicado se consultan en el PR. Estas pruebas no acreditan habilitación,
 Completed/Fallback ni aceptación en producción; #39 sigue abierta.
 
 La publicación de este checkpoint se limita a código/configuración revisados;

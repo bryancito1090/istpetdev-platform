@@ -318,7 +318,7 @@ workflows, prompt, modelo, timeout de 10 s ni políticas del backend.
 | Dimensión | Estado |
 |---|---|
 | Código/configuración | Revisados y corregidos localmente; cambios de deploy/rollback/Compose y placeholders |
-| Pruebas locales | Python 16/16, .NET HMAC/secretos 11/11, npm run check, generación, YAML/shell y actionlint en verde |
+| Pruebas locales | Python 16/16, .NET HMAC/secretos 11/11, npm run check, generación, YAML/shell y actionlint en verde; gitleaks sin secretos en el rango propio (falso positivo de UUID documentado) |
 | Integración | develop actualizado incorporado; revisión local completada, preparada para push/PR; CI del SHA publicado se consulta en el PR |
 | Runtime/producción | Diagnósticos de Antigravity 200/401/403/404 registrados como observaciones; causas requieren contrastar configuración/cuentas |
 | Release | PR #78 fusionado; no incluye este checkpoint, que debe entrar por otro PR a develop antes de promoción autorizada |
