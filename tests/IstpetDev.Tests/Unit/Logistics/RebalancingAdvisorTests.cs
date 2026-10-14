@@ -73,7 +73,7 @@ public sealed class RebalancingAdvisorTests
         var suggestions = await advisor.GenerateSuggestionsAsync();
 
         Assert.NotEmpty(suggestions);
-        var sug = Assert.Single(suggestions.Where(s => s.ProductId == prodId));
+        var sug = Assert.Single(suggestions, s => s.ProductId == prodId);
         Assert.Equal(whAId, sug.SourceLocationId);
         Assert.Equal(whBId, sug.TargetLocationId);
         Assert.InRange(sug.SuggestedQuantity, 75m, 85m);

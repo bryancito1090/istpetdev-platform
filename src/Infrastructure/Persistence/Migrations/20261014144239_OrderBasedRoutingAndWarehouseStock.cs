@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -418,6 +418,8 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                 columns: new[] { "OrganizationId", "ServingWarehouseLocationId" },
                 principalTable: "Location",
                 principalColumns: new[] { "OrganizationId", "Id" });
+
+            migrationBuilder.Sql(DemoGrants.Sql);
         }
 
         /// <inheritdoc />
