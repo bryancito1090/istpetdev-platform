@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
 
 interface StepStatus {
@@ -60,13 +61,15 @@ interface StepStatus {
               </div>
             </div>
 
-            <div class="shrink-0 self-end sm:self-auto">
-              <a 
-                [routerLink]="step.route"
-                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                {{ step.actionText }} →
-              </a>
-            </div>
+            @if (step.route !== '/datos' || session.canWrite()) {
+              <div class="shrink-0 self-end sm:self-auto">
+                <a
+                  [routerLink]="step.route"
+                  class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+                  {{ step.actionText }} →
+                </a>
+              </div>
+            }
           </div>
         }
       </div>
@@ -83,6 +86,7 @@ interface StepStatus {
 })
 export class InicioPage implements OnInit {
   private readonly apiService = inject(ApiService);
+  readonly session = inject(AuthSession);
 
   readonly steps = signal<StepStatus[]>([
     {

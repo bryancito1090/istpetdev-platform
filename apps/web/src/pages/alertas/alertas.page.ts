@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthSession } from '@entities/session';
 import { ApiService, RiskItemDto } from '@shared/api';
 
 @Component({
@@ -58,13 +59,15 @@ import { ApiService, RiskItemDto } from '@shared/api';
           <p class="text-slate-600 text-sm">
             No se han registrado consumos o inventario aún. El sistema no tiene datos para evaluar.
           </p>
-          <div>
-            <a 
-              routerLink="/datos" 
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
-              Ir al Paso 1: Cargar Datos →
-            </a>
-          </div>
+          @if (session.canWrite()) {
+            <div>
+              <a
+                routerLink="/datos"
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                Ir al Paso 1: Cargar Datos →
+              </a>
+            </div>
+          }
         </div>
       }
 
@@ -135,6 +138,7 @@ import { ApiService, RiskItemDto } from '@shared/api';
 })
 export class AlertasPage implements OnInit {
   private readonly apiService = inject(ApiService);
+  readonly session = inject(AuthSession);
 
   readonly allItems = signal<RiskItemDto[]>([]);
   readonly loading = signal(true);
