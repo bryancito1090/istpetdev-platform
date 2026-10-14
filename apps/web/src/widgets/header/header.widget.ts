@@ -61,6 +61,9 @@ const AUDITOR_NAV: NavItem[] = [
 
         <div class="flex items-center gap-3 sm:gap-4 shrink-0 text-sm">
           @if (session.status() === 'authenticated') {
+            @if (session.role() === 'Gerencia') {
+              <a routerLink="/users" class="text-xs font-semibold text-primary-600 hover:text-primary-700">Usuarios</a>
+            }
             <span class="hidden sm:inline text-slate-700">
               {{ session.me()?.displayName }}
               <span class="text-slate-400">· {{ roleName() }}</span>

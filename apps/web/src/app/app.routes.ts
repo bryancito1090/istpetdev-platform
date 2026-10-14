@@ -54,6 +54,13 @@ export const routes: Routes = [
     title: 'Rutas — IstpetDev'
   },
   {
+    path: 'users',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['Gerencia'] },
+    loadComponent: () => import('@pages/users').then(m => m.UsersPage),
+    title: 'Usuarios — IstpetDev'
+  },
+  {
     path: 'bodegas',
     canActivate: [authGuard, roleGuard],
     data: { roles: WEB_WRITE_ROLES },

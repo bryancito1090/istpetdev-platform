@@ -7,3 +7,4 @@ export * from './alertas/alertas.page';
 export * from './rutas/rutas.page';
 export * from './bodegas/bodegas.page';
 export * from './public-trace/public-trace.page';
+export * from './users/users.page';

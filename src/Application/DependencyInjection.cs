@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IAgentRunService, AgentRunService>();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AccountProvisioning>();
+        services.AddScoped<AccountAdministration>();
 
         return services;
     }

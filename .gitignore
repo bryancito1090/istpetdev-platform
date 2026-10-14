@@ -70,6 +70,7 @@ __pycache__/
 .local-skills/
 .cursor/
 .cursorrules
+.superpowers/
 AGENTS.md
 CLAUDE.md
 GEMINI.md

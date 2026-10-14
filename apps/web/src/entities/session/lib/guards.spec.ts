@@ -6,6 +6,7 @@ import { authGuard } from './auth.guard';
 import { homeRedirectGuard, roleGuard } from './role.guard';
 
 function guard(status: SessionStatus, role: string | null, run: () => unknown) {
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [provideRouter([]), { provide: AuthSession, useValue: { status: () => status, role: () => role } }],
   });
@@ -41,6 +42,19 @@ describe('roleGuard', () => {
   it('devuelve al panel a cualquier otro rol', () => {
     const tree = guard('authenticated', 'Auditor', () => roleGuard(route, state)) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(tree)).toBe('/dashboard');
+  });
+
+  it('permite /users a Gerencia y rechaza a Planificador y Auditor', () => {
+    const usersRoute = { data: { roles: ['Gerencia'] } } as unknown as ActivatedRouteSnapshot;
+    const usersState = { url: '/users' } as RouterStateSnapshot;
+
+    expect(guard('authenticated', 'Gerencia', () => roleGuard(usersRoute, usersState))).toBe(true);
+
+    const treePlanificador = guard('authenticated', 'Planificador', () => roleGuard(usersRoute, usersState)) as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(treePlanificador)).toBe('/dashboard');
+
+    const treeAuditor = guard('authenticated', 'Auditor', () => roleGuard(usersRoute, usersState)) as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(treeAuditor)).toBe('/dashboard');
   });
 });
 
