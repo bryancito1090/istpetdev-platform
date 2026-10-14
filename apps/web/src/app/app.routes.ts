@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, homeRedirectGuard, roleGuard } from '@entities/session';
+import { authGuard, homeRedirectGuard, landingRedirectGuard, roleGuard } from '@entities/session';
 
 const WEB_READ_ROLES = ['Gerencia', 'Planificador', 'Auditor'] as const;
 const WEB_WRITE_ROLES = ['Gerencia', 'Planificador'] as const;
@@ -12,6 +12,7 @@ const WEB_WRITE_ROLES = ['Gerencia', 'Planificador'] as const;
 export const routes: Routes = [
   {
     path: '',
+    canActivate: [landingRedirectGuard],
     loadComponent: () => import('@pages/landing').then(m => m.LandingPage),
     title: 'IstpetDev'
   },
