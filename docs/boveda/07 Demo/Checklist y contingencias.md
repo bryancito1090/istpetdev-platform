@@ -78,6 +78,8 @@ Ver [[Evaluacion y entregables]] y [[Registro de trabajo previo y del evento]].
 - [ ] Guardar tiempos reales de restart/rollback por separado de cola GitHub; los tiempos de la tabla anterior son metas pendientes de medida.
 - [ ] Registrar endpoint institucional, certificado y renovación una vez resueltos por el compañero.
 
+> [!info] 14-oct-2026 (fase 3 del issue #46): las tarjetas C-01–C-05 (agente, mapa, conexión, cámara/QR y ZIP del simulador ausente) y el protocolo del ensayo funcional previo al video están en [escena y contingencias](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md). Ninguna está ensayada.
+
 ## Complemento propuesto — spec 006, 12-oct-2026
 
 **Deciders PENDIENTE.** El operador de cada escena lleva una tarjeta: disparador, línea de contingencia y segundo exacto de salida. Los cinco papeles están definidos en [[Guion del pitch]]; nombres y suplentes pendientes. Una alternativa solo se usa si fue ensayada en el mismo dispositivo y versión del material.

@@ -87,3 +87,19 @@ Bloque = parte del Anexo 5.7 donde aparece la frase (P problema, S solución, D 
 1. Dos revisores del equipo recorren esta matriz contra el guion y el PDF congelado (E2E-05) y firman.
 2. Cada escena `vivo previsto` pasa E2E-04 del 006; si no, su frase usa la sustitución.
 3. Repetir la matriz sobre el commit congelado del 17-oct; cualquier cambio de código posterior invalida EJ-07/08.
+
+## Hoja de segunda revisión (E2E-05)
+
+**Pedida el 14-oct-2026** en la issue #46 (fase 3), a cualquier integrante distinto de Joseph; la issue asigna a Bryan la revisión del pitch, pero no hay revisor confirmado. **Revisión no realizada.** La persona revisora completa esta tabla; nadie la completa en su nombre.
+
+| Campo | Registro |
+|---|---|
+| Revisor (nombre) | [PENDIENTE] |
+| Fecha y hora de inicio/fin | [PENDIENTE] |
+| Versión revisada (commit) | [PENDIENTE] |
+| A-16: ¿la sustitución se limita a lo que prueba `PublicTraceHttpTests` (API) y no invita al jurado ni muestra pantalla? | [PENDIENTE] |
+| A-17: ¿queda como propuesta mientras no haya recorrido conectado que contraste pantalla y API? | [PENDIENTE] |
+| A-27: ¿se limita a la identidad de prueba de `AuditorRoleTests` y deja Cognito real como pendiente? | [PENDIENTE] |
+| Intento deliberado: cita sin permiso (A-29), «ahorro» sin ZIP (A-21), «IA replanifica sola» (A-11/A-33), «QR del jurado» (A-16) | [PENDIENTE] |
+| Otras filas corregidas (ID, antes → después) | [PENDIENTE] |
+| ¿Aprueba la matriz para el guion de ensayo? | [PENDIENTE] |

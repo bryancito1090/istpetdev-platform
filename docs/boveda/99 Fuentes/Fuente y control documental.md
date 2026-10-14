@@ -380,3 +380,13 @@ Verificación documental de esta actualización: **85 notas Markdown**, **872 en
 Joseph Baño (Andrés) informó que revisó durante 15 minutos y aprobó los cinco componentes del kit T1 del PR #71 (`228ab72`), sin correcciones adicionales comunicadas. No informó horas de inicio y fin. CE-01 quedó registrado en `task.md` y E2E-01 del spec 006 y en [[Registro de trabajo previo y del evento]]; B-45 se actualizó en [[Backlog]]. Joseph también aprobó el borrador T2 (`8693f73`). La revisión posterior ajustó las afirmaciones A-16/A-17/A-27 de `matriz-afirmaciones.md` para limitar lo dicho a la prueba de API; faltan segundo revisor, PDF y ensayos para CE-03/CE-06.
 
 Verificación documental de esta actualización: **85 notas Markdown**, **880 enlaces internos resueltos**, **0 errores**.
+
+## T3–T5 del spec 006: preparación de escena, feria y ensayos — 14 de octubre de 2026
+
+Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (Claude Code, Opus 5.5) en la rama `feature/46-fase3-escena-ensayos` (PR #75), sobre `f85b5e8` (PR #73 fusionado). Joseph informó que no hubo ensayos, video ni segunda revisión, y que los nombres de los papeles no están confirmados. Sin entrevistas, cronometrajes ni aprobaciones nuevas.
+- [[Guion del pitch]] y [[Checklist y contingencias]]: avisos que remiten a la escena preparada y a las contingencias C-01–C-05.
+- [[Consultas para la organizacion]]: O-04 y O-06 revisadas en la fase 3; siguen sin respuesta con fuente.
+- [[Registro de trabajo previo y del evento]] y [[Backlog]] (B-46): fila y estado de la preparación.
+- Fuera de la bóveda: `escena-y-contingencias.md`, `hojas-feria.md` y `registro-ensayos.md` del spec 006, hoja de segunda revisión en `matriz-afirmaciones.md`, y estado en `task.md` y `test-e2e.md`.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **885 enlaces internos resueltos**, **0 errores**.
