@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -6,20 +8,27 @@ namespace IstpetDev.Application.Accounts;
 
 public sealed partial class AccountAdministration
 {
+    // El directorio es singleton en el API. La tabla débil no retiene instancias de pruebas.
+    private static readonly ConditionalWeakTable<IIdentityDirectory, ConcurrentDictionary<string, byte>> PendingRevocations = new();
+    private ConcurrentDictionary<string, byte> PendingForDirectory => PendingRevocations.GetValue(directory, _ => new());
+
     public async Task<AccountItem> UpdateAsync(Guid actorId, Guid id, UpdateAccountInput input, CancellationToken ct)
     {
+        DirectoryUser? user = null;
         var account = await ChangeAsync(id, async a =>
         {
+            if (input.Role is not null && !Roles.IsHuman(input.Role)) throw AccountProvisioning.InvalidRole();
+            var displayName = input.DisplayName is null ? null : AccountProvisioning.ValidateDisplayName(input.DisplayName);
             if (input.Role is not null && input.Role != a.Role)
             {
-                if (!Roles.IsHuman(input.Role)) throw AccountProvisioning.InvalidRole();
                 if (a.Id == actorId) throw SelfChange();
                 await EnsureNotLastManagerAsync(a, ct);
-                a.Role = input.Role;
             }
-            if (input.DisplayName is not null) a.DisplayName = AccountProvisioning.ValidateDisplayName(input.DisplayName);
+            user = await directory.FindBySubjectAsync(a.Subject, ct);
+            if (input.Role is not null) a.Role = input.Role;
+            if (displayName is not null) a.DisplayName = displayName;
         }, ct);
-        return await DescribeAsync(account, ct);
+        return ToManagedItem(account, user);
     }
 
     // Persiste el bloqueo antes de tocar Cognito; el desfase se puede reintentar.
@@ -31,10 +40,12 @@ public sealed partial class AccountAdministration
             await EnsureNotLastManagerAsync(a, ct);
             a.IsActive = false;
         }, ct);
+        PendingForDirectory[account.Subject] = 0;
         try
         {
             await directory.DisableAsync(account.Subject, ct);
             await directory.SignOutEverywhereAsync(account.Subject, ct);
+            PendingForDirectory.TryRemove(account.Subject, out _);
         }
         catch (IdentityDirectoryUnavailableException)
         {
@@ -50,6 +61,7 @@ public sealed partial class AccountAdministration
         {
             await directory.EnableAsync(account.Subject, ct);
             await directory.SignOutEverywhereAsync(account.Subject, ct);
+            PendingForDirectory.TryRemove(account.Subject, out _);
         }
         catch (IdentityDirectoryUnavailableException)
         {
@@ -90,11 +102,17 @@ public sealed partial class AccountAdministration
 
     private async Task<AccountItem> DescribeAsync(Account account, CancellationToken ct)
     {
-        try { return ToItem(account, await directory.FindBySubjectAsync(account.Subject, ct)); }
+        try { return ToManagedItem(account, await directory.FindBySubjectAsync(account.Subject, ct)); }
         catch (IdentityDirectoryUnavailableException)
         {
             return new AccountItem(account.Id, account.DisplayName, account.Role, account.IsActive, null, "unknown", null, true);
         }
+    }
+
+    private AccountItem ToManagedItem(Account account, DirectoryUser? user)
+    {
+        var item = ToItem(account, user);
+        return PendingForDirectory.ContainsKey(account.Subject) ? item with { OutOfSync = true } : item;
     }
 
     private static AccountRuleException NotFound() => new("not_found", "La cuenta no existe.");

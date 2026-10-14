@@ -1,11 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
+using IstpetDev.Api.Authentication;
+using IstpetDev.Api.Controllers;
 using IstpetDev.Application.Accounts;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace IstpetDev.Tests.Integration.Accounts;
@@ -16,6 +21,82 @@ public sealed partial class AccountsApiTests
     {
         await using var db = TestDb.Context(connection);
         return await db.Accounts.Where(a => a.Subject == subject).Select(a => a.Id).SingleAsync();
+    }
+
+    [Fact]
+    public async Task Patch_with_unavailable_directory_is_503_and_keeps_original_values()
+    {
+        var (api, manager, _, connection) = await ManagerAsync();
+        await using var _api = api;
+        var id = await IdOf(connection, TestTokens.Driver);
+        api.Directory.Unavailable = true;
+
+        var response = await manager.PatchAsJsonAsync($"{Accounts}/{id}", new { displayName = "Alterado", role = Roles.Auditor });
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "identity_unavailable"), (response.StatusCode, await CodeOf(response)));
+        Assert.DoesNotContain("Cognito simulado", await response.Content.ReadAsStringAsync());
+        await using var db = TestDb.Context(connection);
+        var stored = await db.Accounts.SingleAsync(a => a.Id == id);
+        Assert.Equal(("Conductor de prueba", Roles.Conductor), (stored.DisplayName, stored.Role));
+    }
+
+    [Fact]
+    public async Task Failed_sign_out_after_disable_is_visible_in_response_and_list_until_retry()
+    {
+        var (api, manager, _, connection) = await ManagerAsync();
+        await using var _api = api;
+        using var driver = api.ClientFor(TestTokens.Driver);
+        var id = await IdOf(connection, TestTokens.Driver);
+        api.Directory.SignOutUnavailable = true;
+
+        var response = await manager.PostAsync($"{Accounts}/{id}/deactivate", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var item = await response.Content.ReadFromJsonAsync<AccountItem>();
+        Assert.True(item!.OutOfSync);
+        Assert.False(item.IsActive);
+        Assert.False(api.Directory.Users.Single(u => u.Subject == TestTokens.Driver).Enabled);
+        Assert.DoesNotContain(TestTokens.Driver, api.Directory.SignedOut);
+        Assert.Equal(HttpStatusCode.Forbidden, (await driver.GetAsync("/api/v1/me")).StatusCode);
+        var list = await manager.GetFromJsonAsync<AccountItem[]>(Accounts);
+        Assert.True(list!.Single(a => a.Id == id).OutOfSync);
+
+        api.Directory.SignOutUnavailable = false;
+        var retried = await (await manager.PostAsync($"{Accounts}/{id}/deactivate", null)).Content.ReadFromJsonAsync<AccountItem>();
+        Assert.False(retried!.OutOfSync);
+        Assert.Contains(TestTokens.Driver, api.Directory.SignedOut);
+        list = await manager.GetFromJsonAsync<AccountItem[]>(Accounts);
+        Assert.False(list!.Single(a => a.Id == id).OutOfSync);
+    }
+
+    [Fact]
+    public async Task Last_manager_maps_to_conflict_problem_details_at_controller_boundary()
+    {
+        var connection = postgres.NewDatabase();
+        await using var api = new ApiFactory(connection);
+        using var _ = api.ClientFor(TestTokens.Planner);
+        var managerId = await TestAccounts.SetRoleAsync(connection, TestTokens.Planner, Roles.Gerencia);
+        using var scope = api.Services.CreateScope();
+        var administration = scope.ServiceProvider.GetRequiredService<AccountAdministration>();
+        var controller = new AccountsController(administration)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(AccountRoleClaimsTransformation.AccountIdClaim, Guid.NewGuid().ToString())]))
+                }
+            }
+        };
+
+        var result = await controller.Deactivate(managerId, default);
+
+        var problemResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, problemResult.StatusCode);
+        Assert.Contains("application/problem+json", problemResult.ContentTypes);
+        var problem = Assert.IsType<ProblemDetails>(problemResult.Value);
+        Assert.Equal("last_manager", problem.Extensions["code"]);
+        Assert.Equal(409, problem.Status);
     }
 
     [Theory]

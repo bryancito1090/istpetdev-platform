@@ -35,3 +35,18 @@ Se añadieron `PATCH /api/v1/accounts/{id}`, `POST .../{id}/deactivate`, `.../re
 - `Resend_with_unavailable_directory_is_503_without_raw_error` (`identity_unavailable`).
 
 Las pruebas existentes de T11 cubren GET/POST solo Gerencia, actor sin cuenta, correo duplicado, rol/correo/nombre inválidos y Cognito no disponible. La suite completa incluye `LeanSchemaTests`; no se modificó el esquema.
+
+## Corrección tras revisión del spec
+
+La revisión `.superpowers/sdd/plan/t12-spec-review.md` detectó dos fallos ante Cognito no disponible y pidió comprobar el borde del controlador para `last_manager`.
+
+- PATCH valida rol y nombre, obtiene la cuenta humana bajo el bloqueo de organización y consulta `FindBySubjectAsync` **antes** de cambiar valores y guardar. Si el directorio falla, `Run` devuelve 503 `identity_unavailable` y la transacción no persiste cambios. La respuesta usa el usuario consultado antes de guardar; no hace otra lectura del directorio después del commit.
+- Una revocación pendiente se guarda en una tabla concurrente en memoria, asociada a la instancia singleton de `IIdentityDirectory`. Se marca después de persistir `IsActive=false` y se borra solo tras completar `DisableAsync` y `SignOutEverywhereAsync`. La respuesta y `GET /accounts` suman esta señal al cálculo de `OutOfSync`. Una segunda desactivación reintenta ambos pasos y limpia el desfase al completar la revocación.
+- **Límite de duración:** la marca de revocación pendiente existe solo mientras vive el proceso del API. Si el proceso reinicia después de que `DisableAsync` tuvo éxito pero `SignOutEverywhereAsync` falló, la marca se pierde y la lista puede mostrar `OutOfSync=false`; un reintento manual de desactivación sigue revocando sesiones. Persistir esa marca entre reinicios requeriría esquema adicional, excluido por NFR-03. El bloqueo de `/me` sí persiste en `Account.IsActive=false`.
+- La prueba controlada de `AccountsController.Deactivate` con `AccountId` distinto del último Gerencia comprueba `ObjectResult` 409, `application/problem+json` y `code=last_manager`. La autorización real no permite tal actor en ese estado; la prueba evita relajar `[Authorize(Roles=Gerencia)]` y conserva el test de dominio.
+
+### Evidencia RED/GREEN de la corrección
+
+- **RED:** `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~AccountsApiTests' -m:1 --no-restore`: exit 1; 2 fallos, 32 aprobadas, 34 en total. `Failed_sign_out_after_disable_is_visible_in_response_and_list_until_retry` esperaba `OutOfSync=true` y recibió `false`; `Patch_with_unavailable_directory_is_503_and_keeps_original_values` no encontró `code` porque recibió la respuesta anterior 200. `Last_manager_maps_to_conflict_problem_details_at_controller_boundary` pasó.
+- **GREEN:** mismo comando: exit 0; `Failed: 0, Passed: 34, Skipped: 0, Total: 34, Duration: 1 m 4 s`.
+- **Suite completa tras corrección:** `dotnet test -m:1`, exit 0; `Failed: 0, Passed: 311, Skipped: 0, Total: 311, Duration: 5 m 17 s`. Persistieron avisos `NU1900` por acceso a NuGet para datos de vulnerabilidades.
