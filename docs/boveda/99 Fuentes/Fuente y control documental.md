@@ -299,8 +299,6 @@ Verificación documental de esta actualización: **83 notas Markdown**, **812 en
 
 Fuente: solicitud de segregar roles y pantallas entre Web (Torre de Control) y Móvil (PWA de Campo), incorporar el rol y flujo ágil de Receptor Hospitalario y retirar accesos públicos prematuros. Se actualiza [[Usuarios y flujos]], [[Decisiones de arquitectura]] con ADR-24 y ADR-25, y se genera [[2026-10-13-informe-segregacion-roles-y-plataformas]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **813 enlaces internos resueltos**, **0 errores**.
-
 ## Culminación e integración fullstack de Spec 004 y rutas dinámicas — 13 de octubre de 2026
 
 Fuente: solicitud de Alexander Martínez de actualizar la Bóveda con la finalización del Spec 004 y los avances de la rama `test` / `feature/004-campo-qr-custodia-offline`:
@@ -322,3 +320,9 @@ Verificación documental de esta actualización: **84 notas Markdown**, **818 en
 Fuente: instrucción directa de Bryan/Jorge de centralizar toda la persistencia de desarrollo del equipo en AWS EC2 con PostgreSQL 16 y PostGIS 3.4 (`istpetdev_dev_01`) con usuario único `migrator_dev_01`, eliminando la dependencia del servidor de laboratorio LAN. Para cumplir con las directrices de seguridad y control de versiones, se centraliza la configuración en el archivo `.env` en la raíz (ignorado por Git), dejando `src/Api/appsettings.json` local y completamente excluido de Git junto con `appsettings.*.json` mediante `.gitignore`. A GitHub viajan únicamente `!.env.example` y `!src/Api/appsettings.example.json`. El script `scripts/ops/switch-db.mjs` se refactoriza para leer de `.env` y ocultar contraseñas en terminal. Se actualizan [[Estrategia de tres entornos y base de datos]], [[Conexion PostgreSQL en DBeaver]], [[istpetdev-dbflow]], [[Runbook de DevOps y base de datos para la demo]], [[Entornos y operacion acordados]], [[AWS temporal para la hackathon y cierre]], [[Esquema completo de base de datos]], [[Credenciales y acceso del equipo]] y [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]].
 
 Verificación documental de esta actualización: **84 notas Markdown**, **829 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
+
+## Saneamiento de dependencias y ADR-04 — 14 de octubre de 2026
+
+Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
+
+Verificación documental de esta actualización: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**.

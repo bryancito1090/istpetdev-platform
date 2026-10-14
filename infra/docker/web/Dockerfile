@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # Etapa 1: Compilación de contratos y aplicación Angular
-FROM node:22-alpine AS build
+FROM node:22.23.3-alpine AS build
 WORKDIR /app
 
 # Copiar manifiestos de dependencias del monorepo
