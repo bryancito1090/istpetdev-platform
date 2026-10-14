@@ -154,7 +154,10 @@ export class MobileAuthService {
    * Si el backend responde, guarda el token real en memoria volátil; si falla, aplica fallback.
    */
   loginViaApi(credentials: { email?: string; password?: string; role?: string }): Observable<boolean> {
-    return this.http.post<any>('http://localhost:5000/api/v1/auth/login', credentials).pipe(
+    const baseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:5000'
+      : '';
+    return this.http.post<any>(`${baseUrl}/api/v1/auth/login`, credentials).pipe(
       map(res => {
         if (res && res.accessToken) {
           const mappedRole = this.mapBackendToFieldRole(res.user?.role);
