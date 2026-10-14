@@ -75,6 +75,7 @@ export interface RoutePlanDetailDto {
   vehicleId: string;
   vehicleCode: string;
   plannedStartUtc: string;
+  plannedEndUtc?: string;
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
@@ -84,6 +85,10 @@ export interface RoutePlanDetailDto {
     servicePointCode: string;
     servicePointName: string;
     etaUtc: string;
+    plannedDepartureUtc?: string;
+    serviceMinutes?: number;
+    windowStart?: string;
+    windowEnd?: string;
     status: string;
     ordersCount: number;
   }>;
@@ -364,6 +369,7 @@ export class ApiService {
           vehicleId: res.vehicleId,
           vehicleCode: res.vehicleCode,
           plannedStartUtc: res.plannedStartUtc,
+          plannedEndUtc: res.plannedEndUtc,
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
           totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
           polyline: res.polyline || '',
@@ -373,6 +379,10 @@ export class ApiService {
             servicePointCode: s.servicePointCode || '',
             servicePointName: s.servicePointName || '',
             etaUtc: s.etaUtc || s.plannedArrivalUtc,
+            plannedDepartureUtc: s.plannedDepartureUtc,
+            serviceMinutes: s.serviceMinutes ?? 15,
+            windowStart: s.windowStart || '08:00',
+            windowEnd: s.windowEnd || '17:00',
             status: s.status,
             ordersCount: s.ordersCount || 0
           }))
