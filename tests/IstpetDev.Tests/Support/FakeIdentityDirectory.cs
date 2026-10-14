@@ -12,6 +12,7 @@ public sealed class FakeIdentityDirectory : IIdentityDirectory
 
     public string Issuer => TestTokens.Issuer;
     public bool Unavailable { get; set; }
+    public bool SignOutUnavailable { get; set; }
     public int Invitations => invitations;
     public int Resends => resends;
     public ConcurrentBag<string> SignedOut { get; } = [];
@@ -45,7 +46,9 @@ public sealed class FakeIdentityDirectory : IIdentityDirectory
 
     public Task EnableAsync(string subject, CancellationToken ct) => Guarded(() => users[Known(subject)] = users[subject] with { Enabled = true });
 
-    public Task SignOutEverywhereAsync(string subject, CancellationToken ct) => Guarded(() => { SignedOut.Add(Known(subject)); return true; });
+    public Task SignOutEverywhereAsync(string subject, CancellationToken ct) =>
+        SignOutUnavailable ? throw new IdentityDirectoryUnavailableException("Cognito simulado no revocó sesiones.")
+            : Guarded(() => { SignedOut.Add(Known(subject)); return true; });
 
     public Task ResendInvitationAsync(string email, CancellationToken ct) => Guarded(() => Interlocked.Increment(ref resends));
 
