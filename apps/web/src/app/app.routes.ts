@@ -54,6 +54,13 @@ export const routes: Routes = [
     title: 'Rutas — IstpetDev'
   },
   {
+    path: 'users',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['Gerencia'] },
+    loadComponent: () => import('@pages/users').then(m => m.UsersPage),
+    title: 'Usuarios — IstpetDev'
+  },
+  {
     // Pública: el QR impreso en el bulto apunta aquí.
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
