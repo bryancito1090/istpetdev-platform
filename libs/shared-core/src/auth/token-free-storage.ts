@@ -13,6 +13,7 @@ export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  clear?(): void;
 }
 
 /**
@@ -42,43 +43,18 @@ export class TokenFreeStorage {
 
   clear(): void {
     if (this.flowStore) {
-      const keysToRemove: string[] = [];
-      for (let index = 0; index < this.flowStore.length; index++) {
-        const key = this.flowStore.key(index);
-        if (key !== null) keysToRemove.push(key);
+      if (typeof this.flowStore.clear === 'function') {
+        this.flowStore.clear();
+      } else {
+        const keysToRemove: string[] = [];
+        for (let index = 0; index < this.flowStore.length; index++) {
+          const key = this.flowStore.key(index);
+          if (key !== null) keysToRemove.push(key);
+        }
+        for (const key of keysToRemove) this.flowStore.removeItem(key);
       }
-      for (const key of keysToRemove) this.flowStore.removeItem(key);
     }
     this.memory.clear();
   }
 }
 
-// La librería guarda un objeto JSON por configuración; también se admite una clave suelta.
-function flowStateOf(key: string, value: string): string | null {
-  if (AUTH_FLOW_KEYS.includes(key)) return value;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const flow = Object.fromEntries(Object.entries(parsed).filter(([name]) => AUTH_FLOW_KEYS.includes(name)));
-  return Object.keys(flow).length > 0 ? JSON.stringify(flow) : null;
-}
-
-function isFlowStorageEntry(store: KeyValueStore, key: string): boolean {
-  const value = store.getItem(key);
-  if (value === null) return false;
-  if (AUTH_FLOW_KEYS.includes(key)) return true;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    return false;
-  }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-  const keys = Object.keys(parsed);
-  return keys.length > 0 && keys.every((name) => AUTH_FLOW_KEYS.includes(name));
-}
