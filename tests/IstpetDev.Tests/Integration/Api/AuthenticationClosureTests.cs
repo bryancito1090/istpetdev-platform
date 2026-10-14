@@ -93,14 +93,19 @@ public sealed class AuthenticationClosureTests(PostgisContainer postgres)
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Production");
-            builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                ["ConnectionStrings:Main"] = "Host=localhost;Database=not_used;Username=not_used;Password=not_used",
-                ["Authentication:Authority"] = authority,
-                ["Authentication:AllowedClientIds:0"] = allowedClientId,
-                ["Demo:Enabled"] = "false",
-                ["ApplyMigrations"] = "false",
-                ["EnableSwagger"] = "false"
-            }));
+                // Local ignored appsettings may contain several clients. Clear all
+                // entries so this production guard tests an actually empty list.
+                var values = configuration.Build().GetSection("Authentication:AllowedClientIds")
+                    .GetChildren().ToDictionary(child => child.Path, _ => (string?)null);
+                values["ConnectionStrings:Main"] = "Host=localhost;Database=not_used;Username=not_used;Password=not_used";
+                values["Authentication:Authority"] = authority;
+                values["Authentication:AllowedClientIds:0"] = allowedClientId;
+                values["Demo:Enabled"] = "false";
+                values["ApplyMigrations"] = "false";
+                values["EnableSwagger"] = "false";
+                configuration.AddInMemoryCollection(values);
+            });
         });
 }

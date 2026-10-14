@@ -6,6 +6,10 @@ on:
     paths:
       - "src/**"
       - "scripts/db/**"
+      - "scripts/agent/**"
+      - "automation/n8n/**"
+      - "infra/compose/docker-compose*.yml"
+      - ".env.example"
       - ".dockerignore"
       - ".config/dotnet-tools.json"
       - "global.json"
@@ -26,6 +30,10 @@ on:
     paths:
       - "src/**"
       - "scripts/db/**"
+      - "scripts/agent/**"
+      - "automation/n8n/**"
+      - "infra/compose/docker-compose*.yml"
+      - ".env.example"
       - ".dockerignore"
       - ".config/dotnet-tools.json"
       - "global.json"
@@ -72,6 +80,13 @@ jobs:
             dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
           done
           python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Verificar generación n8n, aceptación y limpieza sin credenciales"
+        run: |
+          python3 -I scripts/agent/build-workflows.py --check
+          for test_script in tests/scripts/test_*.py; do
+            python3 -I "$test_script"
+          done
 
       - name: "Conservar resultados de pruebas"
         if: always()

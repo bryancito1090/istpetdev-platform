@@ -321,6 +321,26 @@ Fuente: instrucción directa de Bryan/Jorge de centralizar toda la persistencia 
 
 Verificación documental de esta actualización: **84 notas Markdown**, **829 enlaces internos resueltos**, **0 errores**. Se conserva un aviso documental previo de lenguaje.
 
+
+## Workflows, copia local y desbloqueo M2M del spec 003 — 14 de octubre de 2026
+
+Fuente: solicitud de Bryan de terminar #37, mantener `task.md` al día y verificar
+la coherencia con la bóveda. Se documentan versión n8n 2.39.5, workflows locales,
+borradores inactivos en el servidor con DeepSeek nativo y límites de aceptación
+sin inventar resultados. Bryan revisó y autorizó el plan dirigido de #38;
+se publicó en GitHub y aplicó con 1 añadido, 1 actualizado y 0 destruidos.
+Se comprobó emisión del token automation; secretos solo en configuración local
+ignorada. La API de aceptación usa una base descartable y puerto separado para
+preservar el entorno compartido. Se detectó que Cognito no tenía usuarios humanos: Bryan autorizó crear su cuenta,
+recibió invitación y completó registro/MFA; se obtuvo token por PKCE. M2M local
+responde 200/403, pero Watch real termina Fallback agent_error. Bryan solicitó
+el plan y la delegación de #37/T0–T10 a Antigravity; aceptación real pendiente.
+
+Seguimiento: [task.md](../../specs/003-agente-logistico/task.md),
+[[n8n e IA]] y [[Registro de seguimiento y hallazgos]]. ADR-22 conserva su estado
+hasta aprobación del equipo; no se declara el proveedor ni producción validados.
+
+Verificación documental: **84 notas Markdown**, **831 enlaces internos resueltos**, **0 errores**; un aviso previo de lenguaje, sin modificar su alcance.
 ## Saneamiento de dependencias y ADR-04 — 14 de octubre de 2026
 
 Fuente: ejecución de spec 000 (Issue #44). Se actualiza ADR-04 en [[Decisiones de arquitectura]] para formalizar `@lucide/angular` y la remoción de dependencias sin uso (`lucide-angular`, `@angular/animations`).
@@ -344,8 +364,20 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 - Blindaje de pruebas de persistencia: actualización de `LeanSchemaTests` (36 tablas núcleo) y `MigrationSafetyTests` (7 migraciones consecutivas validadas sin DDL en runtime).
 - Sincronización en la bóveda: actualización de [[Hechos canonicos]], [[Rutas y sobrecostos]], [[Modelo de datos]], [[Backlog]], [[Riesgos y decisiones pendientes]], [[Arquitectura del sistema]], [[Registro de seguimiento y hallazgos]] y [[Plan de trabajo specs 004 y 005]].
 
-Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
+Verificación documental de esta actualización: **84 notas Markdown**, **848 enlaces internos resueltos**, **0 errores**.
 
+## Revisión e integración local de #37 — 14 de octubre de 2026
+
+Fuente: entrega de Antigravity y solicitud de Bryan de comprobar y completar
+las casillas de spec 003. Bryan confirmó la aprobación del diseño/ADR-22; se
+actualizan spec, plan, tareas y hechos canónicos. La revisión completa caminos
+locales faltantes de incidente automático, fallback, contexto firmado, traza,
+concurrencia y recorrido E2E. Evidencia y pendientes en
+[revision-integracion-37.md](../../specs/003-agente-logistico/revision-integracion-37.md).
+Producción permanece en #39; la aceptación del árbol final y CI aún se verifican.
+
+Verificación documental: **84 notas Markdown**, **847 enlaces internos resueltos**,
+**0 errores**; cuatro avisos de lenguaje previos, fuera de este cambio.
 ## Endurecimiento de CI/CD, flujo de persistencia y Plan B — 14 de octubre de 2026
 
 Fuente: atención y cierre de Issue #35 por Joseph Baño y Jorge Doicela a través del PR #70 (commit `0c13909`, merge `d2b7850`). Se endurecen `.github/workflows/deploy.yml` y `rollback.yml` exigiendo verificación estricta de `HTTP 200` en `/health/ready` (eliminando fallbacks permisivos a `/health/live`). Se formaliza en `src/Api/Program.cs` la política Fail-Fast para abortar el arranque de la API ante fallos de migración. En [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]] se incorporan la matriz de alcance CI vs RDS, el procedimiento de verificación de `__EFMigrationsHistory` vía túnel SSM, la política de rollback aditiva y el Plan B local del evento (Laptop Standalone + WiFi Hotspot) sustituyendo la dependencia del laboratorio LAN. Se sincroniza la prueba de integración `MigrationSafetyTests.cs` para validar 8 migraciones canónicas de EF Core tras la incorporación de `SimulationRunsAndEvents`.

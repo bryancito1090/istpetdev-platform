@@ -70,7 +70,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Arquetipo visual y UI | Arquetipo B — Técnico/Minimalista; Lucide Icons (`lucide-angular`), paleta oficial Expo Clean (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`) y tokens semánticos en `tailwind.config.js` ([[Sistema de diseno y colores]]) | ADR-04 ratificada | — | ✅ |
 | Móvil offline y firma | PWA con IndexedDB (`idb`), `signature_pad` para firma táctil y UUID v7 | ADR-06, ADR-17 aceptadas | — | ✅ |
 | Tiempo real | SignalR; Redis solo con varias réplicas | ADR-07 propuesta | — | ⚠️ |
-| IA | Cálculo determinista; LLM (DeepSeek) solo explica; n8n en el servidor existente de Bryan. Propuesta del 12-oct: agente con herramientas y autonomía limitada, DeepSeek con prueba de aceptación (ADR-22) | ADR-08, ADR-22 | Papel del LLM (ver tabla de contradicciones) | ⚠️ propuesta |
+| IA | Cálculo determinista; LLM (DeepSeek) solo explica; n8n en el servidor existente de Bryan. Diseño del 12-oct aceptado por Bryan el 14-oct: agente con herramientas y autonomía limitada, DeepSeek con prueba de aceptación (ADR-22) | ADR-08, ADR-22 | Papel del LLM resuelto por aprobación de ADR-22; ejecución remota en #39 | ✅ diseño confirmado |
 | Identidad | Amazon Cognito (OIDC, Authorization Code + PKCE S256; AuthInterceptor en frontend) | ADR-10, ADR-18 definidas | — | ✅ |
 | Autorización | RBAC administrable por organización: seis roles funcionales como seeds y ConfigurationAdmin administrativo propuesto; acciones implementadas en backend | ADR-16, solicitada por Bryan el 9-oct; [[RBAC y configuracion del sistema]] | Sustituye límite anterior de seis roles fijos; implementación pendiente | ✅ dirección aceptada; ⚠️ diseño físico propuesto |
 | Base objetivo del sistema | ⚠️ Desde el 12-oct, ADR-21 (propuesta) cambia la base de la demo al núcleo `DemoCore` de 27 tablas sin RLS (spec 001; transición en [[Runbook de DevOps y base de datos para la demo]]). Antes: 95 tablas de dominio aplicadas en `istpetdev_dev_01` mediante CompleteSystemSchema95, conservando InitialSchema; 95 ENABLE/FORCE RLS | [[Esquema completo de base de datos]]; evidencia del agente de software en [[Coordinacion migracion schema95]] | PR #1 como borrador; integridad RDS y aislamiento/PostGIS descartable aprobados, incluido cliente EF/Npgsql y pool secuencial; JWT/HTTP real, concurrencia, recorrido/aislamiento RDS, merge e integración pendientes | ✅ aplicación personal y pruebas según evidencia; ⚠️ validaciones funcionales pendientes |
@@ -106,7 +106,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Móvil offline y firma | ADR-17 | Aceptada (IndexedDB + signature_pad) | 2026-10-11 | Jefe de Frontend y Bryan |
 | Cliente OIDC Cognito | ADR-18 | Aceptada (PKCE S256 + AuthInterceptor) | 2026-10-11 | Jefe de Frontend y Bryan |
 | Núcleo delgado para la demo | ADR-21 | Aceptada (difiere ADR-16 a P2) | 2026-10-13, issue #16 | Jorge, Bryan, Joseph ([[Runbook de DevOps y base de datos para la demo]]) |
-| Autonomía del agente | ADR-22 | Propuesta (complementa ADR-08) | Sesión de definición del 12-oct | PENDIENTE |
+| Autonomía del agente | ADR-22 | Aceptada (complementa ADR-08); producción pendiente en #39 | Confirmación expresa de Bryan durante revisión de #37, 14-oct | Bryan |
 | Motor logístico y distancias | ADR-23 | Propuesta (complementa ADR-05) | Sesión de definición del 12-oct | PENDIENTE |
 | Segregación de plataformas y roles | ADR-24 | Aceptada (Web vs PWA móvil de campo) | 2026-10-13, commit `733afbd` | Bryan y Alexander Martínez |
 | Ergonomía PWA y flujos por rol | ADR-25 | Aceptada (interfaz por rol, QR asimétrico, cero emojis) | 2026-10-13, commit `733afbd` | Bryan y Alexander Martínez |
@@ -153,9 +153,9 @@ Tomados de [[Modelo de datos]] y [[Contratos API y eventos]]. Ningún asistente 
 | API base | `/api/v1` | Contratos API y eventos |
 | Hub en tiempo real | `/hubs/operations` | Contratos API y eventos |
 | Lote de importación | `ImportBatch` | ADR-21, spec 001 (⚠️ propuesta) |
-| Decisión del agente logístico | `AgentDecision` | ADR-22, spec 001/002 (⚠️ propuesta) |
+| Decisión del agente logístico | `AgentDecision` | ADR-22, spec 001/002 (diseño aceptado el 14-oct) |
 | Caché de tramos viales | `RoadMatrixEdge` (indexada por coordenadas) | ADR-23, spec 002 (⚠️ propuesta) |
-| Ejecución del agente | `AgentRun` | ADR-22, spec 003 (⚠️ propuesta) |
+| Ejecución del agente | `AgentRun` | ADR-22, spec 003 (diseño aceptado el 14-oct) |
 | Pedido de entrega | `DeliveryOrder` | ADR-28, PR #59 |
 | Línea de pedido de entrega | `DeliveryOrderLine` | ADR-28, PR #59 |
 | Política de stock de bodega | `WarehouseStockPolicy` | ADR-28, PR #59 |
@@ -183,8 +183,8 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Autoría de ADR-04 (aceptación inicial), 09, 13, 14 y 15 | Confirmar Deciders | Reunión del equipo |
 | Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21) | Equipo, con Bryan como Decider de ADR-16 |
 | Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
-| Papel del LLM | Solo explica (ADR-08) o propone y orquesta con autonomía decidida por reglas deterministas (ADR-22) | Equipo |
-| Scopes de automatización | Cuatro scopes finos ([[Identidad OIDC y sesiones]]) o un scope `istpetdev-api/automation` + rol `Automatizacion` (spec 003) | Equipo |
+| Papel del LLM | Resuelto el 14-oct: el LLM elige herramientas y explica; el motor determinista calcula y aplica límites (ADR-22) | Bryan, aprobación expresa en revisión de #37 |
+| Scopes de automatización | Resuelto para spec 003: `istpetdev-api/automation` + rol `Automatizacion`, sin operaciones de aprobación/publicación | Bryan, aprobación expresa del diseño 003 |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
 | Cierre de parada y QR público | Cerrado el 13-oct (commit `431b792`): `advance` en `DemoController.cs` ejecuta la cadena real de preparación, despacho y recepción; paradas y stock se actualizan con efectos contables reales y trazables. | Alexander Martínez / Bryan |
 | Token del QR público | Cerrado el 13-oct: token en fragmento `#t=` sanitizado inmediatamente en cliente con `history.replaceState` y resuelto por backend vía `X-Trace-Token` con rate limiter. | Alexander Martínez / Bryan |
