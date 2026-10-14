@@ -43,7 +43,15 @@ npm run check
 ### Modo A: API y datos locales con Docker
 Este modo mantiene la API y PostgreSQL localmente. El inicio de sesión de las aplicaciones web y móvil sí usa el User Pool real de Cognito; no hay un login simulado ni contraseñas de demo en el repositorio. Las contraseñas se introducen únicamente en la página administrada de Cognito.
 
-Al ejecutar la API con `ASPNETCORE_ENVIRONMENT=Development`, no configures `Authentication__Authority`, `Authentication__AllowedClientIds__0` ni `Authentication__AllowedClientIds__1` para conectarla al User Pool real. La API local conserva su configuración de desarrollo y no valida los tokens reales de Cognito; por eso este modo permite desarrollar la API y revisar el flujo de inicio de sesión de las apps, pero no completar llamadas autenticadas desde esas apps hacia la API local.
+Si la API corre con `ASPNETCORE_ENVIRONMENT=Development` y sin `Authentication__Authority`, usa la configuración de desarrollo y **rechaza los tokens reales de Cognito**: sirve para desarrollar la API, pero las apps no pueden hacer llamadas autenticadas contra ella. Para probar el flujo completo, exporta el issuer y los dos clientes antes de iniciar la API:
+
+```bash
+export Authentication__Authority=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_4Y2j5DINp
+export Authentication__AllowedClientIds__0=6ejhdau47gad74id7id1l7ugln
+export Authentication__AllowedClientIds__1=3k59rv5cov1sinllgd7igmpe1a
+```
+
+Con eso la API local valida los tokens de Cognito. Tu usuario de Cognito también necesita una `Account` en **tu** base local (`--provision-accounts`, ver `docs/specs/013-login-y-cuentas/test-e2e.md`); sin ella, `/api/v1/me` responde 403 y la app muestra «Tu cuenta no está habilitada; contacta a Gerencia».
 
 Las aplicaciones usan los clientes públicos y retornos locales registrados para Cognito:
 
