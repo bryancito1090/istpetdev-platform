@@ -35,6 +35,7 @@ public interface IApplicationDbContext
     DbSet<AgentDecision> AgentDecisions { get; }
     DbSet<SimulationRun> SimulationRuns { get; }
     DbSet<SimulationMetric> SimulationMetrics { get; }
+    DbSet<SimulationEvent> SimulationEvents { get; }
     DbSet<RoadMatrixEdge> RoadMatrixEdges { get; }
     DbSet<RouteStockReservation> RouteStockReservations { get; }
     DbSet<QrAccessToken> QrAccessTokens { get; }
