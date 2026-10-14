@@ -15,7 +15,7 @@
 | T3 | Remediación de vulnerabilidades, evaluación de overrides y excepciones temporales | T1, T2 | — | completada |
 | T4 | Automatización del control de seguridad en CI/CD y política de Node | T3 | — | completada |
 | T5 | Conciliación documental, actualización de ADR-04 y checklist prelaunch | T2, T4 | [P] con T6 | completada |
-| T6 | Evaluación experimental de pnpm (P2 condicional e independiente) | T4 | — | pendiente |
+| T6 | Evaluación experimental de pnpm (P2 condicional e independiente) | T4 | — | completada |
 
 T0 → T1 → T2 → T3 → T4. T5 puede avanzar con T4 cuando sus cambios documentales no contradigan la política ya resuelta. T6 es opcional: se ejecuta en un `git worktree` aparte desde el commit de P1, sin tocar el checkout ni el lockfile de P1.
 
