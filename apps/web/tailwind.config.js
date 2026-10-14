@@ -91,6 +91,7 @@ module.exports = {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       },
       boxShadow: {
+        '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'stripe-xs': '0 2px 5px -1px rgba(45, 55, 72, 0.08), 0 1px 3px -1px rgba(0, 0, 0, 0.04)',
         'stripe-sm': '0 4px 6px -1px rgba(45, 55, 72, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06)',
         'stripe-md': '0 8px 18px -4px rgba(45, 55, 72, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.08)',

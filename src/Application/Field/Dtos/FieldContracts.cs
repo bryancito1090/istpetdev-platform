@@ -78,7 +78,9 @@ public sealed record ReceiptLineRequest(
     decimal QuantityAccepted,
     decimal QuantityRejected,
     string Unit,
-    string? RejectionReason = null);
+    string? RejectionReason = null,
+    decimal? RemainingQuantity = null,
+    decimal? NextRequestedQuantity = null);
 
 public sealed record CreateReceiptRequest(
     Guid OperationId,
@@ -91,7 +93,9 @@ public sealed record ReceiptLineDto(
     Guid LotId,
     decimal QuantityAccepted,
     decimal QuantityRejected,
-    string Unit);
+    string Unit,
+    decimal? RemainingQuantity = null,
+    decimal? NextRequestedQuantity = null);
 
 public sealed record ReceiptResponse(
     Guid ReceiptId,

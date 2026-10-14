@@ -24,6 +24,10 @@ coverage/
 TestResults/
 *.log
 *.tsbuildinfo
+.nx/
+/crop_*.png
+/slice_*.png
+/im1_*.png
 
 # Terraform: versionar .terraform.lock.hcl, excluir state/planes privados
 .terraform/

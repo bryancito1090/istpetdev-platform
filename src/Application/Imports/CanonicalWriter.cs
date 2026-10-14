@@ -207,7 +207,36 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
     {
         var sku = row.Text("sku")!;
         var lotCode = row.Text("lot_code")!;
-        if (!TryProduct(ImportEntity.Lots, row, sku, out var product)) return false;
+        if (!context.Products.TryGetValue(sku, out var product))
+        {
+            var productName = row.Text("product_name");
+            if (!string.IsNullOrWhiteSpace(productName))
+            {
+                var baseUnit = row.Text("base_unit") ?? "UNIDAD";
+                product = new Product
+                {
+                    Sku = sku,
+                    Name = productName,
+                    BaseUnit = baseUnit.ToUpperInvariant(),
+                    IsActive = true
+                };
+                db.Products.Add(product);
+                context.Products[sku] = product;
+            }
+            else if (!TryProduct(ImportEntity.Lots, row, sku, out product))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            var productName = row.Text("product_name");
+            if (!string.IsNullOrWhiteSpace(productName) && string.IsNullOrWhiteSpace(product.Name))
+            {
+                product.Name = productName;
+            }
+        }
+
         if (context.Lots.TryGetValue((product.Id, lotCode), out var old)) PreserveMissing(row, r, ("expires_on", old.ExpiresOn), ("origin", old.Origin));
         var lot = FindOrCreateLot(product, lotCode, r);
         lot.ExpiresOn = row.Date("expires_on") ?? lot.ExpiresOn;
