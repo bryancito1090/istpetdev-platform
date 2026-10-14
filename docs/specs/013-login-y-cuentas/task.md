@@ -17,7 +17,7 @@
 | T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | hecho |
 | T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | hecho |
 | T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | hecho |
-| T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | pendiente |
+| T8 | PWA: outbox por cuenta y logout con capturas pendientes | H2, FR-09, CE-04 | T7 | — | hecho |
 | T9 | Guardián de CI contra el login simulado y pruebas frontend en CI | NFR-04, CE-02 | T6, T8 | — | pendiente |
 | T10 | Infraestructura: callbacks HTTPS, marca, IAM y hop limit (Jorge) | FR-20, NFR-02, #14 | — | [P] con todo | pendiente |
 | T11 | API H4: listar y crear cuentas | FR-12, FR-13, NFR-05 | T4 | — | pendiente (P2) |
@@ -2755,6 +2755,11 @@ git add -A apps/mobile package-lock.json
 git commit -m "feat(campo): login real con cognito pkce y sesion desde /me en la pwa (spec 013 h1)"
 ```
 
+### Desviaciones
+
+La PWA se adaptó a los roles reales (`Bodega`, `Conductor`, `Receptor`), retirando completamente `LogisticsManager` (ADR-24) y los nombres legados (`CarrierDriver`, `WarehouseOperator`, `HospitalReceiver`) en rutas, servicios y `home.page.ts`. A la ruta `/home` se le asignaron explícitamente los tres roles de campo en `data.roles`.
+`MockFieldApiService` se desacopló mediante la función `shouldMockFieldApi(isDev, search)` y se condicionó estrictamente a `isDevMode() && ?mock=true`, con pruebas unitarias que comprueban que nunca se activa en producción. Se añadieron pruebas dedicadas para Review Focus 1 (retorno seguro a `/home` ante URLs maliciosas) y Review Focus 4 (ausencia absoluta de tokens en `localStorage` y `sessionStorage`).
+
 ---
 
 ### Task 8: PWA — outbox por cuenta y logout con capturas pendientes
@@ -2767,7 +2772,7 @@ git commit -m "feat(campo): login real con cognito pkce y sesion desde /me en la
 - Consumes: `MobileAuthService` (T7), `FIELD_API` (004).
 - Produces: `OutboxItem.ownerAccountId: string`; `FieldOutboxService.setOwner(accountId: string | null): Promise<void>`; `FieldOutboxService.pendingCount: Signal<number>`; `MobileAuthService` llama a `setOwner` tras `/me` y en `logout()`.
 
-- [ ] **Step 1: Escribir la prueba que falla** — `apps/mobile/src/app/field/outbox/field-outbox.service.spec.ts`:
+- [x] **Step 1: Escribir la prueba que falla** — `apps/mobile/src/app/field/outbox/field-outbox.service.spec.ts`:
 
 ```ts
 import { TestBed } from '@angular/core/testing';
@@ -2826,12 +2831,12 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que falla**
+- [x] **Step 2: Ejecutar y verificar que falla**
 
 Run: `npm run test:mobile`
 Expected: FAIL con «outbox.setOwner is not a function».
 
-- [ ] **Step 3: Implementación mínima en `field-outbox.service.ts`**
+- [x] **Step 3: Implementación mínima en `field-outbox.service.ts`**
 
 1. Cambiar la importación de Angular a `import { Injectable, computed, inject, signal } from '@angular/core';`.
 2. En `OutboxItem`, después de `operationId: string; // UUID v7`, añadir:
@@ -2897,7 +2902,7 @@ y en el literal `const outboxItem: OutboxItem = {` añadir `ownerAccountId,` des
     }
 ```
 
-- [ ] **Step 4: Conectar el dueño desde la sesión y avisar al cerrar sesión**
+- [x] **Step 4: Conectar el dueño desde la sesión y avisar al cerrar sesión**
 
 En `apps/mobile/src/app/auth/auth.service.ts`: añadir `import { FieldOutboxService } from '../field/outbox/field-outbox.service';`, el campo `private readonly outbox = inject(FieldOutboxService);`, y:
 - en `bootstrap()`, dentro del `try`, después de `this.state.set(…)`: `await this.outbox.setOwner(me.platform === 'field' ? me.accountId : null);`
@@ -2923,17 +2928,21 @@ En `apps/mobile/src/app/home/home.page.ts`: añadir `AlertController` a la impor
   }
 ```
 
-- [ ] **Step 5: Ejecutar y verificar que pasan**
+- [x] **Step 5: Ejecutar y verificar que pasan**
 
 Run: `npm run test:mobile && npm run build:mobile`
 Expected: PASS (outbox 2 casos, sesión 5 casos) y build sin errores.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/mobile/src/app/field/outbox apps/mobile/src/app/auth/auth.service.ts apps/mobile/src/app/auth/auth.service.spec.ts apps/mobile/src/app/home/home.page.ts
 git commit -m "feat(campo): outbox aislado por cuenta y logout que conserva capturas (spec 013 h2)"
 ```
+
+### Desviaciones
+
+Para el outbox en IndexedDB, se incrementó `DB_VERSION` a 2 con un `upgrade` no destructivo que preserva los datos existentes y crea el índice `by_owner` sobre `ownerAccountId`. Las capturas legadas previas sin dueño (`ownerAccountId` indefinido) se conservan en la base sin borrarse (CE-04), se contabilizan en `pendingCount` mediante `legacyPendingCount` para alertar en logout de que existen capturas retenidas, y se prohíbe su sincronización con cualquier otra cuenta. Se añadió una prueba específica para Review Focus 4 que inspecciona exhaustivamente tanto en memoria como en IndexedDB que ningún `OutboxItem` guarde tokens (`access_token`, `id_token`, `refresh_token`, etc.). En `home.page.ts`, se conectó `AlertController` con los textos exactos fijados por las Global Constraints.
 
 ---
 
