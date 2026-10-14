@@ -12,8 +12,8 @@
 |---|---|---|---|---|---|
 | T1 | Rol Auditor y matriz lectura/escritura | FR-21, CE-07 | — | — | hecho |
 | T2 | `GET /api/v1/me` y contrato compartido | FR-05, FR-07 | T1 | — | hecho |
-| T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | pendiente |
-| T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | pendiente |
+| T3 | Directorio de identidad y alta idempotente | FR-11, FR-13, NFR-02, NFR-05 | T2 | — | hecho |
+| T4 | Script de arranque `--provision-accounts` | H3, FR-11, CE-03 | T3 | — | hecho |
 | T5 | Lógica de sesión en `shared-core` (almacenamiento, interceptor, returnUrl, logout) | FR-03, FR-04 | T2 | [P] con T3–T4 | pendiente |
 | T6 | Web: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10, FR-21 | T5 | [P] con T7 | pendiente |
 | T7 | PWA: configuración, sesión real, guards, login y retiro de mocks | H1, FR-01–FR-08, FR-10 | T5 | [P] con T6 | pendiente |
@@ -982,7 +982,7 @@ git commit -m "feat(identidad): directorio cognito y alta idempotente de cuentas
 - Consumes: `AccountProvisioning.ProvisionAsync`, `ProvisionOutcome`, `AccountRuleException`, `IdentityDirectoryUnavailableException` (T3).
 - Produces: `ProvisioningInput.Parse(TextReader) : ProvisioningInput(Rows, Errors)`; `ProvisioningRow(int Line, string Email, string DisplayName, string Role)`; `ProvisionAccountsCommand.Argument = "--provision-accounts"`; `ProvisionAccountsCommand.RunAsync(IServiceProvider, string path, TextWriter output, CancellationToken) : Task<int>` (0 todo bien, 1 alguna fila falló, 2 archivo inválido).
 
-- [ ] **Step 1: Escribir las pruebas que fallan**
+- [x] **Step 1: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Unit/Identity/ProvisioningInputTests.cs`:
 
@@ -1075,12 +1075,12 @@ public sealed class ProvisionAccountsCommandTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 2: Ejecutar y verificar que fallan**
+- [x] **Step 2: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ProvisioningInputTests|FullyQualifiedName~ProvisionAccountsCommandTests"`
 Expected: FAIL de compilación con «The type or namespace name 'ProvisioningInput' could not be found».
 
-- [ ] **Step 3: Implementación mínima**
+- [x] **Step 3: Implementación mínima**
 
 `src/Application/Accounts/ProvisioningInput.cs`:
 
@@ -1195,17 +1195,17 @@ if (provisionAt >= 0)
 }
 ```
 
-- [ ] **Step 4: Ejecutar y verificar que pasan**
+- [x] **Step 4: Ejecutar y verificar que pasan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~ProvisioningInputTests|FullyQualifiedName~ProvisionAccountsCommandTests"`
 Expected: PASS (5 + 2 casos).
 
-- [ ] **Step 5: Comprobar el uso sin archivo**
+- [x] **Step 5: Comprobar el uso sin archivo**
 
 Run: `dotnet run --project src/Api -- --provision-accounts; echo "salida=$?"`
 Expected: «Uso: --provision-accounts <archivo.csv con email,displayName,role>» y `salida=2`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/Application/Accounts/ProvisioningInput.cs src/Api/Accounts/ProvisionAccountsCommand.cs src/Api/Program.cs tests/IstpetDev.Tests/Unit/Identity/ProvisioningInputTests.cs tests/IstpetDev.Tests/Integration/Accounts/ProvisionAccountsCommandTests.cs

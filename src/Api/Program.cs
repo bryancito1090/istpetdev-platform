@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Text.Json.Serialization;
+using IstpetDev.Api.Accounts;
 using IstpetDev.Api.Agent;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application;
@@ -108,6 +109,19 @@ var app = builder.Build();
 
 await PrepareDatabaseAsync(app, args);
 if (args.Contains("--migrate")) return;
+
+var provisionAt = Array.IndexOf(args, ProvisionAccountsCommand.Argument);
+if (provisionAt >= 0)
+{
+    if (provisionAt + 1 >= args.Length)
+    {
+        Console.Error.WriteLine($"Uso: {ProvisionAccountsCommand.Argument} <archivo.csv con {IstpetDev.Application.Accounts.ProvisioningInput.Header}>");
+        Environment.ExitCode = 2;
+        return;
+    }
+    Environment.ExitCode = await ProvisionAccountsCommand.RunAsync(app.Services, args[provisionAt + 1], Console.Out);
+    return;
+}
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", true))
 {
