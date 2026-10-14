@@ -442,3 +442,21 @@ ya concluyeron; el checkpoint requiere integración y promoción posteriores.
 No se ejecutan deploy, siembra de RDS ni reset de producción en esta revisión.
 
 Verificación documental: **85 notas Markdown**, **889 enlaces internos resueltos**, **0 errores**.
+
+
+## Continuidad de #39 y conciliación tras #85 — 14 de octubre de 2026
+
+Fuente: petición de Bryan de ejecutar el plan y sincronizar PR #83 después
+de fusionar #85 (`5582930`). Codex conserva la entrega de Antigravity y
+registra preparación n8n, sincronización privada del HMAC y sus verificaciones,
+sin aceptación/reset productivo. Bryan confirmó límite de gasto DeepSeek,
+fin de ediciones de Antigravity, operación EC2 por Jorge y ventana pendiente.
+
+[[Runbook de DevOps y base de datos para la demo]], [[n8n e IA]] y
+[[Registro de seguimiento y hallazgos]] distinguen código/local/producción:
+se corrige el estado Completado de #38 mientras faltan deploy/cuenta/permisos
+reales. Plan/task/entrega/test-e2e y evidencia de 003 incorporan los ocho pasos,
+merge/conflictos, conciliación y cierre condicionado. La subprueba HMAC no
+se presenta como E2E-07 oficial aprobado; riesgos 401 siguen registrados.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **895 enlaces internos resueltos**, **0 errores**.

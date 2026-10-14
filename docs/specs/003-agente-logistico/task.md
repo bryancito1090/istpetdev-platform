@@ -368,3 +368,65 @@ prueba de que nunca se ejecutó: se exige evidencia API/informe del ensayo.
 No se modificaron workflows, cuentas, credenciales ni configuración remota en
 esta revisión, ni se ejecutaron resets. La issue **permanece abierta** porque
 la solicitud de cierre exige cumplimiento completo, no solo merge a develop.
+
+## Informe de Antigravity sobre n8n y HMAC — 14-oct-2026
+
+Bryan completó la configuración del servidor n8n en Rocky Linux actualizando
+`docker-compose.yml del servidor n8n` con la versión fijada
+`image: docker.n8n.io/n8nio/n8n:2.39.5`, `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`,
+`NODE_FUNCTION_ALLOW_BUILTIN=crypto`, `ISTPETDEV_API_BASE_URL` y la clave secreta
+`ISTPETDEV_WEBHOOK_SECRET`.
+
+Resultados reportados por Antigravity contra `https://n8n.bryan-bano.com`:
+- `/healthz`: HTTP 200 `{"status":"ok"}` utilizando cabecera estándar de User-Agent
+  (la verificación anterior de Codex obtuvo 403 debido al filtrado de User-Agent por
+  Cloudflare al emplear el cliente Python por defecto).
+- Workflows canónicos activos y publicados:
+  - `vigia` (`HO5zltuyBMATIwLT`): `active: true`, Schedule apagado, credenciales
+    `IstpetDev DeepSeek` (`5aBicMrj0xaH7Nfl`) e `IstpetDev M2M` (`mZiC4AJxPhcKtANv`).
+  - `incidente` (`u5l4WnjD2sPhhvEb`): `active: true`, credenciales vinculadas idénticas.
+- Suite de seguridad HMAC (10/10 escenarios verificados en `/watch` y `/incident`):
+  1. Sin firma: HTTP 401 `{"status":"unauthorized"}`
+  2. Firma inválida: HTTP 401 `{"status":"unauthorized"}`
+  3. Timestamp expirado (> 60s): HTTP 401 `{"status":"unauthorized"}`
+  4. Cuerpo alterado post-firma: HTTP 401 `{"status":"unauthorized"}`
+  5. Firma y timestamp válidos: HTTP 202 `{"status":"accepted"}`
+- Disparo y orquestación remota: Tras el HTTP 202, n8n ejecuta el workflow en runtime,
+  DeepSeek recibe el contexto e invoca la herramienta determinista `propose_routes`
+  (`POST https://istpetdev.doicela.dev/api/v1/route-plans`) con OAuth2 M2M.
+  Es un intento de herramienta; no acredita respuesta 2xx ni Completed.
+- Estado de los pasos del plan de cierre:
+  - Preparación n8n de pasos 1, 2 y 5 reportada completa; paso 3 **parcial**
+    hasta verificar risks 200 en la API productiva y el uso autorizado del M2M.
+  - Bloqueo restante para Pasos 6, 7 y 8: Jorge Doicela abrió
+    [PR #85](https://github.com/bryancito1090/istpetdev-platform/pull/85) para la cuenta
+    técnica M2M (`7h8pau7hu9pa40k85idbi7rgn4`), posteriormente fusionado por
+    Bryan en develop (`5582930`). Falta promover a `main` y desplegar en EC2,
+    más la confirmación de la cuenta de Planificador
+    en RDS antes de ejecutar la matriz oficial de 30 corridas de producción.
+
+
+## Ejecución de Codex y preparación del PR #83 — 14-oct-2026
+
+- Integración: develop `5582930f30c32ecfec958c3a8acc28a6cd775104` incorporado
+  en chore/39-verificar-cierre mediante merge, sin conflictos de contenido.
+- Runtime n8n: imagen/Compose 2.39.5, mismo digest, mounts y cifrado preservados;
+  readiness API 200 desde servidor y contenedor, timezone America/Guayaquil.
+- Importación: ambos grafos publicados coinciden con workflows de `8c99a71`,
+  salvo IDs/metadata y remapeo de credenciales, incluidas las cinco herramientas.
+  Schedule de Vigía deshabilitado. No cambian workflows/prompt en el repo.
+- HMAC: se consolidó el archivo privado 0600 y se eliminó un valor literal
+  concurrente que lo sobrescribía. Runtime/configuración y fuente enviada a
+  GitHub Secrets sincronizados. Firma válida 202 en probe sin modelo, borrado;
+  firmas inválidas/expiradas/cuerpo alterado 401 en ambos workflows reales.
+- M2M: cliente/scope/token Cognito correctos. Nodo HTTP temporal n8n → risks
+  **401**, eliminado. No se acreditan risks 200 ni los cinco denegados 403.
+- GitHub: ocho variables públicas del transporte y HMAC privado preparados;
+  AGENT_ENABLED=false. Eso no equivale a variables aplicadas en EC2.
+- Confirmación de Bryan: presupuesto DeepSeek configurado; Antigravity terminó;
+  Jorge opera la API por pipeline; **ventana exclusiva todavía pendiente**.
+- Documentación: plan sustituido por ejecución completa A–J; conciliación de
+  runbook/n8n/hallazgos y registros. #85 local no se etiqueta como producción
+  resuelta. Evidencia: [preparación #39](evidencia/2026-10-14-preparacion-39.md).
+- T9/T10/PA-01: siguen pendientes de release, permisos/cuenta(s), runs reales,
+  matriz oficial y CE-03. #39 permanece abierta. PR #83 se prepara para revisión.
