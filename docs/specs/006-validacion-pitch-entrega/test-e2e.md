@@ -27,6 +27,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** cinco componentes presentes; precio, cita y resultado quedan como huecos; revisión, corrección y nombre del revisor anotados. **Evidencia:** revisión fechada en el registro previo y versión del kit.
 
+**Estado al 14-oct-2026:** sin ejecutar. El kit está preparado por IA en la rama `feature/46-kit-previo-006` (resumen y hoja de revisión en [T1](task.md)); falta que una persona del equipo haga la lectura de unos 15 min. Hasta entonces, E2E-01 no tiene fila en el registro de ejecuciones y CE-01 sigue pendiente.
+
 ### E2E-02 — Feria sin fabricar validación
 
 **Pasos:** dos integrantes piden permiso en las pausas del 16; preguntan cinco minutos, sin grabar por defecto; el 17 presentan el prototipo a al menos una persona y piden interpretación antes de explicar. Separan permiso de notas y permiso de cita; evitan las organizaciones cauteladas.

@@ -346,4 +346,14 @@ Fuente: desarrollo e integración por Alexander Martínez y Bryan Doicela en la 
 
 Verificación documental de esta actualización: **84 notas Markdown**, **846 enlaces internos resueltos**, **0 errores**.
 
+## Kit previo T1 del spec 006 y estado de O-04/O-06 — 14 de octubre de 2026
 
+Fuente: issue #46 (fase 1), pedido de Joseph Baño; trabajo hecho por IA (Claude Code, Opus 5.5) sobre `develop` en la rama `feature/46-kit-previo-006`. Sin entrevistas, ensayos, cifras, aprobaciones ni horas del equipo nuevas.
+- [[Registro de mentorias]]: hoja de entrevista con tres permisos separados (notas, cita sin nombre, mención de rol/organización) y preguntas 2 y 4 sin presuponer el hecho.
+- [[Guion del pitch]]: aviso de que el complemento del 006 sustituye en propuesta el recorrido de 180 s; pregunta 11 del banco sobre escala.
+- [[Modelo de negocio y piloto]]: resumen según Anexo 5.6; contradicción registrada sobre el costo de hosting (USD 37/mes sin RDS); fila de mapas alineada con ADR-05/ADR-23.
+- [[SERCOP limpieza hospitalaria y sanciones]]: URL y citas comprobadas el 14-oct; cita literal en la fila de HGDC.
+- [[Consultas para la organizacion]]: O-04 y O-06 siguen pendientes; se registra qué dice el manual y que las «Indicaciones para pitch y demostración» (§7.2, p. 7) no están en el repositorio.
+- Seguimiento en [[Registro de trabajo previo y del evento]], [[Backlog]] (B-45) y, fuera de la bóveda, `task.md` (T1) y `test-e2e.md` (E2E-01) del spec 006. CE-01 queda pendiente de la revisión humana de unos 15 min.
+
+Verificación documental de esta actualización: **84 notas Markdown**, **863 enlaces internos resueltos**, **0 errores**.

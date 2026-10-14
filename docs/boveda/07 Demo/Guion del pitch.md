@@ -1,13 +1,16 @@
 ---
 tipo: demo
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 tags: [demo, validacion, istpetdev]
 ---
 
 # Guion del pitch
 
 **Meta interna:** tres minutos. Duración oficial y tiempo de preguntas pendientes de confirmar en [[Consultas para la organizacion]]. Ajustar este guion a lo que informe la organización.
+
+> [!warning] Lectura del kit previo (14-oct-2026)
+> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
 
 Protagonista: una empresa de limpieza; objeto conductor: una caja destinada a un hospital. El caso es sintético hasta contar con validación empresarial.
 
@@ -106,8 +109,8 @@ El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → i
 | 7 | ¿Cómo conoce el stock? | Por saldos y movimientos importados/registrados; la frescura del dato se muestra, no se supone tiempo real. |
 | 8 | ¿Qué pasa si no hay señal? | La PWA conserva captura y sincroniza al volver la red si el ensayo en teléfono pasa; un conflicto se muestra. |
 | 9 | ¿Se duplica una recepción? | La operación usa clave idempotente y control de cantidades; solo afirmarlo al pasar 004 CE-03. |
-| 10 | ¿Puede cualquiera escanear la caja? | La vista pública ofrece solo estado e hitos limitados, con token revocable; no incluye firma ni cantidades. |
-| 11 | ¿Por qué el jurado escanea y no solo mira pantalla? | Comprueba el recorrido público desde otro teléfono, si HTTPS y CE-07 funcionan en el lugar. |
+| 10 | ¿Puede cualquiera escanear la caja? | La vista pública ofrece solo estado e hitos limitados, con token revocable; no incluye firma ni cantidades. Se invita al jurado a escanear solo si HTTPS y 004 CE-07 funcionan en el lugar. |
+| 11 | ¿Funciona con 80 puntos o a escala nacional? | En vivo mostramos `demo-region` (unos 15 puntos sintéticos, una bodega y dos vehículos); la escala de unos 80 puntos solo aparece en la simulación de 005. La capacidad de escalar el servicio solo se afirma con una prueba realizada; si no existe, se dice que está pendiente. |
 | 12 | ¿Qué prueba la simulación? | Compara políticas bajo demanda sintética común; no demuestra ahorro observado en una empresa. |
 | 13 | ¿Por qué esos baselines? | Representan aviso reactivo y calendario fijo, fijados antes de mirar resultados; sus reglas y supuestos quedan exportados. |
 | 14 | ¿Qué significan quiebres evitados y nuevos? | Se muestran ambos por punto, producto y día; no escondemos perjuicios tras una resta neta. |
@@ -117,5 +120,7 @@ El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → i
 | 18 | ¿Evita multas hospitalarias? | No lo afirmamos. Fichas SERCOP muestran obligaciones/sanciones específicas; no prueban multas ni ahorro de este caso. |
 | 19 | ¿Qué validaron con el sector? | Solo resumimos conversaciones consentidas de la feria y cambios observados; si faltan, lo declaramos pendiente. |
 | 20 | ¿Qué es trabajo previo y qué se hizo aquí? | El tag `pre-evento` y el registro separan preparación de adaptación durante la hackathon; O-01 sigue por confirmar con fuente oficial. |
+
+El banco cubre las «Preguntas previsibles» de arriba (escalabilidad en la 11, privacidad del QR en la 10); la parte de auditoría append-only sigue solo en esa lista. La pregunta 11 sustituyó el 14-oct a «¿Por qué el jurado escanea y no solo mira pantalla?», cuya condición pasó a la 10; queda sujeto a la revisión humana del kit.
 
 La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no tenemos una medición/precio validado» y se explica el paso de piloto. Ensayar cada respuesta con cronómetro, ≤30 s; no convertir un borrador en hecho técnico hasta enlazar CE y ejecución.
