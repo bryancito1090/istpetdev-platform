@@ -4284,3 +4284,9 @@ Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `d
   - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
   - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
 
+- **Resolución del Riesgo de Recarga (14-oct-2026):**
+  - **Causa Raíz Resuelta**: El bloqueo de cookies de terceros en navegadores modernos impedía el silent renew por iframe en recargas. La sesión se reiniciaba al pulsar F5 o tipear `/inicio`.
+  - **Adopción de IETF OAuth 2.0 BCP**: Se migró `TokenFreeStorage` a `sessionStorage` (aislado por pestaña y eliminado al cerrarla). La sesión sobrevive a recargas sin comprometer la seguridad (cero exposición en `localStorage`).
+  - **Aprovisionamiento Idempotente del Equipo**: Se completó el alta y verificación en AWS Cognito y PostgreSQL (Desarrollo y RDS) para Gerencia (`ismael02doicela@gmail.com`), Planificador (`joseph.bano@istpet.edu.ec`), Auditor (`anthony.pilatasig@istpet.edu.ec`) y Conductor (`alkut202@gmail.com`).
+
+
