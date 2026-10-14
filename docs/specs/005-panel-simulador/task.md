@@ -12,7 +12,7 @@
 | T3 | Base aislada, importador y migración única | T2, 001/002 | — | pendiente |
 | T4 | Políticas reactiva y fija | T2–T3 | [P] con T5 | hecho |
 | T5 | Adaptador IstpetDev y ciclo horario regional | T2–T3, 002 | [P] con T4 | pendiente |
-| T6 | Métricas, invariantes y agregación | T4–T5 | — | pendiente |
+| T6 | Métricas, invariantes y agregación | T4–T5 | — | hecho |
 | T7 | Worker, API, progreso y exportación | T3, T6 | — | pendiente |
 | T8 | Benchmark de corrida completa y corrección medida | T7 | [P] con T9 | pendiente |
 | T9 | Panel en vivo, mapa y acciones | T1, 003/004 | [P] con T8 | en curso (mapa Leaflet, ruteo por pedidos y bodegas integrados en PR #59) |
@@ -126,12 +126,12 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 
 **Archivos:** crear `src/Application/Simulation/{SimulationInvariantValidator,MetricCalculator,ComparisonAggregator}.cs`; pruebas `tests/IstpetDev.Tests/Unit/Simulation/{SimulationInvariantTests,MetricCalculatorTests,ComparisonAggregatorTests}.cs`.
 
-- [ ] Prueba roja de invariantes: al cierre por lote/ubicación `inicial + entradas − salidas = final`; demanda solicitada = satisfecha + no atendida; capacidad, jornada y ventana de cada viaje son válidas. Inyectar salida adicional de 1 L: run `Failed`, evento de causa, sin KPI publicado para esa seed.
-- [ ] Implementar validación diaria antes de persistir métricas. No reducir `Requested` al consumo observado cuando falta stock; faltante conserva SKU/unidad base.
-- [ ] Prueba roja de métricas: baseline quiebra claves A y B, plataforma quiebra B y C → evitados=1 (A), nuevos=1 (C), diferencia neta=0. `km=100`, `cost=200`, entregas=4 → 25 km/entrega y 50 costo/entrega. Puntualidad 3/4 = 75 %. Baseline km=100 y plataforma=80 → ahorro 20 km, reducción 20 %. Baseline=0 → `Value=null`, razón `zero_denominator`. L y kg no se suman en una demanda no atendida total.
-- [ ] Implementar `MetricCalculator` con `MetricValue`, definición versionada, denominador explícito y redondeo documentado a 3 decimales. Trazabilidad simulada sin custodia → N/A `not_simulated`; la operativa viene de 004.
-- [ ] Prueba roja de agregación: tres seeds con ahorro 10, 20, 30 muestran mínimo 10, mediana 20, máximo 30 por baseline; el adverso aparece separado y no entra en ese rango. Implementar `ComparisonAggregator`.
-- [ ] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~SimulationInvariantTests|FullyQualifiedName~MetricCalculatorTests|FullyQualifiedName~ComparisonAggregatorTests"`; esperado `Failed: 0`. Commit `feat(simulation): calcular indicadores auditables` con trailer.
+- [x] Prueba roja de invariantes: al cierre por lote/ubicación `inicial + entradas − salidas = final`; demanda solicitada = satisfecha + no atendida; capacidad, jornada y ventana de cada viaje son válidas. Inyectar salida adicional de 1 L: run `Failed`, evento de causa, sin KPI publicado para esa seed.
+- [x] Implementar validación diaria antes de persistir métricas. No reducir `Requested` al consumo observado cuando falta stock; faltante conserva SKU/unidad base.
+- [x] Prueba roja de métricas: baseline quiebra claves A y B, plataforma quiebra B y C → evitados=1 (A), nuevos=1 (C), diferencia neta=0. `km=100`, `cost=200`, entregas=4 → 25 km/entrega y 50 costo/entrega. Puntualidad 3/4 = 75 %. Baseline km=100 y plataforma=80 → ahorro 20 km, reducción 20 %. Baseline=0 → `Value=null`, razón `zero_denominator`. L y kg no se suman en una demanda no atendida total.
+- [x] Implementar `MetricCalculator` con `MetricValue`, definición versionada, denominador explícito y redondeo documentado a 3 decimales. Trazabilidad simulada sin custodia → N/A `not_simulated`; la operativa viene de 004.
+- [x] Prueba roja de agregación: tres seeds con ahorro 10, 20, 30 muestran mínimo 10, mediana 20, máximo 30 por baseline; el adverso aparece separado y no entra en ese rango. Implementar `ComparisonAggregator`.
+- [x] Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~SimulationInvariantTests|FullyQualifiedName~MetricCalculatorTests|FullyQualifiedName~ComparisonAggregatorTests"`; esperado `Failed: 0`. Commit `feat(simulation): calcular indicadores auditables` con trailer.
 
 ### T7 — Trabajo asíncrono, HTTP y exportación
 
