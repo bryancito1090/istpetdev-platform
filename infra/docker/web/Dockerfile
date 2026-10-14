@@ -27,6 +27,10 @@ COPY eslint.config.mjs nx.json ./
 COPY apps/web/ apps/web/
 RUN npm run build:web
 
+# Copiar y compilar la aplicación Móvil PWA (Campo)
+COPY apps/mobile/ apps/mobile/
+RUN npm run build:mobile
+
 # Etapa 2: Servidor web Nginx para entrega de archivos estáticos
 FROM nginx:alpine AS runtime
 
@@ -35,6 +39,9 @@ RUN rm -rf /usr/share/nginx/html/*
 
 # Copiar bundle de Angular compilado (soporta estructura @angular/build:application)
 COPY --from=build /app/apps/web/dist/web/browser /usr/share/nginx/html/
+
+# Copiar bundle de PWA Móvil Campo compilado bajo el subdirectorio /campo/
+COPY --from=build /app/apps/mobile/dist/mobile/browser /usr/share/nginx/html/campo/
 
 # Copiar configuración Nginx optimizada para SPA
 COPY infra/docker/web/nginx.conf /etc/nginx/conf.d/default.conf

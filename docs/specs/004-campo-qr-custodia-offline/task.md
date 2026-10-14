@@ -49,6 +49,7 @@
 > **Nota de vigencia (spec 013):** La implementación definitiva del login PKCE mediante Cognito, guards de rol, interceptor HTTP y retiro del login simulado fue asumida por el spec 013 (PR #56). La «dev auth API» y perfiles demo locales fueron retirados. La publicación de la PWA bajo `/campo/` queda registrada en el issue #52.
 
 **Archivos:** crear `apps/web/src/app/auth/{auth.config.ts,auth.guard.ts}` y `apps/mobile/src/app/auth/{auth.config.ts,auth.guard.ts}`; modificar `apps/web/src/app/app.config.ts`, `apps/mobile/src/app/app.config.ts`, `apps/mobile/angular.json` (base `/campo/`); crear `infra/docker/mobile/Dockerfile`; modificar `infra/nginx/istpetdev.conf`, `infra/compose/docker-compose.prod.yml`, `infra/terraform/environments/dev/identity.tf`; añadir `angular-auth-oidc-client@22.0.1` a ambas apps.
+*(Nota: Se eligió servir la PWA desde la imagen web (#52) en lugar de una imagen Docker mobile separada).*
 
 - [x] (verificado con mock) Guards de autenticación y roles (`Bodega`, `Conductor`, `Planificador`, `Gerencia`) en `apps/web` y `apps/mobile`; exclusión de tokens OIDC en IndexedDB. Commit `59f9894`.
 - [x] (verificado con mock) Configuración de `angular-auth-oidc-client@22.0.1` con Authorization Code + PKCE en web y móvil.

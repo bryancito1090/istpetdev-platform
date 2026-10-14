@@ -30,6 +30,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/campo/",
               "fileReplacements": [
                 { "replace": "src/app/config/environment.ts", "with": "src/app/config/environment.production.ts" }
               ],

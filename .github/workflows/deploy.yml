@@ -13,6 +13,7 @@ on:
       - "data/fixtures/**"
       - "tests/**"
       - "apps/web/**"
+      - "apps/mobile/**"
       - "libs/shared-core/**"
       - "infra/**"
       - "package*.json"
@@ -422,6 +423,7 @@ jobs:
 
           ### Servicios en Ejecución:
           - **Frontend Web SPA**: `istpetdev-web` servido por Nginx Reverse Proxy.
+          - **PWA de Campo**: Servida en `/campo/` dentro de la imagen `istpetdev-web` con Service Worker y soporte offline.
           - **Backend API**: `istpetdev-backend` (.NET 8 Web API en puerto 5000 interno).
           - **Base de Datos**: Amazon RDS PostgreSQL 16 (`istpetdev-rds-dev` conectada y migrada).
           - **Caché y Mensajería**: `istpetdev-redis` (Redis 7.4).
