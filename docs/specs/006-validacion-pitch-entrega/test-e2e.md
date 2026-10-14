@@ -35,6 +35,8 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Resultado:** ≥3 hojas antes de 12:30 del 17, ≥1 reacción al prototipo, al menos una objeción/ajuste o pendiente trazado. Rechazos cuentan como intento, no conversación. Si no se alcanza, CE-02 queda pendiente y el guion no dice «validado por el sector». **Evidencia:** notas anonimizadas con fecha, contexto, consentimiento y vínculo a cambio.
 
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar; las conversaciones son el 16 y 17-oct. Hojas, registro de intentos y lista de la corrida oficial de 005 preparados en [hojas de feria](hojas-feria.md). CE-02 pendiente.
+
 ### E2E-03 — Siete bloques y cinco voces
 
 **Pasos:** hacer una pasada por cada corte y marcar inicio/fin de cada bloque. Observar cinco intervenciones sin solaparse. La persona de negocio cierra con piloto de cuatro semanas; técnica nombra un límite real.
@@ -43,11 +45,15 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Estado al 14-oct-2026 (fase 2):** sin ejecutar. Los cortes 3/5/7 y el reparto por bloque y papel están redactados en la «Versión de trabajo T2» del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md), pero nadie los ha leído en voz alta ni cronometrado. Los segundos del guion son reparto planificado.
 
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Nombres de los cinco papeles sin confirmar por el equipo; relevo y sustitución por parte en [escena y contingencias](escena-y-contingencias.md). CE-03 pendiente.
+
 ### E2E-04 — Demo y plan B en escena
 
 **Pasos:** ejecutar reset, riesgo, ruta, incidente, despacho/recepción y QR; luego repetir simulando por separado caída de DeepSeek, ausencia de mapa, falta de wifi, fallo de cámara/QR y ZIP de simulación no importable. La persona responsable dice la línea de contingencia y pasa al siguiente hito sin detener cronómetro.
 
 **Resultado:** ninguna escena afirma capacidad sin CE ejecutado; la recepción grabada se llama grabada, un QR que solo funciona en hotspot se opera con teléfono del equipo, y un resultado sin ZIP se retira. **Evidencia:** matriz de contingencia con video/cronómetro y enlace al CE de 001–005 correspondiente.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Protocolo del ensayo funcional, frases vigentes sin ensayo conectado y tarjetas C-01–C-05 preparadas en [escena y contingencias](escena-y-contingencias.md); ninguna contingencia provocada. El video de respaldo no existe. La tabla de pasadas funcionales está vacía en el [registro de ensayos](registro-ensayos.md#ensayos-funcionales-de-la-demo).
 
 ### E2E-05 — Trazabilidad de promesas
 
@@ -57,11 +63,15 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 
 **Estado al 14-oct-2026 (fase 2):** sin ejecutar como recorrido completo. Existe la [matriz de afirmaciones](matriz-afirmaciones.md), preparada por IA sobre `7aed1eb`, con 105 pruebas automatizadas de 001–005 y 013 ejecutadas para sostenerla ([evidencia](evidencia/2026-10-14-suites-fase2.md)). Joseph aprobó el borrador `8693f73`; faltan el segundo revisor humano, la revisión de A-16/A-17/A-27 ajustadas después de su aprobación, el PDF y la versión congelada. Las cuatro afirmaciones del intento deliberado (cita sin consentimiento, «ahorro» sin ZIP, «IA replanifica sola», «QR del jurado») ya están como `retirar` en la matriz (A-29, A-21, A-11/A-33, A-16), pero eso no sustituye el recorrido.
 
+**Actualización 14-oct-2026 (fase 3):** segundo revisor pedido en la issue #46; la revisión no ha ocurrido. Hoja para registrar nombre, versión y correcciones en la [matriz](matriz-afirmaciones.md#hoja-de-segunda-revisión-e2e-05). CE-06 pendiente.
+
 ### E2E-06 — Racha real
 
 **Pasos:** diez pasadas consecutivas del corte oficial completo, incluidas preguntas breves y relevos; medir de primera palabra a cierre. Los ensayos 9 y 10 se hacen sin wifi del recinto y con el mismo plan de conexión elegido para escena. Registrar incluso fallos; un fallo vuelve contador a cero. Cronometrar aparte ronda de veinte respuestas, cada una ≤30 s.
 
 **Resultado:** contador llega a diez, dos últimas sin wifi, tiempo ≤ oficial −20 s en cada pasada, veinte respuestas dentro del límite. Si O-04 aún no llega, registrar pasadas como preparación, no CE-04 cerrado. **Evidencia:** diez filas consecutivas con enlaces, cronómetro, conexión, cinco roles, versión y fallos vacíos.
+
+**Estado al 14-oct-2026 (fase 3):** sin ejecutar. Registro de pasadas y ronda de veinte respuestas preparados en [registro de ensayos](registro-ensayos.md); racha 0/10. CE-04 y CE-05 pendientes.
 
 ### E2E-07 — Paquete que se entrega
 

@@ -5,10 +5,10 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 | ID | Entregable | Depende de | Fecha límite | Estado |
 |---|---|---|---|---|
 | T1 | Kit previo y revisión humana | — | 15-oct | hecho: revisión de 15 min y aprobación de Joseph el 14-oct; CE-01 registrado |
-| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | borrador aprobado por Joseph el 14-oct; segundo revisor, O-04/O-06 y ensayos pendientes |
-| T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente |
-| T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente |
-| T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente |
+| T2 | Guion y matriz de afirmaciones | T1 | antes de slides | borrador aprobado por Joseph el 14-oct; segundo revisor pedido el 14-oct (fase 3), sin realizar; O-04/O-06 y ensayos pendientes |
+| T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente: [hojas](hojas-feria.md) preparadas el 14-oct; sin conversaciones ni corrida oficial de 005 |
+| T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente: [escena y contingencias](escena-y-contingencias.md) preparadas el 14-oct; papeles sin nombres, sin ensayo funcional ni video |
+| T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente: [registro](registro-ensayos.md) preparado el 14-oct; racha 0/10, ninguna ronda de respuestas |
 | T6 | Paquete oficial y congelamiento | T3–T5 | 17-oct 15:45 | pendiente |
 
 ## T1 — Kit previo sin horas del equipo
@@ -75,6 +75,8 @@ No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 - [ ] Registrar mentorías del 16 y 17 con la [plantilla](../../boveda/09%20Plantillas/Plantilla%20mentoria.md), incluyendo si el mentor podría integrar jurado.
 - [ ] Ejecutar o recibir el ZIP de 005 con FR-21 y CE-04/06/09: verificar hashes, host, commit, seeds y escenario adverso antes de escribir un rango. Si falla, retirar cifras.
 
+**Estado al 14-oct-2026 (issue #46, fase 3):** solo preparación. Claude Code (Opus 5.5), a pedido de Joseph Baño, preparó las [hojas de feria](hojas-feria.md): registro de intentos, hoja del 16 y de retorno del 17 con los tres permisos en casillas separadas, códigos anónimos y la lista de comprobación de la corrida oficial de 005. No hubo conversaciones (son el 16 y 17), mentorías nuevas ni corrida oficial: el registro de ejecuciones de 005 sigue vacío, así que A-19 queda como propuesta y A-21 retirada. **Ninguna casilla de T3 se marca.**
+
 ## T4 — Escena física y respaldo
 
 - [ ] Identificar por nombre a narrador, operador web, operador móvil, persona técnica y persona de negocio; ensayar un relevo corto por cada papel. [PENDIENTE: asignación del equipo].
@@ -82,12 +84,16 @@ No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 - [ ] Ensayar offline real en teléfono según 004 CE-02 antes de pronunciar «sin señal»; confirmar que reset/advance no cambia simulación según 005 CE-08.
 - [ ] El 15-oct, después de un ensayo funcional, grabar video con fecha, commit, dispositivo y partes realmente grabadas; etiquetar «grabado» y conservarlo local.
 
+**Estado al 14-oct-2026 (issue #46, fase 3):** solo preparación, en [escena y contingencias](escena-y-contingencias.md). Joseph informó que el equipo no ha confirmado los nombres de los papeles: quedan `[PENDIENTE: nombre]`, con una sustitución por papel ausente y un relevo y una sustitución para cada parte de la escena. Contraste con la matriz: **ninguna acción visible tiene ensayo conectado**, así que cada parte de la demo usa por ahora su frase de propuesta («en nuestras pruebas…», «es el diseño…») y la vista pública no se invita a escanear. Hay cinco tarjetas de contingencia (agente, mapa, conexión, cámara/QR, ZIP ausente), ninguna ensayada; el mapa depende de teselas de OpenStreetMap y de íconos de `unpkg.com`, es decir, de Internet. Se dejó el protocolo del ensayo funcional y la tabla del video **vacía**: el video no existe. **Ninguna casilla de T4 se marca.**
+
 ## T5 — Ensayos cronometrados y respuestas
 
 - [ ] Registrar cada ensayo con corte, segundos, commit, material, conexión, cinco papeles, fallos, enlace y contador de racha. Un fallo reinicia el contador; los dos últimos son sin wifi del recinto.
 - [ ] Hacer rondas de veinte preguntas difíciles del banco; cada respuesta ≤30 s, sin precio ni cifra improvisada. Marcar preguntas que exigen evidencia no disponible.
 - [ ] Usar el 15-oct de 15:00 a 20:00 como bloque principal de ensayos (ver el plan): completar allí la racha de diez y confirmarla el 16 y 17 con la versión del evento.
 - [ ] Repetir hasta diez ensayos completos consecutivos. Verificar al final tiempo oficial −20 s y que la transición al plan B no exceda el bloque asignado.
+
+**Estado al 14-oct-2026 (issue #46, fase 3):** solo preparación. El [registro de ensayos](registro-ensayos.md) tiene columnas de corte, duración medida, meta, cinco papeles, versión, commit, conexión, fallos, enlace y racha; una tabla de ensayos funcionales de la demo; y la ronda de veinte respuestas cronometrada aparte. Joseph informó que no hubo ensayos: **racha 0/10**, ninguna respuesta cronometrada. **Ninguna casilla de T5 se marca.**
 
 ## T6 — Congelar y entregar
 
