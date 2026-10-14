@@ -173,7 +173,7 @@ flowchart LR
 
 | Paquete | Versión | Proyecto | Motivo |
 |---|---|---|---|
-| `AWSSDK.CognitoIdentityProvider` | 4.x estable (exacta la que fije `dotnet add`) | `src/Infrastructure` | API Admin de Cognito |
+| `AWSSDK.CognitoIdentityProvider` | 4.0.106.2 | `src/Infrastructure` | API Admin de Cognito |
 | `vitest` | 4.x exacta (`npm i -D -E`) | `libs/shared-core`, `apps/web`, `apps/mobile` | Pruebas unitarias |
 | `jsdom` | 27.x exacta | `apps/web`, `apps/mobile` | DOM para pruebas de Angular |
 | `fake-indexeddb` | 6.x exacta | `apps/mobile` | IndexedDB en pruebas del outbox |

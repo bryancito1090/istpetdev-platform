@@ -396,12 +396,12 @@ git commit -m "feat(api): endpoint /me con rol y plataforma (spec 013 fr-05)"
   - `CognitoPool.FromAuthority(string?) : CognitoPool?` con `Region`, `UserPoolId`, `Issuer`
   - `ApiFactory.Directory : FakeIdentityDirectory`; `FakeIdentityDirectory.Add(...)`, `.Confirm(subject)`, `.Users`, `.Unavailable`, `.Invitations`, `.Resends`, `.SignedOut`
 
-- [ ] **Step 1: Añadir el paquete del SDK**
+- [x] **Step 1: Añadir el paquete del SDK**
 
 Run: `dotnet add src/Infrastructure package AWSSDK.CognitoIdentityProvider`
 Expected: `PackageReference` con versión 4.x en `IstpetDev.Infrastructure.csproj`. Si resolviera 3.x, repetir con `--version` de la última 4.x publicada en nuget.org. Anotar la versión exacta en la tabla de dependencias de `plan.md`.
 
-- [ ] **Step 2: Escribir las pruebas que fallan**
+- [x] **Step 2: Escribir las pruebas que fallan**
 
 `tests/IstpetDev.Tests/Unit/Identity/CognitoPoolTests.cs`:
 
@@ -639,12 +639,12 @@ public sealed class AccountProvisioningTests(PostgisContainer postgres)
 }
 ```
 
-- [ ] **Step 3: Ejecutar y verificar que fallan**
+- [x] **Step 3: Ejecutar y verificar que fallan**
 
 Run: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~CognitoPoolTests|FullyQualifiedName~AccountProvisioningTests"`
 Expected: FAIL de compilación con «The type or namespace name 'Accounts' does not exist in the namespace 'IstpetDev.Application'».
 
-- [ ] **Step 4: Implementar el puerto y el alta**
+- [x] **Step 4: Implementar el puerto y el alta**
 
 `src/Application/Accounts/IIdentityDirectory.cs`:
 
@@ -777,7 +777,7 @@ Registrar en `src/Application/DependencyInjection.cs`, dentro de `AddApplication
 
 y añadir `using IstpetDev.Application.Accounts;` al inicio.
 
-- [ ] **Step 5: Implementar el adaptador de Cognito**
+- [x] **Step 5: Implementar el adaptador de Cognito**
 
 `src/Infrastructure/Identity/CognitoPool.cs`:
 
@@ -957,12 +957,12 @@ En `tests/IstpetDev.Tests/Support/ApiFactory.cs`: añadir `using IstpetDev.Appli
         });
 ```
 
-- [ ] **Step 6: Ejecutar y verificar que pasan**
+- [x] **Step 6: Ejecutar y verificar que pasan**
 
 Run: `dotnet build IstpetDev.sln && dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~CognitoPoolTests|FullyQualifiedName~AccountProvisioningTests"`
 Expected: build sin advertencias nuevas; PASS (7 + 11 casos).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/Application/Accounts src/Application/DependencyInjection.cs src/Infrastructure/Identity src/Infrastructure/DependencyInjection.cs src/Infrastructure/IstpetDev.Infrastructure.csproj tests/IstpetDev.Tests/Support/FakeIdentityDirectory.cs tests/IstpetDev.Tests/Support/ApiFactory.cs tests/IstpetDev.Tests/Unit/Identity/CognitoPoolTests.cs tests/IstpetDev.Tests/Integration/Accounts/AccountProvisioningTests.cs
