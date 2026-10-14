@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using IstpetDev.Application.Accounts;
 using IstpetDev.Domain.Common;
@@ -57,15 +58,21 @@ public sealed partial class AccountsApiTests(PostgisContainer postgres)
     [Fact]
     public async Task Create_sends_invitation_and_lists_pending_then_active()
     {
-        var (api, manager, _, _) = await ManagerAsync();
+        var (api, manager, _, connection) = await ManagerAsync();
         await using var _api = api;
 
-        var created = await manager.PostAsJsonAsync(Accounts, new { email = "Nuevo.Conductor@ejemplo.test", displayName = "Conductor nuevo", role = Roles.Conductor });
+        var created = await manager.PostAsJsonAsync(Accounts, new { email = "Nuevo.Conductor@ejemplo.test", displayName = "  Conductor nuevo  ", role = Roles.Conductor });
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Null(created.Headers.Location);
         var item = await created.Content.ReadFromJsonAsync<AccountItem>();
-        Assert.Equal(("nuevo.conductor@ejemplo.test", "pending", true, false), (item!.Email, item.InvitationStatus, item.IsActive, item.OutOfSync));
+        Assert.Equal(("nuevo.conductor@ejemplo.test", "Conductor nuevo", "pending", true, false), (item!.Email, item.DisplayName, item.InvitationStatus, item.IsActive, item.OutOfSync));
         Assert.Equal(1, api.Directory.Invitations);
+        await using (var db = TestDb.Context(connection))
+        {
+            var stored = await db.Accounts.SingleAsync(a => a.Id == item.Id);
+            Assert.Equal((item.DisplayName, item.Role, item.IsActive), (stored.DisplayName, stored.Role, stored.IsActive));
+        }
         var json = await created.Content.ReadAsStringAsync();
         Assert.DoesNotContain("password", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("token", json, StringComparison.OrdinalIgnoreCase);
@@ -118,6 +125,26 @@ public sealed partial class AccountsApiTests(PostgisContainer postgres)
         var response = await manager.PostAsJsonAsync(Accounts, new { email, displayName, role = Roles.Conductor });
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal(code, await CodeOf(response));
+        Assert.Equal(0, api.Directory.Invitations);
+    }
+
+    [Theory]
+    [InlineData("{\"displayName\":\"Nombre\",\"role\":\"Conductor\"}", "invalid_email")]
+    [InlineData("{\"email\":null,\"displayName\":\"Nombre\",\"role\":\"Conductor\"}", "invalid_email")]
+    [InlineData("{\"email\":\"x@ejemplo.test\",\"role\":\"Conductor\"}", "invalid_display_name")]
+    [InlineData("{\"email\":\"x@ejemplo.test\",\"displayName\":null,\"role\":\"Conductor\"}", "invalid_display_name")]
+    [InlineData("{\"email\":\"x@ejemplo.test\",\"displayName\":\"Nombre\"}", "invalid_role")]
+    [InlineData("{\"email\":\"x@ejemplo.test\",\"displayName\":\"Nombre\",\"role\":null}", "invalid_role")]
+    public async Task Missing_or_null_fields_have_domain_problem_code(string json, string code)
+    {
+        var (api, manager, _, _) = await ManagerAsync();
+        await using var _api = api;
+
+        var response = await manager.PostAsync(Accounts, new StringContent(json, Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal(code, await CodeOf(response));
         Assert.Equal(0, api.Directory.Invitations);
     }

@@ -20,7 +20,7 @@ public sealed partial class AccountsController(AccountAdministration accounts) :
     public Task<IActionResult> Create(CreateAccountInput input, CancellationToken ct) => Run(async () =>
     {
         var item = await accounts.CreateAsync(input, ct);
-        return Created($"/api/v1/accounts/{item.Id}", item);
+        return StatusCode(StatusCodes.Status201Created, item);
     });
 
     private Guid Actor => User.AccountId() ?? throw new InvalidOperationException("Cuenta autenticada sin identificador.");

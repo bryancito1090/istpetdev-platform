@@ -1,4 +1,5 @@
 using IstpetDev.Application.Common.Interfaces;
+using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,7 +7,7 @@ namespace IstpetDev.Application.Accounts;
 
 public sealed record AccountItem(Guid Id, string DisplayName, string Role, bool IsActive, string? Email, string InvitationStatus, bool? DirectoryEnabled, bool OutOfSync);
 
-public sealed record CreateAccountInput(string Email, string DisplayName, string Role);
+public sealed record CreateAccountInput(string? Email, string? DisplayName, string? Role);
 
 public sealed record UpdateAccountInput(string? DisplayName, string? Role);
 
@@ -27,14 +28,20 @@ public sealed partial class AccountAdministration(IApplicationDbContext database
 
     public async Task<AccountItem> CreateAsync(CreateAccountInput input, CancellationToken ct)
     {
-        var result = await provisioning.ProvisionAsync(input.Email, input.DisplayName, input.Role, ct);
+        var email = AccountProvisioning.NormalizeEmail(input.Email);
+        var displayName = AccountProvisioning.ValidateDisplayName(input.DisplayName);
+        if (!Roles.IsHuman(input.Role)) throw AccountProvisioning.InvalidRole();
+        var role = input.Role!;
+        var result = await provisioning.ProvisionAsync(email, displayName, role, ct);
         if (result.Outcome == ProvisionOutcome.AlreadyExists)
             throw new AccountRuleException("account_exists", "Ese correo ya tiene una cuenta.");
-        var account = await database.Accounts.AsNoTracking().SingleAsync(a => a.Id == result.AccountId, ct);
-        return ToItem(account, result.User);
+        return ToItem(result.AccountId, displayName, role, true, result.User);
     }
 
-    private static AccountItem ToItem(Account account, DirectoryUser? user)
+    private static AccountItem ToItem(Account account, DirectoryUser? user) =>
+        ToItem(account.Id, account.DisplayName, account.Role, account.IsActive, user);
+
+    private static AccountItem ToItem(Guid id, string displayName, string role, bool isActive, DirectoryUser? user)
     {
         var status = user is null ? "missing" : user.Status switch
         {
@@ -42,7 +49,7 @@ public sealed partial class AccountAdministration(IApplicationDbContext database
             DirectoryUserStatus.Active => "active",
             _ => "other",
         };
-        var outOfSync = user is null || user.Enabled != account.IsActive;
-        return new(account.Id, account.DisplayName, account.Role, account.IsActive, user?.Email, status, user?.Enabled, outOfSync);
+        var outOfSync = user is null || user.Enabled != isActive;
+        return new(id, displayName, role, isActive, user?.Email, status, user?.Enabled, outOfSync);
     }
 }

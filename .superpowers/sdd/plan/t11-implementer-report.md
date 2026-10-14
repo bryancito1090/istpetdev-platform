@@ -60,3 +60,39 @@ La restauración emitió `NU1900` al no poder consultar los datos de vulnerabili
 - `.superpowers/sdd/plan/t11-implementer-report.md`: este reporte.
 
 `git diff --check` no señaló errores. La revisión del diff mostró únicamente estos archivos y ningún cambio en Task 12, rutas prohibidas, migraciones, infraestructura, dependencias o registros de correo/nombre. `superpowers:subagent-driven-development` no está instalado en las rutas de skills disponibles; se cumplió su requisito explícito de ejecutar la suite completa una vez antes del commit.
+
+## Corrección tras revisión independiente
+
+Se atendieron los tres hallazgos de `t11-code-review.md`. `CreateAsync` valida y normaliza correo, nombre y rol antes de invocar `ProvisionAsync` y construye el `AccountItem` con el identificador, usuario de directorio y datos validados que ya están disponibles al confirmar la cuenta. Se eliminó la consulta `SingleAsync` posterior al commit. El POST conserva 201 y deja `Location` ausente, ya que no existe GET por ID. Campos de correo, nombre o rol ausentes o `null` producen 422 Problem Details con `invalid_email`, `invalid_display_name` o `invalid_role`, sin invitar ni llamar al directorio.
+
+### RED de la corrección
+
+Comando: `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~AccountsApiTests" -m:1 --no-restore`, autorizado fuera del sandbox por el socket local de VSTest. Código de salida 1:
+
+```text
+Failed!  - Failed:     7, Passed:    10, Skipped:     0, Total:    17, Duration: 38 s - IstpetDev.Tests.dll (net8.0)
+```
+
+Las seis variantes de campos ausentes o `null` obtuvieron `BadRequest` en vez de `UnprocessableEntity`; la prueba de creación encontró `Location: /api/v1/accounts/{id}` cuando esperaba ausencia de cabecera. Son fallas por los comportamientos descritos en la revisión.
+
+### GREEN de la corrección
+
+Mismo comando, código de salida 0:
+
+```text
+Passed!  - Failed:     0, Passed:    17, Skipped:     0, Total:    17, Duration: 38 s - IstpetDev.Tests.dll (net8.0)
+```
+
+Pruebas añadidas: seis casos de `Missing_or_null_fields_have_domain_problem_code`; la prueba de creación comprueba ausencia de `Location`, nombre normalizado, coincidencia del DTO con la fila persistida y el resto del comportamiento anterior.
+
+No se simuló un fallo de lectura de base de datos inmediatamente después del commit: los dobles de integración actuales no permiten inyectar un fallo solo en esa fase sin sustituir el contexto de EF o añadir instrumentación de infraestructura, fuera de la corrección mínima. La comprobación estática del flujo confirma que ya no hay lectura de base de datos después de `ProvisionAsync`, y la prueba de creación verifica la respuesta junto con la cuenta persistida.
+
+### Suite completa de la corrección
+
+`dotnet test -m:1`, ejecutado una vez antes del commit con autorización para el socket local, código de salida 0:
+
+```text
+Passed!  - Failed:     0, Passed:   294, Skipped:     0, Total:   294, Duration: 5 m 16 s - IstpetDev.Tests.dll (net8.0)
+```
+
+Solo aparecieron las advertencias `NU1900` de consulta de datos de vulnerabilidades a NuGet. El diff de corrección contiene `AccountAdministration.cs`, `AccountsController.cs`, `AccountsApiTests.cs` y este reporte; no cambia rutas ni archivos prohibidos.
