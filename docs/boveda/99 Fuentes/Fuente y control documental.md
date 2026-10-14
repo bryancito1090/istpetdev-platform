@@ -383,7 +383,7 @@ Verificación documental de esta actualización: **85 notas Markdown**, **880 en
 
 ## T3–T5 del spec 006: preparación de escena, feria y ensayos — 14 de octubre de 2026
 
-Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (Claude Code, Opus 5.5) sobre la rama `feature/46-fase2-guion-auditoria` (PR #73, `f85b5e8`). Joseph informó que no hubo ensayos, video ni segunda revisión, y que los nombres de los papeles no están confirmados. Sin entrevistas, cronometrajes ni aprobaciones nuevas.
+Fuente: issue #46 (fase 3), pedido de Joseph Baño; preparación hecha por IA (Claude Code, Opus 5.5) en la rama `feature/46-fase3-escena-ensayos` (PR #75), sobre `f85b5e8` (PR #73 fusionado). Joseph informó que no hubo ensayos, video ni segunda revisión, y que los nombres de los papeles no están confirmados. Sin entrevistas, cronometrajes ni aprobaciones nuevas.
 - [[Guion del pitch]] y [[Checklist y contingencias]]: avisos que remiten a la escena preparada y a las contingencias C-01–C-05.
 - [[Consultas para la organizacion]]: O-04 y O-06 revisadas en la fase 3; siguen sin respuesta con fuente.
 - [[Registro de trabajo previo y del evento]] y [[Backlog]] (B-46): fila y estado de la preparación.

@@ -1,6 +1,6 @@
 # 006 — Escena, papeles y contingencias (T4, fase 3 del issue #46)
 
-**Preparado:** 14-oct-2026 por Claude Code (Opus 5.5) a pedido de Joseph Baño, sobre la rama `feature/46-fase2-guion-auditoria` (PR #73, `f85b5e8`). **Es preparación, no ejecución:** al redactarlo no hubo ensayo funcional, ensayo conectado, prueba en teléfono ni grabación. [Spec](spec.md) · [Tareas](task.md) · [Ensayos](test-e2e.md) · [Matriz](matriz-afirmaciones.md) · [Registro de ensayos](registro-ensayos.md) · [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md).
+**Preparado:** 14-oct-2026 por Claude Code (Opus 5.5) a pedido de Joseph Baño, en la rama `feature/46-fase3-escena-ensayos` (PR #75), desde `develop` con el PR #73 fusionado (`f85b5e8`). **Es preparación, no ejecución:** al redactarlo no hubo ensayo funcional, ensayo conectado, prueba en teléfono ni grabación. [Spec](spec.md) · [Tareas](task.md) · [Ensayos](test-e2e.md) · [Matriz](matriz-afirmaciones.md) · [Registro de ensayos](registro-ensayos.md) · [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md).
 
 ## 1. Papeles
 
