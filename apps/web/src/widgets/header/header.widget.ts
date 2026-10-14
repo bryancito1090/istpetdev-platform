@@ -15,7 +15,8 @@ const PLANNER_NAV: NavItem[] = [
   { path: '/inicio', label: '1. Inicio' },
   { path: '/datos', label: '2. Datos' },
   { path: '/rutas', label: '3. Rutas' },
-  { path: '/bodegas', label: '4. Bodegas & Rebalanceo' }
+  { path: '/bodegas', label: '4. Bodegas & Rebalanceo' },
+  { path: '/simulation', label: '5. Simulador 90d' }
 ];
 
 const MANAGER_NAV: NavItem[] = [
@@ -23,7 +24,8 @@ const MANAGER_NAV: NavItem[] = [
   { path: '/datos', label: 'Datos' },
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
-  { path: '/bodegas', label: 'Bodegas' }
+  { path: '/bodegas', label: 'Bodegas' },
+  { path: '/simulation', label: 'Simulador 90d' }
 ];
 
 const AUDITOR_NAV: NavItem[] = [
