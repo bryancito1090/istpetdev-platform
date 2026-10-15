@@ -33,16 +33,16 @@ public sealed class N8nTrigger(
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
+    public Task<N8nTriggerResult> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
         => TriggerAsync(runId, kind, incidentId, null, ct);
 
-    public async Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, DateTime? deadlineUtc, CancellationToken ct)
+    public async Task<N8nTriggerResult> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, DateTime? deadlineUtc, CancellationToken ct)
     {
         var opts = options.Value;
         if (string.IsNullOrWhiteSpace(opts.WebhookSecret))
         {
             logger.LogWarning("n8n webhook secret is not configured for run {RunId}", runId);
-            return TriggerOutcome.Error;
+            return new(TriggerOutcome.Error);
         }
 
         string targetUrl;
@@ -81,7 +81,7 @@ public sealed class N8nTrigger(
         if (remaining <= TimeSpan.Zero)
         {
             logger.LogWarning("Agent run {RunId} reached its deadline before the n8n webhook call", runId);
-            return TriggerOutcome.Error;
+            return new(TriggerOutcome.Error);
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
@@ -98,24 +98,46 @@ public sealed class N8nTrigger(
 
         try
         {
-            var response = await httpClient.SendAsync(request, timeoutCts.Token);
+            using var response = await httpClient.SendAsync(request, timeoutCts.Token);
             if (response.IsSuccessStatusCode)
             {
-                return TriggerOutcome.Success;
+                var executionId = await ReadExecutionIdAsync(response, timeoutCts.Token);
+                return new(TriggerOutcome.Success, executionId);
             }
 
             logger.LogWarning("n8n webhook returned non-success status code {StatusCode} for run {RunId}", (int)response.StatusCode, runId);
-            return TriggerOutcome.Error;
+            return new(TriggerOutcome.Error);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning("n8n webhook timed out after {TimeoutMs}ms for run {RunId}", (int)requestTimeout.TotalMilliseconds, runId);
-            return TriggerOutcome.Error;
+            return new(TriggerOutcome.Error);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to call n8n webhook for run {RunId}", runId);
-            return TriggerOutcome.Error;
+            return new(TriggerOutcome.Error);
+        }
+    }
+
+    private static async Task<string?> ReadExecutionIdAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.Content is null) return null;
+        try
+        {
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            if (!document.RootElement.TryGetProperty("executionId", out var value)) return null;
+            var executionId = value.ValueKind switch
+            {
+                JsonValueKind.String => value.GetString(),
+                JsonValueKind.Number => value.ToString(),
+                _ => null
+            };
+            return string.IsNullOrWhiteSpace(executionId) || executionId.Length > 128 ? null : executionId;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 

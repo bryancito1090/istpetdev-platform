@@ -170,11 +170,11 @@ public sealed class AgentJourneyTests(PostgisContainer postgres) : IClassFixture
     {
         public string Mode { get; init; } = "complete";
         public HttpClient Client { get; set; } = null!;
-        public Task<TriggerOutcome> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
+        public Task<N8nTriggerResult> TriggerAsync(Guid runId, AgentRunKind kind, Guid? incidentId, CancellationToken ct)
         {
-            if (Mode == "unreachable") return Task.FromResult(TriggerOutcome.Error);
+            if (Mode == "unreachable") return Task.FromResult(new N8nTriggerResult(TriggerOutcome.Error));
             if (Mode != "silent") _ = Task.Run(() => CompleteAsync(runId, kind, incidentId));
-            return Task.FromResult(TriggerOutcome.Success);
+            return Task.FromResult(new N8nTriggerResult(TriggerOutcome.Success, "fake-execution"));
         }
 
         private async Task CompleteAsync(Guid runId, AgentRunKind kind, Guid? incidentId)

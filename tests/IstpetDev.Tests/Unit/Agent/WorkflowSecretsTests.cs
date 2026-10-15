@@ -25,16 +25,47 @@ public sealed class WorkflowSecretsTests
     {
         var directory = Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../../automation/n8n/workflows"));
         var files = Directory.GetFiles(directory, "*.json");
-        Assert.Equal(2, files.Length);
+        Assert.Equal(["error-agente.json", "incidente.json", "vigia.json"], files.Select(file => Path.GetFileName(file)!).Order().ToArray());
 
         var violations = new List<string>();
+        var documents = new Dictionary<string, JsonDocument>();
         foreach (var file in files)
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            var document = JsonDocument.Parse(File.ReadAllText(file));
+            documents.Add(Path.GetFileName(file), document);
             Inspect(document.RootElement, Path.GetFileName(file), violations);
         }
 
         Assert.Empty(violations);
+        try
+        {
+            foreach (var name in new[] { "vigia.json", "incidente.json" })
+            {
+                var workflow = documents[name].RootElement;
+                Assert.Equal("{{ERROR_WORKFLOW_ID}}", workflow.GetProperty("settings").GetProperty("errorWorkflow").GetString());
+                var ack = workflow.GetProperty("nodes").EnumerateArray().Single(node => node.GetProperty("name").GetString() == "Respond Accepted");
+                Assert.Contains("$execution.id", ack.GetProperty("parameters").GetProperty("responseBody").GetString());
+                var register = workflow.GetProperty("nodes").EnumerateArray().Single(node => node.GetProperty("name").GetString() == "Register Execution");
+                Assert.Contains("/execution", register.GetProperty("parameters").GetProperty("url").GetString());
+                Assert.Equal("Register Execution", workflow.GetProperty("connections").GetProperty("Valid Signature?").GetProperty("main")[0][0].GetProperty("node").GetString());
+                Assert.Equal("Respond Accepted", workflow.GetProperty("connections").GetProperty("Register Execution").GetProperty("main")[0][0].GetProperty("node").GetString());
+            }
+
+            var errorWorkflow = documents["error-agente.json"].RootElement;
+            Assert.False(errorWorkflow.TryGetProperty("id", out _));
+            Assert.Equal("n8n-nodes-base.errorTrigger", errorWorkflow.GetProperty("nodes")[0].GetProperty("type").GetString());
+            var m2mReferences = errorWorkflow.GetProperty("nodes").EnumerateArray()
+                .Where(node => node.TryGetProperty("credentials", out _))
+                .SelectMany(node => node.GetProperty("credentials").EnumerateObject())
+                .Select(property => property.Value.GetProperty("id").GetString()!)
+                .Distinct()
+                .ToArray();
+            Assert.Equal(["8e186867-4916-54b1-b968-c1c273f79a11"], m2mReferences);
+        }
+        finally
+        {
+            foreach (var document in documents.Values) document.Dispose();
+        }
     }
 
     private static void Inspect(JsonElement value, string path, List<string> violations)

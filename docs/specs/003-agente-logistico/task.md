@@ -691,26 +691,39 @@ acreditados con datos reales; PA-01 resuelta.
 
 ## Issue #113 — workflow de error y traza de AgentRun — 15-oct-2026
 
-Rama `feature/113-n8n-error-workflow-agent-run`, creada desde `origin/develop`
-`8259389`. El issue añade HZ-07/ESC-19 sin cambiar el fallback ESC-16/ESC-17.
+Rama `feature/113-n8n-error-workflow-agent-run`, actualizada mediante rebase
+sobre `origin/develop` `4828c22`. El issue añade HZ-07/ESC-19 sin cambiar el
+fallback ESC-16/ESC-17.
 El Error Trigger no recibe el cuerpo original del webhook; la respuesta 202 de
 los workflows incluirá el `executionId`, que la API persistirá en el `AgentRun`.
-El workflow de error resolverá el `runId` por ese ID usando el M2M ya existente.
-El ID configurado por n8n para el workflow de error queda fuera del repositorio.
+Tras validar HMAC, los workflows registran ese ID con el M2M existente antes de
+continuar al nodo de IA, evitando una carrera entre el callback de error y la
+respuesta 202; la API también lo toma de la respuesta como respaldo. El workflow
+de error resolverá el `runId` por ese ID. El ID que asigna n8n al workflow de
+error queda fuera del repositorio.
 
 Plan:
 
-- [ ] Exponer consulta M2M por `executionId` y `POST /agent/runs/{id}/failure`,
-  validar la asociación con el run y registrar nodo/mensaje una sola vez por
-  ejecución en `ToolCallsJson`.
-- [ ] Devolver y persistir el ID de ejecución de n8n sin alterar el resultado
+- [x] Exponer registro y consulta M2M por `executionId` y
+  `POST /agent/runs/{id}/failure`, validar la asociación con el run y registrar
+  nodo/mensaje una sola vez por ejecución en `ToolCallsJson`.
+- [x] Devolver y persistir el ID de ejecución de n8n sin alterar el resultado
   de fallback ante n8n inaccesible o timeout.
-- [ ] Exportar `error-agente.json`, enlazarlo mediante un marcador de
+- [x] Exportar `error-agente.json`, enlazarlo mediante un marcador de
   configuración de servidor en vigía/incidente y regenerar los tres JSON.
-- [ ] Ampliar las pruebas de CI de credenciales y la cobertura del contrato,
+- [x] Ampliar las pruebas de CI de credenciales y la cobertura del contrato,
   idempotencia, rol, vínculo de workflows y fallback.
-- [ ] Ejecutar los checks de contribución, abrir PR a `develop`, resolver
-  conflictos y fusionar/cerrar #113 solo con checks verdes.
+- [x] Ejecutar los checks locales de contribución y rebasar sobre `develop`
+  actualizado; Git aplicó los commits sin conflictos manuales.
+- [ ] Abrir PR a `develop`, esperar los checks remotos y fusionar/cerrar #113
+  solo cuando estén verdes.
 
-Estado inicial: **código pendiente; pruebas locales pendientes; ejecución n8n
-real pendiente; despliegue/configuración externa pendiente**.
+Estado actual: **código implementado; filtro .NET dirigido 19/19 y suite
+completa 412/412; prueba Python del generador 5/5 y limpieza del arranque local
+1/1; `npm run check` y `npm run audit:check` aprobados**. CI del PR y
+verificación real de n8n pendientes. La configuración externa del servidor no
+se ha cambiado. `build-workflows.py --check` y `git diff --check` están limpios.
+`check_vault.py`: 0 errores y 4 avisos existentes no relacionados con esta nota.
+El marcador
+`{{ERROR_WORKFLOW_ID}}` se resuelve al importar/configurar en la instancia
+objetivo; el ID asignado por n8n no se versiona.

@@ -217,4 +217,126 @@ public sealed class AgentRunsApiTests(PostgisContainer postgres) : IClassFixture
         Assert.Equal("BloqueoVial", getDoc.RootElement.GetProperty("kind").GetString());
         Assert.True(getDoc.RootElement.TryGetProperty("affectedRoutes", out _));
     }
+
+    [Fact]
+    public async Task Failure_callback_is_automation_only_and_idempotent_by_execution_id()
+    {
+        const string executionId = "n8n-execution-113";
+        const string clientId = TechnicalClientId;
+        var connection = postgres.NewDatabase();
+        await using var api = new ApiFactory(connection, overrides: new Dictionary<string, string?>
+        {
+            ["Authentication:AllowedClientIds:1"] = clientId,
+            ["Authentication:TechnicalClientIds:0"] = clientId,
+            ["Authentication:TechnicalScope"] = "istpetdev-api/automation"
+        });
+
+        Guid runId;
+        await using (var db = TestDb.Context(connection))
+        {
+            db.Accounts.Add(new Account
+            {
+                Kind = "technical",
+                Issuer = TestTokens.Issuer,
+                Subject = clientId,
+                Role = Roles.Automatizacion,
+                IsActive = true
+            });
+            var run = new AgentRun
+            {
+                OrganizationId = DemoOrganization.Id,
+                Kind = "Watch",
+                Status = "Running",
+                StartedAtUtc = DateTime.UtcNow,
+                ToolCallsJson = "[]"
+            };
+            db.AgentRuns.Add(run);
+            await db.SaveChangesAsync();
+            runId = run.Id;
+        }
+
+        using var planner = api.ClientFor(TestTokens.Planner);
+        using var automation = api.CreateClient();
+        automation.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokens.Create(
+            clientId, clientId: clientId, scope: "istpetdev-api/automation", role: Roles.Automatizacion));
+        var payload = new AgentFailureRequest(runId, executionId, "IstpetDev Agent - vigia", "AI Agent", "Proveedor devolvió 503");
+        var registration = new AgentExecutionRequest(runId, executionId);
+
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await planner.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/execution", registration)).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted,
+            (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/execution", registration)).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted,
+            (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/execution", registration)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await planner.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/failure", payload)).StatusCode);
+        var duplicateCallbacks = await Task.WhenAll(
+            automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/failure", payload),
+            automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/failure", payload));
+        Assert.All(duplicateCallbacks, response => Assert.Equal(HttpStatusCode.Accepted, response.StatusCode));
+        foreach (var response in duplicateCallbacks) response.Dispose();
+
+        using var lookup = await automation.GetAsync($"/api/v1/agent/runs/by-execution/{executionId}");
+        Assert.Equal(HttpStatusCode.OK, lookup.StatusCode);
+        using (var lookupJson = JsonDocument.Parse(await lookup.Content.ReadAsStringAsync()))
+            Assert.Equal(runId, lookupJson.RootElement.GetProperty("runId").GetGuid());
+
+        var view = await planner.GetFromJsonAsync<AgentRunView>($"/api/v1/agent/runs/{runId}", JsonOpts);
+        Assert.NotNull(view);
+        Assert.Equal(AgentRunStatus.Running, view.Status);
+        var trace = Assert.Single(view.ToolCalls, x => x.ExecutionId == executionId);
+        Assert.Equal("falló el nodo AI Agent", trace.Event);
+        Assert.Equal("AI Agent", trace.Node);
+        Assert.Equal("Proveedor devolvió 503", trace.Message);
+        Assert.Equal("IstpetDev Agent - vigia", trace.Workflow);
+
+        await using var verify = TestDb.Context(connection);
+        Assert.Equal("Running", (await verify.AgentRuns.SingleAsync(r => r.Id == runId)).Status);
+        Assert.Single(view.ToolCalls, x => x.Event == "falló el nodo AI Agent");
+    }
+
+    [Fact]
+    public async Task Failure_callback_rejects_wrong_run_or_unmapped_execution_id()
+    {
+        var connection = postgres.NewDatabase();
+        await using var api = new ApiFactory(connection, overrides: new Dictionary<string, string?>
+        {
+            ["Authentication:AllowedClientIds:1"] = TechnicalClientId,
+            ["Authentication:TechnicalClientIds:0"] = TechnicalClientId,
+            ["Authentication:TechnicalScope"] = "istpetdev-api/automation"
+        });
+
+        Guid runId;
+        await using (var db = TestDb.Context(connection))
+        {
+            db.Accounts.Add(new Account
+            {
+                Kind = "technical", Issuer = TestTokens.Issuer, Subject = TechnicalClientId,
+                Role = Roles.Automatizacion, IsActive = true
+            });
+            var run = new AgentRun
+            {
+                OrganizationId = DemoOrganization.Id, Kind = "Watch", Status = "Running",
+                StartedAtUtc = DateTime.UtcNow, N8nExecutionId = "n8n-execution-known", ToolCallsJson = "[]"
+            };
+            db.AgentRuns.Add(run);
+            await db.SaveChangesAsync();
+            runId = run.Id;
+        }
+
+        using var automation = api.CreateClient();
+        automation.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokens.Create(
+            TechnicalClientId, clientId: TechnicalClientId, scope: "istpetdev-api/automation", role: Roles.Automatizacion));
+        var mismatchedRun = new AgentFailureRequest(Guid.NewGuid(), "n8n-execution-known", "vigia", "AI Agent", "failure");
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/execution", new AgentExecutionRequest(runId, "other-execution"))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/failure", mismatchedRun)).StatusCode);
+
+        var mismatchedExecution = new AgentFailureRequest(runId, "unknown-execution", "vigia", "AI Agent", "failure");
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{runId}/failure", mismatchedExecution)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await automation.GetAsync("/api/v1/agent/runs/by-execution/unknown-execution")).StatusCode);
+    }
 }
