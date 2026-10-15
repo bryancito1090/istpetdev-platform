@@ -496,3 +496,38 @@ Bóveda/spec 003 conciliados; esta evidencia reemplaza el pendiente de cuentas
 del checkpoint anterior, sin convertir pruebas preparatorias en aceptación.
 
 Verificación documental: **85 notas Markdown**, **899 enlaces internos resueltos**, **0 errores**.
+
+## Análisis de flujo E2E por roles, n8n y datasets — 15 de octubre de 2026
+
+Fuente: revisión de `develop` (`4545f50`) a partir del issue #55. Nueva nota
+[[2026-10-15-analisis-flujo-e2e-roles-n8n-datasets]] en estado propuesta:
+hallazgos verificados en código (HZ-01 a HZ-08), matriz de escenarios ESC-01 a
+ESC-28 e issues propuestos ISS-01 a ISS-09. No modifica specs, ADR ni secretos;
+los cambios propuestos quedan listados para decisión del equipo.
+
+Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
+
+## Limpieza de restos de demo en el flujo del Conductor (#123) — 15 de octubre de 2026
+
+Fuente: Issue #123 de Joseph Baño (urgente por congelamiento). En `apps/mobile`
+se retiró de `receipt.page.ts` la entrega inventada y la firma sintética de
+respaldo: una entrega ausente de la asignación cargada ahora muestra el error
+«No encontramos esta entrega en tu ruta» con botón a Inicio y nunca registra
+recepción; la evidencia fotográfica sale solo de la cámara y la firma debe
+dibujarse. Se retiró el botón «Foto Demo» y `generateSimulatedPhoto()`. En
+`sync.page.ts` el interruptor de prueba offline se conserva con el texto
+«Sin señal (prueba)». En `apps/web`, el menú del Auditor incluye «Simulador 90d»
+(`/simulation`) y su prueba de navegación quedó actualizada.
+
+Validación local: `npm run test:mobile` (25 pruebas), `npm run test:web` (52
+pruebas), `npm run build:mobile`, `npm run check` y `npm run audit:check`, todos
+en verde; grep de aceptación del issue sin restos. No se tocaron `scan.page.ts`
+ni `home.page.ts`.
+
+Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
+
+## Reconciliación oficial de cuentas por rol y paridad de ambientes #55 y cierre #107 — 15 de octubre de 2026
+
+Fuente: resolución y cierre formal de [issue #55](https://github.com/bryancito1090/istpetdev-platform/issues/55) e [issue #107](https://github.com/bryancito1090/istpetdev-platform/issues/107) (Spec 013). Se aprovisionaron y reconciliaron las 6 cuentas oficiales definitivas del equipo por rol mediante la CLI `--provision-accounts` con CSV privado fuera de Git, validando idempotencia con código 0. Se aplicaron contraseñas corporativas permanentes (distribuidas por canal privado) en AWS Cognito User Pool (`us-east-1_4Y2j5DINp`) cumpliendo la política de 14 caracteres de `identity.tf`. Se ejecutó safe deactivation de cuentas de prueba previas (`IsActive = false` en BD y `Enabled = false` en Cognito) para proteger la integridad referencial de auditoría. Mediante túnel SSM administrativo en puerto 15433 hacia `istpetdev-rds-dev`, se replicó la misma matriz en la base de producción Amazon RDS (`istpetdev_integration`), certificando paridad absoluta de entornos con `/health/ready` respondiendo `HTTP 200 Healthy` en ~36ms. Se validaron en vivo los escenarios E2E-07 (recuperación de clave con código en Gmail), E2E-04 (segregación Web vs PWA) y E2E-10 (acceso a Tablero Directivo y Despacho Móvil). Se actualizaron [[Identidad OIDC y sesiones]], [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]].
+
+Verificación documental de esta actualización: **86 notas Markdown**, **921 enlaces internos resueltos**, **0 errores**.

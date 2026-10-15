@@ -59,7 +59,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
           <div class="flex items-center justify-between">
             <ion-card-title class="text-base">Control de Conectividad</ion-card-title>
             <ion-badge [color]="outboxService.isSimulatingOffline() ? 'danger' : 'success'">
-              {{ outboxService.isSimulatingOffline() ? 'Offline Simulado' : 'Online' }}
+              {{ outboxService.isSimulatingOffline() ? 'Sin señal (prueba)' : 'Online' }}
             </ion-badge>
           </div>
           <ion-card-subtitle>Pruebe el comportamiento desconectado de campo</ion-card-subtitle>
