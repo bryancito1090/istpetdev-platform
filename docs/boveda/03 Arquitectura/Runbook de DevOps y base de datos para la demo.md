@@ -317,7 +317,11 @@ por Bryan/Codex. No se modifica aquí el procedimiento de migraciones.
 Variables públicas del agente y HMAC privado preparados en GitHub, con
 AGENT_ENABLED=false; falta comprobar su aplicación en EC2 y risks 200 con M2M
 antes de activar. Desde n8n, el nodo HTTP de prueba aún recibió 401. Bryan
-confirmó límite de gasto DeepSeek y ausencia de ventana exclusiva: no hay
-reset ni matriz oficial productiva en esta preparación. Estado/evidencia:
+confirmó límite de gasto DeepSeek. En la continuación autorizó una ventana
+exclusiva; aún no hay reset ni matriz oficial productiva en esta preparación.
+#83 integrado en develop `a5a8c70`; #86 fusionado de develop a main `a45a548`
+con checks aprobados. CD `38658331163` iniciado, agente false; comprobar éxito,
+cuentas y permisos productivos antes de activar. Login humano requiere MFA.
+Estado/evidencia:
 [preparación #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md)
 y [[n8n e IA]].

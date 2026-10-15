@@ -102,3 +102,39 @@ Completed/Fallback/recuperación, reporte oficial de 30 muestras, CE-03 de dos
 decisiones, E2E-07 completo y resolución PA-01/T9/T10. #39 sigue abierta.
 
 Plan de continuidad completo: [plan-cierre-39-produccion.md](../plan-cierre-39-produccion.md).
+
+## Continuación autorizada después de #83
+
+Las observaciones previas conservan su fecha y entorno. #83 fusionado en
+develop `a5a8c706eb7e3baed86fbc04535a4fd6f8075310`. #86 promovió ese HEAD
+por PR a main `a45a54886a94b4e849b9ad664db41a78097e391f` (15-oct 00:08 UTC,
+14-oct 19:08 Guayaquil), sin conflictos y con todos los checks aprobados.
+CD `38658331163` iniciado; no se deduce éxito del deploy a partir del merge.
+AGENT_ENABLED=false durante preparación; no se hicieron accesos nuevos al host.
+
+Revalidación de ambos workflows: publicados iguales al borrador, versiones
+sin cambios, conexiones/parámetros/credenciales remapeadas coinciden con
+`8c99a71`; cron apagado. Curl desde el servidor n8n:
+
+```text
+{"status":"Healthy","timestamp":"2026-10-14T23:55:35.2155268Z","entries":[{"name":"database_ready","status":"Healthy","description":"PostgreSQL database is available.","durationMs":35.8328}]}
+HTTP 200
+```
+
+23:56 UTC: probe HMAC sin modelo/herramientas 202, firma/bytes/clave coinciden;
+nodo HTTP con credencial OAuth2 n8n GET risks 401. Ambos probes eliminados.
+Este resultado se obtuvo antes de #86 y exige repetición tras CD.
+
+Prelaunch de preparación: npm audit aprobado con excepciones vigentes;
+consulta de paquetes NuGet (incluidas transitivas) sin hallazgos en los feeds
+consultados. No son un scan de imagen ni acreditan runtime RDS/roles.
+RBAC fijo/organización demo, validación de identidad desde Account, contexto
+firmado y límites deterministas conservan pruebas CI del HEAD promovido.
+Compose mantiene VerifyFull/CA y Swagger false; configuración efectiva en
+EC2, permisos/cuentas y resultados reales aún deben verificarse.
+
+Bryan confirmó ventana exclusiva en esta continuación. Renovación humana
+autorizada: la sesión privada anterior no permitió refresh; Cognito aceptó
+credenciales en login habitual y exige MFA del titular. Ningún token nuevo
+disponible aún; no se deshabilitó MFA ni se publicaron datos de acceso.
+No se corrió acceptance.sh, resets, Completed/Fallback ni CE-03.

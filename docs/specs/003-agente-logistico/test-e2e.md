@@ -163,7 +163,15 @@ pendiente de G. El transporte preparado se documenta en
 | 2026-10-14 23:00 | `8c99a71` workflows | Dos webhooks n8n reales | HMAC negativo | pasó | Firma inválida, timestamp expirado y cuerpo alterado →401 con cabeceras del contrato |
 | 2026-10-14 23:25 | `8c99a71` nodos HMAC | Probe temporal en n8n, sin modelo/herramientas | Firma positiva tras sincronización | pasó | 202, bytes y secreto coinciden; probe eliminado. No sustituye Completed |
 | 2026-10-14 23:25 | Credencial M2M; backend por verificar | Nodo HTTP n8n → API productiva | risks autorizado | falló | 401; token/scope Cognito correctos. Nodo/flujo temporal eliminado |
+| 2026-10-14 23:55 | Backend anterior a #86; workflows `8c99a71` | Servidor n8n → API productiva | Conectividad repetida | pasó | curl readiness 200 por HTTPS; PostgreSQL Healthy |
+| 2026-10-14 23:56 | Nodos HMAC `8c99a71` | Probe temporal n8n sin modelo/herramientas | Firma positiva repetida | pasó | 202; raw bytes y clave coinciden; probe eliminado |
+| 2026-10-14 23:56 | Credencial M2M; backend anterior a #86 | Nodo HTTP n8n → API productiva | risks autorizado repetido | falló | 401; flujo temporal eliminado; no se acredita gate de permisos |
 
 Fuentes y límites: [evidencia de preparación #39](evidencia/2026-10-14-preparacion-39.md).
 E2E-07 completo y CE-03 siguen pendientes de la corrida oficial y del incidente
 productivo con las dos decisiones; no se marcaron aprobados con estas subpruebas.
+
+Continuación: #83 integrado en develop `a5a8c70`; #86 fusionado a main
+`a45a548`, CD iniciado. Bryan confirmó ventana exclusiva; login nuevo de
+Planificador pendiente de MFA. Los gates de cuenta/permisos/deploy y corridas
+reales siguen pendientes. Los 401 anteriores no se atribuyen a la nueva versión.

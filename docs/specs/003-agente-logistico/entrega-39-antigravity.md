@@ -196,3 +196,18 @@ no acredita carga de esos datos en Production ni provisión en RDS.
 El plan vigente incluye coordinación de release con Jorge, Completed/Fallback,
 matriz oficial/CE-03, conciliación de bóveda, merge a develop y cierre de #39
 solo con todos los gates. No se ejecutaron resets ni la matriz en esta revisión.
+
+## Continuación posterior a #83 — Codex, 14-oct-2026
+
+#83 integrado en develop `a5a8c70`. #86, develop → main, fusionado a `a45a548`
+con backend/frontend/política/bóveda aprobados y sin conflictos, usando el
+pipeline existente y agente false; CD `38658331163` iniciado. Falta comprobar
+éxito/configuración/cuentas/permisos reales antes de activar.
+
+Bryan confirmó una ventana exclusiva, sustituyendo el bloqueo de coordinación
+del checkpoint anterior. Autorizó renovar el acceso humano; Cognito aceptó
+las credenciales y requiere MFA del titular. Nuevo token pendiente; no se
+deshabilita el segundo factor. Readiness 200 desde servidor n8n (23:55 UTC),
+HMAC positivo 202 en probe sin modelo y nodo M2M risks 401 (23:56 UTC), ambos
+probes eliminados. Repetir permisos tras CD; no atribuir el 401 previo a #86.
+Pasos 6–8/PA-01/T9/T10 y cierre #39 aún pendientes de evidencias productivas.

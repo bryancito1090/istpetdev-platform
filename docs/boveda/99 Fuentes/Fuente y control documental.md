@@ -460,3 +460,25 @@ merge/conflictos, conciliación y cierre condicionado. La subprueba HMAC no
 se presenta como E2E-07 oficial aprobado; riesgos 401 siguen registrados.
 
 Verificación documental de esta actualización: **85 notas Markdown**, **895 enlaces internos resueltos**, **0 errores**.
+
+## Promoción productiva de preparación de #39 — 14 de octubre de 2026
+
+Fuente: Bryan pidió completar #39 y confirmó ventana exclusiva. #83 fusionado
+en develop `a5a8c70`; Codex creó/fusionó #86 de develop a main `a45a548` con
+checks aprobados, sin conflictos ni bypass, para desplegar mediante el pipeline
+existente con agente deshabilitado. CD `38658331163` iniciado; pendiente de
+comprobar éxito/configuración/cuentas/permisos reales. Jorge mantiene operación
+RDS; actualización de coordinación en #38.
+
+Revalidación n8n/grafos/cron, curl HTTPS 200 desde su servidor, probe HMAC 202
+sin modelo y OAuth2 risks 401 anteriores a la promoción registrados en evidencia
+003. Probes eliminados, sin aceptación/reset productivo. npm audit cumple
+excepciones vigentes y NuGet no reporta paquetes vulnerables; no se atribuye
+esa comprobación a imágenes ni permisos runtime. Login humano requiere MFA;
+credenciales/JWT fuera de documentos, issues y diff.
+
+Plan/task/test-e2e/entrega/evidencia y [[Runbook de DevOps y base de datos para la demo]],
+[[n8n e IA]], [[Registro de seguimiento y hallazgos]] conciliados. No se resuelven
+PA-01/T9/T10 ni #39 hasta cumplir todos los gates productivos.
+
+Verificación documental: **85 notas Markdown**, **898 enlaces internos resueltos**, **0 errores**.

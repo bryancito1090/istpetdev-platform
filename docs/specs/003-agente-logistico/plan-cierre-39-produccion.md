@@ -48,16 +48,16 @@ configuración de producción. Fuente de resultados: task.md, entrega,
 
 | Pieza | Estado / siguiente acción |
 |---|---|
-| develop | PR #81 y #85 integrados; base vigente `5582930f30c32ecfec958c3a8acc28a6cd775104`. Transporte M2M/agente en Compose/deploy/rollback, más configuración Development/example |
-| main | `9d1a3d9bec8d759bb338368388ce9ccbbe7b3016`; release #78/CD exitoso anterior. No incluye el transporte de #81 |
-| PR #83 | Auditoría y este plan: actualizar, validar e integrar a develop por Codex |
+| develop | PR #81, #85 y #83 integrados; base vigente `a5a8c706eb7e3baed86fbc04535a4fd6f8075310`. Transporte M2M/agente en Compose/deploy/rollback, configuración Development/example y conciliación documental |
+| main | `a45a54886a94b4e849b9ad664db41a78097e391f`; #86 fusionado mediante PR con todos los checks verdes. CD iniciado; comprobar éxito/configuración efectiva antes de acreditar producción |
+| PR #83 / #86 | #83 fusionado a develop; #86 fusionado de develop a main por Codex en la continuación autorizada. Jorge mantiene comprobación de cuentas y operación RDS |
 | PR #85 / #38 | Bryan revisó y fusionó #85 a develop (`5582930`). Cuenta/configuración verificadas localmente por Jorge; producción sigue pendiente |
 | n8n | Runtime/Compose 2.39.5; imagen/digest comprobados. Ambos workflows publicados, cron apagado, credenciales resueltas incluidas herramientas |
 | Red | API readiness 200 desde servidor y contenedor n8n; HTTPS n8n 200 con User-Agent explícito. Rechazos 403 dependientes del cliente no acreditan HMAC |
 | HMAC | Fuentes consolidadas, archivo privado/runtime/GitHub sincronizados; firma positiva 202 en prueba temporal sin modelo y negativos 401. Conservar evidencia y probar run real en G |
-| M2M | Cognito emite token; API productiva observada en 401/403, sin risks 200. No inferir causa solo del código ni dar por completado el paso 3 |
+| M2M / humano | Cognito emite token M2M; risks productivo 401/403 antes de #86, repetir tras CD. Nuevo login de Planificador aceptó contraseña, pendiente de MFA por el titular; no hay nuevo access token vigente aún |
 | Aceptación | No hay report productivo ni Completed/Fallback/CE-03 acreditados. Último informe local conocido p95=10001 ms, fallo conservado |
-| Ventana | Pendiente, explícitamente confirmada por Bryan |
+| Ventana | Bryan confirmó una ventana exclusiva en la continuación del 14-oct; confirmar vigencia si la ejecución se posterga por cuentas/despliegue/token |
 
 PR #84 de ruteo/auditoría no se fusiona como efecto de #39. Si entra mientras
 se prepara la release, revisar impacto en rutas/facts/fixture y aceptar el
@@ -306,8 +306,9 @@ crear rama `chore/39-completar-produccion` desde develop actualizado. Reutilizar
 ## 12. Fase H — Matriz oficial y CE-03 en ventana exclusiva
 
 1. Acordar ventana explícita y respaldo/recuperación con Jorge/equipo. El harness
-   resetea antes de cada muestra y hace warmup/preparación adicional. No iniciar
-   mientras la respuesta vigente de Bryan sea «preparar primero el entorno».
+   resetea antes de cada muestra y hace warmup/preparación adicional. Bryan ya
+   confirmó una ventana exclusiva; comprobar que sigue vigente al superar los
+   gates si la espera por cuentas/despliegue/token posterga la corrida.
 2. Verificar fixture determinista de B, cuentas, presupuesto, token vigente y
    SHA de backend, workflows/prompt y harness por separado. Congelarlos durante
    la corrida; el SHA del report es checkout del harness, no prueba del deploy.
