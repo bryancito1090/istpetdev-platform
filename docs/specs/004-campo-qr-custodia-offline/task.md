@@ -18,6 +18,7 @@
 | T8 | Asignaciones, revisión de ruta y aviso | T4, T5 | — | completado (GET /mobile/assignments) |
 | T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (npm run check y dotnet test ok) |
 | T10 | Ensayo físico, evidencias y bóveda | T9 | — | completado (verificado en PWA, Web y backend C#) |
+| T11 | Recepción con stock en percha y pedido en campo sin colisiones (#111) | T4 | — | completado en backend (5 pruebas nuevas; 403/403 en la suite); sin cambios de PWA |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
@@ -131,6 +132,48 @@
 
 - [x] Ensayo verificado: integración de `HttpFieldApiService` en PWA móvil y Web, escaneo y generación de etiquetas QR con token `#t=`, simulación offline con outbox IndexedDB durable y reconexión a API local en `localhost:5000`.
 - [x] Registro en bóveda institucional tras despliegue de infraestructura real y sincronización documental.
+
+### T11 — Recepción con stock en percha y pedido en campo sin colisiones (#111)
+
+**Responsable:** Anthony Pilatasig. **Revisa:** Alexander Martínez. **Código:** [FieldService](../../../src/Application/Field/FieldService.cs) (`CreateReceiptAsync`), [MovementKinds](../../../src/Domain/Common/MovementKinds.cs), [LogisticsOptions](../../../src/Application/Logistics/LogisticsOptions.cs), [ReceiptReconciliationTests](../../../tests/IstpetDev.Tests/Integration/Field/ReceiptReconciliationTests.cs). Origen: hallazgos HZ-04, HZ-05 y HZ-06 del análisis de flujo E2E (bóveda, `06 Equipo/2026-10-15-analisis-flujo-e2e-roles-n8n-datasets.md`).
+
+**Problema comprobado (15-oct).** Las 5 pruebas nuevas, ejecutadas contra el `FieldService` de `develop` (`b29fa17`), fallaron todas:
+
+- **Cuatro con `DbUpdateException`, por dos restricciones:**
+  - `23505 IX_Consumption_ServicePointId_ProductId_OccurredOn`: dos lotes del mismo SKU, una segunda recepción el mismo día o un consumo importado del día.
+  - `23505 IX_DeliveryOrder_OrganizationId_OrderNumber`: dos líneas que piden reposición.
+- **Una porque no existía ningún movimiento que explicara la diferencia del saldo.**
+
+Cualquiera de esas excepciones revierte la recepción completa, y la PWA la reintenta desde el outbox sin éxito.
+
+- [x] Prueba roja: 5 de 5 fallan con el código anterior, por las causas descritas.
+- [x] Conciliar el stock en percha una vez por lote y antes de sumar lo recibido. La diferencia con el saldo queda como movimiento `FieldAdjustment`: salida del punto si se consumió, entrada si el conteo supera al sistema.
+- [x] Agregar el consumo derivado por producto. Se acumula sobre el consumo `FieldReconciliation` del día; un consumo de otro origen (importado) no se modifica, y la cantidad queda en el movimiento `FieldAdjustment` con un aviso en el log.
+- [x] Mover el período del consumo derivado (antes, `7` fijo en el código) a `Logistics:FieldReconciliationPeriodDays`, con 7 por defecto.
+- [x] Crear un solo `DeliveryOrder` `FieldRequest` por recepción, con una línea por producto y número `ORD-{entrega}-{OperationId}`, estable ante reintentos.
+- [x] Caché local de saldos dentro de la recepción, para que dos líneas del mismo lote no creen un saldo duplicado.
+- [x] Prueba verde: 5 de 5, y la suite completa del backend 403 de 403 (Release, PostGIS en Testcontainers).
+- [ ] Validación E2E con dos teléfonos (ESC-07 a ESC-10 del análisis), en la ronda de #118.
+
+```bash
+DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet test tests/IstpetDev.Tests -c Release --filter "FullyQualifiedName~ReceiptReconciliationTests"
+```
+
+**Sin migración ni cambio de contrato.** `CreateReceiptRequest` y `ReceiptResponse` no cambian, y la PWA ya envía `remainingQuantity` y `nextRequestedQuantity` por línea (`apps/mobile/src/app/field/pages/receipt/receipt.page.ts`), así que no requiere cambios. Cambio de comportamiento: el stock en percha se concilia también en líneas con cantidad aceptada 0; antes se ignoraba.
+
+**Límite conocido.** Dos recepciones **simultáneas** del mismo punto y producto el mismo día todavía pueden chocar en el índice único de `Consumption` al insertar la primera fila del día. La perdedora recibe un error y la PWA la reintenta; en el reintento encuentra la fila y acumula. Resolverlo del todo requiere separar hechos operativos e históricos, que es la migración que plantea 007.
+
+**Registro de cambios de T11:**
+
+| Archivo | Componente | Qué se hizo | Por qué | Estado |
+|---|---|---|---|---|
+| `src/Application/Field/FieldService.cs` | Backend | `CreateReceiptAsync` en cuatro pasos: validar y registrar líneas; conciliar el stock en percha por lote con `FieldAdjustment`; mover lo aceptado; registrar el consumo derivado y un pedido por recepción | HZ-04: el consumo insertado por línea violaba el índice único diario. HZ-05: el saldo se sobrescribía sin movimiento y no se podía reconstruir. HZ-06: un pedido por línea con número por minuto violaba el índice único de `OrderNumber`. Todo eso hacía fallar la recepción completa | Hecho y probado |
+| `src/Domain/Common/MovementKinds.cs` | Backend / Dominio | Constante `FieldAdjustment` | Tipo de movimiento propio para el ajuste por stock en percha, distinto de `Receipt` e `ImportAdjustment`, para conciliarlo y auditarlo por separado | Hecho |
+| `src/Application/Logistics/LogisticsOptions.cs`, `src/Api/appsettings.example.json`, `src/Api/appsettings.Development.json` | Backend / Configuración | `FieldReconciliationPeriodDays` (7 por defecto) | El período estaba fijo en el código; los umbrales son parámetros (G5) | Hecho |
+| `tests/IstpetDev.Tests/Integration/Field/ReceiptReconciliationTests.cs` | Pruebas | 5 pruebas de integración con PostGIS: dos lotes del mismo SKU, segunda recepción del día, consumo importado del día, stock declarado mayor que el saldo (libro cuadrado) y dos líneas con reposición más reintento | Cubren ESC-07 a ESC-10 y fallan con el código anterior | Hecho; 5/5 en verde |
+| `docs/specs/004-…/task.md`, `docs/specs/007-…/spec.md` | Documentación | T11 en este archivo y nota de la regla provisional en 007 | Registrar qué cambió, por qué y qué queda para 007 | Hecho |
+| Frontend (`apps/mobile`) | Frontend | Sin cambios | El contrato no cambió y la PWA ya envía los dos campos | No requerido |
+
 
 ## Código de las pruebas clave
 
