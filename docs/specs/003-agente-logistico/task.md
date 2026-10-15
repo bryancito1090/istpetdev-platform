@@ -430,3 +430,30 @@ Resultados reportados por Antigravity contra `https://n8n.bryan-bano.com`:
   resuelta. Evidencia: [preparación #39](evidencia/2026-10-14-preparacion-39.md).
 - T9/T10/PA-01: siguen pendientes de release, permisos/cuenta(s), runs reales,
   matriz oficial y CE-03. #39 permanece abierta. PR #83 se prepara para revisión.
+
+## Continuación tras integrar #83 — 14-oct-2026
+
+- #83 fusionado a develop `a5a8c706eb7e3baed86fbc04535a4fd6f8075310`;
+  política/documentación verdes. Nueva rama desde esa base:
+  `chore/39-ejecucion-produccion`.
+- [PR #86](https://github.com/bryancito1090/istpetdev-platform/pull/86) fusionado
+  por Codex de develop a main con checks del HEAD exacto aprobados y sin conflictos,
+  main `a45a54886a94b4e849b9ad664db41a78097e391f` (15-oct 00:08 UTC,
+  14-oct 19:08 Guayaquil). Incluye #79/#80 ya integrados y no incluye #84.
+  CD `38658331163` iniciado; agente false. Merge no acredita deploy exitoso.
+- Revalidación real: curl desde servidor n8n → readiness **200**, 23:55 UTC;
+  versiones publicadas/cron/grafos coinciden con `8c99a71` después del remapeo
+  de credenciales. Probe HMAC positivo **202**, sin modelo/herramientas;
+  nodo HTTP n8n → risks **401**, 23:56 UTC. Ambos probes eliminados.
+- Prelaunch de preparación: `npm run audit:check` aprobado con excepciones
+  vigentes; `dotnet list src/Api/IstpetDev.Api.csproj package --vulnerable
+  --include-transitive` sin hallazgos en feeds consultados. No son scans de
+  imagen ni acreditan permisos/cuentas productivos.
+- Bryan confirmó ahora **ventana exclusiva autorizada**; reemplaza el pendiente
+  de ventana del checkpoint anterior. Login de Planificador iniciado con la
+  autorización de Bryan: contraseña aceptada, Cognito exige MFA; el titular
+  debe completarlo en la pestaña privada antes de guardar un nuevo token.
+  No se deshabilita MFA ni se publican credenciales. Jorge mantiene operación
+  EC2/RDS y comprobación de cuentas; continuidad registrada en #38.
+- T9/T10/PA-01 y cierre #39 siguen pendientes de gates productivos. No se han
+  ejecutado resets ni atribuido métricas locales a producción.

@@ -178,3 +178,18 @@ El orden de continuidad está en [[Continuidad del piloto y specs 007 a 012]]. L
 - Continuidad: [plan vigente](../../specs/003-agente-logistico/plan-cierre-39-produccion.md)
   y [evidencia](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md).
   #39 queda abierta hasta superar todos sus gates.
+
+### 14 de octubre de 2026 — Continuidad productiva después de #83
+
+- #83 fusionado en develop `a5a8c70`; promoción fusionada mediante
+  [PR #86](https://github.com/bryancito1090/istpetdev-platform/pull/86),
+  develop → main `a45a548`, con checks verdes. CD iniciado;
+  agente inicialmente deshabilitado. Jorge mantiene operación de RDS/cuentas.
+- Revalidación: n8n publicado igual a la fuente oficial, cron apagado;
+  curl desde su servidor → readiness 200. Probe HMAC sin modelo 202, pero
+  HTTP OAuth2 n8n → risks 401; pruebas temporales eliminadas.
+- npm audit aprobado con excepciones vigentes y consulta NuGet sin paquetes
+  vulnerables. No se declara verificada la imagen ni la cuenta en RDS.
+- Bryan confirmó una ventana exclusiva para aceptación. Sustituye el pendiente
+  previo de coordinación; login humano pendiente de MFA y deploy/permisos por
+  comprobar. No hay aceptación oficial ni cierre #39 acreditados.

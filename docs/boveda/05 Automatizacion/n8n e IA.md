@@ -135,8 +135,9 @@ Entrega verificada localmente y transferida a Codex para revisión e integració
 #37 se integró en PR #74 (`8c99a71`); ADR-22 fue aceptada por Bryan. La prueba
 local inicial aprobada es histórica: el último informe local conocido del
 árbol `4742f3b` registró p95 10001 ms y falló latencia. Ninguno sustituye una
-aceptación productiva. #81 y #85 están integrados en develop (`5582930`);
-Jorge coordina su promoción/deploy en la API, aún pendientes.
+aceptación productiva. #81/#85/#83 integrados en develop (`a5a8c70`), promovidos
+a main por #86 (`a45a548`) con checks aprobados. CD iniciado; Jorge mantiene
+la comprobación de cuentas/configuración productivas.
 
 En n8n de Bryan se comprobó runtime/Compose 2.39.5, DeepSeek nativo, ambos
 workflows publicados del SHA oficial con credenciales resueltas incluidas
@@ -151,7 +152,8 @@ Bryan confirma límite de gasto DeepSeek configurado y que Antigravity terminó
 las ediciones. Eso no acredita todavía Completed ni respuestas de herramientas
 2xx: el nodo M2M → API risks dio 401 y fue eliminado. Quedan cuentas/roles
 productivos, release, Completed/Fallback, 30 muestras oficiales y CE-03 de dos
-decisiones. No hay ventana de resets acordada; #39 permanece abierta.
+decisiones. Bryan confirmó después una ventana exclusiva; login humano requiere
+MFA y el deploy/permisos aún deben comprobarse. #39 permanece abierta.
 
 Fuentes: [evidencia de preparación](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md),
 [task.md](../../specs/003-agente-logistico/task.md), [[Runbook de DevOps y base de datos para la demo]]
