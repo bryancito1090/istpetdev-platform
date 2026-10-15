@@ -4258,7 +4258,7 @@ git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 Run: `npm run check && npm run test:frontend && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
 Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
 
-- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55).
+- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55). **Avance 2026-10-15 (issue #108): E2E-11 a E2E-13 ejecutados en producción contra `d739f43` y registrados en `test-e2e.md`; E2E-01 a E2E-10 siguen pendientes.**
 
 - [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
@@ -4280,7 +4280,7 @@ Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `d
 - **Pendiente para la Fase B (cierre técnico y validación E2E en vivo):**
   - Configuración y validación de infraestructura (T10, issue #43): callbacks HTTPS de Cognito, marca ISTPET en Hosted UI, políticas IAM y hop limit = 2.
   - Publicación y routing de la PWA bajo `/campo/` (issue #52).
-  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55).
+  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55). E2E-11 a E2E-13 ya ejecutados el 2026-10-15 (issue #108) contra la producción `d739f43`, con evidencia difuminada en `evidencia/`; falta E2E-01 a E2E-10. Salvedades: no hay rutas publicadas a conductores (E2E-11 no pudo comprobar «solo sus entregas») y no se verificó la caducidad de una invitación de más de un día (E2E-13). La cuenta de prueba quedó desactivada y la contraseña de Gerencia se cambiará al cerrar la campaña.
   - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
   - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
 

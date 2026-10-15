@@ -1,0 +1,7 @@
+Fecha: 2026-10-15T17:25:34Z
+Perfil: istpetdev-admin-console (cuenta 747456040427)
+User Pool: us-east-1_4Y2j5DINp
+Usuario de prueba E2E-108 (sub enmascarado sha256-8): d3b42013
+UserStatus: CONFIRMED
+Enabled: False
+Origen: aws cognito-idp admin-get-user (posterior a la desactivacion desde Usuarios)
