@@ -861,6 +861,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 [zoom]="8">
               </ui-map-view>
             </div>
+            @if (wizardApproximate()) {
+              <p class="text-[11px] text-amber-700 mt-1">
+                Trazado aproximado (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
+              </p>
+            }
           </div>
         </div>
       </div>
@@ -919,6 +924,7 @@ export class RutasPage implements OnInit {
 
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
+  readonly wizardApproximate = signal(false);
 
   // Pestaña Activa: Rutas o Bandeja de Rechazos
   readonly activeTab = signal<'rutas' | 'rechazos'>('rutas');
@@ -1174,7 +1180,7 @@ export class RutasPage implements OnInit {
       this.selectedVehicleId.set(firstMatch.vehicleId);
     }
 
-    this.updateWizardMap(opt.stops, opt.evaluation.coordinates);
+    this.updateWizardMap(opt.stops, opt.evaluation.coordinates, opt.evaluation.coordinatesSource);
   }
 
   moveStop(index: number, direction: -1 | 1): void {
@@ -1193,7 +1199,7 @@ export class RutasPage implements OnInit {
     // Reevaluar secuencia modificada por el usuario
     this.apiService.evaluateRouteSequence(stops, this.selectedVehicleId() || undefined).subscribe(evalRes => {
       this.currentEvaluation.set(evalRes);
-      this.updateWizardMap(stops, evalRes.coordinates);
+      this.updateWizardMap(stops, evalRes.coordinates, evalRes.coordinatesSource);
     });
   }
 
@@ -1308,7 +1314,7 @@ export class RutasPage implements OnInit {
     });
   }
 
-  private updateWizardMap(stops: RouteCandidateStop[], coordinates?: [number, number][]): void {
+  private updateWizardMap(stops: RouteCandidateStop[], coordinates?: [number, number][], source?: string): void {
     const markers: MapMarker[] = stops.map(s => ({
       id: s.servicePointId || s.locationId || s.code,
       latitude: s.position.lat,
@@ -1321,14 +1327,19 @@ export class RutasPage implements OnInit {
     this.wizardMarkers.set(markers);
 
     if (coordinates && coordinates.length > 1) {
+      const byRoad = source === 'osrm';
       this.wizardPolylines.set([{
         id: 'wizard-road-route',
         coordinates,
-        color: '#00A7C4',
-        weight: 5
+        color: ROUTE_COLORS[0],
+        weight: 5,
+        dashArray: byRoad ? undefined : '6 6',
+        tooltip: byRoad ? 'Recorrido por calles' : 'Trazado aproximado (rectas entre paradas)'
       }]);
+      this.wizardApproximate.set(!byRoad);
     } else {
       this.wizardPolylines.set([]);
+      this.wizardApproximate.set(false);
     }
   }
 

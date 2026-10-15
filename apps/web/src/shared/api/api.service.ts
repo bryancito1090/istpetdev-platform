@@ -243,6 +243,8 @@ export interface RouteSuggestionOptionDto {
     validationErrors: string[];
     warnings: string[];
     coordinates: [number, number][];
+    /** `osrm`: por calles; `approximate`: rectas entre paradas. */
+    coordinatesSource?: 'osrm' | 'approximate';
   };
   stops: RouteCandidateStop[];
   sourcingLines: any[];

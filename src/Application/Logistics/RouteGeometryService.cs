@@ -21,15 +21,35 @@ public sealed record RouteGeometryResponse(
     RouteGeometryWaypoint? Depot,
     IReadOnlyList<RouteGeometryWaypoint> Stops);
 
+public sealed record RoadPath(double Km, IReadOnlyList<double[]> Coordinates);
+
 public interface IRouteGeometryService
 {
     Task<RouteGeometryResponse?> GetAsync(Guid routePlanId, CancellationToken ct = default);
+
+    /// <summary>Recorrido por calles entre puntos [lat, lon] en orden; null si OSRM no está configurado o falla.</summary>
+    Task<RoadPath?> RoadPathAsync(IReadOnlyList<double[]> waypoints, CancellationToken ct = default);
 }
 
 // Un plan no cambia una vez creado (cada cambio es una revisión nueva), así que su trazado se guarda en memoria.
 public sealed class RouteGeometryCache
 {
     private readonly ConcurrentDictionary<string, (RouteGeometryResponse Value, DateTime ExpiresUtc)> _items = new();
+    private readonly ConcurrentDictionary<string, (RoadPath Value, DateTime ExpiresUtc)> _paths = new();
+
+    // El asistente evalúa varias veces la misma secuencia mientras el usuario edita: no se repite la consulta.
+    public bool TryGetPath(string key, out RoadPath value)
+    {
+        if (_paths.TryGetValue(key, out var item) && item.ExpiresUtc > DateTime.UtcNow) { value = item.Value; return true; }
+        value = null!;
+        return false;
+    }
+
+    public void SetPath(string key, RoadPath value, TimeSpan ttl)
+    {
+        if (_paths.Count > 500) _paths.Clear();
+        _paths[key] = (value, DateTime.UtcNow.Add(ttl));
+    }
 
     public bool TryGet(string key, out RouteGeometryResponse value)
     {
@@ -97,7 +117,7 @@ public sealed class RouteGeometryService(
         if (depot is not null && waypoints.Count > 1) waypoints.Add([depot.Latitude, depot.Longitude]);
 
         var vehicleCode = vehicle?.Code ?? string.Empty;
-        var result = await RoadGeometryAsync(waypoints, ct) is { } road
+        var result = await RoadPathAsync(waypoints, ct) is { } road
             ? new RouteGeometryResponse(plan.Id, vehicleCode, "osrm", road.Km, road.Coordinates, depot, stopWaypoints)
             : new RouteGeometryResponse(plan.Id, vehicleCode, "approximate", null, waypoints, depot, stopWaypoints);
 
@@ -106,7 +126,7 @@ public sealed class RouteGeometryService(
         return result;
     }
 
-    private async Task<(double Km, List<double[]> Coordinates)?> RoadGeometryAsync(List<double[]> waypoints, CancellationToken ct)
+    public async Task<RoadPath?> RoadPathAsync(IReadOnlyList<double[]> waypoints, CancellationToken ct = default)
     {
         var baseUrl = options.Value.Osrm.RouteGeometryUrl;
         if (string.IsNullOrWhiteSpace(baseUrl) || waypoints.Count < 2) return null;
@@ -114,6 +134,7 @@ public sealed class RouteGeometryService(
         var path = string.Join(';', waypoints.Select(w =>
             string.Create(CultureInfo.InvariantCulture, $"{w[1]:0.######},{w[0]:0.######}")));
         var url = $"{baseUrl.TrimEnd('/')}/route/v1/driving/{path}?overview=full&geometries=geojson";
+        if (cache.TryGetPath(url, out var cachedPath)) return cachedPath;
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -132,7 +153,10 @@ public sealed class RouteGeometryService(
             var route = doc.RootElement.GetProperty("routes")[0];
             var coordinates = route.GetProperty("geometry").GetProperty("coordinates").EnumerateArray()
                 .Select(c => new[] { c[1].GetDouble(), c[0].GetDouble() }).ToList();
-            return coordinates.Count < 2 ? null : (Math.Round(route.GetProperty("distance").GetDouble() / 1000d, 3), coordinates);
+            if (coordinates.Count < 2) return null;
+            var roadPath = new RoadPath(Math.Round(route.GetProperty("distance").GetDouble() / 1000d, 3), coordinates);
+            cache.SetPath(url, roadPath, TimeSpan.FromHours(12));
+            return roadPath;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
         {
