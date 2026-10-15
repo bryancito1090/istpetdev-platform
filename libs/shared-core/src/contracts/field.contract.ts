@@ -22,6 +22,7 @@ export type PwaSyncState =
   | 'AcceptedByServer'
   | 'Conflict'
   | 'RequiresReview'
+  | 'SessionRequired'
   | 'EvidencePending'
   | 'Complete';
 
@@ -335,3 +336,14 @@ export interface RejectedCapturesResponse {
   items: RejectedCaptureDto[];
   count: number;
 }
+
+/** Catálogo V1, códigos compatibles con #117. El contrato conserva rejectionReason. */
+export const RECEIPT_REJECTION_CATALOG_VERSION = 'V1';
+export const RECEIPT_REJECTION_REASONS = [
+  { code: 'Faltante', label: 'Faltante' },
+  { code: 'Sobrante', label: 'Sobrante' },
+  { code: 'Daño', label: 'Daño' },
+  { code: 'PrecintoViolado', label: 'Precinto violado' },
+  { code: 'LoteNoCoincide', label: 'Lote no coincide' },
+  { code: 'CadenaDeFrio', label: 'Cadena de frío' }
+] as const;

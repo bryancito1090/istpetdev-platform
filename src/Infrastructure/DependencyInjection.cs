@@ -61,6 +61,8 @@ public static class DependencyInjection
             return new CognitoIdentityDirectory(client, pool, provider.GetRequiredService<ILogger<CognitoIdentityDirectory>>());
         });
 
+        services.AddSingleton<IstpetDev.Application.Field.IEvidenceStorage, IstpetDev.Infrastructure.Storage.S3EvidenceStorage>();
+
         // Simulation services (005)
         services.AddSingleton<SimulationWorker>();
         services.AddSingleton<ISimulationWorker>(sp => sp.GetRequiredService<SimulationWorker>());

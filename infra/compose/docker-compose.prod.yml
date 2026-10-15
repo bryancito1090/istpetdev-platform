@@ -50,6 +50,8 @@ services:
       Agent__N8n__WebhookUrl: ${AGENT_N8N_WEBHOOK_URL:-https://n8n.bryan-bano.com/webhook/istpetdev/agent}
       Agent__N8n__WebhookSecret: ${AGENT_N8N_WEBHOOK_SECRET:-}
       Agent__N8n__ApiBaseUrl: ${AGENT_N8N_API_BASE_URL:-https://istpetdev.doicela.dev/api/v1}
+      Evidence__S3__Bucket: ${Evidence__S3__Bucket:-}
+      Evidence__S3__Region: ${Evidence__S3__Region:-us-east-1}
       EnableSwagger: ${ENABLE_SWAGGER:-false}
     depends_on:
       istpetdev-redis:

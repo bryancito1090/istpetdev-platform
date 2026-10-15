@@ -5,14 +5,17 @@ import {
   ReceiptResponse,
   MobileAssignmentResponse,
   PwaSyncState,
-  FieldProblemDetails
+  FieldProblemDetails,
+  ReceiptLineRequest,
+  RECEIPT_REJECTION_REASONS
 } from '@istpetdev/shared-core';
-import { FIELD_API, IFieldApi } from '../field-api.interface';
+import { FIELD_API, IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { generateUuidV7 } from '../uuid';
 
 export interface OutboxItem {
   operationId: string; // UUID v7
   ownerAccountId: string; // FR-09: cuenta que capturó; otra cuenta no la ve ni la sincroniza
+  receiverContext?: { unitId: string; traceToken: string };
   deliveryId: string;
   expectedDeliveryVersion: number;
   recipientName: string;
@@ -123,6 +126,8 @@ const DRIVER_ACK_REVISION_KEY = 'istpetdev_driver_ack_route_revision';
 })
 export class FieldOutboxService {
   private readonly fieldApi = inject<IFieldApi>(FIELD_API);
+  private readonly running = new Map<string, Promise<OutboxItem>>();
+  private sessionRevision = 0;
   private dbPromise: Promise<IDBPDatabase> | null = null;
 
   // Señales reactivas para la UI
@@ -139,10 +144,14 @@ export class FieldOutboxService {
 
   constructor() {
     this.init();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => { void this.syncAllPending(); });
+    }
   }
 
   /** La fija MobileAuthService tras /me y la limpia al cerrar sesión. Nunca borra capturas. */
   async setOwner(accountId: string | null): Promise<void> {
+    this.sessionRevision++;
     this.owner.set(accountId);
     this.activeAssignment.set(null);
     this.activeDriverNotice.set(null);
@@ -182,9 +191,11 @@ export class FieldOutboxService {
    */
   async refreshOutboxItems(): Promise<void> {
     const owner = this.owner();
+    const revision = this.sessionRevision;
     const db = await this.getDb();
     const allItems: OutboxItem[] = await db.getAll('outbox_items');
     const legacyCount = allItems.filter((item) => !item.ownerAccountId && item.status !== 'Complete').length;
+    if (revision !== this.sessionRevision) return;
     this.legacyPendingCount.set(legacyCount);
 
     const items: OutboxItem[] = owner
@@ -193,6 +204,37 @@ export class FieldOutboxService {
     // Ordenar de más reciente a más antiguo por capturedAtUtc
     items.sort((a, b) => new Date(b.capturedAtUtc).getTime() - new Date(a.capturedAtUtc).getTime());
     this.outboxItems.set(items);
+  }
+
+  private assertSession(owner: string, revision: number): void {
+    if (!owner || this.owner() !== owner || this.sessionRevision !== revision) {
+      throw { status: 401, code: 'SESSION_REQUIRED', message: 'La sesión cambió durante la sincronización.' };
+    }
+  }
+
+  async loadReceiverUnit(unitId: string, traceToken: string): Promise<{ unit: ReceiverUnit; cached: boolean }> {
+    const owner = this.owner();
+    if (!owner) throw new Error('Inicia sesión para consultar el bulto.');
+    const revision = this.sessionRevision;
+    const key = `receiver:${owner}:${unitId}:${await calculateBlobSha256(new Blob([traceToken]))}`;
+    const db = await this.getDb();
+    this.assertSession(owner, revision);
+    try {
+      if (this.isSimulatingOffline() || !navigator.onLine) throw { status: 0 };
+      const unit = await new Promise<ReceiverUnit>((resolve, reject) =>
+        this.fieldApi.getReceiverUnit(unitId, traceToken).subscribe({ next: resolve, error: reject }));
+      this.assertSession(owner, revision);
+      await db.put('assignments', { driverAccountId: key, unit });
+      return { unit, cached: false };
+    } catch (error) {
+      this.assertSession(owner, revision);
+      const status = classifySyncError(error).status;
+      if (status !== 0 && status < 500) throw error;
+      const snapshot = await db.get('assignments', key);
+      this.assertSession(owner, revision);
+      if (!snapshot) throw new Error('Consulta este bulto con conexión antes de capturarlo sin señal.');
+      return { unit: snapshot.unit, cached: true };
+    }
   }
 
   /**
@@ -280,15 +322,8 @@ export class FieldOutboxService {
     expectedDeliveryVersion: number;
     recipientName: string;
     notes?: string;
-    lines: {
-      deliveryLineId: string;
-      lotId: string;
-      quantityAccepted: number;
-      quantityRejected: number;
-      unit: string;
-      remainingQuantity?: number;
-      nextRequestedQuantity?: number;
-    }[];
+    receiverContext?: { unitId: string; traceToken: string };
+    lines: ReceiptLineRequest[];
     photoBlob?: Blob;
     signatureBlob?: Blob;
   }): Promise<OutboxItem> {
@@ -297,6 +332,18 @@ export class FieldOutboxService {
       throw new Error('Inicia sesión para registrar una recepción.');
     }
 
+    if (params.receiverContext && params.lines.some(l => l.quantityRejected > 0)) {
+      if (!params.photoBlob) throw new Error('Adjunta una foto cuando hay rechazo.');
+      if (params.lines.some(l => l.quantityRejected > 0 && !RECEIPT_REJECTION_REASONS.some(r => r.code === l.rejectionReason))) {
+        throw new Error('Selecciona un motivo de catálogo por cada línea rechazada.');
+      }
+    }
+    if (params.receiverContext) {
+      await this.refreshOutboxItems();
+      if (this.outboxItems().some(i => i.receiverContext?.unitId === params.receiverContext!.unitId))
+        throw new Error('Este bulto ya tiene una recepción en la cola de tu cuenta.');
+    }
+    const sessionRevision = this.sessionRevision;
     const operationId = generateUuidV7();
     const capturedAtUtc = new Date().toISOString();
 
@@ -320,6 +367,7 @@ export class FieldOutboxService {
     const outboxItem: OutboxItem = {
       operationId,
       ownerAccountId,
+      receiverContext: params.receiverContext,
       deliveryId: params.deliveryId,
       expectedDeliveryVersion: params.expectedDeliveryVersion,
       recipientName: params.recipientName,
@@ -333,6 +381,7 @@ export class FieldOutboxService {
       signatureSha256
     };
 
+    this.assertSession(ownerAccountId, sessionRevision);
     // Guardado atómico en una sola transacción
     const db = await this.getDb();
     const tx = db.transaction('outbox_items', 'readwrite');
@@ -356,7 +405,16 @@ export class FieldOutboxService {
    * Flujo:
    * 1. createReceipt -> 2. uploadEvidence foto -> confirmEvidence -> 3. uploadEvidence firma -> confirmEvidence -> Complete.
    */
-  async syncItem(operationId: string): Promise<OutboxItem> {
+  syncItem(operationId: string): Promise<OutboxItem> {
+    const running = this.running.get(operationId);
+    if (running) return running;
+    const result = this.syncItemCore(operationId).finally(() => this.running.delete(operationId));
+    this.running.set(operationId, result);
+    return result;
+  }
+
+  private async syncItemCore(operationId: string): Promise<OutboxItem> {
+    const sessionRevision = this.sessionRevision;
     const db = await this.getDb();
     const item = await db.get('outbox_items', operationId);
     if (!item) {
@@ -366,6 +424,10 @@ export class FieldOutboxService {
     if (item.ownerAccountId !== this.owner()) {
       throw new Error('La captura pertenece a otra cuenta.');
     }
+
+    if (item.status === 'Complete') return item;
+    const assertSession = () => this.assertSession(item.ownerAccountId, sessionRevision);
+    assertSession();
 
     if (this.isSimulatingOffline() || !navigator.onLine) {
       item.status = 'SavedOnDevice';
@@ -382,7 +444,8 @@ export class FieldOutboxService {
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
 
-      const receiptResponse = await this.sendReceiptRequestWithRetry(item);
+      const receiptResponse = item.receiptResponse ?? await this.sendReceiptRequestWithRetry(item, assertSession);
+      assertSession();
       item.receiptResponse = receiptResponse;
       item.status = 'EvidencePending';
       await db.put('outbox_items', item);
@@ -397,7 +460,8 @@ export class FieldOutboxService {
           'photo',
           item.evidencePhotoBlob,
           item.photoSha256,
-          generateUuidV7()
+          item.operationId,
+          assertSession
         );
         item.photoEvidenceId = photoUpload.evidenceId;
         await db.put('outbox_items', item);
@@ -410,7 +474,8 @@ export class FieldOutboxService {
           'signature',
           item.evidenceSignatureBlob,
           item.signatureSha256,
-          generateUuidV7()
+          item.operationId,
+          assertSession
         );
         item.signatureEvidenceId = sigUpload.evidenceId;
         await db.put('outbox_items', item);
@@ -428,7 +493,10 @@ export class FieldOutboxService {
       item.errorMessage = errorInfo.message;
       item.problemType = errorInfo.type;
 
-      if (errorInfo.isBusiness) {
+      if (errorInfo.status === 401 || (errorInfo.status === 403 && !['UNAUTHORIZED_ASSIGNMENT', 'UNAUTHORIZED_ROLE'].includes(errorInfo.code)) || errorInfo.code === 'SESSION_REQUIRED') {
+        item.status = 'SessionRequired';
+        item.errorMessage = `Sesión requerida: vuelve a entrar con la cuenta que capturó. La captura se conserva. ${errorInfo.message}`;
+      } else if (errorInfo.isBusiness) {
         // Tarea 1 & ESC-23: Errores de negocio (409/422/403) NO se reintentan;
         // pasan a estado «requiere revisión» con el motivo y la cola sigue.
         item.status = 'RequiresReview';
@@ -472,17 +540,18 @@ export class FieldOutboxService {
     }
   }
 
-  private async sendReceiptRequestWithRetry(item: OutboxItem, maxRetries = 3): Promise<ReceiptResponse> {
+  private async sendReceiptRequestWithRetry(item: OutboxItem, assertSession: () => void, maxRetries = 3): Promise<ReceiptResponse> {
     let attempt = 0;
     let baseDelayMs = 400;
 
     while (true) {
       try {
+        assertSession();
         return await this.sendReceiptRequest(item);
       } catch (err: any) {
         const errorInfo = classifySyncError(err);
         // Regla: 409/422/403 de negocio NUNCA se reintentan
-        if (errorInfo.isBusiness) {
+        if (errorInfo.isBusiness || errorInfo.status === 401 || errorInfo.code === 'SESSION_REQUIRED') {
           throw err;
         }
 
@@ -501,7 +570,10 @@ export class FieldOutboxService {
 
   private sendReceiptRequest(item: OutboxItem): Promise<ReceiptResponse> {
     return new Promise((resolve, reject) => {
-      this.fieldApi.createReceipt(item.deliveryId, item.receiptPayload, item.operationId).subscribe({
+      const request = item.receiverContext
+        ? this.fieldApi.receiveAsReceiver(item.receiverContext.unitId, item.receiverContext.traceToken, item.receiptPayload, item.operationId)
+        : this.fieldApi.createReceipt(item.deliveryId, item.receiptPayload, item.operationId);
+      request.subscribe({
         next: (res) => resolve(res),
         error: (err) => reject(err)
       });
@@ -513,8 +585,10 @@ export class FieldOutboxService {
     kind: 'photo' | 'signature',
     blob: Blob,
     sha256: string,
-    operationId: string
+    operationId: string,
+    assertSession: () => void
   ): Promise<{ evidenceId: string }> {
+    assertSession();
     return new Promise((resolve, reject) => {
       // 1. Solicitar URL / registro de carga
       this.fieldApi
@@ -531,6 +605,7 @@ export class FieldOutboxService {
         )
         .subscribe({
           next: (uploadRes) => {
+            try { assertSession(); } catch (error) { reject(error); return; }
             // 2. Confirmar evidencia con el servidor
             this.fieldApi
               .confirmEvidence(uploadRes.evidenceId, {
@@ -557,6 +632,7 @@ export class FieldOutboxService {
     blob: Blob,
     sha256: string,
     operationId: string,
+    assertSession: () => void,
     maxRetries = 3
   ): Promise<{ evidenceId: string }> {
     let attempt = 0;
@@ -564,10 +640,10 @@ export class FieldOutboxService {
 
     while (attempt < maxRetries) {
       try {
-        return await this.uploadAndConfirmEvidence(receiptId, kind, blob, sha256, operationId);
+        return await this.uploadAndConfirmEvidence(receiptId, kind, blob, sha256, operationId, assertSession);
       } catch (err) {
         const errorInfo = classifySyncError(err);
-        if (errorInfo.isBusiness) {
+        if (errorInfo.isBusiness || errorInfo.status === 401 || errorInfo.code === 'SESSION_REQUIRED') {
           throw err;
         }
         attempt++;
@@ -593,6 +669,7 @@ export class FieldOutboxService {
       throw new Error(`Ítem ${operationId} no encontrado en la cola outbox.`);
     }
 
+    if (item.ownerAccountId !== this.owner()) throw new Error('La captura pertenece a otra cuenta.');
     if (newVersion !== undefined) {
       item.expectedDeliveryVersion = newVersion;
       item.receiptPayload.expectedDeliveryVersion = newVersion;
