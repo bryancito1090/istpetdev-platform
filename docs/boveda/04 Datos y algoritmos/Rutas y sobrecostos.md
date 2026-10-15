@@ -86,3 +86,25 @@ Guardar fecha, proveedor, perfil y hash de matriz. Revisar condiciones de almace
 El fallback mantiene el flujo y muestra antigüedad. La planificación asíncrona deja progreso y error recuperable.
 
 Ver [[Simulador y metricas]], [[Dataset y escenarios]], [[Plan de validacion]], [[Decisiones de arquitectura]] (ADR-05, ADR-23, ADR-28) y [[Modelo de datos]].
+
+## Calibración de integración #39 — 14 de octubre de 2026
+
+Bryan delegó elegir la combinación comprobada con el motor real, conservando
+los límites de autonomía. El preset histórico `cierre-norte` queda en el corredor
+de salida hacia el norte, zona Clínica Sur (centro -0,24973/-78,51721; 1,5 km).
+VEH-02 tiene 180 kg y costo 0,15 USD/km; VEH-01 tiene 1200 kg/0,25 USD-km.
+Son costos variables sintéticos; se conserva el costo global de 6 USD/h.
+Se obtienen dos rutas operativas y, tras completar dos paradas por advance,
+VEH-01 se autoejecuta (+14,01% de costo completo, demora máxima 52,15 min)
+y VEH-02 escala por CLI-S09 bloqueada. El mapeo inverso
+del borrador se sustituye en spec/plan/pruebas 002; no cambian 15%, 60 min ni
+la prohibición de omitir obligatorios en autoejecución. Una opción inviable
+por cierre se declara inviable: ventana blanda no habilita el tramo cerrado.
+
+La verificación corresponde a HTTP/PostGIS local, sin prueba productiva todavía.
+El replanteo conserva carga y clasificación publicadas, prefijo, cierres/demoras,
+depósito y jornada. Publicar revisión mueve las entregas y reservas pendientes
+sin duplicarlas; recepción/stock completados permanecen históricos. Fechas del
+dispositivo de demo siguen la ruta; la hora de servidor permanece real.
+Fuente: [spec 002](../../specs/002-motor-logistico/spec.md) y
+[seguimiento #39](../../specs/003-agente-logistico/task.md).

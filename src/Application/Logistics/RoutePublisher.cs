@@ -112,6 +112,9 @@ public sealed class RoutePublisher(
             }
         }
 
+        if (plan.SupersedesRoutePlanId.HasValue && plan.ProposedBy == "System:IncidentReplanner")
+            return await PublishRevisionAsync(plan, stops, plannedLoadsBySeq, request, ct);
+
         // Determinar asignación de conductor si existe
         Guid? assignedAccountId = null;
         if (request.DriverAssignments != null)
@@ -146,7 +149,7 @@ public sealed class RoutePublisher(
                       .ToList());
 
         // Validar y asignar lotes FEFO
-        foreach (var stop in stops)
+        foreach (var stop in stops.Where(s => s.Status != "Completed"))
         {
             if (!plannedLoadsBySeq.TryGetValue(stop.SequenceNumber, out var loads) || loads.Count == 0)
             {
@@ -234,6 +237,61 @@ public sealed class RoutePublisher(
         await db.SaveChangesAsync(ct);
 
         return new PublishResult(plan.Id, plan.Status, createdDeliveries, createdReservations);
+    }
+
+    private async Task<PublishResult> PublishRevisionAsync(RoutePlan plan, List<RouteStop> stops,
+        Dictionary<int, List<StopLoad>> loads, PublishRequest request, CancellationToken ct)
+    {
+        var previous = await db.RoutePlans.FirstAsync(p => p.Id == plan.SupersedesRoutePlanId &&
+            p.OrganizationId == DemoOrganization.Id, ct);
+        if (previous.Status != "Published" || previous.VehicleId != plan.VehicleId)
+            throw new ReplanConflictException("La revisión requiere una ruta vigente del mismo vehículo.");
+        var oldStops = await db.RouteStops.Where(s => s.RoutePlanId == previous.Id &&
+            s.OrganizationId == DemoOrganization.Id).ToDictionaryAsync(s => s.Id, ct);
+        var deliveries = await db.Deliveries.Where(d => d.OrganizationId == DemoOrganization.Id &&
+            d.RouteStopId.HasValue && oldStops.Keys.Contains(d.RouteStopId.Value)).ToListAsync(ct);
+        var reservations = await db.RouteStockReservations.Where(r => r.OrganizationId == DemoOrganization.Id &&
+            r.RoutePlanId == previous.Id && r.Status == RouteStockReservationStatus.Active).ToListAsync(ct);
+        var lines = await db.DeliveryLines.Where(l => l.OrganizationId == DemoOrganization.Id &&
+            deliveries.Select(d => d.Id).Contains(l.DeliveryId))
+            .ToListAsync(ct);
+        var lots = await db.Lots.Where(l => l.OrganizationId == DemoOrganization.Id).ToDictionaryAsync(l => l.Id, ct);
+        foreach (var delivery in deliveries.Where(d => oldStops[d.RouteStopId!.Value].Status != "Completed"))
+        {
+            var original = oldStops[delivery.RouteStopId!.Value];
+            var target = stops.SingleOrDefault(s => s.ServicePointId == original.ServicePointId && s.Status != "Completed");
+            if (target is null)
+            {
+                if (delivery.Status == "Dispatched" || delivery.Status == "Delivered")
+                    throw new ReplanConflictException("No se puede retirar una entrega ya despachada.");
+                foreach (var reservation in reservations.Where(r => r.DeliveryId == delivery.Id))
+                {
+                    var balance = await db.StockBalances.FirstAsync(b => b.Id == reservation.StockBalanceId, ct);
+                    balance.QuantityReserved -= reservation.Quantity;
+                    reservation.Status = RouteStockReservationStatus.Released;
+                    reservation.ClosedAtUtc = DateTime.UtcNow;
+                }
+                delivery.Status = "Cancelled";
+                continue;
+            }
+            var existing = lines.Where(l => l.DeliveryId == delivery.Id)
+                .GroupBy(l => lots[l.LotId].ProductId).ToDictionary(g => g.Key, g => g.Sum(l => l.PlannedQuantity));
+            var proposed = loads.GetValueOrDefault(target.SequenceNumber, [])
+                .GroupBy(l => l.ProductId).ToDictionary(g => g.Key, g => g.Sum(l => l.Quantity));
+            if (existing.Count != proposed.Count || existing.Any(p => proposed.GetValueOrDefault(p.Key) != p.Value))
+                throw new ReplanConflictException("La revisión no puede cambiar la carga reservada o despachada.");
+            delivery.RouteStopId = target.Id;
+            foreach (var reservation in reservations.Where(r => r.DeliveryId == delivery.Id))
+                reservation.RoutePlanId = plan.Id;
+        }
+        previous.Status = "Superseded";
+        plan.Status = "Published";
+        plan.PublishedAtUtc = DateTime.UtcNow;
+        plan.PublishedByAccountId = request.PublishedByAccountId;
+        await db.SaveChangesAsync(ct);
+        return new PublishResult(plan.Id, plan.Status,
+            deliveries.Where(d => stops.Any(s => s.Id == d.RouteStopId)).ToList(),
+            reservations.Where(r => r.RoutePlanId == plan.Id).ToList());
     }
 
     public async Task<RouteStop> CompleteStopAsync(CompleteStopRequest request, CancellationToken ct = default)

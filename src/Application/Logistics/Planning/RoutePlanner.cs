@@ -1,3 +1,4 @@
+using System.Text.Json;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
@@ -259,10 +260,145 @@ public sealed class RoutePlanner(
             facts);
     }
 
-    public Task<PlanResult> ReplanAsync(ReplanInput input, CancellationToken ct = default)
+    public async Task<PlanResult> ReplanAsync(ReplanInput input, CancellationToken ct = default)
     {
-        // Replanificación determinista para T7
-        return PlanAsync(new PlanRequest(null, null), ct);
+        // Cargo already belongs to the published route. Reallocating warehouse stock
+        // here would lose reserved cargo and repeat deliveries from the fixed prefix.
+        var vehicles = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive)
+            .ToDictionaryAsync(v => v.Code, ct);
+        var points = await db.ServicePoints.Where(p => p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Code, ct);
+        var products = await db.Products.Where(p => p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Id, ct);
+        var risks = await riskCalculator.CalculateAsync(false, ct);
+        var depot = await db.Locations.FirstAsync(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse, ct);
+        var depotPos = new GeoPoint((decimal)depot.Position!.Y, (decimal)depot.Position.X).Round();
+        var workdayStart = await clock.WorkdayStartUtcAsync(ct);
+        var workdayEnd = workdayStart.AddHours(_options.WorkdayHours);
+        var routes = new List<VehicleRoute>();
+        var unserved = new List<Unserved>();
+        var facts = new List<Fact>();
+        foreach (var prefix in input.Prefixes.OrderBy(p => p.VehicleCode, StringComparer.Ordinal))
+        {
+            if (!vehicles.TryGetValue(prefix.VehicleCode, out var vehicle))
+                throw new InvalidOperationException("El vehículo del prefijo no existe o está inactivo.");
+            var published = await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id &&
+                    p.VehicleId == vehicle.Id && p.Status == "Published")
+                .OrderByDescending(p => p.Revision).ThenByDescending(p => p.CreatedAtUtc).FirstAsync(ct);
+            using var stored = JsonDocument.Parse(published.InputJson);
+            var loads = stored.RootElement.GetProperty("stops").EnumerateArray().ToDictionary(
+                s => s.GetProperty("pointCode").GetString()!,
+                s => JsonSerializer.Deserialize<List<StopLoad>>(s.GetProperty("loads").GetRawText(),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!);
+            var consolidationCodes = stored.RootElement.GetProperty("stops").EnumerateArray()
+                .Where(s => s.TryGetProperty("isConsolidation", out var value) && value.ValueKind == JsonValueKind.True)
+                .Select(s => s.GetProperty("pointCode").GetString()!).ToHashSet();
+            var previousLegs = stored.RootElement.TryGetProperty("legs", out var savedLegs)
+                ? JsonSerializer.Deserialize<List<Leg>>(savedLegs.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!
+                : new List<Leg>();
+            var completedLegs = previousLegs.Take(prefix.CompletedPointCodes.Count).ToList();
+            var completedKm = completedLegs.Sum(l => l.Km);
+            var completedMinutes = completedLegs.Sum(l => l.Minutes) + prefix.CompletedPointCodes
+                .Sum(code => points[code].ServiceMinutes ?? _options.DefaultServiceMinutes);
+            var completedCost = prefix.CompletedPointCodes.Count == 0 ? 0m : Math.Round(
+                completedKm * (vehicle.CostPerKm ?? _options.DefaultCostPerKm) +
+                Math.Max(0m, (decimal)(prefix.ReadyAtUtc - workdayStart).TotalHours) * _options.CostPerHour,
+                3, MidpointRounding.AwayFromZero);
+            var candidates = new List<StopCandidate>();
+            foreach (var code in prefix.PendingPointCodes.Except(prefix.CompletedPointCodes).Distinct())
+            {
+                var point = points[code];
+                var cargo = loads[code];
+                var risk = risks.Where(r => r.ServicePointId == point.Id && cargo.Any(l => l.ProductId == r.ProductId))
+                    .OrderBy(r => r.Level).FirstOrDefault();
+                // Preserve the classification at publication; receipts elsewhere
+                // must not turn a mandatory stop into disposable consolidation.
+                var consolidation = consolidationCodes.Contains(code);
+                if (input.Mode == ReplanMode.PrioritizeCritical && consolidation)
+                {
+                    unserved.Add(new Unserved(code, "consolidation_excluded",
+                        new[] { new Fact("is_consolidation", code, 1, "flag") }));
+                    continue;
+                }
+                if (!prefix.VehicleAvailable || input.Effect.UnavailableVehicles.Contains(vehicle.Code))
+                {
+                    unserved.Add(new Unserved(code, "vehicle_unavailable", Array.Empty<Fact>()));
+                    continue;
+                }
+                if (point.Position is null)
+                {
+                    unserved.Add(new Unserved(code, "unreachable", Array.Empty<Fact>()));
+                    continue;
+                }
+                candidates.Add(new StopCandidate(point.Id, code,
+                    new GeoPoint((decimal)point.Position.Y, (decimal)point.Position.X).Round(),
+                    point.WindowStartLocal ?? TimeOnly.Parse(_options.DefaultWindowStart),
+                    point.WindowEndLocal ?? TimeOnly.Parse(_options.DefaultWindowEnd),
+                    point.ServiceMinutes ?? _options.DefaultServiceMinutes,
+                    cargo.Sum(l => l.Quantity * products[l.ProductId].WeightPerBaseUnit),
+                    cargo.Sum(l => l.Quantity * products[l.ProductId].VolumePerBaseUnit), cargo,
+                    consolidation, risk?.Level ?? RiskLevel.Alto, point.Criticality,
+                    risk?.CoverageDays ?? 999m, risk?.LeadTimeDays ?? 2m));
+            }
+            var position = prefix.Position.Round();
+            var matrix = await distanceProvider.MatrixAsync(
+                new[] { position, depotPos }.Concat(candidates.Select(c => c.Position)).Distinct().ToList(), ct);
+            FeasibilityCheck Evaluate(IReadOnlyList<StopCandidate> stops) => RouteFeasibility.EvaluateRoute(
+                vehicle, position, stops, prefix.ReadyAtUtc, _options.WorkdayHours, _options.CostPerHour,
+                _options.DefaultCostPerKm, matrix, input.Effect, input.Mode, depotPos, workdayEnd);
+            var selected = RouteImprover.TwoOpt(vehicle, position, candidates, prefix.ReadyAtUtc,
+                _options.WorkdayHours, _options.CostPerHour, _options.DefaultCostPerKm, matrix,
+                input.Effect, input.Mode, depotPos, workdayEnd);
+            if (!Evaluate(selected).IsFeasible)
+            {
+                selected.Clear();
+                foreach (var candidate in candidates.OrderBy(c => c.IsConsolidation).ThenBy(c => c.Level)
+                             .ThenBy(c => c.CoverageDays).ThenBy(c => c.PointCode, StringComparer.Ordinal))
+                {
+                    List<StopCandidate>? best = null;
+                    decimal bestCost = decimal.MaxValue;
+                    string failure = "unreachable";
+                    for (var index = 0; index <= selected.Count; index++)
+                    {
+                        var proposal = new List<StopCandidate>(selected);
+                        proposal.Insert(index, candidate);
+                        var evaluated = Evaluate(proposal);
+                        if (evaluated.IsFeasible && evaluated.CumulativeCost < bestCost)
+                        { best = proposal; bestCost = evaluated.CumulativeCost; }
+                        else if (!evaluated.IsFeasible) failure = evaluated.FailureReason!;
+                    }
+                    if (best is not null) selected = best;
+                    else unserved.Add(new Unserved(candidate.PointCode, failure,
+                        new[] { new Fact("is_consolidation", candidate.PointCode, candidate.IsConsolidation ? 1 : 0, "flag") }));
+                }
+            }
+            var evaluation = Evaluate(selected);
+            var planned = new List<PlannedStop>();
+            var time = prefix.ReadyAtUtc;
+            var from = position;
+            foreach (var stop in selected)
+            {
+                var minutes = matrix[(from, stop.Position)].Minutes *
+                    input.Effect.SlowFactors.GetValueOrDefault((from, stop.Position), 1m);
+                time = time.AddMinutes((double)minutes);
+                var arrival = time;
+                var local = TimeOnly.FromDateTime(time.AddHours(-5));
+                var wait = local < stop.WindowStartLocal
+                    ? stop.WindowStartLocal.ToTimeSpan() - local.ToTimeSpan() : TimeSpan.Zero;
+                int? late = local > stop.WindowEndLocal
+                    ? (int)Math.Ceiling((local.ToTimeSpan() - stop.WindowEndLocal.ToTimeSpan()).TotalMinutes) : null;
+                time = time.Add(wait).AddMinutes(stop.ServiceMinutes);
+                planned.Add(new PlannedStop(prefix.CompletedPointCodes.Count + planned.Count + 1,
+                    stop.PointCode, stop.ServicePointId, arrival, time, wait, stop.Loads, stop.IsConsolidation, late));
+                from = stop.Position;
+            }
+            routes.Add(new VehicleRoute(vehicle.Code, vehicle.Id, planned, completedKm + evaluation.CumulativeKm,
+                completedMinutes + evaluation.CumulativeMinutes, completedCost + evaluation.CumulativeCost, evaluation.TotalWeight,
+                evaluation.TotalVolume, evaluation.HasApproximations, completedLegs.Concat(evaluation.Legs).ToList()));
+            facts.Add(new Fact("route_km", vehicle.Code, completedKm + evaluation.CumulativeKm, "km"));
+            facts.Add(new Fact("route_cost", vehicle.Code, completedCost + evaluation.CumulativeCost, "USD"));
+        }
+        return new PlanResult(routes, unserved.OrderBy(u => u.PointCode, StringComparer.Ordinal).ToList(), facts);
     }
 
     private bool TryInsertCheapest(

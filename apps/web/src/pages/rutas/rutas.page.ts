@@ -10,7 +10,8 @@ import {
   DeliveryOrderDto,
   RouteSuggestionOptionDto,
   RouteCandidateStop,
-  ServicePoint
+  ServicePoint,
+  AgentRunViewDto
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
@@ -33,11 +34,25 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
         @if (session.canWrite()) {
           <div class="flex items-center gap-2">
+            <!-- Botón Pedir al Agente IA (n8n) -->
+            <button
+              type="button"
+              (click)="triggerAgentWatch()"
+              [disabled]="agentLoading() || actionLoading()"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
+              @if (agentLoading()) {
+                <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Consultando agente…</span>
+              } @else {
+                <span>🤖 Pedir al Agente IA</span>
+              }
+            </button>
+
             <!-- Botón de Emergencia -->
             <button
               type="button"
               (click)="triggerEmergencyFlow()"
-              [disabled]="actionLoading()"
+              [disabled]="agentLoading() || actionLoading()"
               class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
               <span>🚨 Proponer Ruta de Emergencia</span>
             </button>
@@ -46,7 +61,8 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             <button
               type="button"
               (click)="openOrderRoutingModal()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm">
+              [disabled]="agentLoading() || actionLoading()"
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50">
               <span>+ Nueva Ruta por Pedidos</span>
             </button>
           </div>
@@ -63,6 +79,51 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
           <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">✕</button>
+        </div>
+      }
+
+      <!-- Tarjeta del Agente IA n8n -->
+      @if (agentRun()) {
+        <div class="bg-gradient-to-r from-indigo-50/80 via-white to-purple-50/50 border border-indigo-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="p-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold leading-none">IA</span>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Propuesta del agente logístico</h3>
+                <p class="text-[11px] text-slate-500">
+                  Ejecución {{ agentRun()!.runId.substring(0, 8) }} · Modelo: {{ agentRun()!.model || 'No informado' }} · Latencia: {{ agentRun()!.latencyMs }} ms
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                class="text-xs px-2.5 py-1 rounded-full font-semibold border"
+                [ngClass]="agentRun()!.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
+                {{ agentRun()!.status === 'Completed' ? '✓ Completado' : agentRun()!.status === 'Fallback' ? '⚠ Respuesta determinista' : agentRun()!.status === 'Running' ? 'En ejecución' : 'Falló la ejecución' }}
+              </span>
+              <button (click)="agentRun.set(null)" class="text-slate-400 hover:text-slate-600 text-sm ml-2">✕</button>
+            </div>
+          </div>
+
+          <!-- Decisiones generadas por el Agente -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            @for (decision of agentRun()!.decisions; track decision.agentDecisionId) {
+              <div class="bg-white border border-indigo-100 rounded-xl p-3.5 space-y-2 text-xs shadow-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-slate-900">Vehículo: {{ decision.vehicleCode }}</span>
+                  <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    Fuente: {{ decision.source === 'Llm' ? 'DeepSeek LLM' : 'Plantilla' }}
+                  </span>
+                </div>
+                <p class="text-slate-700 leading-relaxed">{{ decision.explanation }}</p>
+                @if (decision.driverMessage) {
+                  <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] text-slate-600">
+                    <span class="font-semibold text-slate-700">Mensaje al conductor:</span> "{{ decision.driverMessage }}"
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
       }
 
@@ -117,7 +178,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                   [ngClass]="selectedPlanId() === plan.id ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200 hover:border-slate-300'">
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-sm text-slate-900">{{ plan.code }}</span>
-                    <span 
+                    <span
                       class="text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold"
                       [ngClass]="{
                         'bg-emerald-50 text-emerald-700 border border-emerald-200': plan.status === 'Published',
@@ -557,6 +618,8 @@ export class RutasPage implements OnInit {
   readonly selectedDetail = signal<RoutePlanDetailDto | null>(null);
   readonly loading = signal(true);
   readonly actionLoading = signal(false);
+  readonly agentLoading = signal(false);
+  readonly agentRun = signal<AgentRunViewDto | null>(null);
   readonly feedbackMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
 
   readonly mapMarkers = signal<MapMarker[]>([]);
@@ -888,6 +951,36 @@ export class RutasPage implements OnInit {
         this.feedbackMessage.set({
           type: 'error',
           text: err?.error?.message || 'Error al generar requerimientos de emergencia.'
+        });
+      }
+    });
+  }
+
+  // ========================================================
+  // AGENTE LOGÍSTICO IA (N8N + DEEPSEEK)
+  // ========================================================
+
+  triggerAgentWatch(): void {
+    if (this.agentLoading() || this.actionLoading()) return;
+    this.agentLoading.set(true);
+    this.feedbackMessage.set(null);
+
+    this.apiService.startAgentRun('Watch').subscribe({
+      next: (run) => {
+        this.agentLoading.set(false);
+        this.agentRun.set(run);
+        this.loadPlans();
+        const mode = run.status === 'Completed' ? 'Agente' : run.status === 'Fallback' ? 'Respuesta determinista' : run.status;
+        this.feedbackMessage.set({
+          type: run.status === 'Failed' ? 'error' : 'success',
+          text: `${mode}: ${run.latencyMs} ms; ${run.decisions.length} decisiones.`
+        });
+      },
+      error: (err) => {
+        this.agentLoading.set(false);
+        this.feedbackMessage.set({
+          type: 'error',
+          text: err?.error?.message || 'Error al ejecutar el agente.'
         });
       }
     });

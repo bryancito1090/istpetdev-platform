@@ -201,7 +201,7 @@ Notas revisadas sin contradicción: Inventario y prediccion (fórmulas, niveles,
 - CE-01: sobre `demo-region`, los riesgos dan exactamente 1 `CRITICO`, 4 `ALTO`, 3 `VIGILAR`, 1 `SIN_DATOS` y 6 `NORMAL`; `HOS-N01` tiene cobertura 5,0.
 - CE-02: la propuesta atiende los 5 obligatorios y ≥ 2 de los 3 de consolidación, sin violar ventanas ni capacidad, en ≤ 1 s.
 - CE-03: dos propuestas con la misma base son idénticas byte a byte (JSON serializado).
-- CE-04: el incidente predefinido produce una decisión `AutoExecuted` (vehículo 2) y una `Escalated` (vehículo 1) con las dos opciones calculadas.
+- CE-04: el incidente predefinido produce una decisión `AutoExecuted` (vehículo 1) y una `Escalated` (vehículo 2) con las dos opciones calculadas.
 - CE-05: sin red, la propuesta sobre `demo-region` no hace llamadas externas.
 - CE-06: con 80 puntos sintéticos, la propuesta tarda ≤ 5 s.
 - CE-07: toda cifra de las explicaciones por plantilla está en `facts` (prueba automática).
@@ -210,3 +210,12 @@ Notas revisadas sin contradicción: Inventario y prediccion (fórmulas, niveles,
 
 - PA-01: umbrales iniciales de la política (15% de costo, 60 min de retraso): ¿se validan con el mentor del día 1? Decide: equipo en el evento; se cambian por configuración.
 - PA-02: ¿quién del equipo ejecuta OSRM en su portátil como plan B el día del evento? Decide: equipo.
+
+### Calibración posterior de CE-04 — 14-oct-2026
+
+Bryan delegó escoger la combinación verificada que permita cerrar #39 sin
+modificar los límites de autonomía. La calibración HTTP en PostGIS local fija
+VEH-01=AutoExecuted y VEH-02=Escalated (CLI-S09 bloqueada); sustituye el mapeo
+inverso del borrador. Siguen vigentes 15% de costo, 60 min de demora, ninguna
+parada obligatoria omitida en autoejecución y dos opciones calculadas. Fuente:
+[registro #39](../003-agente-logistico/task.md). No acredita ejecución productiva.

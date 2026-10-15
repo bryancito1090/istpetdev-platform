@@ -152,7 +152,7 @@ Ventana exclusiva autorizada. Persisten gates: Demo.Enabled false (probe sin
 escritura 404); Agent.Enabled false; Completed/Fallback/recuperación, matriz
 oficial de 30 corridas y CE-03 pendientes. La regresión local detectó que el
 preset solo afecta un vehículo y que ReplanAsync ignoraba prefijos/efectos/modos;
-la corrección aún se verifica en base descartable, sin promoción acreditada.
+la corrección pasa regresiones locales; calibración autorizada: VEH-01 automático, VEH-02 escalado. Spec/plan 002 y fixture actualizados, sin promoción productiva acreditada.
 Intento de reaplicación `38665762599` falló antes de recrear servicios por
 permiso GHCR ausente en rollback.yml. Se prepara packages:read y transporte
 explícito DEMO_ENABLED=false por defecto en ambos pipelines. #39 sigue abierta.
