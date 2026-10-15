@@ -472,6 +472,8 @@ public sealed class FieldService : IFieldService
         else
         {
             var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == delivery.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+            if (pLoc != null) destinationLocationId = pLoc.Id;
+
             var huLocId = await _db.HandlingUnits
                 .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
                 .Select(hu => (Guid?)hu.LocationId)
