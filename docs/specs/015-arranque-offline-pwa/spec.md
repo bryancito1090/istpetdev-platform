@@ -51,7 +51,7 @@ El conductor que ya inició sesión una vez con señal puede cerrar la app, qued
 
 | ID | Requisito | Traza a bóveda |
 |---|---|---|
-| FR-01 | Tras un `/me` exitoso de plataforma `field`, la PWA DEBE guardar en el teléfono la última cuenta (`accountId`, `displayName`, `role`, `platform`), nunca tokens. | Identidad OIDC y sesiones |
+| FR-01 | Tras un `/me` exitoso de plataforma `field`, la PWA DEBE guardar en el teléfono la última cuenta (`accountId`, `displayName`, `role`, `platform`) y el `sub` del ID token, nunca tokens. Solo se usa si su `sub` coincide con el de la sesión OIDC local. | Identidad OIDC y sesiones |
 | FR-02 | Si al arrancar no se puede llegar a Cognito o a la API (sin red, timeout, 5xx) y existe la última cuenta guardada y una sesión OIDC local (refresh token), la PWA DEBE entrar autenticada en modo sin conexión con esa cuenta como dueña del outbox. | «no exigir token vigente…» |
 | FR-03 | Si Cognito responde y rechaza el refresh token, la PWA NO DEBE usar la cuenta guardada: queda anónima. | Revocación operativa |
 | FR-04 | En modo sin conexión el outbox DEBE guardar capturas y NO DEBE intentar enviarlas hasta que la sesión se renueve. | Sincronización: «obtener sesión válida» |

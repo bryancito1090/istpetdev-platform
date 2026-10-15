@@ -14,6 +14,9 @@ const FIELD_ROLES: readonly string[] = ['Bodega', 'Conductor', 'Receptor'];
 /** 015: última cuenta de campo (sin tokens) para abrir la app sin señal. Vive junto a la sesión OIDC (D-013-S1). */
 const LAST_ACCOUNT_KEY = 'istpetdev.lastFieldAccount';
 
+/** `subject` es el `sub` del ID token: liga la cuenta guardada a la persona de la sesión OIDC local. */
+type LastAccount = MeResponse & { subject: string };
+
 /** ok: hay access token vigente · none: no hay sesión o Cognito la rechazó · unreachable: no se pudo preguntar a Cognito. */
 type SessionCheck = 'ok' | 'none' | 'unreachable';
 
@@ -55,7 +58,7 @@ export class MobileAuthService {
     try {
       const me = await firstValueFrom(this.http.get<MeResponse>(`${environment.apiUrl}/api/v1/me`));
       this.state.set({ status: me.platform === 'field' ? 'authenticated' : 'wrong-platform', me });
-      this.rememberAccount(me.platform === 'field' ? me : null);
+      await this.rememberAccount(me.platform === 'field' ? me : null);
       await this.outbox.setOwner(me.platform === 'field' ? me.accountId : null);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 403) {
@@ -87,7 +90,7 @@ export class MobileAuthService {
 
   /** 015, FR-02: sin red no se exige token vigente para capturar; la identidad sale de la última cuenta guardada. */
   private async enterOffline(): Promise<void> {
-    const me = this.lastAccount();
+    const me = await this.lastAccount();
     if (!me) {
       this.state.set({ status: 'error', me: null });
       return;
@@ -111,11 +114,13 @@ export class MobileAuthService {
     this.removeOnlineListener = null;
   }
 
-  private rememberAccount(me: MeResponse | null): void {
+  private async rememberAccount(me: MeResponse | null): Promise<void> {
     try {
-      if (me) {
+      const subject = me ? await this.sessionSubject() : null;
+      if (me && subject) {
         const { accountId, displayName, role, platform } = me;
-        localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify({ accountId, displayName, role, platform }));
+        const account: LastAccount = { accountId, displayName, role, platform, subject };
+        localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(account));
       } else {
         localStorage.removeItem(LAST_ACCOUNT_KEY);
       }
@@ -124,14 +129,24 @@ export class MobileAuthService {
     }
   }
 
-  private lastAccount(): MeResponse | null {
+  /** Solo vale si es de campo y pertenece a la misma persona que la sesión OIDC local (otro conductor en el mismo teléfono no la hereda). */
+  private async lastAccount(): Promise<MeResponse | null> {
     try {
       const raw = localStorage.getItem(LAST_ACCOUNT_KEY);
-      const me = raw ? (JSON.parse(raw) as MeResponse) : null;
-      return me?.platform === 'field' && me.accountId && FIELD_ROLES.includes(me.role) ? me : null;
+      const saved = raw ? (JSON.parse(raw) as Partial<LastAccount>) : null;
+      if (!saved?.subject || saved.platform !== 'field' || !saved.accountId || !saved.role || !FIELD_ROLES.includes(saved.role)) return null;
+      if (saved.subject !== (await this.sessionSubject())) return null;
+      const { accountId, displayName, role, platform } = saved as LastAccount;
+      return { accountId, displayName, role, platform };
     } catch {
       return null;
     }
+  }
+
+  /** `sub` del ID token guardado por la librería; se lee sin red. */
+  private async sessionSubject(): Promise<string | null> {
+    const payload = await firstValueFrom(this.oidc.getPayloadFromIdToken());
+    return typeof payload?.sub === 'string' && payload.sub ? payload.sub : null;
   }
 
   /** D-013-S1: con el access token vencido (15 min) se usa el refresh token antes de pedir login otra vez. */
@@ -181,7 +196,7 @@ export class MobileAuthService {
   }
 
   async logout(): Promise<void> {
-    this.rememberAccount(null);
+    await this.rememberAccount(null);
     this.stopWaitingForNetwork();
     this.offlineSession.set(false);
     this.outbox.setSyncHeld(false);

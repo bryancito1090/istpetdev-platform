@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Ningún token fuera del almacenamiento de la librería OIDC (D-013-S1). La clave `istpetdev.lastFieldAccount` solo guarda `accountId`, `displayName`, `role`, `platform`.
+- Ningún token fuera del almacenamiento de la librería OIDC (D-013-S1). La clave `istpetdev.lastFieldAccount` solo guarda `accountId`, `displayName`, `role`, `platform` y `subject` (`sub` del ID token).
 - Cognito que **responde** y rechaza el refresh token gana siempre sobre la cuenta guardada (FR-03).
 - Mensajes en español, sin jerga técnica.
 
@@ -18,7 +18,7 @@
 
 1. Volver la señal con access token vencido no debe disparar un 401 → redirección a Cognito antes de renovar: `syncHeld` bloquea el envío hasta `reconnect()` → T1, T2.
 2. Wifi sin internet (`navigator.onLine` true): timeout, error de red o 5xx también entran en modo sin conexión → T2.
-3. Un `localStorage` manipulado con un rol que no es de campo no debe autenticar: `lastAccount()` valida plataforma y rol → T2.
+3. Otra persona que inicia sesión en el mismo teléfono no hereda la cuenta guardada: `lastAccount()` exige que el `subject` coincida con el `sub` del ID token local, y valida plataforma y rol → T2.
 4. Cerrar sesión sin señal borra la cuenta guardada y no deja la cola retenida → T2.
 5. Listeners de `online` no se acumulan: uno por servicio, se quita al reconectar o destruir → T2.
 

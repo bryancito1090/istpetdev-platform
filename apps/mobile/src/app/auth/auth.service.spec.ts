@@ -14,8 +14,13 @@ const ME_URL = `${environment.apiUrl}/api/v1/me`;
 const LAST_ACCOUNT_KEY = 'istpetdev.lastFieldAccount';
 const CONDUCTOR = { accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' };
 
-function setup(isAuthenticated: boolean, refresh: { token?: string; result?: boolean; unreachable?: boolean } = {}) {
+function seedLastAccount(subject = 'sub-c1') {
+  localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify({ ...CONDUCTOR, subject }));
+}
+
+function setup(isAuthenticated: boolean, refresh: { token?: string; result?: boolean; unreachable?: boolean; sub?: string } = {}) {
   const oidc = {
+    getPayloadFromIdToken: vi.fn(() => of(refresh.sub === undefined ? { sub: 'sub-c1' } : { sub: refresh.sub })),
     checkAuth: vi.fn(() => of({ isAuthenticated })),
     getRefreshToken: vi.fn(() => of(refresh.token ?? '')),
     checkAuthIncludingServer: vi.fn(() => refresh.unreachable
@@ -164,7 +169,7 @@ describe('MobileAuthService', () => {
 
     it('guarda la última cuenta de campo tras /me', async () => {
       await boot(true, CONDUCTOR);
-      expect(JSON.parse(localStorage.getItem(LAST_ACCOUNT_KEY)!)).toEqual(CONDUCTOR);
+      expect(JSON.parse(localStorage.getItem(LAST_ACCOUNT_KEY)!)).toEqual({ ...CONDUCTOR, subject: 'sub-c1' });
     });
 
     it('no guarda una cuenta de otra plataforma', async () => {
@@ -173,7 +178,7 @@ describe('MobileAuthService', () => {
     });
 
     it('con el token vencido y Cognito inalcanzable entra sin conexión con la última cuenta', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false, { token: 'RT', unreachable: true });
       await ctx.auth.bootstrap();
       expect(ctx.auth.status()).toBe('authenticated');
@@ -185,7 +190,7 @@ describe('MobileAuthService', () => {
 
     it('si el navegador sabe que no hay red no espera a Cognito', async () => {
       vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false, { token: 'RT', result: true });
       await ctx.auth.bootstrap();
       expect(ctx.oidc.checkAuthIncludingServer).not.toHaveBeenCalled();
@@ -193,7 +198,7 @@ describe('MobileAuthService', () => {
     });
 
     it('con el token vigente pero la API sin respuesta entra sin conexión', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(true);
       const done = ctx.auth.bootstrap();
       (await vi.waitFor(() => ctx.backend.expectOne(ME_URL))).error(new ProgressEvent('error'));
@@ -203,9 +208,25 @@ describe('MobileAuthService', () => {
     });
 
     it('un 503 de /me también entra sin conexión', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const { auth } = await boot(true, { title: 'down' }, 503);
       expect(auth.offline()).toBe(true);
+    });
+
+    it('no usa la cuenta guardada de otra persona de Cognito en el mismo teléfono', async () => {
+      seedLastAccount('sub-a');
+      const ctx = setup(false, { token: 'RT', unreachable: true, sub: 'sub-b' });
+      await ctx.auth.bootstrap();
+      expect(ctx.auth.status()).toBe('error');
+      expect(ctx.auth.offline()).toBe(false);
+      expect(ctx.outbox.setOwner).not.toHaveBeenCalled();
+    });
+
+    it('no usa una cuenta guardada sin sujeto de Cognito', async () => {
+      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      const ctx = setup(false, { token: 'RT', unreachable: true });
+      await ctx.auth.bootstrap();
+      expect(ctx.auth.status()).toBe('error');
     });
 
     it('sin red y sin cuenta guardada pide señal', async () => {
@@ -216,14 +237,14 @@ describe('MobileAuthService', () => {
     });
 
     it('sin sesión OIDC local no usa la cuenta guardada', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false);
       await ctx.auth.bootstrap();
       expect(ctx.auth.status()).toBe('anonymous');
     });
 
     it('si Cognito rechaza el refresh token no usa la cuenta guardada', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false, { token: 'RT', result: false });
       await ctx.auth.bootstrap();
       expect(ctx.auth.status()).toBe('anonymous');
@@ -231,7 +252,7 @@ describe('MobileAuthService', () => {
     });
 
     it('al volver la señal renueva la sesión, sale del modo sin conexión y envía la cola', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false, { token: 'RT', unreachable: true });
       await ctx.auth.bootstrap();
       ctx.oidc.checkAuthIncludingServer.mockReturnValue(of({ isAuthenticated: true }));
@@ -246,7 +267,7 @@ describe('MobileAuthService', () => {
     });
 
     it('al volver la señal con el refresh token rechazado queda anónima y conserva la cola', async () => {
-      localStorage.setItem(LAST_ACCOUNT_KEY, JSON.stringify(CONDUCTOR));
+      seedLastAccount();
       const ctx = setup(false, { token: 'RT', unreachable: true });
       await ctx.auth.bootstrap();
       ctx.oidc.checkAuthIncludingServer.mockReturnValue(of({ isAuthenticated: false }));
