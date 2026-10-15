@@ -157,6 +157,10 @@ jobs:
       - name: "Validar categorías Unit, Integration y E2E"
         run: python scripts/db/check-test-results.py artifacts/spec001
 
+      # El rollback no revierte la base: una migración nueva debe ser aditiva (Runbook §8).
+      - name: "Verificar que las migraciones nuevas son aditivas"
+        run: python3 -I scripts/db/check-additive-migrations.py
+
       - name: "Verificar generación n8n, aceptación y limpieza sin credenciales"
         run: |
           python3 -I scripts/agent/build-workflows.py --check
