@@ -17,6 +17,11 @@ import urllib.error
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ops'))
 import dev
 import importlib.util
+
+# Una sola imagen para servidor, cliente pg_dump/pg_restore y el chown de los certificados: antes se
+# descargaban tres (postgis, postgres:16-alpine y alpine) en cada ejecución de CI.
+SERVER_IMAGE = 'postgis/postgis:16-3.4-alpine'
+os.environ.setdefault('ISTPETDEV_PG_CLIENT_IMAGE', SERVER_IMAGE)
 spec = importlib.util.spec_from_file_location("dbtask", Path(__file__).with_name("database-task.py"))
 dbtask = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dbtask)
@@ -33,9 +38,9 @@ def main():
         (path / 'master.json').write_text(json.dumps(master))
         dev.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost', '-keyout', str(path/'server.key'), '-out', str(path/'server.crt')])
         # Alpine postgres UID; only these newly generated ephemeral certificate files change owner.
-        dev.run(['docker', 'run', '--rm', '-v', f'{path}:/test', 'alpine:3.20', 'sh', '-c', 'chown 70:70 /test/server.key /test/server.crt; chmod 600 /test/server.key; chmod 644 /test/server.crt'])
+        dev.run(['docker', 'run', '--rm', '-v', f'{path}:/test', SERVER_IMAGE, 'sh', '-c', 'chown 70:70 /test/server.key /test/server.crt; chmod 600 /test/server.key; chmod 644 /test/server.crt'])
         try:
-            dev.run(['docker', 'run', '-d', '--name', name, '-p', '127.0.0.1::5432', '-v', f'{path}/password:/test/password:ro', '-v', f'{path}/server.key:/test/server.key:ro', '-v', f'{path}/server.crt:/test/server.crt:ro', '-e', 'POSTGRES_PASSWORD_FILE=/test/password', 'postgis/postgis:16-3.4-alpine', 'postgres', '-c', 'ssl=on', '-c', 'ssl_cert_file=/test/server.crt', '-c', 'ssl_key_file=/test/server.key'])
+            dev.run(['docker', 'run', '-d', '--name', name, '-p', '127.0.0.1::5432', '-v', f'{path}/password:/test/password:ro', '-v', f'{path}/server.key:/test/server.key:ro', '-v', f'{path}/server.crt:/test/server.crt:ro', '-e', 'POSTGRES_PASSWORD_FILE=/test/password', SERVER_IMAGE, 'postgres', '-c', 'ssl=on', '-c', 'ssl_cert_file=/test/server.crt', '-c', 'ssl_key_file=/test/server.key'])
             port = int(dev.run(['docker', 'port', name, '5432/tcp']).strip().rsplit(':', 1)[1])
             config = {'environment': 'dev', 'aws_region': 'us-east-1', 'rds_address': 'localhost', 'local_tunnel_port': port}
             args = argparse.Namespace(ca=str(path/'server.crt'), local_secrets=str(path/'secrets.json'), local_master=str(path/'master.json'), profile='unused', outputs=None)

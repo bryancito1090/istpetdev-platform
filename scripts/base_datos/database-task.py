@@ -14,6 +14,10 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ops'))
 import dev
 
+# Cliente PostgreSQL 16 exacto, independiente del host. Una prueba puede reutilizar la imagen del
+# servidor (postgis/postgis:16-*) para no descargar otra.
+PG_CLIENT_IMAGE = os.environ.get('ISTPETDEV_PG_CLIENT_IMAGE', 'postgres:16-alpine')
+
 
 def pg_tool(tool, credential, config, ca, *, output=None, source=None, extra=(), database=None):
     # Exact server major, independent of the host's pg_dump version. No password in env/argv.
@@ -22,8 +26,11 @@ def pg_tool(tool, credential, config, ca, *, output=None, source=None, extra=(),
                '-v', env['PGPASSFILE'] + ':/run/pgpass:ro', '-v', ca + ':/run/rds-ca.pem:ro']
         for key in ['PGHOST', 'PGHOSTADDR', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGSSLMODE', 'PGCONNECT_TIMEOUT']:
             cmd += ['-e', key + '=' + env[key]]
-        cmd += ['-e', 'PGPASSFILE=/run/pgpass', '-e', 'PGSSLROOTCERT=/run/rds-ca.pem', 'postgres:16-alpine', tool, *extra]
-        result = subprocess.run(cmd, stdin=source, stdout=output or subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd += ['-e', 'PGPASSFILE=/run/pgpass', '-e', 'PGSSLROOTCERT=/run/rds-ca.pem', PG_CLIENT_IMAGE, tool, *extra]
+        try:
+            result = subprocess.run(cmd, stdin=source, stdout=output or subprocess.PIPE, stderr=subprocess.PIPE, timeout=1800)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f'{tool} exceeded 1800s; no migration or restore accepted') from None
         if result.returncode:
             raise RuntimeError(f'{tool} failed; no migration or restore accepted')
         return result.stdout
@@ -31,11 +38,15 @@ def pg_tool(tool, credential, config, ca, *, output=None, source=None, extra=(),
 
 def fingerprint(credential, config, ca, db=None):
     tables = dev.sql(credential, config, ca, "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename;", db).splitlines()
-    result = {}
+    if not tables:
+        return {}
+    # Una sola consulta para todas las tablas: una conexión en lugar de una por tabla, y una foto consistente.
+    parts = []
     for table in tables:
         identifier = '"' + table.replace('"', '""') + '"'
-        result[table] = dev.sql(credential, config, ca, f"SELECT count(*) || ':' || md5(coalesce(string_agg(row_to_json(t)::text, ',' ORDER BY row_to_json(t)::text), '')) FROM public.{identifier} t;", db)
-    return result
+        parts.append(f"SELECT {dev.literal(table)}, count(*) || ':' || md5(coalesce(string_agg(row_to_json(t)::text, ',' ORDER BY row_to_json(t)::text), '')) FROM public.{identifier} t")
+    rows = dev.sql(credential, config, ca, ' UNION ALL '.join(parts) + ';', db).splitlines()
+    return dict(row.split('|', 1) for row in rows)
 
 
 def backup(credential, config, ca, directory, aws=None, bucket=None):
@@ -100,8 +111,11 @@ def migrate(credential, config, ca):
         raise RuntimeError('Build src/Api in Debug before migrating (dotnet build src/Api/IstpetDev.Api.csproj)')
     env = {k: v for k, v in os.environ.items() if not k.startswith('ConnectionStrings__')}
     env.update({'ConnectionStrings__Main': dev.npgsql(credential, config, ca), 'Authentication__Authority': ''})
-    result = subprocess.run(['dotnet', str(api), '--migrate'], env=env, cwd=dev.ROOT/'src/Api',
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        result = subprocess.run(['dotnet', str(api), '--migrate'], env=env, cwd=dev.ROOT/'src/Api',
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('API --migrate exceeded 600s; values withheld') from None
     if result.returncode:
         # The log can echo the connection string; it is withheld like every other database error.
         raise RuntimeError(f'API --migrate failed (exit {result.returncode}); values withheld')

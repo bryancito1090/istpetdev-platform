@@ -110,6 +110,8 @@ jobs:
   db-backup-rehearsal:
     name: "Ensayo de respaldo y restauración"
     runs-on: ubuntu-latest
+    # Normal: 1 a 2 min. Sin límite, un cuelgue esperaba el máximo de GitHub (6 h); llegó a 20 min.
+    timeout-minutes: 8
     steps:
       - name: "Checkout del código"
         uses: actions/checkout@v4
@@ -119,14 +121,20 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: "Compilar la API en Debug (la usa el migrador)"
-        run: dotnet build src/Api/IstpetDev.Api.csproj -c Debug
+      - name: "Descargar la imagen de PostGIS y compilar la API en Debug, en paralelo"
+        run: |
+          docker pull -q postgis/postgis:16-3.4-alpine > /tmp/pull.log 2>&1 &
+          pull=$!
+          dotnet build src/Api/IstpetDev.Api.csproj -c Debug
+          wait "$pull" || { cat /tmp/pull.log; exit 1; }
 
       - name: "Cliente psql disponible"
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
 
       - name: "Bootstrap, migración, respaldo y restauración verificada"
-        run: python3 scripts/base_datos/test-bootstrap.py
+        timeout-minutes: 5
+        # -u: sin buffer, el log muestra en qué paso va si algo se demora.
+        run: python3 -u scripts/base_datos/test-bootstrap.py
 
   # Conserva el nombre del check histórico y valida que todas las categorías corrieron y pasaron.
   backend-qa:

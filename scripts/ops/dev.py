@@ -37,8 +37,12 @@ def write_private(path, content):
     return path
 
 
-def run(argv, *, data=None, env=None):
-    result = subprocess.run(argv, input=data, text=True, capture_output=True, env=env)
+def run(argv, *, data=None, env=None, timeout=300):
+    # Sin límite, un subproceso colgado (red, lock, imagen) bloqueaba el ensayo de CI durante 20 min (#15).
+    try:
+        result = subprocess.run(argv, input=data, text=True, capture_output=True, env=env, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f'{Path(argv[0]).name} exceeded {timeout}s; values and SQL withheld') from None
     if result.returncode:
         # stderr can echo SQL / credentials; never copy it into logs or exceptions.
         raise RuntimeError(f'{Path(argv[0]).name} failed (exit {result.returncode}); values and SQL withheld')
