@@ -110,6 +110,16 @@ public sealed class FieldUnitTests
         {
             return Task.FromResult(new EvidenceConfirmResponse(evidenceId, "Confirmed", DateTime.UtcNow));
         }
+
+        public Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [Fact]

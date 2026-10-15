@@ -2,6 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {
   IonHeader,
   IonToolbar,
@@ -15,22 +17,16 @@ import {
   IonButton,
   IonBadge,
   IonButtons,
+  IonInput,
   AlertController
 } from '@ionic/angular/standalone';
+import { CreateReceiptRequest } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
-import { FIELD_API, IFieldApi } from '../field/field-api.interface';
+import { FIELD_API, IFieldApi, ReceiverUnit } from '../field/field-api.interface';
+import { parseUnitQr } from '../field/unit-qr';
 import { MockFieldApiService } from '../field/mock/mock-field-api.service';
 import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component';
-
-interface ReceiverScanSample {
-  huCode: string;
-  productName: string;
-  quantity: string;
-  lotNumber: string;
-  destination: string;
-  carrierVehicle: string;
-}
 
 @Component({
   selector: 'app-home',
@@ -50,6 +46,7 @@ interface ReceiverScanSample {
     IonButton,
     IonBadge,
     IonButtons,
+    IonInput,
     WarehouseComponent
   ],
   template: `
@@ -119,36 +116,59 @@ interface ReceiverScanSample {
             </div>
 
             <ion-card-content class="p-4 space-y-4">
-              <!-- Botones de Escaneo -->
-              <div class="flex gap-2">
-                <ion-button expand="block" size="default" color="primary" class="flex-1 font-bold" (click)="openScan()">
-                  Escanear QR con Cámara
-                </ion-button>
-                <button
-                  type="button"
-                  (click)="cycleSampleBox()"
-                  class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-200 transition">
-                  Simular Bulto
-                </button>
+              <!-- Botones de Escaneo y Entrada manual -->
+              <ion-button expand="block" size="default" color="primary" class="font-bold" (click)="openReceiverScan()">
+                Escanear QR con Cámara
+              </ion-button>
+
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label class="text-xs font-bold text-slate-700 block">
+                  Pega o escanea el código del QR
+                </label>
+                <div class="flex gap-2">
+                  <ion-input
+                    [(ngModel)]="qrInputText"
+                    placeholder="https://.../public-trace/...#t=..."
+                    class="bg-white border border-slate-300 rounded-lg text-xs px-2 flex-1">
+                  </ion-input>
+                  <ion-button size="small" color="secondary" class="font-bold" (click)="searchReceiverUnit()" [disabled]="receiverLoading()">
+                    Buscar bulto
+                  </ion-button>
+                </div>
               </div>
+
+              @if (receiverLoading()) {
+                <div class="p-3 text-center text-xs text-slate-500 font-medium">
+                  Cargando información del bulto...
+                </div>
+              }
+
+              @if (receiverError()) {
+                <div class="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-medium">
+                  {{ receiverError() }}
+                </div>
+              }
 
               <!-- Ficha del Bulto Escaneado -->
               @if (receiverActiveBox(); as box) {
                 <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                   <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                     <span class="text-[11px] font-mono font-bold text-teal-800 bg-teal-100 px-2 py-0.5 rounded">
-                      {{ box.huCode }}
+                      {{ box.code }}
                     </span>
-                    <span class="text-[11px] text-slate-500 font-medium">Lote: {{ box.lotNumber }}</span>
+                    <span class="text-[11px] text-slate-500 font-medium">Destino: {{ box.destinationName }}</span>
                   </div>
 
-                  <div class="text-xs space-y-1">
-                    <span class="font-black text-slate-900 block text-sm">{{ box.productName }}</span>
-                    <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600">
-                      <div>Cantidad: <strong class="text-slate-800">{{ box.quantity }}</strong></div>
-                      <div>Vehículo: <strong class="text-slate-800">{{ box.carrierVehicle }}</strong></div>
-                      <div class="col-span-2 text-slate-500">Destino: {{ box.destination }}</div>
-                    </div>
+                  <div class="text-xs space-y-2">
+                    @for (line of box.lines; track line.deliveryLineId) {
+                      <div class="p-2 bg-white border border-slate-200 rounded-lg space-y-1">
+                        <span class="font-black text-slate-900 block text-xs">{{ line.productName }}</span>
+                        <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600">
+                          <div>Lote: <strong class="text-slate-800 font-mono">{{ line.lotCode }}</strong></div>
+                          <div>Cantidad: <strong class="text-slate-800">{{ line.quantity }} {{ line.unit }}</strong></div>
+                        </div>
+                      </div>
+                    }
                   </div>
                 </div>
 
@@ -242,6 +262,7 @@ interface ReceiverScanSample {
                     expand="block"
                     color="success"
                     class="font-black shadow-md"
+                    [disabled]="receiverLoading() || box.status !== 'Dispatched'"
                     (click)="confirmReceiverAction()">
                     Confirmar Recepción de Insumo
                   </ion-button>
@@ -421,36 +442,13 @@ export class HomePage implements OnInit {
   readonly loadingRoute = signal<boolean>(false);
   readonly downloadMessage = signal<string | null>(null);
 
-  // --- Estado para el Receptor Hospitalario ---
-  readonly receiverSampleBoxes: ReceiverScanSample[] = [
-    {
-      huCode: 'HU-2026-MED-042',
-      productName: 'Cloruro de Sodio 0.9% (Solución 500ml)',
-      quantity: '240 Unidades / 10 Cajas',
-      lotNumber: 'LT-2026-0391',
-      destination: 'Hospital Docente Ambato — Farmacia Central',
-      carrierVehicle: 'VH-EC-101'
-    },
-    {
-      huCode: 'HU-2026-OXG-015',
-      productName: 'Oxígeno Medicinal Cilindro Tipo H',
-      quantity: '4 Cilindros de 6m³',
-      lotNumber: 'LT-2026-OX-88',
-      destination: 'Hospital IESS Ambato — Cuarto de Gases',
-      carrierVehicle: 'VH-EC-101'
-    },
-    {
-      huCode: 'HU-2026-DES-088',
-      productName: 'Alcohol Antiséptico al 70% (Galones)',
-      quantity: '50 Galones (Bidones Sellados)',
-      lotNumber: 'LT-2026-AL-12',
-      destination: 'Centro de Salud Pelileo — Bodega Insumos',
-      carrierVehicle: 'VH-EC-102'
-    }
-  ];
 
-  private sampleBoxIndex = 0;
-  readonly receiverActiveBox = signal<ReceiverScanSample | null>(this.receiverSampleBoxes[0]);
+  // --- Estado para el Receptor Hospitalario ---
+  qrInputText = '';
+  readonly receiverActiveBox = signal<ReceiverUnit | null>(null);
+  readonly receiverQr = signal<{ unitId: string; token: string } | null>(null);
+  readonly receiverLoading = signal<boolean>(false);
+  readonly receiverError = signal<string | null>(null);
   readonly receiverStatus = signal<'conforme' | 'problema'>('conforme');
   readonly receiverSelectedIssues = signal<string[]>([]);
   receiverIssueNotes = '';
@@ -490,15 +488,65 @@ export class HomePage implements OnInit {
     if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
+
+    const receiverQr = history.state?.receiverQr;
+    if (receiverQr?.unitId && receiverQr?.token) {
+      await this.loadReceiverUnit(receiverQr.unitId, receiverQr.token);
+    }
   }
 
-  cycleSampleBox(): void {
-    this.sampleBoxIndex = (this.sampleBoxIndex + 1) % this.receiverSampleBoxes.length;
-    this.receiverActiveBox.set(this.receiverSampleBoxes[this.sampleBoxIndex]);
+  openReceiverScan(): void {
+    this.router.navigate(['/scan'], { queryParams: { mode: 'receiver' } });
+  }
+
+  async searchReceiverUnit(): Promise<void> {
+    this.receiverError.set(null);
+    this.receiverConfirmedMessage.set(null);
+    const parsed = parseUnitQr(this.qrInputText);
+    if (!parsed) {
+      this.receiverError.set('QR no válido o vencido');
+      this.receiverActiveBox.set(null);
+      this.receiverQr.set(null);
+      return;
+    }
+    await this.loadReceiverUnit(parsed.unitId, parsed.token);
+  }
+
+  async loadReceiverUnit(unitId: string, token: string): Promise<void> {
+    this.receiverLoading.set(true);
+    this.receiverError.set(null);
+    this.receiverConfirmedMessage.set(null);
+    this.receiverQr.set({ unitId, token });
     this.receiverStatus.set('conforme');
     this.receiverSelectedIssues.set([]);
     this.receiverIssueNotes = '';
-    this.receiverConfirmedMessage.set(null);
+
+    try {
+      const unit = await firstValueFrom(this.fieldApi.getReceiverUnit(unitId, token));
+      this.receiverActiveBox.set(unit);
+      if (unit.status !== 'Dispatched') {
+        this.receiverError.set('Este bulto ya fue recibido');
+      }
+    } catch (err: unknown) {
+      this.receiverActiveBox.set(null);
+      if (err instanceof HttpErrorResponse) {
+        if (err.status === 404) {
+          this.receiverError.set('QR no válido o vencido');
+        } else if (err.status === 409) {
+          this.receiverError.set('Este bulto ya fue recibido');
+        } else if (err.status === 0 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+          this.receiverError.set('Necesitas señal para confirmar');
+        } else {
+          this.receiverError.set(err.error?.detail || err.message || 'Error al cargar bulto');
+        }
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        this.receiverError.set('Necesitas señal para confirmar');
+      } else {
+        this.receiverError.set('QR no válido o vencido');
+      }
+    } finally {
+      this.receiverLoading.set(false);
+    }
   }
 
   setReceiverStatus(status: 'conforme' | 'problema'): void {
@@ -520,45 +568,58 @@ export class HomePage implements OnInit {
 
   async confirmReceiverAction(): Promise<void> {
     const box = this.receiverActiveBox();
-    if (!box) return;
+    const qr = this.receiverQr();
+    if (!box || !qr || box.status !== 'Dispatched') return;
 
-    const receiptId = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const isOk = this.receiverStatus() === 'conforme';
+    this.receiverLoading.set(true);
+    this.receiverError.set(null);
+    this.receiverConfirmedMessage.set(null);
 
-    // Generar operación atómica en outbox para sincronización real contra el backend
+    const ok = this.receiverStatus() === 'conforme';
+    const req: CreateReceiptRequest = {
+      operationId: crypto.randomUUID(),
+      expectedDeliveryVersion: box.deliveryVersion,
+      occurredAtDevice: new Date().toISOString(),
+      lines: box.lines.map((l) => ({
+        deliveryLineId: l.deliveryLineId,
+        lotId: l.lotId,
+        unit: l.unit,
+        quantityAccepted: ok ? l.quantity : 0,
+        quantityRejected: ok ? 0 : l.quantity,
+        rejectionReason: ok ? undefined : this.receiverSelectedIssues().join(', ') || 'Novedad'
+      }))
+    };
+
     try {
-      await this.outboxService.saveReceiptAtomic({
-        deliveryId: box.huCode.toLowerCase(),
-        expectedDeliveryVersion: 1,
-        recipientName: 'Farmacia Hospitalaria - Receptor',
-        notes: isOk ? 'Recepción Conforme' : `Novedad: ${this.receiverSelectedIssues().join(', ')} - ${this.receiverIssueNotes}`,
-        lines: [
-          {
-            deliveryLineId: `dl-${box.huCode}`,
-            lotId: box.lotNumber,
-            quantityAccepted: isOk ? 1 : 0,
-            quantityRejected: isOk ? 0 : 1,
-            unit: 'Unidades'
-          }
-        ]
+      const receipt = await firstValueFrom(
+        this.fieldApi.receiveAsReceiver(qr.unitId, qr.token, req, req.operationId)
+      );
+      this.receiverConfirmedMessage.set(
+        `Recepción registrada: entrega ${receipt.deliveryStatus === 'Delivered' ? 'completa' : 'con novedades'}.`
+      );
+      this.receiverActiveBox.set({
+        ...box,
+        status: receipt.deliveryStatus === 'Delivered' ? 'Received' : 'Partial'
       });
-    } catch (err) {
-      console.warn('Error al persistir recepción en outbox', err);
-    }
-
-    let msg = `Acta ${receiptId}: Bulto ${box.huCode} registrado con estado [${isOk ? 'CONFORME' : 'CON NOVEDADES'}].`;
-    if (!isOk) {
-      const issues = this.receiverSelectedIssues().join(', ') || 'Novedad general';
-      msg += ` Novedades reportadas: ${issues}.`;
-      if (this.receiverIssueNotes) {
-        msg += ` Detalle: "${this.receiverIssueNotes}".`;
+    } catch (err: unknown) {
+      if (err instanceof HttpErrorResponse) {
+        if (err.status === 404) {
+          this.receiverError.set('QR no válido o vencido');
+        } else if (err.status === 409) {
+          this.receiverError.set('Este bulto ya fue recibido');
+        } else if (err.status === 0 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+          this.receiverError.set('Necesitas señal para confirmar');
+        } else {
+          this.receiverError.set(err.error?.detail || err.message || 'Error al registrar recepción');
+        }
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        this.receiverError.set('Necesitas señal para confirmar');
+      } else {
+        this.receiverError.set('Error al registrar recepción');
       }
-      msg += ' La novedad ha sido enviada/encolada a la Torre de Control y Planificador.';
-    } else {
-      msg += ' Custodia registrada y transmitida exitosamente a farmacia hospitalaria.';
+    } finally {
+      this.receiverLoading.set(false);
     }
-
-    this.receiverConfirmedMessage.set(msg);
   }
 
   async downloadRoute(): Promise<void> {
