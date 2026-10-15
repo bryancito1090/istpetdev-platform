@@ -24,7 +24,7 @@ Esta es la configuración a implementar; no hay todavía pools, clientes ni sesi
 | Access token | **15 minutos** | 15 minutos |
 | Refresh token | **7 días**, rotación y revocación habilitadas | 7 días; gracia de rotación 10 segundos |
 | Scopes | `openid email profile` y scope API propio | Scope API propio; scopes mínimos por cliente |
-| MFA | Obligatorio para administración de accesos/AWS; TOTP en cuentas humanas habilitadas para el piloto | MFA humano obligatorio en producción; probar experiencia del conductor |
+| MFA | Obligatorio para administración de accesos/AWS; desactivado en el User Pool de Cognito durante la hackathon (15-oct-2026) para agilizar las cuentas multi-rol | MFA humano obligatorio en producción; probar experiencia del conductor |
 | Callbacks locales | `http://localhost:4200/auth/callback`, `http://localhost:8100/auth/callback` | HTTPS exacto bajo dominio asignado; no wildcards |
 | Logout local | `http://localhost:4200`, `http://localhost:8100` | URLs exactas aprobadas por entorno |
 

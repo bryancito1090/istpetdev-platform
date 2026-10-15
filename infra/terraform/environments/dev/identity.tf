@@ -3,8 +3,7 @@ resource "aws_cognito_user_pool" "dev" {
   deletion_protection      = var.hackathon_closed ? "INACTIVE" : "ACTIVE"
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
-  mfa_configuration        = "ON"
-  software_token_mfa_configuration { enabled = true }
+  mfa_configuration        = "OFF"
   admin_create_user_config { allow_admin_create_user_only = true }
   password_policy {
     minimum_length                   = 14
