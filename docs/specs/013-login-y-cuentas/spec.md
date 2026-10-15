@@ -90,7 +90,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 1. **Dado** que soy Gerencia, **cuando** creo una cuenta con correo, nombre y rol Conductor, **entonces** la persona recibe la invitación de Cognito con contraseña temporal, aparece en la lista con estado «Invitación pendiente» y, tras su primer ingreso (cambio de contraseña y MFA), con estado «Activa».
 2. **Dado** una cuenta de Conductor, **cuando** la desactivo, **entonces** su siguiente llamada a la API responde 403 aunque su token no haya vencido, su sesión de Cognito queda revocada y no puede volver a entrar hasta que la reactive.
 3. **Dado** que soy la única Gerencia activa, **cuando** intento desactivarme o cambiar mi rol, **entonces** la operación se rechaza con un motivo claro.
-4. **Dado** un correo que ya tiene cuenta, **cuando** intento crearla otra vez, **entonces** se rechaza sin crear nada nuevo.
+4. **Dado** un correo que ya tiene cuenta, **cuando** intento crearla otra vez, **entonces** se rechaza sin crear nada nuevo. Si la pido con otro rol, el mensaje dice qué rol tiene ya: **un correo = un rol** (índice único `Issuer`+`Subject` en `Account`). Para cambiarlo se edita la cuenta; quien necesite dos roles en la demo usa dos correos (por ejemplo, alias `nombre+conductor@gmail.com`).
 5. **Dado** una invitación vencida (más de 1 día), **cuando** pulso «Reenviar invitación», **entonces** la persona recibe una nueva contraseña temporal.
 6. ~~**Dado** cualquier alta o cambio, **cuando** consulto la auditoría en la base, **entonces** existe un `AuditEvent` con quién, qué, cuándo, antes y después.~~ **Pospuesto hasta después del 17-oct** (decisión de Joseph Baño, 13-oct): la tabla `AuditEvent` no existe en el esquema de la demo (ver FR-18).
 
@@ -102,7 +102,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 |---|---|---|
 | FR-01 | La web y la PWA DEBEN autenticarse con Cognito mediante Authorization Code + PKCE S256 usando `angular-auth-oidc-client`, con la página administrada de Cognito como pantalla de credenciales. Nuestra `/login` muestra la marca y un botón que la abre; ninguna pantalla propia recibe contraseñas. | ADR-10, ADR-18 |
 | FR-02 | `authority`, `clientId`, `scope` (`openid email profile istpetdev-api/access`) y las URL de retorno y cierre DEBEN venir de la configuración pública por entorno (`environment.*.ts`), con los valores del output `cognito` de Terraform. Ningún secreto en el frontend. | Identidad OIDC y sesiones |
-| FR-03 | Los tokens residen en `sessionStorage` (aislados por pestaña) según IETF OAuth 2.0 BCP para Browser-Based Apps, permitiendo rehidratar la sesión en recargas y navegación directa; nunca en `localStorage`, IndexedDB, el outbox, URLs ni logs. | Identidad OIDC y sesiones; NFR-03 de 004 |
+| FR-03 | La sesión OIDC se guarda según la decisión D-013-S1 (15-oct): en la web, en `sessionStorage` (sobrevive a F5 y muere al cerrar la pestaña); en la PWA, en `localStorage` (sobrevive a que el sistema cierre la app sin señal). Nunca en IndexedDB, el outbox, URLs ni logs. Al arrancar con el access token vencido se renueva con el refresh token antes de pedir login; un 401 con la sesión iniciada devuelve a Cognito sin soltar el outbox. | Identidad OIDC y sesiones; NFR-03 de 004 |
 | FR-04 | Un interceptor DEBE añadir `Authorization: Bearer` únicamente a las llamadas dirigidas a la API configurada. | ADR-18 |
 | FR-05 | `GET /api/v1/me` DEBE devolver `accountId`, `displayName`, `role` y `platform` (`web` o `field`) de la cuenta activa del token; sin `Account` activa responde 403. | 001 FR-17 |
 | FR-06 | Las apps DEBEN decidir acceso y navegación con la respuesta de `GET /me`, no con claims del token ni con datos guardados localmente. | 001 FR-17 |
@@ -185,6 +185,8 @@ Errores en Problem Details: 409 correo existente o regla de última Gerencia/pro
 
 > **✅ Resuelta (14-oct)** — Tokens solo en memoria frente al [informe de entrega de 004](../004-campo-qr-custodia-offline/informe-entrega-spec-004-y-decisiones.md) (decisión 2), que admitía `sessionStorage`. Se siguió la bóveda ([Identidad OIDC y sesiones](../../boveda/03%20Arquitectura/Identidad%20OIDC%20y%20sesiones.md)): la decisión 2 del informe ahora dice «solo en memoria» con referencia a FR-03.
 
+> **✅ Resuelta (15-oct, D-013-S1)** — «Tokens solo en memoria» rompía la recarga (F5) y el reinicio de la PWA, y la sesión moría a los 15 minutos aunque el refresh token siguiera vigente. Decisión de Joseph Baño: web en `sessionStorage`, PWA en `localStorage` con `useRefreshTokenLock`, renovación con refresh token al arrancar y vuelta a Cognito ante un 401. Se descartaron las cookies `HttpOnly`: exigen un backend-for-frontend que haga el canje de tokens y no funcionan sin red en la PWA. Riesgo aceptado: un XSS podría leer el refresh token; se mitiga con su rotación en cada uso, su vida de 7 días y la revocación al desactivar la cuenta. Pendiente después del evento: una CSP en nginx.
+
 > **✅ Resuelta (14-oct)** — ADR-25 frente a ADR-24 (roles en PWA). Se aplicó la opción (a): la PWA solo admite Bodega, Conductor y Receptor, alineada con ADR-24 y ADR-26. El perfil `LogisticsManager` se retiró en T7 (PR #56). Gerencia y Planificador operan exclusivamente en la plataforma web.
 
 Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅), RBAC y configuracion del sistema (roles fijos dentro del diseño diferido), Seguridad y evidencias, Runbook de DevOps y base de datos (sin migraciones nuevas), Credenciales y acceso del equipo.
@@ -199,7 +201,7 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 | El contenedor no obtiene credenciales del perfil de instancia (hop limit 1) | Media | Medio | `HttpPutResponseHopLimit = 2`; probar `GET /accounts` en producción antes de H4 |
 | Cognito envía como máximo unos 50 correos al día con su configuración por defecto | Baja | Medio | Evitar reenvíos masivos; crear las cuentas de demo en un solo lote |
 | El MFA obligatorio frena al conductor en la demo | Media | Medio | MFA configurado antes del evento en los teléfonos de la demo; sesiones ya iniciadas (D3) |
-| Recarga o reinicio de la PWA sin señal deja la sesión anónima y no se puede capturar hasta tener red (tokens solo en memoria, FR-03). Enlaza con la [contradicción del reinicio de la PWA sin señal](plan.md#contradicciones-detectadas-al-planificar). Las capturas ya guardadas no se pierden (CE-04). | Media | Alto | En la demo no se reinicia la PWA en modo avión; capturas persisten en outbox. Decide: Joseph Baño con Alexander |
+| Reinicio de la PWA sin señal con el access token vencido (más de 15 min): el refresh token no se puede usar sin red y la app pide login. Con D-013-S1 la sesión ya no se pierde al cerrar la app; solo falta red para renovarla. Las capturas ya guardadas no se pierden (CE-04). | Baja | Medio | Abrir la PWA con red antes de la escena offline; en la demo no se reinicia en modo avión. Decide: Joseph Baño |
 | Se presenta H4 como funcionando sin estarlo | Baja | Alto | Regla del 006: solo se muestra lo probado en `test-e2e.md` |
 
 ## Criterios de éxito
