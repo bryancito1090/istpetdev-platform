@@ -8,6 +8,7 @@ import {
   DispatchResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
+  DeliveryDetailResponse,
   CreateReceiptRequest,
   ReceiptResponse,
   EvidenceUploadRequest,
@@ -48,6 +49,10 @@ export class HttpFieldApiService implements IFieldApi {
     if (limit) params = params.set('limit', limit.toString());
 
     return this.http.get<DeliveryListResponse>(`${this.baseUrl}/api/v1/deliveries`, { params });
+  }
+
+  getDelivery(deliveryId: string): Observable<DeliveryDetailResponse> {
+    return this.http.get<DeliveryDetailResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}`);
   }
 
   revokePublicToken(unitId: string): Observable<void> {

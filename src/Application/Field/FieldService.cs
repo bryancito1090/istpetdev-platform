@@ -850,6 +850,80 @@ public sealed class FieldService : IFieldService
         return new DeliveryListResponse(listItems, null, total);
     }
 
+    public async Task<DeliveryDetailResponse> GetDeliveryDetailAsync(
+        Guid deliveryId,
+        CancellationToken ct = default)
+    {
+        var delivery = await _db.Deliveries
+            .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
+            ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
+
+        var servicePoint = await _db.ServicePoints
+            .FirstOrDefaultAsync(sp => sp.Id == delivery.ServicePointId && sp.OrganizationId == DemoOrganization.Id, ct);
+
+        var routePlanId = Guid.Empty;
+        if (delivery.RouteStopId.HasValue)
+        {
+            var stop = await _db.RouteStops
+                .FirstOrDefaultAsync(s => s.Id == delivery.RouteStopId.Value && s.OrganizationId == DemoOrganization.Id, ct);
+            if (stop != null)
+            {
+                routePlanId = stop.RoutePlanId;
+            }
+        }
+
+        var lines = await _db.DeliveryLines
+            .Where(dl => dl.DeliveryId == delivery.Id && dl.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var lotIds = lines.Select(l => l.LotId).Distinct().ToList();
+        var lots = await _db.Lots
+            .Where(l => lotIds.Contains(l.Id) && l.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(l => l.Id, l => l, ct);
+
+        var productIds = lots.Values.Select(l => l.ProductId).Distinct().ToList();
+        var products = await _db.Products
+            .Where(p => productIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Id, p => p, ct);
+
+        var lineDtos = new List<DeliveryDetailLineDto>();
+        foreach (var line in lines)
+        {
+            lots.TryGetValue(line.LotId, out var lot);
+            Product? prod = null;
+            if (lot != null)
+            {
+                products.TryGetValue(lot.ProductId, out prod);
+            }
+
+            lineDtos.Add(new DeliveryDetailLineDto(
+                line.Id,
+                line.LotId,
+                lot?.Code ?? "LOTE-DEFAULT",
+                prod?.Sku ?? "MED-001",
+                prod?.Name ?? "Producto",
+                line.PlannedQuantity,
+                prod?.BaseUnit ?? "U"));
+        }
+
+        var handlingUnits = await _db.HandlingUnits
+            .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
+            .Select(hu => new DeliveryDetailHandlingUnitDto(
+                hu.Id,
+                hu.Code,
+                hu.Status))
+            .ToListAsync(ct);
+
+        return new DeliveryDetailResponse(
+            delivery.Id,
+            delivery.Status,
+            delivery.Version,
+            servicePoint?.Name ?? "Punto de Entrega",
+            routePlanId,
+            lineDtos,
+            handlingUnits);
+    }
+
     public async Task<PublicTraceUnitDto> GetPublicTraceAsync(
         Guid unitId,
         string? traceToken,
