@@ -47,6 +47,7 @@ class Client:
                 "Authorization": "Bearer " + self.token,
                 "Accept": "application/json",
                 "Content-Type": "application/json",
+                "User-Agent": "istpetdev-acceptance/1.0",
             },
         )
         try:
