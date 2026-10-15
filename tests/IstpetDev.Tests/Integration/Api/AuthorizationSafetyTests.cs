@@ -10,8 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AuthorizationSafetyTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AuthorizationSafetyTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task Forged_role_does_not_elevate_and_revocation_applies_to_the_same_token()

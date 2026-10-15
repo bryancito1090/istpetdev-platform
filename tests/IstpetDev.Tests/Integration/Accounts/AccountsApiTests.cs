@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Tests.Integration.Accounts;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed partial class AccountsApiTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed partial class AccountsApiTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private const string Accounts = "/api/v1/accounts";
     private readonly PostgisContainer postgres = postgres;

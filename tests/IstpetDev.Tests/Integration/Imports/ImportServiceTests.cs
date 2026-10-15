@@ -9,9 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Tests.Integration.Imports;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class ImportServiceTests(PostgisContainer postgres)
+public class ImportServiceTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static async Task<ImportReport> Import(ApplicationDbContext db, ImportRequest request)
     {

@@ -13,9 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace IstpetDev.Tests.E2E;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "E2E")]
-public sealed class LogisticsJourneyTests(PostgisContainer postgres)
+public sealed class LogisticsJourneyTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly Dictionary<string, string?> OverridesWithManager = new()
     {

@@ -7,9 +7,8 @@ using Location = IstpetDev.Domain.Entities.Location;
 
 namespace IstpetDev.Tests.Integration.Persistence;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class LeanSchemaTests(PostgisContainer postgres)
+public class LeanSchemaTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly string[] CoreTables =
     [

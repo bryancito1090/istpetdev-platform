@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Tests.Integration.Accounts;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class ProvisionAccountsCommandTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class ProvisionAccountsCommandTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task Running_twice_creates_once_and_reports_existing_accounts()

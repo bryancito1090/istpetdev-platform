@@ -12,9 +12,8 @@ using Xunit;
 
 namespace IstpetDev.Tests.Integration.Logistics;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class DistanceProviderTests(PostgisContainer postgres)
+public sealed class DistanceProviderTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private sealed class MockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) : HttpMessageHandler
     {

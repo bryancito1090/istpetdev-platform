@@ -54,9 +54,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-qa:
-    name: "QA Backend (.NET 8)"
+  # Integración es la categoría más larga; Unit y E2E corren a la vez en otro runner.
+  backend-tests:
+    name: "Pruebas Backend (${{ matrix.label }})"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: "Integración"
+            slug: integration
+            categories: "Integration"
+          - label: "Unit y E2E"
+            slug: unit-e2e
+            categories: "Unit E2E"
     steps:
       - name: "Checkout del código"
         uses: actions/checkout@v4
@@ -75,11 +86,47 @@ jobs:
       - name: "Verificar núcleo, importador y HTTP con PostGIS descartable"
         env:
           DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1'
+          CATEGORIES: ${{ matrix.categories }}
         run: |
-          for category in Unit Integration E2E; do
+          for category in $CATEGORIES; do
             dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
           done
-          python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Conservar resultados de pruebas"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec001-ci-tests-${{ matrix.slug }}
+          path: artifacts/spec001/*.trx
+
+  # Conserva el nombre del check histórico y valida que todas las categorías corrieron y pasaron.
+  backend-qa:
+    name: "QA Backend (.NET 8)"
+    needs: backend-tests
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Exigir que todas las pruebas backend terminaran bien"
+        env:
+          RESULT: ${{ needs.backend-tests.result }}
+        run: |
+          if [ "$RESULT" != "success" ]; then
+            echo "Las pruebas backend terminaron con estado: $RESULT"
+            exit 1
+          fi
+
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Reunir resultados de pruebas"
+        uses: actions/download-artifact@v4
+        with:
+          pattern: spec001-ci-tests-*
+          path: artifacts/spec001
+          merge-multiple: true
+
+      - name: "Validar categorías Unit, Integration y E2E"
+        run: python scripts/db/check-test-results.py artifacts/spec001
 
       - name: "Verificar generación n8n, aceptación y limpieza sin credenciales"
         run: |

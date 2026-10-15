@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Tests.Integration.Agent;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AutomationAuthorizationTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AutomationAuthorizationTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private const string TechnicalClientId = "n8n-automation-client";
 
