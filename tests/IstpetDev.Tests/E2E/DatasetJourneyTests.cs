@@ -6,9 +6,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.E2E;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "E2E")]
-public class DatasetJourneyTests(PostgisContainer postgres)
+public class DatasetJourneyTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static MultipartFormDataContent Upload(string fixture)
     {

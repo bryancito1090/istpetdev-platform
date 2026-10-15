@@ -7,12 +7,40 @@ using Testcontainers.PostgreSql;
 
 namespace IstpetDev.Tests.Support;
 
+/// <summary>
+/// Fixture de clase: todas las clases comparten un único contenedor PostGIS por proceso de pruebas
+/// y cada prueba trabaja en su propia base clonada, así que las clases pueden ejecutarse en paralelo.
+/// </summary>
 public sealed class PostgisContainer : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder().WithImage("postgis/postgis:16-3.4-alpine").Build();
+    // Se arranca una vez por proceso; Testcontainers (Ryuk) retira el contenedor al terminar el proceso.
+    private static readonly Lazy<Task<PostgisServer>> Shared = new(PostgisServer.StartAsync);
+    private PostgisServer _server = null!;
+
+    public async Task InitializeAsync() => _server = await Shared.Value;
+
+    public string NewDatabase() => _server.NewDatabase();
+
+    public Task<string> NewEmptyDatabaseAsync() => _server.NewEmptyDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
+}
+
+internal sealed class PostgisServer
+{
+    // Las migraciones bloquean cada tabla del esquema; varias en paralelo agotan la tabla de locks por defecto (64).
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder().WithImage("postgis/postgis:16-3.4-alpine")
+        .WithCommand("-c", "max_locks_per_transaction=1024").Build();
     private readonly string _password = Guid.NewGuid().ToString("N");
 
-    public async Task InitializeAsync()
+    public static async Task<PostgisServer> StartAsync()
+    {
+        var server = new PostgisServer();
+        await server.InitializeAsync();
+        return server;
+    }
+
+    private async Task InitializeAsync()
     {
         await _container.StartAsync();
         await using var admin = new NpgsqlConnection(_container.GetConnectionString());
@@ -45,6 +73,7 @@ public sealed class PostgisContainer : IAsyncLifetime
         return Connection(name, "01", pooling: false);
     }
 
+    // Nombre canónico fijo: solo puede usarlo una prueba por proceso (ver PostgisCollection).
     public async Task<string> NewEmptyDatabaseAsync()
     {
         await using var admin = new NpgsqlConnection(_container.GetConnectionString()); await admin.OpenAsync();
@@ -56,10 +85,14 @@ public sealed class PostgisContainer : IAsyncLifetime
     private string Connection(string database, string number, bool pooling = true) => new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
     { Database = database, Username = $"migrator_dev_{number}", Password = _password, Pooling = pooling }.ConnectionString;
     private static Task<int> Execute(NpgsqlConnection connection, string sql) => new NpgsqlCommand(sql, connection).ExecuteNonQueryAsync();
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
 }
 
-[CollectionDefinition(Name)]
+/// <summary>
+/// Colección serial para pruebas que miden tiempos o usan la base canónica fija istpetdev_dev_02.
+/// xUnit la ejecuta sola, después de las clases paralelas, para que la carga no altere sus mediciones.
+/// El resto de clases usa IClassFixture&lt;PostgisContainer&gt; y corre en paralelo.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class PostgisCollection : ICollectionFixture<PostgisContainer>
 {
     public const string Name = "postgis";

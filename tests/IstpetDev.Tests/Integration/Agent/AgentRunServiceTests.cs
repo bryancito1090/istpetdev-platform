@@ -10,8 +10,8 @@ using Npgsql;
 
 namespace IstpetDev.Tests.Integration.Agent;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AgentRunServiceTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AgentRunServiceTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task Callback_locks_transition_and_commits_decisions_with_completed_status()

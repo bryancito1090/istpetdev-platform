@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class UnprovisionedFieldAccountTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class UnprovisionedFieldAccountTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     public static TheoryData<string, string, string> FieldEndpoints => new()
     {

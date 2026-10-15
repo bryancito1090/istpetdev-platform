@@ -8,8 +8,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AuthenticationClosureTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AuthenticationClosureTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task Retired_auth_login_route_returns_not_found()

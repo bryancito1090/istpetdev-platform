@@ -10,9 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class ImportsApiTests(PostgisContainer postgres)
+public class ImportsApiTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static MultipartFormDataContent Upload(string fixture, bool includeProfile = true)
     {

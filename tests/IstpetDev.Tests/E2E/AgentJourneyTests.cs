@@ -15,8 +15,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace IstpetDev.Tests.E2E;
 
-[Collection(PostgisCollection.Name), Trait("Category", "E2E")]
-public sealed class AgentJourneyTests(PostgisContainer postgres)
+[Trait("Category", "E2E")]
+public sealed class AgentJourneyTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private const string ClientId = "journey-automation";
     private static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true, Converters = { new JsonStringEnumConverter() } };

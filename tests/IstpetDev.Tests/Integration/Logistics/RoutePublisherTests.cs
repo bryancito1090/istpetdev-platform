@@ -15,9 +15,8 @@ namespace IstpetDev.Tests.Integration.Logistics;
 
 using DomainLocation = IstpetDev.Domain.Entities.Location;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class RoutePublisherTests(PostgisContainer postgres)
+public sealed class RoutePublisherTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly GeometryFactory Gf = new(new PrecisionModel(), 4326);
 
