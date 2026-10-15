@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-15
 tags: [istpetdev, ia, skills]
 ---
 
@@ -30,7 +30,7 @@ Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación s
 - Motor: PostgreSQL 16 con PostGIS 3.x compatible (ADR-03). UUID v7 se genera en la aplicación: PostgreSQL 16 no tiene `uuidv7()`.
 - Entornos de base, migraciones y respaldos: `03 Arquitectura/Entornos y operacion acordados.md`.
 - Nombres de entidades: tabla «Nombres en código» de `00 Inicio/Hechos canonicos.md`.
-- No hay dataset generado ni resultados medidos.
+- No hay resultados medidos ni datos de operación real. El fixture sintético `national-v1` seed 11 ya está generado en `docs/dataset/test/national-v1-seed-11/`; sigue siendo salida sintética etiquetada, no observación.
 
 ## Modelo y migraciones
 
@@ -51,6 +51,7 @@ Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación s
 - Cada ejecución guarda dataset/hash, seed, versión de política, parámetros y matriz vial; exporta `metrics.json`, resumen, eventos y manifiesto.
 - Varias seeds y al menos un escenario adverso antes de mostrar cifras. Mostrar quiebres evitados **y** nuevos, denominadores y N/A cuando el denominador sea cero.
 - Datos sintéticos etiquetados como tales; coordenadas sintéticas o públicas, nunca clientes reales.
+- El dataset de prueba reproducible y los agregados públicos viven en `docs/dataset/`; leer su README y manifiesto antes de usar una muestra. Los agregados públicos no son demanda ni inventario observados.
 
 ## Prohibido inventar
 

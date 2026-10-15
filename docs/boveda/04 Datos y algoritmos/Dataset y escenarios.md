@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-15
 tags: [datos, algoritmo, validacion]
 ---
 
@@ -9,7 +9,9 @@ tags: [datos, algoritmo, validacion]
 
 ## Dataset sintético versionado
 
-Propuesta: **80 puntos, 90 días**, una red de productos, bodegas/vehículos y demanda explícita. Son cantidades del equipo. No se han generado registros ni resultados aún.
+Propuesta: **80 puntos, 90 días**, una red de productos, bodegas/vehículos y demanda explícita. Son cantidades del equipo. No hay resultados del simulador medidos.
+
+El fixture sintético **national-v1** (seed 11, escenario base, 2026-10-12) ya está generado con `ScenarioGenerator` y la configuración existentes en `docs/dataset/test/national-v1-seed-11/`: 80 puntos, 6 bodegas, 12 vehículos, 2 productos y 90 días. Es salida sintética reproducible, no una observación ni un resultado de simulación; procedencia y hashes en `docs/dataset/README.md`.
 
 Comenzar con fixture pequeño de **6 puntos y 2 SKU** para verificar invariantes; ampliar después. No forzar toda la operación nacional en el mismo vehículo/circuito diario.
 
@@ -52,6 +54,8 @@ El caso del hospital debe estar dentro de una operación con stock/vehículo suf
 ## Geografía
 
 Usar puntos plausibles y ubicaciones verificadas sin representar clientes reales. Etiquetar coordenadas sintéticas o públicas. Probar cobertura vial en las regiones elegidas; no inventar distancias nacionales como si provinieran de la API.
+
+El agregado público de ACESS 2026-09 en `docs/dataset/reales/acess-2026-09/` cuenta establecimientos únicos (2590) y permisos emitidos (2601) por provincia, cantón, tipo y categoría; no ubica clientes ni mide demanda.
 
 Si se almacenan respuestas de mapas para ensayo sin internet, verificar permisos del proveedor. Registrar proveniencia de cada matriz.
 
