@@ -506,3 +506,22 @@ ESC-28 e issues propuestos ISS-01 a ISS-09. No modifica specs, ADR ni secretos;
 los cambios propuestos quedan listados para decisión del equipo.
 
 Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
+
+## Limpieza de restos de demo en el flujo del Conductor (#123) — 15 de octubre de 2026
+
+Fuente: Issue #123 de Joseph Baño (urgente por congelamiento). En `apps/mobile`
+se retiró de `receipt.page.ts` la entrega inventada y la firma sintética de
+respaldo: una entrega ausente de la asignación cargada ahora muestra el error
+«No encontramos esta entrega en tu ruta» con botón a Inicio y nunca registra
+recepción; la evidencia fotográfica sale solo de la cámara y la firma debe
+dibujarse. Se retiró el botón «Foto Demo» y `generateSimulatedPhoto()`. En
+`sync.page.ts` el interruptor de prueba offline se conserva con el texto
+«Sin señal (prueba)». En `apps/web`, el menú del Auditor incluye «Simulador 90d»
+(`/simulation`) y su prueba de navegación quedó actualizada.
+
+Validación local: `npm run test:mobile` (25 pruebas), `npm run test:web` (52
+pruebas), `npm run build:mobile`, `npm run check` y `npm run audit:check`, todos
+en verde; grep de aceptación del issue sin restos. No se tocaron `scan.page.ts`
+ni `home.page.ts`.
+
+Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
