@@ -28,7 +28,7 @@ Que no haya RLS no significa que no existan roles de PostgreSQL:
 
 | Pieza | Situación | Fuente |
 |---|---|---|
-| Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`; Integración y Unit+E2E en runners paralelos, clases de prueba en paralelo sobre un PostGIS compartido), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA, y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
+| Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`; Integración y Unit+E2E en runners paralelos, clases de prueba en paralelo sobre un PostGIS compartido), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA (construidas en paralelo con QA; el despliegue y el tag `latest` solo avanzan con QA en verde), y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
 | Host de la aplicación | `istpetdev-prod-host` (`i-0e0a979f8c0885a4f`, IP `44.204.107.167`), Debian 13, stateless. | [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] |
 | Base de datos en producción | Amazon RDS PostgreSQL 16.13 (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS. **27 tablas de `DemoCore` aplicadas y verificadas.** | [[Estrategia de tres entornos y base de datos]] |
 | Entorno de desarrollo | Base compartida en AWS EC2 (puerto `5432`) con usuario único `migrator_dev_01` para todo el equipo (laboratorio, casa u oficina), configurada centralizadamente en `.env`, y Docker local (`localhost:15432`) como alternativa individual. `appsettings.json` mantiene secretos limpios para no exponer credenciales en Git. | [[Estrategia de tres entornos y base de datos]] |
@@ -151,7 +151,7 @@ Respuesta esperada: `HTTP/1.1 200 OK` con payload JSON conteniendo `"status": "H
 
 ## 8. Política de Rollback y Migraciones Aditivas
 
-El workflow `rollback.yml` restaura los contenedores `istpetdev-backend` e `istpetdev-web` a una versión inmutable previa (SHA anterior) en menos de 30 segundos. Sin embargo, **el rollback de contenedores no revierte las migraciones aplicadas en Amazon RDS**.
+El workflow `rollback.yml` restaura los contenedores `istpetdev-backend` e `istpetdev-web` a una versión inmutable previa (SHA anterior) en menos de 30 segundos. Solo acepta un SHA hexadecimal de `main` que ya tenga un despliegue exitoso en `deploy.yml` (QA y despliegue en verde) y comparte el grupo de concurrencia `production-deploy`, así que nunca corre a la vez que un despliegue. Sin embargo, **el rollback de contenedores no revierte las migraciones aplicadas en Amazon RDS**.
 
 ### Regla Inviolable: Migraciones Aditivas (Zero-Downtime)
 
