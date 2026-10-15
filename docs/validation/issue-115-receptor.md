@@ -35,6 +35,7 @@ La validación física ESC-04, ESC-06 y ESC-15 en dos teléfonos sigue PENDIENTE
 - `dotnet test tests/IstpetDev.Tests --no-build --logger "trx;LogFileName=backend.trx" --results-directory artifacts/issue-115`: 415/415 correctas, sin omitidas. La primera ejecución tuvo un fallo transitorio de conexión PostgreSQL; la repetición completa quedó verde.
 - `python docs/boveda/.github/scripts/check_vault.py`: 87 notas, 928 enlaces, 0 errores y 4 avisos de lenguaje preexistentes.
 - `git diff --check`: correcto.
+- Ajuste de portabilidad CI: pruebas de recepción y salida de HomePage reunidas en una suite de archivo para compartir la identidad del mock Ionic en el runner Linux. No cambia el comportamiento de producción.
 - Sin Terraform instalado en esta estación: no se ejecutaron `terraform validate` ni `apply`. Se añadió exclusivamente CORS HTTPS a la lista existente.
 
 ## Guion para los dos teléfonos
