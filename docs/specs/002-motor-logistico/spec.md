@@ -120,6 +120,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | FR-21 | DEBE existir el fixture `data/fixtures/demo-region` (≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos, 3 SKUs, tramos viales precalculados e incidentes predefinidos) y un script que regenera sus tramos con OSRM. | Dataset y escenarios, D6 |
 | FR-22 | `POST /api/v1/demo/incidents` DEBE disparar un incidente predefinido del fixture por su nombre, solo con `Demo:Enabled=true`. | Contratos API y eventos |
 | FR-23 | `GET /api/v1/route-plans` DEBE listar planes del día de forma paginada, filtrable por vehículo y estado, con revisión vigente, para que el panel 005 descubra IDs sin fijarlos en código; la respuesta no crea propuestas. Dueño: equipo 002; integrar antes de H4. | RF-07, spec 005 |
+| FR-24 | DEBE proporcionar la geometría vial decodificada (`coordinates: [lat, lon][]`) y la polilínea continua (`polyline: string`) en `GET /api/v1/route-plans/{id}` y `POST /api/v1/route-plans/evaluate-sequence`, reconstruyendo las curvas viales a partir de `RoadMatrixEdge.EncodedPolyline` entre paradas consecutivas. El cliente cartográfico (Leaflet/OpenStreetMap) renderiza el trazado siguiendo el trazado vial real de calles y avenidas, reservando el trazo en línea recta únicamente cuando un tramo no disponga de registro vial previo. | Renderizado vial cartográfico, FR-06, ADR-05 |
 
 ### No funcionales
 

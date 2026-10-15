@@ -111,6 +111,18 @@ public sealed class RouteEvaluator : IRouteEvaluator
                 {
                     legKm = leg.Km;
                     legMin = leg.Minutes;
+
+                    // Decodificar geometría de tramo vial si está disponible
+                    if (!string.IsNullOrEmpty(leg.EncodedPolyline))
+                    {
+                        var decodedPoints = Polyline.Decode(leg.EncodedPolyline);
+                        // Omitir el primer punto si coincide con el último agregado para evitar duplicados
+                        for (int pIdx = (coordinates.Count > 0 ? 1 : 0); pIdx < decodedPoints.Count; pIdx++)
+                        {
+                            var dp = decodedPoints[pIdx];
+                            coordinates.Add(new double[] { (double)dp.Lat, (double)dp.Lon });
+                        }
+                    }
                 }
                 else
                 {
@@ -123,8 +135,11 @@ public sealed class RouteEvaluator : IRouteEvaluator
                 totalMinutes += legMin;
             }
 
-            // Registrar coordenadas para trazado
-            coordinates.Add(new double[] { (double)stop.Position.Lat, (double)stop.Position.Lon });
+            // Si es el primer punto o no hubo polilínea vial decodificada para este leg, asegurar la coordenada de la parada
+            if (coordinates.Count == 0 || coordinates[^1][0] != (double)stop.Position.Lat || coordinates[^1][1] != (double)stop.Position.Lon)
+            {
+                coordinates.Add(new double[] { (double)stop.Position.Lat, (double)stop.Position.Lon });
+            }
 
             // Verificar ventana horaria
             var localTime = TimeOnly.FromDateTime(currentTime.AddHours(_options.FallbackUtcOffsetHours));

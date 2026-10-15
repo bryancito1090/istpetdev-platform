@@ -131,6 +131,61 @@ public sealed class RoutePlansController(
                     coordinates = JsonSerializer.Deserialize<List<double[]>>(coordsElem.GetRawText());
                 }
             }
+
+            // Si no se persistieron coordenadas detalladas, reconstruir geometría vial desde RoadMatrixEdges entre paradas
+            if ((coordinates == null || coordinates.Count <= stops.Count) && stops.Count > 1)
+            {
+                var stopPoints = new List<GeoPoint>();
+                foreach (var s in stops)
+                {
+                    if (servicePoints.TryGetValue(s.ServicePointId, out var sp) && sp.Position != null)
+                    {
+                        stopPoints.Add(new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X));
+                    }
+                }
+
+                if (stopPoints.Count > 1)
+                {
+                    var reconstructed = new List<double[]>();
+                    var allEdges = await db.RoadMatrixEdges
+                        .Where(e => e.OrganizationId == DemoOrganization.Id)
+                        .AsNoTracking()
+                        .ToListAsync(ct);
+
+                    for (int i = 0; i < stopPoints.Count; i++)
+                    {
+                        if (i > 0)
+                        {
+                            var prevPt = stopPoints[i - 1];
+                            var currPt = stopPoints[i];
+                            var edge = allEdges.FirstOrDefault(e =>
+                                Math.Abs(e.FromLat - prevPt.Lat) < 0.0001m &&
+                                Math.Abs(e.FromLon - prevPt.Lon) < 0.0001m &&
+                                Math.Abs(e.ToLat - currPt.Lat) < 0.0001m &&
+                                Math.Abs(e.ToLon - currPt.Lon) < 0.0001m);
+
+                            if (edge != null && !string.IsNullOrEmpty(edge.EncodedPolyline))
+                            {
+                                var decoded = Polyline.Decode(edge.EncodedPolyline);
+                                for (int pIdx = (reconstructed.Count > 0 ? 1 : 0); pIdx < decoded.Count; pIdx++)
+                                {
+                                    reconstructed.Add(new double[] { (double)decoded[pIdx].Lat, (double)decoded[pIdx].Lon });
+                                }
+                            }
+                        }
+
+                        if (reconstructed.Count == 0 || reconstructed[^1][0] != (double)stopPoints[i].Lat || reconstructed[^1][1] != (double)stopPoints[i].Lon)
+                        {
+                            reconstructed.Add(new double[] { (double)stopPoints[i].Lat, (double)stopPoints[i].Lon });
+                        }
+                    }
+
+                    if (reconstructed.Count > stopPoints.Count)
+                    {
+                        coordinates = reconstructed;
+                    }
+                }
+            }
         }
         catch { }
 

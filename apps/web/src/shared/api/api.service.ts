@@ -82,6 +82,7 @@ export interface RoutePlanDetailDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
+  coordinates?: [number, number][];
   stops: Array<{
     sequence: number;
     servicePointId: string;
@@ -380,6 +381,7 @@ export class ApiService {
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
           totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
           polyline: res.polyline || '',
+          coordinates: res.coordinates || undefined,
           stops: (res.stops || []).map((s: any) => ({
             sequence: s.sequence ?? s.sequenceNumber,
             servicePointId: s.servicePointId,
