@@ -51,6 +51,23 @@ public sealed class AccountProvisioningTests(PostgisContainer postgres)
     }
 
     [Fact]
+    public async Task Same_email_with_another_role_is_rejected_and_keeps_the_original_role()
+    {
+        var connection = await MigratedAsync();
+        var directory = new FakeIdentityDirectory();
+        await using var db = TestDb.Context(connection);
+        var provisioning = new AccountProvisioning(db, directory);
+        await provisioning.ProvisionAsync("ana@ejemplo.test", "Ana", Roles.Bodega, default);
+
+        var error = await Assert.ThrowsAsync<AccountRuleException>(
+            () => provisioning.ProvisionAsync("ana@ejemplo.test", "Ana", Roles.Conductor, default));
+
+        Assert.Equal("role_conflict", error.Code);
+        Assert.Contains(Roles.Bodega, error.Message);
+        Assert.Equal(Roles.Bodega, (await db.Accounts.AsNoTracking().SingleAsync(a => a.Kind == "human")).Role);
+    }
+
+    [Fact]
     public async Task Directory_user_without_account_is_reconciled_without_a_new_invitation()
     {
         var connection = await MigratedAsync();

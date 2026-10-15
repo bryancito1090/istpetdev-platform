@@ -36,7 +36,7 @@ public sealed partial class AccountsController(AccountAdministration accounts) :
     private static int StatusFor(string code) => code switch
     {
         "not_found" => StatusCodes.Status404NotFound,
-        "account_exists" or "self_change_forbidden" or "last_manager" or "invitation_not_pending" => StatusCodes.Status409Conflict,
+        "account_exists" or "role_conflict" or "self_change_forbidden" or "last_manager" or "invitation_not_pending" => StatusCodes.Status409Conflict,
         _ => StatusCodes.Status422UnprocessableEntity,
     };
 
