@@ -92,6 +92,14 @@ public sealed class FieldUnitTests
         {
             return Task.FromResult(new EvidenceConfirmResponse(evidenceId, "Confirmed", DateTime.UtcNow));
         }
+
+        public RejectionReasonsCatalogResponse GetRejectionReasonsCatalog()
+        {
+            var items = ReceiptRejectionReasons.All
+                .Select(code => new RejectionReasonDto(code, ReceiptRejectionReasons.GetDescription(code)))
+                .ToList();
+            return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
+        }
     }
 
     [Fact]
@@ -186,5 +194,19 @@ public sealed class FieldUnitTests
         var okConf = Assert.IsType<OkObjectResult>(confRes);
         var confResp = Assert.IsType<EvidenceConfirmResponse>(okConf.Value);
         Assert.Equal("Confirmed", confResp.Status);
+    }
+
+    [Fact]
+    public void DeliveriesController_returns_rejection_reasons_catalog()
+    {
+        var fake = new FakeFieldService();
+        var controller = new DeliveriesController(fake);
+
+        var result = controller.GetRejectionReasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var catalog = Assert.IsType<RejectionReasonsCatalogResponse>(okResult.Value);
+        Assert.Equal("V1", catalog.Version);
+        Assert.Equal(6, catalog.Reasons.Count);
     }
 }

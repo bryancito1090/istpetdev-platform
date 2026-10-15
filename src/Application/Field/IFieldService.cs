@@ -69,4 +69,6 @@ public interface IFieldService
         EvidenceConfirmRequest request,
         Guid actorAccountId,
         CancellationToken ct = default);
+
+    RejectionReasonsCatalogResponse GetRejectionReasonsCatalog();
 }

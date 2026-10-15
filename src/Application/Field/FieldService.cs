@@ -432,7 +432,7 @@ public sealed class FieldService : IFieldService
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
         // Ubicaciones para movimiento
-        Guid vehicleLocationId = delivery.OriginLocationId;
+        Guid? vehicleLocationId = delivery.OriginLocationId;
         Guid destinationLocationId = delivery.OriginLocationId;
 
         if (delivery.RouteStopId.HasValue)
@@ -449,6 +449,16 @@ public sealed class FieldService : IFieldService
                 var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == stop.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
                 if (pLoc != null) destinationLocationId = pLoc.Id;
             }
+        }
+        else
+        {
+            var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == delivery.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+            if (pLoc != null) destinationLocationId = pLoc.Id;
+        }
+
+        if (vehicleLocationId == destinationLocationId)
+        {
+            vehicleLocationId = null;
         }
 
         var receipt = new Receipt
@@ -494,6 +504,14 @@ public sealed class FieldService : IFieldService
                 hasRejections = true;
             }
 
+            string? normalizedReason = null;
+            if (reqLine.QuantityRejected > 0 && !string.IsNullOrWhiteSpace(reqLine.RejectionReason))
+            {
+                normalizedReason = ReceiptRejectionReasons.TryNormalize(reqLine.RejectionReason, out var canonical)
+                    ? canonical
+                    : reqLine.RejectionReason.Trim();
+            }
+
             var rLine = new ReceiptLine
             {
                 OrganizationId = DemoOrganization.Id,
@@ -501,7 +519,7 @@ public sealed class FieldService : IFieldService
                 DeliveryLineId = dLine.Id,
                 QuantityAccepted = reqLine.QuantityAccepted,
                 QuantityRejected = reqLine.QuantityRejected,
-                RejectionReason = reqLine.RejectionReason,
+                RejectionReason = normalizedReason,
                 RemainingQuantity = reqLine.RemainingQuantity,
                 NextRequestedQuantity = reqLine.NextRequestedQuantity
             };
@@ -510,12 +528,15 @@ public sealed class FieldService : IFieldService
             // Mover inventario de lo aceptado vehículo -> punto de destino
             if (reqLine.QuantityAccepted > 0)
             {
-                var vehicleBalance = await _db.StockBalances
-                    .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId && sb.LotId == reqLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-
-                if (vehicleBalance != null)
+                if (vehicleLocationId.HasValue)
                 {
-                    vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                    var vehicleBalance = await _db.StockBalances
+                        .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId.Value && sb.LotId == reqLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
+
+                    if (vehicleBalance != null)
+                    {
+                        vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                    }
                 }
 
                 var destBalance = await _db.StockBalances
@@ -631,6 +652,7 @@ public sealed class FieldService : IFieldService
                 reqLine.QuantityAccepted,
                 reqLine.QuantityRejected,
                 reqLine.Unit,
+                normalizedReason,
                 reqLine.RemainingQuantity,
                 reqLine.NextRequestedQuantity));
         }
@@ -1146,6 +1168,14 @@ public sealed class FieldService : IFieldService
             evidence.Id,
             "Confirmed",
             evidence.ConfirmedAtUtc.Value);
+    }
+
+    public RejectionReasonsCatalogResponse GetRejectionReasonsCatalog()
+    {
+        var items = ReceiptRejectionReasons.All
+            .Select(code => new RejectionReasonDto(code, ReceiptRejectionReasons.GetDescription(code)))
+            .ToList();
+        return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
     }
 
     private static string ComputeSha256(string input)

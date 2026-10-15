@@ -111,4 +111,15 @@ public sealed class DeliveriesController : ControllerBase
         var result = await _fieldService.GetDeliveriesAsync(routePlanId, status, limit, cursor, ct);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Issue #117: Catálogo normativo versionado de motivos de rechazo de recepción en campo.
+    /// </summary>
+    [HttpGet("rejection-reasons")]
+    [Authorize]
+    public IActionResult GetRejectionReasons()
+    {
+        var catalog = _fieldService.GetRejectionReasonsCatalog();
+        return Ok(catalog);
+    }
 }
