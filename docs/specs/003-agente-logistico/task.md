@@ -688,3 +688,29 @@ tumbó la API por `DB_PASSWORD` ausente en `rollback.yml` (recuperada con deploy
 `38738079341` y corregida en #93); Watch previo `01a13faf-3974…` con fallback
 `agent_error` por base sin fixture. La inyección 10/10 y CE-03 quedan
 acreditados con datos reales; PA-01 resuelta.
+
+## Issue #113 — workflow de error y traza de AgentRun — 15-oct-2026
+
+Rama `feature/113-n8n-error-workflow-agent-run`, creada desde `origin/develop`
+`8259389`. El issue añade HZ-07/ESC-19 sin cambiar el fallback ESC-16/ESC-17.
+El Error Trigger no recibe el cuerpo original del webhook; la respuesta 202 de
+los workflows incluirá el `executionId`, que la API persistirá en el `AgentRun`.
+El workflow de error resolverá el `runId` por ese ID usando el M2M ya existente.
+El ID configurado por n8n para el workflow de error queda fuera del repositorio.
+
+Plan:
+
+- [ ] Exponer consulta M2M por `executionId` y `POST /agent/runs/{id}/failure`,
+  validar la asociación con el run y registrar nodo/mensaje una sola vez por
+  ejecución en `ToolCallsJson`.
+- [ ] Devolver y persistir el ID de ejecución de n8n sin alterar el resultado
+  de fallback ante n8n inaccesible o timeout.
+- [ ] Exportar `error-agente.json`, enlazarlo mediante un marcador de
+  configuración de servidor en vigía/incidente y regenerar los tres JSON.
+- [ ] Ampliar las pruebas de CI de credenciales y la cobertura del contrato,
+  idempotencia, rol, vínculo de workflows y fallback.
+- [ ] Ejecutar los checks de contribución, abrir PR a `develop`, resolver
+  conflictos y fusionar/cerrar #113 solo con checks verdes.
+
+Estado inicial: **código pendiente; pruebas locales pendientes; ejecución n8n
+real pendiente; despliegue/configuración externa pendiente**.
