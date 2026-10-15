@@ -18,6 +18,7 @@
 | T9 | Fixture regional y calibración del incidente | T8 | — | completada |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
 | T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
+| T12 | Rutas por calles (mapa y distancias del motor con OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo; demo-region sin cambios) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -206,3 +207,74 @@ la aprobación de alternativas de otros escenarios; requieren su propia evidenci
 | `src/Application/Logistics/Planning/RoutePlanner.cs` | Backend | Bodega por vehículo al planificar y replanificar; posiciones redondeadas; sin planes vacíos | Defectos 1 y 2 | Hecho |
 | `tests/IstpetDev.Tests/E2E/DatasetsJourneyTests.cs` | Pruebas | Recorrido completo con los datasets del repositorio y con coordenadas de 7 decimales | Que los defectos no vuelvan con datos reales | 6/6 en verde |
 | `tests/IstpetDev.Tests/Performance/LogisticsPerformanceTests.cs` | Pruebas | El benchmark exige paradas planificadas, no solo rutas | Pasaba sin planificar nada | En verde |
+
+### T12 — Rutas por calles en el mapa y un color por vehículo (15-oct)
+
+**Responsable:** Anthony Pilatasig. **Código:** [RouteGeometryService](../../../src/Application/Logistics/RouteGeometryService.cs), `GET /api/v1/route-plans/{id}/geometry` en [RoutePlansController](../../../src/Api/Controllers/RoutePlansController.cs), [página Rutas](../../../apps/web/src/pages/rutas/rutas.page.ts) y [map-view](../../../apps/web/src/shared/ui/map-view/map-view.component.ts). **Pruebas:** [RouteGeometryTests](../../../tests/IstpetDev.Tests/Integration/Logistics/RouteGeometryTests.cs) y [rutas-map.spec.ts](../../../apps/web/src/pages/rutas/rutas-map.spec.ts).
+
+**Problema.** Las rutas propuestas por el motor o el agente se dibujaban como rectas entre paradas, sin la bodega de salida, y todas con el mismo color fijo (`#00A7C4`).
+- `Logistics:Osrm:BaseUrl` estaba vacío.
+- Aun configurado, el backend solo pedía la tabla de distancias (`/table`), no la geometría.
+- La web unía las paradas con segmentos rectos (`buildMap`).
+
+**Decisiones:**
+- **OSRM sobre OpenStreetMap** (ADR-05: sin costo ni API key), elegido por el usuario frente a Google Maps.
+- **OSRM solo dibuja.** La opción nueva `Logistics:Osrm:RouteGeometryUrl` no cambia las distancias del plan: activar `BaseUrl` habría cambiado los km de todas las rutas y descalibrado la política del agente validada en #39.
+- **Recorrido completo:** bodega propia del vehículo → paradas en orden → bodega. Se guarda en memoria por plan y versión: 12 h si sale bien, 1 min si falla.
+- **Sin OSRM:** rectas marcadas `approximate`, que la web dibuja punteadas con un aviso.
+- **En la web:**
+  - Todas las rutas vigentes a la vez (última revisión por vehículo, sin canceladas, rechazadas ni reemplazadas), cada una con su color.
+  - La seleccionada va resaltada y encima.
+  - La bodega aparece marcada, y hay una leyenda clicable con vehículo, km y paradas.
+- **Seguridad:** los textos de las ventanas emergentes del mapa se escapan; vienen de datos importados (el fixture `demo-region-injection` trae texto malicioso).
+
+**Verificación en vivo** contra `router.project-osrm.org`, con `docs/dataset/test/national-v1-seed-11`:
+- La primera prueba falló: el servidor público responde **403 sin `User-Agent`**, que `HttpClient` no envía. Se agregó el encabezado y una prueba que lo exige.
+- Después: 6/6 rutas `osrm`, con 3.332 a 7.598 puntos de trazado y entre 0,4 y 2 s por ruta en la primera consulta.
+
+**Diferencia que hay que conocer.** Por calles, las rutas miden **147 a 233 km**; el plan dice **104 a 143 km**, porque el motor usa una aproximación en línea recta. La leyenda indica «por calles» o «aprox.» para no confundir las dos cifras. Llevar las distancias del plan a carretera (`BaseUrl`) queda como decisión posterior al evento, porque obliga a recalibrar la política.
+
+**Datos:** los puntos y bodegas de `docs/dataset` y `data/fixtures` son **sintéticos**, ubicados en zonas plausibles de ciudades reales; solo la red vial (OpenStreetMap) es real.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Estado |
+|---|---|---|---|---|
+| `RouteGeometryService.cs`, `LogisticsOptions.cs`, `DependencyInjection.cs` | Backend | Recorrido por calles con OSRM, caché y respaldo aproximado, más `User-Agent` | Las rutas se dibujaban rectas | Hecho; 3 pruebas |
+| `RoutePlansController.cs` | Backend | `GET /route-plans/{id}/geometry` | La web necesita el trazado y las paradas de cada plan | Hecho |
+| `appsettings.*.json`, `docker-compose.prod.yml` | Configuración | `RouteGeometryUrl` (en producción, `OSRM_ROUTE_GEOMETRY_URL` sobrescribible) | Producción tampoco tenía proveedor de rutas | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Frontend | Todas las rutas con color por vehículo, resaltado, bodega y leyenda | No se distinguían las rutas | Hecho; 2 pruebas nuevas |
+| `map-view.component.ts` | Frontend | Marcadores de color numerados, opacidad, etiqueta y escape de HTML | Soporte de lo anterior y seguridad | Hecho |
+
+Suite del backend 447/447; web 74/74 y `build:web` de producción sin errores.
+
+#### T12b — El motor planifica con distancias por calles (decidido por el usuario el 15-oct)
+
+**Medición previa:** se comparó el orden de paradas del motor con el orden óptimo por calles (OSRM `trip`), con las mismas paradas:
+- Dataset nacional: el orden del motor recorre **9 % más de km** en total, y hasta **31 %** en VEH-MA-01.
+- `demo-region`: 4 % más.
+
+Causa: el motor ordenaba con distancias en línea recta (`Osrm:BaseUrl` vacío). El trazado de OSRM entre paradas respeta las calles de una vía de OpenStreetMap; lo que fallaba era el orden. Google Maps no lo resolvería sin reordenar las paradas.
+
+**Defectos de `DistanceProvider` al activar OSRM**, corregidos:
+1. No enviaba `User-Agent`: el servidor público respondía 403 y se volvía en silencio a la aproximación.
+2. No respetaba el límite de 100 coordenadas por tabla: ahora pide por bloques con `sources` y `destinations`.
+3. Tiempo límite de 3 s, insuficiente para una tabla nacional: ahora 10 s.
+
+Además, los pares pendientes se buscan en un `HashSet` y se registra cuántos tramos quedaron aproximados.
+
+**Efecto medido con `Osrm:BaseUrl` activo:**
+
+| Dataset | Tramos del motor | Resultado |
+|---|---|---|
+| `demo-region` (demo) | 240/240 de `tramos.csv` del dataset | **Sin cambios:** mismos km (57,5 y 11,5) y misma política del agente |
+| Nacional | 1.148 de `road_segments.csv` + 6.162 de OSRM | Cambian VEH-UN-01 (122,8 → 152,9 km) y VEH-US-01 (103,9 → 132,2 km); planificar tarda 4,1 s la primera vez (luego los tramos quedan en `RoadMatrixEdge`) |
+
+**Prioridad de las distancias:** se mantiene tramos importados > OSRM > aproximación. Si una empresa sube sus propios tiempos, mandan sus datos.
+- Los tramos de `docs/dataset` y `data/fixtures` son **sintéticos** (README del dataset nacional).
+- Para planificar el nacional con calles reales, súbelo **sin** `road_segments.csv`.
+
+**Verificación:**
+- Con `Osrm:BaseUrl` apuntando al OSRM público: 58/58 pruebas de E2E, logística y agente en verde, incluido el incidente `cierre-norte` (VEH-01 automático, VEH-02 escalado).
+- Suite completa sin OSRM: 448/449. Falla la intermitente conocida `AgentJourneyTests(partial_watch)`, que pasa aislada.
+- Prueba nueva: 120 puntos → peticiones de 100 coordenadas como máximo, con `User-Agent`, y todos los pares por carretera.
+
+**Configuración:** `Logistics:Osrm:BaseUrl` = `https://router.project-osrm.org` y `TimeoutSeconds` = 10 en `appsettings`. En producción, `OSRM_BASE_URL` y `OSRM_TIMEOUT_SECONDS` se pueden sobrescribir.
