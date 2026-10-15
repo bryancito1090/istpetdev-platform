@@ -720,12 +720,54 @@ Plan:
   export Error Trigger de las pruebas de agentes, todos los checks remotos
   pasaron y el PR se fusionó como `db86e83`. GitHub cerró #113.
 
-Estado final de repositorio: **PR #147 integrado en `develop`; issue #113
+Estado del cierre inicial (histórico): **PR #147 integrado en `develop`; issue #113
 cerrado; suite .NET 412/412; prueba Python del generador 5/5 y limpieza del
 arranque local 1/1; `npm run check`, `npm run audit:check` y CI remoto aprobados**.
 `build-workflows.py --check` y `git diff --check` están limpios.
 `check_vault.py`: 0 errores y 4 avisos existentes no relacionados con esta nota.
-La ejecución real del Error Trigger y la configuración de la instancia n8n
-siguen pendientes: no se modificó el servidor. El marcador
+En ese cierre quedaron pendientes la ejecución real del Error Trigger y la
+configuración de la instancia n8n. El marcador
 `{{ERROR_WORKFLOW_ID}}` debe resolverse al importar/configurar en la instancia
 objetivo; el ID asignado por n8n no se versiona.
+
+## Reapertura y validación completa de #113 — 15-oct-2026
+
+El cierre por #147 fue prematuro: acreditó código y CI, pero no ESC-19 con un
+Error Trigger real. El issue se reabrió. Nueva rama
+`fix/113-validacion-real-n8n` desde `develop` `3a8d8d9`.
+
+- [x] Ejecutar n8n 2.39.5 real y API/PostGIS aislados; asignar y comprobar el
+  ID del workflow de error en esa instancia, sin versionarlo.
+- [x] Provocar una excepción de nodo en vigía e incidente y verificar la
+  traza del AgentRun, payload G1, M2M e idempotencia por executionId.
+- [x] Verificar ESC-16 (n8n caído) y ESC-17 (sin resultado antes del timeout)
+  mediante el cliente HTTP real de n8n.
+- [x] Registrar resultados y fallos; suite completa 439/439, `npm run check`,
+  auditoría npm/.NET, generación, pruebas Python y bóveda aprobados.
+- [ ] Abrir PR sin conflictos a develop, comprobar CI/aprobación/merge en
+  GitHub y cerrar #113 únicamente con evidencia completa.
+
+Evidencia: [validacion-113](evidencia/2026-10-15-validacion-113.md). Se
+detectaron y corrigieron dos fallos reales de arranque: el CLI exige ID al
+importar y el runtime exige publicar el handler. ESC-19 pasa en vigía e
+incidente, con payload G1 y replay concurrente sin duplicados; ESC-17 pasa en
+10 222 ms y ESC-16 en 126 ms. El ID se genera/reutiliza en la instancia.
+
+La API de #113 ya estaba desplegada por release #149 (`main` `508705f`). Tras
+la prueba aislada verde se configuró también el n8n productivo: error workflow
+creado/publicado y vigía/incidente enlazados, con registro de ejecución y ACK
+con ID; misma credencial M2M, cron apagado. Verificación de lectura de la versión
+publicada, HMAC inválido 401 en ambos webhooks y readiness API 200. No se
+provocaron fallos ni resets en producción. El issue permanece abierto mientras
+se completa el nuevo PR y sus checks/revisión.
+
+Prelaunch: alcance local aislado sobre Docker Linux; n8n/API escuchan en
+loopback y PostGIS es descartable. Se reutilizan la autorización, las
+migraciones y las referencias M2M del producto; la identidad OAuth de prueba
+es sintética, sin crear clientes/credenciales cloud ni llamar al modelo.
+SQL de correlación/traza parametrizado y callbacks restringidos a
+Automatizacion. RLS Schema95, plantillas administrables, QR, storage y proxy
+expuesto no aplican a este recorrido. Las pruebas de autorización y scans
+vigentes se reutilizan en lo que no cambió; el runtime ESC-19 sigue pendiente
+hasta la prueba real. No se promueve a main ni se modifica la instancia
+productiva al ejecutar esta validación.
