@@ -127,7 +127,7 @@ python3 scripts/base_datos/database-task.py migrate --profile istpetdev-admin \
   --config "$private_dir/dev-access.json" --outputs "$private_dir/dev-outputs.json" --member integration
 ```
 
-El script genera primero `pg_dump -Fc` con cliente **PostgreSQL 16**, comprueba catálogo/checksum, sube a S3 con SHA-256 y verifica la versión remota antes de DDL. Usa Docker `postgres:16-alpine` para evitar generar un dump de versión mayor incompatible. El migrador ejecuta SQL EF idempotente bajo advisory lock; no hay `EnsureCreated`, migraciones al arrancar ni downgrade automático. Aplicar también en las bases personales con `--member dev_XX` durante el bootstrap inicial. La integración recibe solo migraciones coordinadas desde develop.
+El script genera primero `pg_dump -Fc` con cliente **PostgreSQL 16**, comprueba catálogo/checksum, sube a S3 con SHA-256 y verifica la versión remota antes de DDL. Usa Docker `postgres:16-alpine` para evitar generar un dump de versión mayor incompatible. Desde el 15-oct (#15) el migrador ejecuta `IstpetDev.Api.dll --migrate`, el mismo migrador de EF que usa producción al arrancar con `ApplyMigrations=true`; el script `dotnet ef migrations script --idempotent` vía psql se retiró porque falla con un error de sintaxis sobre las migraciones actuales. Requiere compilar `src/Api` en Debug. No hay `EnsureCreated` ni downgrade automático. Aplicar también en las bases personales con `--member dev_XX` durante el bootstrap inicial. La integración recibe solo migraciones coordinadas desde develop.
 
 ```bash
 python3 scripts/base_datos/database-task.py backup --profile istpetdev-admin \
