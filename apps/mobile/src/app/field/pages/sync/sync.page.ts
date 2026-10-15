@@ -159,6 +159,25 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                 </div>
               }
 
+              <!-- Mensaje de Requiere Revisión (Issue #114 / ESC-23 / ESC-25) -->
+              @if (item.status === 'RequiresReview' && item.errorMessage) {
+                <div class="p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-950 text-xs space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold">Aislado en Outbox ({{ item.errorCode || 'Error de Negocio' }}):</span>
+                    <span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">Requiere Revisión</span>
+                  </div>
+                  @if (item.problemType) {
+                    <div class="text-[10px] font-mono text-slate-500 break-all">
+                      Tipo: {{ item.problemType }}
+                    </div>
+                  }
+                  <p class="text-[11px] leading-relaxed">{{ item.errorMessage }}</p>
+                  <p class="text-[10px] text-amber-800 italic">
+                    Elemento aislado sin reintento automático para no bloquear la cola (ESC-23). Datos locales preservados (ESC-25).
+                  </p>
+                </div>
+              }
+
               <!-- Botones de Acción -->
               <div class="flex flex-col sm:flex-row gap-2 pt-1">
                 @if (item.status === 'Conflict') {
@@ -168,6 +187,16 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                     class="flex-1"
                     (click)="resolveConflict(item)">
                     Resolver con Nueva Versión y Reintentar
+                  </ion-button>
+                }
+
+                @if (item.status === 'RequiresReview') {
+                  <ion-button
+                    size="small"
+                    color="warning"
+                    class="flex-1"
+                    (click)="resolveRequiresReview(item)">
+                    Revisar y Adaptar Versión
                   </ion-button>
                 }
 
@@ -205,9 +234,13 @@ export class SyncPage {
   }
 
   resolveConflict(item: OutboxItem): void {
-    // Si la versión actual era 1 o 2, intentar avanzar a la versión activa o +1
     const nextVersion = item.expectedDeliveryVersion < 3 ? item.expectedDeliveryVersion + 1 : 1;
     this.outboxService.resolveConflictWithNewVersion(item.operationId, nextVersion).catch(() => {});
+  }
+
+  resolveRequiresReview(item: OutboxItem): void {
+    const nextVersion = item.expectedDeliveryVersion < 3 ? item.expectedDeliveryVersion + 1 : 1;
+    this.outboxService.resolveRequiresReview(item.operationId, nextVersion).catch(() => {});
   }
 
   getStatusLabel(status: string): string {
@@ -224,6 +257,8 @@ export class SyncPage {
         return 'Completo';
       case 'Conflict':
         return 'Conflicto 409';
+      case 'RequiresReview':
+        return 'Requiere Revisión';
       default:
         return status;
     }
@@ -242,6 +277,8 @@ export class SyncPage {
         return base + 'bg-emerald-100 text-emerald-800';
       case 'Conflict':
         return base + 'bg-rose-100 text-rose-800';
+      case 'RequiresReview':
+        return base + 'bg-amber-100 text-amber-900 border border-amber-300';
       default:
         return base + 'bg-slate-100 text-slate-800';
     }
