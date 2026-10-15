@@ -1,0 +1,16 @@
+code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days
+HOS-N01,Hospital Norte (sintético),-0.1180,-78.4880,Pichincha,hospital,alta,07:00,10:30,20,2
+CLI-N02,Clínica Norte (sintética),-0.1450,-78.4800,Pichincha,clinica,media,08:00,17:00,15,2
+OFI-N03,Oficinas Norte (sintéticas),-0.1650,-78.4850,Pichincha,oficina,normal,08:00,17:00,10,2
+EDU-N04,Colegio Norte (sintético),-0.1300,-78.4700,Pichincha,educacion,normal,07:00,13:00,10,2
+COM-N05,Comercial Norte (sintético),-0.1750,-78.4780,Pichincha,comercial,media,09:00,20:00,15,2
+HOT-N06,Hotel Centro-Norte (sintético),-0.1900,-78.4900,Pichincha,hotel,media,08:00,17:00,15,2
+OFI-N07,Oficinas La Carolina (sintéticas),-0.1550,-78.4950,Pichincha,oficina,normal,08:00,17:00,10,2
+HOS-S08,Hospital Sur (sintético),-0.2900,-78.5500,Pichincha,hospital,alta,07:00,11:00,20,2
+CLI-S09,Clínica Sur (sintética),-0.2500,-78.5200,Pichincha,clinica,alta,07:00,12:00,15,2
+EDU-S10,Colegio Sur (sintético),-0.2700,-78.5300,Pichincha,educacion,normal,07:00,13:00,10,2
+COM-S11,Comercial Sur (sintético),-0.2300,-78.5150,Pichincha,comercial,media,09:00,20:00,15,2
+OFI-S12,Oficinas Centro (sintéticas),-0.2100,-78.5000,Pichincha,oficina,normal,08:00,17:00,10,2
+IND-S13,Planta Industrial Sur (sintética),-0.3100,-78.5450,Pichincha,industrial,normal,08:00,17:00,15,2
+GER-S14,Geriátrico Sur (sintético),-0.2400,-78.5350,Pichincha,salud,media,08:00,16:00,15,2
+HOS-C15,Hospital Centro (sintético),-0.2050,-78.5050,Pichincha,hospital,alta,07:00,11:00,20,2

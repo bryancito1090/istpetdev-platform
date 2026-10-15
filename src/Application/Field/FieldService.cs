@@ -451,7 +451,7 @@ public sealed class FieldService : IFieldService
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
         // Ubicaciones para movimiento
-        Guid vehicleLocationId = delivery.OriginLocationId;
+        Guid? vehicleLocationId = delivery.OriginLocationId;
         Guid destinationLocationId = delivery.OriginLocationId;
 
         if (delivery.RouteStopId.HasValue)
@@ -479,6 +479,11 @@ public sealed class FieldService : IFieldService
                 .Select(hu => (Guid?)hu.LocationId)
                 .FirstOrDefaultAsync(ct);
             if (huLocId.HasValue) vehicleLocationId = huLocId.Value;
+        }
+
+        if (vehicleLocationId == destinationLocationId)
+        {
+            vehicleLocationId = null;
         }
 
         var receipt = new Receipt
@@ -554,6 +559,14 @@ public sealed class FieldService : IFieldService
                 hasRejections = true;
             }
 
+            string? normalizedReason = null;
+            if (reqLine.QuantityRejected > 0 && !string.IsNullOrWhiteSpace(reqLine.RejectionReason))
+            {
+                normalizedReason = ReceiptRejectionReasons.TryNormalize(reqLine.RejectionReason, out var canonical)
+                    ? canonical
+                    : reqLine.RejectionReason.Trim();
+            }
+
             var rLine = new ReceiptLine
             {
                 OrganizationId = DemoOrganization.Id,
@@ -561,7 +574,7 @@ public sealed class FieldService : IFieldService
                 DeliveryLineId = dLine.Id,
                 QuantityAccepted = reqLine.QuantityAccepted,
                 QuantityRejected = reqLine.QuantityRejected,
-                RejectionReason = reqLine.RejectionReason,
+                RejectionReason = normalizedReason,
                 RemainingQuantity = reqLine.RemainingQuantity,
                 NextRequestedQuantity = reqLine.NextRequestedQuantity
             };
@@ -574,6 +587,7 @@ public sealed class FieldService : IFieldService
                 reqLine.QuantityAccepted,
                 reqLine.QuantityRejected,
                 reqLine.Unit,
+                normalizedReason,
                 reqLine.RemainingQuantity,
                 reqLine.NextRequestedQuantity));
         }
@@ -625,10 +639,13 @@ public sealed class FieldService : IFieldService
         {
             if (reqLine.QuantityAccepted <= 0m) continue;
 
-            var vehicleBalance = await FindBalanceAsync(vehicleLocationId, reqLine.LotId);
-            if (vehicleBalance != null)
+            if (vehicleLocationId.HasValue)
             {
-                vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                var vehicleBalance = await FindBalanceAsync(vehicleLocationId.Value, reqLine.LotId);
+                if (vehicleBalance != null)
+                {
+                    vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                }
             }
 
             var destBalance = await FindBalanceAsync(destinationLocationId, reqLine.LotId)
@@ -1329,6 +1346,14 @@ public sealed class FieldService : IFieldService
             evidence.Id,
             "Confirmed",
             evidence.ConfirmedAtUtc.Value);
+    }
+
+    public RejectionReasonsCatalogResponse GetRejectionReasonsCatalog()
+    {
+        var items = ReceiptRejectionReasons.All
+            .Select(code => new RejectionReasonDto(code, ReceiptRejectionReasons.GetDescription(code)))
+            .ToList();
+        return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
     }
 
     private static string ComputeSha256(string input)

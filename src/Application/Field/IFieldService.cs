@@ -76,4 +76,5 @@ public interface IFieldService
 
     Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default);
     Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default);
+    RejectionReasonsCatalogResponse GetRejectionReasonsCatalog();
 }

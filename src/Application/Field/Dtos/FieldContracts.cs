@@ -94,8 +94,13 @@ public sealed record ReceiptLineDto(
     decimal QuantityAccepted,
     decimal QuantityRejected,
     string Unit,
+    string? RejectionReason = null,
     decimal? RemainingQuantity = null,
     decimal? NextRequestedQuantity = null);
+
+public sealed record RejectionReasonDto(string Code, string Description);
+
+public sealed record RejectionReasonsCatalogResponse(string Version, IReadOnlyList<RejectionReasonDto> Reasons);
 
 public sealed record ReceiptResponse(
     Guid ReceiptId,

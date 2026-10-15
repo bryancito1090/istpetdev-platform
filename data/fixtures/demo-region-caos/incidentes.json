@@ -1,0 +1,11 @@
+{
+  "cierre-norte": {
+    "kind": "BloqueoVial",
+    "severity": "ALTA",
+    "description": "Cierre en el corredor de salida hacia el norte, zona Clínica Sur",
+    "lat": -0.24973,
+    "lon": -78.51721,
+    "radiusKm": 1.5,
+    "isSynthetic": true
+  }
+}

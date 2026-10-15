@@ -1,0 +1,4 @@
+sku,name,base_unit,weight_per_unit,extra_corrupted_column
+CORR-01,Producto Valido,UNIDAD,1.5
+CORR-02,Producto Malformado,,not_a_number,columna_sobrante_desplazada,mas_campos
+CORR-03,,LITRO,2.0
