@@ -48,7 +48,7 @@ public sealed class SimulationsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = Roles.Planning)]
+    [Authorize(Roles = Roles.Planning + "," + Roles.Auditor)]
     public async Task<IActionResult> ListComparisons(
         [FromQuery] int limit = 50,
         CancellationToken cancellationToken = default)
@@ -58,7 +58,7 @@ public sealed class SimulationsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = Roles.Planning)]
+    [Authorize(Roles = Roles.Planning + "," + Roles.Auditor)]
     public async Task<IActionResult> GetComparison(
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
@@ -73,7 +73,7 @@ public sealed class SimulationsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/export")]
-    [Authorize(Roles = Roles.Planning)]
+    [Authorize(Roles = Roles.Planning + "," + Roles.Auditor)]
     public async Task<IActionResult> ExportComparison(
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)

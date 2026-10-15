@@ -28,7 +28,7 @@ Que no haya RLS no significa que no existan roles de PostgreSQL:
 
 | Pieza | Situación | Fuente |
 |---|---|---|
-| Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`; Integración y Unit+E2E en runners paralelos, clases de prueba en paralelo sobre un PostGIS compartido), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA, y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
+| Pipeline CI/CD | Desde `main`, con un PR de `develop`: validación de política de ramas, QA Backend (.NET 8 con `LeanSchemaTests`; Integración y Unit+E2E en runners paralelos, clases de prueba en paralelo sobre un PostGIS compartido), QA Frontend (Angular 22 con ESLint FSD), imágenes Docker inmutables en GHCR asociadas al SHA (construidas en paralelo con QA; el despliegue y el tag `latest` solo avanzan con QA en verde), y despliegue atómico por SSH al EC2. | `.github/workflows/deploy.yml` |
 | Host de la aplicación | `istpetdev-prod-host` (`i-0e0a979f8c0885a4f`, IP `44.204.107.167`), Debian 13, stateless. | [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] |
 | Base de datos en producción | Amazon RDS PostgreSQL 16.13 (`istpetdev-rds-dev`, base `istpetdev_integration`) en subred privada de AWS. **27 tablas de `DemoCore` aplicadas y verificadas.** | [[Estrategia de tres entornos y base de datos]] |
 | Entorno de desarrollo | Base compartida en AWS EC2 (puerto `5432`) con usuario único `migrator_dev_01` para todo el equipo (laboratorio, casa u oficina), configurada centralizadamente en `.env`, y Docker local (`localhost:15432`) como alternativa individual. `appsettings.json` mantiene secretos limpios para no exponer credenciales en Git. | [[Estrategia de tres entornos y base de datos]] |
@@ -53,20 +53,73 @@ Regla estricta: **una migración por spec, en serie sobre `develop`**. Cada migr
 
 ## 4. Procedimiento de Respaldo y Restauración (Issue #15)
 
-Antes de cualquier intervención destructiva o cambio crítico de esquema sobre Amazon RDS:
+> **Actualizado el 15-oct-2026 (#15, Anthony Pilatasig).** Estado verificado en el repositorio; lo que no se pudo comprobar está marcado como tal.
 
-1. **Snapshot Manual en Amazon RDS:**
+### 4.1 Dónde viven los datos y qué respaldos existen
+
+| Pieza | Valor | Fuente |
+|---|---|---|
+| Base de producción | Amazon RDS PostgreSQL 16 `istpetdev-rds-dev`, base `istpetdev_integration`, rol `migrator_integration`, TLS `VerifyFull` | `infra/compose/docker-compose.prod.yml`, `.github/workflows/deploy.yml`; actividad de conexión del 15-oct en la evidencia de #39 |
+| Base de desarrollo | PostgreSQL compartido en EC2 (`istpetdev_dev_01`) o Docker local. **No es producción** | [[Credenciales y acceso del equipo]] §3 |
+| Respaldo automático de RDS (PITR) | 7 días, o 1 día si `free_plan_backup_workaround=true` | `infra/terraform/environments/dev/main.tf` |
+| Snapshot diario con AWS Backup | Solo si `free_plan_backup_workaround=true`; retención de 7 días | `infra/terraform/environments/dev/backup.tf` |
+| Bucket de volcados lógicos | `istpetdev-backups-dev-<cuenta>-us-east-1`, prefijos `daily/` (7 días) y `weekly/` (28 días), versionado | `infra/terraform/environments/dev/operations.tf` |
+| Rol de solo lectura para volcados | `backup_integration` (solo `SELECT`), secreto `/istpetdev/dev/db/integration/backup` | `scripts/ops/dev.py` |
+
+**No verificado desde el repositorio:** qué valor de `free_plan_backup_workaround` está aplicado, y si existen snapshots o volcados en la cuenta. Hace falta acceso a AWS.
+
+PITR y snapshot restauran **la instancia completa en una instancia nueva**. Para recuperar una sola base se usa el volcado lógico.
+
+### 4.2 Herramienta oficial
+
+La única herramienta de respaldo es `scripts/base_datos/database-task.py`; `scripts/backup/backup-db.sh` es su atajo.
+
+- `backup`:
+  - Hace `pg_dump -Fc` con cliente PostgreSQL 16 (en Docker) y el rol `backup_integration`.
+  - Toma el conteo y el hash de cada tabla antes y después del volcado, y aborta si hubo escrituras durante el respaldo.
+  - Calcula el SHA-256 y sube el archivo a `daily/` (y a `weekly/` los domingos) con checksum.
+  - Verifica tamaño y checksum del objeto remoto.
+- `restore-check`:
+  - Comprueba el SHA-256.
+  - Restaura en una base aleatoria `istpetdev_restorecheck_*` y compara todas las tablas contra el manifiesto.
+  - Comprueba PostGIS y **borra solo esa base de prueba**.
+- `migrate`:
+  - Primero respalda; después aplica las migraciones con el mismo migrador que usa producción (`IstpetDev.Api.dll --migrate`).
+
+### 4.3 Procedimiento antes de una migración o intervención destructiva
+
+Requiere el túnel SSM abierto (`scripts/ops/dev-tunnel.sh`) y los archivos privados `dev-access.json` y `dev-outputs.json`, según `docs/aws-dev.md`.
+
+1. **Snapshot manual de la instancia** (Jorge Doicela):
    ```bash
-   aws rds create-db-snapshot \
-     --db-instance-identifier istpetdev-rds-dev \
-     --db-snapshot-identifier istpetdev-rds-dev-pre-democore-20261013
+   aws rds create-db-snapshot --db-instance-identifier istpetdev-rds-dev \
+     --db-snapshot-identifier "istpetdev-rds-dev-pre-<motivo>-$(date -u +%Y%m%d-%H%M)"
+   aws rds wait db-snapshot-available --db-snapshot-identifier "<el mismo identificador>"
    ```
-   Verificar que el estado cambie a `available` antes de continuar.
-2. **Volcado Lógico (`pg_dump -Fc`):**
-   - Ejecutado desde el nodo administrativo o túnel SSM sobre `istpetdev_integration`.
-   - Carga del archivo al bucket `istpetdev-backups-dev-...` registrando su hash SHA-256.
-3. **Plan de Reversión Probado:**
-   - En caso de fallo mayor, restaurar el volcado mediante `pg_restore -d istpetdev_integration` o recuperar el snapshot en una base temporal para reconciliación.
+2. **Volcado lógico verificado en S3**, en una ventana sin escrituras:
+   ```bash
+   scripts/backup/backup-db.sh integration
+   ```
+3. **Restauración de prueba** en una base descartable, nunca sobre `istpetdev_integration`:
+   ```bash
+   python3 scripts/base_datos/database-task.py restore-check --profile istpetdev-admin \
+     --config "$private_dir/dev-access.json" --outputs "$private_dir/dev-outputs.json" \
+     --backup "$private_dir/backups/<archivo>.dump"
+   ```
+4. Registrar la evidencia (fecha UTC, identificador del snapshot, clave S3 y SHA-256, tablas verificadas y segundos de restauración) en el issue o en [[Evidencias y ensayos de base de datos y despliegue]], sin credenciales.
+5. **Recuperación real:**
+   - Restaurar el volcado en una base nueva y reaplicar roles y grants canónicos (el volcado no guarda propietarios ni ACL).
+   - Validar y solo entonces cambiar la conexión.
+   - Con un snapshot: restaurarlo en **otra instancia**, validar y después cambiar el endpoint. Nunca rebobinar operaciones aceptadas sin reconciliación.
+
+### 4.4 Ensayo verificado y pendientes
+
+| Hecho | Estado | Evidencia |
+|---|---|---|
+| Ensayo completo en PostGIS 16 desechable con TLS: bootstrap dos veces, 8 migraciones aplicadas una sola vez, API lista, volcado, restauración aislada y hash por tabla | **Pasó** el 15-oct-2026 16:47 UTC, en 76 s | `python3 scripts/base_datos/test-bootstrap.py`; ahora también corre en CI (job «Ensayo de respaldo y restauración») |
+| Snapshot `pre-democore` antes de aplicar DemoCore | **Sin evidencia en el repositorio.** No se presenta como realizado | — |
+| Volcado de `istpetdev_integration` en S3 y `restore-check` contra RDS | **Pendiente**: requiere acceso a AWS (Jorge Doicela) | — |
+| Paso de respaldo automático en `deploy.yml` antes de migrar | **No implementado.** El rol del host de la app solo tiene permisos de Cognito y el host no tiene `pg_dump` ni AWS CLI; un paso obligatorio bloquearía todos los despliegues. Hasta resolverlo, el ítem 2 del checklist de §11 (snapshot manual) sigue siendo obligatorio | `infra/terraform/environments/dev/app_host_iam.tf` |
 
 ## 5. Regla de Promoción a Producción (Acordada y Ratificada)
 
@@ -151,7 +204,7 @@ Respuesta esperada: `HTTP/1.1 200 OK` con payload JSON conteniendo `"status": "H
 
 ## 8. Política de Rollback y Migraciones Aditivas
 
-El workflow `rollback.yml` restaura los contenedores `istpetdev-backend` e `istpetdev-web` a una versión inmutable previa (SHA anterior) en menos de 30 segundos. Sin embargo, **el rollback de contenedores no revierte las migraciones aplicadas en Amazon RDS**.
+El workflow `rollback.yml` restaura los contenedores `istpetdev-backend` e `istpetdev-web` a una versión inmutable previa (SHA anterior) en menos de 30 segundos. Solo acepta un SHA hexadecimal de `main` que ya tenga un despliegue exitoso en `deploy.yml` (QA y despliegue en verde) y comparte el grupo de concurrencia `production-deploy`, así que nunca corre a la vez que un despliegue. Sin embargo, **el rollback de contenedores no revierte las migraciones aplicadas en Amazon RDS**.
 
 ### Regla Inviolable: Migraciones Aditivas (Zero-Downtime)
 
