@@ -82,6 +82,25 @@ export interface RoutePlanSummaryDto {
   stopsCount: number;
 }
 
+export interface RouteGeometryWaypointDto {
+  code: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  sequence: number;
+}
+
+/** Recorrido para el mapa: `osrm` por calles; `approximate` rectas entre paradas (sin servicio de rutas). */
+export interface RouteGeometryDto {
+  routePlanId: string;
+  vehicleCode: string;
+  source: 'osrm' | 'approximate';
+  roadKm: number | null;
+  coordinates: [number, number][];
+  depot: RouteGeometryWaypointDto | null;
+  stops: RouteGeometryWaypointDto[];
+}
+
 export interface RoutePlanDetailDto {
   id: string;
   code: string;
@@ -404,6 +423,12 @@ export class ApiService {
         this.reportLoadError('rutas', err);
         return of([]);
       })
+    );
+  }
+
+  getRoutePlanGeometry(id: string): Observable<RouteGeometryDto | null> {
+    return this.http.get<RouteGeometryDto>(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/geometry`).pipe(
+      catchError(() => of(null))
     );
   }
 

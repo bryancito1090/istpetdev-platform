@@ -12,9 +12,39 @@ import {
   RouteCandidateStop,
   ServicePoint,
   AgentRunViewDto,
-  RejectedCaptureDto
+  RejectedCaptureDto,
+  RouteGeometryDto
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
+import { forkJoin } from 'rxjs';
+
+/** Un color por vehículo, en el orden de sus códigos; distinguibles entre sí sobre el mapa. */
+export const ROUTE_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2',
+  '#c026d3', '#65a30d', '#b45309', '#0f766e', '#db2777', '#4f46e5'];
+
+export interface RouteLegendItem {
+  planId: string;
+  vehicleCode: string;
+  color: string;
+  km: number;
+  stops: number;
+  source: 'osrm' | 'approximate';
+  selected: boolean;
+}
+
+/** Rutas vigentes: la última revisión de cada vehículo, sin canceladas, rechazadas ni reemplazadas. */
+export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePlanSummaryDto[] {
+  const latest = new Map<string, RoutePlanSummaryDto>();
+  for (const plan of plans) {
+    if (['Superseded', 'Cancelled', 'Rejected'].includes(plan.status)) continue;
+    const key = plan.vehicleCode || plan.vehicleId;
+    const current = latest.get(key);
+    if (!current || plan.revision > current.revision) latest.set(key, plan);
+  }
+  return [...latest.values()]
+    .sort((a, b) => (a.vehicleCode || a.vehicleId).localeCompare(b.vehicleCode || b.vehicleId))
+    .slice(0, limit);
+}
 
 @Component({
   selector: 'page-rutas',
@@ -281,6 +311,24 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                       [zoom]="7">
                     </ui-map-view>
                   </div>
+                }
+                @if (routeLegend().length > 0) {
+                  <div class="flex flex-wrap gap-2" aria-label="Leyenda de rutas">
+                    @for (item of routeLegend(); track item.planId) {
+                      <button type="button" (click)="selectPlan(item.planId)" [attr.data-legend]="item.vehicleCode"
+                        class="inline-flex items-center gap-2 text-[11px] px-2 py-1 rounded-lg border bg-white hover:bg-slate-50"
+                        [class.border-slate-900]="item.selected" [class.border-slate-200]="!item.selected">
+                        <span class="inline-block w-3 h-3 rounded-full" [style.background-color]="item.color"></span>
+                        <span class="font-semibold text-slate-800">{{ item.vehicleCode }}</span>
+                        <span class="text-slate-500">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
+                      </button>
+                    }
+                  </div>
+                  @if (routeLegendHasApproximate()) {
+                    <p class="text-[11px] text-amber-700">
+                      Las líneas punteadas son aproximadas (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
+                    </p>
+                  }
                 }
 
                 <!-- Itinerario de Paradas (Pickups & Deliveries) -->
@@ -843,6 +891,9 @@ export class RutasPage implements OnInit {
 
   readonly mapMarkers = signal<MapMarker[]>([]);
   readonly mapPolylines = signal<MapPolyline[]>([]);
+  readonly routeLegend = signal<RouteLegendItem[]>([]);
+  readonly routeLegendHasApproximate = computed(() => this.routeLegend().some(i => i.source === 'approximate'));
+  private readonly geometries = new Map<string, RouteGeometryDto>();
 
   // Estado del Asistente de Rutas por Pedidos
   readonly isWizardOpen = signal(false);
@@ -917,6 +968,7 @@ export class RutasPage implements OnInit {
       next: (plans) => {
         this.loading.set(false);
         this.routePlans.set(plans || []);
+        this.loadGeometries(plans || []);
         if (plans && plans.length > 0) {
           if (!this.selectedPlanId() || !plans.some(p => p.id === this.selectedPlanId())) {
             this.selectPlan(plans[0].id);
@@ -935,7 +987,8 @@ export class RutasPage implements OnInit {
     this.apiService.getRoutePlanById(id).subscribe({
       next: (detail) => {
         this.selectedDetail.set(detail);
-        this.buildMap(detail);
+        if (this.geometries.size > 0) this.renderAllRoutes();
+        else this.buildMap(detail);
       },
       error: () => {}
     });
@@ -1277,6 +1330,80 @@ export class RutasPage implements OnInit {
     } else {
       this.wizardPolylines.set([]);
     }
+  }
+
+  /** Pide al backend el recorrido por calles de cada ruta vigente que aún no tenga. */
+  private loadGeometries(plans: RoutePlanSummaryDto[]): void {
+    const missing = currentPlans(plans).filter(p => !this.geometries.has(p.id));
+    if (missing.length === 0) {
+      if (this.geometries.size > 0) this.renderAllRoutes();
+      return;
+    }
+    forkJoin(missing.map(p => this.apiService.getRoutePlanGeometry(p.id))).subscribe(results => {
+      results.forEach((geometry, i) => { if (geometry) this.geometries.set(missing[i].id, geometry); });
+      if (this.geometries.size > 0) this.renderAllRoutes();
+    });
+  }
+
+  /** Todas las rutas vigentes a la vez: un color por vehículo, la seleccionada resaltada y las bodegas marcadas. */
+  renderAllRoutes(): void {
+    const selected = this.selectedPlanId();
+    const polylines: MapPolyline[] = [];
+    const markers: MapMarker[] = [];
+    const legend: RouteLegendItem[] = [];
+    const depots = new Map<string, MapMarker>();
+
+    currentPlans(this.routePlans()).forEach((plan, index) => {
+      const geometry = this.geometries.get(plan.id);
+      if (!geometry) return;
+      const color = ROUTE_COLORS[index % ROUTE_COLORS.length];
+      const isSelected = plan.id === selected;
+      const dimmed = !!selected && !isSelected;
+      const vehicle = geometry.vehicleCode || plan.vehicleCode || plan.code;
+      const km = geometry.roadKm ?? plan.totalDistanceKm;
+
+      if (geometry.coordinates.length > 1) {
+        polylines.push({
+          id: plan.id,
+          coordinates: geometry.coordinates,
+          color,
+          weight: isSelected ? 6 : 4,
+          opacity: dimmed ? 0.3 : 0.9,
+          dashArray: geometry.source === 'approximate' ? '6 6' : undefined,
+          tooltip: `${vehicle} · ${km.toFixed(1)} km ${geometry.source === 'osrm' ? 'por calles' : 'aprox.'} · ${geometry.stops.length} paradas`
+        });
+      }
+      if (geometry.depot) {
+        depots.set(geometry.depot.code, {
+          id: `depot-${geometry.depot.code}`,
+          latitude: geometry.depot.latitude,
+          longitude: geometry.depot.longitude,
+          title: `Bodega ${geometry.depot.name || geometry.depot.code}`,
+          badge: 'Salida y regreso',
+          badgeColor: 'amber'
+        });
+      }
+      if (!dimmed) {
+        for (const stop of geometry.stops) {
+          markers.push({
+            id: `${plan.id}-${stop.sequence}`,
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+            title: `${stop.sequence}. ${stop.name || stop.code}`,
+            description: vehicle,
+            color,
+            pinLabel: String(stop.sequence)
+          });
+        }
+      }
+      legend.push({ planId: plan.id, vehicleCode: vehicle, color, km, stops: geometry.stops.length, source: geometry.source, selected: isSelected });
+    });
+
+    // La ruta seleccionada se dibuja al final para que quede encima.
+    polylines.sort((a, b) => Number(a.id === selected) - Number(b.id === selected));
+    this.mapPolylines.set(polylines);
+    this.mapMarkers.set([...depots.values(), ...markers]);
+    this.routeLegend.set(legend);
   }
 
   private buildMap(detail: RoutePlanDetailDto | null): void {
