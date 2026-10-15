@@ -65,11 +65,17 @@ public sealed class AgentRunService(
         var timeoutSeconds = options.Value.TimeoutSeconds > 0 ? options.Value.TimeoutSeconds : 10;
         var deadline = run.StartedAtUtc.AddSeconds(timeoutSeconds);
 
-        var triggerOutcome = await n8nTrigger.TriggerAsync(run.Id, request.Kind, request.IncidentId, deadline, ct);
-        if (triggerOutcome == TriggerOutcome.Error)
+        var triggerResult = await n8nTrigger.TriggerAsync(run.Id, request.Kind, request.IncidentId, deadline, ct);
+        if (triggerResult.Outcome == TriggerOutcome.Error)
         {
             await CompleteFallbackAsync(run, "n8n_unreachable", ct);
             return await BuildViewAsync(run.Id, ct);
+        }
+        if (!string.IsNullOrWhiteSpace(triggerResult.ExecutionId))
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE \"AgentRun\" SET \"N8nExecutionId\" = {triggerResult.ExecutionId} WHERE \"Id\" = {run.Id} AND \"OrganizationId\" = {DemoOrganization.Id} AND \"Status\" = 'Running' AND (\"N8nExecutionId\" IS NULL OR \"N8nExecutionId\" = {triggerResult.ExecutionId})",
+                ct);
         }
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
@@ -178,6 +184,71 @@ public sealed class AgentRunService(
         await transaction.CommitAsync(ct);
 
         return ResultOutcome.Accepted;
+    }
+
+    public Task<Guid?> GetRunIdForExecutionAsync(string executionId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(executionId)) return Task.FromResult<Guid?>(null);
+        return db.AgentRuns.AsNoTracking()
+            .Where(r => r.OrganizationId == DemoOrganization.Id && r.N8nExecutionId == executionId)
+            .Select(r => (Guid?)r.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<ExecutionRegistrationOutcome> RegisterExecutionAsync(Guid runId, string executionId, CancellationToken ct)
+    {
+        var updated = await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "AgentRun"
+            SET "N8nExecutionId" = {executionId}
+            WHERE "Id" = {runId}
+              AND "OrganizationId" = {DemoOrganization.Id}
+              AND "Status" = 'Running'
+              AND ("N8nExecutionId" IS NULL OR "N8nExecutionId" = {executionId})
+            """, ct);
+        if (updated > 0) return ExecutionRegistrationOutcome.Accepted;
+
+        var run = await db.AgentRuns.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == runId && r.OrganizationId == DemoOrganization.Id, ct);
+        if (run is null) return ExecutionRegistrationOutcome.NotFound;
+        return string.Equals(run.N8nExecutionId, executionId, StringComparison.Ordinal)
+            ? ExecutionRegistrationOutcome.Accepted
+            : ExecutionRegistrationOutcome.Conflict;
+    }
+
+    public async Task<FailureOutcome> SubmitFailureAsync(Guid runId, AgentFailureRequest failure, CancellationToken ct)
+    {
+        var run = await db.AgentRuns.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == runId && r.OrganizationId == DemoOrganization.Id, ct);
+        if (run is null) return FailureOutcome.NotFound;
+        if (!string.Equals(run.N8nExecutionId, failure.ExecutionId, StringComparison.Ordinal))
+            return FailureOutcome.ExecutionMismatch;
+
+        var trace = JsonSerializer.Serialize(new[]
+        {
+            new ToolCallTrace(
+                "POST",
+                $"/api/v1/agent/runs/{runId}/failure",
+                500,
+                0,
+                DateTime.UtcNow,
+                $"falló el nodo {failure.Node}",
+                failure.ExecutionId,
+                failure.Workflow,
+                failure.Node,
+                failure.Message)
+        }, JsonOpts);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "AgentRun"
+            SET "ToolCallsJson" = ("ToolCallsJson"::jsonb || {trace}::jsonb)
+            WHERE "Id" = {runId}
+              AND "OrganizationId" = {DemoOrganization.Id}
+              AND "N8nExecutionId" = {failure.ExecutionId}
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM jsonb_array_elements("ToolCallsJson"::jsonb) AS entries(trace)
+                  WHERE trace->>'executionId' = {failure.ExecutionId})
+            """, ct);
+        return FailureOutcome.Accepted;
     }
 
     public async Task<AgentRunView?> GetAsync(Guid runId, CancellationToken ct)
