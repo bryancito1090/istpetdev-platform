@@ -688,3 +688,44 @@ tumbó la API por `DB_PASSWORD` ausente en `rollback.yml` (recuperada con deploy
 `38738079341` y corregida en #93); Watch previo `01a13faf-3974…` con fallback
 `agent_error` por base sin fixture. La inyección 10/10 y CE-03 quedan
 acreditados con datos reales; PA-01 resuelta.
+
+## Issue #113 — workflow de error y traza de AgentRun — 15-oct-2026
+
+Rama `feature/113-n8n-error-workflow-agent-run`, actualizada mediante rebase
+sobre `origin/develop` `4828c22`. El issue añade HZ-07/ESC-19 sin cambiar el
+fallback ESC-16/ESC-17.
+El Error Trigger no recibe el cuerpo original del webhook; la respuesta 202 de
+los workflows incluirá el `executionId`, que la API persistirá en el `AgentRun`.
+Tras validar HMAC, los workflows registran ese ID con el M2M existente antes de
+continuar al nodo de IA, evitando una carrera entre el callback de error y la
+respuesta 202; la API también lo toma de la respuesta como respaldo. El workflow
+de error resolverá el `runId` por ese ID. El ID que asigna n8n al workflow de
+error queda fuera del repositorio.
+
+Plan:
+
+- [x] Exponer registro y consulta M2M por `executionId` y
+  `POST /agent/runs/{id}/failure`, validar la asociación con el run y registrar
+  nodo/mensaje una sola vez por ejecución en `ToolCallsJson`.
+- [x] Devolver y persistir el ID de ejecución de n8n sin alterar el resultado
+  de fallback ante n8n inaccesible o timeout.
+- [x] Exportar `error-agente.json`, enlazarlo mediante un marcador de
+  configuración de servidor en vigía/incidente y regenerar los tres JSON.
+- [x] Ampliar las pruebas de CI de credenciales y la cobertura del contrato,
+  idempotencia, rol, vínculo de workflows y fallback.
+- [x] Ejecutar los checks locales de contribución y rebasar sobre `develop`
+  actualizado; Git aplicó los commits sin conflictos manuales.
+- [x] PR [#147](https://github.com/bryancito1090/istpetdev-platform/pull/147)
+  abierto a `develop`; tras ajustar `test_workflow_context.py` para excluir el
+  export Error Trigger de las pruebas de agentes, todos los checks remotos
+  pasaron y el PR se fusionó como `db86e83`. GitHub cerró #113.
+
+Estado final de repositorio: **PR #147 integrado en `develop`; issue #113
+cerrado; suite .NET 412/412; prueba Python del generador 5/5 y limpieza del
+arranque local 1/1; `npm run check`, `npm run audit:check` y CI remoto aprobados**.
+`build-workflows.py --check` y `git diff --check` están limpios.
+`check_vault.py`: 0 errores y 4 avisos existentes no relacionados con esta nota.
+La ejecución real del Error Trigger y la configuración de la instancia n8n
+siguen pendientes: no se modificó el servidor. El marcador
+`{{ERROR_WORKFLOW_ID}}` debe resolverse al importar/configurar en la instancia
+objetivo; el ID asignado por n8n no se versiona.

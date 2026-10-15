@@ -6,7 +6,9 @@ env_file="$repo_root/.env"
 compose_file="$repo_root/infra/compose/docker-compose.local.yml"
 container="istpetdev-local-n8n"
 credential_file=""
-trap '[[ -z "$credential_file" ]] || rm -f -- "$credential_file"' EXIT
+workflow_export=""
+workflow_stage_dir=""
+trap '[[ -z "$credential_file" ]] || rm -f -- "$credential_file"; [[ -z "$workflow_export" ]] || rm -f -- "$workflow_export"; [[ -z "$workflow_stage_dir" ]] || rm -rf -- "$workflow_stage_dir"' EXIT
 
 if [[ ! -f "$env_file" ]]; then
   printf 'Falta %s; cópialo desde .env.example y completa las variables locales.\n' "$env_file" >&2
@@ -15,6 +17,8 @@ fi
 
 umask 077
 credential_file="$(mktemp "${TMPDIR:-/tmp}/istpetdev-n8n-credentials.XXXXXX")"
+workflow_export="$(mktemp "${TMPDIR:-/tmp}/istpetdev-n8n-workflows.XXXXXX")"
+workflow_stage_dir="$(mktemp -d "${TMPDIR:-/tmp}/istpetdev-n8n-import.XXXXXX")"
 python3 - "$env_file" "$credential_file" <<'PY'
 import json
 import sys
@@ -83,6 +87,26 @@ output_path.write_text(json.dumps(credentials, ensure_ascii=False), encoding="ut
 output_path.chmod(0o600)
 PY
 
+find_error_workflow_id() {
+  python3 - "$workflow_export" "${1:-}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8").strip()
+workflows = json.loads(text) if text else []
+if isinstance(workflows, dict):
+    workflows = [workflows]
+matches = [workflow for workflow in workflows if workflow.get("name") == "IstpetDev Agent - error"]
+if len(matches) > 1:
+    raise SystemExit("Hay más de un workflow IstpetDev Agent - error en n8n local.")
+workflow_id = matches[0].get("id", "") if matches else ""
+if sys.argv[2] and not workflow_id:
+    raise SystemExit("n8n no asignó un ID al workflow IstpetDev Agent - error.")
+print(workflow_id)
+PY
+}
+
 python3 -I "$repo_root/scripts/agent/build-workflows.py"
 docker compose --env-file "$env_file" -f "$compose_file" config --quiet
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent config --quiet
@@ -98,16 +122,48 @@ if ! curl --fail --silent http://127.0.0.1:5678/healthz >/dev/null; then
 fi
 
 docker exec -i "$container" n8n import:credentials --input=/dev/stdin < "$credential_file"
-docker exec "$container" n8n import:workflow --separate --input=/workflows
+docker exec "$container" n8n export:workflow --all > "$workflow_export"
+error_workflow_id="$(find_error_workflow_id)"
+
+if [[ -z "$error_workflow_id" ]]; then
+  docker exec "$container" n8n import:workflow --input=/workflows/error-agente.json
+  docker exec "$container" n8n export:workflow --all > "$workflow_export"
+  error_workflow_id="$(find_error_workflow_id required)"
+fi
+
+python3 - "$repo_root/automation/n8n/workflows" "$workflow_stage_dir" "$error_workflow_id" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+source, destination = map(Path, sys.argv[1:3])
+error_id = sys.argv[3]
+for path in source.glob("*.json"):
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    if path.name == "error-agente.json":
+        workflow["id"] = error_id
+    else:
+        workflow.setdefault("settings", {})["errorWorkflow"] = error_id
+    (destination / path.name).write_text(
+        json.dumps(workflow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+PY
+
+docker exec "$container" rm -rf /tmp/istpetdev-agent-workflows
+docker exec "$container" mkdir -p /tmp/istpetdev-agent-workflows
+docker cp "$workflow_stage_dir/." "$container:/tmp/istpetdev-agent-workflows"
+docker exec "$container" n8n import:workflow --separate --input=/tmp/istpetdev-agent-workflows
 while IFS= read -r workflow_id; do
   [[ -z "$workflow_id" ]] || docker exec "$container" n8n publish:workflow --id="$workflow_id"
-done < <(python3 - "$repo_root/automation/n8n/workflows" <<'PY'
+done < <(python3 - "$workflow_stage_dir" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 for path in sorted(Path(sys.argv[1]).glob("*.json")):
-    print(json.loads(path.read_text(encoding="utf-8"))["id"])
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    if workflow["name"] != "IstpetDev Agent - error":
+        print(workflow["id"])
 PY
 )
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent restart n8n

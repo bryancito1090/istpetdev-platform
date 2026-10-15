@@ -1,0 +1,109 @@
+{
+  "name": "IstpetDev Agent - error",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e133b50b-1e4f-4cf6-9e7c-9a81d3404501",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "method": "GET",
+        "options": {
+          "timeout": 5000
+        },
+        "url": "={{ ($env.ISTPETDEV_API_BASE_URL || 'http://host.docker.internal:5017/api/v1') + '/agent/runs/by-execution/' + encodeURIComponent(String($('Error Trigger').first().json.execution?.id || '')) }}"
+      },
+      "id": "e133b50b-1e4f-4cf6-9e7c-9a81d3404502",
+      "name": "Resolve AgentRun",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        500,
+        300
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "jsonBody": "={{ ({ runId: $json.runId, executionId: String($('Error Trigger').first().json.execution.id), workflow: String($('Error Trigger').first().json.workflow.name).slice(0, 100), node: String($('Error Trigger').first().json.execution.lastNodeExecuted || 'unknown').slice(0, 100), message: String($('Error Trigger').first().json.execution.error.message || 'n8n workflow failed').slice(0, 1000) }) }}",
+        "method": "POST",
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "={{ ($env.ISTPETDEV_API_BASE_URL || 'http://host.docker.internal:5017/api/v1') + '/agent/runs/' + $json.runId + '/failure' }}"
+      },
+      "id": "e133b50b-1e4f-4cf6-9e7c-9a81d3404503",
+      "name": "Register Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        760,
+        300
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Resolve AgentRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve AgentRun": {
+      "main": [
+        [
+          {
+            "node": "Register Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  }
+}

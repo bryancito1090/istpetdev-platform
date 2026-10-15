@@ -41,7 +41,10 @@ public sealed class N8nTriggerTests
         {
             capturedRequest = req;
             capturedBody = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"executionId\":\"n8n-123\"}", Encoding.UTF8, "application/json")
+            };
         });
 
         var client = new HttpClient(handler);
@@ -59,7 +62,8 @@ public sealed class N8nTriggerTests
 
         var result = await trigger.TriggerAsync(runId, AgentRunKind.Watch, null, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Success, result);
+        Assert.Equal(TriggerOutcome.Success, result.Outcome);
+        Assert.Equal("n8n-123", result.ExecutionId);
         Assert.NotNull(capturedRequest);
         Assert.NotNull(capturedBody);
         Assert.Equal("http://localhost:5678/webhook/agent-watch", capturedRequest.RequestUri?.ToString());
@@ -119,7 +123,7 @@ public sealed class N8nTriggerTests
 
         var result = await trigger.TriggerAsync(runId, AgentRunKind.Incident, incidentId, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Success, result);
+        Assert.Equal(TriggerOutcome.Success, result.Outcome);
         Assert.NotNull(capturedRequest);
         Assert.NotNull(capturedBody);
         Assert.Equal("http://localhost:5678/webhook/agent-incident", capturedRequest.RequestUri?.ToString());
@@ -198,7 +202,7 @@ public sealed class N8nTriggerTests
             Guid.NewGuid(), AgentRunKind.Watch, null,
             DateTime.UtcNow.AddMilliseconds(-1), CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Error, outcome);
+        Assert.Equal(TriggerOutcome.Error, outcome.Outcome);
         Assert.False(sent);
     }
 
@@ -218,7 +222,7 @@ public sealed class N8nTriggerTests
 
         var outcome = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Error, outcome);
+        Assert.Equal(TriggerOutcome.Error, outcome.Outcome);
         Assert.False(sent);
     }
 
@@ -260,7 +264,7 @@ public sealed class N8nTriggerTests
         var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
         var result = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Error, result);
+        Assert.Equal(TriggerOutcome.Error, result.Outcome);
     }
 
     [Fact]
@@ -274,6 +278,6 @@ public sealed class N8nTriggerTests
         var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
         var result = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Error, result);
+        Assert.Equal(TriggerOutcome.Error, result.Outcome);
     }
 }

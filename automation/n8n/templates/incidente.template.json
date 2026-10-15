@@ -82,7 +82,7 @@
           "responseCode": 202
         },
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: \"accepted\" }) }}"
+        "responseBody": "={{ JSON.stringify({ status: \"accepted\", executionId: String($execution.id) }) }}"
       },
       "position": [
         880,
@@ -339,6 +339,43 @@
       ],
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "jsonBody": "={{ JSON.stringify({ runId: $('Verify Signature').first().json.payload.runId, executionId: String($execution.id) }) }}",
+        "method": "POST",
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "={{ ($('Verify Signature').first().json.payload.apiBaseUrl || $env.ISTPETDEV_API_BASE_URL || 'http://host.docker.internal:5017/api/v1') + '/agent/runs/' + encodeURIComponent($('Verify Signature').first().json.payload.runId) + '/execution' }}"
+      },
+      "id": "e4e034a0-5f6f-4ca9-aeaf-113000000001",
+      "name": "Register Execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        80
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      }
     }
   ],
   "connections": {
@@ -413,7 +450,7 @@
         [
           {
             "index": 0,
-            "node": "Respond Accepted",
+            "node": "Register Execution",
             "type": "main"
           }
         ],
@@ -502,6 +539,17 @@
           }
         ]
       ]
+    },
+    "Register Execution": {
+      "main": [
+        [
+          {
+            "node": "Respond Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -510,7 +558,8 @@
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
     "saveExecutionProgress": true,
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "{{ERROR_WORKFLOW_ID}}"
   },
   "staticData": null,
   "meta": {

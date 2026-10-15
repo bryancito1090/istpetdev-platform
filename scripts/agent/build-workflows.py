@@ -16,7 +16,9 @@ TEMPLATES_DIR = REPO_ROOT / "automation/n8n/templates"
 WORKFLOWS_DIR = REPO_ROOT / "automation/n8n/workflows"
 PROMPT_VERSION = "v1"
 N8N_VERSION = "2.39.5"
-REQUIRED_WORKFLOWS = ("vigia", "incidente")
+AGENT_WORKFLOWS = ("vigia", "incidente")
+REQUIRED_WORKFLOWS = (*AGENT_WORKFLOWS, "error-agente")
+ERROR_WORKFLOW_ID_MARKER = "{{ERROR_WORKFLOW_ID}}"
 SECRET_KEYS = {
     "apikey",
     "password",
@@ -162,7 +164,21 @@ def build_workflows(
     generated: dict[str, str] = {}
     for name in REQUIRED_WORKFLOWS:
         template_path = templates_dir / f"{name}.template.json"
-        workflow = inject_prompt_into_workflow(_load_json(template_path), prompt, name)
+        workflow = _load_json(template_path)
+        if name in AGENT_WORKFLOWS:
+            if workflow.get("settings", {}).get("errorWorkflow") != ERROR_WORKFLOW_ID_MARKER:
+                raise ValueError(f"{name}: settings.errorWorkflow debe usar el marcador configurado en el servidor")
+            workflow = inject_prompt_into_workflow(workflow, prompt, name)
+        else:
+            nodes = workflow.get("nodes")
+            if not isinstance(nodes, list) or not nodes or nodes[0].get("type") != "n8n-nodes-base.errorTrigger":
+                raise ValueError("error-agente: el primer nodo debe ser Error Trigger")
+            if not {"Resolve AgentRun", "Register Failure"}.issubset({node.get("name") for node in nodes}):
+                raise ValueError("error-agente: faltan los callbacks M2M de resolución y fallo")
+            # n8n assigns the workflow ID on the target server; it must not enter Git.
+            workflow.pop("id", None)
+            workflow.pop("versionId", None)
+            workflow.setdefault("meta", {})["n8nVersion"] = N8N_VERSION
         assert_no_embedded_secrets(workflow, name)
         generated[name] = canonical_dumps(workflow)
 

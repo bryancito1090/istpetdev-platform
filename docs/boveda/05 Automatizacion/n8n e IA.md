@@ -1,7 +1,7 @@
 ---
 tipo: automatizacion
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-15
 tags: [hackathon, istpetdev]
 ---
 
@@ -175,3 +175,27 @@ Schedule apagado. Estado final: agente activo, incidente automático apagado
 (`AGENT_AUTO_ON_INCIDENT=false`), demo apagada; runbook y evidencia en
 [evidencia/2026-10-15-cierre-39.md](../../specs/003-agente-logistico/evidencia/2026-10-15-cierre-39.md).
 Las secciones anteriores son registros históricos fechados.
+
+## Manejo de fallos HZ-07 / issue #113 — 15 de octubre de 2026
+
+`error-agente.json` inicia con Error Trigger y usa la misma referencia de
+credencial OAuth2 M2M que los workflows de agente. El Error Trigger aporta
+`execution.id`, workflow, nodo que falló y mensaje; no entrega el `runId` del
+webhook original. Por eso la respuesta 202 de `vigia` e `incidente` incluye el
+ID de ejecución. Tras validar HMAC, los workflows lo registran con M2M en la API
+antes de continuar al nodo de IA, evitando que un fallo inmediato alcance al
+handler antes de que exista la asociación. La API también lo toma de la respuesta
+202 como respaldo. El handler consulta únicamente el `runId` asociado y envía
+`{ runId, executionId, workflow, node, message }` a
+`POST /api/v1/agent/runs/{id}/failure`; el callback agrega una entrada
+idempotente a la traza sin adjuntar el payload del escenario ni el stack.
+
+`settings.errorWorkflow` usa `{{ERROR_WORKFLOW_ID}}` en los exports. Al importar
+`error-agente` en una instancia, n8n asigna el ID allí; el responsable de esa
+instancia selecciona ese workflow en la configuración de `vigia` e `incidente`.
+No guardar ese ID en Git. Esta implementación no cambia la espera/fallback de
+10 s de ESC-16/ESC-17. Las pruebas locales cubren el contrato; no se ejecutó un
+fallo real en n8n ni se cambió la configuración del servidor.
+
+El formato de Error Trigger y el vínculo por configuración de workflow siguen
+la [documentación oficial de n8n](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/).

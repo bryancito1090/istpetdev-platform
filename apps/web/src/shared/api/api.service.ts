@@ -272,7 +272,10 @@ export interface AgentRunViewDto {
   promptVersion?: string;
   n8nExecutionId?: string;
   fallbackReason?: string;
-  toolCalls: { method: string; path: string; status: number; milliseconds: number; atUtc: string; event?: string | null }[];
+  toolCalls: {
+    method: string; path: string; status: number; milliseconds: number; atUtc: string;
+    event?: string | null; executionId?: string | null; workflow?: string | null; node?: string | null; message?: string | null;
+  }[];
   decisions: AgentDecisionViewDto[];
 }
 
