@@ -137,3 +137,44 @@ El orden de continuidad está en [[Continuidad del piloto y specs 007 a 012]]. L
 - Cambios de contrato/alcance registrados: Validador estricto con signos respetados y facts semánticos positivos (`cost_reduction_pct`, `advance_minutes`); cálculo de retraso en política sin redondeo prematuro; persistencia atómica de decisiones previa al estado Completed.
 - Próxima prueba: Revisión, resolución de conflictos con `origin/develop` (333ce68) y PR por parte de Codex.
 - Responsable de la siguiente revisión: Codex (revisión e integración post-entrega).
+
+
+### 14 de octubre de 2026 — Checkpoint productivo del spec 003 (#39)
+
+- Antigravity entregó preparación de Compose/CD y diagnósticos de producción;
+  Codex conservó el checkpoint e incorporó develop @ `51c3b30`, sin conflictos.
+- Transporte M2M/agente revisado para deploy y rollback: client ID explícito,
+  HMAC desde GitHub Secrets, agente deshabilitado por defecto y rechazo de
+  activación sin credenciales. No cambian workflows, prompt ni proveedor.
+- Verificación local de Codex: Python 16/16, .NET HMAC/secretos 11/11,
+  `npm run check`, generación reproducible y actionlint en verde. Son pruebas
+  del software de configuración; no una aceptación del servidor.
+- PR #78 fusionado y CD `9d1a3d9` exitoso; este checkpoint todavía requiere
+  integración a develop y promoción por el flujo autorizado.
+- Pendientes de #38/#39: fijar n8n sin latest, enlazar credenciales, configurar
+  variables/cuentas productivas, publicar webhooks, comprobar M2M 200/403,
+  Completed/Fallback, 30 muestras y CE-03 de dos decisiones en ventana acordada.
+  La última matriz local disponible falló p95 (10001 ms); no se reemplaza por
+  el informe inicial aprobado ni se declaran todos los CE cumplidos.
+- Detalle y límites: [entrega de #39](../../specs/003-agente-logistico/entrega-39-antigravity.md).
+
+
+### 14 de octubre de 2026 — Preparación #39 después del merge #85
+
+- develop `5582930` incorpora #81/#85; chore/39-verificar-cierre sincronizada
+  por Codex sin conflictos de contenido. La revisión concilia documentación
+  de pruebas locales y producción antes de publicar PR #83.
+- n8n 2.39.5 fijado/runtime comprobado, dos workflows publicados, cron apagado,
+  credenciales incluidas herramientas resueltas; API readiness 200 desde host
+  y contenedor. HMAC privado consolidado tras ediciones concurrentes.
+- HMAC negativo real 401 y probe positivo sin modelo 202, eliminado. Bryan
+  confirma presupuesto DeepSeek configurado. No son la matriz oficial ni
+  Completed/Fallback de producción.
+- Bloqueo vigente: risks con M2M desde n8n 401; cuenta/configuración/permisos
+  productivos por verificar por Jorge tras promoción/deploy. #85 local no
+  equivale a provisión en RDS; runbook conciliado con esa distinción.
+- Bryan confirmó que no hay ventana exclusiva de resets. No se ejecutó
+  acceptance.sh en producción; CE-03/E2E-07 completo/PA-01/T9/T10 pendientes.
+- Continuidad: [plan vigente](../../specs/003-agente-logistico/plan-cierre-39-produccion.md)
+  y [evidencia](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md).
+  #39 queda abierta hasta superar todos sus gates.

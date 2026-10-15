@@ -14,6 +14,7 @@ export const mobileOidcConfig: PassedInitialConfig = {
     useRefreshToken: true,
     renewTimeBeforeTokenExpiresInSeconds: 60,
     ignoreNonceAfterRefresh: true,
+    disableRefreshTokenOfflineAccessScopeWarning: true,
     logLevel: LogLevel.Warn,
     authWellknownEndpoints: {
       issuer: environment.oidc.authority,
