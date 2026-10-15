@@ -149,6 +149,7 @@ public sealed class RoutePlansController(
             totalDurationMinutes = plan.TotalMinutes ?? 0m,
             totalCost = plan.TotalCost,
             plannedStartUtc = plan.PlannedStartUtc,
+            plannedEndUtc = plan.PlannedEndUtc ?? plan.PlannedStartUtc.AddMinutes((double)(plan.TotalMinutes ?? 0m)),
             polyline = polyline ?? "",
             coordinates = coordinates,
             stops = stops.Select(s =>
@@ -163,8 +164,14 @@ public sealed class RoutePlansController(
                     servicePointName = sp?.Name ?? sp?.Code ?? "",
                     status = s.Status,
                     plannedArrivalUtc = s.PlannedArrivalUtc,
+                    plannedDepartureUtc = s.PlannedDepartureUtc,
                     etaUtc = s.PlannedArrivalUtc,
-                    actualArrivalUtc = s.ActualArrivalUtc
+                    actualArrivalUtc = s.ActualArrivalUtc,
+                    serviceMinutes = sp?.ServiceMinutes ?? 15,
+                    windowStart = sp?.WindowStartLocal.HasValue == true ? sp.WindowStartLocal.Value.ToString("HH:mm") : "08:00",
+                    windowEnd = sp?.WindowEndLocal.HasValue == true ? sp.WindowEndLocal.Value.ToString("HH:mm") : "17:00",
+                    lat = sp?.Position != null ? (double?)sp.Position.Y : null,
+                    lon = sp?.Position != null ? (double?)sp.Position.X : null
                 };
             })
         });

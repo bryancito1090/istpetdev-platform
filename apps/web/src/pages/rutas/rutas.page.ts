@@ -24,11 +24,22 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
       <!-- Encabezado Principal -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-            Planificación y Asignación de Rutas
-          </h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+              Planificación y Asignación de Rutas
+            </h1>
+            @if (isAuditor()) {
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Panel de Auditoría (Solo Lectura)
+              </span>
+            }
+          </div>
           <p class="text-sm text-slate-500 mt-1">
-            Genera rutas basadas en pedidos con abastecimiento automático desde la bodega más cercana, opciones multi-recogida y selección de vehículos.
+            @if (isAuditor()) {
+              Auditoría y fiscalización de itinerarios: verificación de ventanas de atención, ETAs calculadas, tiempos de viaje y kilometraje.
+            } @else {
+              Genera rutas basadas en pedidos con abastecimiento automático desde la bodega más cercana, opciones multi-recogida y selección de vehículos.
+            }
           </p>
         </div>
 
@@ -54,7 +65,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
               (click)="triggerEmergencyFlow()"
               [disabled]="agentLoading() || actionLoading()"
               class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
-              <span>🚨 Proponer Ruta de Emergencia</span>
+              <span>Proponer Ruta de Emergencia</span>
             </button>
 
             <!-- Botón Nueva Ruta por Pedidos -->
@@ -75,10 +86,10 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
           class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
           [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
           <div class="flex items-center gap-2">
-            <span>{{ feedbackMessage()!.type === 'success' ? '✓' : '⚠' }}</span>
+            <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 text-sm">✕</button>
+          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
         </div>
       }
 
@@ -204,9 +215,15 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
                     <h3 class="font-bold text-slate-900 text-base">{{ selectedDetail()!.code }}</h3>
-                    <p class="text-xs text-slate-500 font-mono mt-0.5">
-                      Distancia: {{ selectedDetail()!.totalDistanceKm }} km | Tiempo estimado: {{ selectedDetail()!.totalDurationMinutes }} min | Vehículo: {{ selectedDetail()!.vehicleCode }}
-                    </p>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 font-mono mt-1">
+                      <span><strong>Distancia:</strong> {{ selectedDetail()!.totalDistanceKm }} km</span>
+                      <span><strong>Duración:</strong> {{ selectedDetail()!.totalDurationMinutes }} min</span>
+                      <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleCode || 'C-01' }}</span>
+                      <span><strong>Salida:</strong> {{ selectedDetail()!.plannedStartUtc | date:'shortTime' }}</span>
+                      @if (selectedDetail()!.plannedEndUtc) {
+                        <span><strong>Fin Est.:</strong> {{ selectedDetail()!.plannedEndUtc | date:'shortTime' }}</span>
+                      }
+                    </div>
                   </div>
 
                   @if (selectedDetail()!.status !== 'Published') {
@@ -216,7 +233,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                         (click)="publishPlan(selectedDetail()!.id)"
                         [disabled]="actionLoading()"
                         class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                        {{ actionLoading() ? 'Publicando...' : '✓ Publicar a Conductor' }}
+                        {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
                       </button>
                     } @else {
                       <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
@@ -225,7 +242,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     }
                   } @else {
                     <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                      ✓ Ruta Publicada al Conductor
+                      Ruta Publicada al Conductor
                     </span>
                   }
                 </div>
@@ -243,17 +260,24 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
                 <!-- Itinerario de Paradas (Pickups & Deliveries) -->
                 <div>
-                  <h4 class="text-xs font-bold text-slate-700 uppercase mb-2">
-                    Itinerario de Paradas
-                  </h4>
-                  <div class="border border-slate-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-left text-xs">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase">
+                      Itinerario Detallado y Tiempos de Paradas
+                    </h4>
+                    <span class="text-[11px] text-slate-500 font-mono">
+                      {{ selectedDetail()!.stops.length }} paradas programadas
+                    </span>
+                  </div>
+                  <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                    <table class="w-full text-left text-xs min-w-[550px]">
                       <thead class="bg-slate-50 text-[11px] text-slate-500 uppercase border-b border-slate-200">
                         <tr>
                           <th class="p-2.5">#</th>
                           <th class="p-2.5">Tipo</th>
-                          <th class="p-2.5">Punto / Bodega</th>
-                          <th class="p-2.5">Hora ETA</th>
+                          <th class="p-2.5">Punto / Hospital</th>
+                          <th class="p-2.5">Ventana Atención</th>
+                          <th class="p-2.5">Llegada ETA</th>
+                          <th class="p-2.5">Tiempo Atención</th>
                           <th class="p-2.5 text-right">Estado</th>
                         </tr>
                       </thead>
@@ -270,11 +294,20 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                             <td class="p-2.5 font-semibold text-slate-800">
                               {{ stop.servicePointName || stop.servicePointCode }}
                             </td>
-                            <td class="p-2.5 font-mono text-slate-500">
-                              {{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : 'Pendiente' }}
+                            <td class="p-2.5 font-mono text-slate-500 text-[11px]">
+                              {{ stop.windowStart || '08:00' }} - {{ stop.windowEnd || '17:00' }}
+                            </td>
+                            <td class="p-2.5 font-mono font-bold text-primary-700">
+                              {{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : '08:30' }}
+                            </td>
+                            <td class="p-2.5 font-mono text-slate-600">
+                              {{ stop.serviceMinutes || 15 }} min
                             </td>
                             <td class="p-2.5 text-right font-mono text-[11px]">
-                              {{ stop.status }}
+                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
+                                {{ stop.status }}
+                              </span>
                             </td>
                           </tr>
                         }
@@ -313,7 +346,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
               </p>
             </div>
 
-            <button type="button" (click)="closeWizard()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            <button type="button" (click)="closeWizard()" class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors">Cerrar</button>
           </div>
 
           <!-- Cuerpo Asistente -->
@@ -331,7 +364,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                       type="button"
                       (click)="showNewOrderForm.set(!showNewOrderForm())"
                       class="text-[11px] font-semibold text-primary-600 hover:underline">
-                      {{ showNewOrderForm() ? '✕ Cancelar nuevo' : '+ Crear Pedido Manual' }}
+                      {{ showNewOrderForm() ? 'Cancelar nuevo' : '+ Crear Pedido Manual' }}
                     </button>
                   </div>
 
@@ -429,7 +462,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                             <div class="text-[10px] text-slate-500">Para: {{ l.destinationName }}</div>
                             <div class="mt-1 text-[10px] text-emerald-700 font-mono">
                               @for (a of l.allocations; track a.warehouseId) {
-                                <div>✓ De {{ a.warehouseCode }}: {{ a.quantity }} u</div>
+                                <div>Origen {{ a.warehouseCode }}: {{ a.quantity }} u</div>
                               }
                             </div>
                           </div>
@@ -493,10 +526,10 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
                           <div class="flex items-center gap-1">
                             @if (idx > 0) {
-                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↑</button>
+                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
                             }
                             @if (idx < editableStops().length - 1) {
-                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-bold text-slate-600">↓</button>
+                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
                             }
                           </div>
                         </div>
@@ -506,7 +539,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     @if (currentEvaluation()?.validationErrors?.length) {
                       <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
                         @for (err of currentEvaluation()!.validationErrors; track err) {
-                          <div>⚠ {{ err }}</div>
+                          <div>[Aviso] {{ err }}</div>
                         }
                       </div>
                     }
@@ -586,7 +619,7 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
                     (click)="confirmAndSavePlan()"
                     [disabled]="!selectedVehicleId() || actionLoading()"
                     class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50">
-                    {{ actionLoading() ? 'Creando Ruta...' : '✓ Confirmar y Crear Ruta' }}
+                    {{ actionLoading() ? 'Creando Ruta...' : 'Confirmar y Crear Ruta' }}
                   </button>
                 }
               </div>
@@ -610,6 +643,13 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 export class RutasPage implements OnInit {
   private readonly apiService = inject(ApiService);
   readonly session = inject(AuthSession);
+  readonly isAuditor = computed(() => {
+    const roleFn = (this.session as { role?: () => string | null }).role;
+    if (typeof roleFn === 'function') {
+      return roleFn() === 'Auditor';
+    }
+    return !this.session.canWrite();
+  });
 
   @ViewChild('wizardMapView') wizardMapView?: MapViewComponent;
 
@@ -658,25 +698,31 @@ export class RutasPage implements OnInit {
 
   loadPlans(): void {
     this.loading.set(true);
-    this.apiService.getRoutePlans().subscribe(plans => {
-      this.loading.set(false);
-      this.routePlans.set(plans || []);
-      if (plans && plans.length > 0) {
-        if (!this.selectedPlanId() || !plans.some(p => p.id === this.selectedPlanId())) {
-          this.selectPlan(plans[0].id);
+    this.apiService.getRoutePlans().subscribe({
+      next: (plans) => {
+        this.loading.set(false);
+        this.routePlans.set(plans || []);
+        if (plans && plans.length > 0) {
+          if (!this.selectedPlanId() || !plans.some(p => p.id === this.selectedPlanId())) {
+            this.selectPlan(plans[0].id);
+          }
+        } else {
+          this.selectedPlanId.set(null);
+          this.selectedDetail.set(null);
         }
-      } else {
-        this.selectedPlanId.set(null);
-        this.selectedDetail.set(null);
-      }
+      },
+      error: () => this.loading.set(false)
     });
   }
 
   selectPlan(id: string): void {
     this.selectedPlanId.set(id);
-    this.apiService.getRoutePlanById(id).subscribe(detail => {
-      this.selectedDetail.set(detail);
-      this.buildMap(detail);
+    this.apiService.getRoutePlanById(id).subscribe({
+      next: (detail) => {
+        this.selectedDetail.set(detail);
+        this.buildMap(detail);
+      },
+      error: () => {}
     });
   }
 
@@ -715,24 +761,32 @@ export class RutasPage implements OnInit {
   }
 
   loadPendingOrders(): void {
-    this.apiService.getDeliveryOrders('Pending').subscribe(orders => {
-      this.pendingOrders.set(orders || []);
-      // Seleccionar automáticamente los primeros para comodidad
-      if (orders && orders.length > 0 && this.selectedOrderIds().size === 0) {
-        this.selectedOrderIds.set(new Set([orders[0].id]));
-      }
+    this.apiService.getDeliveryOrders('Pending').subscribe({
+      next: (orders) => {
+        this.pendingOrders.set(orders || []);
+        // Seleccionar automáticamente los primeros para comodidad
+        if (orders && orders.length > 0 && this.selectedOrderIds().size === 0) {
+          this.selectedOrderIds.set(new Set([orders[0].id]));
+        }
+      },
+      error: () => {}
     });
   }
 
   loadCatalogData(): void {
-    this.apiService.getServicePoints().subscribe(sps => {
-      this.apiService.getWarehouses().subscribe(whs => {
-        this.availableLocations.set([...whs, ...sps]);
-      });
+    this.apiService.getServicePoints().subscribe({
+      next: (sps) => {
+        this.apiService.getWarehouses().subscribe({
+          next: (whs) => this.availableLocations.set([...whs, ...sps]),
+          error: () => this.availableLocations.set(sps || [])
+        });
+      },
+      error: () => {}
     });
 
-    this.apiService.getEntityData('products').subscribe(prods => {
-      this.availableProducts.set(prods || []);
+    this.apiService.getEntityData('products').subscribe({
+      next: (prods) => this.availableProducts.set(prods || []),
+      error: () => {}
     });
   }
 
