@@ -1,0 +1,4 @@
+point_code,sku,date,quantity,period_days
+HOS-N01,DES-01,2026-10-05,84,7
+CLI-N02,2026-10-05,70,7,PAP-01
+OFI-N03,PAP-01,2026-10-05,70,7
