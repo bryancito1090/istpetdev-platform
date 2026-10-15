@@ -63,6 +63,33 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(outbox.outboxItems().every((item) => item.ownerAccountId === 'cuenta-a')).toBe(true);
   });
 
+  it('015: con la sincronización en espera guarda en el teléfono y no envía hasta liberarla', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    await outbox.setOwner('cuenta-a');
+    outbox.setSyncHeld(true);
+
+    const item = await outbox.saveReceiptAtomic(receipt('d-1'));
+    await outbox.syncAllPending();
+    expect(api.createReceipt).not.toHaveBeenCalled();
+    expect(outbox.outboxItems()[0].status).toBe('SavedOnDevice');
+
+    outbox.setSyncHeld(false);
+    await outbox.syncAllPending();
+    expect(api.createReceipt).toHaveBeenCalledTimes(1);
+    expect((await outbox.syncItem(item.operationId)).status).toBe('Complete');
+  });
+
+  it('015: pide almacenamiento persistente para que el navegador no borre la cola', async () => {
+    const persist = vi.fn(async () => true);
+    Object.defineProperty(navigator, 'storage', { value: { persist }, configurable: true });
+    try {
+      TestBed.inject(FieldOutboxService);
+      await vi.waitFor(() => expect(persist).toHaveBeenCalled());
+    } finally {
+      delete (navigator as { storage?: unknown }).storage;
+    }
+  });
+
   it('no captura sin cuenta y no sincroniza una captura ajena', async () => {
     const outbox = TestBed.inject(FieldOutboxService);
     outbox.isSimulatingOffline.set(true);
