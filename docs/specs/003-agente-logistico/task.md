@@ -715,15 +715,17 @@ Plan:
   idempotencia, rol, vínculo de workflows y fallback.
 - [x] Ejecutar los checks locales de contribución y rebasar sobre `develop`
   actualizado; Git aplicó los commits sin conflictos manuales.
-- [ ] Abrir PR a `develop`, esperar los checks remotos y fusionar/cerrar #113
-  solo cuando estén verdes.
+- [x] PR [#147](https://github.com/bryancito1090/istpetdev-platform/pull/147)
+  abierto a `develop`; tras ajustar `test_workflow_context.py` para excluir el
+  export Error Trigger de las pruebas de agentes, todos los checks remotos
+  pasaron y el PR se fusionó como `db86e83`. GitHub cerró #113.
 
-Estado actual: **código implementado; filtro .NET dirigido 19/19 y suite
-completa 412/412; prueba Python del generador 5/5 y limpieza del arranque local
-1/1; `npm run check` y `npm run audit:check` aprobados**. CI del PR y
-verificación real de n8n pendientes. La configuración externa del servidor no
-se ha cambiado. `build-workflows.py --check` y `git diff --check` están limpios.
+Estado final de repositorio: **PR #147 integrado en `develop`; issue #113
+cerrado; suite .NET 412/412; prueba Python del generador 5/5 y limpieza del
+arranque local 1/1; `npm run check`, `npm run audit:check` y CI remoto aprobados**.
+`build-workflows.py --check` y `git diff --check` están limpios.
 `check_vault.py`: 0 errores y 4 avisos existentes no relacionados con esta nota.
-El marcador
-`{{ERROR_WORKFLOW_ID}}` se resuelve al importar/configurar en la instancia
+La ejecución real del Error Trigger y la configuración de la instancia n8n
+siguen pendientes: no se modificó el servidor. El marcador
+`{{ERROR_WORKFLOW_ID}}` debe resolverse al importar/configurar en la instancia
 objetivo; el ID asignado por n8n no se versiona.
