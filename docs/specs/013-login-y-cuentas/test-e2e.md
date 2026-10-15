@@ -4,7 +4,9 @@
 >
 > **Evidencia sin datos sensibles:** ninguna captura o archivo guardado muestra correos personales, tokens, códigos TOTP, contraseñas temporales ni el contenido de la invitación. Recortar o difuminar antes de guardar en `docs/specs/013-login-y-cuentas/evidencia/`.
 >
-> Ningún escenario se ha ejecutado todavía.
+> **Cierre (15-oct-2026):** pasaron E2E-00, E2E-01, E2E-02, E2E-03, E2E-05, E2E-06 y E2E-09 (ver «Registro de ejecuciones»). El spec se cerró con los escenarios restantes asignados: E2E-04, E2E-07 y E2E-10 en [#107](https://github.com/bryancito1090/istpetdev-platform/issues/107); E2E-11 a E2E-13 en [#108](https://github.com/bryancito1090/istpetdev-platform/issues/108); E2E-08 queda con Alexander (Conductor) y Joseph (Receptor) según [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55).
+>
+> **Cuentas de la demo:** Jorge fijó contraseñas definitivas con `aws cognito-idp admin-set-user-password --permanent` después de `--provision-accounts`. Por eso las cuentas quedan en `CONFIRMED` (no `FORCE_CHANGE_PASSWORD`) y no dependen del correo de invitación.
 
 ## Preparación del entorno
 
@@ -322,3 +324,13 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 
 | Fecha | Commit | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|
+| 2026-10-14 | `29572c3` | E2E-00 | Pasa | [e2e-00-resultados.txt](evidencia/e2e-00-resultados.txt) | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-01 | Pasa (6 cuentas por rol; segunda ejecución sin duplicados) | Salida en poder de Jorge; CSV fuera del repositorio (G1) | Jorge |
+| 2026-10-15 | `2b8793f` | E2E-02 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Equipo |
+| 2026-10-15 | `2b8793f` | E2E-03 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Equipo |
+| 2026-10-15 | `2b8793f` | E2E-05 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-06 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-09 | Pasa (banner `#00A7C4`, botón `#EA601F`; sin logo) | [escritorio](evidencia/e2e-09-marca-escritorio.png), [teléfono](evidencia/e2e-09-marca-telefono.png) (correo tapado) | Joseph |
+| — | — | E2E-04, E2E-07, E2E-10 | Pendiente | [#107](https://github.com/bryancito1090/istpetdev-platform/issues/107) | Jorge |
+| — | — | E2E-08 | Pendiente | [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55) | Alexander y Joseph |
+| — | — | E2E-11 a E2E-13 | Pendiente | [#108](https://github.com/bryancito1090/istpetdev-platform/issues/108) | Bryan |

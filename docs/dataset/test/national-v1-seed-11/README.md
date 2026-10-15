@@ -57,9 +57,14 @@ dotnet test tests/IstpetDev.Tests/IstpetDev.Tests.csproj \
 
 ## Hashes de referencia
 
-- `manifest.json`: `233b968fa854f1d0d1ea20a73d10f8adc455d8fe6f5fe3215662f0c3d4d32809`
-- `calendar.json`: `73bc5e99225df82c110173ffdbce0cde57872d4f5d80d452c81cd5b5cfd92dec`
+- `manifest.json`: `60bfe4bf995fd27a89bb0cb8bade408a7c4d33a4964fa26a990f2a1d4b5bff2f`
+- `calendar.json`: `3bf1ed6c3b5cc8abd37fe0b67b6879c749df8f7a02610d4c9a70d44d118400ac`
 - Hashes por archivo: ver `manifest.json`.
+
+`calendar.json` se guarda compactado (sin sangría) para aligerar el repositorio: pasa de 3,6 MB y
+~144 000 líneas a 2,6 MB en una línea. El generador lo escribe con sangría, así que para comparar
+con una salida nueva hay que comparar el JSON parseado; el contenido y `calendarSha256` son los mismos.
+Los hashes de `calendar.json` y `manifest.json` de arriba corresponden a la copia compactada.
 - `mapping.json` (copia sin cambios de `data/fixtures/simulation-national/mapping.json`): `775d5650d2774fdfb8ea22ed18f63fc9a19a138eae91e52a6c62573b7451dadc`
 
 ## Uso del perfil de importación
