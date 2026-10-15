@@ -482,3 +482,17 @@ Plan/task/test-e2e/entrega/evidencia y [[Runbook de DevOps y base de datos para 
 PA-01/T9/T10 ni #39 hasta cumplir todos los gates productivos.
 
 Verificación documental: **85 notas Markdown**, **898 enlaces internos resueltos**, **0 errores**.
+
+## Continuación de cuentas productivas #39 — 14 de octubre de 2026
+
+Fuente: Bryan confirmó contraseña/MFA de su cuenta y autorizó registrar dos
+Account en RDS. Transacción acotada sobre la base efectiva de EC2, verificada
+por conexión; cuenta humana /me y risks 200, credencial M2M n8n risks 200,
+cinco acciones humanas 403 con M2M. Sin correo/subject/token en documentación.
+Túnel cerrado. CD 38658331163 exitoso; intento de reaplicación 38665762599 falló
+antes de recreación por permiso GHCR. Agente false; Demo false; gates pendientes.
+Transporte/permiso corregidos en rama; motor/calibración en verificación local.
+Bóveda/spec 003 conciliados; esta evidencia reemplaza el pendiente de cuentas
+del checkpoint anterior, sin convertir pruebas preparatorias en aceptación.
+
+Verificación documental: **85 notas Markdown**, **899 enlaces internos resueltos**, **0 errores**.
