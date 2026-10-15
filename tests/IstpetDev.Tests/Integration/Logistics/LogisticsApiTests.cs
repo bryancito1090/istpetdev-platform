@@ -6,9 +6,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.Integration.Logistics;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class LogisticsApiTests(PostgisContainer postgres)
+public class LogisticsApiTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly Dictionary<string, string?> OverridesWithManager = new()
     {

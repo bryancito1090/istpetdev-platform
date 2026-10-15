@@ -6,8 +6,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class MeEndpointTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class MeEndpointTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Theory]
     [InlineData(Roles.Gerencia, "web")]

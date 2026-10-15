@@ -16,9 +16,8 @@ using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Tests.Integration.Logistics;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class DemoRegionTests(PostgisContainer postgres)
+public class DemoRegionTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task Demo_region_reset_imports_canonical_entities_and_calculates_calibrated_risks()

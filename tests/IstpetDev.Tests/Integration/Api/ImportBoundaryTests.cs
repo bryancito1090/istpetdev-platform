@@ -9,8 +9,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class ImportBoundaryTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class ImportBoundaryTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static MultipartFormDataContent Upload(string csv, string entity = "products", string? profile = null)
     {

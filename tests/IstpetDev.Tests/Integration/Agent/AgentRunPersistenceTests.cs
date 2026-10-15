@@ -8,9 +8,8 @@ using Xunit;
 
 namespace IstpetDev.Tests.Integration.Agent;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class AgentRunPersistenceTests(PostgisContainer postgres)
+public class AgentRunPersistenceTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Fact]
     public async Task AgentRun_persists_all_fields_and_validates_constraints()

@@ -10,9 +10,8 @@ using Xunit;
 
 namespace IstpetDev.Tests.Integration.Imports;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class RoadSegmentsImportTests(PostgisContainer postgres)
+public sealed class RoadSegmentsImportTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static ImportRequest Csv(ImportEntity entity, string rows, bool partial = false, bool dryRun = false) =>
         new([new ImportFile(entity, $"{entity.Key()}.csv", new MemoryStream(Encoding.UTF8.GetBytes(rows)))], MappingProfile.Auto(), dryRun, partial, null);

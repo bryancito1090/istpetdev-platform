@@ -14,9 +14,8 @@ using Xunit;
 
 namespace IstpetDev.Tests.Integration.Field;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class PublicTraceHttpTests(PostgisContainer postgres)
+public class PublicTraceHttpTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private const string Token = "token-de-prueba-0123456789abcdef0123456789abcdef";
     private static readonly string[] AllowedFields = ["unitId", "status", "productUnits", "events"];

@@ -3,9 +3,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name)]
 [Trait("Category", "Integration")]
-public class AuthorizationTests(PostgisContainer postgres)
+public class AuthorizationTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     [Theory]
     [InlineData(null, "access", HttpStatusCode.Unauthorized)]

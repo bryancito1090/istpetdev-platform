@@ -5,8 +5,8 @@ using IstpetDev.Tests.Support;
 
 namespace IstpetDev.Tests.Integration.Api;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AuditorRoleTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AuditorRoleTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly string[] Reads =
         ["/api/v1/service-points", "/api/v1/risks", "/api/v1/route-plans", "/api/v1/agent-decisions", "/api/v1/autonomy/mode", "/api/v1/deliveries"];

@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace IstpetDev.Tests.Integration.Accounts;
 
-[Collection(PostgisCollection.Name), Trait("Category", "Integration")]
-public sealed class AccountProvisioningTests(PostgisContainer postgres)
+[Trait("Category", "Integration")]
+public sealed class AccountProvisioningTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private async Task<string> MigratedAsync()
     {
