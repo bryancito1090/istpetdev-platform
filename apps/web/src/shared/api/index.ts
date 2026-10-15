@@ -3,3 +3,4 @@ export * from './field-api.interface';
 export * from './http-web-field-api.service';
 export * from './api-auth.interceptor';
 export * from './simulations.api';
+export * from './field-exceptions.api';

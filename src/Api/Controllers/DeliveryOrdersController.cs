@@ -21,6 +21,7 @@ public sealed class DeliveryOrdersController(
         [FromQuery] string? status = null,
         [FromQuery] string? priority = null,
         [FromQuery] int limit = 50,
+        [FromQuery] string? sourceType = null,
         CancellationToken ct = default)
     {
         var query = db.DeliveryOrders.Where(o => o.OrganizationId == DemoOrganization.Id);
@@ -35,9 +36,15 @@ public sealed class DeliveryOrdersController(
             query = query.Where(o => o.Priority == priority);
         }
 
+        // #116: la web del Planificador lista solo los pedidos pedidos en campo (FieldRequest).
+        if (!string.IsNullOrWhiteSpace(sourceType))
+        {
+            query = query.Where(o => o.SourceType == sourceType);
+        }
+
         var orders = await query
             .OrderByDescending(o => o.CreatedAtUtc)
-            .Take(limit)
+            .Take(Math.Clamp(limit, 1, 200))
             .ToListAsync(ct);
 
         var orderIds = orders.Select(o => o.Id).ToList();
@@ -92,6 +99,7 @@ public sealed class DeliveryOrdersController(
                 sourceType = o.SourceType,
                 notes = o.Notes,
                 createdAtUtc = o.CreatedAtUtc,
+                version = o.Version,
                 lines = ordLines
             };
         });
@@ -157,15 +165,42 @@ public sealed class DeliveryOrdersController(
 
     [HttpPatch("{id:guid}/cancel")]
     [Authorize(Roles = Roles.Planning)]
-    public async Task<IActionResult> CancelOrder([FromRoute] Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> CancelOrder(
+        [FromRoute] Guid id,
+        [FromQuery] long? expectedVersion = null,
+        CancellationToken ct = default)
     {
         var order = await db.DeliveryOrders.FirstOrDefaultAsync(o => o.OrganizationId == DemoOrganization.Id && o.Id == id, ct);
         if (order == null) return NotFound();
 
-        order.Status = DeliveryOrderStatus.Cancelled;
-        await db.SaveChangesAsync(ct);
+        // Repetir la cancelación de un pedido ya cancelado no es un error (reintento o doble clic).
+        if (order.Status == DeliveryOrderStatus.Cancelled)
+            return Ok(new { success = true, id = order.Id, status = order.Status, version = order.Version });
 
-        return Ok(new { success = true, id = order.Id, status = order.Status });
+        // #116: un pedido ya planificado, despachado o entregado tiene rutas y movimientos asociados;
+        // cancelarlo aquí dejaría esos registros sin pedido vigente.
+        if (order.Status != DeliveryOrderStatus.Pending)
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "order_not_pending",
+                detail: $"El pedido {order.OrderNumber} está en estado {order.Status} y ya no se puede cancelar.");
+
+        // El cliente envía la versión que vio; si otro usuario o proceso lo cambió, no se pisa.
+        if (expectedVersion.HasValue && expectedVersion.Value != order.Version)
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "version_conflict",
+                detail: $"El pedido {order.OrderNumber} cambió mientras lo revisabas. Actualiza la lista y vuelve a intentarlo.");
+
+        order.Status = DeliveryOrderStatus.Cancelled;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra transacción (por ejemplo, la planificación de rutas) modificó el pedido entre la lectura y el guardado.
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "version_conflict",
+                detail: $"El pedido {order.OrderNumber} cambió mientras se cancelaba. Actualiza la lista y vuelve a intentarlo.");
+        }
+
+        return Ok(new { success = true, id = order.Id, status = order.Status, version = order.Version });
     }
 }
 
