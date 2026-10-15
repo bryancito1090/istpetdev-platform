@@ -25,6 +25,7 @@ mockIonicStandalone('@ionic/angular/standalone', async () => {
     IonBadge: IonDummyComponent,
     IonButtons: IonDummyComponent,
     IonInput: IonDummyComponent,
+    IonSpinner: IonDummyComponent,
     AlertController: MockAlertController
   };
 });
