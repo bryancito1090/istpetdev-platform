@@ -76,6 +76,11 @@ public sealed class DistanceProvider(
             {
                 logger.LogWarning(ex, "OSRM query failed or timed out. Falling back to approximation.");
             }
+
+            var stillMissing = missingPairs.Count(pair => !result.ContainsKey(pair));
+            if (stillMissing > 0)
+                logger.LogWarning("OSRM no devolvió {Missing} de {Requested} tramos; se usa la aproximación en línea recta para ellos.",
+                    stillMissing, missingPairs.Count);
         }
 
         // 4. Approximation Fallback para lo que siga faltando (sin guardar en base de datos)
@@ -98,6 +103,9 @@ public sealed class DistanceProvider(
         return result;
     }
 
+    // El servidor público de OSRM admite hasta 100 coordenadas por petición de tabla (max-table-size).
+    private const int OsrmMaxTableCoordinates = 100;
+
     private async Task QueryOsrmAndSaveAsync(
         List<(GeoPoint From, GeoPoint To)> missingPairs,
         List<GeoPoint> allPoints,
@@ -105,16 +113,54 @@ public sealed class DistanceProvider(
         string osrmBaseUrl,
         CancellationToken ct)
     {
-        // OSRM table service: /table/v1/driving/{coords}?annotations=distance,duration
-        // Formato coords: {lon},{lat};{lon},{lat}...
-        var coordsStr = string.Join(";", allPoints.Select(p => $"{p.Lon.ToString(System.Globalization.CultureInfo.InvariantCulture)},{p.Lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}"));
-        var url = $"{osrmBaseUrl}/table/v1/driving/{coordsStr}?annotations=distance,duration";
+        var missing = missingPairs.ToHashSet();
+        var newEdgesToPersist = new List<RoadMatrixEdge>();
+
+        // Con más de 100 puntos se pide la tabla por bloques: cada petición lleva un bloque de orígenes y uno
+        // de destinos (como máximo 100 coordenadas) y solo los pares que todavía faltan.
+        var blockSize = allPoints.Count <= OsrmMaxTableCoordinates ? allPoints.Count : OsrmMaxTableCoordinates / 2;
+        var blocks = allPoints.Chunk(blockSize).ToList();
+        foreach (var sources in blocks)
+        foreach (var destinations in blocks)
+        {
+            if (!sources.Any(f => destinations.Any(t => missing.Contains((f, t))))) continue;
+            await QueryOsrmBlockAsync(sources, destinations, missing, result, newEdgesToPersist, osrmBaseUrl, ct);
+        }
+
+        if (newEdgesToPersist.Count > 0)
+        {
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    private async Task QueryOsrmBlockAsync(
+        GeoPoint[] sources,
+        GeoPoint[] destinations,
+        HashSet<(GeoPoint From, GeoPoint To)> missing,
+        Dictionary<(GeoPoint From, GeoPoint To), Leg> result,
+        List<RoadMatrixEdge> newEdgesToPersist,
+        string osrmBaseUrl,
+        CancellationToken ct)
+    {
+        var points = sources.Concat(destinations).Distinct().ToList();
+        var index = points.Select((point, i) => (point, i)).ToDictionary(x => x.point, x => x.i);
+        // OSRM table service: /table/v1/driving/{lon,lat;...}?sources=..&destinations=..&annotations=distance,duration
+        var coordsStr = string.Join(";", points.Select(p => $"{p.Lon.ToString(System.Globalization.CultureInfo.InvariantCulture)},{p.Lat.ToString(System.Globalization.CultureInfo.InvariantCulture)}"));
+        var url = $"{osrmBaseUrl}/table/v1/driving/{coordsStr}?annotations=distance,duration" +
+                  $"&sources={string.Join(';', sources.Select(p => index[p]))}&destinations={string.Join(';', destinations.Select(p => index[p]))}";
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, options.Value.Osrm.TimeoutSeconds)));
 
-        var response = await httpClient.GetAsync(url, cts.Token);
-        if (!response.IsSuccessStatusCode) return;
+        // El servidor público de OSRM responde 403 a peticiones sin User-Agent (HttpClient no envía uno).
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.UserAgent.ParseAdd("IstpetDev/1.0 (+https://istpetdev.doicela.dev)");
+        using var response = await httpClient.SendAsync(request, cts.Token);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning("OSRM table respondió {Status}.", (int)response.StatusCode);
+            return;
+        }
 
         var json = await response.Content.ReadAsStringAsync(cts.Token);
         using var doc = JsonDocument.Parse(json);
@@ -124,17 +170,15 @@ public sealed class DistanceProvider(
         var distances = root.GetProperty("distances");
         var durations = root.GetProperty("durations");
 
-        var newEdgesToPersist = new List<RoadMatrixEdge>();
-
-        for (int i = 0; i < allPoints.Count; i++)
+        for (int i = 0; i < sources.Length; i++)
         {
-            for (int j = 0; j < allPoints.Count; j++)
+            for (int j = 0; j < destinations.Length; j++)
             {
-                var from = allPoints[i];
-                var to = allPoints[j];
+                var from = sources[i];
+                var to = destinations[j];
                 var pair = (from, to);
 
-                if (from == to || !missingPairs.Contains(pair)) continue;
+                if (from == to || !missing.Contains(pair) || result.ContainsKey(pair)) continue;
 
                 var distMetersElem = distances[i][j];
                 var durSecondsElem = durations[i][j];
@@ -162,11 +206,6 @@ public sealed class DistanceProvider(
                 newEdgesToPersist.Add(edge);
                 db.RoadMatrixEdges.Add(edge);
             }
-        }
-
-        if (newEdgesToPersist.Count > 0)
-        {
-            await db.SaveChangesAsync(ct);
         }
     }
 

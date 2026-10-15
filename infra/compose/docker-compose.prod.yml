@@ -32,7 +32,9 @@ services:
       Cors__Origins__3: http://localhost:8100
       ApplyMigrations: ${APPLY_MIGRATIONS:-true}
       Demo__Enabled: ${DEMO_ENABLED:-false}
-      # Solo el trazado por calles del mapa; las distancias del plan no cambian.
+      # Distancias por calles para planificar (los tramos importados en el dataset tienen prioridad) y trazado del mapa.
+      Logistics__Osrm__BaseUrl: ${OSRM_BASE_URL:-https://router.project-osrm.org}
+      Logistics__Osrm__TimeoutSeconds: ${OSRM_TIMEOUT_SECONDS:-10}
       Logistics__Osrm__RouteGeometryUrl: ${OSRM_ROUTE_GEOMETRY_URL:-https://router.project-osrm.org}
       Demo__FixturePath: /app/data/fixtures/demo-base
       Authentication__Authority: ${COGNITO_AUTHORITY:?Define COGNITO_AUTHORITY con el issuer del User Pool}

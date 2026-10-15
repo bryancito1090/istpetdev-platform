@@ -18,7 +18,7 @@
 | T9 | Fixture regional y calibración del incidente | T8 | — | completada |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
 | T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
-| T12 | Rutas por calles en el mapa (OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo) |
+| T12 | Rutas por calles (mapa y distancias del motor con OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo; demo-region sin cambios) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -245,3 +245,36 @@ la aprobación de alternativas de otros escenarios; requieren su propia evidenci
 | `map-view.component.ts` | Frontend | Marcadores de color numerados, opacidad, etiqueta y escape de HTML | Soporte de lo anterior y seguridad | Hecho |
 
 Suite del backend 447/447; web 74/74 y `build:web` de producción sin errores.
+
+#### T12b — El motor planifica con distancias por calles (decidido por el usuario el 15-oct)
+
+**Medición previa:** se comparó el orden de paradas del motor con el orden óptimo por calles (OSRM `trip`), con las mismas paradas:
+- Dataset nacional: el orden del motor recorre **9 % más de km** en total, y hasta **31 %** en VEH-MA-01.
+- `demo-region`: 4 % más.
+
+Causa: el motor ordenaba con distancias en línea recta (`Osrm:BaseUrl` vacío). El trazado de OSRM entre paradas respeta las calles de una vía de OpenStreetMap; lo que fallaba era el orden. Google Maps no lo resolvería sin reordenar las paradas.
+
+**Defectos de `DistanceProvider` al activar OSRM**, corregidos:
+1. No enviaba `User-Agent`: el servidor público respondía 403 y se volvía en silencio a la aproximación.
+2. No respetaba el límite de 100 coordenadas por tabla: ahora pide por bloques con `sources` y `destinations`.
+3. Tiempo límite de 3 s, insuficiente para una tabla nacional: ahora 10 s.
+
+Además, los pares pendientes se buscan en un `HashSet` y se registra cuántos tramos quedaron aproximados.
+
+**Efecto medido con `Osrm:BaseUrl` activo:**
+
+| Dataset | Tramos del motor | Resultado |
+|---|---|---|
+| `demo-region` (demo) | 240/240 de `tramos.csv` del dataset | **Sin cambios:** mismos km (57,5 y 11,5) y misma política del agente |
+| Nacional | 1.148 de `road_segments.csv` + 6.162 de OSRM | Cambian VEH-UN-01 (122,8 → 152,9 km) y VEH-US-01 (103,9 → 132,2 km); planificar tarda 4,1 s la primera vez (luego los tramos quedan en `RoadMatrixEdge`) |
+
+**Prioridad de las distancias:** se mantiene tramos importados > OSRM > aproximación. Si una empresa sube sus propios tiempos, mandan sus datos.
+- Los tramos de `docs/dataset` y `data/fixtures` son **sintéticos** (README del dataset nacional).
+- Para planificar el nacional con calles reales, súbelo **sin** `road_segments.csv`.
+
+**Verificación:**
+- Con `Osrm:BaseUrl` apuntando al OSRM público: 58/58 pruebas de E2E, logística y agente en verde, incluido el incidente `cierre-norte` (VEH-01 automático, VEH-02 escalado).
+- Suite completa sin OSRM: 448/449. Falla la intermitente conocida `AgentJourneyTests(partial_watch)`, que pasa aislada.
+- Prueba nueva: 120 puntos → peticiones de 100 coordenadas como máximo, con `User-Agent`, y todos los pares por carretera.
+
+**Configuración:** `Logistics:Osrm:BaseUrl` = `https://router.project-osrm.org` y `TimeoutSeconds` = 10 en `appsettings`. En producción, `OSRM_BASE_URL` y `OSRM_TIMEOUT_SECONDS` se pueden sobrescribir.
