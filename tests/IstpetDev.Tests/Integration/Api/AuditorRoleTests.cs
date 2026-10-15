@@ -11,7 +11,8 @@ namespace IstpetDev.Tests.Integration.Api;
 public sealed class AuditorRoleTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private static readonly string[] Reads =
-        ["/api/v1/service-points", "/api/v1/risks", "/api/v1/route-plans", "/api/v1/agent-decisions", "/api/v1/autonomy/mode", "/api/v1/deliveries", "/api/v1/simulations/comparisons"];
+        ["/api/v1/service-points", "/api/v1/risks", "/api/v1/route-plans", "/api/v1/agent-decisions", "/api/v1/autonomy/mode", "/api/v1/deliveries", "/api/v1/simulations/comparisons",
+         "/api/v1/receipts/exceptions", "/api/v1/delivery-orders?sourceType=FieldRequest"];
 
     private static readonly (HttpMethod Method, string Path)[] Writes =
     [
@@ -31,6 +32,7 @@ public sealed class AuditorRoleTests(PostgisContainer postgres) : IClassFixture<
         (HttpMethod.Post, $"/api/v1/demo/route-plans/{Guid.Empty}/advance"),
         (HttpMethod.Post, "/api/v1/simulations/comparisons"),
         (HttpMethod.Post, "/api/v1/simulations/comparisons/import"),
+        (HttpMethod.Patch, $"/api/v1/delivery-orders/{Guid.Empty}/cancel"),
     ];
 
     [Fact]

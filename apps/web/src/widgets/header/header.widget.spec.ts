@@ -37,7 +37,7 @@ describe('HeaderWidget (FR-21)', () => {
   });
 
   it('Auditor conserva solo la navegación de lectura', () => {
-    expect(navigationFor('Auditor')).toEqual(['/inicio', '/alertas', '/rutas', '/simulation']);
+    expect(navigationFor('Auditor')).toEqual(['/inicio', '/alertas', '/rutas', '/novedades', '/simulation']);
   });
 
   it('Gerencia ve el enlace a Usuarios', () => {
@@ -53,6 +53,6 @@ describe('HeaderWidget (FR-21)', () => {
 
   it('Planificador incluye las rutas operativas completas', () => {
     const nav = navigationFor('Planificador');
-    expect(nav).toEqual(['/inicio', '/datos', '/alertas', '/rutas', '/bodegas', '/simulation']);
+    expect(nav).toEqual(['/inicio', '/datos', '/alertas', '/rutas', '/novedades', '/bodegas', '/simulation']);
   });
 });
