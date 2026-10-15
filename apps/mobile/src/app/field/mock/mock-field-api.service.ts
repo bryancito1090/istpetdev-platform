@@ -20,7 +20,7 @@ import {
   PublicTraceUnitDto,
   FieldProblemDetails
 } from '@istpetdev/shared-core';
-import { IFieldApi } from '../field-api.interface';
+import { IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { MockServerStore } from './mock-server.store';
 
 /**
@@ -499,5 +499,13 @@ export class MockFieldApiService implements IFieldApi {
       switchMap(() => of(undefined)),
       delay(50)
     );
+  }
+
+  getReceiverUnit(_unitId: string, _token: string): Observable<ReceiverUnit> {
+    return throwError(() => new Error('no disponible en mock'));
+  }
+
+  receiveAsReceiver(_unitId: string, _token: string, _req: CreateReceiptRequest, _idempotencyKey: string): Observable<ReceiptResponse> {
+    return throwError(() => new Error('no disponible en mock'));
   }
 }
