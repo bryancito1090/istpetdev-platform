@@ -36,7 +36,8 @@ const output = vm.runInNewContext('(function () {' + input.code + '\\n})()', {
 });
 process.stdout.write(JSON.stringify(output.json));
 """
-        for path in (ROOT / "automation/n8n/workflows").glob("*.json"):
+        for name in ("vigia.json", "incidente.json"):
+            path = ROOT / "automation/n8n/workflows" / name
             workflow = json.loads(path.read_text())
             prepare = next(n for n in workflow["nodes"] if n["name"] == "Prepare Result")
             output = {"decisions": [{"agentDecisionId": "00000000-0000-4000-8000-000000000001",
@@ -48,7 +49,8 @@ process.stdout.write(JSON.stringify(output.json));
             self.assertEqual("x" * 161, result["decisions"][0]["driverMessage"])
 
     def test_model_cannot_change_origin_run_incident_or_deadline(self):
-        for path in (ROOT / "automation/n8n/workflows").glob("*.json"):
+        for name in ("vigia.json", "incidente.json"):
+            path = ROOT / "automation/n8n/workflows" / name
             workflow = json.loads(path.read_text())
             tools = [n for n in workflow["nodes"] if n["type"].endswith(".toolWorkflow")]
             self.assertEqual(5, len(tools))

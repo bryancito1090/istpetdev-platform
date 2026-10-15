@@ -27,4 +27,23 @@ describe('HttpWebFieldApiService', () => {
     request.flush({ items: [] });
     backend.verify();
   });
+
+  it('consulta capturas rechazadas con o sin filtro de servicePointId', () => {
+    environment.apiUrl = '';
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), HttpWebFieldApiService],
+    });
+
+    const api = TestBed.inject(HttpWebFieldApiService);
+    const backend = TestBed.inject(HttpTestingController);
+
+    api.getRejectedCaptures('sp-123').subscribe(res => {
+      expect(res.count).toBe(1);
+    });
+
+    const req = backend.expectOne('/api/v1/deliveries/rejected?servicePointId=sp-123');
+    expect(req.request.method).toBe('GET');
+    req.flush({ items: [{ receiptId: 'rcpt-1' }], count: 1 });
+    backend.verify();
+  });
 });

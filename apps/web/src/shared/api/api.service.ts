@@ -2,8 +2,20 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../config/environment';
-import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
-export type { ServicePoint } from '@istpetdev/shared-core';
+import {
+  HealthStatusDto,
+  PublicTraceResponseDto,
+  ServicePoint,
+  RejectedCaptureDto,
+  RejectedCaptureLineDto,
+  RejectedCapturesResponse
+} from '@istpetdev/shared-core';
+export type {
+  ServicePoint,
+  RejectedCaptureDto,
+  RejectedCaptureLineDto,
+  RejectedCapturesResponse
+};
 
 export interface RiskItemDto {
   servicePointId: string;
@@ -260,7 +272,10 @@ export interface AgentRunViewDto {
   promptVersion?: string;
   n8nExecutionId?: string;
   fallbackReason?: string;
-  toolCalls: { method: string; path: string; status: number; milliseconds: number; atUtc: string; event?: string | null }[];
+  toolCalls: {
+    method: string; path: string; status: number; milliseconds: number; atUtc: string;
+    event?: string | null; executionId?: string | null; workflow?: string | null; node?: string | null; message?: string | null;
+  }[];
   decisions: AgentDecisionViewDto[];
 }
 
@@ -276,27 +291,27 @@ export class ApiService {
   private readonly baseUrl = environment.apiUrl;
 
   readonly apiLiveStatus = signal<'checking' | 'online' | 'offline'>('checking');
-  readonly lastPing = signal<PingResponseDto | null>(null);
+  readonly loadErrors = signal<Record<string, string>>({});
+
+  private clearLoadError(resource: string): void {
+    this.loadErrors.update(errors => {
+      const remaining = { ...errors };
+      delete remaining[resource];
+      return remaining;
+    });
+  }
+
+  private reportLoadError(resource: string, error: unknown): void {
+    console.error('No se pudo cargar ' + resource, error);
+    this.loadErrors.update(errors => ({
+      ...errors,
+      [resource]: 'No se pudo cargar ' + resource + '. Los datos pueden estar incompletos. Reintente la consulta.'
+    }));
+  }
 
   // ==========================================
   // 1. TELEMETRÍA Y ESTADO DE SERVICIO
   // ==========================================
-
-  getPing(): Observable<PingResponseDto | null> {
-    return this.http.get<PingResponseDto>(`${this.baseUrl}/api/v1/ping`).pipe(
-      map(res => {
-        this.apiLiveStatus.set('online');
-        this.lastPing.set(res);
-        return res;
-      }),
-      catchError(err => {
-        console.warn('API ping failed', err);
-        this.apiLiveStatus.set('offline');
-        this.lastPing.set(null);
-        return of(null);
-      })
-    );
-  }
 
   getLiveness(): Observable<HealthStatusDto | null> {
     return this.http.get<HealthStatusDto>(`${this.baseUrl}/health/live`).pipe(
@@ -319,9 +334,10 @@ export class ApiService {
 
   getServicePoints(): Observable<ServicePoint[]> {
     return this.http.get<ServicePoint[]>(`${this.baseUrl}/api/v1/service-points`).pipe(
+      tap(() => this.clearLoadError('puntos de servicio')),
       tap(() => this.apiLiveStatus.set('online')),
       catchError(err => {
-        console.warn('Get service points failed', err);
+        this.reportLoadError('puntos de servicio', err);
         return of([]);
       })
     );
@@ -329,9 +345,10 @@ export class ApiService {
 
   getWarehouses(): Observable<ServicePoint[]> {
     return this.http.get<ServicePoint[]>(`${this.baseUrl}/api/v1/service-points/warehouses`).pipe(
+      tap(() => this.clearLoadError('bodegas')),
       tap(() => this.apiLiveStatus.set('online')),
       catchError(err => {
-        console.warn('Get warehouses failed', err);
+        this.reportLoadError('bodegas', err);
         return of([]);
       })
     );
@@ -348,8 +365,9 @@ export class ApiService {
     const qs = params.toString() ? `?${params.toString()}` : '';
     const url = `${this.baseUrl}/api/v1/risks${qs}`;
     return this.http.get<RisksResponseDto>(url).pipe(
+      tap(() => this.clearLoadError('alertas de stock')),
       catchError(err => {
-        console.warn('Get risks failed', err);
+        this.reportLoadError('alertas de stock', err);
         return of(null);
       })
     );
@@ -366,6 +384,7 @@ export class ApiService {
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
     return this.http.get<any>(`${this.baseUrl}/api/v1/route-plans${queryString}`).pipe(
+      tap(() => this.clearLoadError('rutas')),
       map(res => {
         const raw = Array.isArray(res) ? res : (res?.items || []);
         return raw.map((item: any) => ({
@@ -382,7 +401,7 @@ export class ApiService {
         }));
       }),
       catchError(err => {
-        console.warn('Get route plans failed', err);
+        this.reportLoadError('rutas', err);
         return of([]);
       })
     );
@@ -556,8 +575,9 @@ export class ApiService {
   getAgentDecisions(status?: string): Observable<AgentDecisionDto[]> {
     const url = status ? `${this.baseUrl}/api/v1/agent-decisions?status=${encodeURIComponent(status)}` : `${this.baseUrl}/api/v1/agent-decisions`;
     return this.http.get<AgentDecisionDto[]>(url).pipe(
+      tap(() => this.clearLoadError('decisiones del agente')),
       catchError(err => {
-        console.warn('Get agent decisions failed', err);
+        this.reportLoadError('decisiones del agente', err);
         return of([]);
       })
     );
@@ -659,9 +679,25 @@ export class ApiService {
 
   getEntityData(entityKey: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/api/v1/imports/data/${encodeURIComponent(entityKey)}`).pipe(
+      tap(() => this.clearLoadError('datos de ' + entityKey)),
       catchError(err => {
-        console.warn(`Get entity data for ${entityKey} failed`, err);
+        this.reportLoadError('datos de ' + entityKey, err);
         return of([]);
+      })
+    );
+  }
+
+  // ==========================================
+  // 11. BANDEJA DE CAPTURAS RECHAZADAS (GET /api/v1/deliveries/rejected)
+  // ==========================================
+
+  getRejectedCaptures(servicePointId?: string): Observable<RejectedCapturesResponse> {
+    const options = servicePointId ? { params: { servicePointId } } : {};
+    return this.http.get<RejectedCapturesResponse>(`${this.baseUrl}/api/v1/deliveries/rejected`, options).pipe(
+      tap(() => this.clearLoadError('capturas rechazadas')),
+      catchError(err => {
+        this.reportLoadError('capturas rechazadas', err);
+        return of({ items: [], count: 0 });
       })
     );
   }

@@ -8,7 +8,7 @@ import {
   FieldProblemDetails
 } from '@istpetdev/shared-core';
 import { FIELD_API, IFieldApi } from '../field-api.interface';
-import { generateUuidV7 } from '../mock/mock-field-api.service';
+import { generateUuidV7 } from '../uuid';
 
 export interface OutboxItem {
   operationId: string; // UUID v7
@@ -32,9 +32,75 @@ export interface OutboxItem {
   photoEvidenceId?: string;
   signatureEvidenceId?: string;
   
-  // Error si hubo conflicto (ej: 409 ASSIGNMENT_CHANGED)
+  // Error si hubo rechazo/conflicto de negocio o transitorio
   errorCode?: string;
   errorMessage?: string;
+  problemType?: string;
+  retryCount?: number;
+  lastAttemptUtc?: string;
+}
+
+export interface ClassifiedError {
+  isBusiness: boolean;
+  status: number;
+  code: string;
+  type?: string;
+  message: string;
+}
+
+/**
+ * Clasifica respuestas del API según la práctica offline-first:
+ * - 409/422/403/400 de negocio = no reintentar (isBusiness: true)
+ * - 5xx o errores de red = error transitorio, reintento con espera exponencial y variación aleatoria (isBusiness: false)
+ */
+export function classifySyncError(err: any): ClassifiedError {
+  let status = 0;
+  let code = 'UNKNOWN_ERROR';
+  let type: string | undefined;
+  let message = '';
+
+  if (err) {
+    if (typeof err.status === 'number') {
+      status = err.status;
+    }
+    const body = err.error || err;
+    if (body && typeof body === 'object') {
+      if (typeof body.status === 'number') status = body.status;
+      if (body.code) code = String(body.code);
+      else if (body.title && typeof body.title === 'string' && body.title.length < 50 && !body.title.includes(' ')) {
+        code = body.title;
+      }
+      if (body.type) type = String(body.type);
+      if (body.detail) message = String(body.detail);
+      else if (body.title) message = String(body.title);
+      else if (body.message) message = String(body.message);
+    }
+    if (!message && err.message) {
+      message = String(err.message);
+    }
+  }
+
+  const isBusiness =
+    status === 409 ||
+    status === 422 ||
+    status === 403 ||
+    status === 400 ||
+    status === 404 ||
+    code === 'ASSIGNMENT_CHANGED' ||
+    code === 'IDEMPOTENCY_CONFLICT' ||
+    code === 'QUANTITY_EXCEEDED' ||
+    code === 'UNAUTHORIZED_ROLE' ||
+    code === 'UNAUTHORIZED_ASSIGNMENT' ||
+    code === 'UNIT_NOT_FOUND' ||
+    code === 'TOKEN_REVOKED_OR_EXPIRED';
+
+  return {
+    isBusiness,
+    status,
+    code,
+    type,
+    message: message || (isBusiness ? 'Conflicto o rechazo de negocio en el servidor.' : 'Error de red o conexión.')
+  };
 }
 
 const DB_NAME = 'istpetdev-driver-outbox-db';
@@ -316,7 +382,7 @@ export class FieldOutboxService {
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
 
-      const receiptResponse = await this.sendReceiptRequest(item);
+      const receiptResponse = await this.sendReceiptRequestWithRetry(item);
       item.receiptResponse = receiptResponse;
       item.status = 'EvidencePending';
       await db.put('outbox_items', item);
@@ -324,7 +390,7 @@ export class FieldOutboxService {
 
       const receiptId = receiptResponse.receiptId;
 
-      // Paso 2: Subir foto de evidencia con reintentos y retroceso exponencial (PA-02, F5)
+      // Paso 2: Subir foto de evidencia con reintentos y retroceso exponencial con jitter (PA-02, F5)
       if (item.evidencePhotoBlob && item.photoSha256 && !item.photoEvidenceId) {
         const photoUpload = await this.uploadAndConfirmEvidenceWithRetry(
           receiptId,
@@ -337,7 +403,7 @@ export class FieldOutboxService {
         await db.put('outbox_items', item);
       }
 
-      // Paso 3: Subir firma con reintentos y retroceso exponencial (PA-02, F5)
+      // Paso 3: Subir firma con reintentos y retroceso exponencial con jitter (PA-02, F5)
       if (item.evidenceSignatureBlob && item.signatureSha256 && !item.signatureEvidenceId) {
         const sigUpload = await this.uploadAndConfirmEvidenceWithRetry(
           receiptId,
@@ -356,15 +422,23 @@ export class FieldOutboxService {
       await this.refreshOutboxItems();
       return item;
     } catch (err: any) {
-      const prob = err as FieldProblemDetails;
-      if (prob && (prob.status === 409 || prob.code === 'ASSIGNMENT_CHANGED' || prob.code === 'IDEMPOTENCY_CONFLICT')) {
-        item.status = 'Conflict';
-        item.errorCode = prob.code || '409';
-        item.errorMessage = prob.detail || prob.title || 'Conflicto de asignación o versión en el servidor.';
+      const errorInfo = classifySyncError(err);
+      item.lastAttemptUtc = new Date().toISOString();
+      item.errorCode = errorInfo.code;
+      item.errorMessage = errorInfo.message;
+      item.problemType = errorInfo.type;
+
+      if (errorInfo.isBusiness) {
+        // Tarea 1 & ESC-23: Errores de negocio (409/422/403) NO se reintentan;
+        // pasan a estado «requiere revisión» con el motivo y la cola sigue.
+        item.status = 'RequiresReview';
       } else {
+        // Errores transitorios (5xx o red): tras agotar reintentos con variación,
+        // permanece en SavedOnDevice para posterior intento.
+        item.retryCount = (item.retryCount ?? 0) + 1;
         item.status = 'SavedOnDevice';
-        item.errorMessage = err?.message || 'Error de red o conexión.';
       }
+
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
       throw err;
@@ -395,6 +469,33 @@ export class FieldOutboxService {
     } finally {
       this.isSyncing.set(false);
       await this.refreshOutboxItems();
+    }
+  }
+
+  private async sendReceiptRequestWithRetry(item: OutboxItem, maxRetries = 3): Promise<ReceiptResponse> {
+    let attempt = 0;
+    let baseDelayMs = 400;
+
+    while (true) {
+      try {
+        return await this.sendReceiptRequest(item);
+      } catch (err: any) {
+        const errorInfo = classifySyncError(err);
+        // Regla: 409/422/403 de negocio NUNCA se reintentan
+        if (errorInfo.isBusiness) {
+          throw err;
+        }
+
+        attempt++;
+        if (attempt >= maxRetries) {
+          throw err;
+        }
+
+        // Variación aleatoria (jitter de 80% a 120%)
+        const jitter = 0.8 + Math.random() * 0.4;
+        const delayMs = Math.round(Math.min(3000, baseDelayMs * Math.pow(2, attempt - 1)) * jitter);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     }
   }
 
@@ -448,7 +549,7 @@ export class FieldOutboxService {
   }
 
   /**
-   * Sube y confirma evidencia binaria implementando reintentos con retroceso exponencial (PA-02, F5).
+   * Sube y confirma evidencia binaria implementando reintentos con retroceso exponencial y jitter (PA-02, F5).
    */
   private async uploadAndConfirmEvidenceWithRetry(
     receiptId: string,
@@ -459,17 +560,22 @@ export class FieldOutboxService {
     maxRetries = 3
   ): Promise<{ evidenceId: string }> {
     let attempt = 0;
-    let delayMs = 1000;
+    let delayMs = 500;
 
     while (attempt < maxRetries) {
       try {
         return await this.uploadAndConfirmEvidence(receiptId, kind, blob, sha256, operationId);
       } catch (err) {
+        const errorInfo = classifySyncError(err);
+        if (errorInfo.isBusiness) {
+          throw err;
+        }
         attempt++;
         if (attempt >= maxRetries) {
           throw err;
         }
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        const jitter = 0.8 + Math.random() * 0.4;
+        await new Promise((resolve) => setTimeout(resolve, Math.round(delayMs * jitter)));
         delayMs *= 2;
       }
     }
@@ -477,27 +583,39 @@ export class FieldOutboxService {
   }
 
   /**
-   * Resuelve un conflicto 409 (ASSIGNMENT_CHANGED / versión) actualizando la versión esperada
-   * pero manteniendo intactos todos los datos capturados y evidencias locales (FR-12).
+   * Resuelve o reintenta manualmente una captura en estado 'RequiresReview' o 'Conflict'.
+   * Si se especifica una nueva versión, se adapta la versión de la entrega (FR-12).
    */
-  async resolveConflictWithNewVersion(operationId: string, newVersion: number): Promise<OutboxItem> {
+  async resolveRequiresReview(operationId: string, newVersion?: number): Promise<OutboxItem> {
     const db = await this.getDb();
     const item = await db.get('outbox_items', operationId);
     if (!item) {
       throw new Error(`Ítem ${operationId} no encontrado en la cola outbox.`);
     }
 
-    item.expectedDeliveryVersion = newVersion;
-    item.receiptPayload.expectedDeliveryVersion = newVersion;
+    if (newVersion !== undefined) {
+      item.expectedDeliveryVersion = newVersion;
+      item.receiptPayload.expectedDeliveryVersion = newVersion;
+    }
+
     item.status = 'SavedOnDevice';
     item.errorCode = undefined;
     item.errorMessage = undefined;
+    item.problemType = undefined;
+    item.retryCount = 0;
 
     await db.put('outbox_items', item);
     await this.refreshOutboxItems();
 
     // Reintentar sincronización inmediata
     return this.syncItem(operationId);
+  }
+
+  /**
+   * Compatibilidad hacia atrás para resolución de 409 de versión.
+   */
+  async resolveConflictWithNewVersion(operationId: string, newVersion: number): Promise<OutboxItem> {
+    return this.resolveRequiresReview(operationId, newVersion);
   }
 
   /**

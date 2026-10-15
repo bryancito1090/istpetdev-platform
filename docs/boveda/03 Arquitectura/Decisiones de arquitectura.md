@@ -385,14 +385,14 @@ Tras validar la lógica de interfaces y outbox offline bajo arquitectura fronten
    - `MobileAssignmentsController`: `GET /mobile/assignments`.
    - `DemoController`: `POST /demo/route-plans/{id}/advance` ejecutando la cadena contable real.
 3. **Adaptadores HTTP y Conexión Real en Móvil y Web:**
-   - En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` está habilitada por defecto a través de `HttpFieldApiService`, conservando el mock simulado solo como plan de contingencia offline con `?mock=true`.
+   - En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` está habilitada por defecto a través de `HttpFieldApiService`, conservando el mock únicamente en desarrollo con `isDevMode()` y el parámetro exacto `?mock=true`; no se activa por fallos de red ni en producción.
    - En `apps/mobile` (componente principal `HomePage`), el rol receptor hospitalario consulta `GET /api/v1/receiver/handling-units/{unitId}` y confirma la recepción en línea mediante `POST /api/v1/receiver/handling-units/{unitId}/receipt` con cabecera `X-Trace-Token` e `Idempotency-Key` (spec 014), en lugar de la persistencia atómica en outbox (`saveReceiptAtomic`) que queda reservada al conductor sin señal.
 4. **Cálculo Dinámico de Revisiones y Enriquecimiento de Rutas en `RoutePlansController`:**
    - La creación de planes en `RoutePlansController.cs` calcula dinámicamente la revisión incrementada (`existingMaxRevision + 1`) para el código base del día.
    - Las lecturas de ruta devuelven el conteo real de paradas (`stopsCount`) y asocian los códigos y nombres legibles de cada `ServicePoint`, permitiendo que el panel web (`rutas.page.ts`) y su mapa muestren retroalimentación inmediata, alertas de éxito y navegación reactiva.
 
 ### Consecuencias
-- Flujo end-to-end 100% operativo sin maquetas obligatorias: desde la propuesta del motor logístico hasta la recepción hospitalaria y la consulta pública por QR.
+- Los adaptadores conectan propuesta de rutas, recepción y consulta pública a la API. El recorrido productivo con las seis cuentas requiere evidencia propia y no se da por validado por la implementación (issue #124).
 - Consistencia contable entre la PWA móvil y el ledger de inventario de PostgreSQL.
 - Eliminación de errores de deserialización y desajustes DTO en el frontend (`PublicTraceResponseDto`, `RoutePlanDetailDto`).
 

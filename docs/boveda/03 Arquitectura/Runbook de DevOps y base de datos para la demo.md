@@ -42,11 +42,13 @@ Regla estricta: **una migración por spec, en serie sobre `develop`**. Cada migr
 |---|---|---|---|---|---|---|
 | 0 | — | Tag `schema95-archivo` | Punto de congelamiento y referencia de Schema95 | Bryan / Jorge | 12-oct | **Completado** |
 | 1 | 001 | `DemoCore` | 27 tablas del núcleo, organización demo, PostGIS, cuentas y `DemoGrants` | Bryan / Jorge | H2 (13-oct 20:00) | **Completado y Desplegado en Prod** |
-| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, caché de distancias y `RouteStockReservation` | Asignado spec 002 | Antes de H3 (14-oct 20:00) | **Integrado en develop** (Pendiente en Prod) |
-| 3 | 004 | `FieldOperations` | `QrAccessToken`, estado y sincronización offline | Alexander Martínez | Antes de H3 (14-oct 20:00) | **Integrado en develop** (Pendiente en Prod) |
-| 4 | 003 | `AgentRuns` | Registro de ejecuciones y trazabilidad de decisiones del agente | Asignado spec 003 | Antes de H4 (15-oct 11:00) | **Integrado en develop** (Pendiente en Prod) |
-| 5 | 013 | `AccountsAndAudit` | Gestión de cuentas por Gerencia, bloqueo y rol Auditor (ADR-26) | Bryan / Jorge | 14-oct | **Integrado en develop** (Pendiente en Prod) |
-| 6 | 005 | `SimulationRuns` | Metadatos y eventos de corridas de simulación (`SimulationRun`, `SimulationEvent`) | Alexander Martínez | Antes de H4 (15-oct 11:00) | Pendiente |
+| 2 | 002 | `RoadMatrixCache` | `RoadMatrixEdge`, caché de distancias y `RouteStockReservation` | Anthony Pilatasig | Antes de H3 (14-oct 20:00) | **Desplegado en Prod** (verificado 15-oct) |
+| 3 | 004 | `FieldOperations` | `QrAccessToken`, estado y sincronización offline | Alexander Martínez | Antes de H3 (14-oct 20:00) | **Desplegado en Prod** (verificado 15-oct) |
+| 4 | 003 | `AgentRuns` | Registro de ejecuciones y trazabilidad de decisiones del agente | Anthony Pilatasig | Antes de H4 (15-oct 11:00) | **Desplegado en Prod** (verificado 15-oct) |
+| 5 | — | `OrderBasedRoutingAndWarehouseStock` | Ruteo por pedidos, stock por bodega y rebalanceo | Alexander Martínez | 14-oct | **Desplegado en Prod** (verificado 15-oct) |
+| 6 | 005 | `SimulationRunsAndEvents` | Metadatos y eventos de corridas de simulación (`SimulationRun`, `SimulationEvent`) | Alexander Martínez | Antes de H4 (15-oct 11:00) | **Desplegado en Prod** (verificado 15-oct) |
+
+> **Verificación del 15-oct (17:20 UTC):** `/health/ready` de producción responde `Healthy`. Ese check devuelve `Unhealthy` si hay migraciones pendientes o si las tablas no coinciden con el modelo (`DatabaseHealthCheck`), así que las 8 migraciones del repositorio están aplicadas en RDS. La migración `AccountsAndAudit` que se había planificado para la spec 013 no existe en el repositorio.
 
 > [!important] Congelamiento total de base de datos (H5)
 > **A partir de H5 (15 de octubre a las 14:00) queda terminantemente prohibido generar, fusionar o aplicar cualquier nueva migración DDL.** Toda la persistencia quedará congelada para la sesión de demostración y pitch.
@@ -134,7 +136,7 @@ De las dos alternativas planteadas en la [issue #16](https://github.com/bryancit
 
 ## 6. Alcance del CI frente a Amazon RDS (Matriz de Verificación)
 
-Un resultado exitoso en el flujo de integración continua (`ci.yml`) **no certifica** la conectividad, credenciales ni compatibilidad de migraciones con Amazon RDS. El pipeline ejecuta las suites de pruebas contra un contenedor Docker efímero local (`postgis/postgis:16-3.4-alpine`) aprovisionado al vuelo en el ejecutor de GitHub Actions.
+Un resultado exitoso en el flujo de integración continua (`ci.yml`) **no certifica** la conectividad, las credenciales ni el comportamiento de las migraciones con los datos reales de Amazon RDS. El pipeline ejecuta las suites de pruebas contra un contenedor Docker efímero local (`postgis/postgis:16-3.4-alpine`) aprovisionado al vuelo en el ejecutor de GitHub Actions.
 
 | Componente | Validado por CI (`ci.yml`) | Validado Exclusivamente en Despliegue (`deploy.yml`) |
 |---|---|---|
@@ -145,7 +147,8 @@ Un resultado exitoso en el flujo de integración continua (`ci.yml`) **no certif
 | **Conectividad de Red AWS RDS** | **No** (VPC privada inaccesible desde GitHub) | **Sí** (EC2 dentro de la VPC en puerto 5432) |
 | **Credenciales Secrets Manager** | **No** (CI desconoce `migrator_integration`) | **Sí** (Inyectadas en runtime en host EC2) |
 | **TLS VerifyFull con CA Oficial** | **No** (Contenedor efímero sin TLS forzado) | **Sí** (`global-bundle.pem` montado en backend) |
-| **Aplicación Real de Migraciones** | **No** (Solo valida que el código compila) | **Sí** (`DatabaseInitializer.MigrateAsync` en RDS) |
+| **Aplicación de Migraciones** | Sí, sobre base vacía o con fixtures: historia completa sin cambios de modelo pendientes (`MigrationSafetyTests`) y ensayo por el camino de producción `--migrate`, dos veces, con respaldo y restauración (job «Ensayo de respaldo y restauración») | **Sí**, sobre los datos reales (`DatabaseInitializer.MigrateAsync` en RDS al arrancar la API) |
+| **Migraciones solo aditivas (§8)** | Sí: `scripts/db/check-additive-migrations.py` rechaza `Drop*`, `Rename*`, `AlterColumn` y SQL destructivo en `Up()` de migraciones posteriores a `DemoCore` | Heredado |
 | **Criterio de Éxito de Despliegue** | Job en verde de GitHub Actions | `HTTP 200` estricto en `/health/ready` |
 
 > [!important] Regla de verificación obligatoria
@@ -214,7 +217,11 @@ Para garantizar que un rollback de imagen no rompa el backend:
    - Toda migración DDL debe ser estrictamente aditiva: creación de tablas nuevas, nuevas columnas con valor `DEFAULT` o que admitan `NULL`, y nuevos índices.
    - **Prohibido:** Eliminar columnas, renombrar tablas en uso o alterar tipos de datos restrictivos dentro de la misma versión.
    - Si se requiere retirar un campo obsoleto, se realiza en un ciclo de dos pasos: primero se deja de usar en el código de aplicación (conservando la columna), y en una versión posterior se elimina la columna física.
-2. **Procedimiento ante Rollback con Migración Aplicada:**
+   - **Lo hace cumplir el CI:** el paso «Verificar que las migraciones nuevas son aditivas» de `ci.yml` falla ante `Drop*`, `Rename*`, `AlterColumn` o SQL destructivo en `Up()`. Una excepción revisada se declara dentro del archivo con `// migracion-destructiva-aprobada: <motivo>` y requiere el snapshot manual del §11.
+2. **Si la migración falla al arrancar en RDS:**
+   - PostgreSQL revierte la transacción de esa migración, así que la base queda en la versión anterior.
+   - Pero `deploy.yml` ya recreó los contenedores (`up -d --force-recreate`) antes del chequeo de `/health/ready`: el backend nuevo no arranca y **producción queda caída** hasta ejecutar `rollback.yml` al último SHA desplegado.
+3. **Procedimiento ante Rollback con Migración Aplicada:**
    - Si la migración cumple la regla aditiva, la versión anterior de la API continuará operando normalmente ignorando las tablas o columnas adicionales.
    - Si la migración introdujo una incompatibilidad regresiva crítica, el rollback de contenedores no es suficiente: se debe ejecutar la restauración del Snapshot previo en Amazon RDS.
 
@@ -286,7 +293,7 @@ flowchart LR
 
 Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `main`:
 
-- [ ] **1. Migración Aditiva Verificada**: Comprobar que la nueva migración en `src/Infrastructure/Persistence/Migrations/` no elimine tablas ni columnas en uso por la versión actual.
+- [ ] **1. Migración Aditiva Verificada**: El CI la comprueba (`scripts/db/check-additive-migrations.py`). Una excepción se declara en la migración con `// migracion-destructiva-aprobada: <motivo>` y exige el snapshot del ítem 2.
 - [ ] **2. Snapshot Manual de RDS Creado**:
   ```bash
   aws rds create-db-snapshot \
