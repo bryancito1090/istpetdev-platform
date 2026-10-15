@@ -2,8 +2,21 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../config/environment';
-import { PingResponseDto, HealthStatusDto, PublicTraceResponseDto, ServicePoint } from '@istpetdev/shared-core';
-export type { ServicePoint } from '@istpetdev/shared-core';
+import {
+  PingResponseDto,
+  HealthStatusDto,
+  PublicTraceResponseDto,
+  ServicePoint,
+  RejectedCaptureDto,
+  RejectedCaptureLineDto,
+  RejectedCapturesResponse
+} from '@istpetdev/shared-core';
+export type {
+  ServicePoint,
+  RejectedCaptureDto,
+  RejectedCaptureLineDto,
+  RejectedCapturesResponse
+};
 
 export interface RiskItemDto {
   servicePointId: string;
@@ -662,6 +675,20 @@ export class ApiService {
       catchError(err => {
         console.warn(`Get entity data for ${entityKey} failed`, err);
         return of([]);
+      })
+    );
+  }
+
+  // ==========================================
+  // 11. BANDEJA DE CAPTURAS RECHAZADAS (GET /api/v1/deliveries/rejected)
+  // ==========================================
+
+  getRejectedCaptures(servicePointId?: string): Observable<RejectedCapturesResponse> {
+    const options = servicePointId ? { params: { servicePointId } } : {};
+    return this.http.get<RejectedCapturesResponse>(`${this.baseUrl}/api/v1/deliveries/rejected`, options).pipe(
+      catchError(err => {
+        console.warn('Get rejected captures failed', err);
+        return of({ items: [], count: 0 });
       })
     );
   }

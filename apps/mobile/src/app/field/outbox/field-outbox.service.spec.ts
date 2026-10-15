@@ -136,4 +136,88 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(stored).toBeDefined();
     expect(stored.operationId).toBe('op-legacy-123');
   });
+
+  it('ESC-23: elemento con error de negocio (409/422) pasa a RequiresReview y NO bloquea el resto de la cola', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('conductor-1');
+
+    // Registrar 3 capturas: la primera falla con 409 (colisión HZ-04 / conflicto), las otras dos son válidas
+    const item1 = await outbox.saveReceiptAtomic(receipt('d-collision-hz04'));
+    const item2 = await outbox.saveReceiptAtomic(receipt('d-success-2'));
+    const item3 = await outbox.saveReceiptAtomic(receipt('d-success-3'));
+
+    api.createReceipt.mockImplementation((deliveryId: string) => {
+      if (deliveryId === 'd-collision-hz04') {
+        const error: any = new Error('Conflicto de negocio HZ-04');
+        error.status = 409;
+        error.error = {
+          status: 409,
+          code: 'ASSIGNMENT_CHANGED',
+          title: 'ASSIGNMENT_CHANGED',
+          type: 'https://istpetdev.local/errors/assignment_changed',
+          detail: 'Colisión de asignación o versión en el servidor.'
+        };
+        return {
+          subscribe: ({ error: errCb }: any) => errCb(error)
+        };
+      }
+      return of({ receiptId: `rcpt-${deliveryId}`, deliveryId, deliveryVersion: 2, status: 'Delivered' });
+    });
+
+    outbox.isSimulatingOffline.set(false);
+    await outbox.syncAllPending();
+
+    const items = outbox.outboxItems();
+    const failedItem = items.find((i) => i.deliveryId === 'd-collision-hz04');
+    const okItem2 = items.find((i) => i.deliveryId === 'd-success-2');
+    const okItem3 = items.find((i) => i.deliveryId === 'd-success-3');
+
+    // El elemento que falló se aisló como «RequiresReview»
+    expect(failedItem).toBeDefined();
+    expect(failedItem?.status).toBe('RequiresReview');
+    expect(failedItem?.errorCode).toBe('ASSIGNMENT_CHANGED');
+    expect(failedItem?.problemType).toBe('https://istpetdev.local/errors/assignment_changed');
+
+    // ESC-23: NO bloqueó la cola; las capturas 2 y 3 se sincronizaron con éxito
+    expect(okItem2?.status).toBe('Complete');
+    expect(okItem3?.status).toBe('Complete');
+  });
+
+  it('ESC-25: carrera de desactivación de cuenta (403 TOKEN_REVOKED_OR_EXPIRED) aísla la captura en RequiresReview sin perder datos', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('conductor-deactivated');
+
+    const item = await outbox.saveReceiptAtomic(receipt('d-deactivated'));
+
+    // Servidor responde 403 Forbidden por cuenta inactiva
+    api.createReceipt.mockImplementation(() => {
+      const error: any = new Error('Cuenta inactiva');
+      error.status = 403;
+      error.error = {
+        status: 403,
+        code: 'TOKEN_REVOKED_OR_EXPIRED',
+        type: 'https://istpetdev.local/errors/token_revoked_or_expired',
+        detail: 'La cuenta del conductor está inactiva o ha sido desactivada.'
+      };
+      return {
+        subscribe: ({ error: errCb }: any) => errCb(error)
+      };
+    });
+
+    outbox.isSimulatingOffline.set(false);
+    await expect(outbox.syncItem(item.operationId)).rejects.toBeDefined();
+
+    const currentItem = outbox.outboxItems().find((i) => i.operationId === item.operationId);
+    expect(currentItem?.status).toBe('RequiresReview');
+    expect(currentItem?.errorCode).toBe('TOKEN_REVOKED_OR_EXPIRED');
+    expect(currentItem?.errorMessage).toContain('inactiva');
+
+    // Los datos siguen intactos en el dispositivo
+    const db = await (outbox as any).getDb();
+    const stored = await db.get('outbox_items', item.operationId);
+    expect(stored).toBeDefined();
+    expect(stored.receiptPayload.deliveryId || item.deliveryId).toBe('d-deactivated');
+  });
 });
