@@ -98,6 +98,12 @@ Un resultado exitoso en el flujo de integración continua (`ci.yml`) **no certif
 > [!important] Regla de verificación obligatoria
 > La única certificación formal de que una migración fue aplicada exitosamente en producción es la respuesta `HTTP 200 Healthy` del endpoint `https://istpetdev.doicela.dev/health/ready` tras el paso 8 de `deploy.yml`. Si el endpoint responde `HTTP 503` o el contenedor reinicia, el despliegue aborta con código 1 (política Fail-Fast).
 
+### Registro de Cambios de Infraestructura Fuera de Terraform
+
+| Fecha | Identificador de Recurso | Cambio Aplicado | Método / Rama | Responsable | Estado |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-10-15 | `i-0e0a979f8c0885a4f` (`istpetdev-prod-host`) | 013 — Perfil IAM (`istpetdev-app-host-dev`) y hop limit 2 del host de la app | CLI / Rama A | Jorge Doicela | **Completado** |
+
 ---
 
 ## 7. Procedimiento de Verificación de Migraciones en Producción
@@ -256,7 +262,7 @@ Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `m
 | **001 T4** | Retirar `Schema95Check` y validar con `dotnet test` (`LeanSchemaTests`) | `.github/workflows/deploy.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
 | **001** | Incluir fixtures (`demo-base`) y variables `Demo__*` en Docker y compose | `infra/docker/backend/Dockerfile`, `infra/compose/docker-compose.prod.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
 | **004 T1b** | Servir PWA en ruta `/campo/` y configurar cabeceras de caché | `infra/nginx/istpetdev.conf` | Alexander Martínez / Jorge Doicela | H3 (14-oct) | En curso |
-| **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
+| **013 T10** | Callbacks HTTPS en Amazon Cognito, marca ISTPET y perfil IAM del host de la app | Terraform `identity.tf`, `variables.tf`, `app_host_iam.tf`, CLI | Jorge Doicela | H3 (14-oct) | **Completado** (Issue #43) |
 | **003** | Cliente M2M en Cognito (`client_credentials`), scopes y cuenta técnica para el agente n8n | Terraform `identity.tf`, `src/Api/appsettings.*`, Compose, Deploy | Jorge Doicela | H3 (14-oct) | CD #86 exitoso (`a45a548`); **cuentas productivas y permisos M2M/humano verificados** (n8n risks 200; cinco acciones humanas 403 con M2M); aceptación pendiente en [#38](https://github.com/bryancito1090/istpetdev-platform/issues/38)/[#39](https://github.com/bryancito1090/istpetdev-platform/issues/39) |
 | **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
 | **Seguridad (#14)** | TLS con `VerifyFull` + CA oficial de RDS y Swagger restringido por defecto. SSH 22 mitigado con UFW/fail2ban (cierre y Terraform diferidos a P2) | Dockerfile / Compose / Nginx / Program.cs / Deploy workflow | Jorge Doicela | Antes de H4 (14-oct) | **Completado** |

@@ -108,3 +108,13 @@ variable "github_oidc_subject" {
     error_message = "Use the verified exact repository/environment or main branch subject."
   }
 }
+
+variable "app_public_origin" {
+  type        = string
+  description = "Origen HTTPS público de la web; la PWA vive en /campo/ (spec 013)"
+  default     = "https://istpetdev.doicela.dev"
+  validation {
+    condition     = can(regex("^https://[a-z0-9.-]+$", var.app_public_origin))
+    error_message = "Debe ser https://dominio sin barra final."
+  }
+}
