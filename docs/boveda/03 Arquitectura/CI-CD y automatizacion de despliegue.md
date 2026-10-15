@@ -287,7 +287,7 @@ Para desacoplar la ejecución automatizada de GitHub Actions del mantenimiento m
   - `init-debian-host.sh`: Inicialización manual para servidores Debian.
   - `prune-host.sh`: Poda de almacenamiento, vaciado de `journalctl` (50M) y rotación de imágenes locales (últimas 3 versiones).
 - **`scripts/backup/`**:
-  - `backup-db.sh`: volcado comprimido manual de PostgreSQL. ⚠️ Por defecto respalda la base `postgres` con `istpetadmin` y lo guarda en el disco del host stateless; la corrección está pendiente en la [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15).
+  - `backup-db.sh`: atajo de `scripts/base_datos/database-task.py backup` (15-oct, [issue #15](https://github.com/bryancito1090/istpetdev-platform/issues/15)). Respalda `istpetdev_integration` con el rol de solo lectura `backup_integration`, calcula el SHA-256 y sube al bucket de respaldos con verificación. Requiere el túnel SSM y los archivos privados; procedimiento en el runbook §4.
 - **`scripts/deploy/`**:
   - `deploy-local-host.sh`: Despliegue y levantamiento local desatendido desde el servidor sin pasar por CI.
 - **`scripts/db/`**:

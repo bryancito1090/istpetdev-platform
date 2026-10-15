@@ -87,11 +87,22 @@ jobs:
             sleep 5
             (curl -sf http://127.0.0.1:5000/health/ready || curl -sf http://localhost/health/ready) && echo "Servicios reiniciados correctamente"
 
-  backend-qa:
-    name: "QA Backend (.NET 8)"
+  # Integración es la categoría más larga; Unit y E2E corren a la vez en otro runner.
+  backend-tests:
+    name: "Pruebas Backend (${{ matrix.label }})"
     needs: validate-source
     if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: "Integración"
+            slug: integration
+            categories: "Integration"
+          - label: "Unit y E2E"
+            slug: unit-e2e
+            categories: "Unit E2E"
     steps:
       - name: "Checkout del código"
         uses: actions/checkout@v4
@@ -110,11 +121,47 @@ jobs:
       - name: "Verificar núcleo, importador y recorrido HTTP"
         env:
           DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '1'
+          CATEGORIES: ${{ matrix.categories }}
         run: |
-          for category in Unit Integration E2E; do
+          for category in $CATEGORIES; do
             dotnet test tests/IstpetDev.Tests -c Release --no-build --no-restore --filter "Category=$category" --logger "trx;LogFileName=$category.trx" --results-directory artifacts/spec001
           done
-          python scripts/db/check-test-results.py artifacts/spec001
+
+      - name: "Conservar resultados parciales"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec001-cd-tests-${{ matrix.slug }}
+          path: artifacts/spec001/*.trx
+
+  # Conserva el nombre histórico y exige que todas las categorías corrieron y pasaron.
+  backend-qa:
+    name: "QA Backend (.NET 8)"
+    needs: backend-tests
+    if: ${{ !cancelled() && inputs.restart_only != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Exigir que todas las pruebas backend terminaran bien"
+        env:
+          RESULT: ${{ needs.backend-tests.result }}
+        run: |
+          if [ "$RESULT" != "success" ]; then
+            echo "Las pruebas backend terminaron con estado: $RESULT"
+            exit 1
+          fi
+
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Reunir resultados de pruebas"
+        uses: actions/download-artifact@v4
+        with:
+          pattern: spec001-cd-tests-*
+          path: artifacts/spec001
+          merge-multiple: true
+
+      - name: "Validar categorías Unit, Integration y E2E"
+        run: python scripts/db/check-test-results.py artifacts/spec001
 
       - name: "Verificar generación n8n, aceptación y limpieza sin credenciales"
         run: |
@@ -178,7 +225,8 @@ jobs:
 
   build-backend:
     name: "Compilar y Publicar Backend (GHCR)"
-    needs: [validate-source, backend-qa]
+    # Corre en paralelo con QA: solo publica tags inmutables (SHA). `latest` se mueve tras QA en promote-latest.
+    needs: validate-source
     if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     outputs:
@@ -212,13 +260,13 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:${{ steps.vars.outputs.sha_short }}
-            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-frontend:
     name: "Compilar y Publicar Frontend Web (GHCR)"
-    needs: [validate-source, frontend-qa]
+    # Corre en paralelo con QA: solo publica tags inmutables (SHA). `latest` se mueve tras QA en promote-latest.
+    needs: validate-source
     if: ${{ inputs.restart_only != true }}
     runs-on: ubuntu-latest
     outputs:
@@ -252,14 +300,20 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:${{ steps.vars.outputs.sha_short }}
-            ${{ env.REGISTRY }}/${{ steps.vars.outputs.owner_lower }}/istpetdev-web:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy-ec2:
     name: "Despliegue Inmutable en Servidor EC2"
-    needs: [validate-source, build-backend, build-frontend]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && inputs.restart_only != true }}
+    # Las imágenes se construyen en paralelo con QA; aquí se exige que TODO haya pasado antes de tocar el host.
+    needs: [validate-source, backend-qa, frontend-qa, build-backend, build-frontend]
+    if: >-
+      ${{ !cancelled() && inputs.restart_only != true
+      && needs.validate-source.result == 'success'
+      && needs.backend-qa.result == 'success'
+      && needs.frontend-qa.result == 'success'
+      && needs.build-backend.result == 'success'
+      && needs.build-frontend.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout del código para sincronizar configuraciones"
@@ -437,6 +491,37 @@ jobs:
               docker compose -f infra/compose/docker-compose.prod.yml logs --tail=80 istpetdev-backend
               exit 1
             fi
+
+  promote-latest:
+    name: "Promover imágenes validadas a latest"
+    needs: [backend-qa, frontend-qa, build-backend, build-frontend]
+    if: >-
+      ${{ !cancelled() && inputs.restart_only != true
+      && needs.backend-qa.result == 'success'
+      && needs.frontend-qa.result == 'success'
+      && needs.build-backend.result == 'success'
+      && needs.build-frontend.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Configurar Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Autenticar en GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Etiquetar como latest las imágenes de este commit"
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SHA: ${{ github.sha }}
+        run: |
+          owner_lower=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          for image in istpetdev-backend istpetdev-web; do
+            docker buildx imagetools create -t "$REGISTRY/$owner_lower/$image:latest" "$REGISTRY/$owner_lower/$image:$SHA"
+          done
 
   health-check-report:
     name: "Reporte Ejecutivo Post-Despliegue"

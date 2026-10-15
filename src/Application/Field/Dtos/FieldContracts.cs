@@ -181,6 +181,33 @@ public sealed record DeliveryListResponse(
     int? Total);
 
 // ==========================================
+// Spec 004 / Issue #121: Delivery Detail
+// ==========================================
+
+public sealed record DeliveryDetailLineDto(
+    Guid DeliveryLineId,
+    Guid LotId,
+    string LotCode,
+    string Sku,
+    string ProductName,
+    decimal PlannedQuantity,
+    string Unit);
+
+public sealed record DeliveryDetailHandlingUnitDto(
+    Guid HandlingUnitId,
+    string Code,
+    string Status);
+
+public sealed record DeliveryDetailResponse(
+    Guid DeliveryId,
+    string Status,
+    long Version,
+    string PointName,
+    Guid RoutePlanId,
+    IReadOnlyList<DeliveryDetailLineDto> Lines,
+    IReadOnlyList<DeliveryDetailHandlingUnitDto> HandlingUnits);
+
+// ==========================================
 // FR-16: Demo Advance
 // ==========================================
 
@@ -231,3 +258,11 @@ public sealed record HandlingUnitTraceResponse(
     Guid? DeliveryId,
     IReadOnlyList<HandlingUnitLineDto> Lines,
     IReadOnlyList<HandlingUnitTraceEvent> Events);
+
+// 014: lo que ve el Receptor al escanear el QR del bulto.
+public sealed record ReceiverUnitLineDto(Guid DeliveryLineId, Guid LotId, string LotCode, string Sku, string ProductName, decimal Quantity, string Unit);
+
+public sealed record ReceiverUnitResponse(
+    Guid HandlingUnitId, string Code, string Status, Guid DeliveryId, long DeliveryVersion,
+    string DestinationName, IReadOnlyList<ReceiverUnitLineDto> Lines);
+

@@ -111,4 +111,24 @@ public sealed class DeliveriesController : ControllerBase
         var result = await _fieldService.GetDeliveriesAsync(routePlanId, status, limit, cursor, ct);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Spec 004 / Issue #121: Detalle de la entrega con líneas y bultos creados. Rol Bodega y Gerencia.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = $"{Roles.Bodega},{Roles.Gerencia}")]
+    public async Task<IActionResult> GetDeliveryDetail(
+        Guid id,
+        CancellationToken ct)
+    {
+        try
+        {
+            var result = await _fieldService.GetDeliveryDetailAsync(id, ct);
+            return Ok(result);
+        }
+        catch (FieldException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: ex.StatusCode, title: ex.Code);
+        }
+    }
 }

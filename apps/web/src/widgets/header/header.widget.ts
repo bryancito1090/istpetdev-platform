@@ -33,7 +33,8 @@ const MANAGER_NAV: NavItem[] = [
 const AUDITOR_NAV: NavItem[] = [
   { path: '/inicio', label: 'Inicio' },
   { path: '/alertas', label: 'Alertas' },
-  { path: '/rutas', label: 'Rutas' }
+  { path: '/rutas', label: 'Rutas' },
+  { path: '/simulation', label: 'Simulador 90d' }
 ];
 
 @Component({

@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
   packages: read
+  actions: read
+
+# Comparte grupo con deploy.yml: un rollback y un despliegue nunca tocan el host a la vez.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   validate-source:
@@ -28,15 +34,60 @@ jobs:
           BRANCH: ${{ github.ref_name }}
         run: bash .github/scripts/branch-policy.sh dispatch "$BRANCH"
 
+  # Solo se puede volver a una versión de main que ya se desplegó con éxito (pruebas en verde).
+  resolve-target:
+    name: "Validar Versión Destino"
+    needs: validate-source
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    steps:
+      - name: "Checkout con historial"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Resolver SHA y exigir un despliegue previo exitoso"
+        id: resolve
+        env:
+          TARGET: ${{ inputs.target_sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! [[ "$TARGET" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::target_sha debe ser un hash hexadecimal de 7 a 40 caracteres."
+            exit 1
+          fi
+          if ! FULL=$(git rev-parse --verify --quiet "${TARGET}^{commit}"); then
+            echo "::error::El commit $TARGET no existe en el repositorio (o el hash corto es ambiguo)."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$FULL" origin/main; then
+            echo "::error::El commit $FULL no forma parte de la historia de main."
+            exit 1
+          fi
+          DEPLOYED=0
+          for run in $(gh api "repos/$REPO/actions/workflows/deploy.yml/runs?head_sha=$FULL&status=success&per_page=20" -q '.workflow_runs[].id'); do
+            if gh api "repos/$REPO/actions/runs/$run/jobs" -q '.jobs[] | select(.name == "Despliegue Inmutable en Servidor EC2" and .conclusion == "success") | .id' | grep -q .; then
+              DEPLOYED=1; break
+            fi
+          done
+          if [ "$DEPLOYED" != "1" ]; then
+            echo "::error::El commit $FULL nunca se desplegó con éxito (QA y despliegue en verde); no se permite volver a él."
+            exit 1
+          fi
+          echo "Versión destino validada: $FULL"
+          echo "sha=$FULL" >> "$GITHUB_OUTPUT"
+
   rollback:
     name: "Ejecutar Rollback en el Host"
-    needs: validate-source
+    needs: resolve-target
     runs-on: ubuntu-latest
     steps:
       - name: "Ejecutar reversión de versión vía SSH"
         uses: appleboy/ssh-action@v1.2.0
         env:
-          TARGET_SHA: ${{ inputs.target_sha }}
+          TARGET_SHA: ${{ needs.resolve-target.outputs.sha }}
           OWNER: ${{ github.repository_owner }}
           GH_ACTOR: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -152,18 +203,21 @@ jobs:
             fi
 
       - name: "Generar Reporte de Rollback en GitHub Step Summary"
+        env:
+          TARGET_SHA: ${{ needs.resolve-target.outputs.sha }}
+          ACTOR: ${{ github.actor }}
         run: |
-          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           # Reporte Ejecutivo de Rollback — IstpetDev
 
           | Parámetro | Valor |
           | :--- | :--- |
           | **Estado** | Rollback Ejecutado Exitosamente |
           | **Dominio Público** | [https://istpetdev.doicela.dev](https://istpetdev.doicela.dev) |
-          | **Target Commit SHA** | `${{ inputs.target_sha }}` |
-          | **Ejecutado por** | @${{ github.actor }} |
-          | **Verificación Base de Datos** | Exitoso (HTTP 200 en `/health/ready`) |
+          | **Target Commit SHA** | \`${TARGET_SHA}\` |
+          | **Ejecutado por** | @${ACTOR} |
+          | **Verificación Base de Datos** | Exitoso (HTTP 200 en \`/health/ready\`) |
 
           ### Nota Operativa:
-          Se restauraron los contenedores en producción a la imagen inmutable correspondiente a `${{ inputs.target_sha }}` en menos de 30 segundos, validando conectividad efectiva con Amazon RDS sin degradación de base de datos.
+          Se restauraron los contenedores en producción a la imagen inmutable correspondiente a \`${TARGET_SHA}\` en menos de 30 segundos, validando conectividad efectiva con Amazon RDS sin degradación de base de datos.
           EOF

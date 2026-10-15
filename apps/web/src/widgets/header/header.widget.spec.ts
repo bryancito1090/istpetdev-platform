@@ -37,7 +37,7 @@ describe('HeaderWidget (FR-21)', () => {
   });
 
   it('Auditor conserva solo la navegación de lectura', () => {
-    expect(navigationFor('Auditor')).toEqual(['/inicio', '/alertas', '/rutas']);
+    expect(navigationFor('Auditor')).toEqual(['/inicio', '/alertas', '/rutas', '/simulation']);
   });
 
   it('Gerencia ve el enlace a Usuarios', () => {

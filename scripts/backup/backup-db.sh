@@ -1,24 +1,36 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # backup-db.sh
-# Generación de respaldo preventivo comprimido de la base de datos PostgreSQL
+# Respaldo lógico de una base de RDS con la herramienta verificada del repositorio
+# (scripts/base_datos/database-task.py backup): pg_dump -Fc con cliente PostgreSQL 16,
+# conteo y hash de cada tabla, SHA-256 y carga verificada al bucket de respaldos
+# (prefijo daily/ 7 días; weekly/ 28 días los domingos).
+#
+# Antes respaldaba la base de mantenimiento `postgres` con `istpetadmin` al disco del
+# host, que no conserva datos (#15). Procedimiento completo: «Runbook de DevOps y base
+# de datos para la demo», §4.
+#
+# Requisitos: túnel SSM activo (scripts/ops/dev-tunnel.sh), Docker, psql, AWS CLI con
+# un perfil que pueda leer el secreto /istpetdev/dev/db/integration/backup y escribir en
+# el bucket, y los archivos privados dev-access.json y dev-outputs.json.
+#
+# Uso: scripts/backup/backup-db.sh [integration|dev_01..dev_05]   (por defecto: integration)
+#   ISTPETDEV_AWS_PROFILE   perfil AWS (por defecto istpetdev-admin)
+#   ISTPETDEV_PRIVATE_DIR   carpeta privada fuera del repo (por defecto ~/.config/istpetdev/private)
 # ==============================================================================
 
 set -euo pipefail
 
-BACKUP_DIR="${DEPLOY_DIR:-/var/www/istpetdev}/backups"
-mkdir -p "$BACKUP_DIR"
+MEMBER="${1:-integration}"
+PROFILE="${ISTPETDEV_AWS_PROFILE:-istpetdev-admin}"
+PRIVATE_DIR="${ISTPETDEV_PRIVATE_DIR:-$HOME/.config/istpetdev/private}"
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/istpetdev_db_${TIMESTAMP}.sql.gz"
+for file in dev-access.json dev-outputs.json; do
+  [ -f "$PRIVATE_DIR/$file" ] || { echo "ERROR: falta $PRIVATE_DIR/$file (ver docs/aws-dev.md)" >&2; exit 1; }
+done
 
-DB_HOST="${DB_HOST:-istpetdev-rds-dev.cep4osawemm3.us-east-1.rds.amazonaws.com}"
-DB_PORT="${DB_PORT:-5432}"
-DB_USER="${DB_USER:-istpetadmin}"
-DB_NAME="${DB_NAME:-postgres}"
-
-echo "==> Generando respaldo de Amazon RDS (${DB_HOST}) en ${BACKUP_FILE}..."
-PGPASSWORD="${DB_PASSWORD:-}" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" | gzip > "$BACKUP_FILE"
-
-echo "==> Respaldo generado exitosamente:"
-ls -lh "$BACKUP_FILE"
+exec python3 "$(dirname "$0")/../base_datos/database-task.py" backup \
+  --profile "$PROFILE" \
+  --config "$PRIVATE_DIR/dev-access.json" \
+  --outputs "$PRIVATE_DIR/dev-outputs.json" \
+  --member "$MEMBER"
