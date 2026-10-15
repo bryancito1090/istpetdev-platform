@@ -93,7 +93,7 @@ API técnica autenticada con Cognito M2M/rol Automatización, cron `America/Guay
 La sesión de definición propone que WF-01 y WF-02 evolucionen a dos workflows de agente, `vigia` e `incidente`, con un nodo AI Agent cuyas herramientas son endpoints del motor logístico (ADR-22, [[Definiciones de producto y plan hasta el pitch]]). Se conservan los principios de esta nota: la API calcula y conserva el estado; n8n coordina; el LLM no cambia stock, prioridades ni fechas; una caída del LLM no detiene la operación (la API responde a los 10 s con el camino determinista). Cambian tres cosas: el LLM elige qué herramientas llamar; la política determinista del motor decide qué se publica solo; y cada cifra del texto se valida contra los datos calculados. Proveedor: DeepSeek, con prueba de aceptación. Workflows y prompt versionados en `automation/n8n/`; detalle en el spec 003 del repositorio (`docs/specs/003-agente-logistico/`).
 
 
-## Avance verificable de #37 — 14 de octubre de 2026
+## Histórico de la entrega inicial de #37 — 14 de octubre de 2026
 
 La rama `feature/37-n8n-workflows-local` contiene prompt, plantillas, workflows
 DeepSeek nativos, generador, perfil Docker `agent`, arranque y aceptación local.
@@ -118,7 +118,8 @@ El seguimiento y las instrucciones de obtención de credenciales se mantienen
 en [task.md](../../specs/003-agente-logistico/task.md) y
 [guia-cierre-37.md](../../specs/003-agente-logistico/guia-cierre-37.md).
 No se cambian el papel determinista de la API, las cinco herramientas, el
-control humano ni el estado de propuesta de ADR-22.
+control humano. La aprobación posterior de ADR-22 y el estado vigente se
+registran a continuación.
 
 El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
 1. El AI Agent y los nodos de herramientas se enlazaron con DeepSeek nativo en `build-workflows.py`.
@@ -127,3 +128,36 @@ El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
 4. Se ejecutó la matriz de aceptación de 30 corridas reales consecutivas en API 5017 contra DeepSeek nativo (reporte `artifacts/agent-acceptance/20261014-150147-176964/report.md`): 0 fallbacks, 100% herramientas 2xx (60/60), p95 9127 ms (<=10 s), 96% decisiones LLM (48/50) y 10/10 inyecciones neutralizadas con idéntica política y 0 herramientas prohibidas.
 
 Entrega verificada localmente y transferida a Codex para revisión e integración en `develop` vía PR; el despliegue en producción permanece planificado en [plan-cierre-39-produccion.md](../../specs/003-agente-logistico/plan-cierre-39-produccion.md).
+
+
+## Estado vigente de preparación #39 — 14 de octubre de 2026, 20:13 Guayaquil
+
+Workflows de #37 integrados en `8c99a71` (PR #74), transporte #81 y M2M #85
+integrados en develop/main por #86; CD `38658331163` exitoso para `a45a548`.
+ADR-22 aceptada; la matriz histórica local no sustituye la productiva.
+
+n8n de Bryan: Compose/runtime fijados a 2.39.5, DeepSeek nativo, vigía/incidente
+publicados del SHA oficial, credenciales remapeadas también en herramientas,
+Schedule apagado. HTTPS/readiness 200 desde servidor/contenedor; HMAC inválido,
+expirado y alterado rechazado 401; positivo 202 en probe sin modelo. Presupuesto
+DeepSeek confirmado por Bryan, quien terminó las ediciones de Antigravity.
+
+Bryan completó contraseña/MFA de su cuenta propia y autorizó registrar dos
+Account en RDS productivo `istpetdev_integration`: Planificador humano y
+Automatizacion técnica. Cuenta humana: /me y /risks 200; **nodo HTTP n8n con
+IstpetDev M2M: risks 200**; prueba eliminada. Las cinco acciones de decisión
+humana responden 403 con M2M. No se publican identidades privadas ni JWT.
+
+Ventana exclusiva autorizada. Persisten gates: Demo.Enabled false (probe sin
+escritura 404); Agent.Enabled false; Completed/Fallback/recuperación, matriz
+oficial de 30 corridas y CE-03 pendientes. La regresión local detectó que el
+preset solo afecta un vehículo y que ReplanAsync ignoraba prefijos/efectos/modos;
+la corrección aún se verifica en base descartable, sin promoción acreditada.
+Intento de reaplicación `38665762599` falló antes de recrear servicios por
+permiso GHCR ausente en rollback.yml. Se prepara packages:read y transporte
+explícito DEMO_ENABLED=false por defecto en ambos pipelines. #39 sigue abierta.
+
+Fuentes: [evidencia de preparación](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md),
+[task.md](../../specs/003-agente-logistico/task.md), [[Runbook de DevOps y base de datos para la demo]]
+y [[Registro de seguimiento y hallazgos]]. Las secciones anteriores son registros
+históricos fechados, no el estado de cierre actual.

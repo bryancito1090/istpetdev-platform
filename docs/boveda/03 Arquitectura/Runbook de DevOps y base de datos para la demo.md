@@ -257,7 +257,7 @@ Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `m
 | **001** | Incluir fixtures (`demo-base`) y variables `Demo__*` en Docker y compose | `infra/docker/backend/Dockerfile`, `infra/compose/docker-compose.prod.yml` | Jorge Doicela | H2 (13-oct) | **Completado** |
 | **004 T1b** | Servir PWA en ruta `/campo/` y configurar cabeceras de caché | `infra/nginx/istpetdev.conf` | Alexander Martínez / Jorge Doicela | H3 (14-oct) | En curso |
 | **004 T1b** | Callbacks HTTPS en Amazon Cognito (`https://istpetdev.doicela.dev/auth/callback`) | Terraform `identity.tf` | Jorge Doicela | H3 (14-oct) | Pendiente |
-| **003** | Cliente M2M en Cognito (`client_credentials`) para integraciones | Terraform `identity.tf` | Jorge Doicela | H4 (15-oct) | Pendiente |
+| **003** | Cliente M2M en Cognito (`client_credentials`), scopes y cuenta técnica para el agente n8n | Terraform `identity.tf`, `src/Api/appsettings.*`, Compose, Deploy | Jorge Doicela | H3 (14-oct) | CD #86 exitoso (`a45a548`); **cuentas productivas y permisos M2M/humano verificados** (n8n risks 200; cinco acciones humanas 403 con M2M); aceptación pendiente en [#38](https://github.com/bryancito1090/istpetdev-platform/issues/38)/[#39](https://github.com/bryancito1090/istpetdev-platform/issues/39) |
 | **005** | Base aislada de simulación (`istpetdev_simulation`) y cadena `ConnectionStrings:Simulation` | RDS / Docker Compose / Secretos | Jorge Doicela | H4 (15-oct) | Pendiente |
 | **Seguridad (#14)** | TLS con `VerifyFull` + CA oficial de RDS y Swagger restringido por defecto. SSH 22 mitigado con UFW/fail2ban (cierre y Terraform diferidos a P2) | Dockerfile / Compose / Nginx / Program.cs / Deploy workflow | Jorge Doicela | Antes de H4 (14-oct) | **Completado** |
 
@@ -303,3 +303,50 @@ Antes de abrir y fusionar el Pull Request de promoción desde `develop` hacia `m
 ## Referencias
 
 [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]] · [[CI-CD y automatizacion de despliegue]] · [[Estrategia de tres entornos y base de datos]] · [[AWS y Terraform]] · [[istpetdev-dbflow]] · [[Definiciones de producto y plan hasta el pitch]] · [[Decisiones de arquitectura]] · [[Evidencias y ensayos de base de datos y despliegue]]
+
+
+### Preparación del agente tras #85 — 14 de octubre de 2026
+
+Bryan fusionó #85 a develop (`5582930`), después del transporte de #81.
+Los cambios de appsettings.Development/example y la validación local de Jorge
+no demuestran carga de esa cuenta/configuración en Production: la siembra
+actual depende de Demo.Enabled. Jorge opera EC2/RDS y coordina la promoción
+de develop a main mediante el pipeline; la preparación n8n queda administrada
+por Bryan/Codex. No se modifica aquí el procedimiento de migraciones.
+
+Variables públicas del agente y HMAC privado preparados en GitHub, con
+AGENT_ENABLED=false; falta comprobar su aplicación en EC2 y risks 200 con M2M
+antes de activar. Desde n8n, el nodo HTTP de prueba aún recibió 401. Bryan
+confirmó límite de gasto DeepSeek. En la continuación autorizó una ventana
+exclusiva; aún no hay reset ni matriz oficial productiva en esta preparación.
+#83 integrado en develop `a5a8c70`; #86 fusionado de develop a main `a45a548`
+con checks aprobados. CD `38658331163` iniciado, agente false; comprobar éxito,
+cuentas y permisos productivos antes de activar. Login humano requiere MFA.
+Estado/evidencia:
+[preparación #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md)
+y [[n8n e IA]].
+
+### Continuación #39 — cuentas productivas, 14-oct 20:13 Guayaquil
+
+CD #86 / `38658331163` exitoso (main a45a548). Por autorización explícita de
+Bryan se insertaron dos Account en RDS `istpetdev_integration`, después de
+comprobar que es la base usada por EC2. No se usó la conexión personal
+`istpetdev_dev_01`, ni se alteraron grants/esquemas/cuentas ajenas. Planificador
+propio con contraseña/MFA configurado: /me y /risks 200. Credencial M2M real
+en nodo HTTP temporal n8n: risks 200; nodo eliminado. Cinco acciones humanas
+denegadas 403 con M2M. Identidades y tokens solo en almacenamiento privado 0600.
+
+DEMO_ENABLED false en producción; la aceptación necesita transportarlo como
+variable pública por CD/rollback a Demo__Enabled para la ventana exclusiva
+autorizada y restaurarlo tras el ensayo. No usar restart_only para aplicar env.
+El intento de reaplicación 38665762599 falló al descargar GHCR antes de recrear
+servicios; falta packages:read en rollback.yml. Variables del agente restauradas
+a false/AutoOnIncident=true. La corrección local incluye transporte y permiso
+mínimo; merge no implica configuración desplegada ni aceptación.
+
+Referencia Secrets Manager del migrador de integración no autenticó durante
+la comprobación; no se rotó. Se usó la credencial maestra administrada RDS en
+memoria para la transacción acotada. Jorge debe conciliar esa referencia privada.
+Fuente vigente: [evidencia #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md)
+y [[n8n e IA]]. Continúan pendientes la corrección/calibración local del motor,
+activación, Completed/Fallback, matriz oficial y CE-03. #39 permanece abierta.

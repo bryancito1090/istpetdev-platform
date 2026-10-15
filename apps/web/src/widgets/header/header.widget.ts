@@ -14,9 +14,10 @@ interface NavItem {
 const PLANNER_NAV: NavItem[] = [
   { path: '/inicio', label: '1. Inicio' },
   { path: '/datos', label: '2. Datos' },
-  { path: '/rutas', label: '3. Rutas' },
-  { path: '/bodegas', label: '4. Bodegas & Rebalanceo' },
-  { path: '/simulation', label: '5. Simulador 90d' }
+  { path: '/alertas', label: '3. Alertas' },
+  { path: '/rutas', label: '4. Rutas' },
+  { path: '/bodegas', label: '5. Bodegas & Rebalanceo' },
+  { path: '/simulation', label: '6. Simulador 90d' }
 ];
 
 const MANAGER_NAV: NavItem[] = [
@@ -25,6 +26,7 @@ const MANAGER_NAV: NavItem[] = [
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
   { path: '/bodegas', label: 'Bodegas' },
+  { path: '/users', label: 'Usuarios' },
   { path: '/simulation', label: 'Simulador 90d' }
 ];
 
@@ -42,12 +44,12 @@ const AUDITOR_NAV: NavItem[] = [
     <header class="w-full bg-white sticky top-0 z-30 border-b border-slate-200">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-6">
         <div class="flex items-center gap-8 min-w-0">
-          <a routerLink="/" class="flex items-center gap-1 shrink-0">
+          <a [routerLink]="session.status() === 'authenticated' ? '/inicio' : '/'" class="flex items-center gap-1 shrink-0">
             <span class="text-xl font-bold tracking-[-0.04em] text-charcoal-900">istpetdev</span>
             <span class="h-1.5 w-1.5 rounded-full bg-primary-500 inline-block mb-1"></span>
           </a>
 
-          @if (isSystemArea() && session.status() === 'authenticated') {
+          @if (session.status() === 'authenticated') {
             <nav class="flex items-center gap-1 text-sm overflow-x-auto">
               @for (item of navItems(); track item.path) {
                 <a

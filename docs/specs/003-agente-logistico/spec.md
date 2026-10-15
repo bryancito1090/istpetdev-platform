@@ -29,7 +29,15 @@ La sesión de brainstorming del 12-oct decidió:
 - Los avisos al conductor llegan **dentro de la PWA** (spec 004), detectando el cambio de revisión de su ruta.
 - El modelo es **DeepSeek** (la propuesta de ADR-08), validado con una **prueba de aceptación** con umbrales fijos en lugar de una comparación entre modelos.
 
-Avance al 14-oct: workflows/prompt/copia local implementados y verificados. Cliente M2M aplicado y verificado. Bloqueo P0 resuelto; 30 corridas de aceptación consecutivas completadas con 0 fallbacks (100% herramientas, p95 9127 ms, 96% decisiones LLM, 10/10 inyección neutralizada). Ensayo CE-06 verificado en la laptop. Suite de 227 pruebas .NET y 10 pruebas Python al 100%. Entrega lista para revisión e integración en develop por parte de Codex; despliegue en servidor de producción documentado como fase posterior en [plan-cierre-39-produccion.md](plan-cierre-39-produccion.md).
+Avance al 14-oct: #37 integrada mediante PR #74 (`8c99a71`), con workflows,
+prompt y copia local. El apply M2M se verificó localmente; la configuración y
+cuentas en producción permanecen en #38/#39. La matriz inicial local pasó,
+pero el último intento disponible del árbol `4742f3b` registró p95 10001 ms y
+falló latencia. No se acredita aceptación oficial ni CE-03 de dos decisiones.
+#39 entrega un checkpoint de transporte Compose/CD/rollback para revisión y
+PR a develop; ejecución productiva pendiente. Ver
+[plan-cierre-39-produccion.md](plan-cierre-39-produccion.md) y
+[entrega-39-antigravity.md](entrega-39-antigravity.md).
 
 ## Objetivo y aporte a la nota
 

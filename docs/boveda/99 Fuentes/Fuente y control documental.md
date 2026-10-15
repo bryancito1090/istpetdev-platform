@@ -428,3 +428,71 @@ Verificación documental de esta actualización: **85 notas Markdown**, **885 en
 Fuente: issue #46 (fase final), pedido de Joseph Baño; IA (Claude Code, Opus 5.5) en el PR #76. Se crearon `manifiesto-paquete.md` y `materiales/` (pptx y PDF provisionales con su generador y SHA-256 en el manifiesto) del spec 006. [[Registro de trabajo previo y del evento]] añade la tabla del tag `pre-evento` y la sección «Cambios durante el evento», vacías. En [[Consultas para la organizacion]], O-04/O-06 siguen pendientes. Sin ensayos, entrevistas, video, tag ni entrega.
 
 Verificación documental de esta actualización: **85 notas Markdown**, **888 enlaces internos resueltos**, **0 errores**.
+
+
+## Checkpoint de operación n8n #39 — 14 de octubre de 2026
+
+Fuente: solicitud de Bryan y entrega de Antigravity para #39; revisión de Codex
+sobre develop @ `51c3b30`. Se registra el transporte de configuración M2M,
+callback API y HMAC en Compose/deploy/rollback, con agente false por defecto y
+sin cambios de workflows/prompt. [[Registro de seguimiento y hallazgos]] y los
+archivos spec/task/test-e2e/plan/entrega de 003 distinguen código probado,
+diagnósticos productivos y aceptación pendiente. PR #78 y su CD `9d1a3d9`
+ya concluyeron; el checkpoint requiere integración y promoción posteriores.
+No se ejecutan deploy, siembra de RDS ni reset de producción en esta revisión.
+
+Verificación documental: **85 notas Markdown**, **889 enlaces internos resueltos**, **0 errores**.
+
+
+## Continuidad de #39 y conciliación tras #85 — 14 de octubre de 2026
+
+Fuente: petición de Bryan de ejecutar el plan y sincronizar PR #83 después
+de fusionar #85 (`5582930`). Codex conserva la entrega de Antigravity y
+registra preparación n8n, sincronización privada del HMAC y sus verificaciones,
+sin aceptación/reset productivo. Bryan confirmó límite de gasto DeepSeek,
+fin de ediciones de Antigravity, operación EC2 por Jorge y ventana pendiente.
+
+[[Runbook de DevOps y base de datos para la demo]], [[n8n e IA]] y
+[[Registro de seguimiento y hallazgos]] distinguen código/local/producción:
+se corrige el estado Completado de #38 mientras faltan deploy/cuenta/permisos
+reales. Plan/task/entrega/test-e2e y evidencia de 003 incorporan los ocho pasos,
+merge/conflictos, conciliación y cierre condicionado. La subprueba HMAC no
+se presenta como E2E-07 oficial aprobado; riesgos 401 siguen registrados.
+
+Verificación documental de esta actualización: **85 notas Markdown**, **895 enlaces internos resueltos**, **0 errores**.
+
+## Promoción productiva de preparación de #39 — 14 de octubre de 2026
+
+Fuente: Bryan pidió completar #39 y confirmó ventana exclusiva. #83 fusionado
+en develop `a5a8c70`; Codex creó/fusionó #86 de develop a main `a45a548` con
+checks aprobados, sin conflictos ni bypass, para desplegar mediante el pipeline
+existente con agente deshabilitado. CD `38658331163` iniciado; pendiente de
+comprobar éxito/configuración/cuentas/permisos reales. Jorge mantiene operación
+RDS; actualización de coordinación en #38.
+
+Revalidación n8n/grafos/cron, curl HTTPS 200 desde su servidor, probe HMAC 202
+sin modelo y OAuth2 risks 401 anteriores a la promoción registrados en evidencia
+003. Probes eliminados, sin aceptación/reset productivo. npm audit cumple
+excepciones vigentes y NuGet no reporta paquetes vulnerables; no se atribuye
+esa comprobación a imágenes ni permisos runtime. Login humano requiere MFA;
+credenciales/JWT fuera de documentos, issues y diff.
+
+Plan/task/test-e2e/entrega/evidencia y [[Runbook de DevOps y base de datos para la demo]],
+[[n8n e IA]], [[Registro de seguimiento y hallazgos]] conciliados. No se resuelven
+PA-01/T9/T10 ni #39 hasta cumplir todos los gates productivos.
+
+Verificación documental: **85 notas Markdown**, **898 enlaces internos resueltos**, **0 errores**.
+
+## Continuación de cuentas productivas #39 — 14 de octubre de 2026
+
+Fuente: Bryan confirmó contraseña/MFA de su cuenta y autorizó registrar dos
+Account en RDS. Transacción acotada sobre la base efectiva de EC2, verificada
+por conexión; cuenta humana /me y risks 200, credencial M2M n8n risks 200,
+cinco acciones humanas 403 con M2M. Sin correo/subject/token en documentación.
+Túnel cerrado. CD 38658331163 exitoso; intento de reaplicación 38665762599 falló
+antes de recreación por permiso GHCR. Agente false; Demo false; gates pendientes.
+Transporte/permiso corregidos en rama; motor/calibración en verificación local.
+Bóveda/spec 003 conciliados; esta evidencia reemplaza el pendiente de cuentas
+del checkpoint anterior, sin convertir pruebas preparatorias en aceptación.
+
+Verificación documental: **85 notas Markdown**, **899 enlaces internos resueltos**, **0 errores**.
