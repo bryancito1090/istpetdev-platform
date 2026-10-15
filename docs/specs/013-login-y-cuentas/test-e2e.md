@@ -116,7 +116,7 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 
 **Evidencia a guardar:** salida de ambas ejecuciones (ya sin correos), conteo por rol de la consulta SQL (sin `Subject`), fecha de creación para el registro G8.
 
-### E2E-02 — Login web del Planificador con MFA
+### E2E-02 — Login web del Planificador
 
 **Objetivo:** acceso real con identidad administrada y sin tokens persistidos.
 
@@ -199,7 +199,7 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 **Pasos:**
 
 1. En `/login`, «Iniciar sesión» → en Cognito, «Forgot your password?».
-2. Escribir el correo de una cuenta de demo; usar el código recibido para definir una contraseña nueva; entrar con TOTP.
+2. Escribir el correo de una cuenta de demo; usar el código recibido para definir una contraseña nueva y entrar con ella. Solo funciona con una cuenta que ya completó su primer ingreso: Cognito no recupera la contraseña de una cuenta con la contraseña temporal pendiente (para esa, «Reenviar invitación»).
 
 **Resultado esperado:** el correo llega a la dirección verificada; la nueva contraseña cumple la política (14 caracteres, mayúsculas, minúsculas, números, símbolos); el ingreso termina en `/dashboard`.
 
@@ -244,7 +244,7 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 2. Entrar con cada uno de los seis roles en su plataforma.
 3. En el host: `docker compose -f infra/compose/docker-compose.prod.yml logs istpetdev-backend | grep -c "Authentication failed"` antes y después.
 
-**Resultado esperado:** los seis entran con TOTP y ven su nombre y rol; la URL de retorno es HTTPS exacta; ningún error `redirect_mismatch`; sin nuevos «Authentication failed».
+**Resultado esperado:** los seis entran con su contraseña y ven su nombre y rol; la URL de retorno es HTTPS exacta; ningún error `redirect_mismatch`; sin nuevos «Authentication failed».
 
 **Evidencia a guardar:** tabla rol → plataforma → resultado (sin nombres); conteo de errores antes/después.
 
@@ -256,7 +256,7 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 
 1. Web con la cuenta de Gerencia → «Usuarios».
 2. Crear correo de prueba del equipo, nombre y rol Conductor.
-3. La persona completa su primer ingreso en la PWA (contraseña nueva + TOTP).
+3. La persona completa su primer ingreso en la PWA (cambio de la contraseña temporal).
 4. Gerencia recarga la lista.
 5. Asignar a esa cuenta una entrega publicada (flujo de 002/004) y abrir la PWA del nuevo Conductor.
 
