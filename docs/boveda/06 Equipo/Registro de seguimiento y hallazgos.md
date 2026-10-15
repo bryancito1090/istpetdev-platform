@@ -193,3 +193,22 @@ El orden de continuidad está en [[Continuidad del piloto y specs 007 a 012]]. L
 - Bryan confirmó una ventana exclusiva para aceptación. Sustituye el pendiente
   previo de coordinación; login humano pendiente de MFA y deploy/permisos por
   comprobar. No hay aceptación oficial ni cierre #39 acreditados.
+
+### 14 de octubre de 2026 — RDS y permisos #39 comprobados
+
+- CD 38658331163 exitoso sobre main a45a548. Por autorización explícita de Bryan
+  se registraron dos Account (Planificador humano propio y Automatizacion técnica)
+  en RDS productivo istpetdev_integration; conexión backend comprobada, transacción
+  acotada, sin grants ni esquema nuevos. No es la DB personal de DBeaver.
+- Cuenta propia con contraseña/MFA configurado: /me y risks 200. Nodo HTTP n8n
+  con credencial M2M real: risks 200 (15-oct 01:13:28 UTC), luego eliminado.
+  Las cinco acciones humanas: 403 con M2M. Túnel propio cerrado, secretos privados.
+- Demo.Enabled false, regresión CE-03 roja y stub ReplanAsync detectado. Se prepara
+  corrección/calibración aislada y transporte de DEMO_ENABLED por pipeline.
+- Reaplicación 38665762599 falló antes de recreación por permiso GHCR ausente;
+  packages:read corregido localmente. Agente sigue false, AutoOnIncident=true.
+  Pendientes runs reales, matriz oficial y CE-03; #39 sigue abierta.
+- Referencia privada Secrets Manager del migrador de integración no autenticó;
+  no se rotó ni se sustituyó la credencial del backend. Jorge debe conciliarla.
+
+Fuente: [evidencia #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md).

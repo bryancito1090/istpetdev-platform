@@ -211,3 +211,16 @@ deshabilita el segundo factor. Readiness 200 desde servidor n8n (23:55 UTC),
 HMAC positivo 202 en probe sin modelo y nodo M2M risks 401 (23:56 UTC), ambos
 probes eliminados. Repetir permisos tras CD; no atribuir el 401 previo a #86.
 Pasos 6–8/PA-01/T9/T10 y cierre #39 aún pendientes de evidencias productivas.
+
+## Continuación Codex — cuentas productivas, 14-oct-2026
+
+CD 38658331163 exitoso, main a45a548. Cuenta propia de Bryan confirmada con
+contraseña/MFA; autorización explícita para registrar dos Account en la RDS
+usada por EC2 (istpetdev_integration). Planificador: /me y risks 200. Nodo HTTP
+n8n con credencial M2M real: risks 200, 15-oct 01:13:28 UTC; prueba eliminada.
+M2M: cinco acciones humanas 403. Túnel propio cerrado, sin datos privados en Git.
+Demo sigue false (probe no mutante 404); se prepara transporte por pipeline.
+Reaplicación 38665762599 falló antes de recreación por permiso GHCR ausente;
+se prepara packages:read, agente restaurado false. Regresión del preset sigue
+en verificación local: solo una ruta afectada y stub de ReplanAsync detectado.
+Sin aceptación/resets productivos; no se marcan PA-01/T9/T10 ni cierre #39.

@@ -175,3 +175,15 @@ Continuación: #83 integrado en develop `a5a8c70`; #86 fusionado a main
 `a45a548`, CD iniciado. Bryan confirmó ventana exclusiva; login nuevo de
 Planificador pendiente de MFA. Los gates de cuenta/permisos/deploy y corridas
 reales siguen pendientes. Los 401 anteriores no se atribuyen a la nueva versión.
+
+### Continuación real tras CD #86 — 14-oct-2026, 20:13 Guayaquil
+
+| Fecha | Commit | Entorno | Escenario | Resultado | Evidencia | Quién |
+|---|---|---|---|---|---|---|
+| 2026-10-14 | API a45a548; workflows 8c99a71 | HTTPS productivo y n8n de Bryan | E2E-04, preparación de identidad/permisos | pasó | /me Planificador 200; risks humano 200; nodo HTTP n8n con credencial M2M 200, eliminado; cinco acciones humanas 403 con M2M. No acredita todo E2E-04 | Codex |
+| 2026-10-14 | API a45a548; workflows 8c99a71 | HTTPS productivo | E2E-07, preparación | bloqueado | Demo.Enabled false (probe sin escritura 404); activación vía reaplicación 38665762599 falló antes de recreación por permiso GHCR. Regresión CE-03 local detectó preset no calibrado y stub de replanteo; sin matriz/reset productivo | Codex |
+
+Estas filas sustituyen el pendiente de cuentas de los checkpoints anteriores.
+Completed/Fallback/recuperación, matriz oficial de 30 corridas y CE-03 quedan
+pendientes de promoción/verificación de la corrección, con ventana exclusiva
+ya autorizada. La cuenta propia completó MFA; no se deshabilitó el de terceros.

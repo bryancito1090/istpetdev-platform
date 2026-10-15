@@ -457,3 +457,71 @@ Resultados reportados por Antigravity contra `https://n8n.bryan-bano.com`:
   EC2/RDS y comprobación de cuentas; continuidad registrada en #38.
 - T9/T10/PA-01 y cierre #39 siguen pendientes de gates productivos. No se han
   ejecutado resets ni atribuido métricas locales a producción.
+
+## Preparación después del CD — 14-oct-2026
+
+- CD `38658331163` **exitoso** en EC2 para main `a45a548`. Readiness desde
+  servidor n8n: 200 (15-oct 00:22 UTC). Nodo HTTP OAuth2 n8n → risks **403**,
+  00:22 UTC; prueba temporal eliminada. Gate de lectura autorizada sigue
+  pendiente; Jorge coordina comprobación/provisión en RDS de técnica y humana.
+- Joseph no está disponible para completar MFA. Bryan solo controla MFA IAM
+  (distinto de Cognito) y autorizó preparar una cuenta propia de Planificador,
+  con invitación a su correo y MFA propio. Cuenta creada en el pool existente
+  mediante el mecanismo AdminCreateUser habitual; invitación EMAIL solicitada,
+  estado FORCE_CHANGE_PASSWORD. Pool mantiene MFA ON; no se alteró MFA de
+  otros usuarios ni se concedieron roles por grupos Cognito.
+- Identidad/subject y correo quedan en archivo privado 0600 fuera del repo:
+  `~/.config/istpetdev/private/planner-acceptance-39.json`. Rol de Account en
+  RDS aún pendiente; creación Cognito no acredita acceso a la API.
+- Calibración CE-03 en PostGIS descartable: se reforzó el recorrido existente
+  usando preset oficial y demo/advance real; ahora exige dos rutas afectadas
+  y exactamente AutoExecuted/Escalated. Prueba **roja: actual 1, esperado 2**.
+  Confirma el pendiente del fixture; se corrige en rama
+  `chore/39-calibrar-aceptacion`, sin resets/cambios de datos productivos.
+
+## Cuentas productivas verificadas — 14-oct-2026, 20:13 Guayaquil
+
+- Bryan completó contraseña definitiva/MFA propio en Cognito y autorizó
+  explícitamente insertar su Account Planificador y la técnica Automatizacion.
+- Se verificó la conexión efectiva del backend EC2 a RDS `istpetdev_integration`;
+  la conexión personal mostrada en DBeaver (`istpetdev_dev_01`) no es ese destino.
+  Inserción transaccional de solo dos filas en `public."Account"`, con guardas
+  de issuer/subject/organización/rol y organización demo activa. No se alteraron
+  esquemas, permisos DB, roles de otras cuentas ni configuración de MFA.
+- Cuenta propia: `/api/v1/me` 200, rol Planificador, y `/api/v1/risks` 200.
+  Identidad/refresh/access token quedan únicamente en archivos privados 0600.
+- Nodo HTTP temporal ejecutado en n8n con **IstpetDev M2M**: GET risks **200**,
+  15-oct 01:13:28 UTC. Workflow de prueba eliminado. Conectividad/rol ya no
+  bloquean #39. Túnel SSM propio a RDS cerrado después de la transacción.
+- Hallazgo adicional local: `IRoutePlanner.ReplanAsync` delegaba en `PlanAsync`
+  ignorando prefijos, efectos y modos; `BloqueoVial` se interpretaba como demora.
+  Se inició corrección conservadora y regresión en PostGIS descartable.
+  Agente productivo sigue deshabilitado; sin resets ni matriz oficial todavía.
+
+- Verificación adicional de M2M: risks 200 y cinco acciones humanas 403;
+  ninguna mutación efectiva. Demo.Enabled productivo sigue false (probe
+  no mutante demo/incidents devuelve 404). Se prepara transporte explícito
+  DEMO_ENABLED, false por defecto, por CD/rollback para la ventana autorizada.
+- Hallazgo de operación: referencia privada Secrets Manager del migrador de
+  integración desactualizada; no se rotó. Transacción acotada de Account con
+  credencial maestra administrada RDS en memoria; Jorge debe conciliar referencia.
+
+### Prelaunch acotado de activación — 14-oct, 20:27 Guayaquil
+
+Se reutiliza CI/CD aprobado de main a45a548, permisos humanos/M2M verificados
+en runtime, TLS/readiness, HMAC y cron apagado del checkpoint anterior.
+Configuración solamente: activar el agente sobre la **misma imagen** mediante
+workflow existente de reaplicación/rollback, con AutoOnIncident=false durante
+la verificación Watch. No promueve la corrección local aún en curso ni declara
+el incidente/demo listo. Demo sigue deshabilitada; no se ejecutan resets.
+Publicación inicial requiere aprobación humana (AutoPublishInitialPlans=false).
+Hallazgo del replanteador mantiene bloqueada la matriz Incident/CE-03 hasta
+corregir, probar y promover; no se presenta como control ya satisfecho.
+
+- Intento de reaplicación sobre a45a548: [38665762599](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38665762599)
+  **falló antes de recrear servicios**, al descargar imagen inmutable GHCR
+  (denied). Diagnóstico: rollback.yml declara contents:read y omite packages:read,
+  a diferencia de CD. Se corrige permiso mínimo en la rama; no se amplían scopes
+  de usuarios ni se omiten checks. Variables preparadas se restauraron a
+  AGENT_ENABLED=false, AGENT_AUTO_ON_INCIDENT=true; runtime sigue en a45a548.
+  No se acredita activación ni Completed con este intento.
