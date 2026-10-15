@@ -92,10 +92,19 @@ def restore_check(path, master, config, ca):
 
 
 def migrate(credential, config, ca):
-    # This task never downgrades or resets a database. Integration migrations are serialized.
-    statement = dev.run(['dotnet', 'ef', 'migrations', 'script', '--idempotent', '--no-build',
-                         '--project', str(dev.ROOT/'src/Infrastructure'), '--startup-project', str(dev.ROOT/'src/Api')])
-    dev.sql(credential, config, ca, 'SELECT pg_advisory_lock(742901);\n' + statement + '\nSELECT pg_advisory_unlock(742901);')
+    # This task never downgrades or resets a database. It runs the same EF migrator that production
+    # runs at startup (ApplyMigrations / --migrate). `dotnet ef migrations script --idempotent` was
+    # retired: psql rejects it with a syntax error on the current migrations (#15).
+    api = dev.ROOT/'src/Api/bin/Debug/net8.0/IstpetDev.Api.dll'
+    if not api.exists():
+        raise RuntimeError('Build src/Api in Debug before migrating (dotnet build src/Api/IstpetDev.Api.csproj)')
+    env = {k: v for k, v in os.environ.items() if not k.startswith('ConnectionStrings__')}
+    env.update({'ConnectionStrings__Main': dev.npgsql(credential, config, ca), 'Authentication__Authority': ''})
+    result = subprocess.run(['dotnet', str(api), '--migrate'], env=env, cwd=dev.ROOT/'src/Api',
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode:
+        # The log can echo the connection string; it is withheld like every other database error.
+        raise RuntimeError(f'API --migrate failed (exit {result.returncode}); values withheld')
 
 
 def main():
