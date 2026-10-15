@@ -187,11 +187,20 @@ type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
       @if (!loading() && allItems().length === 0) {
         <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-3">
           <p class="text-slate-600 text-sm font-medium">
-            No se han registrado consumos o inventario en este ambiente.
+            No se han registrado consumos o inventario aún. El sistema no tiene datos para evaluar.
           </p>
           <p class="text-xs text-slate-400">
             Para auditar riesgos, asegúrate de que existan puntos de servicio con stock y consumos cargados.
           </p>
+          @if (session.canWrite()) {
+            <div>
+              <a
+                routerLink="/datos"
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                Cargar Datos Maestros
+              </a>
+            </div>
+          }
         </div>
       }
 

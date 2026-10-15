@@ -582,7 +582,13 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 export class RutasPage implements OnInit {
   private readonly apiService = inject(ApiService);
   readonly session = inject(AuthSession);
-  readonly isAuditor = computed(() => this.session.role() === 'Auditor');
+  readonly isAuditor = computed(() => {
+    const roleFn = (this.session as { role?: () => string | null }).role;
+    if (typeof roleFn === 'function') {
+      return roleFn() === 'Auditor';
+    }
+    return !this.session.canWrite();
+  });
 
   @ViewChild('wizardMapView') wizardMapView?: MapViewComponent;
 

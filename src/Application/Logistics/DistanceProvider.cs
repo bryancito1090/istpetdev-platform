@@ -1,7 +1,5 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
@@ -17,16 +15,6 @@ public sealed class DistanceProvider(
     IOptions<LogisticsOptions> options,
     ILogger<DistanceProvider> logger) : IDistanceProvider
 {
-    private static readonly ConcurrentDictionary<(GeoPoint From, GeoPoint To), (decimal Km, decimal Min, string? Polyline)> EdgesCache = new();
-    private static DateTime _lastCacheRefreshUtc = DateTime.MinValue;
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
-    private static readonly SemaphoreSlim CacheLock = new(1, 1);
-
-    public static void InvalidateCache()
-    {
-        EdgesCache.Clear();
-        _lastCacheRefreshUtc = DateTime.MinValue;
-    }
     public async Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default)
     {
         var result = new Dictionary<(GeoPoint From, GeoPoint To), Leg>();
@@ -53,15 +41,22 @@ public sealed class DistanceProvider(
 
         if (requiredPairs.Count == 0) return result;
 
-        // 2. Stored: Cargar de RoadMatrixEdge con caché en memoria para evitar latencia WAN repetitiva
-        await EnsureCacheLoadedAsync(ct);
+        // 2. Stored: Cargar de RoadMatrixEdge
+        var storedEdges = await db.RoadMatrixEdges
+            .AsNoTracking()
+            .Where(e => e.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var storedLookup = storedEdges.ToDictionary(
+            e => (new GeoPoint(e.FromLat, e.FromLon).Round(), new GeoPoint(e.ToLat, e.ToLon).Round()),
+            e => e);
 
         var missingPairs = new List<(GeoPoint From, GeoPoint To)>();
         foreach (var pair in requiredPairs)
         {
-            if (EdgesCache.TryGetValue(pair, out var cachedEdge))
+            if (storedLookup.TryGetValue(pair, out var edge))
             {
-                result[pair] = new Leg(pair.From, pair.To, cachedEdge.Km, cachedEdge.Min, DistanceSource.Road, cachedEdge.Polyline);
+                result[pair] = new Leg(pair.From, pair.To, edge.DistanceKm, edge.DurationMinutes, DistanceSource.Road, edge.EncodedPolyline);
             }
             else
             {
@@ -166,44 +161,12 @@ public sealed class DistanceProvider(
                 };
                 newEdgesToPersist.Add(edge);
                 db.RoadMatrixEdges.Add(edge);
-                EdgesCache[pair] = (km, minutes, null);
             }
         }
 
         if (newEdgesToPersist.Count > 0)
         {
             await db.SaveChangesAsync(ct);
-        }
-    }
-
-    private async Task EnsureCacheLoadedAsync(CancellationToken ct)
-    {
-        if (DateTime.UtcNow - _lastCacheRefreshUtc <= CacheTtl && !EdgesCache.IsEmpty)
-            return;
-
-        await CacheLock.WaitAsync(ct);
-        try
-        {
-            if (DateTime.UtcNow - _lastCacheRefreshUtc <= CacheTtl && !EdgesCache.IsEmpty)
-                return;
-
-            var storedEdges = await db.RoadMatrixEdges
-                .AsNoTracking()
-                .Where(e => e.OrganizationId == DemoOrganization.Id)
-                .ToListAsync(ct);
-
-            foreach (var edge in storedEdges)
-            {
-                var pair = (new GeoPoint(edge.FromLat, edge.FromLon).Round(), new GeoPoint(edge.ToLat, edge.ToLon).Round());
-                EdgesCache[pair] = (edge.DistanceKm, edge.DurationMinutes, edge.EncodedPolyline);
-            }
-
-            _lastCacheRefreshUtc = DateTime.UtcNow;
-            logger.LogInformation("Caché de tramos viales (RoadMatrixEdge) sincronizada en memoria con {Count} elementos.", EdgesCache.Count);
-        }
-        finally
-        {
-            CacheLock.Release();
         }
     }
 
