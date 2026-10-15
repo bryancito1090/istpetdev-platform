@@ -644,5 +644,7 @@ y `LogisticsJourneyTests` E2E-03/E2E-04. `DemoRegionTests` ya lo hacía. No
 cambian producto, workflows, prompt ni umbrales.
 
 Verificación local (Release, PostGIS descartable): Unit 180/180,
-Integration 153/153, E2E 15/15; `dotnet build` sin warnings. CI del SHA
-publicado pendiente; #39 permanece abierta.
+Integration 153/153, E2E 15/15; `dotnet build` sin warnings. CI del HEAD
+`dc4d3a7` 4/4 verde; PR #90 fusionado a develop `2a9ae9f` (15-oct 03:22 UTC).
+#39 permanece abierta: la promoción a main (#89), el CD y los gates
+productivos (Fases G–H) siguen pendientes.
