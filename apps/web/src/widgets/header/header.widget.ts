@@ -16,8 +16,9 @@ const PLANNER_NAV: NavItem[] = [
   { path: '/datos', label: '2. Datos' },
   { path: '/alertas', label: '3. Alertas' },
   { path: '/rutas', label: '4. Rutas' },
-  { path: '/bodegas', label: '5. Bodegas & Rebalanceo' },
-  { path: '/simulation', label: '6. Simulador 90d' }
+  { path: '/novedades', label: '5. Novedades de campo' },
+  { path: '/bodegas', label: '6. Bodegas & Rebalanceo' },
+  { path: '/simulation', label: '7. Simulador 90d' }
 ];
 
 const MANAGER_NAV: NavItem[] = [
@@ -25,6 +26,7 @@ const MANAGER_NAV: NavItem[] = [
   { path: '/datos', label: 'Datos' },
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
+  { path: '/novedades', label: 'Novedades' },
   { path: '/bodegas', label: 'Bodegas' },
   { path: '/users', label: 'Usuarios' },
   { path: '/simulation', label: 'Simulador 90d' }
@@ -34,6 +36,7 @@ const AUDITOR_NAV: NavItem[] = [
   { path: '/inicio', label: 'Inicio' },
   { path: '/alertas', label: 'Alertas' },
   { path: '/rutas', label: 'Rutas' },
+  { path: '/novedades', label: 'Novedades' },
   { path: '/simulation', label: 'Simulador 90d' }
 ];
 

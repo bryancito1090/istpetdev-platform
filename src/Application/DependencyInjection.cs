@@ -24,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<IRiskCalculator, RiskCalculator>();
         services.AddScoped<ReplenishmentAllocator>();
         services.AddHttpClient<IDistanceProvider, DistanceProvider>();
+        services.AddSingleton<RouteGeometryCache>();
+        services.AddHttpClient<IRouteGeometryService, RouteGeometryService>();
         services.AddScoped<IRoutePlanner, RoutePlanner>();
         services.AddScoped<IRoutePublisher, RoutePublisher>();
         services.AddScoped<IIncidentEvaluator, IncidentEvaluator>();

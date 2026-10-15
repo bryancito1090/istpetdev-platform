@@ -98,6 +98,15 @@ public sealed class RoutePlansController(
         });
     }
 
+    // Recorrido por calles para el mapa (OSRM route); rectas aproximadas si OSRM no está disponible.
+    [HttpGet("{id:guid}/geometry")]
+    [Authorize(Roles = Roles.Any)]
+    public async Task<IActionResult> GetGeometry([FromRoute] Guid id, [FromServices] IRouteGeometryService geometry, CancellationToken ct = default)
+    {
+        var result = await geometry.GetAsync(id, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     [Authorize(Roles = Roles.Any)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct = default)

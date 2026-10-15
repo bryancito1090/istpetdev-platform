@@ -25,7 +25,7 @@ public sealed class EvidenceController : ControllerBase
     /// T6: Solicitar URL presignada para subida de evidencia privada (foto/firma).
     /// </summary>
     [HttpPost("api/v1/receipts/{id:guid}/evidence-uploads")]
-    [Authorize(Roles = $"{Roles.Conductor},{Roles.Gerencia}")]
+    [Authorize(Roles = $"{Roles.Conductor},{Roles.Receptor},{Roles.Gerencia}")]
     public async Task<IActionResult> RequestUpload(
         Guid id,
         [FromBody] EvidenceUploadRequest request,
@@ -48,7 +48,7 @@ public sealed class EvidenceController : ControllerBase
     /// T6: Confirmar almacenamiento de evidencia privada tras subida a S3.
     /// </summary>
     [HttpPost("api/v1/evidence/{id:guid}/confirm")]
-    [Authorize(Roles = $"{Roles.Conductor},{Roles.Gerencia}")]
+    [Authorize(Roles = $"{Roles.Conductor},{Roles.Receptor},{Roles.Gerencia}")]
     public async Task<IActionResult> ConfirmEvidence(
         Guid id,
         [FromBody] EvidenceConfirmRequest request,

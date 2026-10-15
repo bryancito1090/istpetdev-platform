@@ -21,6 +21,9 @@ export interface MapMarker {
   description?: string;
   badge?: string;
   badgeColor?: 'blue' | 'emerald' | 'amber' | 'red';
+  /** Color libre (por ejemplo, el de la ruta del vehículo); dibuja un círculo con pinLabel. */
+  color?: string;
+  pinLabel?: string;
 }
 
 export interface MapPolyline {
@@ -29,6 +32,18 @@ export interface MapPolyline {
   color?: string;
   weight?: number;
   dashArray?: string;
+  opacity?: number;
+  /** Texto al pasar el cursor sobre la línea (por ejemplo, vehículo y km). */
+  tooltip?: string;
+}
+
+// Los títulos y descripciones vienen de datos importados: se escapan antes de insertarlos como HTML.
+function escapeHtml(value: string | undefined): string {
+  return (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
+function isCssColor(value: string): boolean {
+  return /^#[0-9a-fA-F]{3,8}$/.test(value);
 }
 
 @Component({
@@ -157,14 +172,22 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
     this.markers.forEach((m) => {
       const popupContent = `
         <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 140px;">
-          <strong style="color: #0f172a; font-size: 14px;">${m.title}</strong>
-          ${m.badge ? `<div style="margin-top: 4px;"><span style="background: ${m.badgeColor === 'amber' ? '#fef3c7; color: #92400e' : m.badgeColor === 'emerald' ? '#d1fae5; color: #065f46' : '#e6f7fa; color: #026e82'}; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${m.badge}</span></div>` : ''}
-          ${m.description ? `<p style="margin-top: 6px; color: #475569; font-size: 12px; margin-bottom: 0;">${m.description}</p>` : ''}
+          <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(m.title)}</strong>
+          ${m.badge ? `<div style="margin-top: 4px;"><span style="background: ${m.badgeColor === 'amber' ? '#fef3c7; color: #92400e' : m.badgeColor === 'emerald' ? '#d1fae5; color: #065f46' : '#e6f7fa; color: #026e82'}; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">${escapeHtml(m.badge)}</span></div>` : ''}
+          ${m.description ? `<p style="margin-top: 6px; color: #475569; font-size: 12px; margin-bottom: 0;">${escapeHtml(m.description)}</p>` : ''}
         </div>
       `;
 
       let icon: L.Icon | L.DivIcon | undefined = undefined;
-      if (m.badgeColor === 'amber') {
+      if (m.color && isCssColor(m.color)) {
+        icon = L.divIcon({
+          className: 'custom-route-stop-pin',
+          html: `<div style="background-color: ${m.color}; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.4);">${escapeHtml(m.pinLabel)}</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+          popupAnchor: [0, -11]
+        });
+      } else if (m.badgeColor === 'amber') {
         icon = L.divIcon({
           className: 'custom-warehouse-pin',
           html: `<div style="background-color: #d97706; color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.4);">B</div>`,
@@ -208,8 +231,9 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
         color: line.color || '#00A7C4',
         weight: line.weight || 4,
         dashArray: line.dashArray || undefined,
-        opacity: 0.85
+        opacity: line.opacity ?? 0.85
       });
+      if (line.tooltip) polyline.bindTooltip(escapeHtml(line.tooltip), { sticky: true });
       this.polylinesLayer?.addLayer(polyline);
     });
   }

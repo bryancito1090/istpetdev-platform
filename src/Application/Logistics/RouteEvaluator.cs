@@ -35,7 +35,9 @@ public sealed record RouteEvaluationResult(
     IReadOnlyList<EvaluatedStopDto> Stops,
     IReadOnlyList<string> ValidationErrors,
     IReadOnlyList<string> Warnings,
-    IReadOnlyList<double[]> Coordinates
+    IReadOnlyList<double[]> Coordinates,
+    // "osrm": recorrido por calles; "approximate": rectas entre paradas (sin servicio de rutas).
+    string CoordinatesSource = "approximate"
 );
 
 public interface IRouteEvaluator
@@ -51,13 +53,16 @@ public sealed class RouteEvaluator : IRouteEvaluator
 {
     private readonly IDistanceProvider _distanceProvider;
     private readonly LogisticsOptions _options;
+    private readonly IRouteGeometryService? _geometry;
 
     public RouteEvaluator(
         IDistanceProvider distanceProvider,
-        IOptions<LogisticsOptions> options)
+        IOptions<LogisticsOptions> options,
+        IRouteGeometryService? geometry = null)
     {
         _distanceProvider = distanceProvider;
         _options = options.Value;
+        _geometry = geometry;
     }
 
     public async Task<RouteEvaluationResult> EvaluateSequenceAsync(
@@ -203,6 +208,15 @@ public sealed class RouteEvaluator : IRouteEvaluator
 
         bool isValid = errors.Count == 0;
 
+        // El mapa del asistente (rutas por pedidos y de emergencia) dibuja el recorrido por calles si OSRM
+        // responde; los km y el costo de la evaluación no cambian.
+        var coordinatesSource = "approximate";
+        if (_geometry is not null && coordinates.Count > 1 && await _geometry.RoadPathAsync(coordinates, ct) is { } road)
+        {
+            coordinates = road.Coordinates.ToList();
+            coordinatesSource = "osrm";
+        }
+
         return new RouteEvaluationResult(
             isValid,
             Math.Round(totalKm, 1),
@@ -213,7 +227,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
             evaluatedStops,
             errors,
             warnings,
-            coordinates
+            coordinates,
+            coordinatesSource
         );
     }
 }

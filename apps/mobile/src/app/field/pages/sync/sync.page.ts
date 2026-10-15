@@ -178,6 +178,12 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                 </div>
               }
 
+              @if (item.status === 'SessionRequired') {
+                <p role="alert" class="p-3 rounded border border-amber-300 text-amber-900 text-xs">
+                  {{ item.errorMessage }} Cierra sesión y vuelve a entrar con esta cuenta; después pulsa Reintentar sincronización.
+                </p>
+              }
+
               <!-- Botones de Acción -->
               <div class="flex flex-col sm:flex-row gap-2 pt-1">
                 @if (item.status === 'Conflict') {
@@ -190,7 +196,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                   </ion-button>
                 }
 
-                @if (item.status === 'RequiresReview') {
+                @if (item.status === 'RequiresReview' && !item.receiverContext) {
                   <ion-button
                     size="small"
                     color="warning"
@@ -257,6 +263,8 @@ export class SyncPage {
         return 'Completo';
       case 'Conflict':
         return 'Conflicto 409';
+      case 'SessionRequired':
+        return 'Sesión requerida';
       case 'RequiresReview':
         return 'Requiere Revisión';
       default:
@@ -277,6 +285,7 @@ export class SyncPage {
         return base + 'bg-emerald-100 text-emerald-800';
       case 'Conflict':
         return base + 'bg-rose-100 text-rose-800';
+      case 'SessionRequired':
       case 'RequiresReview':
         return base + 'bg-amber-100 text-amber-900 border border-amber-300';
       default:

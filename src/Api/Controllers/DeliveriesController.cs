@@ -131,4 +131,15 @@ public sealed class DeliveriesController : ControllerBase
             return Problem(detail: ex.Message, statusCode: ex.StatusCode, title: ex.Code);
         }
     }
+
+    /// <summary>
+    /// Issue #117: Catálogo normativo versionado de motivos de rechazo de recepción en campo.
+    /// </summary>
+    [HttpGet("rejection-reasons")]
+    [Authorize]
+    public IActionResult GetRejectionReasons()
+    {
+        var catalog = _fieldService.GetRejectionReasonsCatalog();
+        return Ok(catalog);
+    }
 }

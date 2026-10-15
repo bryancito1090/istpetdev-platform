@@ -55,6 +55,14 @@ export const routes: Routes = [
     title: 'Rutas — IstpetDev'
   },
   {
+    // #116: novedades de recepción y pedidos de campo; el Auditor solo lee.
+    path: 'novedades',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/novedades').then(m => m.NovedadesPage),
+    title: 'Novedades de campo — IstpetDev'
+  },
+  {
     path: 'users',
     canActivate: [authGuard, roleGuard],
     data: { roles: ['Gerencia'] },

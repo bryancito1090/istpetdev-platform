@@ -75,11 +75,15 @@ public sealed class RoutePlanner(
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, p => p, ct);
 
-        // Bodega principal de salida
+        // Bodega de salida por vehículo (ADR-28, varias bodegas): cada vehículo sale y vuelve a su DepotLocationId.
+        // Antes todos salían de la primera bodega y, con varias, cruzaban el país o quedaban vacíos.
         var depotLoc = warehouseLocations.FirstOrDefault();
+        // Posiciones redondeadas como las claves de la matriz de distancias (DistanceProvider usa GeoPoint.Round()):
+        // con más de 5 decimales en los datos, la búsqueda fallaba y todos los puntos quedaban «unreachable».
         var depotPos = depotLoc?.Position != null
-            ? new GeoPoint((decimal)depotLoc.Position.Y, (decimal)depotLoc.Position.X)
+            ? new GeoPoint((decimal)depotLoc.Position.Y, (decimal)depotLoc.Position.X).Round()
             : new GeoPoint(-0.2295m, -78.5243m); // Default demo
+        var depots = vehicles.ToDictionary(v => v.Code, v => DepotOf(v, warehouseLocations) ?? depotPos);
 
         // 5. Preparar candidatos y clasificar en obligatorios y consolidación
         var candidates = new List<StopCandidate>();
@@ -99,7 +103,7 @@ public sealed class RoutePlanner(
                 continue;
             }
 
-            var pos = new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X);
+            var pos = new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X).Round();
             var riskItem = risks.FirstOrDefault(r => r.ServicePointId == servicePointId && r.ProductId == alloc.ProductId);
             var level = riskItem?.Level ?? RiskLevel.Normal;
             bool isConsolidation = level == RiskLevel.Vigilar;
@@ -143,7 +147,9 @@ public sealed class RoutePlanner(
 
         // 6. Matriz de distancias
         var allPoints = new List<GeoPoint> { depotPos };
+        allPoints.AddRange(depots.Values);
         allPoints.AddRange(candidates.Select(c => c.Position));
+        allPoints = allPoints.Distinct().ToList();
         var distanceMatrix = await distanceProvider.MatrixAsync(allPoints, ct);
 
         // 7. Algoritmo de Inserción
@@ -166,7 +172,7 @@ public sealed class RoutePlanner(
         // Insertar obligatorios
         foreach (var candidate in mandatory)
         {
-            bool inserted = TryInsertCheapest(vehicles, vehicleRoutes, candidate, depotPos, workdayStartUtc, distanceMatrix, out var bestVehicleCode, out var bestPos);
+            bool inserted = TryInsertCheapest(vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix, out var bestVehicleCode, out var bestPos);
             if (inserted && bestVehicleCode != null)
             {
                 vehicleRoutes[bestVehicleCode].Insert(bestPos, candidate);
@@ -174,7 +180,7 @@ public sealed class RoutePlanner(
             else
             {
                 // Determinar razón de fallo de inserción
-                var reason = DetermineFailureReason(vehicles, vehicleRoutes, candidate, depotPos, workdayStartUtc, distanceMatrix);
+                var reason = DetermineFailureReason(vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix);
                 unserved.Add(new Unserved(candidate.PointCode, reason, Array.Empty<Fact>()));
             }
         }
@@ -183,7 +189,7 @@ public sealed class RoutePlanner(
         foreach (var v in vehicles)
         {
             vehicleRoutes[v.Code] = RouteImprover.TwoOpt(
-                v, depotPos, vehicleRoutes[v.Code], workdayStartUtc, _options.WorkdayHours,
+                v, depots[v.Code], vehicleRoutes[v.Code], workdayStartUtc, _options.WorkdayHours,
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
         }
 
@@ -191,7 +197,7 @@ public sealed class RoutePlanner(
         foreach (var candidate in consolidation)
         {
             bool inserted = TryInsertConsolidation(
-                vehicles, vehicleRoutes, candidate, depotPos, workdayStartUtc, distanceMatrix,
+                vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix,
                 _options.MaxDetourMinutes, out var bestVehicleCode, out var bestPos);
 
             if (inserted && bestVehicleCode != null)
@@ -200,7 +206,7 @@ public sealed class RoutePlanner(
                 // 2-opt post inserción
                 var v = vehicles.First(veh => veh.Code == bestVehicleCode);
                 vehicleRoutes[bestVehicleCode] = RouteImprover.TwoOpt(
-                    v, depotPos, vehicleRoutes[bestVehicleCode], workdayStartUtc, _options.WorkdayHours,
+                    v, depots[v.Code], vehicleRoutes[bestVehicleCode], workdayStartUtc, _options.WorkdayHours,
                     _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
             }
         }
@@ -210,13 +216,19 @@ public sealed class RoutePlanner(
         foreach (var v in vehicles)
         {
             var stops = vehicleRoutes[v.Code];
+            // Un vehículo sin paradas no genera plan: antes se guardaban rutas vacías de 0 km.
+            if (stops.Count == 0)
+            {
+                facts.Add(new Fact("vehicle_idle", v.Code, 0, "stops"));
+                continue;
+            }
             var eval = RouteFeasibility.EvaluateRoute(
-                v, depotPos, stops, workdayStartUtc, _options.WorkdayHours,
+                v, depots[v.Code], stops, workdayStartUtc, _options.WorkdayHours,
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
             var plannedStops = new List<PlannedStop>();
             DateTime curTimeUtc = workdayStartUtc;
-            GeoPoint curPos = depotPos;
+            GeoPoint curPos = depots[v.Code];
 
             for (int i = 0; i < stops.Count; i++)
             {
@@ -271,8 +283,10 @@ public sealed class RoutePlanner(
         var products = await db.Products.Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
         var risks = await riskCalculator.CalculateAsync(false, ct);
-        var depot = await db.Locations.FirstAsync(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse, ct);
-        var depotPos = new GeoPoint((decimal)depot.Position!.Y, (decimal)depot.Position.X).Round();
+        var warehouseLocations = await db.Locations
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse).ToListAsync(ct);
+        var firstDepot = warehouseLocations.First();
+        var defaultDepotPos = new GeoPoint((decimal)firstDepot.Position!.Y, (decimal)firstDepot.Position.X).Round();
         var workdayStart = await clock.WorkdayStartUtcAsync(ct);
         var workdayEnd = workdayStart.AddHours(_options.WorkdayHours);
         var routes = new List<VehicleRoute>();
@@ -282,6 +296,7 @@ public sealed class RoutePlanner(
         {
             if (!vehicles.TryGetValue(prefix.VehicleCode, out var vehicle))
                 throw new InvalidOperationException("El vehículo del prefijo no existe o está inactivo.");
+            var depotPos = DepotOf(vehicle, warehouseLocations) ?? defaultDepotPos;
             var published = await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id &&
                     p.VehicleId == vehicle.Id && p.Status == "Published")
                 .OrderByDescending(p => p.Revision).ThenByDescending(p => p.CreatedAtUtc).FirstAsync(ct);
@@ -401,11 +416,18 @@ public sealed class RoutePlanner(
         return new PlanResult(routes, unserved.OrderBy(u => u.PointCode, StringComparer.Ordinal).ToList(), facts);
     }
 
+    // Posición de la bodega propia del vehículo; null si no tiene o la bodega no tiene coordenadas.
+    private static GeoPoint? DepotOf(Vehicle vehicle, IReadOnlyList<Location> warehouses)
+    {
+        var depot = warehouses.FirstOrDefault(w => w.Id == vehicle.DepotLocationId);
+        return depot?.Position is { } position ? new GeoPoint((decimal)position.Y, (decimal)position.X).Round() : null;
+    }
+
     private bool TryInsertCheapest(
         List<Vehicle> vehicles,
         Dictionary<string, List<StopCandidate>> currentRoutes,
         StopCandidate candidate,
-        GeoPoint depotPos,
+        IReadOnlyDictionary<string, GeoPoint> depots,
         DateTime workdayStartUtc,
         IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
         out string? bestVehicleCode,
@@ -419,7 +441,7 @@ public sealed class RoutePlanner(
         {
             var route = currentRoutes[v.Code];
             var currentEval = RouteFeasibility.EvaluateRoute(
-                v, depotPos, route, workdayStartUtc, _options.WorkdayHours,
+                v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
             for (int pos = 0; pos <= route.Count; pos++)
@@ -428,7 +450,7 @@ public sealed class RoutePlanner(
                 candidateRoute.Insert(pos, candidate);
 
                 var newEval = RouteFeasibility.EvaluateRoute(
-                    v, depotPos, candidateRoute, workdayStartUtc, _options.WorkdayHours,
+                    v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
                     _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
                 if (newEval.IsFeasible)
@@ -461,7 +483,7 @@ public sealed class RoutePlanner(
         List<Vehicle> vehicles,
         Dictionary<string, List<StopCandidate>> currentRoutes,
         StopCandidate candidate,
-        GeoPoint depotPos,
+        IReadOnlyDictionary<string, GeoPoint> depots,
         DateTime workdayStartUtc,
         IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
         int maxDetourMinutes,
@@ -476,7 +498,7 @@ public sealed class RoutePlanner(
         {
             var route = currentRoutes[v.Code];
             var currentEval = RouteFeasibility.EvaluateRoute(
-                v, depotPos, route, workdayStartUtc, _options.WorkdayHours,
+                v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
             for (int pos = 0; pos <= route.Count; pos++)
@@ -485,7 +507,7 @@ public sealed class RoutePlanner(
                 candidateRoute.Insert(pos, candidate);
 
                 var newEval = RouteFeasibility.EvaluateRoute(
-                    v, depotPos, candidateRoute, workdayStartUtc, _options.WorkdayHours,
+                    v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
                     _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
                 if (newEval.IsFeasible)
@@ -508,7 +530,7 @@ public sealed class RoutePlanner(
         List<Vehicle> vehicles,
         Dictionary<string, List<StopCandidate>> currentRoutes,
         StopCandidate candidate,
-        GeoPoint depotPos,
+        IReadOnlyDictionary<string, GeoPoint> depots,
         DateTime workdayStartUtc,
         IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix)
     {
@@ -517,7 +539,7 @@ public sealed class RoutePlanner(
             var route = currentRoutes[v.Code];
             var candidateRoute = new List<StopCandidate>(route) { candidate };
             var eval = RouteFeasibility.EvaluateRoute(
-                v, depotPos, candidateRoute, workdayStartUtc, _options.WorkdayHours,
+                v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
 
             if (!eval.IsFeasible && eval.FailureReason != null)

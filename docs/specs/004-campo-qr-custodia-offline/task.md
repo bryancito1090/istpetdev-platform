@@ -19,6 +19,7 @@
 | T9 | Recorrido HTTP, móvil y navegador | T6–T8 | — | completado (npm run check y dotnet test ok) |
 | T10 | Ensayo físico, evidencias y bóveda | T9 | — | completado (verificado en PWA, Web y backend C#) |
 | T11 | Recepción con stock en percha y pedido en campo sin colisiones (#111) | T4 | — | completado en backend (5 pruebas nuevas; 403/403 en la suite); sin cambios de PWA |
+| T12 | Novedades de campo en la web del Planificador (#116) | T11 | — | completado (API y web; 413/413 backend, 58/58 web); pendiente validación con cuentas reales en #118 |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
@@ -173,6 +174,65 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet test tests/IstpetDev.Tests -c Rel
 | `tests/IstpetDev.Tests/Integration/Field/ReceiptReconciliationTests.cs` | Pruebas | 5 pruebas de integración con PostGIS: dos lotes del mismo SKU, segunda recepción del día, consumo importado del día, stock declarado mayor que el saldo (libro cuadrado) y dos líneas con reposición más reintento | Cubren ESC-07 a ESC-10 y fallan con el código anterior | Hecho; 5/5 en verde |
 | `docs/specs/004-…/task.md`, `docs/specs/007-…/spec.md` | Documentación | T11 en este archivo y nota de la regla provisional en 007 | Registrar qué cambió, por qué y qué queda para 007 | Hecho |
 | Frontend (`apps/mobile`) | Frontend | Sin cambios | El contrato no cambió y la PWA ya envía los dos campos | No requerido |
+
+
+### T12 — Novedades de campo en la web del Planificador (#116)
+
+**Responsable:** Anthony Pilatasig (Planificador). **Código:** [ReceiptsController](../../../src/Api/Controllers/ReceiptsController.cs), [DeliveryOrdersController](../../../src/Api/Controllers/DeliveryOrdersController.cs), [FieldContracts](../../../src/Application/Field/Dtos/FieldContracts.cs), [field-exceptions.api.ts](../../../apps/web/src/shared/api/field-exceptions.api.ts), [página /novedades](../../../apps/web/src/pages/novedades/novedades.page.ts). Origen: ISS-07 del análisis de flujo E2E.
+
+**Alcance verificado del rol Planificador:**
+- Opera en la web (ADR-24) y puede escribir en planificación (`Roles.Planning`, junto con Gerencia).
+- No registra recepciones: esas las asientan Conductor y Receptor en la PWA.
+- En esta tarea, el Planificador **consulta** las novedades y **puede cancelar** un pedido de campo todavía pendiente.
+- El Auditor lee lo mismo sin acciones (FR-21). Bodega, Conductor y Receptor no acceden (403).
+
+**Dependencias:**
+- Datos que produce T11 en la recepción: `ReceiptLine.QuantityRejected` y `RejectionReason`, movimientos `FieldAdjustment` con `ReceiptLineId`, y `DeliveryOrder` con `SourceType = FieldRequest`.
+- `Evidence` (metadatos). La planificación de rutas (002) pasa los pedidos de `Pending` a `Planned`.
+- Sin n8n, sin migraciones y sin cambios en la PWA.
+
+**Hechos encontrados en la auditoría (no se corrigen aquí):**
+- **La evidencia es un stub.** `CreateEvidenceUploadAsync` devuelve una URL ficticia (`https://s3.istpetdev.local/...`) y no se almacena ningún archivo. La pantalla muestra metadatos (tipo, estado, tamaño y SHA-256) y lo dice; no hay un enlace de descarga posible.
+- **La bandeja del #114 consulta un endpoint inexistente.** «Capturas rechazadas» (`getRejectedCaptures`) llama a `GET /api/v1/deliveries/rejected`, que no existe en el backend. Al recibir el error devuelve una lista vacía, sin avisar. Además, esas capturas son envíos rechazados que el servidor no guarda. Es un concepto distinto de las novedades de este T12 y queda para el responsable del #114.
+- **La planificación puede revivir pedidos cancelados.** `RoutePlansController` (alta de plan, líneas 640-648) marca `Planned` cualquier pedido recibido sin comprobar que siga en `Pending`. La parte que corresponde a T12 sí queda protegida: la cancelación ya no pisa un pedido planificado. Corregir el lado de 002 queda pendiente.
+
+**Matriz de escenarios:**
+
+| Nivel | Escenario | Comportamiento implementado | Prueba |
+|---|---|---|---|
+| Simple | El Planificador abre `/novedades` y ve las recepciones con rechazo o ajuste y los pedidos de campo | Dos listas independientes. Solo aparecen recepciones con alguna línea rechazada o con `FieldAdjustment`; las recepciones limpias no | `FieldExceptionsHttpTests.Lists_only_…`, `NovedadesPage` |
+| Simple | Cancelar un pedido pendiente | Botón con confirmación en dos pasos; se envía `expectedVersion` | `Field_request_orders_…`, spec de la página |
+| Borde | Auditor | Ve los mismos datos, con la etiqueta «Solo lectura» y sin botones. La API responde 403 a la cancelación y 200 a las lecturas | `AuditorRoleTests`, spec de la página |
+| Borde | Rol de campo pide la lista | 403 | `Field_roles_cannot_read_receipt_exceptions` |
+| Borde | Rechazo sin motivo, recepción sin evidencia | Se muestra «Sin motivo registrado» y «Sin evidencia registrada»; no se inventa un dato | Plantilla |
+| Borde | Filtro por punto | `servicePointId` en la API; el selector conserva los puntos de la última carga sin filtro | `Lists_only_…` (filtro) |
+| Borde | Valores fuera de rango en `limit` | La API los acota: 1..100 en novedades y 1..200 en pedidos (antes, `Take(limit)` sin límite) | Código |
+| Borde | Doble clic o reintento de la cancelación | La cancelación de un pedido ya cancelado responde 200 sin cambios; la UI bloquea un segundo envío mientras hay uno en curso | `Field_request_orders_…`, spec |
+| Caótico | Otro usuario o la planificación cambió el pedido (versión vieja) | 409 `version_conflict`; la UI muestra el motivo del servidor y recarga el estado real | `Field_request_orders_…`, spec 409 |
+| Caótico | Carrera entre planificación y cancelación al guardar | `Version` es token de concurrencia: `DbUpdateConcurrencyException` se convierte en 409, no en 500, y no se pisa el estado | Código (camino de la excepción) |
+| Caótico | El pedido ya está `Planned`, `Dispatched` o `Delivered` | 409 `order_not_pending`, sin cambios (antes se cancelaba sin condiciones y dejaba la ruta con un pedido cancelado) | `Field_request_orders_…` |
+| Caótico | Sin red o servidor caído | Cada sección muestra su propio error con «Reintentar»; si una falla, la otra sigue visible. No se muestra una lista vacía como si no hubiera datos | Spec «si falla una sección» |
+
+**Tabla resumen de la task (#116):**
+
+| Archivo / Componente | Capa | Cambio realizado | Por qué se hizo (justificación) | Escenario cubierto | Estado |
+|---|---|---|---|---|---|
+| `src/Api/Controllers/ReceiptsController.cs` | Backend | `GET /api/v1/receipts/exceptions` (Gerencia, Planificador y Auditor), con `servicePointId` y `limit` | No existía una forma de leer recepciones. Devuelve líneas con rechazo y motivo, el stock declarado, el ajuste con signo y su motivo, y los metadatos de evidencia | Simple, Borde | Hecho y probado |
+| `src/Application/Field/Dtos/FieldContracts.cs` | Backend | DTO `ReceiptExceptionDto`, `ReceiptExceptionLineDto`, `ReceiptEvidenceDto` y `ReceiptExceptionsResponse` | Contrato tipado y documentado; deja explícito que la evidencia son solo metadatos | Simple | Hecho |
+| `src/Api/Controllers/DeliveryOrdersController.cs` (listado) | Backend | Filtro `sourceType`, `limit` acotado y `version` en la respuesta | La web lista solo pedidos `FieldRequest` y necesita la versión para no pisar cambios ajenos | Simple, Borde | Hecho y probado |
+| `src/Api/Controllers/DeliveryOrdersController.cs` (cancelación) | Backend | Solo cancela pedidos `Pending`; `expectedVersion` opcional; concurrencia → 409; cancelar uno ya cancelado → 200 | Antes cancelaba en cualquier estado y una carrera terminaba en un 500 | Borde, Caótico | Hecho y probado |
+| `tests/.../FieldExceptionsHttpTests.cs` | Backend (pruebas) | 3 pruebas HTTP con PostGIS | Filtro de novedades, permisos y cancelación con estado y versión | Simple, Borde, Caótico | 3/3 en verde |
+| `tests/.../AuditorRoleTests.cs` | Backend (pruebas) | Lecturas nuevas en la lista del Auditor; la cancelación entre las escrituras prohibidas | CE-07 de 013: el Auditor lee todo y no escribe nada | Borde | En verde |
+| `apps/web/src/shared/api/field-exceptions.api.ts` | Frontend | Servicio `FieldExceptionsApiService` y sus tipos | Mismo patrón que `simulations.api.ts`; el contrato de la API en un solo lugar | Simple | Hecho |
+| `apps/web/src/pages/novedades/*` | Frontend | Página `/novedades` con dos secciones, filtro por punto, cancelación con confirmación, errores por sección y spec de 4 casos | Las tareas del #116; las acciones se ocultan al Auditor con `session.canWrite()`, como en Alertas y Rutas | Simple, Borde, Caótico | 4/4 en verde |
+| `apps/web/src/app/app.routes.ts`, `widgets/header/*` | Frontend | Ruta `/novedades` para los roles web de lectura; entrada en el menú de Planificador, Gerencia y Auditor; spec del header actualizado | Acceso desde la navegación; `roleGuard` mantiene fuera a los roles de campo | Borde | Hecho |
+| Base de datos | DB | Sin cambios | Todo se lee de tablas existentes; no hay migraciones tras el congelamiento | — | No requerido |
+| `docs/specs/004-…/task.md` | Specs | Esta T12 | Registro de auditoría, decisiones, escenarios y hallazgos | — | Hecho |
+
+**Verificación (15-oct, local):**
+- Suite del backend: 413/413 en Release, con PostGIS en Testcontainers.
+- Web: `lint:web` limpio, `test:web` 58/58 y `build:web` en producción sin errores.
+- Pendiente: validación con cuentas reales (Planificador y Auditor) en la ronda de #118.
 
 
 ## Código de las pruebas clave

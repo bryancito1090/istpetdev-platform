@@ -26,6 +26,20 @@ export interface EntityDetailConfig {
   tableCols: { key: string; label: string; badge?: boolean }[];
 }
 
+/** Un perfil de mapeo es un objeto con `files` y solo claves de perfil (ver MappingProfile en el backend). */
+export function isMappingProfile(text: string): boolean {
+  try {
+    const value: unknown = JSON.parse(text);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const allowed = new Set(['name', 'delimiter', 'decimalSeparator', 'dateFormats', 'files']);
+    const keys = Object.keys(value);
+    const files = (value as Record<string, unknown>)['files'];
+    return keys.every(k => allowed.has(k)) && !!files && typeof files === 'object' && !Array.isArray(files);
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'page-datos',
   standalone: true,
@@ -136,10 +150,10 @@ export interface EntityDetailConfig {
             type="file" 
             multiple
             (change)="onFilesSelected($event)"
-            accept=".csv,.xlsx"
+            accept=".csv,.xlsx,.json"
             class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer border border-slate-200 rounded-lg p-2 bg-slate-50/50" />
           <p class="text-[11px] text-slate-400 mt-1.5">
-            Formatos admitidos: .csv, .xlsx. El nombre del archivo o sus encabezados detectarán la entidad correspondiente.
+            Formatos admitidos: .csv, .xlsx. El nombre del archivo o sus encabezados detectarán la entidad correspondiente. Si el dataset trae un perfil de mapeo (.json), inclúyalo en la selección.
           </p>
         </div>
 
@@ -182,6 +196,15 @@ export interface EntityDetailConfig {
           </div>
         }
 
+        @if (importNotice()) {
+          <div class="border border-slate-200 bg-slate-50 text-slate-700 rounded-xl p-3 text-xs" role="status">{{ importNotice() }}</div>
+        }
+        @if (importError()) {
+          <div class="border border-rose-200 bg-rose-50 text-rose-800 rounded-xl p-4 text-xs" role="alert">
+            <p class="font-semibold">No se pudo procesar la carga</p>
+            <p class="mt-1">{{ importError() }}</p>
+          </div>
+        }
         <!-- Resultado de la importación masiva -->
         @if (report()) {
           <div 
@@ -1319,6 +1342,8 @@ export class DatosPage {
   readonly selectedFiles = signal<File[]>([]);
   readonly loading = signal(false);
   readonly report = signal<ImportReportDto | null>(null);
+  readonly importError = signal<string | null>(null);
+  readonly importNotice = signal<string | null>(null);
 
   // Estado del Drawer Lateral
   readonly selectedEntity = signal<EntityDetailConfig | null>(null);
@@ -2040,23 +2065,60 @@ export class DatosPage {
     if (input.files) {
       this.selectedFiles.set(Array.from(input.files));
       this.report.set(null);
+      this.importError.set(null);
+      this.importNotice.set(null);
     }
   }
 
-  processImport(dryRun: boolean): void {
+  async processImport(dryRun: boolean): Promise<void> {
     if (!this.session.canWrite()) return;
     const files = this.selectedFiles();
     if (files.length === 0) return;
+    this.importError.set(null);
+
+    this.importNotice.set(null);
+
+    // Un dataset suele traer varios .json (mapping, manifest, calendario...). Solo uno es el perfil
+    // de mapeo; se reconoce por su contenido y el resto se omite avisando, sin bloquear la carga.
+    const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+    const profiles: Array<{ name: string; text: string }> = [];
+    const skipped: string[] = [];
+    for (const file of jsonFiles) {
+      const text = await file.text();
+      if (isMappingProfile(text)) profiles.push({ name: file.name, text });
+      else skipped.push(file.name);
+    }
+    if (profiles.length > 1) {
+      this.importError.set(`Hay más de un perfil de mapeo (${profiles.map(p => p.name).join(', ')}); deje solo uno.`);
+      return;
+    }
 
     const formData = new FormData();
     for (const file of files) {
+      if (jsonFiles.includes(file)) continue;
+      // El servidor reconoce la entidad por el nombre del archivo o por sus columnas.
       formData.append(file.name, file);
+    }
+    if (profiles.length === 1) formData.append('profile', profiles[0].text);
+    if (skipped.length > 0) {
+      this.importNotice.set(`Se omitieron ${skipped.join(', ')}: no son perfiles de mapeo ni tablas importables.`);
+    }
+    if (![...formData.keys()].some(k => k !== 'profile')) {
+      this.importError.set('Seleccione al menos un archivo .csv o .xlsx con datos.');
+      return;
     }
 
     this.loading.set(true);
-    this.apiService.importData(formData, dryRun).subscribe(res => {
-      this.loading.set(false);
-      this.report.set(res);
+    this.apiService.importDataOrExplain(formData, dryRun).subscribe({
+      next: res => {
+        this.loading.set(false);
+        this.report.set(res);
+      },
+      error: (err: Error) => {
+        this.loading.set(false);
+        this.report.set(null);
+        this.importError.set(err.message);
+      },
     });
   }
 

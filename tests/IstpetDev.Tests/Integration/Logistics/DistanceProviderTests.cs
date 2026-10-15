@@ -166,4 +166,39 @@ public sealed class DistanceProviderTests(PostgisContainer postgres) : IClassFix
         // Crucial requirement: Approximation is NOT saved to the database
         Assert.Equal(0, await db.RoadMatrixEdges.CountAsync());
     }
+
+    [Fact]
+    public async Task More_than_100_points_are_requested_in_blocks_with_user_agent_and_all_pairs_come_from_the_road()
+    {
+        await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        var points = Enumerable.Range(0, 120).Select(i => new GeoPoint(-0.2m - i * 0.001m, -78.5m - i * 0.001m)).ToList();
+        var maxCoordinates = 0;
+        var userAgents = new HashSet<string>();
+        var handler = new MockHttpMessageHandler(request =>
+        {
+            var url = request.RequestUri!.ToString();
+            var coordinates = url.Split("/driving/")[1].Split('?')[0].Split(';').Length;
+            maxCoordinates = Math.Max(maxCoordinates, coordinates);
+            userAgents.Add(request.Headers.UserAgent.ToString());
+            var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri.Query);
+            var sources = query["sources"]!.Split(';').Length;
+            var destinations = query["destinations"]!.Split(';').Length;
+            var row = string.Join(",", Enumerable.Repeat("1500", destinations));
+            var table = "[" + string.Join(",", Enumerable.Repeat("[" + row + "]", sources)) + "]";
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent($"{{\"code\":\"Ok\",\"distances\":{table},\"durations\":{table}}}")
+            };
+        });
+        var options = Options.Create(new LogisticsOptions { Osrm = new OsrmOptions { BaseUrl = "http://osrm-mock", TimeoutSeconds = 10 } });
+        var provider = new DistanceProvider(db, new HttpClient(handler), options, NullLogger<DistanceProvider>.Instance);
+
+        var matrix = await provider.MatrixAsync(points);
+
+        Assert.True(handler.CallCount > 1, "Con 120 puntos la tabla debe pedirse por bloques");
+        Assert.True(maxCoordinates <= 100, $"Una petición llevó {maxCoordinates} coordenadas (límite del servidor: 100)");
+        Assert.All(userAgents, ua => Assert.StartsWith("IstpetDev/", ua)); // sin User-Agent, el OSRM público responde 403
+        Assert.All(matrix.Where(m => m.Key.From != m.Key.To), m => Assert.Equal(DistanceSource.Road, m.Value.Source));
+        Assert.Equal(120 * 119, await db.RoadMatrixEdges.CountAsync(e => e.Source == "osrm"));
+    }
 }

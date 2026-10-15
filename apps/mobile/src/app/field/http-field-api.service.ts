@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, switchMap, of } from 'rxjs';
+import { Observable, switchMap, of, throwError } from 'rxjs';
 import {
   CreateHandlingUnitRequest,
   HandlingUnitResponse,
@@ -19,6 +19,7 @@ import {
   DemoAdvanceResponse,
   PublicTraceUnitDto
 } from '@istpetdev/shared-core';
+import { environment } from '../config/environment';
 import { IFieldApi, ReceiverUnit } from './field-api.interface';
 
 @Injectable({
@@ -26,9 +27,7 @@ import { IFieldApi, ReceiverUnit } from './field-api.interface';
 })
 export class HttpFieldApiService implements IFieldApi {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : '';
+  private readonly baseUrl = environment.apiUrl;
 
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse> {
     return this.http.post<HandlingUnitResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/handling-units`, req);
@@ -78,7 +77,7 @@ export class HttpFieldApiService implements IFieldApi {
     return this.http.post<EvidenceUploadResponse>(`${this.baseUrl}/api/v1/receipts/${receiptId}/evidence-uploads`, req).pipe(
       switchMap((resp) => {
         if (!fileBlob || !resp.uploadUrl || resp.uploadUrl.includes('istpetdev.local')) {
-          return of(resp);
+          return throwError(() => ({ status: 503, message: 'Almacenamiento de evidencias no disponible.' }));
         }
         const headers = new HttpHeaders(resp.requiredHeaders || { 'Content-Type': req.mimeType });
         return this.http.put(resp.uploadUrl, fileBlob, { headers }).pipe(

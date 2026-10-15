@@ -8,7 +8,7 @@ module "s3_backups" {
 resource "aws_s3_bucket_cors_configuration" "evidence" {
   bucket = module.s3_evidence.bucket_id
   cors_rule {
-    allowed_origins = ["http://localhost:4200", "http://localhost:8100"]
+    allowed_origins = ["http://localhost:4200", "http://localhost:8100", "https://istpetdev.doicela.dev", "https://clean.doicela.dev"]
     allowed_methods = ["GET", "HEAD", "POST", "PUT"]
     allowed_headers = ["content-type", "x-amz-checksum-sha256", "x-amz-meta-sha256"]
     expose_headers  = ["ETag", "x-amz-checksum-sha256", "x-amz-version-id"]

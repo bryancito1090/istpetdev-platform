@@ -88,7 +88,7 @@ output_path.chmod(0o600)
 PY
 
 find_error_workflow_id() {
-  python3 - "$workflow_export" "${1:-}" <<'PY'
+  python3 - "$workflow_export" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -101,8 +101,6 @@ matches = [workflow for workflow in workflows if workflow.get("name") == "Istpet
 if len(matches) > 1:
     raise SystemExit("Hay más de un workflow IstpetDev Agent - error en n8n local.")
 workflow_id = matches[0].get("id", "") if matches else ""
-if sys.argv[2] and not workflow_id:
-    raise SystemExit("n8n no asignó un ID al workflow IstpetDev Agent - error.")
 print(workflow_id)
 PY
 }
@@ -126,9 +124,12 @@ docker exec "$container" n8n export:workflow --all > "$workflow_export"
 error_workflow_id="$(find_error_workflow_id)"
 
 if [[ -z "$error_workflow_id" ]]; then
-  docker exec "$container" n8n import:workflow --input=/workflows/error-agente.json
-  docker exec "$container" n8n export:workflow --all > "$workflow_export"
-  error_workflow_id="$(find_error_workflow_id required)"
+  # CLI import requires an ID. Generate it on the target instance, never in Git.
+  error_workflow_id="$(docker exec "$container" node -e 'process.stdout.write(require("crypto").randomUUID())')"
+  if [[ -z "$error_workflow_id" ]]; then
+    printf 'No se pudo generar el ID del workflow de error en n8n.\n' >&2
+    exit 1
+  fi
 fi
 
 python3 - "$repo_root/automation/n8n/workflows" "$workflow_stage_dir" "$error_workflow_id" <<'PY'
@@ -162,8 +163,7 @@ from pathlib import Path
 
 for path in sorted(Path(sys.argv[1]).glob("*.json")):
     workflow = json.loads(path.read_text(encoding="utf-8"))
-    if workflow["name"] != "IstpetDev Agent - error":
-        print(workflow["id"])
+    print(workflow["id"])
 PY
 )
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent restart n8n

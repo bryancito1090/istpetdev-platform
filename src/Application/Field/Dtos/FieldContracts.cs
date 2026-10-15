@@ -94,8 +94,13 @@ public sealed record ReceiptLineDto(
     decimal QuantityAccepted,
     decimal QuantityRejected,
     string Unit,
+    string? RejectionReason = null,
     decimal? RemainingQuantity = null,
     decimal? NextRequestedQuantity = null);
+
+public sealed record RejectionReasonDto(string Code, string Description);
+
+public sealed record RejectionReasonsCatalogResponse(string Version, IReadOnlyList<RejectionReasonDto> Reasons);
 
 public sealed record ReceiptResponse(
     Guid ReceiptId,
@@ -266,3 +271,46 @@ public sealed record ReceiverUnitResponse(
     Guid HandlingUnitId, string Code, string Status, Guid DeliveryId, long DeliveryVersion,
     string DestinationName, IReadOnlyList<ReceiverUnitLineDto> Lines);
 
+
+// ==========================================
+// Issue #116: Recepciones con novedades para la web (rechazos y ajustes de stock en percha)
+// ==========================================
+
+public sealed record ReceiptExceptionLineDto(
+    Guid ReceiptLineId,
+    string Sku,
+    string ProductName,
+    string LotCode,
+    decimal QuantityAccepted,
+    decimal QuantityRejected,
+    string? RejectionReason,
+    decimal? RemainingDeclared,
+    decimal? AdjustmentQuantity, // Con signo: negativo = consumo derivado; positivo = conteo mayor que el saldo
+    string? AdjustmentReason);
+
+// La evidencia se registra como metadato; el archivo todavía no se almacena (la URL de subida es un stub).
+public sealed record ReceiptEvidenceDto(
+    Guid EvidenceId,
+    string Kind,
+    string Status,
+    string MimeType,
+    long? ByteSize,
+    string? Sha256,
+    DateTime? ConfirmedAtUtc);
+
+public sealed record ReceiptExceptionDto(
+    Guid ReceiptId,
+    Guid DeliveryId,
+    string DeliveryCode,
+    Guid ServicePointId,
+    string ServicePointCode,
+    string ServicePointName,
+    string ActorName,
+    DateTime ReceivedAtServer,
+    DateTime? OccurredAtDevice,
+    bool HasRejections,
+    bool HasAdjustments,
+    IReadOnlyList<ReceiptExceptionLineDto> Lines,
+    IReadOnlyList<ReceiptEvidenceDto> Evidence);
+
+public sealed record ReceiptExceptionsResponse(IReadOnlyList<ReceiptExceptionDto> Items, int Total);

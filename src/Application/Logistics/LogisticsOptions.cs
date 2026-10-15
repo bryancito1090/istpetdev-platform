@@ -50,6 +50,10 @@ public sealed class OsrmOptions
 {
     public string BaseUrl { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 3;
+    // Solo para dibujar el recorrido por calles en el mapa (servicio route de OSRM). No cambia las
+    // distancias del plan, que siguen saliendo de BaseUrl, la caché de tramos o la aproximación.
+    public string RouteGeometryUrl { get; set; } = string.Empty;
+    public int RouteGeometryTimeoutSeconds { get; set; } = 8;
 }
 
 public sealed class PolicyOptions

@@ -28,14 +28,17 @@ public sealed class FieldService : IFieldService
     private readonly IConfiguration _config;
     private readonly ILogger<FieldService> _logger;
     private readonly LogisticsOptions _logistics;
+    private readonly IEvidenceStorage? _evidenceStorage;
 
     public FieldService(
         IApplicationDbContext db,
         IConfiguration config,
         ILogger<FieldService> logger,
-        IOptions<LogisticsOptions> logistics)
+        IOptions<LogisticsOptions> logistics,
+        IEvidenceStorage? evidenceStorage = null)
     {
         _db = db;
+        _evidenceStorage = evidenceStorage;
         _config = config;
         _logger = logger;
         _logistics = logistics.Value;
@@ -451,7 +454,7 @@ public sealed class FieldService : IFieldService
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
         // Ubicaciones para movimiento
-        Guid vehicleLocationId = delivery.OriginLocationId;
+        Guid? vehicleLocationId = delivery.OriginLocationId;
         Guid destinationLocationId = delivery.OriginLocationId;
 
         if (delivery.RouteStopId.HasValue)
@@ -479,6 +482,11 @@ public sealed class FieldService : IFieldService
                 .Select(hu => (Guid?)hu.LocationId)
                 .FirstOrDefaultAsync(ct);
             if (huLocId.HasValue) vehicleLocationId = huLocId.Value;
+        }
+
+        if (vehicleLocationId == destinationLocationId)
+        {
+            vehicleLocationId = null;
         }
 
         var receipt = new Receipt
@@ -554,6 +562,14 @@ public sealed class FieldService : IFieldService
                 hasRejections = true;
             }
 
+            string? normalizedReason = null;
+            if (reqLine.QuantityRejected > 0 && !string.IsNullOrWhiteSpace(reqLine.RejectionReason))
+            {
+                normalizedReason = ReceiptRejectionReasons.TryNormalize(reqLine.RejectionReason, out var canonical)
+                    ? canonical
+                    : reqLine.RejectionReason.Trim();
+            }
+
             var rLine = new ReceiptLine
             {
                 OrganizationId = DemoOrganization.Id,
@@ -561,7 +577,7 @@ public sealed class FieldService : IFieldService
                 DeliveryLineId = dLine.Id,
                 QuantityAccepted = reqLine.QuantityAccepted,
                 QuantityRejected = reqLine.QuantityRejected,
-                RejectionReason = reqLine.RejectionReason,
+                RejectionReason = normalizedReason,
                 RemainingQuantity = reqLine.RemainingQuantity,
                 NextRequestedQuantity = reqLine.NextRequestedQuantity
             };
@@ -574,6 +590,7 @@ public sealed class FieldService : IFieldService
                 reqLine.QuantityAccepted,
                 reqLine.QuantityRejected,
                 reqLine.Unit,
+                normalizedReason,
                 reqLine.RemainingQuantity,
                 reqLine.NextRequestedQuantity));
         }
@@ -625,10 +642,13 @@ public sealed class FieldService : IFieldService
         {
             if (reqLine.QuantityAccepted <= 0m) continue;
 
-            var vehicleBalance = await FindBalanceAsync(vehicleLocationId, reqLine.LotId);
-            if (vehicleBalance != null)
+            if (vehicleLocationId.HasValue)
             {
-                vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                var vehicleBalance = await FindBalanceAsync(vehicleLocationId.Value, reqLine.LotId);
+                if (vehicleBalance != null)
+                {
+                    vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+                }
             }
 
             var destBalance = await FindBalanceAsync(destinationLocationId, reqLine.LotId)
@@ -1114,6 +1134,9 @@ public sealed class FieldService : IFieldService
     {
         var hu = await RequireUnitWithTokenAsync(unitId, traceToken, ct);
         if (hu.DeliveryId is not Guid deliveryId) throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
+        foreach (var line in request.Lines.Where(l => l.QuantityRejected > 0))
+            if (!ReceiptRejectionReasons.IsValid(line.RejectionReason))
+                throw new FieldUnprocessableException("INVALID_REJECTION_REASON", "Selecciona un motivo del catálogo V1.");
         // El QR prueba que el Receptor tiene el bulto en la mano; no hay conductor asignado que validar.
         return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, requireAssignedDriver: false, ct);
     }
@@ -1286,28 +1309,35 @@ public sealed class FieldService : IFieldService
             .FirstOrDefaultAsync(r => r.Id == receiptId && r.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Recibo {receiptId} no encontrado.");
 
-        var evidence = new Evidence
+        if (receipt.ActorAccountId != actorAccountId)
+            throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment, "Solo quien registró la recepción puede adjuntar sus evidencias.");
+        if (request.OperationId == Guid.Empty || request.Kind is not ("photo" or "signature") ||
+            request.MimeType is not ("image/jpeg" or "image/png" or "image/webp") ||
+            request.ByteSize <= 0 || request.ByteSize > 10 * 1024 * 1024 ||
+            request.Sha256.Length != 64 || !request.Sha256.All(Uri.IsHexDigit))
+            throw new FieldUnprocessableException("INVALID_EVIDENCE", "Evidencia inválida: imagen de hasta 10 MB y SHA-256 requerido.");
+
+        var storage = _evidenceStorage ?? throw new FieldException(503, "EVIDENCE_STORAGE_UNAVAILABLE", "Almacenamiento no configurado.");
+        var key = $"evidences/{receipt.Id}/{request.Kind}-{request.OperationId}";
+        // Deterministic PK makes retries reuse the evidence instead of creating orphan rows.
+        var evidenceId = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(key)).AsSpan(0, 16));
+        var evidence = await _db.Evidences.FirstOrDefaultAsync(e => e.Id == evidenceId && e.OrganizationId == DemoOrganization.Id, ct);
+        if (evidence != null && (evidence.UploadedByAccountId != actorAccountId || evidence.Sha256 != request.Sha256 || evidence.ByteSize != request.ByteSize || evidence.MimeType != request.MimeType))
+            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, "La operación de evidencia tiene otro contenido.");
+        var upload = await storage.AuthorizeUploadAsync(key, request.MimeType, request.Sha256, ct);
+        if (evidence == null)
         {
-            OrganizationId = DemoOrganization.Id,
-            ReceiptId = receipt.Id,
-            Kind = request.Kind,
-            StorageKey = $"evidences/{receipt.Id}/{request.Kind}-{request.OperationId}.bin",
-            MimeType = request.MimeType,
-            ByteSize = request.ByteSize,
-            Sha256 = request.Sha256,
-            Status = "Pending",
-            UploadedByAccountId = actorAccountId
-        };
-
-        _db.Evidences.Add(evidence);
-        await _db.SaveChangesAsync(ct);
-
-        var uploadUrl = $"https://s3.istpetdev.local/evidences/{evidence.Id}";
-        return new EvidenceUploadResponse(
-            evidence.Id,
-            uploadUrl,
-            new Dictionary<string, string> { { "Content-Type", request.MimeType } },
-            DateTime.UtcNow.AddMinutes(15));
+            evidence = new Evidence
+            {
+                Id = evidenceId, OrganizationId = DemoOrganization.Id, ReceiptId = receipt.Id,
+                Kind = request.Kind, StorageKey = key, MimeType = request.MimeType,
+                ByteSize = request.ByteSize, Sha256 = request.Sha256,
+                Status = "Pending", UploadedByAccountId = actorAccountId
+            };
+            _db.Evidences.Add(evidence);
+            await _db.SaveChangesAsync(ct);
+        }
+        return new EvidenceUploadResponse(evidence.Id, upload.Url, upload.Headers, upload.ExpiresAtUtc);
     }
 
     public async Task<EvidenceConfirmResponse> ConfirmEvidenceAsync(
@@ -1319,16 +1349,27 @@ public sealed class FieldService : IFieldService
         var evidence = await _db.Evidences
             .FirstOrDefaultAsync(e => e.Id == evidenceId && e.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Evidencia {evidenceId} no encontrada.");
+        if (evidence.UploadedByAccountId != actorAccountId)
+            throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment, "La evidencia pertenece a otra cuenta.");
+        if (evidence.Sha256 != request.Sha256 || evidence.ByteSize != request.ByteSize)
+            throw new FieldUnprocessableException("EVIDENCE_MISMATCH", "El hash o tamaño no coincide con la autorización.");
+        if (evidence.Status != "Confirmed")
+        {
+            var storage = _evidenceStorage ?? throw new FieldException(503, "EVIDENCE_STORAGE_UNAVAILABLE", "Almacenamiento no configurado.");
+            await storage.VerifyAsync(evidence.StorageKey, evidence.MimeType, request.ByteSize, request.Sha256, ct);
+            evidence.Status = "Confirmed";
+            evidence.ConfirmedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+        }
+        return new EvidenceConfirmResponse(evidence.Id, "Confirmed", evidence.ConfirmedAtUtc!.Value);
+    }
 
-        evidence.Status = "Confirmed";
-        evidence.ConfirmedAtUtc = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync(ct);
-
-        return new EvidenceConfirmResponse(
-            evidence.Id,
-            "Confirmed",
-            evidence.ConfirmedAtUtc.Value);
+    public RejectionReasonsCatalogResponse GetRejectionReasonsCatalog()
+    {
+        var items = ReceiptRejectionReasons.All
+            .Select(code => new RejectionReasonDto(code, ReceiptRejectionReasons.GetDescription(code)))
+            .ToList();
+        return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
     }
 
     private static string ComputeSha256(string input)
