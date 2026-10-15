@@ -7,6 +7,7 @@ import {
   DispatchRequest,
   DispatchResponse,
   DeliveryListResponse,
+  RejectedCapturesResponse,
   DemoAdvanceRequest,
   DemoAdvanceResponse,
   PublicTraceUnitDto
@@ -40,6 +41,12 @@ export class HttpWebFieldApiService implements IWebFieldApi {
     if (limit) params = params.set('limit', limit.toString());
 
     return this.http.get<DeliveryListResponse>(`${this.baseUrl}/api/v1/deliveries`, { params });
+  }
+
+  getRejectedCaptures(servicePointId?: string): Observable<RejectedCapturesResponse> {
+    let params = new HttpParams();
+    if (servicePointId) params = params.set('servicePointId', servicePointId);
+    return this.http.get<RejectedCapturesResponse>(`${this.baseUrl}/api/v1/deliveries/rejected`, { params });
   }
 
   revokePublicToken(unitId: string): Observable<void> {

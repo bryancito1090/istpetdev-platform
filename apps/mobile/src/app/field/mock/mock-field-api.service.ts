@@ -8,6 +8,8 @@ import {
   DispatchResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
+  DeliveryDetailResponse,
+  DeliveryDetailLineDto,
   CreateReceiptRequest,
   ReceiptResponse,
   EvidenceUploadRequest,
@@ -20,33 +22,10 @@ import {
   PublicTraceUnitDto,
   FieldProblemDetails
 } from '@istpetdev/shared-core';
-import { IFieldApi } from '../field-api.interface';
+import { IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { MockServerStore } from './mock-server.store';
 
-/**
- * Generador simple de UUID v7 estándar (RFC 9562) en cliente sin librerías externas.
- */
-export function generateUuidV7(): string {
-  const now = Date.now();
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-
-  // Timestamp de 48 bits
-  bytes[0] = (now / 0x10000000000) & 0xff;
-  bytes[1] = (now / 0x100000000) & 0xff;
-  bytes[2] = (now / 0x1000000) & 0xff;
-  bytes[3] = (now / 0x10000) & 0xff;
-  bytes[4] = (now / 0x100) & 0xff;
-  bytes[5] = now & 0xff;
-
-  // Versión 7 (0b0111) en bits 48..51
-  bytes[6] = (bytes[6] & 0x0f) | 0x70;
-  // Variante RFC (0b10) en bits 64..65
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
+import { generateUuidV7 } from '../uuid';
 
 @Injectable({
   providedIn: 'root'
@@ -61,6 +40,10 @@ export class MockFieldApiService implements IFieldApi {
   public simulate429RateLimit = false;
   public simulate503ServiceUnavailable = false;
   public simulateS3Failure = false;
+  public simulate409Conflict = false;
+  public simulate422Unprocessable = false;
+  public simulate500InternalError = false;
+  public simulateAccountDeactivated = false;
 
   private createProblemDetails(code: string, status: number, title: string, detail?: string): FieldProblemDetails {
     return {
@@ -80,8 +63,20 @@ export class MockFieldApiService implements IFieldApi {
     if (this.simulate401Unauthorized) {
       throw this.createProblemDetails('UNAUTHORIZED', 401, 'Sesión expirada o no autorizada.');
     }
+    if (this.simulateAccountDeactivated) {
+      throw this.createProblemDetails('TOKEN_REVOKED_OR_EXPIRED', 403, 'La cuenta del conductor está inactiva o ha sido desactivada.');
+    }
+    if (this.simulate409Conflict) {
+      throw this.createProblemDetails('ASSIGNMENT_CHANGED', 409, 'Conflicto de asignación: versión desactualizada.');
+    }
+    if (this.simulate422Unprocessable) {
+      throw this.createProblemDetails('QUANTITY_EXCEEDED', 422, 'Cantidades no procesables: regla de validación de negocio violada.');
+    }
     if (this.simulate429RateLimit) {
       throw this.createProblemDetails('RATE_LIMIT_EXCEEDED', 429, 'Demasiadas solicitudes. Intente más tarde.');
+    }
+    if (this.simulate500InternalError) {
+      throw this.createProblemDetails('INTERNAL_SERVER_ERROR', 500, 'Error interno del servidor.');
     }
     if (this.simulate503ServiceUnavailable) {
       throw this.createProblemDetails('SERVICE_UNAVAILABLE', 503, 'El servicio de API no está disponible temporalmente.');
@@ -463,6 +458,58 @@ export class MockFieldApiService implements IFieldApi {
     ).pipe(delay(this.latencyMs));
   }
 
+  getDelivery(deliveryId: string): Observable<DeliveryDetailResponse> {
+    return from(
+      (async () => {
+        this.checkFailureHooks();
+        const state = await this.store.getState();
+        const delivery = state.deliveries.find((d) => d.deliveryId === deliveryId);
+        if (!delivery) {
+          throw this.createProblemDetails('UNIT_NOT_FOUND', 404, `Entrega ${deliveryId} no encontrada.`);
+        }
+
+        const handlingUnits = Object.values(state.handlingUnits)
+          .filter((hu) => hu.deliveryId === deliveryId)
+          .map((hu) => ({
+            handlingUnitId: hu.handlingUnitId,
+            code: hu.code,
+            status: hu.status
+          }));
+
+        const existingLines: DeliveryDetailLineDto[] = [
+          {
+            deliveryLineId: `dl-${deliveryId}-01`,
+            lotId: `lot-${deliveryId}-01`,
+            lotCode: 'LOT-2026-MED-01',
+            sku: 'MED-PARACETAMOL-500MG',
+            productName: 'Paracetamol 500mg Comprimidos',
+            plannedQuantity: 100,
+            unit: 'caja'
+          },
+          {
+            deliveryLineId: `dl-${deliveryId}-02`,
+            lotId: `lot-${deliveryId}-02`,
+            lotCode: 'LOT-2026-SUERO-02',
+            sku: 'SUERO-FISIOLOGICO-500ML',
+            productName: 'Solución Fisiológica 0.9% 500ml',
+            plannedQuantity: 50,
+            unit: 'frasco'
+          }
+        ];
+
+        return {
+          deliveryId: delivery.deliveryId,
+          status: delivery.status,
+          version: 1,
+          pointName: delivery.pointName,
+          routePlanId: delivery.routePlanId,
+          lines: existingLines,
+          handlingUnits
+        };
+      })()
+    ).pipe(delay(this.latencyMs));
+  }
+
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse> {
     return from(
       (async () => {
@@ -499,5 +546,13 @@ export class MockFieldApiService implements IFieldApi {
       switchMap(() => of(undefined)),
       delay(50)
     );
+  }
+
+  getReceiverUnit(_unitId: string, _token: string): Observable<ReceiverUnit> {
+    return throwError(() => new Error('no disponible en mock'));
+  }
+
+  receiveAsReceiver(_unitId: string, _token: string, _req: CreateReceiptRequest, _idempotencyKey: string): Observable<ReceiptResponse> {
+    return throwError(() => new Error('no disponible en mock'));
   }
 }

@@ -56,6 +56,8 @@ describe('SimulationPage (Spec 005 - T9 & T10)', () => {
     const fixture = TestBed.createComponent(SimulationPage);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Detalle de 1 corridas del comparador');
+    expect(fixture.nativeElement.textContent).not.toContain('1080 jornadas');
     const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
     expect(buttons.some(b => /Nueva Corrida|Importar/.test(b.textContent ?? ''))).toBe(false);
   });

@@ -132,6 +132,14 @@ Los contratos existentes proponen `GET /api/v1/inventory`, `POST /api/v1/consump
 
 > **⚠️ Contrato de consumo** — Hecho nuevo: el importador agrega consumo histórico por punto/SKU/día, mientras el piloto requiere varias operaciones físicas por lote y día. Hecho establecido: `Consumption` y su índice único actual, más la fórmula de demanda en [[Inventario y prediccion]]. Impacto: registrar consumos físicos sobre la fila histórica sobrescribiría datos y distorsionaría riesgo. Propuesta: separar hechos operativos e historia y conservar trazabilidad durante la migración. El plan desarrolla la regla de día cerrado propuesta; su aceptación empresarial sigue pendiente antes de activar el piloto.
 
+> **Regla provisional en código (15-oct, #111, sin migración).** La recepción de 004 ya produce consumo derivado del stock en percha:
+> - Lo registra con `SourceKind = FieldReconciliation`, una fila por punto, producto y día, que se acumula entre recepciones.
+> - **No modifica** un consumo de otro origen (importado); en ese caso la cantidad queda solo en el movimiento `FieldAdjustment`.
+> - Toda diferencia entre el stock declarado y el saldo queda como movimiento `FieldAdjustment`.
+> - El período se configura en `Logistics:FieldReconciliationPeriodDays`.
+>
+> Es un puente para que la recepción no falle. No resuelve la separación de hechos operativos e historia que propone esta contradicción: esa migración sigue siendo de 007. Detalle en la tarea T11 de [004](../004-campo-qr-custodia-offline/task.md).
+
 ## Riesgos
 
 | Riesgo | Impacto | Respuesta |

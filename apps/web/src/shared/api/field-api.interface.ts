@@ -6,6 +6,7 @@ import {
   DispatchRequest,
   DispatchResponse,
   DeliveryListResponse,
+  RejectedCapturesResponse,
   DemoAdvanceRequest,
   DemoAdvanceResponse,
   PublicTraceUnitDto
@@ -18,6 +19,7 @@ export interface IWebFieldApi {
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse>;
   dispatch(deliveryId: string, req: DispatchRequest, idempotencyKey: string): Observable<DispatchResponse>;
   getDeliveries(routePlanId?: string, status?: string, cursor?: string, limit?: number): Observable<DeliveryListResponse>;
+  getRejectedCaptures(servicePointId?: string): Observable<RejectedCapturesResponse>;
   revokePublicToken(unitId: string): Observable<void>;
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse>;
   getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto>;

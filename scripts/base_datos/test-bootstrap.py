@@ -77,9 +77,16 @@ def main():
             else:
                 raise AssertionError('Wrong TLS hostname was accepted')
             assert dev.sql(app, config, args.ca, 'SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid();') == 't'
+            # /health/ready requires exactly the DemoCore tables (DatabaseHealthCheck), so the probe goes.
+            dev.sql(migrator, config, args.ca, 'DROP TABLE public.isolation_probe;')
             dbtask.migrate(migrator, config, args.ca)
             dbtask.migrate(migrator, config, args.ca)
-            assert dev.sql(app, config, args.ca, 'SELECT count(*) FROM public."__EFMigrationsHistory";') == '1'
+            # Every migration in the repository is applied exactly once, even after a second run.
+            expected = sorted(p.stem for p in (dev.ROOT/'src/Infrastructure/Persistence/Migrations').glob('*.cs')
+                              if p.stem[:14].isdigit() and not p.stem.endswith('.Designer'))
+            applied = dev.sql(app, config, args.ca, 'SELECT "MigrationId" FROM public."__EFMigrationsHistory" ORDER BY 1;').splitlines()
+            assert applied == expected, f'Applied migrations {applied} differ from repository {expected}'
+            print(f'PASS: {len(applied)} EF migrations applied once through API --migrate, run twice')
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1', 0))
                 api_port = sock.getsockname()[1]

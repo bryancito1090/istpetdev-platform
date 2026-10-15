@@ -58,6 +58,24 @@ public sealed class FieldUnitTests
             return Task.FromResult(new DeliveryListResponse(Array.Empty<DeliveryListItem>(), null, 0));
         }
 
+        public Task<DeliveryDetailResponse> GetDeliveryDetailAsync(Guid deliveryId, CancellationToken ct = default)
+        {
+            if (deliveryId == Guid.Empty)
+            {
+                throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Entrega no encontrada.");
+            }
+            var lines = new[]
+            {
+                new DeliveryDetailLineDto(Guid.NewGuid(), Guid.NewGuid(), "LOT-01", "MED-001", "Paracetamol 500mg", 50m, "U")
+            };
+            var hus = new[]
+            {
+                new DeliveryDetailHandlingUnitDto(Guid.NewGuid(), "HU-01", "Prepared")
+            };
+            return Task.FromResult(new DeliveryDetailResponse(
+                deliveryId, "Draft", 1, "Hospital Docente de Ambato", Guid.NewGuid(), lines, hus));
+        }
+
         public Task<PublicTraceUnitDto> GetPublicTraceAsync(Guid unitId, string? traceToken, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(traceToken) || traceToken == "expired")
@@ -91,6 +109,16 @@ public sealed class FieldUnitTests
         public Task<EvidenceConfirmResponse> ConfirmEvidenceAsync(Guid evidenceId, EvidenceConfirmRequest request, Guid actorAccountId, CancellationToken ct = default)
         {
             return Task.FromResult(new EvidenceConfirmResponse(evidenceId, "Confirmed", DateTime.UtcNow));
+        }
+
+        public Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
         }
 
         public RejectionReasonsCatalogResponse GetRejectionReasonsCatalog()
@@ -208,5 +236,33 @@ public sealed class FieldUnitTests
         var catalog = Assert.IsType<RejectionReasonsCatalogResponse>(okResult.Value);
         Assert.Equal("V1", catalog.Version);
         Assert.Equal(6, catalog.Reasons.Count);
+    }
+
+    [Fact]
+    public async Task DeliveriesController_get_detail_returns_200_with_lines_and_handling_units()
+    {
+        var fake = new FakeFieldService();
+        var controller = new DeliveriesController(fake);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.Role, Roles.Bodega),
+                    new Claim(AccountRoleClaimsTransformation.AccountIdClaim, Guid.NewGuid().ToString())
+                }, "TestAuth"))
+            }
+        };
+
+        var delId = Guid.NewGuid();
+        var result = await controller.GetDeliveryDetail(delId, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var detail = Assert.IsType<DeliveryDetailResponse>(okResult.Value);
+        Assert.Equal(delId, detail.DeliveryId);
+        Assert.Single(detail.Lines);
+        Assert.Equal("MED-001", detail.Lines[0].Sku);
+        Assert.Equal("Hospital Docente de Ambato", detail.PointName);
     }
 }
