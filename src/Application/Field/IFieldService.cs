@@ -38,6 +38,10 @@ public interface IFieldService
         string? cursor,
         CancellationToken ct = default);
 
+    Task<DeliveryDetailResponse> GetDeliveryDetailAsync(
+        Guid deliveryId,
+        CancellationToken ct = default);
+
     Task<PublicTraceUnitDto> GetPublicTraceAsync(
         Guid unitId,
         string? traceToken,

@@ -7,6 +7,7 @@ import {
   DispatchResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
+  DeliveryDetailResponse,
   CreateReceiptRequest,
   ReceiptResponse,
   EvidenceUploadRequest,
@@ -28,6 +29,7 @@ export interface IFieldApi {
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse>;
   dispatch(deliveryId: string, req: DispatchRequest, idempotencyKey: string): Observable<DispatchResponse>;
   getDeliveries(routePlanId?: string, status?: string, cursor?: string, limit?: number): Observable<DeliveryListResponse>;
+  getDelivery(deliveryId: string): Observable<DeliveryDetailResponse>;
   revokePublicToken(unitId: string): Observable<void>;
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse>;
 
