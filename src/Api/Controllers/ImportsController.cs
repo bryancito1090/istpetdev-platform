@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IstpetDev.Api.Controllers;
 
 [ApiController, Route("api/v1/imports"), Authorize(Roles = Roles.Human), EnableRateLimiting("imports")]
-public sealed class ImportsController(IImportService importer, IApplicationDbContext db) : ControllerBase
+public sealed class ImportsController(IImportService importer, IApplicationDbContext db, ITabularReader reader) : ControllerBase
 {
     [HttpGet("data/{entity}")]
     [Authorize(Roles = Roles.Human)]
@@ -179,8 +179,15 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                 ImportEntity? byField = ImportEntityKeys.TryParse(file.Name, out var parsed) ? parsed : null;
                 if (byProfile is not null && byField is not null && byProfile != byField)
                     return Problem(statusCode: 400, title: "El nombre del campo y el perfil asignan entidades diferentes; corrija uno de ellos.");
-                var entity = byProfile ?? byField;
-                if (entity is null) return Problem(statusCode: 400, title: "Archivo sin entidad; use un campo canónico/alias o declare file en profile.", detail: Path.GetFileName(file.FileName));
+                // El sistema se adapta al archivo: perfil, campo, nombre del archivo y, por último, sus columnas.
+                var entity = byProfile ?? byField ?? ImportEntityDetector.FromFileName(file.FileName);
+                if (entity is null)
+                {
+                    var detection = DetectByHeaders(file, profile);
+                    if (detection.Entity is null)
+                        return Problem(statusCode: 400, title: $"No se pudo identificar el contenido de {Path.GetFileName(file.FileName)}.", detail: detection.Explanation);
+                    entity = detection.Entity;
+                }
                 if (selected.Any(x => x.Entity == entity)) return Problem(statusCode: 400, title: "Se admite un archivo por entidad; combine las filas en un archivo.");
                 selected.Add((file, entity.Value));
             }
@@ -194,5 +201,22 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
         }
         catch (MappingProfileException ex) { return Problem(statusCode: 400, title: "Perfil inválido", detail: string.Join(" ", ex.Errors)); }
         catch (ImportConflictException ex) { return Problem(statusCode: 409, title: "Conflicto de importación", detail: ex.Message); }
+    }
+
+    // Lee solo para conocer los encabezados; la importación vuelve a abrir el archivo desde el inicio.
+    private EntityDetection DetectByHeaders(IFormFile file, MappingProfile profile)
+    {
+        try
+        {
+            using var buffer = new MemoryStream();
+            using (var stream = file.OpenReadStream()) stream.CopyTo(buffer);
+            buffer.Position = 0;
+            var table = reader.Read(buffer, Path.GetFileName(file.FileName), profile.Delimiter, null);
+            return ImportEntityDetector.FromHeaders(table.Headers);
+        }
+        catch (UnsupportedFileException ex)
+        {
+            return new EntityDetection(null, ex.Message);
+        }
     }
 }
