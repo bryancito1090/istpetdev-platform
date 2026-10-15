@@ -175,7 +175,7 @@ def build_workflows(
                 raise ValueError("error-agente: el primer nodo debe ser Error Trigger")
             if not {"Resolve AgentRun", "Register Failure"}.issubset({node.get("name") for node in nodes}):
                 raise ValueError("error-agente: faltan los callbacks M2M de resolución y fallo")
-            # n8n assigns the workflow ID on the target server; it must not enter Git.
+            # Configure the workflow ID on the target server; it must not enter Git.
             workflow.pop("id", None)
             workflow.pop("versionId", None)
             workflow.setdefault("meta", {})["n8nVersion"] = N8N_VERSION

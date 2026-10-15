@@ -190,12 +190,22 @@ handler antes de que exista la asociación. La API también lo toma de la respue
 `POST /api/v1/agent/runs/{id}/failure`; el callback agrega una entrada
 idempotente a la traza sin adjuntar el payload del escenario ni el stack.
 
-`settings.errorWorkflow` usa `{{ERROR_WORKFLOW_ID}}` en los exports. Al importar
-`error-agente` en una instancia, n8n asigna el ID allí; el responsable de esa
-instancia selecciona ese workflow en la configuración de `vigia` e `incidente`.
-No guardar ese ID en Git. Esta implementación no cambia la espera/fallback de
-10 s de ESC-16/ESC-17. Las pruebas locales cubren el contrato; no se ejecutó un
-fallo real en n8n ni se cambió la configuración del servidor.
+`settings.errorWorkflow` usa `{{ERROR_WORKFLOW_ID}}` en los exports. El ID se
+configura en la instancia objetivo y no se guarda en Git. El editor/API de n8n
+puede crearlo; **el CLI 2.39.5 exige un ID al importar**. `local-up.sh` consulta
+primero el workflow existente por nombre; si no existe, genera un UUID dentro
+del contenedor y lo aplica solamente al JSON temporal de importación y a los
+ajustes de `vigia` e `incidente`. Las importaciones posteriores reutilizan ese
+ID. En el runtime 2.39.5 se comprobó que el workflow de error también debe
+publicarse: sin ello n8n lo rechaza como inactivo. El arranque publica los tres
+workflows y reinicia la instancia local. Se conserva la espera/fallback de
+10 s de ESC-16/ESC-17.
+
+El cierre inicial por #147 se reabrió porque faltaba probar un Error Trigger
+real. La validación complementaria utiliza Docker Linux, n8n 2.39.5 y
+API/PostGIS aislados, con identidad OAuth sintética y la misma referencia M2M;
+no cambia la instancia productiva. Resultados en
+[task.md](../../specs/003-agente-logistico/task.md).
 
 El formato de Error Trigger y el vínculo por configuración de workflow siguen
 la [documentación oficial de n8n](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/).
