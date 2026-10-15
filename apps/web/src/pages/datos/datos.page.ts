@@ -26,6 +26,20 @@ export interface EntityDetailConfig {
   tableCols: { key: string; label: string; badge?: boolean }[];
 }
 
+/** Un perfil de mapeo es un objeto con `files` y solo claves de perfil (ver MappingProfile en el backend). */
+export function isMappingProfile(text: string): boolean {
+  try {
+    const value: unknown = JSON.parse(text);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const allowed = new Set(['name', 'delimiter', 'decimalSeparator', 'dateFormats', 'files']);
+    const keys = Object.keys(value);
+    const files = (value as Record<string, unknown>)['files'];
+    return keys.every(k => allowed.has(k)) && !!files && typeof files === 'object' && !Array.isArray(files);
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'page-datos',
   standalone: true,
@@ -182,6 +196,9 @@ export interface EntityDetailConfig {
           </div>
         }
 
+        @if (importNotice()) {
+          <div class="border border-slate-200 bg-slate-50 text-slate-700 rounded-xl p-3 text-xs" role="status">{{ importNotice() }}</div>
+        }
         @if (importError()) {
           <div class="border border-rose-200 bg-rose-50 text-rose-800 rounded-xl p-4 text-xs" role="alert">
             <p class="font-semibold">No se pudo procesar la carga</p>
@@ -1326,6 +1343,7 @@ export class DatosPage {
   readonly loading = signal(false);
   readonly report = signal<ImportReportDto | null>(null);
   readonly importError = signal<string | null>(null);
+  readonly importNotice = signal<string | null>(null);
 
   // Estado del Drawer Lateral
   readonly selectedEntity = signal<EntityDetailConfig | null>(null);
@@ -2070,6 +2088,7 @@ OFI-003,PAP-01,2026-10-05,35,7`,
       this.selectedFiles.set(Array.from(input.files));
       this.report.set(null);
       this.importError.set(null);
+      this.importNotice.set(null);
     }
   }
 
@@ -2079,20 +2098,37 @@ OFI-003,PAP-01,2026-10-05,35,7`,
     if (files.length === 0) return;
     this.importError.set(null);
 
-    // Un .json entre los archivos es el perfil de mapeo del dataset (por ejemplo mapping.json).
-    const profiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+    this.importNotice.set(null);
+
+    // Un dataset suele traer varios .json (mapping, manifest, calendario...). Solo uno es el perfil
+    // de mapeo; se reconoce por su contenido y el resto se omite avisando, sin bloquear la carga.
+    const jsonFiles = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+    const profiles: Array<{ name: string; text: string }> = [];
+    const skipped: string[] = [];
+    for (const file of jsonFiles) {
+      const text = await file.text();
+      if (isMappingProfile(text)) profiles.push({ name: file.name, text });
+      else skipped.push(file.name);
+    }
     if (profiles.length > 1) {
-      this.importError.set('Seleccione un solo archivo .json de perfil de mapeo.');
+      this.importError.set(`Hay más de un perfil de mapeo (${profiles.map(p => p.name).join(', ')}); deje solo uno.`);
       return;
     }
 
     const formData = new FormData();
     for (const file of files) {
-      if (profiles.includes(file)) continue;
+      if (jsonFiles.includes(file)) continue;
       // El servidor reconoce la entidad por el nombre del archivo o por sus columnas.
       formData.append(file.name, file);
     }
-    if (profiles.length === 1) formData.append('profile', await profiles[0].text());
+    if (profiles.length === 1) formData.append('profile', profiles[0].text);
+    if (skipped.length > 0) {
+      this.importNotice.set(`Se omitieron ${skipped.join(', ')}: no son perfiles de mapeo ni tablas importables.`);
+    }
+    if (![...formData.keys()].some(k => k !== 'profile')) {
+      this.importError.set('Seleccione al menos un archivo .csv o .xlsx con datos.');
+      return;
+    }
 
     this.loading.set(true);
     this.apiService.importDataOrExplain(formData, dryRun).subscribe({
