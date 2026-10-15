@@ -17,6 +17,7 @@
 | T8 | API, autorización e inyección de dependencias | T7 | — | completada |
 | T9 | Fixture regional y calibración del incidente | T8 | — | completada |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
+| T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -163,3 +164,45 @@ Resultado de la prueba tras fijar datos todavía en verificación; despliegue y
 aceptación productiva se registran exclusivamente en spec 003. No se atribuye
 esta corrección como comprobación completa de la reasignación por avería ni de
 la aprobación de alternativas de otros escenarios; requieren su propia evidencia.
+
+### T11 — Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión (15-oct)
+
+**Responsable:** Anthony Pilatasig. **Código:** [RoutePlanner](../../../src/Application/Logistics/Planning/RoutePlanner.cs). **Pruebas:** [DatasetsJourneyTests](../../../tests/IstpetDev.Tests/E2E/DatasetsJourneyTests.cs) y [LogisticsPerformanceTests](../../../tests/IstpetDev.Tests/Performance/LogisticsPerformanceTests.cs).
+
+**Cómo se encontró.** Se recorrió importar → `GET /risks` → `POST /route-plans` → `POST /agent/runs` con cada dataset del repositorio (`docs/dataset/test/national-v1-seed-11`, `data/fixtures/demo-base`, `demo-region`, `demo-region-injection` y `ejemplo-externo`). Importación, alertas y agente respondieron con todos. Las rutas tenían dos defectos:
+
+1. **Una sola bodega para toda la flota.** `PlanAsync` tomaba `warehouseLocations.FirstOrDefault()` como salida de todos los vehículos, sin mirar su `DepotLocationId`. Con las 6 bodegas del dataset nacional (ADR-28):
+   - Todos salían desde Ambato.
+   - Cuatro planes quedaban vacíos (0 paradas, 0 km).
+   - Los demás recorrían unos 330 km con 3 a 5 paradas.
+
+   `ReplanAsync` tenía el mismo supuesto.
+2. **Coordenadas con más de 5 decimales.** `DistanceProvider` guarda la matriz con `GeoPoint.Round()` (5 decimales), pero `PlanAsync` buscaba con las posiciones sin redondear. Con datos de más precisión, como las exportaciones de GPS, todos los puntos quedaban `unreachable` y no se planificaba nada.
+
+   Los benchmarks de rendimiento estaban en ese caso: 0 paradas con 15 y con 80 puntos. Pasaban solo porque contaban rutas vacías.
+
+**Corrección:**
+- Cada vehículo sale y vuelve a **su** bodega, al planificar y al replanificar. Si no tiene bodega o esta no tiene coordenadas, se usa la primera, como antes.
+- Todas las bodegas entran en la matriz de distancias.
+- Las posiciones se redondean igual que las claves de la matriz.
+- Un vehículo sin paradas ya no genera un plan vacío; queda el fact `vehicle_idle`.
+
+**Resultado con los datos del repositorio:**
+
+| Dataset | Antes | Después |
+|---|---|---|
+| `national-v1-seed-11` (6 bodegas) | 12 planes: 4 vacíos y 8 de unos 300 km con 3 a 5 paradas | 6 planes, uno por bodega, con 13 o 14 paradas (80/80 puntos) y 104 a 143 km |
+| `demo-base`, `demo-region`, `demo-region-injection` (1 bodega) | 1, 2 y 2 planes | Sin cambios (mismos km y paradas) |
+| `ejemplo-externo` (sin bodegas ni stock) | Sin rutas | Sin rutas, con el motivo `warehouse_stock` en `unserved` |
+| Benchmarks de 15 y 80 puntos (7 decimales) | 0 paradas | 15/15 paradas; 44 de 80 (36 sin atender por capacidad) |
+
+**Verificación:**
+- Suite del backend 444/444 (Release, PostGIS en Testcontainers).
+- `AgentJourneyTests.Fallback_proposes_routes_and_rejects_late_callback(partial_watch)` falló una vez con la suite completa y pasó en las 3 repeticiones aisladas y en la corrida completa siguiente. Es sensible al tiempo: el n8n falso crea los planes en segundo plano mientras corre el plazo del agente. Queda registrada como **intermitente**, no como resuelta.
+- El agente se probó por el camino determinista (sin n8n). La prueba con n8n y DeepSeek reales requiere un token de Planificador vigente.
+
+| Archivo | Capa | Cambio | Por qué | Estado |
+|---|---|---|---|---|
+| `src/Application/Logistics/Planning/RoutePlanner.cs` | Backend | Bodega por vehículo al planificar y replanificar; posiciones redondeadas; sin planes vacíos | Defectos 1 y 2 | Hecho |
+| `tests/IstpetDev.Tests/E2E/DatasetsJourneyTests.cs` | Pruebas | Recorrido completo con los datasets del repositorio y con coordenadas de 7 decimales | Que los defectos no vuelvan con datos reales | 6/6 en verde |
+| `tests/IstpetDev.Tests/Performance/LogisticsPerformanceTests.cs` | Pruebas | El benchmark exige paradas planificadas, no solo rutas | Pasaba sin planificar nada | En verde |

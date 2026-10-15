@@ -189,7 +189,8 @@ public sealed class LogisticsPerformanceTests(PostgisContainer postgres)
         sw.Stop();
 
         Assert.NotNull(result);
-        Assert.True(result.Routes.Count > 0);
+        // Antes pasaba con rutas vacías: los puntos quedaban «unreachable» y no se planificaba nada.
+        Assert.True(result.Routes.Sum(r => r.Stops.Count) > 0, "El benchmark no planificó ninguna parada.");
         Assert.True(sw.ElapsedMilliseconds <= 1000, $"Planificación de 15 puntos tardó {sw.ElapsedMilliseconds} ms (presupuesto: <= 1000 ms)");
     }
 
@@ -217,7 +218,8 @@ public sealed class LogisticsPerformanceTests(PostgisContainer postgres)
         sw.Stop();
 
         Assert.NotNull(result);
-        Assert.True(result.Routes.Count > 0);
+        // Antes pasaba con rutas vacías: los puntos quedaban «unreachable» y no se planificaba nada.
+        Assert.True(result.Routes.Sum(r => r.Stops.Count) > 0, "El benchmark no planificó ninguna parada.");
         Assert.True(sw.ElapsedMilliseconds <= 5000, $"Planificación de 80 puntos tardó {sw.ElapsedMilliseconds} ms (presupuesto: <= 5000 ms)");
     }
 }
