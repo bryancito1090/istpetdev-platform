@@ -20,6 +20,7 @@
 | T8 | E2E, CI y evidencia | T7 | Verificado en Release (114 pruebas); CI, cotejo y builds aprobados |
 | T9 | Bóveda, contratos y cierre | T0/T8 | En curso (documentación y evidencia registradas; ADR/cierre final pendiente de decisión) |
 | T10 | Respaldo y restauración verificables (#15) | T4/T8 | Ensayo local verificado y en CI; volcado y restauración contra RDS pendientes de acceso a AWS |
+| T11 | Importador que se adapta al dataset (entidad por nombre o columnas) | T5/T7 | Implementado y verificado con `docs/dataset`; 426/426 backend |
 
 Los estados se actualizan después de cada resultado. Las pruebas compartidas pueden editarse de forma independiente; migraciones, snapshot, DI y Program se integran por un solo responsable.
 
@@ -238,3 +239,44 @@ python3 scripts/base_datos/test-bootstrap.py   # Linux con Docker, psql, openssl
 | `scripts/base_datos/test-bootstrap.py` | DB / Pruebas | Compara las migraciones aplicadas con la lista exacta del repositorio (antes esperaba 1) y borra `isolation_probe` antes de migrar | La aserción databa del 9-oct, cuando había una sola migración (hoy hay 8). Además, `/health/ready` exige exactamente las tablas de DemoCore (`DatabaseHealthCheck`), y la tabla de prueba lo dejaba en «Unhealthy» | Hecho; pasó en 76 s |
 | `.github/workflows/ci.yml` | CI | Job `db-backup-rehearsal` y filtros para `scripts/base_datos/**`, `scripts/backup/**` y `scripts/ops/dev.py` | El ensayo de respaldo y restauración se había roto sin que nadie lo notara porque no corría en CI | Hecho; primera ejecución en el PR |
 | Bóveda: runbook §4 | Documentación | Inventario verificado de respaldos, herramienta oficial, procedimiento por pasos con responsables, evidencia del ensayo y pendientes | El runbook usaba un snapshot de ejemplo, no tenía la restauración de prueba y no decía qué está verificado | Hecho |
+
+### T11 — Importador que se adapta al dataset (15-oct)
+
+**Responsable:** Anthony Pilatasig. **Código:** [ImportEntityDetector](../../../src/Application/Imports/ImportEntityDetector.cs), [ImportsController](../../../src/Api/Controllers/ImportsController.cs), [página Datos](../../../apps/web/src/pages/datos/datos.page.ts). **Pruebas:** [ImportEntityDetectorTests](../../../tests/IstpetDev.Tests/Unit/Imports/ImportEntityDetectorTests.cs), [AdaptiveImportTests](../../../tests/IstpetDev.Tests/Integration/Imports/AdaptiveImportTests.cs).
+
+**Problema comprobado.** Se subieron los archivos de `docs/dataset/test/national-v1-seed-11` desde la carga masiva de la web y la pantalla quedó vacía.
+
+- **Por qué fallaba:** la web envía cada archivo con su nombre completo (`consumptions.csv`) como campo, y el servidor solo aceptaba la clave sin extensión. Respondía `400 «Archivo sin entidad»`, e `importData` descartaba el error y devolvía `null`.
+- **El dataset no tenía errores:** con la clave canónica se importaba con 0 errores.
+- **La interfaz prometía otra cosa:** «el nombre del archivo o sus encabezados detectarán la entidad», pero el servidor no lo hacía.
+
+**Regla nueva (FR-04 llevado a la entidad).** La entidad de cada archivo se resuelve en este orden:
+
+1. Perfil de mapeo (`file`).
+2. Nombre del campo.
+3. **Nombre del archivo**, sin extensión, con claves canónicas y alias en español (`Consumos Septiembre.xlsx`, `bodegas-quito.csv`).
+4. **Columnas del archivo**: gana la entidad que tiene todos sus campos obligatorios y explica más columnas.
+
+**Sin adivinanzas:**
+- **Empate:** si dos entidades encajan igual (por ejemplo, código, nombre y coordenadas sirven para una bodega y para un punto), el servidor responde 400 y explica cómo resolverlo.
+- **Nada encaja:** responde 400 con la entidad más cercana, las columnas que le faltan y la indicación de usar un perfil de mapeo.
+
+**En la web:**
+- Un `.json` incluido en la selección se envía como perfil (por ejemplo, `mapping.json`).
+- Un rechazo sin reporte (400, 409, 413 o falta de red) se muestra con el motivo del servidor, en lugar de dejar la pantalla vacía.
+
+**Datasets de `docs/dataset`:**
+- `test/national-v1-seed-11`, enviado como lo envía la web, **se aplica** con 0 errores: 6 bodegas, 80 puntos, 12 vehículos y 2240 consumos.
+- `reales/acess-2026-09` **no es un dato operativo:** es un agregado de permisos por provincia, cantón y tipo, sin códigos ni coordenadas, y su README prohíbe insertarlo. El sistema lo rechaza explicando por qué y qué columnas le faltan para ser, por ejemplo, un punto de servicio.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Estado |
+|---|---|---|---|---|
+| `src/Application/Imports/ImportEntityDetector.cs` | Backend | Detección por nombre de archivo y por columnas, con explicación | Aceptar los archivos como vienen | Hecho; 12 pruebas unitarias |
+| `src/Application/Imports/ImportEntity.cs` | Backend | `Names()`: claves y alias | Para detectar por nombre | Hecho |
+| `src/Api/Controllers/ImportsController.cs` | Backend | Cadena perfil → campo → nombre → columnas; 400 con el motivo | Antes: «Archivo sin entidad» para `consumptions.csv` | Hecho |
+| `apps/web/src/shared/api/api.service.ts` | Frontend | `importDataOrExplain`: el error llega con el motivo del servidor | `importData` ocultaba los 400 | Hecho |
+| `apps/web/src/pages/datos/datos.page.ts` | Frontend | Acepta `.json` como perfil; aviso de error visible | Cargar el dataset con su `mapping.json` y saber por qué falla | Hecho |
+| `tests/.../AdaptiveImportTests.cs` | Pruebas | Dataset nacional real aplicado, archivo con nombre desconocido y ACESS rechazado con explicación | Verificar con los datos reales del repositorio | 3/3 en verde |
+
+Verificación (15-oct): backend 426/426; web 54/54 y `build:web` de producción sin errores.
+

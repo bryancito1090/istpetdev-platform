@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, map, Observable, of, tap } from 'rxjs';
+import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { environment } from '../config/environment';
 import {
   HealthStatusDto,
@@ -661,6 +661,28 @@ export class ApiService {
   // ==========================================
   // 10. IMPORTACIÓN DE DATOS (POST /api/v1/imports)
   // ==========================================
+
+  /**
+   * Igual que importData, pero un rechazo sin reporte (400, 409, 413, red) llega como error con el
+   * motivo del servidor, para mostrarlo en pantalla en lugar de dejarla vacía.
+   */
+  importDataOrExplain(formData: FormData, dryRun = true, allowPartial = false): Observable<ImportReportDto> {
+    return this.http.post<ImportReportDto>(
+      `${this.baseUrl}/api/v1/imports?dryRun=${dryRun}&allowPartial=${allowPartial}`,
+      formData
+    ).pipe(
+      catchError(err => {
+        if (err?.error && typeof err.error === 'object' && 'entities' in err.error) {
+          return of(err.error as ImportReportDto);
+        }
+        const problem = err?.error && typeof err.error === 'object' ? err.error as { title?: string; detail?: string } : null;
+        const message = err?.status === 0
+          ? 'Sin conexión con el servidor.'
+          : [problem?.title, problem?.detail].filter(Boolean).join(' ') || `La importación fue rechazada (HTTP ${err?.status ?? '?'}).`;
+        return throwError(() => new Error(message));
+      })
+    );
+  }
 
   importData(formData: FormData, dryRun = true, allowPartial = false): Observable<ImportReportDto | null> {
     return this.http.post<ImportReportDto>(

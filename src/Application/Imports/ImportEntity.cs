@@ -31,6 +31,10 @@ public static class ImportEntityKeys
 
     public static IReadOnlyCollection<string> All => Keys.Values;
 
+    // Nombres canónicos y alias; los usa la detección por nombre de archivo.
+    public static IEnumerable<(string Name, ImportEntity Entity)> Names() =>
+        Keys.Select(k => (k.Value, k.Key)).Concat(Aliases.Select(a => (a.Key, a.Value)));
+
     public static string Key(this ImportEntity entity) => Keys[entity];
 
     public static bool TryParse(string? text, out ImportEntity entity)
