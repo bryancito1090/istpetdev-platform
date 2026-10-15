@@ -7,6 +7,7 @@ import {
   DispatchResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
+  DeliveryDetailResponse,
   CreateReceiptRequest,
   ReceiptResponse,
   EvidenceUploadRequest,
@@ -28,6 +29,7 @@ export interface IFieldApi {
   createHandlingUnit(deliveryId: string, req: CreateHandlingUnitRequest): Observable<HandlingUnitResponse>;
   dispatch(deliveryId: string, req: DispatchRequest, idempotencyKey: string): Observable<DispatchResponse>;
   getDeliveries(routePlanId?: string, status?: string, cursor?: string, limit?: number): Observable<DeliveryListResponse>;
+  getDelivery(deliveryId: string): Observable<DeliveryDetailResponse>;
   revokePublicToken(unitId: string): Observable<void>;
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse>;
 
@@ -39,6 +41,31 @@ export interface IFieldApi {
 
   // Público (Consulta QR sin datos sensibles)
   getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto>;
+
+  // Receptor (Mobile / Recepción validada con QR del bulto)
+  getReceiverUnit(unitId: string, token: string): Observable<ReceiverUnit>;
+  receiveAsReceiver(unitId: string, token: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse>;
+}
+
+export interface ReceiverUnitLine {
+  deliveryLineId: string;
+  lotId: string;
+  lotCode: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface ReceiverUnit {
+  handlingUnitId: string;
+  code: string;
+  status: string;
+  deliveryId: string;
+  deliveryVersion: number;
+  destinationName: string;
+  lines: ReceiverUnitLine[];
 }
 
 export const FIELD_API = new InjectionToken<IFieldApi>('FIELD_API');
+

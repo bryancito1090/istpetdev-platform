@@ -189,9 +189,59 @@ curl -s http://localhost:5000/health/ready
 
 ---
 
-## 6. Conclusiones y Cumplimiento
+## 6. Ensayo 4 — Reconciliación de Cuentas por Rol y Paridad de Ambientes (Issue #55)
+
+### Objetivo
+Demostrar el aprovisionamiento idempotente de las 6 cuentas oficiales por rol (Spec 013), la asignación de contraseñas permanentes en AWS Cognito y la paridad de datos entre la Base de Desarrollo Central (`istpetdev_dev_01`) y Producción Amazon RDS (`istpetdev_integration`).
+
+### Condición y Ejecución
+1. **Aprovisionamiento Idempotente con CLI:**
+   Ejecución de `--provision-accounts` con archivo CSV privado fuera del repositorio Git (`scratch/istpetdev-cuentas-demo.csv`).
+   - Salida de la corrida de verificación:
+     ```text
+     línea 2: ya existía; sin cambios (Gerencia)
+     línea 3: ya existía; sin cambios (Planificador)
+     línea 4: ya existía; sin cambios (Auditor)
+     línea 5: ya existía; sin cambios (Receptor)
+     línea 6: ya existía; sin cambios (Conductor)
+     línea 7: ya existía; sin cambios (Bodega)
+     ```
+   - Código de salida: `0`.
+
+2. **Políticas de Contraseña Definitivas en AWS Cognito:**
+   Aplicación de clave corporativa permanente (distribuida por canal privado, cumpliendo los 14 caracteres mínimos y requisitos de `password_policy`) en el User Pool `us-east-1_4Y2j5DINp` mediante `admin-set-user-password --permanent`.
+
+3. **Paridad y Desactivación Segura en Amazon RDS (`istpetdev_integration`):**
+   Conexión administrativa mediante túnel SSM en puerto 15433 hacia `istpetdev-rds-dev`.
+   - Inserción de cuentas oficiales faltantes (`Bryan Baño`, `Joseph Baño (Receptor)`, `Jorge Doicela`).
+   - Actualización de rol de `Anthony Pilatasig` a `Planificador`.
+   - Desactivación segura (`IsActive = false` en BD y `Enabled = false` en Cognito) de cuentas de prueba previas (`ismael02doicela@gmail.com`, `bryanbano1090@gmail.com`, `banobryan1090@gmail.com`), preservando registros para trazabilidad.
+
+4. **Verificación de Salud de Producción:**
+   ```bash
+   curl -s -i https://istpetdev.doicela.dev/health/ready
+   ```
+   ```json
+   {
+     "status": "Healthy",
+     "timestamp": "2026-10-15T15:58:39.3895908Z",
+     "entries": [
+       {
+         "name": "database_ready",
+         "status": "Healthy",
+         "description": "PostgreSQL database is available.",
+         "durationMs": 36.07
+       }
+     ]
+   }
+   ```
+
+---
+
+## 7. Conclusiones y Cumplimiento
 
 1. **Paridad de motores confirmada:** PostgreSQL 16 PostGIS 3.4 en local y PostgreSQL 16.13 PostGIS 3.4.6 en Amazon RDS comparten tipos canónicos y extensiones espaciales sin discrepancias.
-2. **Despliegues Fail-Fast garantizados:** Ningún despliegue saldrá verde si la base de datos o las migraciones fallan.
-3. **Rollback seguro certificado:** La política de migraciones aditivas protege la disponibilidad del servicio durante reversiones de emergencia.
-4. **Plan B del evento listo para ejecución en vivo:** Cero dependencias de redes institucionales o de laboratorios remotos.
+2. **Despliegues Fail-Fast verificados:** Ningún despliegue avanzará a verde si la base de datos o las migraciones fallan.
+3. **Rollback seguro:** La política de migraciones aditivas protege la disponibilidad del servicio durante reversiones de emergencia.
+4. **Paridad de cuentas y roles completada:** Las 6 cuentas oficiales operan de forma idéntica en desarrollo y producción RDS.
+5. **Plan B del evento listo para ejecución en vivo:** Cero dependencias de redes institucionales o de laboratorios remotos.

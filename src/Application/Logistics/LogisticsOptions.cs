@@ -16,6 +16,8 @@ public sealed class LogisticsOptions
     public decimal SafetyStockUnits { get; set; } = 0m;
     public decimal WarehouseSafetyStockPct { get; set; } = 10m;
     public int StaleStockDays { get; set; } = 7;
+    // Días que cubre el consumo derivado del stock en percha declarado en una recepción (#111).
+    public int FieldReconciliationPeriodDays { get; set; } = 7;
     public string DefaultWindowStart { get; set; } = "08:00";
     public string DefaultWindowEnd { get; set; } = "17:00";
     public int DefaultServiceMinutes { get; set; } = 15;

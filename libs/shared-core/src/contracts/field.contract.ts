@@ -10,7 +10,7 @@
 
 export type HandlingUnitStatus = 'Prepared' | 'Dispatched' | 'Received' | 'Partial';
 
-export type DeliveryFieldStatus = 'Planned' | 'Prepared' | 'Dispatched' | 'Delivered' | 'Partial';
+export type DeliveryFieldStatus = 'Draft' | 'Planned' | 'Prepared' | 'Dispatched' | 'Delivered' | 'Partial';
 
 export type EvidenceStatus = 'Pending' | 'Uploaded' | 'Confirmed' | 'Failed';
 
@@ -21,6 +21,7 @@ export type PwaSyncState =
   | 'Sending'
   | 'AcceptedByServer'
   | 'Conflict'
+  | 'RequiresReview'
   | 'EvidencePending'
   | 'Complete';
 
@@ -151,6 +152,36 @@ export interface DeliveryListResponse {
 }
 
 // ==========================================
+// Spec 004 / Issue #121: Delivery Detail
+// ==========================================
+
+export interface DeliveryDetailLineDto {
+  deliveryLineId: string;
+  lotId: string;
+  lotCode: string;
+  sku: string;
+  productName: string;
+  plannedQuantity: number;
+  unit: string;
+}
+
+export interface DeliveryDetailHandlingUnitDto {
+  handlingUnitId: string;
+  code: string;
+  status: string;
+}
+
+export interface DeliveryDetailResponse {
+  deliveryId: string;
+  status: string;
+  version: number;
+  pointName: string;
+  routePlanId: string;
+  lines: DeliveryDetailLineDto[];
+  handlingUnits: DeliveryDetailHandlingUnitDto[];
+}
+
+// ==========================================
 // T4 & T5: Recepción Offline e Idempotente
 // ==========================================
 
@@ -263,4 +294,44 @@ export interface PublicTraceUnitDto {
   status: HandlingUnitStatus;
   productUnits: PublicTraceProductUnit[];
   events: PublicTraceEvent[];
+}
+
+// ==========================================
+// Issue #114 / ESC-23 & ESC-25: Problem Details y Bandeja de Rechazos
+// ==========================================
+
+export const ProblemTypes = {
+  Conflict: 'https://istpetdev.local/errors/conflict',
+  Validation: 'https://istpetdev.local/errors/validation',
+  TokenRevoked: 'https://istpetdev.local/errors/token_revoked',
+  InternalError: 'https://istpetdev.local/errors/internal_error',
+} as const;
+
+export interface RejectedCaptureLineDto {
+  productId: string;
+  productName: string;
+  sku: string;
+  quantityAccepted: number;
+  quantityRejected: number;
+  rejectionReason?: string | null;
+}
+
+export interface RejectedCaptureDto {
+  receiptId: string;
+  deliveryId: string;
+  deliveryCode: string;
+  servicePointId: string;
+  servicePointCode: string;
+  servicePointName: string;
+  driverId: string;
+  driverName: string;
+  receivedAtUtc: string;
+  reason: string;
+  status: string;
+  lines: RejectedCaptureLineDto[];
+}
+
+export interface RejectedCapturesResponse {
+  items: RejectedCaptureDto[];
+  count: number;
 }

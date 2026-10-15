@@ -11,7 +11,8 @@ import {
   RouteSuggestionOptionDto,
   RouteCandidateStop,
   ServicePoint,
-  AgentRunViewDto
+  AgentRunViewDto,
+  RejectedCaptureDto
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 
@@ -80,8 +81,32 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
         }
       </div>
 
-      <!-- Banner de retroalimentación -->
-      @if (feedbackMessage()) {
+      <!-- Selector de Pestañas: Rutas / Bandeja de Rechazos -->
+      <div class="flex items-center gap-6 border-b border-slate-200">
+        <button
+          type="button"
+          (click)="activeTab.set('rutas')"
+          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+          [ngClass]="activeTab() === 'rutas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <span>Rutas Planificadas</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">{{ routePlans().length }}</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="activeTab.set('rechazos'); loadRejectedCaptures()"
+          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+          [ngClass]="activeTab() === 'rechazos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <span>Bandeja de Capturas Rechazadas</span>
+          @if (rejectedCaptures().length > 0) {
+            <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold font-mono">{{ rejectedCaptures().length }}</span>
+          }
+        </button>
+      </div>
+
+      @if (activeTab() === 'rutas') {
+        <!-- Banner de retroalimentación -->
+        @if (feedbackMessage()) {
         <div 
           class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
           [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
@@ -318,6 +343,160 @@ import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
               </div>
             }
           </div>
+        </div>
+      }
+      } <!-- Fin pestaña rutas -->
+
+      <!-- ======================================================== -->
+      <!-- BANDEJA DE CAPTURAS RECHAZADAS POR PUNTO (ESC-23 / ESC-25) -->
+      <!-- ======================================================== -->
+      @if (activeTab() === 'rechazos') {
+        <div class="space-y-6">
+          <!-- Filtros y Resumen -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <label class="text-xs font-bold text-slate-700">Filtrar por Punto de Servicio:</label>
+              <select
+                [ngModel]="selectedServicePointFilter()"
+                (ngModelChange)="onServicePointFilterChange($event)"
+                class="text-xs p-2 border border-slate-300 rounded-lg bg-white min-w-[220px]">
+                <option value="">Todos los puntos (General)</option>
+                @for (pt of availableLocations(); track pt.id) {
+                  <option [value]="pt.id">{{ pt.name }} ({{ pt.code }})</option>
+                }
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                (click)="loadRejectedCaptures()"
+                [disabled]="rejectedLoading()"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50">
+                @if (rejectedLoading()) {
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-slate-600 border-t-transparent rounded-full"></span>
+                }
+                <span>↻ Actualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Métricas Rápidas -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Total Capturas Aisladas</span>
+              <p class="text-2xl font-bold text-rose-600 mt-1 font-mono">{{ rejectedCaptures().length }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Capturas en «Requiere Revisión»</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Puntos con Incidencias</span>
+              <p class="text-2xl font-bold text-amber-600 mt-1 font-mono">{{ uniqueRejectedPointsCount() }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Puntos de entrega afectados</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Unidades Rechazadas</span>
+              <p class="text-2xl font-bold text-slate-800 mt-1 font-mono">{{ totalRejectedUnitsCount() }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Discrepancias o daños de stock</p>
+            </div>
+          </div>
+
+          <!-- Estado Cargando -->
+          @if (rejectedLoading()) {
+            <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
+              Consultando capturas rechazadas por punto...
+            </div>
+          }
+
+          <!-- Estado Vacío -->
+          @if (!rejectedLoading() && rejectedCaptures().length === 0) {
+            <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-2">
+              <div class="text-3xl text-emerald-600">✓</div>
+              <p class="text-slate-800 font-bold text-sm">Sin capturas rechazadas pendientes</p>
+              <p class="text-slate-500 text-xs">
+                No hay elementos en outbox con estado «Requiere Revisión» para los filtros seleccionados.
+                Todas las entregas y sincronizaciones de campo se encuentran operativas.
+              </p>
+            </div>
+          }
+
+          <!-- Lista de Capturas Rechazadas -->
+          @if (!rejectedLoading() && rejectedCaptures().length > 0) {
+            <div class="space-y-4">
+              @for (capture of rejectedCaptures(); track capture.receiptId) {
+                <div class="bg-white border border-rose-200 rounded-xl p-5 shadow-xs space-y-4">
+                  <!-- Cabecera de la captura -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900 text-sm">{{ capture.servicePointName }}</span>
+                        <span class="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                          {{ capture.servicePointCode }}
+                        </span>
+                      </div>
+                      <p class="text-xs text-slate-500 mt-0.5 font-mono">
+                        Entrega: <strong class="text-slate-800">{{ capture.deliveryCode }}</strong> · 
+                        Conductor: <strong class="text-slate-800">{{ capture.driverName }}</strong> · 
+                        Fecha: {{ capture.receivedAtUtc | date:'medium' }}
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        ⚠ Requiere Revisión
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Motivo de rechazo de negocio -->
+                  <div class="bg-rose-50/70 border border-rose-200 rounded-lg p-3 text-xs space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold text-rose-900">
+                      <span>Causa de Aislamiento:</span>
+                      <span class="font-mono text-[11px] bg-rose-100 px-1.5 py-0.5 rounded">{{ capture.reason }}</span>
+                    </div>
+                    <p class="text-rose-700 text-[11px]">
+                      Aislada del flujo normal (ESC-23 / ESC-25) para evitar reintentos continuos y permitir que el resto de la cola continúe sincronizando.
+                    </p>
+                  </div>
+
+                  <!-- Detalle de líneas -->
+                  <div>
+                    <h5 class="text-[11px] font-bold text-slate-600 uppercase mb-2">Detalle de Productos y Líneas Rechazadas</h5>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                      <table class="w-full text-left text-xs min-w-[500px]">
+                        <thead class="bg-slate-50 text-[11px] text-slate-500 uppercase border-b border-slate-200">
+                          <tr>
+                            <th class="p-2.5">Producto / SKU</th>
+                            <th class="p-2.5 text-center">Cant. Aceptada</th>
+                            <th class="p-2.5 text-center">Cant. Rechazada</th>
+                            <th class="p-2.5">Motivo Específico</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                          @for (line of capture.lines; track line.productId) {
+                            <tr>
+                              <td class="p-2.5 font-medium text-slate-800">
+                                {{ line.productName }}
+                                <span class="block text-[10px] text-slate-400 font-mono">{{ line.sku }}</span>
+                              </td>
+                              <td class="p-2.5 text-center font-mono font-semibold text-emerald-700">
+                                {{ line.quantityAccepted }} u
+                              </td>
+                              <td class="p-2.5 text-center font-mono font-bold text-rose-600">
+                                {{ line.quantityRejected }} u
+                              </td>
+                              <td class="p-2.5 text-slate-600 text-[11px]">
+                                {{ line.rejectionReason || 'Discrepancia en recepción física' }}
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
     </div>
@@ -690,10 +869,46 @@ export class RutasPage implements OnInit {
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
 
+  // Pestaña Activa: Rutas o Bandeja de Rechazos
+  readonly activeTab = signal<'rutas' | 'rechazos'>('rutas');
+
+  // Estado de la Bandeja de Capturas Rechazadas
+  readonly rejectedCaptures = signal<RejectedCaptureDto[]>([]);
+  readonly rejectedLoading = signal(false);
+  readonly selectedServicePointFilter = signal<string>('');
+  readonly uniqueRejectedPointsCount = computed(() => new Set(this.rejectedCaptures().map(c => c.servicePointId)).size);
+  readonly totalRejectedUnitsCount = computed(() =>
+    this.rejectedCaptures().reduce(
+      (acc: number, c) => acc + c.lines.reduce((lacc: number, l) => lacc + (l.quantityRejected || 0), 0),
+      0
+    )
+  );
+
   ngOnInit(): void {
     this.loadPlans();
     this.loadPendingOrders();
     this.loadCatalogData();
+    this.loadRejectedCaptures();
+  }
+
+  loadRejectedCaptures(): void {
+    this.rejectedLoading.set(true);
+    const filterPoint = this.selectedServicePointFilter() || undefined;
+    this.apiService.getRejectedCaptures(filterPoint).subscribe({
+      next: (res) => {
+        this.rejectedLoading.set(false);
+        this.rejectedCaptures.set(res?.items || []);
+      },
+      error: () => {
+        this.rejectedLoading.set(false);
+        this.rejectedCaptures.set([]);
+      }
+    });
+  }
+
+  onServicePointFilterChange(pointId: string): void {
+    this.selectedServicePointFilter.set(pointId);
+    this.loadRejectedCaptures();
   }
 
   loadPlans(): void {

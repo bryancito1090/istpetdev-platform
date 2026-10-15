@@ -85,7 +85,7 @@ Acordadas en la sesión de definición del 12-oct-2026; el porqué de cada una e
 | 005 | [Panel web y simulador comparativo de 90 días con KPIs](005-panel-simulador/spec.md) | Impacto, presentación, demo | 001–004, 013 parcial (H1–H3, solo el panel) | en curso (PR #59: ruteo por pedidos, bodegas, rebalanceo y mapas Leaflet integrados; simulación 90d en curso) |
 | 006 | [Validación, pitch y paquete de entrega](006-validacion-pitch-entrega/spec.md) (no es código) | Comprensión, presentación, equipo, demo e impacto trazables | 001–005 | borrador (cuatro archivos redactados; Deciders, revisión, ensayos y entrega pendientes) |
 | 007 | [Inventario cotidiano y conciliación para un piloto](007-inventario-cotidiano-conciliacion/spec.md) | Operación diaria, saldos auditables y riesgo con consumos reales | 001, 002, 004; pase técnico | borrador (spec, plan, tareas y E2E redactados; reglas del piloto, aprobación y ejecución pendientes) |
-| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) ([plan](013-login-y-cuentas/plan.md), [tareas](013-login-y-cuentas/task.md), [E2E](013-login-y-cuentas/test-e2e.md)) | Viabilidad, demo (desbloquea 004/005) | 001 | en curso (implementado en develop vía PR #56 y #65; E2E-00 verde; validación E2E en #55 e infra T10 en #43 pendientes) |
+| 013 | [Login real y gestión de cuentas por Gerencia](013-login-y-cuentas/spec.md) ([plan](013-login-y-cuentas/plan.md), [tareas](013-login-y-cuentas/task.md), [E2E](013-login-y-cuentas/test-e2e.md)) | Viabilidad, demo (desbloquea 004/005) | 001 | cerrado (PR #56, #65, #100 y #104; E2E principales pasados el 15-oct; E2E restantes en #107, #108 y #55) |
 
 ```mermaid
 flowchart LR

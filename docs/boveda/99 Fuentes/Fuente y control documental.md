@@ -526,6 +526,22 @@ ni `home.page.ts`.
 
 Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
 
+## Reconciliación oficial de cuentas por rol y paridad de ambientes #55 y cierre #107 — 15 de octubre de 2026
+
+Fuente: resolución y cierre formal de [issue #55](https://github.com/bryancito1090/istpetdev-platform/issues/55) e [issue #107](https://github.com/bryancito1090/istpetdev-platform/issues/107) (Spec 013). Se aprovisionaron y reconciliaron las 6 cuentas oficiales definitivas del equipo por rol mediante la CLI `--provision-accounts` con CSV privado fuera de Git, validando idempotencia con código 0. Se aplicaron contraseñas corporativas permanentes (distribuidas por canal privado) en AWS Cognito User Pool (`us-east-1_4Y2j5DINp`) cumpliendo la política de 14 caracteres de `identity.tf`. Se ejecutó safe deactivation de cuentas de prueba previas (`IsActive = false` en BD y `Enabled = false` en Cognito) para proteger la integridad referencial de auditoría. Mediante túnel SSM administrativo en puerto 15433 hacia `istpetdev-rds-dev`, se replicó la misma matriz en la base de producción Amazon RDS (`istpetdev_integration`), certificando paridad absoluta de entornos con `/health/ready` respondiendo `HTTP 200 Healthy` en ~36ms. Se validaron en vivo los escenarios E2E-07 (recuperación de clave con código en Gmail), E2E-04 (segregación Web vs PWA) y E2E-10 (acceso a Tablero Directivo y Despacho Móvil). Se actualizaron [[Identidad OIDC y sesiones]], [[Runbook de DevOps y base de datos para la demo]] y [[Evidencias y ensayos de base de datos y despliegue]].
+
+Verificación documental de esta actualización: **86 notas Markdown**, **921 enlaces internos resueltos**, **0 errores**.
+
+## Respaldo y restauración verificables (#15) — 15 de octubre de 2026
+
+Fuente: auditoría de `develop` (`8f36d08`) y ensayo real con `scripts/base_datos/test-bootstrap.py`
+(pasó el 15-oct 16:47 UTC, 76 s, PostGIS 16 desechable con TLS). Se reescribe el §4 de
+[[Runbook de DevOps y base de datos para la demo]] y se actualiza B-32 en [[Backlog]]. Sin acceso
+a AWS desde la sesión: el volcado y el `restore-check` contra RDS y el snapshot `pre-democore`
+quedan registrados como pendientes, no como realizados.
+
+Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
+
 ## Validación E2E de gestión de cuentas (#108) — 15 de octubre de 2026
 
 Fuente: Issue #108 asignado a Bryan Baño; guía `docs/specs/013-login-y-cuentas/test-e2e.md`
@@ -543,4 +559,5 @@ comprobó «solo sus entregas») y sin prueba de caducidad de invitación de má
 un día; la cuenta de prueba quedó desactivada y Bryan cambiará la contraseña de
 Gerencia al cerrar la campaña. Sin cambios de código.
 
-Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
+Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
+

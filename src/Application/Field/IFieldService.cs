@@ -38,6 +38,10 @@ public interface IFieldService
         string? cursor,
         CancellationToken ct = default);
 
+    Task<DeliveryDetailResponse> GetDeliveryDetailAsync(
+        Guid deliveryId,
+        CancellationToken ct = default);
+
     Task<PublicTraceUnitDto> GetPublicTraceAsync(
         Guid unitId,
         string? traceToken,
@@ -69,4 +73,7 @@ public interface IFieldService
         EvidenceConfirmRequest request,
         Guid actorAccountId,
         CancellationToken ct = default);
+
+    Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default);
+    Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default);
 }

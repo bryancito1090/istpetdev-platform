@@ -3079,7 +3079,7 @@ En la suite de mobile, el runner Angular seguía advirtiendo sobre `vi.mock` aun
 - Consumes: pool `aws_cognito_user_pool.dev`, clientes `aws_cognito_user_pool_client.human`; host de la app `i-0e0a979f8c0885a4f` (ID en [Perfil A Reforzado](../../boveda/03%20Arquitectura/Perfil%20A%20Reforzado%20-%20Despliegue%20Stateless%20y%20Amazon%20RDS.md)).
 - Produces: callbacks y cierres exactos de Global Constraints; branding FR-20; política `istpetdev-app-cognito-admin-dev` (NFR-02) en el rol del host de la app; IMDSv2 con hop limit 2 en el host de la app.
 
-- [ ] **Step 1: Leer el estado actual del host de la app (sin cambiar nada)**
+- [x] **Step 1: Leer el estado actual del host de la app (sin cambiar nada)**
 
 Run:
 
@@ -3094,7 +3094,7 @@ Expected: una sola instancia con `Nombre` `istpetdev-prod-host`. Anotar en el PR
 - Si `Perfil` tiene un ARN → **rama B** en Step 4 (se reutiliza ese rol; no se asocia otro perfil).
 - Si el ID no existe o el nombre no coincide → **detenerse** y confirmar el host con Jorge y Joseph antes de seguir.
 
-- [ ] **Step 2: Callbacks y cierres HTTPS (#14)**
+- [x] **Step 2: Callbacks y cierres HTTPS (#14)**
 
 En `variables.tf` añadir:
 
@@ -3135,7 +3135,7 @@ y en `aws_cognito_user_pool_client.human` reemplazar `for_each`, `callback_urls`
   logout_urls                          = each.value.logout_urls
 ```
 
-- [ ] **Step 3: Página de Cognito con la marca (FR-20)**
+- [x] **Step 3: Página de Cognito con la marca (FR-20)**
 
 `infra/terraform/environments/dev/cognito/hosted-ui.css` (UI clásica: solo clases `-customizable`; colores de [Sistema de diseno y colores](../../boveda/03%20Arquitectura/Sistema%20de%20diseno%20y%20colores.md)):
 
@@ -3166,7 +3166,7 @@ resource "aws_cognito_user_pool_ui_customization" "hosted_ui" {
 
 La UI clásica no carga tipografías web: la tipografía institucional queda como limitación declarada en E2E-09.
 
-- [ ] **Step 4: Permiso mínimo de la API sobre el pool (NFR-02)**
+- [x] **Step 4: Permiso mínimo de la API sobre el pool (NFR-02)**
 
 Crear `infra/terraform/environments/dev/app_host_iam.tf`. Solo crea recursos nuevos; no referencia `module.ec2_access`.
 
@@ -3227,7 +3227,7 @@ output "app_host_instance_profile" {
 - **Rama A** (sin perfil): no definir `app_host_existing_role_name`.
 - **Rama B** (con perfil): obtener el rol con `aws iam get-instance-profile --instance-profile-name <nombre del ARN> --query 'InstanceProfile.Roles[0].RoleName'` y pasar `-var app_host_existing_role_name=<rol>` en Step 5.
 
-- [ ] **Step 5: Plan revisado y aplicación con `-target`**
+- [x] **Step 5: Plan revisado y aplicación con `-target`**
 
 Run (rama A; en rama B quitar los dos primeros `-target` de IAM y añadir `-var app_host_existing_role_name=<rol>`):
 
@@ -3244,7 +3244,7 @@ terraform -chdir=infra/terraform/environments/dev plan \
 
 Expected: `validate` correcto; el plan **actualiza en sitio** los dos clientes (solo URLs) y **crea** la personalización y los recursos IAM. **Ningún** recurso de `module.ec2_access`, ningún `destroy` ni `replace`. Si aparece cualquier otro recurso, detenerse y revisar con Joseph. Pegar el resumen del plan en el PR y que otra persona lo apruebe. Con el plan aprobado: `terraform -chdir=infra/terraform/environments/dev apply 013.tfplan`.
 
-- [ ] **Step 6: Asociar el perfil y subir el hop limit en el host de la app (CLI)**
+- [x] **Step 6: Asociar el perfil y subir el hop limit en el host de la app (CLI)**
 
 Run:
 
@@ -3259,7 +3259,7 @@ aws ec2 modify-instance-metadata-options --instance-id "$APP_HOST" --http-put-re
 
 Expected: `associate-iam-instance-profile` devuelve `State: associating`; `modify-instance-metadata-options` devuelve `HttpPutResponseHopLimit: 2` (`State: pending` → `applied`). No requiere reiniciar la instancia ni los contenedores.
 
-- [ ] **Step 7: Verificar en AWS y registrar el cambio fuera de Terraform**
+- [x] **Step 7: Verificar en AWS y registrar el cambio fuera de Terraform**
 
 Run:
 
@@ -3278,7 +3278,7 @@ Expected: URLs idénticas a Global Constraints; el host de la app con perfil y h
 
 Registrar en el [Runbook de DevOps y base de datos](../../boveda/03%20Arquitectura/Runbook%20de%20DevOps%20y%20base%20de%20datos%20para%20la%20demo.md) §6 una fila «013 — Perfil IAM y hop limit del host de la app (cambio por CLI, fuera de Terraform)» con fecha, rama A/B y quién lo aplicó.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add infra/terraform/environments/dev/identity.tf infra/terraform/environments/dev/variables.tf infra/terraform/environments/dev/app_host_iam.tf infra/terraform/environments/dev/cognito "docs/boveda/03 Arquitectura/Runbook de DevOps y base de datos para la demo.md"
@@ -4258,15 +4258,24 @@ git commit -m "feat(web): pantalla de usuarios para gerencia (spec 013 h4)"
 Run: `npm run check && npm run test:frontend && for c in Unit Integration E2E; do dotnet test tests/IstpetDev.Tests --filter "Category=$c" || break; done`
 Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `docs/specs/013-login-y-cuentas/evidencia/e2e-00-resultados.txt`.
 
-- [ ] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55). **Avance 2026-10-15 (issue #108): E2E-11 a E2E-13 ejecutados en producción contra `d739f43` y registrados en `test-e2e.md`; E2E-01 a E2E-10 siguen pendientes.**
+- [x] **Step 2: Ejecutar `test-e2e.md`** — escenarios obligatorios E2E-01 a E2E-08 (y E2E-09 a E2E-13 si H4 entra), con evidencia en `docs/specs/013-login-y-cuentas/evidencia/` sin correos, tokens ni códigos MFA (Fase B, issue #55). **Avance 2026-10-15 (issue #108): E2E-11 a E2E-13 ejecutados en producción contra `d739f43` y registrados en `test-e2e.md`; quedan pendientes E2E-04, E2E-07, E2E-08 y E2E-10.**
 
-- [ ] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
+
+- [x] **Step 3: Actualizar el spec** (fase A hecha; falta el estado `cerrado`): FR-18 y H4-6 pospuestos; H4 reflejada como implementada antes del congelamiento (PR #65); decisión ADR-25 vs ADR-24 registrada con opción (a); PA-04 resuelta (#55); sección «Estado de implementación» añadida; riesgo abierto de recarga offline documentado. Estado `cerrado` pendiente de validación E2E en Fase B.
 
 - [x] **Step 4: README e índice** — fila 013 de `docs/specs/README.md` actualizada con el estado real y enlaces a `plan.md`, `task.md`, `test-e2e.md`; fila D3 de login Cognito actualizada.
 
-- [ ] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
+- [x] **Step 5: Bóveda (G8 — fase A hecha)** — en «Registro de trabajo previo y del evento», registrados los hitos del 14-oct con PRs #56 y #65; línea pendiente dejada para cuentas creadas por rol y fecha (se llena en Fase B).
 
-- [ ] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
+- [x] **Step 6: Commit y PR** (se ejecuta al completar la Fase B con revisión cruzada de Joseph Baño).
+
+### Cierre (15-oct-2026)
+
+- **T10:** hecha por Jorge en el PR #104 (#43 cerrado). Las casillas se marcaron en el cierre.
+- **Step 2:** cerrado con pendientes asignados. Pasaron E2E-01, 02, 03, 05, 06 y 09; E2E-04, 07 y 10 en #107 (Jorge), E2E-11 a 13 en #108 (Bryan) y E2E-08 en #55 (Alexander y Joseph). Ver el registro en [test-e2e.md](test-e2e.md#registro-de-ejecuciones).
+- **Step 3:** spec en `cerrado`.
+- **Step 5:** registro de cuentas por rol añadido a la bóveda (sin correos).
+- **Step 6:** PR de cierre de `docs/013-cierre-t14`.
 
 ### Desviaciones / estado fase A
 
@@ -4280,7 +4289,7 @@ Expected: todo verde; cero coincidencias del guardián. Evidencia guardada en `d
 - **Pendiente para la Fase B (cierre técnico y validación E2E en vivo):**
   - Configuración y validación de infraestructura (T10, issue #43): callbacks HTTPS de Cognito, marca ISTPET en Hosted UI, políticas IAM y hop limit = 2.
   - Publicación y routing de la PWA bajo `/campo/` (issue #52).
-  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55). E2E-11 a E2E-13 ya ejecutados el 2026-10-15 (issue #108) contra la producción `d739f43`, con evidencia difuminada en `evidencia/`; falta E2E-01 a E2E-10. Salvedades: no hay rutas publicadas a conductores (E2E-11 no pudo comprobar «solo sus entregas») y no se verificó la caducidad de una invitación de más de un día (E2E-13). La cuenta de prueba quedó desactivada y la contraseña de Gerencia se cambiará al cerrar la campaña.
+  - Escenarios manuales E2E-01 a E2E-13 de `test-e2e.md` en entorno HTTPS real con cuentas de demo aprovisionadas (issue #55). E2E-11 a E2E-13 ya ejecutados el 2026-10-15 (issue #108) contra la producción `d739f43`, con evidencia difuminada en `evidencia/`; quedan pendientes E2E-04, E2E-07, E2E-08 y E2E-10. Salvedades: no hay rutas publicadas a conductores (E2E-11 no pudo comprobar «solo sus entregas») y no se verificó la caducidad de una invitación de más de un día (E2E-13). La cuenta de prueba quedó desactivada y la contraseña de Gerencia se cambiará al cerrar la campaña.
   - Llenar el registro de cuentas creadas por rol y fecha en la bóveda (Step 5 definitivo).
   - Step 6: Commit final y apertura de PR hacia `develop` marcando el spec como `cerrado` con aprobación del equipo.
 

@@ -4,7 +4,9 @@
 >
 > **Evidencia sin datos sensibles:** ninguna captura o archivo guardado muestra correos personales, tokens, códigos TOTP, contraseñas temporales ni el contenido de la invitación. Recortar o difuminar antes de guardar en `docs/specs/013-login-y-cuentas/evidencia/`.
 >
-> Ningún escenario se ha ejecutado todavía.
+> **Cierre (15-oct-2026):** pasaron E2E-00, E2E-01, E2E-02, E2E-03, E2E-05, E2E-06 y E2E-09 (ver «Registro de ejecuciones»). El spec se cerró con los escenarios restantes asignados: E2E-04, E2E-07 y E2E-10 en [#107](https://github.com/bryancito1090/istpetdev-platform/issues/107); E2E-11 a E2E-13 en [#108](https://github.com/bryancito1090/istpetdev-platform/issues/108); E2E-08 queda con Alexander (Conductor) y Joseph (Receptor) según [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55).
+>
+> **Cuentas de la demo:** Jorge fijó contraseñas definitivas con `aws cognito-idp admin-set-user-password --permanent` después de `--provision-accounts`. Por eso las cuentas quedan en `CONFIRMED` (no `FORCE_CHANGE_PASSWORD`) y no dependen del correo de invitación.
 
 ## Preparación del entorno
 
@@ -73,6 +75,7 @@ Ruta sugerida: `~/istpetdev-cuentas-demo.csv` con `chmod 600`.
 | E2E-11 | Gerencia crea un Conductor desde «Usuarios»; primer ingreso; ve solo sus entregas en la PWA | H4-1, FR-12, FR-13, FR-19, CE-06 | manual | P2 (sí si H4 entra) |
 | E2E-12 | Gerencia desactiva al Conductor: 403 inmediato, sesión de Cognito revocada; reactivación | H4-2, FR-15, NFR-01, CE-05 | manual | P2 (sí si H4 entra) |
 | E2E-13 | Reglas de Gerencia: propia cuenta, correo repetido, reenvío de invitación vencida | H4-3, H4-4, H4-5, FR-16, FR-17 | manual | P2 (sí si H4 entra) |
+| E2E-14 | Recepción real del Receptor con QR del bulto; la entrega queda Delivered en la web | Spec 014, ADR-27 | manual | sí |
 
 H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.md#contradicciones-detectadas-al-planificar)).
 
@@ -295,10 +298,42 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 
 **Evidencia a guardar:** capturas de los mensajes.
 
+### E2E-14 — Recepción real del Receptor con QR del bulto (spec 014)
+
+**Objetivo:** Validar que el Receptor hospitalario puede autenticarse con su propia cuenta, escanear el QR real de un bulto preparado y despachado por Bodega, visualizar los datos reales de producto/lote/cantidad y confirmar la recepción en línea contra la API real (`POST /api/v1/receiver/handling-units/{unitId}/receipt`), dejando la entrega como `Delivered` en la web.
+
+**Pasos:**
+
+1. Iniciar sesión en la plataforma con la cuenta de Bodega (o Gerencia) y preparar un bulto para una entrega publicada (`POST /api/v1/deliveries/{id}/handling-units`) y despacharlo (`POST /api/v1/deliveries/{id}/dispatch`).
+2. Abrir o copiar la URL del QR de la unidad emitida (`https://istpetdev.doicela.dev/public-trace/{unitId}#t={token}`).
+3. Iniciar sesión en la PWA con la cuenta de Receptor hospitalario (`/home`).
+4. En la tarjeta del Receptor, ingresar o escanear la URL/código del QR del bulto.
+5. Comprobar que la PWA consulte `GET /api/v1/receiver/handling-units/{unitId}` con el header `X-Trace-Token`, cargando código de bulto, destino y líneas de producto, lote y cantidad reales (sin aviso de datos simulados).
+6. Seleccionar «Todo conforme» y pulsar «Confirmar recepción».
+7. Verificar en la consola web (`/rutas` o `/entregas`) que la entrega cambie a estado «Entregada» (`Delivered`).
+
+**Resultado esperado:**
+- La PWA muestra «Recepción registrada: entrega completa.».
+- La API procesa la recepción autorizada con el token del QR sin exigir conductor asignado ni usar outbox offline.
+- En la web, la entrega pasa a `Delivered` y el bulto a `Received`.
+- Un intento repetido con el mismo bulto ya recibido devuelve error 409 y muestra «Este bulto ya fue recibido».
+
+**Evidencia a guardar:** Captura de la tarjeta del Receptor con el bulto real; captura de confirmación exitosa; captura de la consola web con la entrega en `Delivered`.
+
 ## Registro de ejecuciones
 
 | Fecha | Commit | Escenario | Resultado | Evidencia | Quién |
 |---|---|---|---|---|---|
+| 2026-10-14 | `29572c3` | E2E-00 | Pasa | [e2e-00-resultados.txt](evidencia/e2e-00-resultados.txt) | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-01 | Pasa (6 cuentas por rol; segunda ejecución sin duplicados) | Salida en poder de Jorge; CSV fuera del repositorio (G1) | Jorge |
+| 2026-10-15 | `2b8793f` | E2E-02 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Equipo |
+| 2026-10-15 | `2b8793f` | E2E-03 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Equipo |
+| 2026-10-15 | `2b8793f` | E2E-05 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-06 | Pasa | Reportado en la sesión de cierre; sin captura en el repositorio | Joseph |
+| 2026-10-15 | `2b8793f` | E2E-09 | Pasa (banner `#00A7C4`, botón `#EA601F`; sin logo) | [escritorio](evidencia/e2e-09-marca-escritorio.png), [teléfono](evidencia/e2e-09-marca-telefono.png) (correo tapado) | Joseph |
+| — | — | E2E-04, E2E-07, E2E-10 | Pendiente | [#107](https://github.com/bryancito1090/istpetdev-platform/issues/107) | Jorge |
+| — | — | E2E-08 | Pendiente | [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55) | Alexander y Joseph |
 | 2026-10-15 | `d739f43` (producción) | E2E-11 | PASA con salvedad: alta desde «Usuarios» («Invitación pendiente» → correo con contraseña temporal → primer ingreso y cambio de contraseña en `/campo/` → «Activa»). El Conductor ve 0 entregas porque no hay rutas publicadas a conductores, así que no pudo comprobarse «solo sus entregas». | `evidencia/e2e-11-*.png` | Bryan (issue #108) |
 | 2026-10-15 | `d739f43` (producción) | E2E-12 | PASA: con la sesión del Conductor abierta, `/api/v1/me` responde 403 de inmediato tras «Desactivar» (sin esperar los 15 min del token); Cognito devuelve `Enabled=false`; el nuevo ingreso se rechaza («User is disabled.»); «Reactivar» permite reingresar al Conductor; la cuenta de prueba queda desactivada al cierre. | `evidencia/e2e-12-*.png`, `evidencia/e2e-12-cognito-enabled.txt` | Bryan (issue #108) |
 | 2026-10-15 | `d739f43` (producción) | E2E-13 | PASA parcial: la fila propia no ofrece «Desactivar» ni selector de rol; crear el correo repetido responde «Ese correo ya tiene una cuenta.» sin alterar la lista; «Reenviar invitación» sobre una invitación pendiente reciente envía una contraseña temporal nueva (no se verificó la caducidad de una invitación con más de un día). | `evidencia/e2e-13-*.png` | Bryan (issue #108) |
+

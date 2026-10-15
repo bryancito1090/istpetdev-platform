@@ -7,6 +7,9 @@ on:
       - "src/**"
       - "scripts/db/**"
       - "scripts/agent/**"
+      - "scripts/base_datos/**"
+      - "scripts/backup/**"
+      - "scripts/ops/dev.py"
       - "automation/n8n/**"
       - "infra/compose/docker-compose*.yml"
       - ".env.example"
@@ -31,6 +34,9 @@ on:
       - "src/**"
       - "scripts/db/**"
       - "scripts/agent/**"
+      - "scripts/base_datos/**"
+      - "scripts/backup/**"
+      - "scripts/ops/dev.py"
       - "automation/n8n/**"
       - "infra/compose/docker-compose*.yml"
       - ".env.example"
@@ -99,6 +105,29 @@ jobs:
           name: spec001-ci-tests-${{ matrix.slug }}
           path: artifacts/spec001/*.trx
 
+  # Ensayo de respaldo y restauración (#15): PostGIS desechable con TLS, migración por el camino
+  # de producción (API --migrate), pg_dump con cliente 16, restauración aislada y hash por tabla.
+  db-backup-rehearsal:
+    name: "Ensayo de respaldo y restauración"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout del código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar .NET SDK 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: "Compilar la API en Debug (la usa el migrador)"
+        run: dotnet build src/Api/IstpetDev.Api.csproj -c Debug
+
+      - name: "Cliente psql disponible"
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+
+      - name: "Bootstrap, migración, respaldo y restauración verificada"
+        run: python3 scripts/base_datos/test-bootstrap.py
+
   # Conserva el nombre del check histórico y valida que todas las categorías corrieron y pasaron.
   backend-qa:
     name: "QA Backend (.NET 8)"
@@ -127,6 +156,10 @@ jobs:
 
       - name: "Validar categorías Unit, Integration y E2E"
         run: python scripts/db/check-test-results.py artifacts/spec001
+
+      # El rollback no revierte la base: una migración nueva debe ser aditiva (Runbook §8).
+      - name: "Verificar que las migraciones nuevas son aditivas"
+        run: python3 -I scripts/db/check-additive-migrations.py
 
       - name: "Verificar generación n8n, aceptación y limpieza sin credenciales"
         run: |

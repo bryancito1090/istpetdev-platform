@@ -8,6 +8,7 @@ import {
   DispatchResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
+  DeliveryDetailResponse,
   CreateReceiptRequest,
   ReceiptResponse,
   EvidenceUploadRequest,
@@ -18,7 +19,7 @@ import {
   DemoAdvanceResponse,
   PublicTraceUnitDto
 } from '@istpetdev/shared-core';
-import { IFieldApi } from './field-api.interface';
+import { IFieldApi, ReceiverUnit } from './field-api.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -48,6 +49,10 @@ export class HttpFieldApiService implements IFieldApi {
     if (limit) params = params.set('limit', limit.toString());
 
     return this.http.get<DeliveryListResponse>(`${this.baseUrl}/api/v1/deliveries`, { params });
+  }
+
+  getDelivery(deliveryId: string): Observable<DeliveryDetailResponse> {
+    return this.http.get<DeliveryDetailResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}`);
   }
 
   revokePublicToken(unitId: string): Observable<void> {
@@ -93,4 +98,20 @@ export class HttpFieldApiService implements IFieldApi {
     });
     return this.http.get<PublicTraceUnitDto>(`${this.baseUrl}/api/v1/public/trace/${unitId}`, { headers });
   }
+
+  getReceiverUnit(unitId: string, token: string): Observable<ReceiverUnit> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token
+    });
+    return this.http.get<ReceiverUnit>(`${this.baseUrl}/api/v1/receiver/handling-units/${unitId}`, { headers });
+  }
+
+  receiveAsReceiver(unitId: string, token: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token,
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<ReceiptResponse>(`${this.baseUrl}/api/v1/receiver/handling-units/${unitId}/receipt`, req, { headers });
+  }
 }
+
