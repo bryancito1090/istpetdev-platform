@@ -1034,6 +1034,9 @@ public sealed class FieldService : IFieldService
 
         foreach (var stop in pendingStops)
         {
+            // Advance simulates progress on the operational date of the route.
+            // Server receipt/custody timestamps still record the real execution.
+            var occurredAt = stop.PlannedArrivalUtc ?? DateTime.UtcNow;
             var deliveries = await _db.Deliveries
                 .Where(d => d.RouteStopId == stop.Id && d.OrganizationId == DemoOrganization.Id)
                 .ToListAsync(ct);
@@ -1066,7 +1069,7 @@ public sealed class FieldService : IFieldService
                 // 2. Despachar si no está despachada
                 if (del.Status != "Dispatched" && del.Status != "Delivered")
                 {
-                    var dispReq = new DispatchRequest(Guid.NewGuid(), new[] { huId }, DateTime.UtcNow);
+                    var dispReq = new DispatchRequest(Guid.NewGuid(), new[] { huId }, occurredAt);
                     await DispatchAsync(del.Id, dispReq, actorAccountId, $"adv-{Guid.NewGuid()}", ct);
                 }
 
@@ -1074,7 +1077,7 @@ public sealed class FieldService : IFieldService
                 var receiptReq = new CreateReceiptRequest(
                     Guid.NewGuid(),
                     del.Version,
-                    DateTime.UtcNow,
+                    occurredAt,
                     delLines.Select(dl => new ReceiptLineRequest(dl.Id, dl.LotId, dl.PlannedQuantity, 0m, "U")).ToList());
 
                 var receiptResp = await CreateReceiptAsync(del.Id, receiptReq, actorAccountId, $"rec-{Guid.NewGuid()}", ct);
@@ -1083,7 +1086,7 @@ public sealed class FieldService : IFieldService
                     stop.SequenceNumber,
                     del.Id,
                     receiptResp.ReceiptId,
-                    DateTime.UtcNow));
+                    occurredAt));
             }
         }
 

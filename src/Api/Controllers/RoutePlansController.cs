@@ -221,6 +221,7 @@ public sealed class RoutePlansController(
                     {
                         sequence = s.Sequence,
                         pointCode = s.PointCode,
+                        isConsolidation = s.IsConsolidation,
                         loads = s.Loads
                     }),
                     legs = r.Legs

@@ -240,6 +240,30 @@ export interface AgentDecisionDto {
   createdAtUtc: string;
 }
 
+export interface AgentDecisionViewDto {
+  agentDecisionId: string;
+  vehicleCode: string;
+  outcome: string;
+  explanation: string;
+  driverMessage: string;
+  source: 'Llm' | 'Template';
+  mismatchReason?: string | null;
+  facts: { code: string; subject: string; value: number; unit: string }[];
+}
+
+export interface AgentRunViewDto {
+  runId: string;
+  kind: 'Watch' | 'Incident';
+  status: 'Running' | 'Completed' | 'Fallback' | 'Failed';
+  latencyMs: number;
+  model?: string;
+  promptVersion?: string;
+  n8nExecutionId?: string;
+  fallbackReason?: string;
+  toolCalls: { method: string; path: string; status: number; milliseconds: number; atUtc: string; event?: string | null }[];
+  decisions: AgentDecisionViewDto[];
+}
+
 export interface AutonomyModeDto {
   mode: 'AutoWithLimits' | 'ProposeOnly';
 }
@@ -545,6 +569,14 @@ export class ApiService {
 
   rejectAgentDecision(id: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/agent-decisions/${encodeURIComponent(id)}/reject`, {});
+  }
+
+  startAgentRun(kind: 'Watch' | 'Incident' = 'Watch', incidentId?: string): Observable<AgentRunViewDto> {
+    return this.http.post<AgentRunViewDto>(`${this.baseUrl}/api/v1/agent/runs`, { kind, incidentId });
+  }
+
+  getAgentRun(id: string): Observable<AgentRunViewDto> {
+    return this.http.get<AgentRunViewDto>(`${this.baseUrl}/api/v1/agent/runs/${encodeURIComponent(id)}`);
   }
 
   // ==========================================

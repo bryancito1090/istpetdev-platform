@@ -14,16 +14,34 @@ public static class RouteImprover
         decimal defaultCostPerKm,
         IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
         IncidentEffect? incidentEffect = null,
-        ReplanMode replanMode = ReplanMode.Strict)
+        ReplanMode replanMode = ReplanMode.Strict,
+        GeoPoint? returnDepot = null,
+        DateTime? workdayEndUtc = null)
     {
-        if (stops.Count < 3) return stops;
+        if (stops.Count < 2) return stops;
 
         var currentStops = new List<StopCandidate>(stops);
         var currentEvaluation = RouteFeasibility.EvaluateRoute(
             vehicle, depotPos, currentStops, workdayStartUtc, workdayHours,
-            costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode);
+            costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc);
 
-        if (!currentEvaluation.IsFeasible) return stops;
+        // A closure may require relocating a stop before any reversal is
+        // feasible (for three stops, the two cyclic orders are relocations).
+        if (!currentEvaluation.IsFeasible)
+        {
+            for (var from = 0; from < stops.Count && !currentEvaluation.IsFeasible; from++)
+            for (var to = 0; to < stops.Count && !currentEvaluation.IsFeasible; to++)
+            {
+                var repaired = new List<StopCandidate>(stops);
+                var moved = repaired[from];
+                repaired.RemoveAt(from);
+                repaired.Insert(to, moved);
+                var evaluation = RouteFeasibility.EvaluateRoute(vehicle, depotPos, repaired, workdayStartUtc,
+                    workdayHours, costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode,
+                    returnDepot, workdayEndUtc);
+                if (evaluation.IsFeasible) { currentStops = repaired; currentEvaluation = evaluation; }
+            }
+        }
 
         bool improved = true;
         while (improved)
@@ -36,9 +54,9 @@ public static class RouteImprover
                     var newRoute = TwoOptSwap(currentStops, i, k);
                     var eval = RouteFeasibility.EvaluateRoute(
                         vehicle, depotPos, newRoute, workdayStartUtc, workdayHours,
-                        costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode);
+                        costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc);
 
-                    if (eval.IsFeasible && eval.CumulativeCost < currentEvaluation.CumulativeCost)
+                    if (eval.IsFeasible && (!currentEvaluation.IsFeasible || eval.CumulativeCost < currentEvaluation.CumulativeCost))
                     {
                         currentStops = newRoute;
                         currentEvaluation = eval;

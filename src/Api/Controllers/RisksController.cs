@@ -10,18 +10,9 @@ namespace IstpetDev.Api.Controllers;
 [Authorize(Roles = Roles.Any)]
 public sealed class RisksController(IRiskCalculator riskCalculator) : ControllerBase
 {
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTime CachedAtUtc, object Response)> Cache = new();
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(45);
-
     [HttpGet]
     public async Task<IActionResult> GetRisks([FromQuery] string? level = null, [FromQuery] bool refresh = false, CancellationToken ct = default)
     {
-        var cacheKey = level ?? "__ALL__";
-        if (!refresh && Cache.TryGetValue(cacheKey, out var entry) && (DateTime.UtcNow - entry.CachedAtUtc) < CacheTtl)
-        {
-            return Ok(entry.Response);
-        }
-
         var risks = await riskCalculator.CalculateAsync(persistSnapshots: false, ct);
 
         if (!string.IsNullOrWhiteSpace(level))
@@ -53,7 +44,6 @@ public sealed class RisksController(IRiskCalculator riskCalculator) : Controller
             facts = Facts.Sort(facts)
         };
 
-        Cache[cacheKey] = (DateTime.UtcNow, response);
         return Ok(response);
     }
 }

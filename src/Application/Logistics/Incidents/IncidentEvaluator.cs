@@ -95,8 +95,23 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
 
         var incidentCenter = new GeoPoint((decimal)incident.Position.Y, (decimal)incident.Position.X);
         decimal radiusKm = incident.RadiusKm.Value;
-        bool isClosure = string.Equals(incident.Kind, "ROAD_CLOSURE", StringComparison.OrdinalIgnoreCase);
+        bool isClosure = string.Equals(incident.Kind, "ROAD_CLOSURE", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(incident.Kind, "BloqueoVial", StringComparison.OrdinalIgnoreCase);
         decimal delayFactor = 2.0m; // Factor por defecto para demoras
+
+        // Also exclude affected cached legs from alternative orders, rather than
+        // permitting a new leg through the same closure simply because it was
+        // absent from the previous route.
+        if (isClosure)
+        {
+            var edges = await db.RoadMatrixEdges.Where(e => e.OrganizationId == DemoOrganization.Id).ToListAsync(ct);
+            foreach (var edge in edges)
+            {
+                var leg = new Leg(new GeoPoint(edge.FromLat, edge.FromLon), new GeoPoint(edge.ToLat, edge.ToLon),
+                    edge.DistanceKm, edge.DurationMinutes, DistanceSource.Road, edge.EncodedPolyline);
+                if (IsLegAffected(leg, incidentCenter, radiusKm)) blockedLegs.Add((leg.From, leg.To));
+            }
+        }
 
         foreach (var plan in publishedPlans)
         {
@@ -116,7 +131,8 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
                 .Where(s => s.OrganizationId == DemoOrganization.Id)
                 .ToDictionaryAsync(s => s.Id, s => s, ct);
 
-            foreach (var leg in legsInRoute)
+            var completedPrefixLength = stops.TakeWhile(s => s.Status == "Completed").Count();
+            foreach (var leg in legsInRoute.Skip(completedPrefixLength))
             {
                 if (IsLegAffected(leg, incidentCenter, radiusKm))
                 {

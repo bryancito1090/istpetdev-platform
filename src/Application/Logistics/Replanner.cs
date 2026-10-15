@@ -100,7 +100,7 @@ public sealed class Replanner(
             : new GeoPoint(-0.2295m, -78.5243m);
 
         GeoPoint lastPos = depotPos;
-        DateTime readyAtUtc = plan.PlannedStartUtc;
+        DateTime readyAtUtc = await clock.WorkdayStartUtcAsync(ct);
 
         if (completedStops.Count > 0)
         {
@@ -110,7 +110,11 @@ public sealed class Replanner(
             {
                 lastPos = new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X);
             }
-            readyAtUtc = lastStop.ActualArrivalUtc ?? lastStop.PlannedArrivalUtc ?? DateTime.UtcNow;
+            var arrival = lastStop.ActualArrivalUtc ?? lastStop.PlannedArrivalUtc ?? DateTime.UtcNow;
+            var windowStart = arrival.AddHours(-5).Date
+                .Add((sp.WindowStartLocal ?? TimeOnly.Parse(_options.DefaultWindowStart)).ToTimeSpan()).AddHours(5);
+            readyAtUtc = (arrival < windowStart ? windowStart : arrival)
+                .AddMinutes(sp.ServiceMinutes ?? _options.DefaultServiceMinutes);
         }
 
         bool vehicleAvailable = !impact.Effect.UnavailableVehicles.Contains(vehicle.Code);
@@ -136,7 +140,7 @@ public sealed class Replanner(
 
         // 3. Evaluar política de autonomía
         var mode = autonomyState.CurrentMode;
-        var decision = autonomyPolicy.Classify(prevRoute, proposedRoute, strictResult.Unserved, mode);
+        var decision = autonomyPolicy.Classify(prevRoute, proposedRoute, MandatoryUnserved(strictResult), mode);
 
         // 4. Calcular diff
         var prevArrivals = prevRoute.Stops.ToDictionary(s => s.PointCode, s => s.ArrivalUtc);
@@ -180,8 +184,8 @@ public sealed class Replanner(
 
             optionsList.Add(new EscalationOption(
                 "late_service",
-                lateResult.Routes.Count > 0,
-                lateResult.Routes.Count == 0 ? "infeasible" : null,
+                lateResult.Routes.Count > 0 && MandatoryUnserved(lateResult).Count == 0,
+                lateResult.Routes.Count == 0 || MandatoryUnserved(lateResult).Count > 0 ? "infeasible" : null,
                 lateResult.Routes,
                 lateStopsMap,
                 Array.Empty<string>(),
@@ -191,12 +195,13 @@ public sealed class Replanner(
             var critInput = new ReplanInput(new[] { prefix }, impact.Effect, ReplanMode.PrioritizeCritical);
             var critResult = await routePlanner.ReplanAsync(critInput, ct);
             var critRoute = critResult.Routes.FirstOrDefault();
-            var droppedConsolidation = critResult.Unserved.Select(u => u.PointCode).ToList();
+            var droppedConsolidation = critResult.Unserved.Where(u => u.Facts.Any(f => f.Code == "is_consolidation" && f.Value == 1))
+                .Select(u => u.PointCode).ToList();
 
             optionsList.Add(new EscalationOption(
                 "prioritize_critical",
-                critResult.Routes.Count > 0,
-                critResult.Routes.Count == 0 ? "infeasible" : null,
+                critResult.Routes.Count > 0 && MandatoryUnserved(critResult).Count == 0,
+                critResult.Routes.Count == 0 || MandatoryUnserved(critResult).Count > 0 ? "infeasible" : null,
                 critResult.Routes,
                 new Dictionary<string, int>(),
                 droppedConsolidation,
@@ -216,7 +221,7 @@ public sealed class Replanner(
             Revision = nextRevision,
             SupersedesRoutePlanId = plan.Id,
             VehicleId = vehicle.Id,
-            Status = decision.Outcome == PolicyOutcome.AutoExecuted ? "Published" : "Proposed",
+            Status = "Proposed",
             ProposedBy = "System:IncidentReplanner",
             PlannedStartUtc = plan.PlannedStartUtc,
             PlannedEndUtc = plan.PlannedEndUtc,
@@ -230,10 +235,11 @@ public sealed class Replanner(
                 {
                     sequence = s.Sequence,
                     pointCode = s.PointCode,
+                    isConsolidation = s.IsConsolidation,
                     loads = s.Loads
                 }),
                 legs = proposedRoute.Legs
-            })
+            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
         };
         db.RoutePlans.Add(newPlan);
 
@@ -271,6 +277,11 @@ public sealed class Replanner(
         db.RouteStops.AddRange(newRouteStops);
 
         var replanFacts = decision.Facts.ToList();
+        foreach (var missing in strictResult.Unserved)
+        {
+            replanFacts.AddRange(missing.Facts);
+            replanFacts.Add(new Fact("unserved_reason", missing.PointCode, 1, missing.Reason));
+        }
         replanFacts.Add(new Fact("cost_increase_pct", "route", diff.CostDeltaPct, "%"));
         if (diff.CostDeltaPct < 0)
         {
@@ -363,6 +374,9 @@ public sealed class Replanner(
             explanation,
             agentDecision.Id);
     }
+
+    private static IReadOnlyList<Unserved> MandatoryUnserved(PlanResult result) => result.Unserved
+        .Where(u => !u.Facts.Any(f => f.Code == "is_consolidation" && f.Value == 1)).ToList();
 
     public async Task<RoutePlan> ApproveDecisionOptionAsync(ApproveOptionRequest request, CancellationToken ct = default)
     {
