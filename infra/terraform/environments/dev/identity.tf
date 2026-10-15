@@ -26,6 +26,12 @@ resource "aws_cognito_user_pool_domain" "dev" {
   user_pool_id = aws_cognito_user_pool.dev.id
 }
 
+resource "aws_cognito_user_pool_ui_customization" "hosted_ui" {
+  user_pool_id = aws_cognito_user_pool_domain.dev.user_pool_id
+  css          = file("${path.module}/cognito/hosted-ui.css")
+  image_file   = fileexists("${path.module}/cognito/logo-istpet.png") ? filebase64("${path.module}/cognito/logo-istpet.png") : null
+}
+
 resource "aws_cognito_resource_server" "api" {
   identifier = "istpetdev-api"
   # Preserve the deployed name: this provider replaces the resource on rename.
@@ -41,8 +47,21 @@ resource "aws_cognito_resource_server" "api" {
   }
 }
 
+locals {
+  human_clients = {
+    web = {
+      callback_urls = ["http://localhost:4200/auth/callback", "${var.app_public_origin}/auth/callback"]
+      logout_urls   = ["http://localhost:4200", var.app_public_origin]
+    }
+    mobile = {
+      callback_urls = ["http://localhost:8100/auth/callback", "${var.app_public_origin}/campo/auth/callback"]
+      logout_urls   = ["http://localhost:8100", "${var.app_public_origin}/campo/"]
+    }
+  }
+}
+
 resource "aws_cognito_user_pool_client" "human" {
-  for_each                             = { web = 4200, mobile = 8100 }
+  for_each                             = local.human_clients
   name                                 = "istpetdev-dev-${each.key}"
   user_pool_id                         = aws_cognito_user_pool.dev.id
   generate_secret                      = false
@@ -50,20 +69,8 @@ resource "aws_cognito_user_pool_client" "human" {
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["openid", "email", "profile", "${aws_cognito_resource_server.api.identifier}/access"]
-  callback_urls = each.key == "web" ? [
-    "http://localhost:4200/auth/callback",
-    "https://istpetdev.doicela.dev/auth/callback"
-  ] : [
-    "http://localhost:8100/auth/callback",
-    "https://istpetdev.doicela.dev/campo/auth/callback"
-  ]
-  logout_urls = each.key == "web" ? [
-    "http://localhost:4200",
-    "https://istpetdev.doicela.dev"
-  ] : [
-    "http://localhost:8100",
-    "https://istpetdev.doicela.dev/campo/"
-  ]
+  callback_urls                        = each.value.callback_urls
+  logout_urls                          = each.value.logout_urls
   explicit_auth_flows                  = []
   prevent_user_existence_errors        = "ENABLED"
   enable_token_revocation              = true

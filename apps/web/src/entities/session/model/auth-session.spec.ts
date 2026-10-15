@@ -22,9 +22,11 @@ function memoryStorage(): Storage {
   } as Storage;
 }
 
-function setup(isAuthenticated: boolean) {
+function setup(isAuthenticated: boolean, refresh: { token?: string; result?: boolean } = {}) {
   const oidc = {
     checkAuth: vi.fn(() => of({ isAuthenticated })),
+    getRefreshToken: vi.fn(() => of(refresh.token ?? '')),
+    checkAuthIncludingServer: vi.fn(() => of({ isAuthenticated: refresh.result ?? false })),
     authorize: vi.fn(),
     logoffLocal: vi.fn(),
   };
@@ -55,6 +57,28 @@ describe('AuthSession', () => {
     await session.bootstrap();
     expect(session.status()).toBe('anonymous');
     backend.expectNone(ME_URL);
+  });
+
+  it('con el access token vencido recupera la sesión con el refresh token', async () => {
+    const { session, backend, oidc } = setup(false, { token: 'RT', result: true });
+    const done = session.bootstrap();
+    await answerMe(backend, { accountId: 'a-1', displayName: 'Planificación', role: 'Planificador', platform: 'web' });
+    await done;
+    expect(oidc.checkAuthIncludingServer).toHaveBeenCalled();
+    expect(session.status()).toBe('authenticated');
+  });
+
+  it('si el refresh token ya no sirve queda anónima', async () => {
+    const { session, backend } = setup(false, { token: 'RT', result: false });
+    await session.bootstrap();
+    expect(session.status()).toBe('anonymous');
+    backend.expectNone(ME_URL);
+  });
+
+  it('sin refresh token no intenta renovar', async () => {
+    const { session, oidc } = setup(false);
+    await session.bootstrap();
+    expect(oidc.checkAuthIncludingServer).not.toHaveBeenCalled();
   });
 
   it('una cuenta web queda autenticada con su rol y sin escribir localStorage', async () => {
@@ -136,5 +160,26 @@ describe('AuthSession', () => {
     expect(navigate).toHaveBeenCalledWith(
       `${environment.oidc.cognitoDomain}/logout?client_id=${environment.oidc.clientId}&logout_uri=${encodeURIComponent(environment.oidc.postLogoutRedirectUri)}`,
     );
+  });
+
+  it('expire con la sesión iniciada vuelve a Cognito guardando la ruta', async () => {
+    const { session, backend, oidc } = setup(true);
+    const done = session.bootstrap();
+    await answerMe(backend, { accountId: 'a-1', displayName: 'Planificación', role: 'Planificador', platform: 'web' });
+    await done;
+
+    session.expire('/routes');
+
+    expect(session.status()).toBe('anonymous');
+    expect(oidc.logoffLocal).toHaveBeenCalled();
+    expect(oidc.authorize).toHaveBeenCalledTimes(1);
+    expect(session.takeReturnUrl()).toBe('/routes');
+  });
+
+  it('expire sin sesión iniciada no redirige (evita bucles con /me)', async () => {
+    const { session, oidc } = setup(false);
+    await session.bootstrap();
+    session.expire('/routes');
+    expect(oidc.authorize).not.toHaveBeenCalled();
   });
 });

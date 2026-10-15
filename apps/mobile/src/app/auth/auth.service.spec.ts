@@ -12,8 +12,14 @@ import { NAVIGATE_EXTERNAL } from './navigate-external';
 
 const ME_URL = `${environment.apiUrl}/api/v1/me`;
 
-function setup(isAuthenticated: boolean) {
-  const oidc = { checkAuth: vi.fn(() => of({ isAuthenticated })), authorize: vi.fn(), logoffLocal: vi.fn() };
+function setup(isAuthenticated: boolean, refresh: { token?: string; result?: boolean } = {}) {
+  const oidc = {
+    checkAuth: vi.fn(() => of({ isAuthenticated })),
+    getRefreshToken: vi.fn(() => of(refresh.token ?? '')),
+    checkAuthIncludingServer: vi.fn(() => of({ isAuthenticated: refresh.result ?? false })),
+    authorize: vi.fn(),
+    logoffLocal: vi.fn(),
+  };
   const navigate = vi.fn();
   const outbox = { setOwner: vi.fn(async () => undefined) };
   TestBed.configureTestingModule({
@@ -43,6 +49,21 @@ describe('MobileAuthService', () => {
     expect(auth.status()).toBe('authenticated');
     expect(auth.currentRole()).toBe('Conductor');
     expect(localStorage.length + sessionStorage.length).toBe(0);
+  });
+
+  it('al reabrir la app con el access token vencido recupera la sesión con el refresh token', async () => {
+    const ctx = setup(false, { token: 'RT', result: true });
+    const done = ctx.auth.bootstrap();
+    (await vi.waitFor(() => ctx.backend.expectOne(ME_URL))).flush({ accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' });
+    await done;
+    expect(ctx.oidc.checkAuthIncludingServer).toHaveBeenCalled();
+    expect(ctx.auth.status()).toBe('authenticated');
+  });
+
+  it('si el refresh token ya no sirve queda anónima', async () => {
+    const ctx = setup(false, { token: 'RT', result: false });
+    await ctx.auth.bootstrap();
+    expect(ctx.auth.status()).toBe('anonymous');
   });
 
   it('Gerencia en la PWA queda en plataforma equivocada', async () => {
@@ -118,5 +139,16 @@ describe('MobileAuthService', () => {
     const { auth, outbox } = await boot(true, { accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' });
     await auth.logout();
     expect(outbox.setOwner).toHaveBeenCalledWith(null);
+  });
+
+  it('expire vuelve a Cognito sin soltar el outbox de la cuenta', async () => {
+    const { auth, oidc, outbox } = await boot(true, { accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' });
+    outbox.setOwner.mockClear();
+
+    auth.expire('/home');
+
+    expect(auth.status()).toBe('anonymous');
+    expect(oidc.authorize).toHaveBeenCalledTimes(1);
+    expect(outbox.setOwner).not.toHaveBeenCalled();
   });
 });

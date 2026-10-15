@@ -42,7 +42,8 @@ Limitar confianza de `X-Forwarded-*` al proxy conocido. El servicio confía en N
 
 ## Sesión web, móvil y offline
 
-- Web/PWA: tokens en memoria, no en URLs, logs, localStorage ni en la outbox. Tras cerrar/reabrir, usar reautenticación OIDC; la cola de capturas se conserva.
+- Web/PWA (D-013-S1, 15-oct): sesión OIDC en `sessionStorage` en la web y en `localStorage` en la PWA; nunca en URLs, logs, IndexedDB ni la outbox. Al reabrir con el access token vencido se renueva con el refresh token; si eso falla, reautenticación OIDC. La cola de capturas se conserva.
+- Una persona = un correo = un rol (`Account` tiene índice único `Issuer`+`Subject`). Para dos roles se usan dos correos.
 - PWA offline: almacenar asignaciones/capturas/archivos; no exigir token vigente para conservar una captura ya autorizada localmente. Mostrar su estado pendiente.
 - Sincronización: obtener sesión válida, revalidar cuenta/rol/asignación y enviar con operationId original. Un 401 pide login sin borrar nada; un 403 conserva el conflicto y sus evidencias.
 - Logout: cerrar conexiones y memoria de sesión. Si hay capturas pendientes, advertir y conservarlas aisladas por identidad; no permitir que otro usuario las consulte o sincronice.
@@ -87,10 +88,11 @@ La especificación 013 implementó el flujo OIDC PKCE real con Cognito User Pool
      - `LogoutURLs`: `http://localhost:8100` y `https://istpetdev.doicela.dev/campo/`
    - Sincronizados en AWS Cognito y formalizados en `infra/terraform/environments/dev/identity.tf`.
 
-2. **Persistencia Efímera de Sesión OIDC (`TokenFreeStorage`)**:
+2. **Persistencia de la sesión OIDC (`OidcSessionStorage`, antes `TokenFreeStorage`)**:
    - Inicialmente, la especificación 013 restringía los tokens a memoria JavaScript estricta, persistiendo únicamente los verificadores PKCE (`AUTH_FLOW_KEYS`) en `sessionStorage`.
    - **Diagnóstico de Causa Raíz**: Los navegadores modernos bloquean el uso de cookies de terceros dentro de iframes de orígenes cruzados (`amazoncognito.com`), lo que impide la renovación silenciosa (*silent renew*) al recargar la página. Como consecuencia, cualquier actualización de página (`F5`) o navegación directa por la barra de direcciones (por ejemplo, a `/inicio`) perdía los tokens en memoria y expulsaba al usuario al login.
    - **Resolución bajo IETF OAuth 2.0 BCP**: Conforme a la recomendación IETF OAuth 2.0 Security Best Current Practice para Browser-Based Apps, `TokenFreeStorage` persiste la sesión OIDC en `sessionStorage`. Esta capa provee aislamiento estricto por pestaña, eliminación automática al cerrar la pestaña y protección contra ataques CSRF (al no depender de cookies ambientales), permitiendo la rehidratación inmediata de la sesión en recargas y navegación interna directa. Los tokens continúan excluidos de `localStorage` e `IndexedDB`.
+   - **Ajuste del 15-oct (D-013-S1)**: la sesión moría al volver después de 15 minutos porque al arrancar solo se miraba el access token y no se usaba el refresh token. Ahora el arranque llama a `checkAuthIncludingServer` cuando hay refresh token, un 401 de la API devuelve a Cognito y `clear()` borra solo las claves de la librería. La PWA pasa a `localStorage` (con `useRefreshTokenLock`) para que el conductor no pierda la sesión cuando el sistema cierra la app. Detalle y riesgo aceptado en la sección de contradicciones del spec 013.
    - En `auth.config.ts` (Web y Móvil) se configuró `disableRefreshTokenOfflineAccessScopeWarning: true` para suprimir la advertencia sobre el scope `offline_access`, no requerido por AWS Cognito.
 
 3. **Validación de Identidad y Claims en API**:
