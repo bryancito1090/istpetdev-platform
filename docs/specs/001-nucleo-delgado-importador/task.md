@@ -19,6 +19,7 @@
 | T7 | HTTP, reset, límites e imagen | T5/T6 | Implementado; imagen construida y límites verificados en Release |
 | T8 | E2E, CI y evidencia | T7 | Verificado en Release (114 pruebas); CI, cotejo y builds aprobados |
 | T9 | Bóveda, contratos y cierre | T0/T8 | En curso (documentación y evidencia registradas; ADR/cierre final pendiente de decisión) |
+| T10 | Respaldo y restauración verificables (#15) | T4/T8 | Ensayo local verificado y en CI; volcado y restauración contra RDS pendientes de acceso a AWS |
 
 Los estados se actualizan después de cada resultado. Las pruebas compartidas pueden editarse de forma independiente; migraciones, snapshot, DI y Program se integran por un solo responsable.
 
@@ -200,3 +201,40 @@ python docs/boveda/.github/scripts/check_vault.py
 - [x] Cambiar estado solo con evidencia: implementar/verificar localmente permite `en curso`; `cerrado` requiere los E2E obligatorios, incluido el simulacro humano.
 
 No hay una publicación, commit, PR, migración externa ni despliegue acreditados por este registro.
+
+### T10 — Respaldo y restauración verificables (#15)
+
+**Responsable:** Anthony Pilatasig (procedimiento, scripts y ensayo). **Ejecución en RDS:** Jorge Doicela. **Código:** [database-task.py](../../../scripts/base_datos/database-task.py), [test-bootstrap.py](../../../scripts/base_datos/test-bootstrap.py), [backup-db.sh](../../../scripts/backup/backup-db.sh), [CI](../../../.github/workflows/ci.yml). **Procedimiento:** runbook §4 en la bóveda (`03 Arquitectura/Runbook de DevOps y base de datos para la demo.md`).
+
+**Auditoría previa (15-oct, solo con evidencia del repositorio):**
+
+- **Base de producción:** sigue en Amazon RDS (`istpetdev-rds-dev`, base `istpetdev_integration`). Desarrollo usa un PostgreSQL en EC2 o Docker local.
+- **Respaldos de AWS:** RDS tiene PITR de 7 días (o 1 día, según `free_plan_backup_workaround`) y snapshots diarios opcionales de AWS Backup. No se pudo comprobar qué valor está aplicado ni si existen snapshots.
+- **La herramienta correcta ya existía:** `database-task.py backup` y `restore-check`, con S3, SHA-256 y hash por tabla. En cambio, `backup-db.sh` respaldaba la base `postgres` con `istpetadmin` al disco del host, sin hash ni S3.
+- **Dos defectos que nadie había detectado:**
+  - El ensayo `test-bootstrap.py` estaba roto en `develop` y no corría en CI.
+  - `database-task.py migrate` fallaba con un error de sintaxis de psql.
+
+- [x] Auditar dónde viven los datos y qué respaldos existen; registrar lo no verificable.
+- [x] Reemplazar `backup-db.sh` por un atajo de la herramienta verificada (base `istpetdev_integration`, rol `backup_integration`, S3 con checksum).
+- [x] Corregir `database-task.py migrate` para usar el migrador de producción (`IstpetDev.Api.dll --migrate`).
+- [x] Reparar `test-bootstrap.py` (lista exacta de migraciones y tabla de prueba que bloqueaba readiness) y ejecutarlo: pasó el 15-oct 16:47 UTC en 76 s.
+- [x] Agregar el ensayo a CI (job «Ensayo de respaldo y restauración»).
+- [x] Reescribir el runbook §4 con el procedimiento, los responsables y el estado verificado.
+- [ ] Snapshot `pre-democore`: sin evidencia; no se presenta como realizado.
+- [ ] Volcado de `istpetdev_integration` en S3 y `restore-check` contra RDS, con evidencia (Jorge Doicela, requiere AWS).
+- [ ] Respaldo automático en `deploy.yml` antes de migrar: requiere permisos de S3 y Secrets Manager en el rol del host, más `pg_dump` y AWS CLI en el host.
+
+```bash
+python3 scripts/base_datos/test-bootstrap.py   # Linux con Docker, psql, openssl y la API compilada en Debug
+```
+
+**Registro de cambios de T10:**
+
+| Archivo | Componente | Qué se hizo | Por qué | Estado |
+|---|---|---|---|---|
+| `scripts/backup/backup-db.sh` | DB / Operación | Ahora es un atajo de `database-task.py backup --member <base>` que valida los archivos privados | Respaldaba la base de mantenimiento `postgres` con `istpetadmin`, en SQL plano, al disco de un host que no conserva datos, sin hash ni S3. Además duplicaba una herramienta que ya hacía todo eso correctamente | Hecho; ejecución contra RDS pendiente |
+| `scripts/base_datos/database-task.py` | DB / Backend | `migrate()` ejecuta `IstpetDev.Api.dll --migrate` con la cadena del migrador, en vez de `dotnet ef migrations script --idempotent` vía psql | El script idempotente falla con `syntax error at or near "END"` sobre las migraciones actuales. Producción migra con el migrador de EF de la API (`ApplyMigrations=true`), así que se usa el mismo camino. El error de la API se oculta, igual que los demás, porque puede contener la cadena de conexión | Hecho y verificado |
+| `scripts/base_datos/test-bootstrap.py` | DB / Pruebas | Compara las migraciones aplicadas con la lista exacta del repositorio (antes esperaba 1) y borra `isolation_probe` antes de migrar | La aserción databa del 9-oct, cuando había una sola migración (hoy hay 8). Además, `/health/ready` exige exactamente las tablas de DemoCore (`DatabaseHealthCheck`), y la tabla de prueba lo dejaba en «Unhealthy» | Hecho; pasó en 76 s |
+| `.github/workflows/ci.yml` | CI | Job `db-backup-rehearsal` y filtros para `scripts/base_datos/**`, `scripts/backup/**` y `scripts/ops/dev.py` | El ensayo de respaldo y restauración se había roto sin que nadie lo notara porque no corría en CI | Hecho; primera ejecución en el PR |
+| Bóveda: runbook §4 | Documentación | Inventario verificado de respaldos, herramienta oficial, procedimiento por pasos con responsables, evidencia del ensayo y pendientes | El runbook usaba un snapshot de ejemplo, no tenía la restauración de prueba y no decía qué está verificado | Hecho |

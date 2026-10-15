@@ -231,15 +231,9 @@ interface ReceiptLineForm {
                 (change)="onPhotoSelected($event)"
                 class="hidden" />
 
-              <div class="flex gap-2">
-                <ion-button expand="block" fill="outline" class="flex-1" (click)="fileInput.click()">
-                  {{ photoBlob() ? 'Cambiar Foto' : 'Tomar / Seleccionar Foto' }}
-                </ion-button>
-
-                <ion-button expand="block" fill="outline" (click)="generateSimulatedPhoto()">
-                  Foto Demo
-                </ion-button>
-              </div>
+              <ion-button expand="block" fill="outline" (click)="fileInput.click()">
+                {{ photoBlob() ? 'Cambiar Foto' : 'Tomar / Seleccionar Foto' }}
+              </ion-button>
 
               @if (photoPreviewUrl()) {
                 <div class="relative mt-2 border rounded overflow-hidden max-h-48 flex justify-center bg-black">
@@ -303,6 +297,11 @@ interface ReceiptLineForm {
             Los datos se guardan atómicamente en IndexedDB (S-05) y se sincronizan al recuperar red.
           </p>
         </div>
+      } @else if (loadError(); as loadErrorMsg) {
+        <div class="text-center py-12 space-y-4">
+          <p class="text-sm text-slate-600">{{ loadErrorMsg }}</p>
+          <ion-button expand="block" (click)="goHome()">Volver a Inicio</ion-button>
+        </div>
       } @else {
         <div class="text-center py-12">
           <p class="text-sm text-slate-500">Cargando entrega seleccionada...</p>
@@ -325,6 +324,7 @@ export class ReceiptPage implements OnInit {
   readonly photoPreviewUrl = signal<string | null>(null);
   readonly isSaving = signal<boolean>(false);
   readonly validationError = signal<string | null>(null);
+  readonly loadError = signal<string | null>(null);
 
   recipientName = '';
   notes = '';
@@ -353,54 +353,21 @@ export class ReceiptPage implements OnInit {
       }
     }
 
-    // Si no está cargada aún la asignación en memoria, usar fallback de demo
     if (!found) {
-      found = {
-        deliveryId,
-        sequence: 1,
-        pointCode: 'HOSP-001',
-        pointName: 'Farmacia Central Quito (Demo)',
-        address: 'Av. 10 de Agosto y Colón',
-        dueAtUtc: new Date().toISOString(),
-        status: 'Dispatched',
-        handlingUnits: [
-          {
-            handlingUnitId: 'hu-001',
-            code: 'HU-001',
-            deliveryId,
-            status: 'Dispatched',
-            labelUrl: 'https://api.istpetdev.local/labels/hu-001.pdf',
-            createdAtUtc: new Date().toISOString(),
-            lines: [
-              {
-                deliveryLineId: `dl-${deliveryId}-01`,
-                lotId: 'LOT-INS-2026-A1',
-                sku: 'INS-NPH-100UI',
-                quantity: 50,
-                unit: 'Viales'
-              }
-            ]
-          }
-        ]
-      };
+      this.loadError.set('No encontramos esta entrega en tu ruta. Vuelve a Inicio y descarga la ruta.');
+      return;
     }
 
-    const target = found;
-    this.delivery.set(target);
-    this.deliveryVersion.set(version);
-    this.recipientName = target.pointName;
-
-    // Extraer líneas desde handlingUnits
-    const allLines: HandlingUnitLineDto[] = target.handlingUnits.flatMap((hu: any) => hu.lines || []);
+    // Extraer líneas desde handlingUnits; sin líneas no se registra recepción
+    const allLines: HandlingUnitLineDto[] = found.handlingUnits.flatMap((hu: any) => hu.lines || []);
     if (allLines.length === 0) {
-      allLines.push({
-        deliveryLineId: `dl-${deliveryId}-01`,
-        lotId: 'LOT-INS-2026-A1',
-        sku: 'INS-NPH-100UI',
-        quantity: 50,
-        unit: 'Viales'
-      });
+      this.loadError.set('Esta entrega no tiene líneas de recepción registradas. Vuelve a Inicio y descarga la ruta.');
+      return;
     }
+
+    this.delivery.set(found);
+    this.deliveryVersion.set(version);
+    this.recipientName = found.pointName;
 
     const initialLines: ReceiptLineForm[] = allLines.map((l: HandlingUnitLineDto) => ({
       deliveryLineId: l.deliveryLineId,
@@ -468,27 +435,8 @@ export class ReceiptPage implements OnInit {
     }
   }
 
-  generateSimulatedPhoto(): void {
-    // Generar un Blob sintético simulado usando un canvas pequeño
-    const canvas = document.createElement('canvas');
-    canvas.width = 300;
-    canvas.height = 200;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(0, 0, 300, 200);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '14px sans-serif';
-      ctx.fillText('Evidencia Remito Demo', 20, 50);
-      ctx.fillText(new Date().toLocaleString(), 20, 80);
-      ctx.fillText(`Entrega: ${this.delivery()?.deliveryId}`, 20, 110);
-    }
-    canvas.toBlob((blob) => {
-      if (blob) {
-        this.photoBlob.set(blob);
-        this.photoPreviewUrl.set(URL.createObjectURL(blob));
-      }
-    }, 'image/jpeg');
+  goHome(): void {
+    this.router.navigate(['/home']);
   }
 
   clearPhoto(): void {
@@ -506,29 +454,14 @@ export class ReceiptPage implements OnInit {
       return;
     }
 
-    // Verificar si se ha firmado
-    let signatureBlob: Blob | undefined;
-    if (this.signaturePad && !this.signaturePad.isEmpty()) {
-      const dataUrl = this.signaturePad.toDataURL('image/png');
-      const res = await fetch(dataUrl);
-      signatureBlob = await res.blob();
-    } else {
-      // Generar una firma de prueba rápida si no se dibujó en pantalla
-      const canvas = document.createElement('canvas');
-      canvas.width = 200;
-      canvas.height = 80;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 200, 80);
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'italic 16px sans-serif';
-        ctx.fillText(this.recipientName || 'Firma Conforme', 10, 45);
-      }
-      signatureBlob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b || new Blob()), 'image/png')
-      );
+    if (!this.signaturePad || this.signaturePad.isEmpty()) {
+      this.validationError.set('Dibuje la firma de quien recibe para confirmar la recepción.');
+      return;
     }
+
+    const dataUrl = this.signaturePad.toDataURL('image/png');
+    const res = await fetch(dataUrl);
+    const signatureBlob: Blob = await res.blob();
 
     this.isSaving.set(true);
 

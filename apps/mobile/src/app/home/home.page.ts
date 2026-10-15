@@ -20,6 +20,8 @@ import {
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi } from '../field/field-api.interface';
+import { MockFieldApiService } from '../field/mock/mock-field-api.service';
+import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component';
 
 interface ReceiverScanSample {
   huCode: string;
@@ -47,7 +49,8 @@ interface ReceiverScanSample {
     IonCardContent,
     IonButton,
     IonBadge,
-    IonButtons
+    IonButtons,
+    WarehouseComponent
   ],
   template: `
     <ion-header [translucent]="true">
@@ -68,16 +71,18 @@ interface ReceiverScanSample {
     </ion-header>
 
     <ion-content [fullscreen]="true" class="ion-padding bg-slate-50">
-      <!-- Insignia fija: Datos Simulados (F7 / Spec 004) -->
-      <div class="mb-3 flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 shadow-sm">
-        <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-          <span class="font-bold">Datos simulados (Fase Frontend-First)</span>
+      <!-- Insignia fija: Datos Simulados (F7 / Spec 004) solo si usa mock -->
+      @if (isMockApi()) {
+        <div class="mb-3 flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 shadow-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+            <span class="font-bold">Datos simulados (Fase Frontend-First)</span>
+          </div>
+          <span class="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
+            useMockApi
+          </span>
         </div>
-        <span class="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded font-mono font-bold">
-          useMockApi
-        </span>
-      </div>
+      }
 
       <!-- Tarjeta de Perfil Activo -->
       <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white">
@@ -261,61 +266,10 @@ interface ReceiverScanSample {
       }
 
       <!-- ======================================================== -->
-      <!-- CASO 2: OPERADOR DE BODEGA (Móvil)                       -->
+      <!-- CASO 2: OPERADOR DE BODEGA (Móvil / Real)                -->
       <!-- ======================================================== -->
       @else if (authService.currentRole() === 'Bodega') {
-        <div class="space-y-4">
-          <ion-card class="m-0 border border-sky-200 bg-white shadow-sm">
-            <ion-card-header class="pb-2 bg-sky-50 border-b border-sky-100">
-              <ion-card-title class="text-base text-sky-950 font-bold">
-                Despacho y Preparación de Bultos
-              </ion-card-title>
-              <ion-card-subtitle class="text-xs text-sky-700">
-                Punto Central: WH-CENTRAL-01
-              </ion-card-subtitle>
-            </ion-card-header>
-
-            <ion-card-content class="pt-4 space-y-3">
-              <p class="text-xs text-slate-600 leading-relaxed">
-                Desde esta terminal móvil se realiza el escaneo de salida de bultos (HU) y la asignación a las unidades de transporte con custodia digital.
-              </p>
-
-              <div class="grid grid-cols-2 gap-2 pt-1">
-                <ion-button expand="block" size="small" color="primary" class="font-bold" (click)="openScan()">
-                  Escanear Salida QR
-                </ion-button>
-                <ion-button expand="block" size="small" fill="outline" color="primary" class="font-bold" (click)="openSyncQueue()">
-                  Cola de Despacho
-                </ion-button>
-              </div>
-            </ion-card-content>
-          </ion-card>
-
-          <div class="mb-2 flex items-center justify-between px-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-600">
-              Cargas Listas para Despachar
-            </span>
-            <span class="text-[11px] text-slate-500 font-bold">2 Lotes Pendientes</span>
-          </div>
-
-          <div class="space-y-2">
-            <ion-card class="m-0 border shadow-sm">
-              <ion-card-header class="pb-2">
-                <div class="flex items-center justify-between">
-                  <ion-badge color="primary">Vehículo VH-EC-101</ion-badge>
-                  <span class="text-[11px] text-slate-500 font-mono">HU-2026-MED-042</span>
-                </div>
-                <ion-card-title class="text-sm font-bold">Ruta Hospitalaria Tungurahua</ion-card-title>
-                <ion-card-subtitle class="text-xs">4 Bultos preparados • 1,200 Litros</ion-card-subtitle>
-              </ion-card-header>
-              <ion-card-content class="pt-0">
-                <ion-button expand="block" size="small" fill="outline" (click)="openScan()">
-                  Verificar y Cargar al Vehículo →
-                </ion-button>
-              </ion-card-content>
-            </ion-card>
-          </div>
-        </div>
+        <app-warehouse />
       }
 
       <!-- ======================================================== -->
@@ -459,6 +413,8 @@ interface ReceiverScanSample {
 export class HomePage implements OnInit {
   readonly authService = inject(MobileAuthService);
   readonly outboxService = inject(FieldOutboxService);
+  private readonly fieldApi = inject<IFieldApi>(FIELD_API);
+  readonly isMockApi = computed(() => this.fieldApi instanceof MockFieldApiService);
   private readonly router = inject(Router);
   private readonly alerts = inject(AlertController);
 
@@ -561,8 +517,6 @@ export class HomePage implements OnInit {
       this.receiverSelectedIssues.set([...current, issueLabel]);
     }
   }
-
-  private readonly fieldApi = inject<IFieldApi>(FIELD_API);
 
   async confirmReceiverAction(): Promise<void> {
     const box = this.receiverActiveBox();

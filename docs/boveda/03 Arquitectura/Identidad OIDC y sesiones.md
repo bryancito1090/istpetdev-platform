@@ -99,12 +99,16 @@ La especificación 013 implementó el flujo OIDC PKCE real con Cognito User Pool
    - Despliegue en EC2 parametriza `Authentication__Authority`, `Authentication__AllowedClientIds__0` y `Authentication__AllowedClientIds__1` desde variables de repositorio en GitHub Actions (`deploy.yml`).
    - Endpoint `GET /api/v1/me` resuelve la identidad autenticada contra la tabla `Account` en PostgreSQL (`istpetdev_integration`), validando rol institucional y plataforma autorizada (`web` o `field`).
 
-4. **Aprovisionamiento y Sincronización del Equipo**:
-   - Cuentas aprovisionadas y validadas en AWS Cognito User Pool (`us-east-1_4Y2j5DINp`) y en las bases de datos de desarrollo y producción RDS:
-     - `ismael02doicela@gmail.com`: Rol `Gerencia` (`sub: e4780498-b031-701f-4553-6037c59e69ee`)
-     - `joseph.bano@istpet.edu.ec`: Rol `Planificador` (`sub: c4e844f8-d061-70ef-58fd-641218081778`)
-     - `anthony.pilatasig@istpet.edu.ec`: Rol `Auditor` (`sub: f4385408-9011-7031-dbef-8b1c77a0459e`)
+4. **Aprovisionamiento y Sincronización del Equipo (Resolución Definitiva Issue #55)**:
+   - Se formalizó la matriz canónica de 6 cuentas por rol para pruebas E2E y demostración oficial (Spec 013), sincronizadas en AWS Cognito User Pool (`us-east-1_4Y2j5DINp`) y en las bases de datos de Desarrollo Central (`istpetdev_dev_01`) y Producción Amazon RDS (`istpetdev_integration`):
+     - `bryan.bano@istpet.edu.ec`: Rol `Gerencia` (`sub: 64e8d438-80e1-7076-2c94-293a80eb6845`, plataforma `web`)
+     - `anthony.pilatasig@istpet.edu.ec`: Rol `Planificador` (`sub: f4385408-9011-7031-dbef-8b1c77a0459e`, plataforma `web`)
+     - `joseph.bano@istpet.edu.ec`: Rol `Auditor` (`sub: c4e844f8-d061-70ef-58fd-641218081778`, plataforma `web`)
+     - `andres.jbo2003@gmail.com`: Rol `Receptor` (`sub: 04b8e4b8-7011-7002-946e-dab293f2a188`, plataforma `field`)
      - `alkut202@gmail.com`: Rol `Conductor` (`sub: 94a85418-50b1-7067-3252-76ff8425cc4c`, plataforma `field`)
+     - `jorge.doicela.m@gmail.com`: Rol `Bodega` (`sub: 14987428-f011-700e-75d2-5340b3fba178`, plataforma `field`)
+   - **Contraseñas Definitivas:** Fijadas mediante `admin-set-user-password --permanent` (clave corporativa distribuida por canal privado seguro, cumpliendo los 14 caracteres y requisitos de `identity.tf`), eliminando enlaces temporales de invitación y requerimientos de cambio en primer inicio.
+   - **Desactivación Segura:** Cuentas provisionales de pruebas previas (`ismael02doicela@gmail.com`, `bryanbano1090@gmail.com`, `banobryan1090@gmail.com`) desactivadas en base de datos (`IsActive = false`) y deshabilitadas en Cognito (`admin-disable-user`), preservando la integridad referencial para evitar fallos en tablas de auditoría.
    - Navegación superior (`HeaderWidget`) adaptada por rol, habilitando `/users` para Gerencia y manteniendo los enlaces accesibles durante toda la sesión autenticada.
 
 
