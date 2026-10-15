@@ -8,29 +8,37 @@ using System.Threading;
 using System.Threading.Tasks;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Field.Dtos;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Application.Field;
 
 public sealed class FieldService : IFieldService
 {
+    // Origen del consumo derivado del stock en percha declarado al recibir (#111).
+    private const string FieldReconciliationSource = "FieldReconciliation";
+
     private readonly IApplicationDbContext _db;
     private readonly IConfiguration _config;
     private readonly ILogger<FieldService> _logger;
+    private readonly LogisticsOptions _logistics;
 
     public FieldService(
         IApplicationDbContext db,
         IConfiguration config,
-        ILogger<FieldService> logger)
+        ILogger<FieldService> logger,
+        IOptions<LogisticsOptions> logistics)
     {
         _db = db;
         _config = config;
         _logger = logger;
+        _logistics = logistics.Value;
     }
 
     public async Task<HandlingUnitResponse> CreateHandlingUnitAsync(
@@ -492,6 +500,36 @@ public sealed class FieldService : IFieldService
             .Where(l => lotIds.Contains(l.Id) && l.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(l => l.Id, ct);
 
+        // Saldos leídos o creados en esta recepción: una segunda línea del mismo lote debe ver
+        // los cambios aún no guardados, en vez de consultar la base y crear un saldo duplicado.
+        var balances = new Dictionary<(Guid LocationId, Guid LotId), StockBalance>();
+
+        async Task<StockBalance?> FindBalanceAsync(Guid locationId, Guid lotId)
+        {
+            if (balances.TryGetValue((locationId, lotId), out var cached)) return cached;
+            var found = await _db.StockBalances
+                .FirstOrDefaultAsync(sb => sb.LocationId == locationId && sb.LotId == lotId && sb.OrganizationId == DemoOrganization.Id, ct);
+            if (found != null) balances[(locationId, lotId)] = found;
+            return found;
+        }
+
+        StockBalance NewBalance(Guid locationId, Guid lotId)
+        {
+            var created = new StockBalance
+            {
+                OrganizationId = DemoOrganization.Id,
+                LocationId = locationId,
+                LotId = lotId,
+                QuantityOnHand = 0m,
+                QuantityReserved = 0m
+            };
+            _db.StockBalances.Add(created);
+            balances[(locationId, lotId)] = created;
+            return created;
+        }
+
+        // 4. Validar líneas y registrar lo recibido
+        var receiptLines = new List<(ReceiptLineRequest Request, DeliveryLine DeliveryLine, ReceiptLine ReceiptLine)>();
         foreach (var reqLine in request.Lines)
         {
             if (!dLinesById.TryGetValue(reqLine.DeliveryLineId, out var dLine))
@@ -528,124 +566,7 @@ public sealed class FieldService : IFieldService
                 NextRequestedQuantity = reqLine.NextRequestedQuantity
             };
             _db.ReceiptLines.Add(rLine);
-
-            // Mover inventario de lo aceptado vehículo -> punto de destino
-            if (reqLine.QuantityAccepted > 0)
-            {
-                var vehicleBalance = await _db.StockBalances
-                    .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId && sb.LotId == reqLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-
-                if (vehicleBalance != null)
-                {
-                    vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
-                }
-
-                var destBalance = await _db.StockBalances
-                    .FirstOrDefaultAsync(sb => sb.LocationId == destinationLocationId && sb.LotId == reqLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-
-                // Reconciliación con el stock en percha declarado ("me quedan X")
-                if (reqLine.RemainingQuantity.HasValue)
-                {
-                    var reportedRemaining = Math.Max(0m, reqLine.RemainingQuantity.Value);
-                    var previousOnHand = destBalance?.QuantityOnHand ?? 0m;
-
-                    // Si tenía más de lo que queda, el hospital consumió la diferencia
-                    if (previousOnHand > reportedRemaining && lots.TryGetValue(reqLine.LotId, out var lot))
-                    {
-                        var consumed = previousOnHand - reportedRemaining;
-                        _db.Consumptions.Add(new Consumption
-                        {
-                            OrganizationId = DemoOrganization.Id,
-                            ServicePointId = delivery.ServicePointId,
-                            ProductId = lot.ProductId,
-                            OccurredOn = DateOnly.FromDateTime(DateTime.UtcNow),
-                            Quantity = consumed,
-                            PeriodDays = 7,
-                            SourceKind = "FieldReconciliation"
-                        });
-                    }
-
-                    if (destBalance == null)
-                    {
-                        destBalance = new StockBalance
-                        {
-                            OrganizationId = DemoOrganization.Id,
-                            LocationId = destinationLocationId,
-                            LotId = reqLine.LotId,
-                            QuantityOnHand = reportedRemaining + reqLine.QuantityAccepted,
-                            QuantityReserved = 0m
-                        };
-                        _db.StockBalances.Add(destBalance);
-                    }
-                    else
-                    {
-                        destBalance.QuantityOnHand = reportedRemaining + reqLine.QuantityAccepted;
-                    }
-                }
-                else
-                {
-                    if (destBalance == null)
-                    {
-                        destBalance = new StockBalance
-                        {
-                            OrganizationId = DemoOrganization.Id,
-                            LocationId = destinationLocationId,
-                            LotId = reqLine.LotId,
-                            QuantityOnHand = reqLine.QuantityAccepted,
-                            QuantityReserved = 0m
-                        };
-                        _db.StockBalances.Add(destBalance);
-                    }
-                    else
-                    {
-                        destBalance.QuantityOnHand += reqLine.QuantityAccepted;
-                    }
-                }
-
-                var movement = new InventoryMovement
-                {
-                    OrganizationId = DemoOrganization.Id,
-                    Kind = "Receipt",
-                    LotId = reqLine.LotId,
-                    FromLocationId = vehicleLocationId,
-                    ToLocationId = destinationLocationId,
-                    Quantity = reqLine.QuantityAccepted,
-                    ActorAccountId = actorAccountId,
-                    OperationId = request.OperationId,
-                    OccurredAtUtc = request.OccurredAtDevice,
-                    DeliveryLineId = dLine.Id,
-                    ReceiptLineId = rLine.Id,
-                    Reason = "Recepción de entrega en punto de servicio"
-                };
-                _db.InventoryMovements.Add(movement);
-            }
-
-            // Pedido futuro solicitado en campo ("necesito X más")
-            if (reqLine.NextRequestedQuantity.HasValue && reqLine.NextRequestedQuantity.Value > 0 && lots.TryGetValue(reqLine.LotId, out var reqLot))
-            {
-                var deliveryOrder = new DeliveryOrder
-                {
-                    OrganizationId = DemoOrganization.Id,
-                    OrderNumber = $"ORD-{delivery.Code}-{DateTime.UtcNow:MMddHHmm}",
-                    DestinationServicePointId = delivery.ServicePointId,
-                    RequiredDateUtc = DateTime.UtcNow.AddDays(2),
-                    Priority = "Normal",
-                    Status = DeliveryOrderStatus.Pending,
-                    SourceType = "FieldRequest",
-                    Notes = $"Solicitud en campo por receptor al conductor. Reposición requerida: {reqLine.NextRequestedQuantity.Value}"
-                };
-                _db.DeliveryOrders.Add(deliveryOrder);
-
-                _db.DeliveryOrderLines.Add(new DeliveryOrderLine
-                {
-                    OrganizationId = DemoOrganization.Id,
-                    DeliveryOrderId = deliveryOrder.Id,
-                    ProductId = reqLot.ProductId,
-                    RequestedQuantity = reqLine.NextRequestedQuantity.Value,
-                    PlannedQuantity = 0m,
-                    DeliveredQuantity = 0m
-                });
-            }
+            receiptLines.Add((reqLine, dLine, rLine));
 
             responseLines.Add(new ReceiptLineDto(
                 reqLine.DeliveryLineId,
@@ -655,6 +576,152 @@ public sealed class FieldService : IFieldService
                 reqLine.Unit,
                 reqLine.RemainingQuantity,
                 reqLine.NextRequestedQuantity));
+        }
+
+        // 5. Stock en percha declarado ("me quedan X"), una vez por lote y antes de sumar lo recibido.
+        // La diferencia con el saldo del punto queda como movimiento FieldAdjustment: el saldo se
+        // reconstruye sumando movimientos, sin sobrescrituras silenciosas (#111).
+        var consumedByProduct = new Dictionary<Guid, decimal>();
+        var reconciledLots = new HashSet<Guid>();
+        foreach (var (reqLine, _, rLine) in receiptLines)
+        {
+            if (!reqLine.RemainingQuantity.HasValue || !reconciledLots.Add(reqLine.LotId)) continue;
+
+            var declared = Math.Max(0m, reqLine.RemainingQuantity.Value);
+            var destBalance = await FindBalanceAsync(destinationLocationId, reqLine.LotId);
+            var previousOnHand = destBalance?.QuantityOnHand ?? 0m;
+            var difference = declared - previousOnHand;
+            if (difference == 0m) continue;
+
+            destBalance ??= NewBalance(destinationLocationId, reqLine.LotId);
+            destBalance.QuantityOnHand = declared;
+
+            _db.InventoryMovements.Add(new InventoryMovement
+            {
+                OrganizationId = DemoOrganization.Id,
+                Kind = MovementKinds.FieldAdjustment,
+                LotId = reqLine.LotId,
+                FromLocationId = difference < 0m ? destinationLocationId : null,
+                ToLocationId = difference > 0m ? destinationLocationId : null,
+                Quantity = Math.Abs(difference),
+                ActorAccountId = actorAccountId,
+                OperationId = request.OperationId,
+                OccurredAtUtc = request.OccurredAtDevice,
+                ReceiptLineId = rLine.Id,
+                Reason = difference < 0m
+                    ? $"Stock en percha declarado ({declared}) menor que el saldo del punto ({previousOnHand}): consumo derivado"
+                    : $"Stock en percha declarado ({declared}) mayor que el saldo del punto ({previousOnHand}): ajuste por conteo"
+            });
+
+            // Si tenía más de lo que queda, el punto consumió la diferencia
+            if (difference < 0m && lots.TryGetValue(reqLine.LotId, out var lot))
+            {
+                consumedByProduct[lot.ProductId] = consumedByProduct.GetValueOrDefault(lot.ProductId) - difference;
+            }
+        }
+
+        // 6. Mover inventario de lo aceptado vehículo -> punto de destino
+        foreach (var (reqLine, dLine, rLine) in receiptLines)
+        {
+            if (reqLine.QuantityAccepted <= 0m) continue;
+
+            var vehicleBalance = await FindBalanceAsync(vehicleLocationId, reqLine.LotId);
+            if (vehicleBalance != null)
+            {
+                vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
+            }
+
+            var destBalance = await FindBalanceAsync(destinationLocationId, reqLine.LotId)
+                ?? NewBalance(destinationLocationId, reqLine.LotId);
+            destBalance.QuantityOnHand += reqLine.QuantityAccepted;
+
+            _db.InventoryMovements.Add(new InventoryMovement
+            {
+                OrganizationId = DemoOrganization.Id,
+                Kind = "Receipt",
+                LotId = reqLine.LotId,
+                FromLocationId = vehicleLocationId,
+                ToLocationId = destinationLocationId,
+                Quantity = reqLine.QuantityAccepted,
+                ActorAccountId = actorAccountId,
+                OperationId = request.OperationId,
+                OccurredAtUtc = request.OccurredAtDevice,
+                DeliveryLineId = dLine.Id,
+                ReceiptLineId = rLine.Id,
+                Reason = "Recepción de entrega en punto de servicio"
+            });
+        }
+
+        // 7. Consumo derivado: una fila por punto, producto y día (índice único de Consumption).
+        // Se acumula sobre el consumo de campo del día; un consumo importado no se modifica,
+        // y la cantidad queda trazada en el movimiento FieldAdjustment.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        foreach (var (productId, consumed) in consumedByProduct)
+        {
+            var existing = await _db.Consumptions
+                .FirstOrDefaultAsync(c => c.ServicePointId == delivery.ServicePointId && c.ProductId == productId && c.OccurredOn == today, ct);
+
+            if (existing == null)
+            {
+                _db.Consumptions.Add(new Consumption
+                {
+                    OrganizationId = DemoOrganization.Id,
+                    ServicePointId = delivery.ServicePointId,
+                    ProductId = productId,
+                    OccurredOn = today,
+                    Quantity = consumed,
+                    PeriodDays = Math.Max(1, _logistics.FieldReconciliationPeriodDays),
+                    SourceKind = FieldReconciliationSource
+                });
+            }
+            else if (existing.SourceKind == FieldReconciliationSource)
+            {
+                existing.Quantity += consumed;
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Consumo derivado de {Consumed} del producto {ProductId} en la entrega {DeliveryId} no se registra: ya existe un consumo de origen {SourceKind} para {Day}. Queda en el movimiento FieldAdjustment.",
+                    consumed, productId, delivery.Id, existing.SourceKind, today);
+            }
+        }
+
+        // 8. Pedido futuro solicitado en campo ("necesito X más"): un pedido por recepción con una
+        // línea por producto. El número se deriva de OperationId, estable ante reintentos.
+        var requestedByProduct = receiptLines
+            .Where(l => l.Request.NextRequestedQuantity is > 0m && lots.ContainsKey(l.Request.LotId))
+            .GroupBy(l => lots[l.Request.LotId].ProductId)
+            .Select(g => (ProductId: g.Key, Quantity: g.Sum(l => l.Request.NextRequestedQuantity!.Value)))
+            .ToList();
+
+        if (requestedByProduct.Count > 0)
+        {
+            var deliveryOrder = new DeliveryOrder
+            {
+                OrganizationId = DemoOrganization.Id,
+                OrderNumber = $"ORD-{delivery.Code}-{request.OperationId:N}",
+                DestinationServicePointId = delivery.ServicePointId,
+                RequiredDateUtc = DateTime.UtcNow.AddDays(2),
+                Priority = "Normal",
+                Status = DeliveryOrderStatus.Pending,
+                SourceType = "FieldRequest",
+                Notes = "Solicitud en campo por receptor al conductor. Reposición requerida: " +
+                        string.Join(", ", requestedByProduct.Select(r => r.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            };
+            _db.DeliveryOrders.Add(deliveryOrder);
+
+            foreach (var (productId, quantity) in requestedByProduct)
+            {
+                _db.DeliveryOrderLines.Add(new DeliveryOrderLine
+                {
+                    OrganizationId = DemoOrganization.Id,
+                    DeliveryOrderId = deliveryOrder.Id,
+                    ProductId = productId,
+                    RequestedQuantity = quantity,
+                    PlannedQuantity = 0m,
+                    DeliveredQuantity = 0m
+                });
+            }
         }
 
         var handlingUnits = await _db.HandlingUnits
