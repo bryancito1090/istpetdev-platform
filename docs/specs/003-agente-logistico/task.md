@@ -15,8 +15,8 @@
 | T6 | Endpoints, correlación y disparo por incidente | T5 | — | completada |
 | T7 | Prompt, workflows y control de credenciales | T6 | — | completada |
 | T8 | Copia local de n8n | T7 | [P] con T9 | completada |
-| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | código y ensayo local histórico; corrida oficial de producción pendiente (#39) |
-| T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada localmente (producción en #39) |
+| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | completada (matriz oficial 30/30 en producción, 15-oct; `evidencia/2026-10-15-cierre-39.md`) |
+| T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada (E2E y producción verificados el 15-oct; `evidencia/2026-10-15-cierre-39.md`) |
 
 `[P]` indica archivos distintos; integrar los commits antes de T5 o T10. Las firmas de `AgentRunView`, `IAgentRunService`, `IN8nTrigger` e `IExplanationValidator` son las de [Componentes de la API](plan.md#componentes-de-la-api). Si 001/002 integrados cambian sus nombres, documentar el ajuste en el PR junto con las pruebas consumidoras.
 
