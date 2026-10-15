@@ -561,3 +561,9 @@ Gerencia al cerrar la campaña. Sin cambios de código.
 
 Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
 
+
+## 15-oct-2026 — Flujos de prueba
+
+Se agrega [[Flujos de prueba]] (07 Demo): recorrido de la demo por rol, login del spec 013 y estado de ESC-01 a ESC-28 tras los merges del día (#121, #122, #123, #128, #110, #111, #112, #114).
+
+Verificación documental: **87 notas Markdown**, **928 enlaces internos resueltos**, **0 errores**.
