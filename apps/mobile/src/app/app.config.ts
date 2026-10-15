@@ -1,12 +1,12 @@
 import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { AbstractSecurityStorage, provideAuth } from 'angular-auth-oidc-client';
-import { TokenFreeStorage } from '@istpetdev/shared-core';
+import { OidcSessionStorage, browserStore } from '@istpetdev/shared-core';
 import { routes } from './app.routes';
-import { MobileAuthService, authInterceptor, mobileOidcConfig } from './auth';
+import { MobileAuthService, SESSION_EXPIRED, authInterceptor, mobileOidcConfig } from './auth';
 import { FIELD_API } from './field/field-api.interface';
 import { MockFieldApiService } from './field/mock/mock-field-api.service';
 import { HttpFieldApiService } from './field/http-field-api.service';
@@ -29,9 +29,17 @@ export const appConfig: ApplicationConfig = {
       mode: 'md'
     }),
     provideAuth(mobileOidcConfig),
-    // FR-03: tokens solo en memoria; reemplaza el almacenamiento por defecto de la librería.
-    { provide: AbstractSecurityStorage, useFactory: () => new TokenFreeStorage() },
+    // D-013-S1: la sesión vive en localStorage para que el conductor no la pierda si el sistema cierra la app sin conexión.
+    { provide: AbstractSecurityStorage, useFactory: () => new OidcSessionStorage(browserStore('local')) },
     provideAppInitializer(() => inject(MobileAuthService).bootstrap()),
+    {
+      provide: SESSION_EXPIRED,
+      useFactory: () => {
+        const auth = inject(MobileAuthService);
+        const router = inject(Router);
+        return () => auth.expire(router.url);
+      }
+    },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000'
