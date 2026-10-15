@@ -98,6 +98,7 @@ public class DemoRegionTests(PostgisContainer postgres)
         }
 
         // 4. Segundo reset preserva caché de tramos
+        (await planner.GetAsync("/api/v1/risks")).EnsureSuccessStatusCode();
         var secondReset = await planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null);
         Assert.Equal(HttpStatusCode.OK, secondReset.StatusCode);
 
@@ -105,6 +106,10 @@ public class DemoRegionTests(PostgisContainer postgres)
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             Assert.Equal(240, await db.RoadMatrixEdges.CountAsync(e => e.OrganizationId == DemoOrganization.Id));
+            var currentIds = (await db.ServicePoints.Select(s => s.Id).ToListAsync()).ToHashSet();
+            var refreshed = await planner.GetFromJsonAsync<JsonElement>("/api/v1/risks");
+            Assert.All(refreshed.GetProperty("items").EnumerateArray(),
+                item => Assert.Contains(item.GetProperty("servicePointId").GetGuid(), currentIds));
         }
     }
 

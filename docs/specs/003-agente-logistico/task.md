@@ -595,3 +595,33 @@ La prueba sin efecto conserva costo delta 0% y los mismos IDs/saldos reservados.
 Python 16/16, generador --check, lint y build web aprobados. Se añade aserción
 explícita de CLI-S09 y ambas opciones inviables. Se conservan los intentos
 anteriores como históricos superados; falta CI del commit y ejecución productiva.
+
+### Integración de develop y prelaunch — 14-oct, 21:23 Guayaquil
+
+- PR #84 entró a develop `dbb65b2` durante la revisión. Merge conservando ambas
+  implementaciones en `15d3835`, sin conflictos. Regresión nueva reprodujo que
+  la caché estática de GET risks devolvía IDs eliminados tras reset. Se retira
+  esa caché sin invalidación; se conservan las mejoras AsNoTracking de #84.
+  El agente debe recibir datos actuales después de cada reset/importación/recepción.
+- Alcance de prelaunch: código candidato de replanteo, UI y datos sintéticos;
+  mismas migraciones, proxy, lockfiles y workflows/prompt oficiales. ADR-21:
+  una organización fija, sin RLS; no se agregan grants ni recursos cloud.
+- Autorización: roles/DTOs no se amplían; actor/organización/clasificación de
+  carga son del servidor. SQL de bloqueo sigue interpolado/parametrizado y
+  acotado a la organización. Pruebas de asignación/stock/prefijo en CI pendientes
+  del HEAD final; evidencia de permisos productivos en a45a548 se conserva.
+- Credenciales/tokens únicamente privados; datos de fixture sintéticos;
+  texto del agente interpolado en Angular, sin HTML ejecutable. Validación de
+  explicaciones y allowlist de herramientas permanecen vigentes.
+- TLS VerifyFull, Swagger y controles de host: reutiliza evidencia del despliegue
+  anterior, se comprobará readiness tras CD. No se acredita un scan de imagen;
+  escaneos npm/.NET previos conservan vigencia de lockfiles y CI repite auditoría.
+  Las excepciones previas de headers/SSH constan en el runbook, sin ampliación.
+- No hubo reset productivo ni invocación del modelo. La cuenta propia y M2M
+  ya responden 200; #39 sigue abierta hasta la evidencia real exigida.
+
+Resultado de integración: 13/13 dirigidas aprobadas con #84 y corrección de
+caché; incluye riesgos con IDs vigentes inmediatamente después de reset,
+escenario CLI-S09/opciones inviables y transferencia de reservas. Lint/build
+web del conjunto integrado aprobados. No se incluye en el PR el ajuste local
+ajeno de launchSettings (escucha de desarrollo); se conserva en el workspace.
