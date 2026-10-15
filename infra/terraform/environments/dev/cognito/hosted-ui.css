@@ -1,0 +1,12 @@
+.background-customizable { background-color: #F8FAFC; }
+.banner-customizable { background-color: #00A7C4; padding: 16px 0; }
+.logo-customizable { max-width: 60%; max-height: 30%; }
+.label-customizable { color: #2D3748; font-weight: 600; }
+.textDescription-customizable { color: #2D3748; }
+.legalText-customizable { color: #4A5568; }
+.inputField-customizable { border-color: #00A7C4; color: #2D3748; }
+.inputField-customizable:focus { border-color: #EA601F; }
+.submitButton-customizable { background-color: #EA601F; border-color: #EA601F; font-weight: 700; }
+.submitButton-customizable:hover { background-color: #C94F17; border-color: #C94F17; }
+.redirect-customizable { color: #00A7C4; }
+.errorMessage-customizable { color: #B42318; border-color: #B42318; background-color: #FEF3F2; }
