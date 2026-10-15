@@ -14,6 +14,8 @@ export const mobileOidcConfig: PassedInitialConfig = {
     useRefreshToken: true,
     renewTimeBeforeTokenExpiresInSeconds: 60,
     ignoreNonceAfterRefresh: true,
+    // localStorage se comparte entre pestañas: el bloqueo evita que dos pestañas gasten el mismo refresh token rotado.
+    useRefreshTokenLock: true,
     disableRefreshTokenOfflineAccessScopeWarning: true,
     logLevel: LogLevel.Warn,
     authWellknownEndpoints: {

@@ -29,8 +29,12 @@ public sealed class AccountProvisioning(IApplicationDbContext database, IIdentit
         var user = found ?? await directory.CreateUserAsync(email, ct);
         var existing = await database.Accounts.AsNoTracking()
             .Where(a => a.Issuer == directory.Issuer && a.Subject == user.Subject)
-            .Select(a => (Guid?)a.Id).SingleOrDefaultAsync(ct);
-        if (existing is Guid id) return new(ProvisionOutcome.AlreadyExists, id, user);
+            .Select(a => new { a.Id, a.Role }).SingleOrDefaultAsync(ct);
+        // Una persona = un correo = un rol: el índice único (Issuer, Subject) no admite una segunda fila.
+        if (existing is not null && existing.Role != role)
+            throw new AccountRuleException("role_conflict",
+                $"Ese correo ya tiene una cuenta con rol {existing.Role}. Cada correo tiene un solo rol: cámbialo en «Usuarios» o usa otro correo.");
+        if (existing is not null) return new(ProvisionOutcome.AlreadyExists, existing.Id, user);
 
         var account = new Account
         {
