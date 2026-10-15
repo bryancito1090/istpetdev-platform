@@ -21,6 +21,8 @@ public sealed class PostgisContainer : IAsyncLifetime
 
     public string NewDatabase() => _server.NewDatabase();
 
+    public string NewSchema95Database() => _server.NewSchema95Database();
+
     public Task<string> NewEmptyDatabaseAsync() => _server.NewEmptyDatabaseAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -53,9 +55,17 @@ internal sealed class PostgisServer
         await PrepareExtensionAsync("istpetdev_dev_01");
         // Historical guard requires the genuine limited migrator and canonical DB name.
         var template = Connection("istpetdev_dev_01", "01", pooling: false);
-        await using var db = TestDb.Context(template);
-        await db.GetService<IMigrator>().MigrateAsync("20261010023200_CompleteSystemSchema95");
+        // Se cierra antes de clonar: Postgres no copia una plantilla con conexiones abiertas.
+        await using (var db = TestDb.Context(template))
+            await db.GetService<IMigrator>().MigrateAsync("20261010023200_CompleteSystemSchema95");
+
+        // Plantilla con todas las migraciones, aplicadas una sola vez igual que hacía cada prueba sobre su clon.
+        // El nombre no es canónico, así que DemoGrants no concede permisos (mismo estado que un clon t_*).
+        await Execute(admin, $"CREATE DATABASE {FullTemplate} TEMPLATE istpetdev_dev_01 OWNER migrator_dev_01");
+        await using (var full = await TestDb.CreateMigratedAsync(Connection(FullTemplate, "01", pooling: false))) { }
     }
+
+    private const string FullTemplate = "istpetdev_full";
 
     private async Task PrepareExtensionAsync(string database)
     {
@@ -64,11 +74,17 @@ internal sealed class PostgisServer
         await Execute(admin, "CREATE EXTENSION IF NOT EXISTS postgis");
     }
 
-    public string NewDatabase()
+    // Clon con todas las migraciones aplicadas.
+    public string NewDatabase() => Clone(FullTemplate);
+
+    // Clon detenido en CompleteSystemSchema95, para probar la transición de migraciones.
+    public string NewSchema95Database() => Clone("istpetdev_dev_01");
+
+    private string Clone(string template)
     {
         var name = $"t_{Guid.NewGuid():N}";
         using var admin = new NpgsqlConnection(_container.GetConnectionString()); admin.Open();
-        using var command = new NpgsqlCommand($"CREATE DATABASE \"{name}\" TEMPLATE istpetdev_dev_01 OWNER migrator_dev_01", admin);
+        using var command = new NpgsqlCommand($"CREATE DATABASE \"{name}\" TEMPLATE {template} OWNER migrator_dev_01", admin);
         command.ExecuteNonQuery();
         return Connection(name, "01", pooling: false);
     }

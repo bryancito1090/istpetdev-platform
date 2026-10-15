@@ -33,7 +33,7 @@ public sealed class MigrationSafetyTests(PostgisContainer postgres)
     [Fact]
     public async Task Transition_rejects_non_seed_data_without_deleting_it_or_rewriting_history()
     {
-        await using var db = TestDb.Context(postgres.NewDatabase());
+        await using var db = TestDb.Context(postgres.NewSchema95Database());
         var product = new Product { Sku = "PRESERVE", Name = "Conservar", BaseUnit = "L", IsActive = true };
         db.Add(product); await db.SaveChangesAsync();
         var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.MigrateAsync());
