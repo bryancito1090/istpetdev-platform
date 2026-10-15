@@ -542,6 +542,8 @@ quedan registrados como pendientes, no como realizados.
 
 Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
 
+- 15-oct-2026, issue #124: retirada de cifras y pantallas ficticias de la landing, avisos de fallos de consulta y corrección del flujo en línea del Receptor según spec 014. Evidencia y límites en `docs/validation/issue-124-demo-cleanup.md`.
+
 ## Validación E2E de gestión de cuentas (#108) — 15 de octubre de 2026
 
 Fuente: Issue #108 asignado a Bryan Baño; guía `docs/specs/013-login-y-cuentas/test-e2e.md`

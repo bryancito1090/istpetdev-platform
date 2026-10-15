@@ -1,3 +1,3 @@
 export function shouldMockFieldApi(isDev: boolean, search: string): boolean {
-  return isDev && search.includes('mock=true');
+  return isDev && new URLSearchParams(search).get('mock') === 'true';
 }
