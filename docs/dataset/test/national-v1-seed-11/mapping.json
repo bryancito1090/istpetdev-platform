@@ -1,0 +1,13 @@
+{
+  "name": "simulation-national",
+  "files": {
+    "warehouses": { "file": "warehouses.csv" },
+    "service_points": { "file": "service_points.csv" },
+    "products": { "file": "products.csv" },
+    "vehicles": { "file": "vehicles.csv" },
+    "lots": { "file": "lots.csv" },
+    "stock": { "file": "stock.csv" },
+    "consumptions": { "file": "consumptions.csv" },
+    "road_segments": { "file": "road_segments.csv" }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "fuente": "Agencia de Aseguramiento de la Calidad de los Servicios de Salud y Medicina Prepagada (ACESS)",
+  "conjunto": "Permisos de Funcionamiento",
+  "urlDescarga": "https://www.datosabiertos.gob.ec/dataset/63c8ff4f-5de6-4989-96a1-f2baa9b3de27/resource/de9a8097-3802-4ee1-80e2-b307cab28733/download/acess_permisosdefuncionamiento_2026_09.csv",
+  "urlCatalogo": "https://www.datosabiertos.gob.ec/dataset/permisos-de-funcionamiento",
+  "urlDiccionario": "https://www.datosabiertos.gob.ec/dataset/63c8ff4f-5de6-4989-96a1-f2baa9b3de27/resource/ddae8b6f-e54b-4081-9946-53d1ece40cc2/download/acess_permisosdefuncionamiento_dd_2026.ods",
+  "fechaDescarga": "2026-10-15",
+  "fechaActualizacionCatalogo": "2026-10-14",
+  "licencia": "Creative Commons Attribution (CC BY)",
+  "licenciaUrl": "http://www.opendefinition.org/licenses/cc-by",
+  "archivoOrigen": {
+    "nombre": "acess_permisosdefuncionamiento_2026_09.csv",
+    "bytes": 538763,
+    "sha256": "b98fe76c51f4da6359b2a16aca7d259be43fb1b4c054279d8d1115ddc43bde06",
+    "filasDatos": 2601,
+    "unicodigosDistintos": 2590,
+    "conservado": false,
+    "motivoNoConservado": "El archivo original contiene RUC, razon social, nombre comercial, institucion, unicodigo y numero de permiso; no se versiona."
+  },
+  "transformacion": {
+    "descripcion": "Lectura del CSV original (ISO-8859-1, delimitador ';', comillas dobles) y agregacion por provincia, canton, tipo de establecimiento y categoria. `establecimientos` cuenta los UNICODIGO distintos de cada grupo (el diccionario 2026 define UNICODIGO como identificador unico de establecimiento); el UNICODIGO se usa solo de forma temporal para deduplicar y no se conserva como columna ni valor. `permisos` cuenta las filas del archivo (permisos emitidos); el NUMERO_PERMISO del origen no es unico global (un mismo valor aparece en 3 filas) y no se usa para deduplicar. Se recorto espacio en blanco extremo en los valores de agrupacion. No se conserva ninguna fila individual.",
+    "columnasEliminadas": [
+      "UNICODIGO",
+      "INSTITUCION",
+      "RUC",
+      "RAZONSOCIAL",
+      "NOMBRECOMERCIAL",
+      "NUMERO_PERMISO",
+      "FECHAEMISION_PERMISO_SOL_ANT",
+      "FECHA_VIGENCIA_SOL_ANT",
+      "ZONA"
+    ],
+    "columnasResultado": [
+      "provincia",
+      "canton",
+      "tipo_establecimiento",
+      "categoria",
+      "establecimientos",
+      "permisos"
+    ],
+    "agrupacion": [
+      "PROVINCIA",
+      "CANTON",
+      "TIPO_ESTABLECIMIENTO",
+      "CATEGORIA"
+    ],
+    "orden": "provincia, canton, tipo_establecimiento, categoria (ascendente)",
+    "notaConteos": "Hay 11 permisos adicionales en 10 grupos: un mismo establecimiento (UNICODIGO) puede tener mas de un permiso emitido en el archivo. El numero de permiso se cuenta como fila fuente, no como identificador global deduplicado."
+  },
+  "conteos": {
+    "filasEntrada": 2601,
+    "filasSalida": 1007,
+    "sumaEstablecimientos": 2590,
+    "sumaPermisos": 2601,
+    "gruposConPermisosAdicionales": 10,
+    "permisosAdicionales": 11,
+    "provincias": 24,
+    "cantones": 152,
+    "tiposEstablecimiento": 97,
+    "categorias": 2
+  },
+  "resultado": {
+    "archivo": "acess-2026-09-agregado.csv",
+    "bytes": 73218,
+    "sha256": "6873c11fcf00b1db10e2d5ea54a28de8e1834cbbe503e1e90feb489feedfc321"
+  },
+  "limitesDeUso": [
+    "Agregado de permisos de funcionamiento publicados por ACESS; no mide consumo, demanda logistica ni actividad de establecimientos.",
+    "No identifica establecimientos ni personas; no debe usarse como padron de clientes.",
+    "No se inserta automaticamente en la base de demo."
+  ]
+}
