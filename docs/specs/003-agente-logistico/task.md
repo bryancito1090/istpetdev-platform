@@ -648,3 +648,18 @@ Integration 153/153, E2E 15/15; `dotnet build` sin warnings. CI del HEAD
 `dc4d3a7` 4/4 verde; PR #90 fusionado a develop `2a9ae9f` (15-oct 03:22 UTC).
 #39 permanece abierta: la promoción a main (#89), el CD y los gates
 productivos (Fases G–H) siguen pendientes.
+
+### Tuning productivo de workflows — 15-oct, 07:14 Guayaquil
+
+Por instrucción de Bryan se versiona el tuning, idéntico en vigía e incidente:
+nodo DeepSeek `maxRetries: 2` y `timeout: 20 s`; nodos HTTP de herramientas y
+callback a `15 s`; `executionTimeout: 35`; `saveData*: all` con progreso y
+manuales para auditoría. Motivos observados: el timeout de 3 s abortaba OAuth2
+M2M hacia Cognito bajo latencia; los 503 intermitentes de DeepSeek caían a
+Fallback con 0 reintentos.
+
+Regenerado con `build-workflows.py` (`--check` limpio); Python 6/6 y
+`WorkflowSecretsTests` en verde. No cambia prompt, modelo, herramientas ni
+política; el deadline del API (10 s) sigue siendo el límite efectivo y se mide
+en Fase G. Pendiente: importar ambos JSON en el n8n productivo y comparar
+grafos (GC-2) antes de la ventana.
