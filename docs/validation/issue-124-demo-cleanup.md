@@ -1,7 +1,7 @@
 # Evidencia de limpieza de demo — issue #124
 
 Fecha: 15-oct-2026. Rama: `chore/124-limpieza-restos-demo`.
-Base verificada: `cbdabf2` de `develop`.
+Base inicial verificada: `cbdabf2` de `develop`. Actualización incorporada: `8259389` (CI de migraciones aditivas y evidencia documental de #108; sin cambios al frontend o backend).
 
 ## Dependencias verificadas en GitHub e incorporadas
 

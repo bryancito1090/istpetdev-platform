@@ -543,3 +543,23 @@ quedan registrados como pendientes, no como realizados.
 Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
 
 - 15-oct-2026, issue #124: retirada de cifras y pantallas ficticias de la landing, avisos de fallos de consulta y corrección del flujo en línea del Receptor según spec 014. Evidencia y límites en `docs/validation/issue-124-demo-cleanup.md`.
+
+## Validación E2E de gestión de cuentas (#108) — 15 de octubre de 2026
+
+Fuente: Issue #108 asignado a Bryan Baño; guía `docs/specs/013-login-y-cuentas/test-e2e.md`
+(E2E-11 a E2E-13). Ejecución asistida contra producción `d739f43`
+(`https://istpetdev.doicela.dev`, user pool `us-east-1_4Y2j5DINp`): alta de un
+Conductor de prueba desde «Usuarios» («Invitación pendiente» → correo con
+contraseña temporal → primer ingreso y cambio de contraseña en `/campo/` →
+«Activa»); desactivación con 403 inmediato en `/api/v1/me` pese a la sesión
+abierta, `Enabled=false` en Cognito, rechazo de ingreso («User is disabled.») y
+reingreso tras «Reactivar»; reglas de Gerencia: fila propia sin acciones, correo
+repetido rechazado y reenvío de invitación reciente. Capturas con correos
+difuminados en `docs/specs/013-login-y-cuentas/evidencia/` y registro en
+`test-e2e.md` y `task.md`. Salvedades: sin rutas publicadas a conductores (no se
+comprobó «solo sus entregas») y sin prueba de caducidad de invitación de más de
+un día; la cuenta de prueba quedó desactivada y Bryan cambiará la contraseña de
+Gerencia al cerrar la campaña. Sin cambios de código.
+
+Verificación documental: **86 notas Markdown**, **925 enlaces internos resueltos**, **0 errores**.
+
