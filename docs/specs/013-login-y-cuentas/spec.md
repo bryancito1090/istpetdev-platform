@@ -1,9 +1,9 @@
 ---
 id: "013"
 titulo: Login real y gestión de cuentas por Gerencia
-estado: borrador
+estado: cerrado
 creado: 2026-10-13
-actualizado: 2026-10-14
+actualizado: 2026-10-15
 responsable: Alexander Martínez y Joseph Baño   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE     # diseño acordado con Joseph Baño en la sesión del 13-oct (Auditor, H4 en P2 y revisor); PA-04 abierta
 revisor: revisión cruzada (Alexander revisa los PR de Joseph y Joseph los de Alexander; nadie aprueba su propio PR)
@@ -18,7 +18,7 @@ boveda:
 
 # 013 — Login real y gestión de cuentas por Gerencia
 
-> **Nota de estado (14-oct-2026):** Implementado en `develop` mediante PR #56 (T1–T9) y PR #65 (T11–T13). Pendiente de validación E2E en entorno HTTPS con cuentas reales (E2E-01 a E2E-13, issue #55) y tareas de infraestructura (T10, issue #43). Spec no cerrado.
+> **Nota de estado (15-oct-2026):** Cerrado. Implementado en `develop` y desplegado a `main` (PR #56, #65, #100 y #104). Pasaron E2E-00, 01, 02, 03, 05, 06 y 09. Los escenarios que faltan no bloquean el cierre y quedan asignados: E2E-04, 07 y 10 en #107; E2E-11 a 13 en #108; E2E-08 en #55.
 
 ## Contexto
 
@@ -219,10 +219,8 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 - **PR #56** (T1–T9): implementación de roles (`Auditor`), `GET /api/v1/me`, script de aprovisionamiento idempotente (`--provision-accounts`), lógica de sesión OIDC en `shared-core`, integración real en web y PWA (con retiro de mocks y guards) y guardián de CI.
 - **PR #65** (T11–T13): API y web de gestión de cuentas por Gerencia (H4) — listado, alta, edición, desactivación/reactivación y reenvío de invitación, junto con la pantalla «Usuarios».
 - **Desviaciones relevantes:** documentadas en las secciones «Desviaciones» de las Tasks 6–9 y 11–13 de [task.md](task.md).
-- **Pendiente para cierre completo:**
-  - T10: configuración de infraestructura en AWS/Cognito (callbacks HTTPS, marca, IAM y hop limit, issue [#43](https://github.com/bryancito1090/istpetdev-platform/issues/43)).
-  - PWA en `/campo/`: despliegue y validación de la app móvil en subdirectorio (issue [#52](https://github.com/bryancito1090/istpetdev-platform/issues/52)).
-  - E2E-01 a E2E-13: ejecución de pruebas de punta a punta en entorno HTTPS con cuentas reales (issue [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55)).
+- **PR #104** (15-oct): T10 aplicada (callbacks HTTPS, marca, rol IAM del host y hop limit 2); cierra [#43](https://github.com/bryancito1090/istpetdev-platform/issues/43). La PWA quedó publicada en `/campo/` ([#52](https://github.com/bryancito1090/istpetdev-platform/issues/52)).
+- **Cierre (15-oct):** E2E con cuentas reales en HTTPS: pasaron E2E-01, 02, 03, 05, 06 y 09 (más E2E-00). Pendientes asignados, sin bloquear el cierre: E2E-04, 07 y 10 en [#107](https://github.com/bryancito1090/istpetdev-platform/issues/107); E2E-11 a 13 en [#108](https://github.com/bryancito1090/istpetdev-platform/issues/108); E2E-08 en [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55).
 - **PR #100** (15-oct): la sesión se renueva con el refresh token al arrancar y vuelve a Cognito ante un 401 (D-013-S1); el alta de un correo existente con otro rol se rechaza (`role_conflict`).
 - **Pendiente después del evento (17-oct en adelante):**
   - Reactivar el MFA del pool (`mfa_configuration = "ON"`, PR #98 lo apagó). Como mínimo, `"OPTIONAL"` con MFA obligatorio para Gerencia, que administra cuentas.
