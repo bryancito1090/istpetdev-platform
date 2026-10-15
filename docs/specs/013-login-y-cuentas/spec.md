@@ -36,7 +36,7 @@ No existe forma de dar de alta a una persona: no hay usuarios de demo documentad
 
 | Criterio | Peso | Cómo lo sostiene este spec |
 |---|---:|---|
-| Viabilidad técnica | 15% | Identidad administrada con MFA y revocación inmediata; ante una pregunta del jurado se muestra que el acceso no es simulado |
+| Viabilidad técnica | 15% | Identidad administrada con revocación inmediata (MFA desactivado durante la hackathon, PR #98); ante una pregunta del jurado se muestra que el acceso no es simulado |
 | Prototipo/demo | 20% | Habilita el recorrido real de 004 y 005 (sin login real la PWA y el panel no hablan con la API) |
 | Presentación | 10% | Cada dispositivo de la demo muestra el nombre y rol reales; pantalla de Gerencia disponible para preguntas |
 
@@ -200,7 +200,7 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
 | La contraseña temporal vence en 1 día y la invitación caduca antes del evento | Alta | Medio | Crear o reenviar las cuentas de demo el 15-oct; reenviar desde H4 o el script |
 | El contenedor no obtiene credenciales del perfil de instancia (hop limit 1) | Media | Medio | `HttpPutResponseHopLimit = 2`; probar `GET /accounts` en producción antes de H4 |
 | Cognito envía como máximo unos 50 correos al día con su configuración por defecto | Baja | Medio | Evitar reenvíos masivos; crear las cuentas de demo en un solo lote |
-| El MFA obligatorio frena al conductor en la demo | Media | Medio | MFA configurado antes del evento en los teléfonos de la demo; sesiones ya iniciadas (D3) |
+| El MFA obligatorio frena al conductor en la demo | — | — | **Cerrado (15-oct, PR #98):** MFA desactivado en el pool durante la hackathon. Se reactiva después del evento (ver «Pendiente después del evento») |
 | Reinicio de la PWA sin señal con el access token vencido (más de 15 min): el refresh token no se puede usar sin red y la app pide login. Con D-013-S1 la sesión ya no se pierde al cerrar la app; solo falta red para renovarla. Las capturas ya guardadas no se pierden (CE-04). | Baja | Medio | Abrir la PWA con red antes de la escena offline; en la demo no se reinicia en modo avión. Decide: Joseph Baño |
 | Se presenta H4 como funcionando sin estarlo | Baja | Alto | Regla del 006: solo se muestra lo probado en `test-e2e.md` |
 
@@ -223,6 +223,10 @@ Notas revisadas sin otra contradicción: Hechos canonicos (identidad Cognito ✅
   - T10: configuración de infraestructura en AWS/Cognito (callbacks HTTPS, marca, IAM y hop limit, issue [#43](https://github.com/bryancito1090/istpetdev-platform/issues/43)).
   - PWA en `/campo/`: despliegue y validación de la app móvil en subdirectorio (issue [#52](https://github.com/bryancito1090/istpetdev-platform/issues/52)).
   - E2E-01 a E2E-13: ejecución de pruebas de punta a punta en entorno HTTPS con cuentas reales (issue [#55](https://github.com/bryancito1090/istpetdev-platform/issues/55)).
+- **PR #100** (15-oct): la sesión se renueva con el refresh token al arrancar y vuelve a Cognito ante un 401 (D-013-S1); el alta de un correo existente con otro rol se rechaza (`role_conflict`).
+- **Pendiente después del evento (17-oct en adelante):**
+  - Reactivar el MFA del pool (`mfa_configuration = "ON"`, PR #98 lo apagó). Como mínimo, `"OPTIONAL"` con MFA obligatorio para Gerencia, que administra cuentas.
+  - Añadir una Content-Security-Policy en `infra/nginx/istpetdev.conf`: es la mitigación que falta para el riesgo aceptado en D-013-S1 (refresh token legible por un XSS).
 
 ## Preguntas abiertas
 
