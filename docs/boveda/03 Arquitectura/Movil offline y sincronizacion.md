@@ -92,8 +92,8 @@ Para eliminar fricciones operativas y mitigar riesgos de error humano en rutas d
   - El **Conductor lee el QR de la caja/bulto** con su cámara móvil antes de ingresar la mercancía a su unidad de transporte («Recibir Paquetes»). Esto carga y valida los insumos/lotes asignados a su manifiesto de carga.
 - **En Destino Hospitalario (Descarga y Entrega):**
   - El conductor accede a «Ver Ruta Hoy» y pulsa la parada correspondiente (ej. *Hospital Gineco Obstétrico Laura*).
-  - La pantalla del conductor genera y expone el **Código QR de Custodia de Entrega** (`DELIVERY:HOSP-LAURA-...`).
-  - El **Receptor hospitalario escanea el teléfono del conductor** con su terminal o cámara para asentar la recepción formal.
+  - El conductor registra el resultado de la entrega desde su parada; el QR para el Receptor corresponde a la etiqueta del bulto.
+  - El **Receptor escanea el QR del bulto** o pega su URL completa; la recepción se confirma en línea mediante la API de spec 014.
   - El conductor captura la fotografía de descargo y solo escribe si detecta alguna anomalía física.
 
 ### 2. Ergonomía del Conductor (Regla de mínimo tipeo)
@@ -110,8 +110,8 @@ Para eliminar fricciones operativas y mitigar riesgos de error humano en rutas d
 - Prohibición estricta de emojis en la interfaz gráfica. Los elementos de navegación y estado emplean iconos SVG vectoriales precisos bajo el Arquetipo B Técnico/Minimalista.
 
 ### 5. Integración Fullstack con API Real y Sincronización Hospitalaria (13-oct-2026)
-- **Conexión Predeterminada:** En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` opera por defecto a través de `HttpFieldApiService`; el modo simulado mock se conserva como fallback contingente mediante el parámetro explícito `?mock=true`.
-- **Encolamiento Atómico en Outbox:** Al dictaminar la recepción de un bulto en farmacia hospitalaria (rol `HospitalReceiver` en `HomePage`), se genera una transacción atómica mediante `saveReceiptAtomic` que persiste en IndexedDB (`istpetdev-driver-outbox-db`) el dictamen (conforme o con incidencias categorizadas y notas) y las líneas de entrega, transmitiéndolo de manera idempotente contra `POST /api/v1/deliveries/{id}/receipts` en el backend .NET.
-- **Trazabilidad Ininterrumpida:** La operación asienta la custodia física en destino tanto con conectividad activa como tras interrupciones temporales en modo avión, emitiendo el acta formal `REC-2026-XXXX`.
+- **Conexión Predeterminada:** En `apps/mobile/src/app/app.config.ts`, la conexión a la API backend local en `http://localhost:5000` opera por defecto a través de `HttpFieldApiService`; el mock solo se habilita en desarrollo con `isDevMode()` y el parámetro exacto `?mock=true`. No se activa en producción ni como respuesta a un error de API.
+- **Receptor (spec 014):** `HomePage` consulta `GET /api/v1/receiver/handling-units/{unitId}` y confirma por `POST /api/v1/receiver/handling-units/{unitId}/receipt`, con `X-Trace-Token` e `Idempotency-Key`. Este flujo requiere conexión y no usa el outbox del conductor.
+- **Conductor:** las capturas pendientes se conservan en el outbox local y se reintentan con idempotencia. La validación en teléfono y modo avión requiere evidencia del recorrido; no se presume por la implementación.
 
 

@@ -366,9 +366,9 @@ import {
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-4 border-b border-slate-200 flex items-center justify-between">
               <h3 class="text-sm font-bold text-slate-900">
-                Detalle de las 12 Corridas del Comparador
+                Detalle de {{ selectedDetail()!.runs.length }} corridas del comparador
               </h3>
-              <span class="text-xs text-slate-500">1080 jornadas simuladas en total</span>
+              <span class="text-xs text-slate-500">Corridas registradas por la API</span>
             </div>
 
             <div class="overflow-x-auto">

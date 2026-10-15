@@ -103,3 +103,18 @@ Bloque = parte del Anexo 5.7 donde aparece la frase (P problema, S solución, D 
 | Intento deliberado: cita sin permiso (A-29), «ahorro» sin ZIP (A-21), «IA replanifica sola» (A-11/A-33), «QR del jurado» (A-16) | [PENDIENTE] |
 | Otras filas corregidas (ID, antes → después) | [PENDIENTE] |
 | ¿Aprueba la matriz para el guion de ensayo? | [PENDIENTE] |
+
+
+## Revisión de restos de demo — issue #124 (15-oct-2026)
+
+La landing pública retiró las cifras sin fuente (volumen, ahorro, quiebres,
+custodia, sedes y precio), el formulario sin envío y las pantallas ilustradas
+que parecían datos operativos. Conserva enlaces funcionales al login y a la PWA.
+
+A-13–A-18 siguen sujetas a sus evidencias: una implementación fusionada no
+equivale a un recorrido productivo. El Receptor de spec 014 confirma en línea
+con el QR del bulto; no se debe anunciar recepción hospitalaria offline.
+A-21 y A-26 continúan retiradas: no se publican ahorros ni precios inventados.
+El simulador de 90 días sigue identificado como simulación por diseño.
+La revisión humana E2E-05 y el recorrido con las seis cuentas quedan pendientes;
+esta limpieza no los certifica.

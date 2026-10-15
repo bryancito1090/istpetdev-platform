@@ -8,7 +8,7 @@ import {
   FieldProblemDetails
 } from '@istpetdev/shared-core';
 import { FIELD_API, IFieldApi } from '../field-api.interface';
-import { generateUuidV7 } from '../mock/mock-field-api.service';
+import { generateUuidV7 } from '../uuid';
 
 export interface OutboxItem {
   operationId: string; // UUID v7

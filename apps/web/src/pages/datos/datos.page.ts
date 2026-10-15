@@ -1407,9 +1407,7 @@ export class DatosPage {
         { name: 'lat', type: 'Decimal', required: true, desc: 'Latitud geográfica en grados decimales (WGS84)', example: '-0.2295' },
         { name: 'lon', type: 'Decimal', required: true, desc: 'Longitud geográfica en grados decimales (WGS84)', example: '-78.5243' }
       ],
-      csvTemplate: `code,name,lat,lon
-BOD-UIO,Bodega central Quito (sintética),-0.2295,-78.5243
-BOD-SUR,Bodega Sur Distribución,-0.2850,-78.5400`,
+      csvTemplate: `code,name,lat,lon\n`,
       tableCols: [
         { key: 'code', label: 'Código' },
         { key: 'name', label: 'Nombre de la Bodega' },
@@ -1439,10 +1437,7 @@ BOD-SUR,Bodega Sur Distribución,-0.2850,-78.5400`,
         { name: 'service_minutes', type: 'Entero', required: false, desc: 'Minutos estimados de atención / descarga', example: '20' },
         { name: 'lead_time_days', type: 'Decimal', required: false, desc: 'Días de anticipación requeridos', example: '2' }
       ],
-      csvTemplate: `code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days
-HOS-001,Hospital Norte (sintético),-0.1700,-78.4800,Pichincha,hospital,alta,07:00,15:00,20,2
-CLI-002,Clínica Centro (sintética),-0.2100,-78.5000,Pichincha,clinica,alta,08:00,16:00,15,1
-OFI-003,Oficina Corporativa (sintética),-0.1900,-78.4850,Pichincha,oficina,normal,08:00,17:00,10,1`,
+      csvTemplate: `code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days\n`,
       tableCols: [
         { key: 'code', label: 'Código' },
         { key: 'name', label: 'Establecimiento' },
@@ -1470,10 +1465,7 @@ OFI-003,Oficina Corporativa (sintética),-0.1900,-78.4850,Pichincha,oficina,norm
         { name: 'weight_per_unit', type: 'Decimal', required: false, desc: 'Peso en kilogramos por unidad de medida', example: '1.05' },
         { name: 'volume_per_unit', type: 'Decimal', required: false, desc: 'Volumen en m³ por unidad de medida', example: '0.001' }
       ],
-      csvTemplate: `sku,name,base_unit,weight_per_unit,volume_per_unit
-DES-01,Desinfectante hospitalario,L,1.05,0.001
-PAP-01,Papel higiénico industrial,UN,0.80,0.004
-ALC-70,Alcohol antiséptico 70% 1L,L,0.95,0.0012`,
+      csvTemplate: `sku,name,base_unit,weight_per_unit,volume_per_unit\n`,
       tableCols: [
         { key: 'sku', label: 'SKU' },
         { key: 'name', label: 'Descripción del Producto' },
@@ -1498,10 +1490,7 @@ ALC-70,Alcohol antiséptico 70% 1L,L,0.95,0.0012`,
         { name: 'max_volume', type: 'Decimal', required: false, desc: 'Capacidad volumétrica máxima en m³', example: '8' },
         { name: 'cost_per_km', type: 'Decimal', required: false, desc: 'Costo operacional por km en USD', example: '0.45' }
       ],
-      csvTemplate: `code,depot_code,max_weight,max_volume,cost_per_km
-VEH-01,BOD-UIO,1200,8,0.45
-VEH-02,BOD-UIO,2500,16,0.70
-VEH-03,BOD-SUR,800,5,0.35`,
+      csvTemplate: `code,depot_code,max_weight,max_volume,cost_per_km\n`,
       tableCols: [
         { key: 'code', label: 'Código Unidad' },
         { key: 'depot_code', label: 'Bodega Base' },
@@ -1527,9 +1516,7 @@ VEH-03,BOD-SUR,800,5,0.35`,
         { name: 'expires_on', type: 'Fecha (YYYY-MM-DD)', required: false, desc: 'Fecha de caducidad o vencimiento', example: '2027-04-30' },
         { name: 'origin', type: 'Texto', required: false, desc: 'Proveedor, laboratorio o fabricante', example: 'Proveedor sintético A' }
       ],
-      csvTemplate: `sku,lot_code,product_name,base_unit,expires_on,origin
-DES-01,L-DES-2610,Desinfectante hospitalario,L,2027-04-30,Proveedor sintético A
-PAP-01,L-PAP-2610,Papel higiénico industrial,UN,2028-12-31,Proveedor sintético B`,
+      csvTemplate: `sku,lot_code,product_name,base_unit,expires_on,origin\n`,
       tableCols: [
         { key: 'lot_code', label: 'Código de Lote' },
         { key: 'sku', label: 'SKU' },
@@ -1555,11 +1542,7 @@ PAP-01,L-PAP-2610,Papel higiénico industrial,UN,2028-12-31,Proveedor sintético
         { name: 'lot_code', type: 'Texto', required: false, desc: 'Código de lote específico (vacío para genérico)', example: 'L-DES-2610' },
         { name: 'quantity', type: 'Decimal', required: true, desc: 'Saldo o existencias disponibles físicamente', example: '800' }
       ],
-      csvTemplate: `location_kind,location_code,sku,lot_code,quantity
-warehouse,BOD-UIO,DES-01,L-DES-2610,800
-warehouse,BOD-UIO,PAP-01,L-PAP-2610,1500
-service_point,HOS-001,DES-01,L-DES-2610,60
-service_point,CLI-002,DES-01,L-DES-2610,90`,
+      csvTemplate: `location_kind,location_code,sku,lot_code,quantity\n`,
       tableCols: [
         { key: 'location_code', label: 'Ubicación' },
         { key: 'location_kind', label: 'Tipo Ubicación', badge: true },
@@ -1584,11 +1567,7 @@ service_point,CLI-002,DES-01,L-DES-2610,90`,
         { name: 'quantity', type: 'Decimal', required: true, desc: 'Cantidad de unidades consumidas en el período', example: '84' },
         { name: 'period_days', type: 'Entero', required: false, desc: 'Días acumulados (1=diario, 7=semanal, 30=mensual)', example: '7' }
       ],
-      csvTemplate: `point_code,sku,date,quantity,period_days
-HOS-001,DES-01,2026-10-05,84,7
-HOS-001,PAP-01,2026-10-05,70,7
-CLI-002,DES-01,2026-10-05,42,7
-OFI-003,PAP-01,2026-10-05,35,7`,
+      csvTemplate: `point_code,sku,date,quantity,period_days\n`,
       tableCols: [
         { key: 'point_code', label: 'Punto Hospitalario' },
         { key: 'sku', label: 'SKU' },
@@ -1732,7 +1711,7 @@ OFI-003,PAP-01,2026-10-05,35,7`,
   }
 
   downloadTemplateForWarehouse(warehouse: { code: string; name: string }): void {
-    const csv = `location_kind,location_code,sku,lot_code,quantity\nwarehouse,${warehouse.code},DES-01,L-DES-2610,500\nwarehouse,${warehouse.code},PAP-01,L-PAP-2610,1200`;
+    const csv = `location_kind,location_code,sku,lot_code,quantity\n`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1745,8 +1724,7 @@ OFI-003,PAP-01,2026-10-05,35,7`,
   }
 
   downloadTemplateForServicePoint(point: { code: string; name: string }): void {
-    const today = new Date().toISOString().substring(0, 10);
-    const csv = `point_code,sku,date,quantity,period_days\n${point.code},DES-01,${today},84,7\n${point.code},PAP-01,${today},70,7`;
+    const csv = `point_code,sku,date,quantity,period_days\n`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
