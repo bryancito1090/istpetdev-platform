@@ -224,26 +224,26 @@ public sealed class SimulationApiTests
     }
 
     [Fact]
-    public void All_Comparison_Endpoints_Are_Protected_With_Planning_Role()
+    public void Comparison_reads_allow_auditor_and_writes_remain_planning_only()
     {
         var controllerType = typeof(SimulationsController);
 
-        var methods = new[]
+        var methods = new (string Name, string ExpectedRoles)[]
         {
-            nameof(SimulationsController.CreateComparison),
-            nameof(SimulationsController.ListComparisons),
-            nameof(SimulationsController.GetComparison),
-            nameof(SimulationsController.ExportComparison),
-            nameof(SimulationsController.ImportComparison)
+            (nameof(SimulationsController.CreateComparison), Roles.Planning),
+            (nameof(SimulationsController.ListComparisons), Roles.Planning + "," + Roles.Auditor),
+            (nameof(SimulationsController.GetComparison), Roles.Planning + "," + Roles.Auditor),
+            (nameof(SimulationsController.ExportComparison), Roles.Planning + "," + Roles.Auditor),
+            (nameof(SimulationsController.ImportComparison), Roles.Planning)
         };
 
-        foreach (var name in methods)
+        foreach (var (name, expectedRoles) in methods)
         {
             var method = controllerType.GetMethod(name);
             Assert.NotNull(method);
             var auth = (AuthorizeAttribute?)Attribute.GetCustomAttribute(method, typeof(AuthorizeAttribute));
             Assert.NotNull(auth);
-            Assert.Equal(Roles.Planning, auth.Roles);
+            Assert.Equal(expectedRoles, auth.Roles);
             Assert.Contains(Roles.Gerencia, auth.Roles);
             Assert.Contains(Roles.Planificador, auth.Roles);
             Assert.DoesNotContain(Roles.Conductor, auth.Roles);
