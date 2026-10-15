@@ -329,8 +329,20 @@ public sealed class RoutePlansController(
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
-        var res = await publisher.PublishAsync(request, ct);
-        return Ok(res);
+        try
+        {
+            var res = await publisher.PublishAsync(request, ct);
+            return Ok(res);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "invalid_driver", detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "publish_conflict", detail: ex.Message);
+        }
     }
 
     [HttpPost("{id:guid}/stops/{sequence:int}/complete")]

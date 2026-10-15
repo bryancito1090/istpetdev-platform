@@ -82,6 +82,11 @@ export interface RoutePlanSummaryDto {
   stopsCount: number;
 }
 
+export interface DriverOptionDto {
+  accountId: string;
+  displayName: string;
+}
+
 export interface RouteGeometryWaypointDto {
   code: string;
   name: string;
@@ -579,8 +584,15 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions/${encodeURIComponent(id)}/dismiss`, { reason });
   }
 
-  publishRoutePlan(id: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, {});
+  /** Conductores activos que el Planificador puede asignar al publicar. */
+  getDrivers(): Observable<DriverOptionDto[]> {
+    return this.http.get<DriverOptionDto[]>(`${this.baseUrl}/api/v1/drivers`).pipe(catchError(() => of([])));
+  }
+
+  /** Sin conductor, las entregas se crean sin asignar y ningún conductor las ve en la PWA. */
+  publishRoutePlan(id: string, assignment?: { vehicleCode: string; driverAccountId: string }): Observable<any> {
+    const body = assignment ? { driverAssignments: { [assignment.vehicleCode]: assignment.driverAccountId } } : {};
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, body);
   }
 
   completeStop(routePlanId: string, sequence: number): Observable<any> {

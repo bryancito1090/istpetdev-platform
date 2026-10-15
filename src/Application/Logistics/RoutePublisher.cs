@@ -58,7 +58,10 @@ public sealed class RoutePublisher(
                 .Where(r => r.OrganizationId == DemoOrganization.Id && r.RoutePlanId == plan.Id)
                 .ToListAsync(ct);
 
-            return new PublishResult(plan.Id, plan.Status, existingDeliveries, existingReservations);
+            // Un plan publicado sin entregas quedó vacío (rutas del asistente publicadas antes de esta corrección): se repara
+            // publicándolo de nuevo en lugar de devolver una ruta que ningún conductor puede ver.
+            if (existingDeliveries.Count > 0)
+                return new PublishResult(plan.Id, plan.Status, existingDeliveries, existingReservations);
         }
 
         var today = await clock.TodayAsync(ct);
@@ -70,14 +73,21 @@ public sealed class RoutePublisher(
             .OrderBy(s => s.SequenceNumber)
             .ToListAsync(ct);
 
-        // Ubicación de salida (bodega)
-        var depotLoc = await db.Locations
-            .FirstOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse, ct)
-            ?? throw new InvalidOperationException("No se encontró la bodega central de origen.");
+        // Bodega de origen por parada (ADR-28, varias bodegas): la última recogida en bodega previa en la ruta o,
+        // si no hay, la bodega del vehículo. Antes todas las entregas salían de la primera bodega encontrada.
+        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
+        var warehouses = await db.Locations
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse)
+            .ToDictionaryAsync(l => l.Id, ct);
+        if (warehouses.Count == 0)
+            throw new InvalidOperationException("No se encontró la bodega central de origen.");
+        var vehicleDepotId = vehicle != null && warehouses.ContainsKey(vehicle.DepotLocationId)
+            ? vehicle.DepotLocationId
+            : warehouses.Keys.First();
 
-        // Cargar lotes de la bodega disponibles
+        // Cargar lotes de las bodegas disponibles
         var balances = await db.StockBalances
-            .Where(b => b.OrganizationId == DemoOrganization.Id && b.LocationId == depotLoc.Id)
+            .Where(b => b.OrganizationId == DemoOrganization.Id && warehouses.Keys.Contains(b.LocationId))
             .ToListAsync(ct);
 
         var lotIds = balances.Select(b => b.LotId).Distinct().ToHashSet();
@@ -112,19 +122,22 @@ public sealed class RoutePublisher(
             }
         }
 
+        await FillLoadsFromOrdersAsync(routeDoc.RootElement, stops, plannedLoadsBySeq, ct);
+
         if (plan.SupersedesRoutePlanId.HasValue && plan.ProposedBy == "System:IncidentReplanner")
             return await PublishRevisionAsync(plan, stops, plannedLoadsBySeq, request, ct);
 
         // Determinar asignación de conductor si existe
+        // El conductor solo ve las entregas con su cuenta en AssignedAccountId (GET /mobile/assignments).
         Guid? assignedAccountId = null;
-        if (request.DriverAssignments != null)
+        if (request.DriverAssignments != null && vehicle != null &&
+            request.DriverAssignments.TryGetValue(vehicle.Code, out var driverText))
         {
-            var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
-            if (vehicle != null && request.DriverAssignments.TryGetValue(vehicle.Code, out var driverSubStr) &&
-                Guid.TryParse(driverSubStr, out var driverGuid))
-            {
-                assignedAccountId = driverGuid;
-            }
+            if (!Guid.TryParse(driverText, out var driverId) ||
+                !await db.Accounts.AnyAsync(a => a.Id == driverId && a.IsActive && a.Role == Roles.Conductor &&
+                                                  a.OrganizationId == DemoOrganization.Id, ct))
+                throw new ArgumentException($"La cuenta indicada para {vehicle.Code} no es un Conductor activo.");
+            assignedAccountId = driverId;
         }
 
         var createdDeliveries = new List<Delivery>();
@@ -141,7 +154,7 @@ public sealed class RoutePublisher(
                 if (lot.ExpiresOn.HasValue && lot.ExpiresOn.Value <= today) return false;
                 return (b.QuantityOnHand - b.QuantityReserved) > 0;
             })
-            .GroupBy(b => lots[b.LotId].ProductId)
+            .GroupBy(b => (b.LocationId, lots[b.LotId].ProductId))
             .ToDictionary(
                 g => g.Key,
                 g => g.OrderBy(b => lots[b.LotId].ExpiresOn ?? DateOnly.MaxValue)
@@ -149,8 +162,15 @@ public sealed class RoutePublisher(
                       .ToList());
 
         // Validar y asignar lotes FEFO
+        var originId = vehicleDepotId;
         foreach (var stop in stops.Where(s => s.Status != "Completed"))
         {
+            // Una recogida en bodega cambia el origen de las entregas siguientes.
+            if (stop.Kind == RouteStopKind.Pickup && stop.LocationId is { } pickupId && warehouses.ContainsKey(pickupId))
+            {
+                originId = pickupId;
+                continue;
+            }
             if (!plannedLoadsBySeq.TryGetValue(stop.SequenceNumber, out var loads) || loads.Count == 0)
             {
                 continue;
@@ -162,7 +182,7 @@ public sealed class RoutePublisher(
                 OrganizationId = DemoOrganization.Id,
                 Code = deliveryCode,
                 RouteStopId = stop.Id,
-                OriginLocationId = depotLoc.Id,
+                OriginLocationId = originId,
                 ServicePointId = stop.ServicePointId,
                 Status = nameof(DeliveryStatus.Draft),
                 AssignedAccountId = assignedAccountId
@@ -172,9 +192,10 @@ public sealed class RoutePublisher(
             foreach (var load in loads)
             {
                 decimal qtyNeeded = load.Quantity;
-                if (!availableByProduct.TryGetValue(load.ProductId, out var candidateBalances))
+                if (!availableByProduct.TryGetValue((originId, load.ProductId), out var candidateBalances))
                 {
-                    throw new InvalidOperationException($"Conflicto de stock: No hay stock disponible para el producto {load.Sku}.");
+                    throw new InvalidOperationException(
+                        $"Conflicto de stock: No hay stock disponible para el producto {load.Sku} en la bodega {warehouses[originId].Code}.");
                 }
 
                 foreach (var bal in candidateBalances)
@@ -225,6 +246,10 @@ public sealed class RoutePublisher(
             }
         }
 
+        if (createdDeliveries.Count == 0)
+            throw new InvalidOperationException(
+                "La ruta no tiene productos para entregar: ninguna parada tiene cargas planificadas ni pedidos asociados. No se publicó.");
+
         // Persistir entregas, líneas, reservas y actualizar estado del plan
         plan.Status = "Published";
         plan.PublishedAtUtc = DateTime.UtcNow;
@@ -237,6 +262,38 @@ public sealed class RoutePublisher(
         await db.SaveChangesAsync(ct);
 
         return new PublishResult(plan.Id, plan.Status, createdDeliveries, createdReservations);
+    }
+
+    // Rutas del asistente (pedidos y emergencia): sus paradas no guardan cargas, pero el plan guarda los pedidos.
+    // A cada parada de entrega sin cargas se le asignan las líneas pendientes de los pedidos de su punto.
+    private async Task FillLoadsFromOrdersAsync(JsonElement root, List<RouteStop> stops,
+        Dictionary<int, List<StopLoad>> loadsBySeq, CancellationToken ct)
+    {
+        if (!root.TryGetProperty("orderIds", out var idsElem) || idsElem.ValueKind != JsonValueKind.Array) return;
+        var orderIds = idsElem.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String)
+            .Select(e => Guid.TryParse(e.GetString(), out var id) ? id : Guid.Empty).Where(id => id != Guid.Empty).ToList();
+        if (orderIds.Count == 0) return;
+
+        var orders = await db.DeliveryOrders
+            .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id) && o.Status != DeliveryOrderStatus.Cancelled)
+            .ToListAsync(ct);
+        var ids = orders.Select(o => o.Id).ToList();
+        var lines = await db.DeliveryOrderLines.Where(l => ids.Contains(l.DeliveryOrderId)).ToListAsync(ct);
+        var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
+        var products = await db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+
+        foreach (var stop in stops.Where(s => s.Kind != RouteStopKind.Pickup))
+        {
+            if (loadsBySeq.TryGetValue(stop.SequenceNumber, out var existing) && existing.Count > 0) continue;
+            var pointOrders = orders.Where(o => o.DestinationServicePointId == stop.ServicePointId).Select(o => o.Id).ToHashSet();
+            var loads = lines.Where(l => pointOrders.Contains(l.DeliveryOrderId))
+                .GroupBy(l => l.ProductId)
+                .Select(g => (ProductId: g.Key, Quantity: g.Sum(l => Math.Max(0m, l.RequestedQuantity - l.DeliveredQuantity))))
+                .Where(x => x.Quantity > 0 && products.ContainsKey(x.ProductId))
+                .Select(x => new StopLoad(x.ProductId, products[x.ProductId].Sku, x.Quantity, products[x.ProductId].BaseUnit))
+                .ToList();
+            if (loads.Count > 0) loadsBySeq[stop.SequenceNumber] = loads;
+        }
     }
 
     private async Task<PublishResult> PublishRevisionAsync(RoutePlan plan, List<RouteStop> stops,
