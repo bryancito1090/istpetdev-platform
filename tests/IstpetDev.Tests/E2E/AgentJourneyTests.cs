@@ -105,7 +105,8 @@ public sealed class AgentJourneyTests(PostgisContainer postgres)
         using var planJson = JsonDocument.Parse(await plans.Content.ReadAsStringAsync());
         var ids = planJson.RootElement.GetProperty("routes").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ToArray();
         foreach (var id in ids) Assert.Equal(HttpStatusCode.OK, (await planner.PostAsJsonAsync($"/api/v1/route-plans/{id}/publish", new { })).StatusCode);
-        var response = await planner.PostAsJsonAsync("/api/v1/incidents", new { kind = "BloqueoVial", lat = -0.1250m, lon = -78.4850m, radiusKm = 1.5m, severity = "ALTA", description = "Cierre de prueba" });
+        var response = await planner.PostAsJsonAsync("/api/v1/incidents",
+            Fixtures.IncidentPreset("demo-region", "cierre-norte"));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         using var incident = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var runId = incident.RootElement.GetProperty("runId").GetGuid();

@@ -8,9 +8,12 @@ export type { ServicePoint } from '@istpetdev/shared-core';
 export interface RiskItemDto {
   servicePointId: string;
   servicePointCode: string;
+  criticality?: string;
   productId: string;
   sku: string;
+  baseUnit?: string;
   availableQuantity: number;
+  inTransitQuantity?: number;
   dailyDemand: number;
   coverageDays: number;
   leadTimeDays: number;
@@ -75,6 +78,7 @@ export interface RoutePlanDetailDto {
   vehicleId: string;
   vehicleCode: string;
   plannedStartUtc: string;
+  plannedEndUtc?: string;
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
@@ -84,6 +88,10 @@ export interface RoutePlanDetailDto {
     servicePointCode: string;
     servicePointName: string;
     etaUtc: string;
+    plannedDepartureUtc?: string;
+    serviceMinutes?: number;
+    windowStart?: string;
+    windowEnd?: string;
     status: string;
     ordersCount: number;
   }>;
@@ -232,6 +240,30 @@ export interface AgentDecisionDto {
   createdAtUtc: string;
 }
 
+export interface AgentDecisionViewDto {
+  agentDecisionId: string;
+  vehicleCode: string;
+  outcome: string;
+  explanation: string;
+  driverMessage: string;
+  source: 'Llm' | 'Template';
+  mismatchReason?: string | null;
+  facts: { code: string; subject: string; value: number; unit: string }[];
+}
+
+export interface AgentRunViewDto {
+  runId: string;
+  kind: 'Watch' | 'Incident';
+  status: 'Running' | 'Completed' | 'Fallback' | 'Failed';
+  latencyMs: number;
+  model?: string;
+  promptVersion?: string;
+  n8nExecutionId?: string;
+  fallbackReason?: string;
+  toolCalls: { method: string; path: string; status: number; milliseconds: number; atUtc: string; event?: string | null }[];
+  decisions: AgentDecisionViewDto[];
+}
+
 export interface AutonomyModeDto {
   mode: 'AutoWithLimits' | 'ProposeOnly';
 }
@@ -309,8 +341,12 @@ export class ApiService {
   // 4. MATRIZ DE RIESGOS Y AUTONOMÍA (GET /risks)
   // ==========================================
 
-  getRisks(level?: string): Observable<RisksResponseDto | null> {
-    const url = level ? `${this.baseUrl}/api/v1/risks?level=${encodeURIComponent(level)}` : `${this.baseUrl}/api/v1/risks`;
+  getRisks(level?: string, refresh = false): Observable<RisksResponseDto | null> {
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    if (refresh) params.append('refresh', 'true');
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const url = `${this.baseUrl}/api/v1/risks${qs}`;
     return this.http.get<RisksResponseDto>(url).pipe(
       catchError(err => {
         console.warn('Get risks failed', err);
@@ -364,6 +400,7 @@ export class ApiService {
           vehicleId: res.vehicleId,
           vehicleCode: res.vehicleCode,
           plannedStartUtc: res.plannedStartUtc,
+          plannedEndUtc: res.plannedEndUtc,
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
           totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
           polyline: res.polyline || '',
@@ -373,6 +410,10 @@ export class ApiService {
             servicePointCode: s.servicePointCode || '',
             servicePointName: s.servicePointName || '',
             etaUtc: s.etaUtc || s.plannedArrivalUtc,
+            plannedDepartureUtc: s.plannedDepartureUtc,
+            serviceMinutes: s.serviceMinutes ?? 15,
+            windowStart: s.windowStart || '08:00',
+            windowEnd: s.windowEnd || '17:00',
             status: s.status,
             ordersCount: s.ordersCount || 0
           }))
@@ -528,6 +569,14 @@ export class ApiService {
 
   rejectAgentDecision(id: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/agent-decisions/${encodeURIComponent(id)}/reject`, {});
+  }
+
+  startAgentRun(kind: 'Watch' | 'Incident' = 'Watch', incidentId?: string): Observable<AgentRunViewDto> {
+    return this.http.post<AgentRunViewDto>(`${this.baseUrl}/api/v1/agent/runs`, { kind, incidentId });
+  }
+
+  getAgentRun(id: string): Observable<AgentRunViewDto> {
+    return this.http.get<AgentRunViewDto>(`${this.baseUrl}/api/v1/agent/runs/${encodeURIComponent(id)}`);
   }
 
   // ==========================================

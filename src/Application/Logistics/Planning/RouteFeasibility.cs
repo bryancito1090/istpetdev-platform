@@ -47,7 +47,9 @@ public static class RouteFeasibility
         decimal defaultCostPerKm,
         IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
         IncidentEffect? incidentEffect = null,
-        ReplanMode replanMode = ReplanMode.Strict)
+        ReplanMode replanMode = ReplanMode.Strict,
+        GeoPoint? returnDepot = null,
+        DateTime? workdayEndUtc = null)
     {
         // 1. Capacidad: Peso y Volumen
         decimal totalWeight = stops.Sum(s => s.Weight);
@@ -96,7 +98,6 @@ public static class RouteFeasibility
                 return Infeasible("unreachable");
             }
 
-            legs.Add(leg);
             if (leg.Source == DistanceSource.Approximation) hasApproximations = true;
 
             decimal legMinutes = leg.Minutes;
@@ -104,6 +105,7 @@ public static class RouteFeasibility
             {
                 legMinutes *= factor;
             }
+            legs.Add(leg with { Minutes = legMinutes });
 
             totalKm += leg.Km;
             totalMinutes += legMinutes;
@@ -128,7 +130,7 @@ public static class RouteFeasibility
                 lateMinutes = (int)Math.Ceiling(lateSpan.TotalMinutes);
 
                 // En modo Strict, cualquier retraso de ventana hace inviable la ruta
-                if (replanMode == ReplanMode.Strict)
+                if (replanMode != ReplanMode.LateService || stop.IsConsolidation)
                 {
                     return Infeasible("time_window");
                 }
@@ -143,31 +145,32 @@ public static class RouteFeasibility
         }
 
         // Regreso al depósito
-        if (incidentEffect?.BlockedLegs.Contains((currentPos, depotPos)) == true)
+        var destination = returnDepot ?? depotPos;
+        if (incidentEffect?.BlockedLegs.Contains((currentPos, destination)) == true)
         {
             return Infeasible("blocked_leg");
         }
 
-        if (!distanceMatrix.TryGetValue((currentPos, depotPos), out var returnLeg))
+        if (!distanceMatrix.TryGetValue((currentPos, destination), out var returnLeg))
         {
             return Infeasible("unreachable");
         }
 
-        legs.Add(returnLeg);
         if (returnLeg.Source == DistanceSource.Approximation) hasApproximations = true;
 
         decimal returnMinutes = returnLeg.Minutes;
-        if (incidentEffect != null && incidentEffect.SlowFactors.TryGetValue((currentPos, depotPos), out var returnFactor))
+        if (incidentEffect != null && incidentEffect.SlowFactors.TryGetValue((currentPos, destination), out var returnFactor))
         {
             returnMinutes *= returnFactor;
         }
+        legs.Add(returnLeg with { Minutes = returnMinutes });
 
         totalKm += returnLeg.Km;
         totalMinutes += returnMinutes;
         currentTimeUtc = currentTimeUtc.AddMinutes((double)returnMinutes);
 
         // 3. Jornada laboral máxima
-        var maxWorkdayEndUtc = workdayStartUtc.AddHours(workdayHours);
+        var maxWorkdayEndUtc = workdayEndUtc ?? workdayStartUtc.AddHours(workdayHours);
         if (currentTimeUtc > maxWorkdayEndUtc)
         {
             return Infeasible("workday");

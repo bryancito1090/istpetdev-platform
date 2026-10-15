@@ -11,7 +11,7 @@ namespace IstpetDev.Api.Controllers;
 public sealed class RisksController(IRiskCalculator riskCalculator) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetRisks([FromQuery] string? level = null, CancellationToken ct = default)
+    public async Task<IActionResult> GetRisks([FromQuery] string? level = null, [FromQuery] bool refresh = false, CancellationToken ct = default)
     {
         var risks = await riskCalculator.CalculateAsync(persistSnapshots: false, ct);
 
@@ -28,9 +28,12 @@ public sealed class RisksController(IRiskCalculator riskCalculator) : Controller
             {
                 servicePointId = r.ServicePointId,
                 servicePointCode = r.PointCode,
+                criticality = r.Criticality,
                 productId = r.ProductId,
                 sku = r.Sku,
+                baseUnit = r.BaseUnit,
                 availableQuantity = r.Available,
+                inTransitQuantity = r.InTransit,
                 dailyDemand = r.DailyDemand,
                 coverageDays = r.CoverageDays,
                 leadTimeDays = r.LeadTimeDays,

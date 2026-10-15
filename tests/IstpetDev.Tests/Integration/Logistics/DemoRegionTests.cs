@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using IstpetDev.Application.Demo;
 using IstpetDev.Api.Controllers;
 using IstpetDev.Application.Logistics;
+using IstpetDev.Application.Logistics.Incidents;
 using IstpetDev.Application.Logistics.Planning;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
@@ -10,6 +12,7 @@ using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Tests.Integration.Logistics;
 
@@ -95,6 +98,7 @@ public class DemoRegionTests(PostgisContainer postgres)
         }
 
         // 4. Segundo reset preserva caché de tramos
+        (await planner.GetAsync("/api/v1/risks")).EnsureSuccessStatusCode();
         var secondReset = await planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null);
         Assert.Equal(HttpStatusCode.OK, secondReset.StatusCode);
 
@@ -102,7 +106,57 @@ public class DemoRegionTests(PostgisContainer postgres)
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             Assert.Equal(240, await db.RoadMatrixEdges.CountAsync(e => e.OrganizationId == DemoOrganization.Id));
+            var currentIds = (await db.ServicePoints.Select(s => s.Id).ToListAsync()).ToHashSet();
+            var refreshed = await planner.GetFromJsonAsync<JsonElement>("/api/v1/risks");
+            Assert.All(refreshed.GetProperty("items").EnumerateArray(),
+                item => Assert.Contains(item.GetProperty("servicePointId").GetGuid(), currentIds));
         }
+    }
+
+    [Fact]
+    public async Task Replan_reuses_reserved_cargo_and_deliveries_without_repeating_completed_stops()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase(), demoEnabled: true,
+            overrides: new Dictionary<string, string?> { ["Agent:AutoOnIncident"] = "false" });
+        var client = api.ClientFor(TestTokens.Planner);
+        (await client.PostAsync("/api/v1/demo/reset?fixture=demo-region", null)).EnsureSuccessStatusCode();
+        var created = await client.PostAsJsonAsync("/api/v1/route-plans", new PlanRequest(new DateOnly(2026, 10, 12), null, true));
+        created.EnsureSuccessStatusCode();
+        var proposal = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = proposal.GetProperty("routes")[0].GetProperty("routePlanId").GetGuid();
+        (await client.PostAsJsonAsync($"/api/v1/route-plans/{id}/publish", new { })).EnsureSuccessStatusCode();
+        (await client.PostAsJsonAsync($"/api/v1/demo/route-plans/{id}/advance",
+            new { operationId = Guid.NewGuid(), stops = 2 })).EnsureSuccessStatusCode();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var completed = await db.RouteStops.AsNoTracking().Where(s => s.RoutePlanId == id && s.Status == "Completed")
+            .OrderBy(s => s.SequenceNumber).ToListAsync();
+        Assert.Equal(2, completed.Count);
+        Assert.All(completed, s => Assert.Equal(s.PlannedArrivalUtc, s.ActualArrivalUtc));
+        var deliveriesBefore = await db.Deliveries.Select(d => d.Id).OrderBy(d => d).ToListAsync();
+        var reservationsBefore = await db.StockBalances.OrderBy(b => b.Id).Select(b => b.QuantityReserved).ToListAsync();
+        var incident = await client.PostAsJsonAsync("/api/v1/incidents",
+            new { kind = "ROAD_CLOSURE", lat = -1m, lon = -79m, radiusKm = .1m, isSynthetic = true });
+        incident.EnsureSuccessStatusCode();
+        var incidentId = (await incident.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("incidentId").GetGuid();
+        var replanned = await client.PostAsJsonAsync($"/api/v1/route-plans/{id}/replan", new { incidentId });
+        Assert.Equal(HttpStatusCode.Created, replanned.StatusCode);
+        var result = await replanned.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("AutoExecuted", result.GetProperty("decision").GetProperty("outcome").GetString());
+        Assert.Equal(0m, result.GetProperty("diff").GetProperty("costDeltaPct").GetDecimal());
+        var revisionId = result.GetProperty("proposedRoutePlanId").GetGuid();
+        db.ChangeTracker.Clear();
+        Assert.Equal("Superseded", (await db.RoutePlans.SingleAsync(p => p.Id == id)).Status);
+        Assert.Equal("Published", (await db.RoutePlans.SingleAsync(p => p.Id == revisionId)).Status);
+        Assert.Equal(deliveriesBefore, await db.Deliveries.Select(d => d.Id).OrderBy(d => d).ToListAsync());
+        Assert.Equal(reservationsBefore, await db.StockBalances.OrderBy(b => b.Id).Select(b => b.QuantityReserved).ToListAsync());
+        var pendingStopIds = await db.RouteStops.Where(s => s.RoutePlanId == revisionId && s.Status == "Pending").Select(s => s.Id).ToListAsync();
+        Assert.NotEmpty(pendingStopIds);
+        Assert.Equal(pendingStopIds.Count, await db.Deliveries.CountAsync(d => d.RouteStopId.HasValue && pendingStopIds.Contains(d.RouteStopId.Value)));
+        var preserved = await db.RouteStops.Where(s => s.RoutePlanId == revisionId && s.Status == "Completed")
+            .OrderBy(s => s.SequenceNumber).ToListAsync();
+        Assert.Equal(completed.Select(s => (s.ServicePointId, s.ActualArrivalUtc)), preserved.Select(s => (s.ServicePointId, s.ActualArrivalUtc)));
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/api/v1/route-plans/{id}/replan", new { incidentId })).StatusCode);
     }
 
     [Fact]
@@ -140,21 +194,16 @@ public class DemoRegionTests(PostgisContainer postgres)
 
         // 4. Completar 2 paradas en la primera ruta
         var firstPlanId = planIds[0];
-        var c1 = await planner.PostAsJsonAsync($"/api/v1/route-plans/{firstPlanId}/stops/1/complete", new { });
-        Assert.Equal(HttpStatusCode.OK, c1.StatusCode);
-        var c2 = await planner.PostAsJsonAsync($"/api/v1/route-plans/{firstPlanId}/stops/2/complete", new { });
-        Assert.Equal(HttpStatusCode.OK, c2.StatusCode);
+        var advance = await planner.PostAsJsonAsync($"/api/v1/demo/route-plans/{firstPlanId}/advance",
+            new { operationId = Guid.NewGuid(), stops = 2 });
+        Assert.Equal(HttpStatusCode.OK, advance.StatusCode);
+        var advanced = await advance.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, advanced.GetProperty("completedStops").GetArrayLength());
 
         // 5. Crear incidente cierre-norte
-        var incReq = new CreateIncidentRequest(
-            Kind: "BloqueoVial",
-            Lat: -0.1300m,
-            Lon: -78.4800m,
-            RadiusKm: 2.5m,
-            Severity: "ALTA",
-            Description: "Cierre vial en corredor norte hacia Hospital Norte",
-            IsSynthetic: true
-        );
+        var fixtures = Path.GetDirectoryName(api.Services.GetRequiredService<IOptions<DemoOptions>>().Value.FixturePath)!;
+        using var presets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(fixtures, "demo-region", "incidentes.json")));
+        var incReq = presets.RootElement.GetProperty("cierre-norte");
         var incResp = await planner.PostAsJsonAsync("/api/v1/incidents", incReq);
         Assert.Equal(HttpStatusCode.Created, incResp.StatusCode);
         var incDoc = await incResp.Content.ReadFromJsonAsync<JsonElement>();
@@ -162,8 +211,10 @@ public class DemoRegionTests(PostgisContainer postgres)
 
         // 6. Replanificar cada ruta afectada
         var affected = incDoc.GetProperty("affectedRoutes");
-        Assert.True(affected.GetArrayLength() > 0);
+        Assert.Equal(2, affected.GetArrayLength());
 
+        var outcomes = new Dictionary<string, string>();
+        var policyFacts = new List<string>();
         foreach (var aff in affected.EnumerateArray())
         {
             var affPlanId = aff.GetProperty("routePlanId").GetGuid();
@@ -172,6 +223,30 @@ public class DemoRegionTests(PostgisContainer postgres)
             var replanDoc = await replanResp.Content.ReadFromJsonAsync<JsonElement>();
             Assert.True(replanDoc.TryGetProperty("decision", out var dec));
             Assert.True(replanDoc.TryGetProperty("diff", out _));
+            outcomes[aff.GetProperty("vehicleCode").GetString()!] = dec.GetProperty("outcome").GetString()!;
+            policyFacts.Add(dec.GetRawText());
+            Assert.Equal(2, replanDoc.GetProperty("proposedRevision").GetInt32());
+            if (outcomes[aff.GetProperty("vehicleCode").GetString()!] == "Escalated")
+            {
+                Assert.Equal(2, replanDoc.GetProperty("options").GetArrayLength());
+                Assert.Contains(replanDoc.GetProperty("diff").GetProperty("droppedStops").EnumerateArray(),
+                    stop => stop.GetString() == "CLI-S09");
+                Assert.All(replanDoc.GetProperty("options").EnumerateArray(), option => Assert.False(option.GetProperty("feasible").GetBoolean()));
+            }
+            using var scope = api.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var revisionId = replanDoc.GetProperty("proposedRoutePlanId").GetGuid();
+            var revision = await db.RoutePlans.SingleAsync(p => p.Id == revisionId);
+            Assert.Equal(outcomes[aff.GetProperty("vehicleCode").GetString()!] == "AutoExecuted" ? "Published" : "Proposed", revision.Status);
+            using var input = JsonDocument.Parse(revision.InputJson);
+            var legs = JsonSerializer.Deserialize<List<Leg>>(input.RootElement.GetProperty("legs").GetRawText(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            var completedCount = await db.RouteStops.CountAsync(s => s.RoutePlanId == revision.Id && s.Status == "Completed");
+            Assert.All(legs.Skip(completedCount), leg => Assert.False(IncidentEvaluator.IsLegAffected(leg,
+                new GeoPoint(incReq.GetProperty("lat").GetDecimal(), incReq.GetProperty("lon").GetDecimal()),
+                incReq.GetProperty("radiusKm").GetDecimal())));
         }
+        Assert.True(outcomes["VEH-01"] == "AutoExecuted", string.Join("; ", policyFacts));
+        Assert.Equal("Escalated", outcomes["VEH-02"]);
     }
 }

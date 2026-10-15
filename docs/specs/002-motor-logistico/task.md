@@ -13,7 +13,7 @@
 | T4 | Planificador de rutas y costos | T2, T3 | — | completada |
 | T5 | Publicación FEFO, reservas y paradas completadas | T4 | [P] con T6 | completada |
 | T6 | Política de autonomía y explicaciones por facts | T4 | [P] con T5 | completada |
-| T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | completada |
+| T7 | Incidentes, revisiones, opciones y decisiones | T5, T6 | — | revalidación parcial #39; ver registro posterior |
 | T8 | API, autorización e inyección de dependencias | T7 | — | completada |
 | T9 | Fixture regional y calibración del incidente | T8 | — | completada |
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
@@ -111,7 +111,7 @@
 
 - [x] Prueba roja: reset de `demo-region` importa por el importador canónico 1 bodega, 15 puntos, 2 vehículos, 3 SKU, consumos y tramos dirigidos; reloj `Dataset=2026-10-12`; 1 `Critico`, 4 `Alto`, 3 `Vigilar`, 1 `SinDatos`, 6 `Normal`; `HOS-N01/DES-01` tiene 5,0 días.
 - [x] Crear los 7 CSV de 001 más `tramos.csv`, perfil e incidentes del plan. El generador consulta OSRM a ≤ 1 petición/s para 240 pares dirigidos y falla con salida clara si no obtiene datos; el CSV versionado permite correr sin red. Verificar `source=road` para todos los legs en el recorrido de demo y 0 solicitudes HTTP externas.
-- [x] Calibrar `cierre-norte` **después** de ejecutar el planificador real mediante `scripts/data/calibrate-incident.sh`: reset, propuesta, publicación, dos paradas completadas, incidente, replan de rutas afectadas. Ajustar solo datos de `incidentes.json` o el fixture hasta obtener `VEH-02=AutoExecuted`, `VEH-01=Escalated`, con `late_service` y `prioritize_critical` calculadas. Fijar ese resultado en `DemoRegionTests`. Si 004 ya está integrado, el script completa las paradas con `POST /api/v1/demo/route-plans/{id}/advance` en vez del endpoint provisional.
+- [x] Calibrar `cierre-norte` **después** de ejecutar el planificador real mediante `scripts/data/calibrate-incident.sh`: reset, propuesta, publicación, dos paradas completadas, incidente, replan de rutas afectadas. Ajustar solo datos de `incidentes.json` o el fixture hasta obtener `VEH-01=AutoExecuted`, `VEH-02=Escalated` (mapeo recalibrado y autorizado en #39), con `late_service` y `prioritize_critical` calculadas. Fijar ese resultado en `DemoRegionTests`. Si 004 ya está integrado, el script completa las paradas con `POST /api/v1/demo/route-plans/{id}/advance` en vez del endpoint provisional.
 - [x] Repetir reset y recorrido; los códigos del preset siguen resolviendo con IDs nuevos y la caché conserva tramos. Ejecutar `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~DemoRegionTests"`; esperado: 0 fallos. Commit `feat(demo): add reproducible regional scenario`.
 
 ### T10 — Recorrido E2E, rendimiento y bóveda
@@ -145,3 +145,21 @@
 | CE-04 | T7, T9 | `DemoRegionTests`, E2E-03 |
 
 **Nota de contrato:** CE-03 exige JSON idéntico byte a byte. La prueba de T4 sobre objetos no basta: T8/T10 deben estabilizar también los identificadores y campos de auditoría de la respuesta de propuestas repetidas, o excluirlos del contrato público mediante una misma representación canónica. No relajar CE-03 en la prueba E2E.
+
+## Corrección de integración descubierta por #39 — 14-oct-2026
+
+La comprobación previa de T7/T9 no detectaba que ReplanAsync volvía a PlanAsync
+sin usar prefijos/efectos/modos ni exigía el par real del preset. La regresión
+reforzada falló con una ruta afectada y la otra vacía. Se corrigen carga publicada,
+clasificación original de paradas, prefijos, cierres/demoras, ventanas, depósito,
+jornada y publicación que conserva entregas/reservas. Demo/advance usa la fecha
+operativa para el evento del dispositivo; servidor registra la hora real.
+
+Calibración HTTP local reproducida con 2 rutas afectadas, VEH-01 automático
+y VEH-02 escalado; Bryan delegó elegir este mapeo con umbrales intactos. Fixture
+VEH-02 180 kg/0,15 USD-km; círculo del preset actualizado. La prueba canónica
+exige el par, dos opciones del escalado y dos paradas completadas con recibos.
+Resultado de la prueba tras fijar datos todavía en verificación; despliegue y
+aceptación productiva se registran exclusivamente en spec 003. No se atribuye
+esta corrección como comprobación completa de la reasignación por avería ni de
+la aprobación de alternativas de otros escenarios; requieren su propia evidencia.

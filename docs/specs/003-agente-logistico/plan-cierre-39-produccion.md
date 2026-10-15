@@ -18,7 +18,7 @@ GitHub **únicamente después de comprobar el cumplimiento completo**.
 | Codex | Continuar la revisión/ejecución, conservar la entrega de Antigravity, corregir dentro del alcance, preparar PR, resolver conflictos, merge a develop, documentación y cierre condicionado de #39 |
 | Antigravity | Entrega anterior conservada; Bryan confirmó que terminó de editar. Evitar cambios concurrentes en repo/n8n |
 | Bryan | Administración n8n, presupuesto DeepSeek, acceso privado y coordinación del equipo |
-| Jorge / #38 | Operación AWS/EC2/RDS y despliegue de la API mediante el pipeline y promoción a main; cuentas técnica y humana |
+| Jorge / #38 | Operación habitual AWS/EC2/RDS y despliegue por pipeline. Bryan autorizó después a Codex la inserción acotada de las dos Account; ya verificadas |
 | Equipo | Ventana exclusiva de resets/fallback y cualquier excepción a H5 |
 
 Bryan ya asignó a Codex el merge a develop y el cierre cuando se cumplan los
@@ -31,8 +31,8 @@ Confirmaciones de Bryan durante esta ejecución:
 - Antigravity terminó; Codex continúa como único editor operativo de n8n.
 - El límite de gasto de la cuenta DeepSeek está configurado. Es confirmación
   del administrador, no una captura ni una auditoría independiente de pagos.
-- **Todavía no hay ventana exclusiva**: preparar primero el entorno. No ejecutar
-  acceptance.sh, warmup o resets productivos mientras siga pendiente.
+- Bryan confirmó después **ventana exclusiva autorizada**; reemplaza la espera
+  inicial. Confirmar vigencia si la ejecución se posterga a otra sesión.
 - El EC2 de la API lo opera Jorge; Bryan no dispone de alias SSH/SSM para él.
   Usar el pipeline acordado, sin crear accesos alternativos como atajo.
 
@@ -48,16 +48,16 @@ configuración de producción. Fuente de resultados: task.md, entrega,
 
 | Pieza | Estado / siguiente acción |
 |---|---|
-| develop | PR #81 y #85 integrados; base vigente `5582930f30c32ecfec958c3a8acc28a6cd775104`. Transporte M2M/agente en Compose/deploy/rollback, más configuración Development/example |
-| main | `9d1a3d9bec8d759bb338368388ce9ccbbe7b3016`; release #78/CD exitoso anterior. No incluye el transporte de #81 |
-| PR #83 | Auditoría y este plan: actualizar, validar e integrar a develop por Codex |
-| PR #85 / #38 | Bryan revisó y fusionó #85 a develop (`5582930`). Cuenta/configuración verificadas localmente por Jorge; producción sigue pendiente |
+| develop | PR #81, #85 y #83 integrados; base vigente tras #87 `34e7fd887aa95e65d1e70772f6189f3c8e6feaea`. Transporte M2M/agente en Compose/deploy/rollback, configuración Development/example y conciliación documental |
+| main | `a45a54886a94b4e849b9ad664db41a78097e391f`; #86 fusionado mediante PR con todos los checks verdes. CD `38658331163` exitoso; Agent false y Demo false. Reaplicación `38665762599` falló al descargar GHCR antes de recrear |
+| PR #83 / #86 | #83 fusionado a develop; #86 fusionado de develop a main por Codex en la continuación autorizada. operación habitual RDS de Jorge; inserción acotada de cuentas autorizada después a Codex y verificada |
+| PR #85 / #38 | Bryan revisó y fusionó #85 a develop (`5582930`). CD y cuentas productivas comprobadas después; M2M risks 200 y cinco denegados 403 |
 | n8n | Runtime/Compose 2.39.5; imagen/digest comprobados. Ambos workflows publicados, cron apagado, credenciales resueltas incluidas herramientas |
 | Red | API readiness 200 desde servidor y contenedor n8n; HTTPS n8n 200 con User-Agent explícito. Rechazos 403 dependientes del cliente no acreditan HMAC |
 | HMAC | Fuentes consolidadas, archivo privado/runtime/GitHub sincronizados; firma positiva 202 en prueba temporal sin modelo y negativos 401. Conservar evidencia y probar run real en G |
-| M2M | Cognito emite token; API productiva observada en 401/403, sin risks 200. No inferir causa solo del código ni dar por completado el paso 3 |
-| Aceptación | No hay report productivo ni Completed/Fallback/CE-03 acreditados. Último informe local conocido p95=10001 ms, fallo conservado |
-| Ventana | Pendiente, explícitamente confirmada por Bryan |
+| M2M / humano | n8n con credencial real: risks 200, prueba eliminada. Cinco acciones humanas 403 con M2M. Cuenta propia con contraseña/MFA y Account Planificador: /me y risks 200; token privado vigente/renovable |
+| Aceptación | Sin report productivo/Completed/Fallback/CE-03 acreditados; Demo false y regresión local de replanteo/preset en corrección. p95 local histórico 10001 ms, fallo conservado |
+| Ventana | Bryan confirmó una ventana exclusiva en la continuación del 14-oct; confirmar vigencia si la ejecución se posterga por cuentas/despliegue/token |
 
 PR #84 de ruteo/auditoría no se fusiona como efecto de #39. Si entra mientras
 se prepara la release, revisar impacto en rutas/facts/fixture y aceptar el
@@ -306,8 +306,9 @@ crear rama `chore/39-completar-produccion` desde develop actualizado. Reutilizar
 ## 12. Fase H — Matriz oficial y CE-03 en ventana exclusiva
 
 1. Acordar ventana explícita y respaldo/recuperación con Jorge/equipo. El harness
-   resetea antes de cada muestra y hace warmup/preparación adicional. No iniciar
-   mientras la respuesta vigente de Bryan sea «preparar primero el entorno».
+   resetea antes de cada muestra y hace warmup/preparación adicional. Bryan ya
+   confirmó una ventana exclusiva; comprobar que sigue vigente al superar los
+   gates si la espera por cuentas/despliegue/token posterga la corrida.
 2. Verificar fixture determinista de B, cuentas, presupuesto, token vigente y
    SHA de backend, workflows/prompt y harness por separado. Congelarlos durante
    la corrida; el SHA del report es checkout del harness, no prueba del deploy.

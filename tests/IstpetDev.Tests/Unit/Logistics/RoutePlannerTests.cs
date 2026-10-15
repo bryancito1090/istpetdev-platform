@@ -136,6 +136,55 @@ public sealed class RoutePlannerTests
         Assert.Equal(50m, eval.CumulativeCost);
     }
 
+    [Fact]
+    public void Replanning_returns_to_real_depot_applies_delay_and_keeps_original_workday_end()
+    {
+        var position = new GeoPoint(-0.2100m, -78.5100m);
+        var point = new GeoPoint(-0.2000m, -78.5000m);
+        var vehicle = new Vehicle { Code = "V", MaxWeight = 1000m };
+        var matrix = new Dictionary<(GeoPoint, GeoPoint), Leg>
+        {
+            [(position, point)] = new(position, point, 2, 10, DistanceSource.Road, null),
+            [(point, _depot)] = new(point, _depot, 5, 20, DistanceSource.Road, null)
+        };
+        var effect = new IncidentEffect(new HashSet<(GeoPoint, GeoPoint)>(),
+            new Dictionary<(GeoPoint, GeoPoint), decimal> { [(position, point)] = 2m }, new HashSet<string>());
+        var ready = _workdayStartUtc.AddHours(7);
+        var stop = CreateStop("P", point, serviceMinutes: 15);
+        var result = RouteFeasibility.EvaluateRoute(vehicle, position, new[] { stop }, ready,
+            8, 10, .5m, matrix, effect, ReplanMode.Strict, _depot, _workdayStartUtc.AddHours(8));
+        Assert.True(result.IsFeasible);
+        Assert.Equal(55m, result.CumulativeMinutes);
+        Assert.Equal(20m, result.Legs[0].Minutes);
+        Assert.Equal(_depot, result.Legs.Last().To);
+        var expired = RouteFeasibility.EvaluateRoute(vehicle, position, new[] { stop }, ready.AddMinutes(10),
+            8, 10, .5m, matrix, effect, ReplanMode.Strict, _depot, _workdayStartUtc.AddHours(8));
+        Assert.False(expired.IsFeasible);
+        Assert.Equal("workday", expired.FailureReason);
+        var closed = effect with { BlockedLegs = new HashSet<(GeoPoint, GeoPoint)> { (position, point) } };
+        Assert.Equal("blocked_leg", RouteFeasibility.EvaluateRoute(vehicle, position, new[] { stop }, ready,
+            8, 10, .5m, matrix, closed, returnDepot: _depot).FailureReason);
+    }
+
+    [Theory]
+    [InlineData(ReplanMode.Strict, false, false)]
+    [InlineData(ReplanMode.PrioritizeCritical, false, false)]
+    [InlineData(ReplanMode.LateService, false, true)]
+    [InlineData(ReplanMode.LateService, true, false)]
+    public void Only_late_service_relaxes_mandatory_windows(ReplanMode mode, bool consolidation, bool feasible)
+    {
+        var point = new GeoPoint(-0.2m, -78.5m);
+        var matrix = new Dictionary<(GeoPoint, GeoPoint), Leg>
+        {
+            [(_depot, point)] = new(_depot, point, 2, 20, DistanceSource.Road, null),
+            [(point, _depot)] = new(point, _depot, 2, 20, DistanceSource.Road, null)
+        };
+        var stop = CreateStop("P", point, windowEnd: new TimeOnly(8, 10)) with { IsConsolidation = consolidation };
+        var result = RouteFeasibility.EvaluateRoute(new Vehicle { Code = "V", MaxWeight = 1000 }, _depot,
+            new[] { stop }, _workdayStartUtc, 8, 10, .5m, matrix, replanMode: mode);
+        Assert.Equal(feasible, result.IsFeasible);
+    }
+
     private static StopCandidate CreateStop(
         string code,
         GeoPoint pos,

@@ -236,16 +236,8 @@ public sealed class AgentRunTraceTests(PostgisContainer postgres)
         Assert.Equal(HttpStatusCode.OK, (await planner.PostAsJsonAsync($"/api/v1/route-plans/{planIds[0]}/stops/1/complete", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await planner.PostAsJsonAsync($"/api/v1/route-plans/{planIds[0]}/stops/2/complete", new { })).StatusCode);
 
-        var incidentResponse = await planner.PostAsJsonAsync("/api/v1/incidents", new
-        {
-            kind = "BloqueoVial",
-            lat = -0.1300m,
-            lon = -78.4800m,
-            radiusKm = 2.5m,
-            severity = "ALTA",
-            description = "Cierre vial de prueba",
-            isSynthetic = true
-        });
+        var incidentResponse = await planner.PostAsJsonAsync("/api/v1/incidents",
+            Fixtures.IncidentPreset("demo-region", "cierre-norte"));
         Assert.Equal(HttpStatusCode.Created, incidentResponse.StatusCode);
         using var incident = JsonDocument.Parse(await incidentResponse.Content.ReadAsStringAsync());
         var incidentId = incident.RootElement.GetProperty("incidentId").GetGuid();

@@ -97,6 +97,7 @@ Mostrar el recorrido operativo de forma comprensible y una comparación reproduc
 | FR-19 | El dataset nacional DEBE agrupar los ≈80 puntos en regiones operables con una bodega por grupo y vehículos locales; cada planificación región/día usa el planificador de 002 con su límite de una bodega y sin pernocta ni transferencias entre regiones. El número de regiones y vehículos es parámetro del dataset; el escenario adverso retira un vehículo identificado previamente en el manifiesto. | D6, Rutas y sobrecostos |
 | FR-20 | Cada política DEBE validar al cierre diario balance de stock por lote/ubicación, capacidad/jornada/ventanas, demanda solicitada frente a satisfecha y pendientes; una violación marca la corrida `Failed` con evento y no publica KPI comparativos de esa seed. | Simulador y metricas, G4 |
 | FR-21 | La corrida oficial de comparación NO DEBE ejecutarse en la instancia que sirve la demo (plantilla Terraform: `t3.micro`, 1 GB y CPU por créditos): corre en una máquina dedicada (portátil del equipo o instancia temporal mayor) con el mismo commit, dataset y manifiesto. `POST /api/v1/simulations/comparisons/import` (Gerencia, Planificación) DEBE aceptar el ZIP exportado, recalcular los SHA-256 contra el manifiesto, rechazarlo si no coinciden y guardar runs, métricas y eventos marcados con origen `imported`, host y commit; el panel muestra «calculada en <host> el <fecha>». | NFR-01, H4, Simulador y metricas |
+| FR-22 | La vista de Inicio (`/inicio`) DEBE operar como panel unificado de control y estado de red en tiempo real, adaptando dinámicamente su presentación al rol autenticado (`Planificador`, `Auditor`, `Gerencia`) conforme a spec 013 y ADR-26. Debe consultar el pulso en vivo (`/service-points`, `/warehouses`, `/risks`, `/route-plans`, `/autonomy/mode`). Para el rol Auditor (solo lectura), DEBE ocultar enlaces de escritura a `/datos` (cumpliendo FR-21 de 005 y guard de permisos) y proveer acceso directo a los 3 frentes de fiscalización: auditoría de demanda (`/alertas`), fiscalización de rutas (`/rutas`) y custodia digital (`/public-trace`). | RF-07, FR-05, ADR-26 |
 
 ### Políticas congeladas antes de la primera simulación
 
@@ -135,6 +136,19 @@ Estas reglas son **propuesta de equipo del 12-oct-2026**, pendiente de Deciders.
 | `POST /api/v1/simulations/comparisons/import` | Gerencia, Planificación | Carga un ZIP exportado en otra máquina; `422` si algún hash no coincide con el manifiesto; guarda origen `imported`, host y commit |
 
 El generador produce datos canónicos y el importador de 001 los carga **en un contexto aislado**. El dueño de esta adaptación es 005; no se modifica el endpoint ni el contrato de importación de 001. El plan debe probar que el mismo escritor/validador canónico opera sobre ese contexto y que el reset no toca resultados archivados salvo selección explícita de limpieza de demo.
+
+### Vista de Inicio y Tablero de Pulso Operativo (FR-22)
+
+- **Qué implementa:** La ruta `/inicio` opera como consola ejecutiva y flujo guiado en tiempo real, consumiendo simultáneamente los contratos de 001 (`/service-points`, `/warehouses`), 002 (`/risks`, `/route-plans`) y 003 (`/autonomy/mode`). Se adapta dinámicamente a los tres roles humanos de la web:
+  - **Planificador:** Presenta el ciclo de 4 fases operativas (`1. Cargar Datos Maestros`, `2. Monitorear Alertas de Stock`, `3. Planificar y Publicar Rutas`, `4. Bodegas & Rebalanceo`), mostrando el progreso cuantitativo en badges y habilitando los enlaces de acción operativa.
+  - **Auditor:** Presenta la Consola de Fiscalización con accesos directos a sus tres áreas de control: Auditoría de Demanda (`/alertas`), Fiscalización de Rutas (`/rutas`) y Trazabilidad QR (`/public-trace`), ocultando de forma estricta los enlaces de escritura a `/datos` (cumpliendo FR-21 y `roleGuard`).
+  - **Gerencia:** Presenta accesos directos al Simulador de 90 días (`/simulation`), Matriz de Alertas, Rutas Activas y Administración de Usuarios (`/users`).
+- **Por qué es necesario:** La maqueta previa de `/inicio` contenía un listado estático con un botón único obligando a "Ir a Datos", lo cual causaba error de navegación para el Auditor (cuyos permisos no permiten escribir en `/datos`) y no proveía una visión integral del pulso del sistema.
+- **Dependencias:**
+  - `001-nucleo-delgado-importador`: Ingesta y catálogo maestro de `ServicePoints` y `Warehouses`.
+  - `002-motor-logistico`: Consulta de matriz de riesgos (`/api/v1/risks`) y planes de ruta (`/api/v1/route-plans`).
+  - `003-agente-logistico`: Consulta del modo de autonomía y políticas del motor (`/api/v1/autonomy/mode`).
+  - `013-login-y-cuentas`: Autenticación OIDC, sesión reactiva `AuthSession` y matriz de roles humanos (`HumanRole`).
 
 ## Guardarraíles aplicados
 

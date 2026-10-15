@@ -130,30 +130,34 @@ El bloqueo inicial P0 (fallback agent_error en vigía) fue resuelto:
 Entrega verificada localmente y transferida a Codex para revisión e integración en `develop` vía PR; el despliegue en producción permanece planificado en [plan-cierre-39-produccion.md](../../specs/003-agente-logistico/plan-cierre-39-produccion.md).
 
 
-## Estado vigente de preparación #39 — 14 de octubre de 2026
+## Estado vigente de preparación #39 — 14 de octubre de 2026, 20:13 Guayaquil
 
-#37 se integró en PR #74 (`8c99a71`); ADR-22 fue aceptada por Bryan. La prueba
-local inicial aprobada es histórica: el último informe local conocido del
-árbol `4742f3b` registró p95 10001 ms y falló latencia. Ninguno sustituye una
-aceptación productiva. #81 y #85 están integrados en develop (`5582930`);
-Jorge coordina su promoción/deploy en la API, aún pendientes.
+Workflows de #37 integrados en `8c99a71` (PR #74), transporte #81 y M2M #85
+integrados en develop/main por #86; CD `38658331163` exitoso para `a45a548`.
+ADR-22 aceptada; la matriz histórica local no sustituye la productiva.
 
-En n8n de Bryan se comprobó runtime/Compose 2.39.5, DeepSeek nativo, ambos
-workflows publicados del SHA oficial con credenciales resueltas incluidas
-herramientas embebidas y Schedule deshabilitado. API readiness 200 desde
-servidor/contenedor. HMAC consolidado en archivo privado 0600 y GitHub Secrets,
-con runtime sincronizado; firmas incorrectas/expiradas/alteradas rechazadas
-401, y probe positivo sin modelo 202, posteriormente eliminado. Antigravity
-reportó su suite 10/10. La base es
-`https://n8n.bryan-bano.com/webhook/istpetdev/agent` (watch/incident).
+n8n de Bryan: Compose/runtime fijados a 2.39.5, DeepSeek nativo, vigía/incidente
+publicados del SHA oficial, credenciales remapeadas también en herramientas,
+Schedule apagado. HTTPS/readiness 200 desde servidor/contenedor; HMAC inválido,
+expirado y alterado rechazado 401; positivo 202 en probe sin modelo. Presupuesto
+DeepSeek confirmado por Bryan, quien terminó las ediciones de Antigravity.
 
-Bryan confirma límite de gasto DeepSeek configurado y que Antigravity terminó
-las ediciones. Eso no acredita todavía Completed ni respuestas de herramientas
-2xx: el nodo M2M → API risks dio 401 y fue eliminado. Quedan cuentas/roles
-productivos, release, Completed/Fallback, 30 muestras oficiales y CE-03 de dos
-decisiones. No hay ventana de resets acordada; #39 permanece abierta.
+Bryan completó contraseña/MFA de su cuenta propia y autorizó registrar dos
+Account en RDS productivo `istpetdev_integration`: Planificador humano y
+Automatizacion técnica. Cuenta humana: /me y /risks 200; **nodo HTTP n8n con
+IstpetDev M2M: risks 200**; prueba eliminada. Las cinco acciones de decisión
+humana responden 403 con M2M. No se publican identidades privadas ni JWT.
+
+Ventana exclusiva autorizada. Persisten gates: Demo.Enabled false (probe sin
+escritura 404); Agent.Enabled false; Completed/Fallback/recuperación, matriz
+oficial de 30 corridas y CE-03 pendientes. La regresión local detectó que el
+preset solo afecta un vehículo y que ReplanAsync ignoraba prefijos/efectos/modos;
+la corrección pasa regresiones locales; calibración autorizada: VEH-01 automático, VEH-02 escalado. Spec/plan 002 y fixture actualizados, sin promoción productiva acreditada.
+Intento de reaplicación `38665762599` falló antes de recrear servicios por
+permiso GHCR ausente en rollback.yml. Se prepara packages:read y transporte
+explícito DEMO_ENABLED=false por defecto en ambos pipelines. #39 sigue abierta.
 
 Fuentes: [evidencia de preparación](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md),
 [task.md](../../specs/003-agente-logistico/task.md), [[Runbook de DevOps y base de datos para la demo]]
-y [[Registro de seguimiento y hallazgos]]. El plan vigente incluye integración
-y conflictos, documentación, operación y cierre condicionado de GitHub.
+y [[Registro de seguimiento y hallazgos]]. Las secciones anteriores son registros
+históricos fechados, no el estado de cierre actual.

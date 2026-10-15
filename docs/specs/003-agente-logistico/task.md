@@ -430,3 +430,236 @@ Resultados reportados por Antigravity contra `https://n8n.bryan-bano.com`:
   resuelta. Evidencia: [preparación #39](evidencia/2026-10-14-preparacion-39.md).
 - T9/T10/PA-01: siguen pendientes de release, permisos/cuenta(s), runs reales,
   matriz oficial y CE-03. #39 permanece abierta. PR #83 se prepara para revisión.
+
+## Continuación tras integrar #83 — 14-oct-2026
+
+- #83 fusionado a develop `a5a8c706eb7e3baed86fbc04535a4fd6f8075310`;
+  política/documentación verdes. Nueva rama desde esa base:
+  `chore/39-ejecucion-produccion`.
+- [PR #86](https://github.com/bryancito1090/istpetdev-platform/pull/86) fusionado
+  por Codex de develop a main con checks del HEAD exacto aprobados y sin conflictos,
+  main `a45a54886a94b4e849b9ad664db41a78097e391f` (15-oct 00:08 UTC,
+  14-oct 19:08 Guayaquil). Incluye #79/#80 ya integrados y no incluye #84.
+  CD `38658331163` iniciado; agente false. Merge no acredita deploy exitoso.
+- Revalidación real: curl desde servidor n8n → readiness **200**, 23:55 UTC;
+  versiones publicadas/cron/grafos coinciden con `8c99a71` después del remapeo
+  de credenciales. Probe HMAC positivo **202**, sin modelo/herramientas;
+  nodo HTTP n8n → risks **401**, 23:56 UTC. Ambos probes eliminados.
+- Prelaunch de preparación: `npm run audit:check` aprobado con excepciones
+  vigentes; `dotnet list src/Api/IstpetDev.Api.csproj package --vulnerable
+  --include-transitive` sin hallazgos en feeds consultados. No son scans de
+  imagen ni acreditan permisos/cuentas productivos.
+- Bryan confirmó ahora **ventana exclusiva autorizada**; reemplaza el pendiente
+  de ventana del checkpoint anterior. Login de Planificador iniciado con la
+  autorización de Bryan: contraseña aceptada, Cognito exige MFA; el titular
+  debe completarlo en la pestaña privada antes de guardar un nuevo token.
+  No se deshabilita MFA ni se publican credenciales. Jorge mantiene operación
+  EC2/RDS y comprobación de cuentas; continuidad registrada en #38.
+- T9/T10/PA-01 y cierre #39 siguen pendientes de gates productivos. No se han
+  ejecutado resets ni atribuido métricas locales a producción.
+
+## Preparación después del CD — 14-oct-2026
+
+- CD `38658331163` **exitoso** en EC2 para main `a45a548`. Readiness desde
+  servidor n8n: 200 (15-oct 00:22 UTC). Nodo HTTP OAuth2 n8n → risks **403**,
+  00:22 UTC; prueba temporal eliminada. Gate de lectura autorizada sigue
+  pendiente; Jorge coordina comprobación/provisión en RDS de técnica y humana.
+- Joseph no está disponible para completar MFA. Bryan solo controla MFA IAM
+  (distinto de Cognito) y autorizó preparar una cuenta propia de Planificador,
+  con invitación a su correo y MFA propio. Cuenta creada en el pool existente
+  mediante el mecanismo AdminCreateUser habitual; invitación EMAIL solicitada,
+  estado FORCE_CHANGE_PASSWORD. Pool mantiene MFA ON; no se alteró MFA de
+  otros usuarios ni se concedieron roles por grupos Cognito.
+- Identidad/subject y correo quedan en archivo privado 0600 fuera del repo:
+  `~/.config/istpetdev/private/planner-acceptance-39.json`. Rol de Account en
+  RDS aún pendiente; creación Cognito no acredita acceso a la API.
+- Calibración CE-03 en PostGIS descartable: se reforzó el recorrido existente
+  usando preset oficial y demo/advance real; ahora exige dos rutas afectadas
+  y exactamente AutoExecuted/Escalated. Prueba **roja: actual 1, esperado 2**.
+  Confirma el pendiente del fixture; se corrige en rama
+  `chore/39-calibrar-aceptacion`, sin resets/cambios de datos productivos.
+
+## Cuentas productivas verificadas — 14-oct-2026, 20:13 Guayaquil
+
+- Bryan completó contraseña definitiva/MFA propio en Cognito y autorizó
+  explícitamente insertar su Account Planificador y la técnica Automatizacion.
+- Se verificó la conexión efectiva del backend EC2 a RDS `istpetdev_integration`;
+  la conexión personal mostrada en DBeaver (`istpetdev_dev_01`) no es ese destino.
+  Inserción transaccional de solo dos filas en `public."Account"`, con guardas
+  de issuer/subject/organización/rol y organización demo activa. No se alteraron
+  esquemas, permisos DB, roles de otras cuentas ni configuración de MFA.
+- Cuenta propia: `/api/v1/me` 200, rol Planificador, y `/api/v1/risks` 200.
+  Identidad/refresh/access token quedan únicamente en archivos privados 0600.
+- Nodo HTTP temporal ejecutado en n8n con **IstpetDev M2M**: GET risks **200**,
+  15-oct 01:13:28 UTC. Workflow de prueba eliminado. Conectividad/rol ya no
+  bloquean #39. Túnel SSM propio a RDS cerrado después de la transacción.
+- Hallazgo adicional local: `IRoutePlanner.ReplanAsync` delegaba en `PlanAsync`
+  ignorando prefijos, efectos y modos; `BloqueoVial` se interpretaba como demora.
+  Se inició corrección conservadora y regresión en PostGIS descartable.
+  Agente productivo sigue deshabilitado; sin resets ni matriz oficial todavía.
+
+- Verificación adicional de M2M: risks 200 y cinco acciones humanas 403;
+  ninguna mutación efectiva. Demo.Enabled productivo sigue false (probe
+  no mutante demo/incidents devuelve 404). Se prepara transporte explícito
+  DEMO_ENABLED, false por defecto, por CD/rollback para la ventana autorizada.
+- Hallazgo de operación: referencia privada Secrets Manager del migrador de
+  integración desactualizada; no se rotó. Transacción acotada de Account con
+  credencial maestra administrada RDS en memoria; Jorge debe conciliar referencia.
+
+### Prelaunch acotado de activación — 14-oct, 20:27 Guayaquil
+
+Se reutiliza CI/CD aprobado de main a45a548, permisos humanos/M2M verificados
+en runtime, TLS/readiness, HMAC y cron apagado del checkpoint anterior.
+Configuración solamente: activar el agente sobre la **misma imagen** mediante
+workflow existente de reaplicación/rollback, con AutoOnIncident=false durante
+la verificación Watch. No promueve la corrección local aún en curso ni declara
+el incidente/demo listo. Demo sigue deshabilitada; no se ejecutan resets.
+Publicación inicial requiere aprobación humana (AutoPublishInitialPlans=false).
+Hallazgo del replanteador mantiene bloqueada la matriz Incident/CE-03 hasta
+corregir, probar y promover; no se presenta como control ya satisfecho.
+
+- Intento de reaplicación sobre a45a548: [38665762599](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38665762599)
+  **falló antes de recrear servicios**, al descargar imagen inmutable GHCR
+  (denied). Diagnóstico: rollback.yml declara contents:read y omite packages:read,
+  a diferencia de CD. Se corrige permiso mínimo en la rama; no se amplían scopes
+  de usuarios ni se omiten checks. Variables preparadas se restauraron a
+  AGENT_ENABLED=false, AGENT_AUTO_ON_INCIDENT=true; runtime sigue en a45a548.
+  No se acredita activación ni Completed con este intento.
+
+## Integración de preparación y corrección del motor — 14-oct, 20:42 Guayaquil
+
+- [PR #88](https://github.com/bryancito1090/istpetdev-platform/pull/88) fusionado
+  a develop `6f2147002c304623804d234be043fc13015fdae9`, sin conflictos ni bypass.
+  HEAD 8d3ab15: backend 8m13s, frontend 1m36s, política y bóveda aprobados.
+  Integra transporte DEMO_ENABLED=false por defecto y packages:read en rollback;
+  todavía no se promueve ni acredita activación productiva.
+- Rama de corrección desde develop: `fix/39-replanteo-produccion`. Se conserva
+  la lógica de workflows/prompt de #37. ReplanAsync reutiliza cargas publicadas,
+  prefijo y efectos; IsConsolidation se conserva desde publicación; cierre
+  BloqueoVial bloquea también alternativas cacheadas. Publicación de revisión
+  conserva entregas/reservas y marca la previa Superseded. Demo/advance usa
+  horas de la ruta para OccurredAtDevice y mantiene horas reales de servidor.
+- Regresiones locales: 11/11 de cargo/revisión y factibilidad aprobadas.
+  Incluyen 2 paradas completadas, mismos IDs de entregas/saldos reservados,
+  revisión Published/Superseded y replay rechazado; modos de ventana, demora,
+  regreso al depósito real y límite de jornada original. Regresión completa
+  aún en ejecución. No se atribuye este cambio a producción.
+- Calibración temporal local usa servicios reales en PostGIS descartable,
+  sin alterar el rate limiter productivo. Una búsqueda obtuvo el par de
+  outcomes con vehículos invertidos respecto de CE-04 de 002; se conserva
+  como diagnóstico, no como aceptación aprobada. Continúa búsqueda del par
+  exigido y falta fijar datos/regresión antes de PR/promoción del motor.
+
+### Decisión de calibración y verificación — 14-oct, 21:00 Guayaquil
+
+Bryan delegó escoger la combinación más conveniente después de revisar la
+diferencia de mapeo entre CE-04 de 002 y CE-03 de 003. Se eligió el resultado
+HTTP reproducido en PostGIS: **VEH-01 AutoExecuted, VEH-02 Escalated** por
+CLI-S09 bloqueada. Auto conserva todos los obligatorios y demora máxima
+34,581 min; límites siguen 15%/60 min. Se actualizan spec/plan/test-e2e/task
+002 y bóveda para reflejar ese mapeo. El preset conserva su clave por compatibilidad
+y sitúa el cierre en salida hacia el norte, zona Clínica Sur. VEH-02=180 kg,
+0,30 USD/km; fixture de inyección conserva exactamente los mismos datos salvo
+el nombre adversarial. Workflows y prompt oficiales no cambian.
+
+Verificación local: 145 regresiones de logística/agente/campo aprobadas antes
+del ajuste final de datos; después, 14/14 dirigidas (incluye escenario canónico
+con dos rutas, dos opciones y publicación); Python 16/16 y generador --check
+aprobados. La selección local amplia previa se interrumpió porque incluyó
+Performance (fuera del cambio); no se acredita como prueba completada.
+Calibradores temporales eliminados; aún falta CI del HEAD de corrección.
+
+PR #89 de develop a main está en borrador para incluir la corrección del motor
+antes del único despliegue final. Checks de la preparación 6f21470 aprobados;
+se repetirán sobre el HEAD final cuando entre la corrección. No hubo reset
+productivo; no se marca CE-03/aceptación/cierre como aprobado con evidencia local.
+
+### Revalidación del costo completo — 14-oct, 21:20 Guayaquil
+
+Al sumar el costo ya ejecutado del prefijo, el candidato anterior dejó de cumplir:
+VEH-01 pasó a 16,86% y se escaló correctamente. No se usa la medición previa
+como aceptación final. Radios 1,0/1,25 km solo afectaron una ruta; una búsqueda
+geométrica local tampoco obtuvo el par con el costo completo. Se mantienen
+15%/60 min y la contabilización del prefijo. Se calibra el fixture sintético
+con costos variables explícitos VEH-01=0,25 USD/km y VEH-02=0,15 USD/km,
+conservando el componente de 6 USD/h; pruebas finales pendientes. No son tarifas
+reales ni resultados de producción. Fixture de inyección debe ser idéntico salvo
+su nombre adversarial. Cambios de Antigravity en UI conservados y revisados
+contra AgentRunView; no se presupone modelo ni éxito si la respuesta falla.
+
+
+Resultado final local del fixture: **VEH-01 AutoExecuted**, costo +14,01%,
+demora máxima 52,15 min; **VEH-02 Escalated**, obligatorio CLI-S09 bloqueado.
+La prueba sin efecto conserva costo delta 0% y los mismos IDs/saldos reservados.
+13/13 dirigidas aprobadas en PostGIS descartable tras contabilizar el prefijo;
+Python 16/16, generador --check, lint y build web aprobados. Se añade aserción
+explícita de CLI-S09 y ambas opciones inviables. Se conservan los intentos
+anteriores como históricos superados; falta CI del commit y ejecución productiva.
+
+### Integración de develop y prelaunch — 14-oct, 21:23 Guayaquil
+
+- PR #84 entró a develop `dbb65b2` durante la revisión. Merge conservando ambas
+  implementaciones en `15d3835`, sin conflictos. Regresión nueva reprodujo que
+  la caché estática de GET risks devolvía IDs eliminados tras reset. Se retira
+  esa caché sin invalidación; se conservan las mejoras AsNoTracking de #84.
+  El agente debe recibir datos actuales después de cada reset/importación/recepción.
+- Alcance de prelaunch: código candidato de replanteo, UI y datos sintéticos;
+  mismas migraciones, proxy, lockfiles y workflows/prompt oficiales. ADR-21:
+  una organización fija, sin RLS; no se agregan grants ni recursos cloud.
+- Autorización: roles/DTOs no se amplían; actor/organización/clasificación de
+  carga son del servidor. SQL de bloqueo sigue interpolado/parametrizado y
+  acotado a la organización. Pruebas de asignación/stock/prefijo en CI pendientes
+  del HEAD final; evidencia de permisos productivos en a45a548 se conserva.
+- Credenciales/tokens únicamente privados; datos de fixture sintéticos;
+  texto del agente interpolado en Angular, sin HTML ejecutable. Validación de
+  explicaciones y allowlist de herramientas permanecen vigentes.
+- TLS VerifyFull, Swagger y controles de host: reutiliza evidencia del despliegue
+  anterior, se comprobará readiness tras CD. No se acredita un scan de imagen;
+  escaneos npm/.NET previos conservan vigencia de lockfiles y CI repite auditoría.
+  Las excepciones previas de headers/SSH constan en el runbook, sin ampliación.
+- No hubo reset productivo ni invocación del modelo. La cuenta propia y M2M
+  ya responden 200; #39 sigue abierta hasta la evidencia real exigida.
+
+Resultado de integración: 13/13 dirigidas aprobadas con #84 y corrección de
+caché; incluye riesgos con IDs vigentes inmediatamente después de reset,
+escenario CLI-S09/opciones inviables y transferencia de reservas. Lint/build
+web del conjunto integrado aprobados. No se incluye en el PR el ajuste local
+ajeno de launchSettings (escucha de desarrollo); se conserva en el workspace.
+
+### Corrección de pruebas desalineadas tras la calibración — 14-oct, 21:55 Guayaquil
+
+CI del PR #90 falló en Integration:
+`AgentRunTraceTests.Incident_replan_decision_is_correlated_to_its_run_for_the_n8n_result`
+(`IndexOutOfRange` al leer `affectedRoutes[0]`). Causa: tras mover `cierre-norte`
+a (-0.24973, -78.51721) y recalibrar vehículos, las coordenadas fijas antiguas
+que la prueba usaba (-0.1300, -78.4800, 2,5 km) ya no intersecaron tramos
+pendientes y la respuesta trajo `affectedRoutes: []`. No es fallo de producto:
+es data de prueba duplicada y desactualizada; la suite completa local se había
+interrumpido después de la recalibración (registro de las 21:00).
+
+Corrección: se añade `Fixtures.IncidentPreset` y las pruebas consumen el preset
+`cierre-norte` del fixture sin duplicar coordenadas: `AgentRunTraceTests`,
+`AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`
+y `LogisticsJourneyTests` E2E-03/E2E-04. `DemoRegionTests` ya lo hacía. No
+cambian producto, workflows, prompt ni umbrales.
+
+Verificación local (Release, PostGIS descartable): Unit 180/180,
+Integration 153/153, E2E 15/15; `dotnet build` sin warnings. CI del HEAD
+`dc4d3a7` 4/4 verde; PR #90 fusionado a develop `2a9ae9f` (15-oct 03:22 UTC).
+#39 permanece abierta: la promoción a main (#89), el CD y los gates
+productivos (Fases G–H) siguen pendientes.
+
+### Tuning productivo de workflows — 15-oct, 07:14 Guayaquil
+
+Por instrucción de Bryan se versiona el tuning, idéntico en vigía e incidente:
+nodo DeepSeek `maxRetries: 2` y `timeout: 20 s`; nodos HTTP de herramientas y
+callback a `15 s`; `executionTimeout: 35`; `saveData*: all` con progreso y
+manuales para auditoría. Motivos observados: el timeout de 3 s abortaba OAuth2
+M2M hacia Cognito bajo latencia; los 503 intermitentes de DeepSeek caían a
+Fallback con 0 reintentos.
+
+Regenerado con `build-workflows.py` (`--check` limpio); Python 6/6 y
+`WorkflowSecretsTests` en verde. No cambia prompt, modelo, herramientas ni
+política; el deadline del API (10 s) sigue siendo el límite efectivo y se mide
+en Fase G. Pendiente: importar ambos JSON en el n8n productivo y comparar
+grafos (GC-2) antes de la ventana.
