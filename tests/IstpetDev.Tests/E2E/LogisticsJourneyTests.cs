@@ -132,15 +132,8 @@ public sealed class LogisticsJourneyTests(PostgisContainer postgres)
         Assert.Equal(HttpStatusCode.OK, incResp.StatusCode);
 
         // Crear incidente real en la BD para probar replanificación
-        var createIncResp = await planner.PostAsJsonAsync("/api/v1/incidents", new CreateIncidentRequest(
-            Kind: "BloqueoVial",
-            Lat: -0.1300m,
-            Lon: -78.4800m,
-            RadiusKm: 2.5m,
-            Severity: "ALTA",
-            Description: "Cierre vial en corredor norte",
-            IsSynthetic: true
-        ));
+        var createIncResp = await planner.PostAsJsonAsync("/api/v1/incidents",
+            Fixtures.IncidentPreset("demo-region", "cierre-norte"));
         Assert.Equal(HttpStatusCode.Created, createIncResp.StatusCode);
         var incDoc = await createIncResp.Content.ReadFromJsonAsync<JsonElement>();
         var incidentId = incDoc.GetProperty("incidentId").GetGuid();
@@ -178,15 +171,8 @@ public sealed class LogisticsJourneyTests(PostgisContainer postgres)
         await planner.PostAsJsonAsync($"/api/v1/route-plans/{planId}/publish", new { });
 
         // 3. Crear incidente y replanificar bajo modo ProposeOnly
-        var createIncResp = await planner.PostAsJsonAsync("/api/v1/incidents", new CreateIncidentRequest(
-            Kind: "BloqueoVial",
-            Lat: -0.1300m,
-            Lon: -78.4800m,
-            RadiusKm: 2.5m,
-            Severity: "ALTA",
-            Description: "Cierre vial",
-            IsSynthetic: true
-        ));
+        var createIncResp = await planner.PostAsJsonAsync("/api/v1/incidents",
+            Fixtures.IncidentPreset("demo-region", "cierre-norte"));
         var incDoc = await createIncResp.Content.ReadFromJsonAsync<JsonElement>();
         var incidentId = incDoc.GetProperty("incidentId").GetGuid();
 

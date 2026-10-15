@@ -625,3 +625,24 @@ caché; incluye riesgos con IDs vigentes inmediatamente después de reset,
 escenario CLI-S09/opciones inviables y transferencia de reservas. Lint/build
 web del conjunto integrado aprobados. No se incluye en el PR el ajuste local
 ajeno de launchSettings (escucha de desarrollo); se conserva en el workspace.
+
+### Corrección de pruebas desalineadas tras la calibración — 14-oct, 21:55 Guayaquil
+
+CI del PR #90 falló en Integration:
+`AgentRunTraceTests.Incident_replan_decision_is_correlated_to_its_run_for_the_n8n_result`
+(`IndexOutOfRange` al leer `affectedRoutes[0]`). Causa: tras mover `cierre-norte`
+a (-0.24973, -78.51721) y recalibrar vehículos, las coordenadas fijas antiguas
+que la prueba usaba (-0.1300, -78.4800, 2,5 km) ya no intersecaron tramos
+pendientes y la respuesta trajo `affectedRoutes: []`. No es fallo de producto:
+es data de prueba duplicada y desactualizada; la suite completa local se había
+interrumpido después de la recalibración (registro de las 21:00).
+
+Corrección: se añade `Fixtures.IncidentPreset` y las pruebas consumen el preset
+`cierre-norte` del fixture sin duplicar coordenadas: `AgentRunTraceTests`,
+`AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`
+y `LogisticsJourneyTests` E2E-03/E2E-04. `DemoRegionTests` ya lo hacía. No
+cambian producto, workflows, prompt ni umbrales.
+
+Verificación local (Release, PostGIS descartable): Unit 180/180,
+Integration 153/153, E2E 15/15; `dotnet build` sin warnings. CI del SHA
+publicado pendiente; #39 permanece abierta.
