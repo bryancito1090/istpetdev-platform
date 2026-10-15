@@ -15,8 +15,8 @@
 | T6 | Endpoints, correlación y disparo por incidente | T5 | — | completada |
 | T7 | Prompt, workflows y control de credenciales | T6 | — | completada |
 | T8 | Copia local de n8n | T7 | [P] con T9 | completada |
-| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | código y ensayo local histórico; corrida oficial de producción pendiente (#39) |
-| T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada localmente (producción en #39) |
+| T9 | Fixture de inyección e informe de aceptación | T7 | [P] con T8 | completada (matriz oficial 30/30 en producción, 15-oct; `evidencia/2026-10-15-cierre-39.md`) |
+| T10 | E2E, bóveda y cierre medido | T8, T9 | — | completada (E2E y producción verificados el 15-oct; `evidencia/2026-10-15-cierre-39.md`) |
 
 `[P]` indica archivos distintos; integrar los commits antes de T5 o T10. Las firmas de `AgentRunView`, `IAgentRunService`, `IN8nTrigger` e `IExplanationValidator` son las de [Componentes de la API](plan.md#componentes-de-la-api). Si 001/002 integrados cambian sus nombres, documentar el ajuste en el PR junto con las pruebas consumidoras.
 
@@ -663,3 +663,28 @@ Regenerado con `build-workflows.py` (`--check` limpio); Python 6/6 y
 política; el deadline del API (10 s) sigue siendo el límite efectivo y se mide
 en Fase G. Pendiente: importar ambos JSON en el n8n productivo y comparar
 grafos (GC-2) antes de la ventana.
+
+## Cierre productivo verificado — 15-oct-2026, ventana 08:00–10:00
+
+Ejecución real con autorización de Bryan; manifiesto completo en
+[evidencia/2026-10-15-cierre-39.md](evidencia/2026-10-15-cierre-39.md).
+
+| Área | Resultado real | Evidencia |
+|---|---|---|
+| GC-1/GC-2 | n8n 2.39.5 con digest fijado; grafos productivos con el tuning #92 sincronizados vía API (respaldo privado), Schedule apagado, HMAC 401 sin firma | Sync verificado por API; difieren solo IDs/credenciales remapeadas |
+| GC-3 | M2M risks 200 + cinco 403; humano /me 200 | Sobre el SHA desplegado `3c55e96` |
+| GC-4 | Completed 8077 ms, Fallback 1248 ms `n8n_unreachable`, recuperación 7048 ms, estado final 8398 ms | Runs `01a13fb6-d3ce…`, `01a13fb7-1dd2…`, `01a13fb7-330c…`, `01a13fbe-613c…` |
+| GC-5 | Matriz oficial 30/30: herramientas 72/72, p95 7804 ms, LLM 58/60 (96,7%), inyección 10/10, exit 0 | `artifacts/agent-acceptance/20261015-082412-298442/report.md` |
+| GC-6 | CE-03: 2 rutas afectadas; VEH-01 AutoExecuted (+14,01%), VEH-02 Escalated por CLI-S09; revisiones Published/Proposed; sin ejecución de la escalada | Run `01a13fbc-6119…`; decisión por LLM y mensajes 88/105 |
+| Estado final | `AGENT_ENABLED=true`, `AGENT_AUTO_ON_INCIDENT=false`, `DEMO_ENABLED=false`; demo en fixture canónico | Reaplicación `38742486844`; reset con demo apagada 404 |
+
+Integraciones: #92 → develop `5c89d99`; #89 → main `3c55e96` con CD
+`38735781915`; #93 (hotfix rollback) → main `40cec19` con reaplicación
+`38742486844`; #94 (User-Agent del harness) → develop.
+
+Fallos conservados: matriz `20261015-081914-646750` (403 de Cloudflare al
+User-Agent por defecto de Python, corregido en #94); reaplicación `38737536432`
+tumbó la API por `DB_PASSWORD` ausente en `rollback.yml` (recuperada con deploy
+`38738079341` y corregida en #93); Watch previo `01a13faf-3974…` con fallback
+`agent_error` por base sin fixture. La inyección 10/10 y CE-03 quedan
+acreditados con datos reales; PA-01 resuelta.

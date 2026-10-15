@@ -24,7 +24,7 @@ La identidad administrativa usa los perfiles existentes `istpetdev-admin-console
 - PostgreSQL 16 Single-AZ `db.t4g.medium`: gp3 20 GiB, máximo 100, privado, cifrado, `rds.force_ssl=1`, protección de borrado. TCP 5432 exclusivamente desde el SG del nodo. Password master gestionado por RDS.
 - S3 separados: state SSE-KMS con la clave **existente** `alias/istpetdev-tfstate`; evidencias y dumps SSE-S3. Todos privados, versionados, ownership enforced y TLS obligatorio.
 - Secretos: cinco app personales, cinco migradores, cinco usuarios de integración, migrador y backup de integración. Terraform solo administra contenedores/ARN; `bootstrap-dev.sh` crea valores fuera del state.
-- Cognito dev: registro administrativo, TOTP obligatorio, web y PWA públicas sin client secret, flujo code, tokens 15 min, refresh siete días con rotación/revocación. Callbacks localhost exactos 4200/8100. El cliente debe usar PKCE S256; la UI de login y el RBAC de negocio continúan siendo trabajo de aplicación.
+- Cognito dev: registro administrativo, MFA desactivado (`OFF`, para agilizar las cuentas multi-rol de la hackathon), web y PWA públicas sin client secret, flujo code, tokens 15 min, refresh siete días con rotación/revocación. Callbacks localhost exactos 4200/8100. El cliente debe usar PKCE S256; la UI de login y el RBAC de negocio continúan siendo trabajo de aplicación.
 - Logs PostgreSQL/upgrade 14 días; alarmas RDS CPU/memoria/almacenamiento/conexiones, estado EC2, eventos RDS. SNS requiere confirmar el correo.
 - Dos presupuestos sobre el mismo gasto bruto mensual de la **cuenta** (real y previsto), sin descontar créditos/reembolsos, umbrales 50/80/100%. No suman dos gastos ni constituyen un tope o apagado. El importe y correo se cargan en tfvars privados.
 

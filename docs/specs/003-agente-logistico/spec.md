@@ -195,5 +195,5 @@ Notas revisadas sin otra contradicción: Contratos API y eventos (contrato n8n: 
 
 ## Preguntas abiertas
 
-- PA-01: ¿Bryan puede crear la credencial de DeepSeek y la credencial OAuth2 de Cognito en su n8n el 13-oct por la mañana? Decide: Bryan.
+- PA-01 (resuelta 15-oct-2026): credenciales DeepSeek nativa y OAuth2 M2M de Cognito creadas y usadas en runs reales (Completed, herramientas 2xx, HMAC 202/401) durante el cierre productivo de #39; evidencia en `evidencia/2026-10-15-cierre-39.md`.
 - PA-02: El apply dirigido del cliente M2M se ejecutó el 14-oct por Codex con revisión y autorización expresa de Bryan; [evidencia #38](https://github.com/bryancito1090/istpetdev-platform/issues/38#issuecomment-6172192197). Configuración/despliegue de producción permanecen a cargo de #38/#39.

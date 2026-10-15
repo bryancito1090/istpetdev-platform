@@ -52,7 +52,7 @@ Ruta sugerida: `~/istpetdev-cuentas-demo.csv` con `chmod 600`.
 
 ### Teléfonos y autenticador
 
-- Cada persona con su app TOTP (Google Authenticator, Authy u otra) para el primer ingreso (MFA obligatorio en el pool).
+- MFA desactivado en el pool desde el 15-oct-2026: el primer ingreso solo pide cambiar la contraseña temporal; ya no se registra TOTP.
 - Las invitaciones caducan en **1 día**: crear o reenviar las cuentas de la demo el **15-oct** (riesgo del spec).
 
 ## Escenarios
@@ -61,7 +61,7 @@ Ruta sugerida: `~/istpetdev-cuentas-demo.csv` con `chmod 600`.
 |---|---|---|---|---|
 | E2E-00 | Suites automáticas verdes | CE-02, CE-03, CE-05, CE-07, NFR-01, NFR-04, NFR-05 | automatizado | sí |
 | E2E-01 | Script de arranque crea la Gerencia y las cuentas de demo; segunda ejecución no duplica | H3, FR-11, CE-03 | manual | sí |
-| E2E-02 | Planificador entra a la web con contraseña y TOTP; la API recibe Bearer; ningún token persiste | H1-1, FR-01–FR-05, CE-02 | manual | sí |
+| E2E-02 | Planificador entra a la web con contraseña; la API recibe Bearer; ningún token persiste | H1-1, FR-01–FR-05, CE-02 | manual | sí |
 | E2E-03 | Recargar una ruta privada vuelve autenticado sin pedir contraseña | H1-2, FR-03, FR-08 | manual | sí |
 | E2E-04 | Cada rol solo entra a su plataforma | H1-3, FR-07, CE-01 | manual | sí |
 | E2E-05 | Auditor ve todo y no puede escribir | H1-6, FR-21, CE-07 | manual | sí |
@@ -124,7 +124,7 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 
 1. Navegador en ventana privada, DevTools abierto (Network con «Preserve log»). Ir a `http://localhost:4200/login`.
 2. Pulsar «Iniciar sesión»: se abre `https://…amazoncognito.com/login?…code_challenge_method=S256…`.
-3. Entrar con la cuenta de Planificador; en el primer ingreso, cambiar la contraseña temporal y registrar TOTP; ingresar el código.
+3. Entrar con la cuenta de Planificador; en el primer ingreso, cambiar la contraseña temporal.
 4. Al volver, comprobar la cabecera (nombre y rol) y abrir en Network `GET /api/v1/me` y otra llamada a `/api/v1/…`.
 5. En Application: revisar `localStorage`, `sessionStorage` e IndexedDB del origen `localhost:4200`.
 6. Buscar en la consola y en la URL final cualquier `access_token`, `id_token` o `refresh_token`.
