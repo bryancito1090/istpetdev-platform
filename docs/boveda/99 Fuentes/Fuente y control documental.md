@@ -497,6 +497,16 @@ del checkpoint anterior, sin convertir pruebas preparatorias en aceptación.
 
 Verificación documental: **85 notas Markdown**, **899 enlaces internos resueltos**, **0 errores**.
 
+## Análisis de flujo E2E por roles, n8n y datasets — 15 de octubre de 2026
+
+Fuente: revisión de `develop` (`4545f50`) a partir del issue #55. Nueva nota
+[[2026-10-15-analisis-flujo-e2e-roles-n8n-datasets]] en estado propuesta:
+hallazgos verificados en código (HZ-01 a HZ-08), matriz de escenarios ESC-01 a
+ESC-28 e issues propuestos ISS-01 a ISS-09. No modifica specs, ADR ni secretos;
+los cambios propuestos quedan listados para decisión del equipo.
+
+Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
+
 ## Limpieza de restos de demo en el flujo del Conductor (#123) — 15 de octubre de 2026
 
 Fuente: Issue #123 de Joseph Baño (urgente por congelamiento). En `apps/mobile`
@@ -514,4 +524,4 @@ pruebas), `npm run build:mobile`, `npm run check` y `npm run audit:check`, todos
 en verde; grep de aceptación del issue sin restos. No se tocaron `scan.page.ts`
 ni `home.page.ts`.
 
-Verificación documental: **85 notas Markdown**, **899 enlaces internos resueltos**, **0 errores**.
+Verificación documental: **86 notas Markdown**, **918 enlaces internos resueltos**, **0 errores**.
