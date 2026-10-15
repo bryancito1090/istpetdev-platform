@@ -75,6 +75,7 @@ Ruta sugerida: `~/istpetdev-cuentas-demo.csv` con `chmod 600`.
 | E2E-11 | Gerencia crea un Conductor desde «Usuarios»; primer ingreso; ve solo sus entregas en la PWA | H4-1, FR-12, FR-13, FR-19, CE-06 | manual | P2 (sí si H4 entra) |
 | E2E-12 | Gerencia desactiva al Conductor: 403 inmediato, sesión de Cognito revocada; reactivación | H4-2, FR-15, NFR-01, CE-05 | manual | P2 (sí si H4 entra) |
 | E2E-13 | Reglas de Gerencia: propia cuenta, correo repetido, reenvío de invitación vencida | H4-3, H4-4, H4-5, FR-16, FR-17 | manual | P2 (sí si H4 entra) |
+| E2E-14 | Recepción real del Receptor con QR del bulto; la entrega queda Delivered en la web | Spec 014, ADR-27 | manual | sí |
 
 H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.md#contradicciones-detectadas-al-planificar)).
 
@@ -296,6 +297,28 @@ H4-6 (`AuditEvent`) no tiene escenario: FR-18 está pospuesto (ver [plan](plan.m
 **Resultado esperado:** paso 1: la propia fila no ofrece «Desactivar» ni selector de rol. Paso 2: «Ese correo ya tiene una cuenta.» y la lista no cambia. Paso 3: llega una nueva contraseña temporal y la persona completa su primer ingreso.
 
 **Evidencia a guardar:** capturas de los mensajes.
+
+### E2E-14 — Recepción real del Receptor con QR del bulto (spec 014)
+
+**Objetivo:** Validar que el Receptor hospitalario puede autenticarse con su propia cuenta, escanear el QR real de un bulto preparado y despachado por Bodega, visualizar los datos reales de producto/lote/cantidad y confirmar la recepción en línea contra la API real (`POST /api/v1/receiver/handling-units/{unitId}/receipt`), dejando la entrega como `Delivered` en la web.
+
+**Pasos:**
+
+1. Iniciar sesión en la plataforma con la cuenta de Bodega (o Gerencia) y preparar un bulto para una entrega publicada (`POST /api/v1/deliveries/{id}/handling-units`) y despacharlo (`POST /api/v1/deliveries/{id}/dispatch`).
+2. Abrir o copiar la URL del QR de la unidad emitida (`https://istpetdev.doicela.dev/public-trace/{unitId}#t={token}`).
+3. Iniciar sesión en la PWA con la cuenta de Receptor hospitalario (`/home`).
+4. En la tarjeta del Receptor, ingresar o escanear la URL/código del QR del bulto.
+5. Comprobar que la PWA consulte `GET /api/v1/receiver/handling-units/{unitId}` con el header `X-Trace-Token`, cargando código de bulto, destino y líneas de producto, lote y cantidad reales (sin aviso de datos simulados).
+6. Seleccionar «Todo conforme» y pulsar «Confirmar recepción».
+7. Verificar en la consola web (`/rutas` o `/entregas`) que la entrega cambie a estado «Entregada» (`Delivered`).
+
+**Resultado esperado:**
+- La PWA muestra «Recepción registrada: entrega completa.».
+- La API procesa la recepción autorizada con el token del QR sin exigir conductor asignado ni usar outbox offline.
+- En la web, la entrega pasa a `Delivered` y el bulto a `Received`.
+- Un intento repetido con el mismo bulto ya recibido devuelve error 409 y muestra «Este bulto ya fue recibido».
+
+**Evidencia a guardar:** Captura de la tarjeta del Receptor con el bulto real; captura de confirmación exitosa; captura de la consola web con la entrega en `Delivered`.
 
 ## Registro de ejecuciones
 

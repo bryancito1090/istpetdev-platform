@@ -41,6 +41,31 @@ export interface IFieldApi {
 
   // Público (Consulta QR sin datos sensibles)
   getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto>;
+
+  // Receptor (Mobile / Recepción validada con QR del bulto)
+  getReceiverUnit(unitId: string, token: string): Observable<ReceiverUnit>;
+  receiveAsReceiver(unitId: string, token: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse>;
+}
+
+export interface ReceiverUnitLine {
+  deliveryLineId: string;
+  lotId: string;
+  lotCode: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface ReceiverUnit {
+  handlingUnitId: string;
+  code: string;
+  status: string;
+  deliveryId: string;
+  deliveryVersion: number;
+  destinationName: string;
+  lines: ReceiverUnitLine[];
 }
 
 export const FIELD_API = new InjectionToken<IFieldApi>('FIELD_API');
+

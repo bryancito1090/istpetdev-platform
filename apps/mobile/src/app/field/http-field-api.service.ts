@@ -19,7 +19,7 @@ import {
   DemoAdvanceResponse,
   PublicTraceUnitDto
 } from '@istpetdev/shared-core';
-import { IFieldApi } from './field-api.interface';
+import { IFieldApi, ReceiverUnit } from './field-api.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -98,4 +98,20 @@ export class HttpFieldApiService implements IFieldApi {
     });
     return this.http.get<PublicTraceUnitDto>(`${this.baseUrl}/api/v1/public/trace/${unitId}`, { headers });
   }
+
+  getReceiverUnit(unitId: string, token: string): Observable<ReceiverUnit> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token
+    });
+    return this.http.get<ReceiverUnit>(`${this.baseUrl}/api/v1/receiver/handling-units/${unitId}`, { headers });
+  }
+
+  receiveAsReceiver(unitId: string, token: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse> {
+    const headers = new HttpHeaders({
+      'X-Trace-Token': token,
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<ReceiptResponse>(`${this.baseUrl}/api/v1/receiver/handling-units/${unitId}/receipt`, req, { headers });
+  }
 }
+

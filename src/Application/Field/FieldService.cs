@@ -391,6 +391,17 @@ public sealed class FieldService : IFieldService
         string idempotencyKey,
         CancellationToken ct = default)
     {
+        return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, requireAssignedDriver: true, ct);
+    }
+
+    private async Task<ReceiptResponse> CreateReceiptCoreAsync(
+        Guid deliveryId,
+        CreateReceiptRequest request,
+        Guid actorAccountId,
+        string idempotencyKey,
+        bool requireAssignedDriver,
+        CancellationToken ct)
+    {
         // 1. Idempotencia
         var existingRecord = await _db.IdempotencyRecords
             .FirstOrDefaultAsync(r => r.OrganizationId == DemoOrganization.Id &&
@@ -413,7 +424,7 @@ public sealed class FieldService : IFieldService
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
 
         // 2. Autorización por asignación de conductor
-        if (delivery.AssignedAccountId.HasValue && delivery.AssignedAccountId.Value != actorAccountId)
+        if (requireAssignedDriver && delivery.AssignedAccountId.HasValue && delivery.AssignedAccountId.Value != actorAccountId)
         {
             throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment, "El conductor no está asignado a esta entrega.");
         }
@@ -449,6 +460,17 @@ public sealed class FieldService : IFieldService
                 var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == stop.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
                 if (pLoc != null) destinationLocationId = pLoc.Id;
             }
+        }
+        else
+        {
+            var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == delivery.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+            if (pLoc != null) destinationLocationId = pLoc.Id;
+
+            var huLocId = await _db.HandlingUnits
+                .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
+                .Select(hu => (Guid?)hu.LocationId)
+                .FirstOrDefaultAsync(ct);
+            if (huLocId.HasValue) vehicleLocationId = huLocId.Value;
         }
 
         var receipt = new Receipt
@@ -850,6 +872,17 @@ public sealed class FieldService : IFieldService
         return new DeliveryListResponse(listItems, null, total);
     }
 
+    private async Task<HandlingUnit> RequireUnitWithTokenAsync(Guid unitId, string? traceToken, CancellationToken ct)
+    {
+        var notFound = new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
+        if (string.IsNullOrWhiteSpace(traceToken)) throw notFound;
+        var hu = await _db.HandlingUnits.FirstOrDefaultAsync(h => h.Id == unitId && h.OrganizationId == DemoOrganization.Id, ct) ?? throw notFound;
+        var tokenHash = ComputeSha256(traceToken.Trim());
+        var valid = await _db.QrAccessTokens.AnyAsync(t => t.HandlingUnitId == hu.Id && t.TokenHash == tokenHash
+            && t.RevokedAtUtc == null && t.ExpiresAtUtc > DateTime.UtcNow, ct);
+        return valid ? hu : throw notFound;
+    }
+
     public async Task<DeliveryDetailResponse> GetDeliveryDetailAsync(
         Guid deliveryId,
         CancellationToken ct = default)
@@ -929,31 +962,7 @@ public sealed class FieldService : IFieldService
         string? traceToken,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(traceToken))
-        {
-            throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
-        }
-
-        var hu = await _db.HandlingUnits
-            .FirstOrDefaultAsync(h => h.Id == unitId && h.OrganizationId == DemoOrganization.Id, ct);
-
-        if (hu == null)
-        {
-            throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
-        }
-
-        var tokenHash = ComputeSha256(traceToken.Trim());
-
-        var validToken = await _db.QrAccessTokens
-            .FirstOrDefaultAsync(t => t.HandlingUnitId == hu.Id &&
-                                      t.TokenHash == tokenHash &&
-                                      t.RevokedAtUtc == null &&
-                                      t.ExpiresAtUtc > DateTime.UtcNow, ct);
-
-        if (validToken == null)
-        {
-            throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
-        }
+        var hu = await RequireUnitWithTokenAsync(unitId, traceToken, ct);
 
         var lines = await _db.HandlingUnitLines
             .Where(l => l.HandlingUnitId == hu.Id && l.OrganizationId == DemoOrganization.Id)
@@ -1007,6 +1016,39 @@ public sealed class FieldService : IFieldService
             hu.Status,
             productUnits,
             events);
+    }
+
+    public async Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default)
+    {
+        var hu = await RequireUnitWithTokenAsync(unitId, traceToken, ct);
+        if (hu.DeliveryId is not Guid deliveryId) throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
+        var delivery = await _db.Deliveries.SingleAsync(d => d.Id == deliveryId, ct);
+        var point = await _db.ServicePoints.FirstOrDefaultAsync(p => p.Id == delivery.ServicePointId, ct);
+        var deliveryLines = await _db.DeliveryLines.Where(l => l.DeliveryId == deliveryId).ToListAsync(ct);
+        var unitLines = await _db.HandlingUnitLines.Where(l => l.HandlingUnitId == hu.Id).ToListAsync(ct);
+        var lotIds = unitLines.Select(l => l.LotId).ToList();
+        var lots = await _db.Lots.Where(l => lotIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
+        var productIds = lots.Values.Select(l => l.ProductId).ToList();
+        var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+
+        var lines = unitLines.Select(l =>
+        {
+            // La línea de la caja puede no traer DeliveryLineId: se resuelve por lote dentro de la entrega.
+            var deliveryLineId = l.DeliveryLineId ?? deliveryLines.First(dl => dl.LotId == l.LotId).Id;
+            var lot = lots[l.LotId];
+            var product = products[lot.ProductId];
+            return new ReceiverUnitLineDto(deliveryLineId, lot.Id, lot.Code, product.Sku, product.Name, l.Quantity, product.BaseUnit);
+        }).ToList();
+
+        return new ReceiverUnitResponse(hu.Id, hu.Code, hu.Status, deliveryId, delivery.Version, point?.Name ?? "", lines);
+    }
+
+    public async Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
+    {
+        var hu = await RequireUnitWithTokenAsync(unitId, traceToken, ct);
+        if (hu.DeliveryId is not Guid deliveryId) throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
+        // El QR prueba que el Receptor tiene el bulto en la mano; no hay conductor asignado que validar.
+        return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, requireAssignedDriver: false, ct);
     }
 
     public async Task<HandlingUnitTraceResponse> GetOperativeTraceAsync(

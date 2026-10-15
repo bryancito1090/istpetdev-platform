@@ -162,7 +162,7 @@ JSON camelCase, horas ISO 8601 UTC y errores Problem Details con código estable
 
 - Build nativo de Capacitor, GPS continuo, geolocalización en segundo plano y push.
 - Chat, Telegram, correo, WhatsApp o mensajería bidireccional.
-- Recepción por una sesión independiente de Receptor en el recorrido de demo; el receptor firma voluntariamente en el dispositivo del conductor.
+- ~~Recepción por una sesión independiente de Receptor en el recorrido de demo; el receptor firma voluntariamente en el dispositivo del conductor.~~ (Superado por el [spec 014](../014-receptor-recepcion-real/plan.md): el Receptor registra la recepción con su propia cuenta escaneando el QR del bulto).
 - Impresora térmica o integración con drivers; se imprime la etiqueta desde el navegador.
 - Acceso público a cantidades, firmas, fotos, nombres personales, teléfonos, rutas completas o inventario.
 - Conciliación automática de devoluciones rechazadas sin escaneo físico en bodega.

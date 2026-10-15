@@ -18,7 +18,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * ⚠️ Por seguridad (Spec 004 / Issue #122), el token retornado no debe
  * persistirse en outbox, logs ni localStorage.
  */
-export function parseUnitQr(raw: string): ParsedUnitQr | null {
+export function parseUnitQr(raw: string | null | undefined): ParsedUnitQr | null {
   if (!raw) return null;
   const m = raw.trim().match(QR_URL_REGEX);
   return m ? { unitId: m[1].toLowerCase(), token: m[2] } : null;
@@ -28,7 +28,7 @@ export function parseUnitQr(raw: string): ParsedUnitQr | null {
  * Extrae el identificador de unidad (UUID) a partir de una URL completa de QR
  * o directamente desde un UUID ingresado manualmente.
  */
-export function extractUnitId(raw: string): string | null {
+export function extractUnitId(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const trimmed = raw.trim();
   const traceMatch = trimmed.match(TRACE_PATH_REGEX);
