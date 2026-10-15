@@ -551,6 +551,11 @@ public sealed class FieldService : IFieldService
 
             if (reqLine.QuantityRejected > 0)
             {
+                if (!ReceiptRejectionReasons.TryValidate(reqLine.RejectionReason, out var reasonError))
+                {
+                    throw new FieldUnprocessableException(FieldErrorCodes.InvalidRejectionReason,
+                        reasonError ?? "Motivo de rechazo inválido.");
+                }
                 hasRejections = true;
             }
 

@@ -232,11 +232,11 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                       @for (chip of receiverIssueChips; track chip.id) {
                         <button
                           type="button"
-                          (click)="toggleReceiverIssue(chip.label)"
-                          [class.bg-rose-700]="receiverSelectedIssues().includes(chip.label)"
-                          [class.text-white]="receiverSelectedIssues().includes(chip.label)"
-                          [class.bg-white]="!receiverSelectedIssues().includes(chip.label)"
-                          [class.text-rose-900]="!receiverSelectedIssues().includes(chip.label)"
+                          (click)="toggleReceiverIssue(chip.id)"
+                          [class.bg-rose-700]="receiverSelectedIssues().includes(chip.id)"
+                          [class.text-white]="receiverSelectedIssues().includes(chip.id)"
+                          [class.bg-white]="!receiverSelectedIssues().includes(chip.id)"
+                          [class.text-rose-900]="!receiverSelectedIssues().includes(chip.id)"
                           class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-rose-300 transition shadow-sm">
                           {{ chip.label }}
                         </button>
@@ -455,10 +455,10 @@ export class HomePage implements OnInit {
   readonly receiverConfirmedMessage = signal<string | null>(null);
 
   readonly receiverIssueChips = [
-    { id: 'damaged', label: 'Empaque roto o golpeado' },
-    { id: 'seal_broken', label: 'Sello de seguridad roto / alterado' },
-    { id: 'missing', label: 'Faltan galones / unidades' },
-    { id: 'lot_mismatch', label: 'Lote o fecha no coincide' }
+    { id: 'dano', label: 'Empaque roto o golpeado' },
+    { id: 'precinto_violado', label: 'Sello de seguridad roto / alterado' },
+    { id: 'faltante', label: 'Faltan galones / unidades' },
+    { id: 'lote_no_coincide', label: 'Lote o fecha no coincide' }
   ];
 
   readonly pendingCount = this.outboxService.pendingCount;
@@ -557,12 +557,12 @@ export class HomePage implements OnInit {
     }
   }
 
-  toggleReceiverIssue(issueLabel: string): void {
+  toggleReceiverIssue(issueId: string): void {
     const current = this.receiverSelectedIssues();
-    if (current.includes(issueLabel)) {
-      this.receiverSelectedIssues.set(current.filter((i) => i !== issueLabel));
+    if (current.includes(issueId)) {
+      this.receiverSelectedIssues.set(current.filter((i) => i !== issueId));
     } else {
-      this.receiverSelectedIssues.set([...current, issueLabel]);
+      this.receiverSelectedIssues.set([...current, issueId]);
     }
   }
 
@@ -576,6 +576,24 @@ export class HomePage implements OnInit {
     this.receiverConfirmedMessage.set(null);
 
     const ok = this.receiverStatus() === 'conforme';
+    const selectedCodes = this.receiverSelectedIssues();
+    let rejectionReason: string | undefined = undefined;
+    if (!ok) {
+      const firstCode = selectedCodes[0] || 'dano';
+      const restCodes = selectedCodes.slice(1);
+      const restLabels = restCodes.map(
+        (c) => this.receiverIssueChips.find((chip) => chip.id === c)?.label || c
+      );
+      const note = this.receiverIssueNotes.trim();
+      const detailParts = [...restLabels, ...(note ? [note] : [])];
+      if (detailParts.length > 0) {
+        const detail = detailParts.join(', ');
+        rejectionReason = `${firstCode}: ${detail.slice(0, 200)}`;
+      } else {
+        rejectionReason = firstCode;
+      }
+    }
+
     const req: CreateReceiptRequest = {
       operationId: crypto.randomUUID(),
       expectedDeliveryVersion: box.deliveryVersion,
@@ -586,7 +604,7 @@ export class HomePage implements OnInit {
         unit: l.unit,
         quantityAccepted: ok ? l.quantity : 0,
         quantityRejected: ok ? 0 : l.quantity,
-        rejectionReason: ok ? undefined : this.receiverSelectedIssues().join(', ') || 'Novedad'
+        rejectionReason
       }))
     };
 

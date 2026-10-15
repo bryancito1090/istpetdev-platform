@@ -20,6 +20,7 @@ public static class FieldErrorCodes
     public const string UnauthorizedAssignment = "UNAUTHORIZED_ASSIGNMENT";
     public const string UnitNotFound = "UNIT_NOT_FOUND";
     public const string TokenRevokedOrExpired = "TOKEN_REVOKED_OR_EXPIRED";
+    public const string InvalidRejectionReason = "INVALID_REJECTION_REASON";
 }
 
 // ==========================================

@@ -286,6 +286,7 @@ export class FieldOutboxService {
       quantityAccepted: number;
       quantityRejected: number;
       unit: string;
+      rejectionReason?: string;
       remainingQuantity?: number;
       nextRequestedQuantity?: number;
     }[];

@@ -32,6 +32,7 @@ interface ReceiptLineForm {
   quantityAccepted: number;
   quantityRejected: number;
   unit: string;
+  rejectionReason?: string;
   remainingQuantity?: number;
   nextRequestedQuantity?: number;
 }
@@ -477,6 +478,7 @@ export class ReceiptPage implements OnInit {
           quantityAccepted: l.quantityAccepted,
           quantityRejected: l.quantityRejected,
           unit: l.unit,
+          rejectionReason: l.quantityRejected > 0 ? (l.rejectionReason || (this.notes ? `dano: ${this.notes}`.slice(0, 206) : 'dano')) : undefined,
           remainingQuantity: l.remainingQuantity != null && l.remainingQuantity !== ('' as any) ? Number(l.remainingQuantity) : undefined,
           nextRequestedQuantity: l.nextRequestedQuantity != null && l.nextRequestedQuantity !== ('' as any) ? Number(l.nextRequestedQuantity) : undefined
         })),

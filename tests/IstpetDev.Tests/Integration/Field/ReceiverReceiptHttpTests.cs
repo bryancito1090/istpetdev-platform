@@ -58,12 +58,23 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
         return request;
     }
 
-    private static object ReceiptBody(Guid operationId, FieldSeed.Dispatched d, decimal accepted, decimal rejected) => new
+    private static object ReceiptBody(Guid operationId, FieldSeed.Dispatched d, decimal accepted, decimal rejected, string? rejectionReason = null) => new
     {
         operationId,
         expectedDeliveryVersion = 0,
         occurredAtDevice = DateTime.UtcNow,
-        lines = new[] { new { deliveryLineId = d.DeliveryLineId, lotId = d.LotId, quantityAccepted = accepted, quantityRejected = rejected, unit = "L" } },
+        lines = new[]
+        {
+            new
+            {
+                deliveryLineId = d.DeliveryLineId,
+                lotId = d.LotId,
+                quantityAccepted = accepted,
+                quantityRejected = rejected,
+                rejectionReason = rejectionReason ?? (rejected > 0 ? "dano: rotura en transporte" : null),
+                unit = "L"
+            }
+        },
     };
 
     [Fact]
