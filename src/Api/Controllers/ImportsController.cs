@@ -9,10 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Api.Controllers;
 
-[ApiController, Route("api/v1/imports"), Authorize(Roles = Roles.Planning), EnableRateLimiting("imports")]
+[ApiController, Route("api/v1/imports"), Authorize(Roles = Roles.Human), EnableRateLimiting("imports")]
 public sealed class ImportsController(IImportService importer, IApplicationDbContext db) : ControllerBase
 {
     [HttpGet("data/{entity}")]
+    [Authorize(Roles = Roles.Human)]
     public async Task<IActionResult> GetEntityData([FromRoute] string entity, CancellationToken cancellationToken = default)
     {
         if (!ImportEntityKeys.TryParse(entity, out var parsed))
@@ -157,7 +158,7 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                 return Ok(Array.Empty<object>());
         }
     }
-    [HttpPost, RequestSizeLimit(ImportLimits.RequestBytes), RequestFormLimits(MultipartBodyLengthLimit = ImportLimits.RequestBytes, ValueLengthLimit = ImportLimits.ProfileBytes)]
+    [HttpPost, Authorize(Roles = Roles.Planning), RequestSizeLimit(ImportLimits.RequestBytes), RequestFormLimits(MultipartBodyLengthLimit = ImportLimits.RequestBytes, ValueLengthLimit = ImportLimits.ProfileBytes)]
     public async Task<IActionResult> Import([FromQuery] bool dryRun = true, [FromQuery] bool allowPartial = false, CancellationToken cancellationToken = default)
     {
         if (!Request.HasFormContentType) return Problem(statusCode: 400, title: "Envíe multipart/form-data con archivos CSV/XLSX.");

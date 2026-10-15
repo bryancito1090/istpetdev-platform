@@ -43,6 +43,7 @@ public sealed class DistanceProvider(
 
         // 2. Stored: Cargar de RoadMatrixEdge
         var storedEdges = await db.RoadMatrixEdges
+            .AsNoTracking()
             .Where(e => e.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 

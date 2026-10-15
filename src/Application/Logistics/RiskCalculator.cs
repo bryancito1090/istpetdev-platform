@@ -45,10 +45,12 @@ public sealed class RiskCalculator(
         var windowStart = today.AddDays(-_options.DemandWindowDays);
 
         var servicePoints = await db.ServicePoints
+            .AsNoTracking()
             .Where(sp => sp.OrganizationId == DemoOrganization.Id && sp.IsActive)
             .ToListAsync(ct);
 
         var products = await db.Products
+            .AsNoTracking()
             .Where(p => p.OrganizationId == DemoOrganization.Id && p.IsActive)
             .ToListAsync(ct);
 
@@ -56,6 +58,7 @@ public sealed class RiskCalculator(
 
         // 1. Stock balances en ubicaciones de los puntos de servicio
         var spLocations = await db.Locations
+            .AsNoTracking()
             .Where(l => l.OrganizationId == DemoOrganization.Id && l.ServicePointId != null && spIds.Contains(l.ServicePointId.Value))
             .Select(l => new { l.Id, ServicePointId = l.ServicePointId!.Value })
             .ToListAsync(ct);
@@ -64,26 +67,31 @@ public sealed class RiskCalculator(
         var locIds = spLocations.Select(l => l.Id).ToHashSet();
 
         var balances = await db.StockBalances
+            .AsNoTracking()
             .Where(sb => sb.OrganizationId == DemoOrganization.Id && locIds.Contains(sb.LocationId))
             .ToListAsync(ct);
 
         var lotIds = balances.Select(b => b.LotId).Distinct().ToList();
         var lots = await db.Lots
+            .AsNoTracking()
             .Where(l => lotIds.Contains(l.Id))
             .ToDictionaryAsync(l => l.Id, ct);
 
         // 2. Consumos en la ventana de demanda
         var consumptions = await db.Consumptions
+            .AsNoTracking()
             .Where(c => c.OrganizationId == DemoOrganization.Id && spIds.Contains(c.ServicePointId))
             .ToListAsync(ct);
 
         // 3. Entregas en tránsito hacia el punto (despachadas y no completadas/canceladas)
         var pendingDeliveries = await db.Deliveries
+            .AsNoTracking()
             .Where(d => d.OrganizationId == DemoOrganization.Id && spIds.Contains(d.ServicePointId) && d.DispatchedAtUtc != null && d.Status != "Delivered" && d.Status != "Cancelled")
             .Select(d => d.Id)
             .ToListAsync(ct);
 
         var pendingLines = await db.DeliveryLines
+            .AsNoTracking()
             .Where(dl => pendingDeliveries.Contains(dl.DeliveryId))
             .ToListAsync(ct);
 
