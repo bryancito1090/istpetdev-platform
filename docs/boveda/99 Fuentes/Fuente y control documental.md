@@ -569,3 +569,8 @@ Verificación documental: **86 notas Markdown**, **925 enlaces internos resuelto
 Se agrega [[Flujos de prueba]] (07 Demo): recorrido de la demo por rol, login del spec 013 y estado de ESC-01 a ESC-28 tras los merges del día (#121, #122, #123, #128, #110, #111, #112, #114).
 
 Verificación documental: **87 notas Markdown**, **928 enlaces internos resueltos**, **0 errores**.
+
+
+## 15-oct-2026 — Issue #115: recepción PWA y evidencia privada
+
+La rama `feature/115-receptor-recepcion-real` integra captura parcial del Receptor con su endpoint, catálogo V1 compatible con #117, stock en percha/pedido, foto obligatoria en la captura con rechazo y outbox por cuenta. Sustituye la autorización ficticia S3 por PUT privado prefirmado y verifica el objeto antes de confirmar evidencia. Reutiliza la tabla Evidence; sin migración. Configuración de bucket y prueba física en dos teléfonos pendientes de ejecución en el entorno de destino; no afirmar ESC-04/06/15 físicamente validados. Guion y alcance de las pruebas automatizadas: `docs/validation/issue-115-receptor.md`.

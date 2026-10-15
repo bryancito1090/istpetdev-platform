@@ -1,7 +1,8 @@
+import { Blob as NodeBlob } from 'node:buffer';
 import { TestBed } from '@angular/core/testing';
 import { IDBFactory } from 'fake-indexeddb';
-import { of } from 'rxjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { of, throwError, Subject } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FIELD_API } from '../field-api.interface';
 import { FieldOutboxService } from './field-outbox.service';
 
@@ -17,21 +18,28 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     createReceipt: ReturnType<typeof vi.fn>;
     uploadEvidence: ReturnType<typeof vi.fn>;
     confirmEvidence: ReturnType<typeof vi.fn>;
+    receiveAsReceiver: ReturnType<typeof vi.fn>;
+    getReceiverUnit: ReturnType<typeof vi.fn>;
     getAssignments: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
+    vi.stubGlobal('Blob', NodeBlob);
     globalThis.indexedDB = new IDBFactory();
     api = {
       createReceipt: vi.fn(() => of({ receiptId: 'r-1' })),
       uploadEvidence: vi.fn(),
       confirmEvidence: vi.fn(),
-      getAssignments: vi.fn()
+      getAssignments: vi.fn(),
+      receiveAsReceiver: vi.fn(() => of({ receiptId: 'receiver-receipt' })),
+      getReceiverUnit: vi.fn()
     };
     TestBed.configureTestingModule({
       providers: [{ provide: FIELD_API, useValue: api }]
     });
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   it('cada cuenta ve y sincroniza solo sus capturas, y cerrar sesión no las borra', async () => {
     const outbox = TestBed.inject(FieldOutboxService);
@@ -184,7 +192,7 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(okItem3?.status).toBe('Complete');
   });
 
-  it('ESC-25: carrera de desactivación de cuenta (403 TOKEN_REVOKED_OR_EXPIRED) aísla la captura en RequiresReview sin perder datos', async () => {
+  it('ESC-25: carrera de desactivación de cuenta (403 TOKEN_REVOKED_OR_EXPIRED) pausa la captura en SessionRequired sin perder datos', async () => {
     const outbox = TestBed.inject(FieldOutboxService);
     outbox.isSimulatingOffline.set(true);
     await outbox.setOwner('conductor-deactivated');
@@ -210,7 +218,7 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     await expect(outbox.syncItem(item.operationId)).rejects.toBeDefined();
 
     const currentItem = outbox.outboxItems().find((i) => i.operationId === item.operationId);
-    expect(currentItem?.status).toBe('RequiresReview');
+    expect(currentItem?.status).toBe('SessionRequired');
     expect(currentItem?.errorCode).toBe('TOKEN_REVOKED_OR_EXPIRED');
     expect(currentItem?.errorMessage).toContain('inactiva');
 
@@ -220,4 +228,101 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(stored).toBeDefined();
     expect(stored.receiptPayload.deliveryId || item.deliveryId).toBe('d-deactivated');
   });
+  const receiverCapture = (id = 'unit-1') => ({ ...receipt('d-receiver'),
+    receiverContext: { unitId: id, traceToken: 'qr-capability' },
+    lines: [{ deliveryLineId: 'line-1', lotId: 'lot-1', unit: 'L', quantityAccepted: 6,
+      quantityRejected: 4, rejectionReason: 'Daño', remainingQuantity: 3, nextRequestedQuantity: 20 }]
+  });
+
+  it('ESC-06: rechazo exige foto y motivo; persiste foto y cantidades con la identidad del Receptor', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('receiver');
+    await expect(outbox.saveReceiptAtomic(receiverCapture())).rejects.toThrow('foto');
+    const photo = new Blob(['image-bytes'], { type: 'image/jpeg' });
+    const capture = receiverCapture();
+    await expect(outbox.saveReceiptAtomic({ ...capture, photoBlob: photo,
+      lines: [{ ...capture.lines[0], rejectionReason: 'texto libre' }] })).rejects.toThrow('catálogo');
+    const saved = await outbox.saveReceiptAtomic({ ...capture, photoBlob: photo });
+    const db = await (outbox as any).getDb();
+    const persisted = await db.get('outbox_items', saved.operationId);
+    expect(persisted.ownerAccountId).toBe('receiver');
+    expect(await persisted.evidencePhotoBlob.text()).toBe('image-bytes');
+    expect(persisted.receiptPayload.lines[0]).toMatchObject({ quantityAccepted: 6, quantityRejected: 4,
+      remainingQuantity: 3, nextRequestedQuantity: 20, rejectionReason: 'Daño' });
+    await expect(outbox.saveReceiptAtomic({ ...capture, photoBlob: photo })).rejects.toThrow('ya tiene');
+  });
+
+  it('ESC-04: sincroniza por endpoint Receptor; un fallo de foto no vuelve a asentar recepción', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('receiver');
+    const saved = await outbox.saveReceiptAtomic({ ...receiverCapture(), photoBlob: new Blob(['photo']) });
+    api.uploadEvidence.mockReturnValue(throwError(() => ({ status: 422, error: { detail: 'Foto inválida' } })));
+    outbox.isSimulatingOffline.set(false);
+    await expect(outbox.syncItem(saved.operationId)).rejects.toBeDefined();
+    expect(api.receiveAsReceiver).toHaveBeenCalledWith('unit-1', 'qr-capability', saved.receiptPayload, saved.operationId);
+    expect(api.createReceipt).not.toHaveBeenCalled();
+    api.uploadEvidence.mockReturnValue(of({ evidenceId: 'photo-id' }));
+    api.confirmEvidence.mockReturnValue(of({ status: 'Confirmed' }));
+    const done = await outbox.syncItem(saved.operationId);
+    expect(done.status).toBe('Complete');
+    expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
+    expect(api.uploadEvidence.mock.calls[0][1].operationId).toBe(api.uploadEvidence.mock.calls[1][1].operationId);
+    await outbox.syncItem(saved.operationId);
+    expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
+  });
+
+  it('snapshot offline del Receptor queda aislado por cuenta y por QR; 403 nunca usa caché', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    await outbox.setOwner('receiver-a');
+    api.getReceiverUnit.mockReturnValue(of({ handlingUnitId: 'unit-1', status: 'Dispatched' }));
+    expect((await outbox.loadReceiverUnit('unit-1', 'qr')).cached).toBe(false);
+    outbox.isSimulatingOffline.set(true);
+    expect((await outbox.loadReceiverUnit('unit-1', 'qr')).cached).toBe(true);
+    await expect(outbox.loadReceiverUnit('unit-1', 'wrong')).rejects.toThrow('conexión');
+    await outbox.setOwner('receiver-b');
+    await expect(outbox.loadReceiverUnit('unit-1', 'qr')).rejects.toThrow('conexión');
+    await outbox.setOwner('receiver-a');
+    outbox.isSimulatingOffline.set(false);
+    api.getReceiverUnit.mockReturnValue(throwError(() => ({ status: 403 })));
+    await expect(outbox.loadReceiverUnit('unit-1', 'qr')).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('cambio de identidad durante recepción detiene envío de foto y no expone capturas ajenas', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('receiver-a');
+    const saved = await outbox.saveReceiptAtomic({ ...receiverCapture(), photoBlob: new Blob(['photo']) });
+    const response = new Subject<any>();
+    api.receiveAsReceiver.mockReturnValue(response);
+    outbox.isSimulatingOffline.set(false);
+    const syncing = outbox.syncItem(saved.operationId);
+    const rejected = expect(syncing).rejects.toBeDefined();
+    await vi.waitFor(() => expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1));
+    await outbox.setOwner('receiver-b');
+    response.next({ receiptId: 'receipt-a' });
+    await rejected;
+    expect(api.uploadEvidence).not.toHaveBeenCalled();
+    expect(outbox.outboxItems()).toEqual([]);
+    await expect(outbox.resolveRequiresReview(saved.operationId, 2)).rejects.toThrow('otra cuenta');
+    await outbox.setOwner('receiver-a');
+    expect(outbox.outboxItems()[0].status).toBe('SessionRequired');
+  });
+
+  it('ESC-15: 401 no se reintenta y dos sincronizaciones simultáneas comparten petición', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('receiver');
+    const saved = await outbox.saveReceiptAtomic({ ...receiverCapture(), lines: [] });
+    api.receiveAsReceiver.mockReturnValue(throwError(() => ({ status: 401 })));
+    outbox.isSimulatingOffline.set(false);
+    const results = await Promise.allSettled([outbox.syncItem(saved.operationId), outbox.syncItem(saved.operationId)]);
+    expect(results.every(r => r.status === 'rejected')).toBe(true);
+    expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
+    expect(outbox.outboxItems()[0].status).toBe('SessionRequired');
+    await outbox.syncAllPending();
+    expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
+  });
+
 });

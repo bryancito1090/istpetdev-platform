@@ -1,9 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import {
   IonHeader,
   IonToolbar,
@@ -20,7 +19,7 @@ import {
   IonInput,
   AlertController
 } from '@ionic/angular/standalone';
-import { CreateReceiptRequest } from '@istpetdev/shared-core';
+import { RECEIPT_REJECTION_REASONS } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field/field-api.interface';
@@ -102,188 +101,59 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
       @if (authService.currentRole() === 'Receptor') {
-        <div class="space-y-4">
-          <ion-card class="m-0 border border-emerald-200 bg-white shadow-sm overflow-hidden">
-            <div class="p-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-              <div>
-                <h3 class="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                  Recepción de Custodia en Hospital
-                </h3>
-                <p class="text-[11px] text-emerald-700">
-                  Escanea el QR del bulto y reporta si llegó bien o si hubo novedades
-                </p>
-              </div>
-            </div>
-
-            <ion-card-content class="p-4 space-y-4">
-              <!-- Botones de Escaneo y Entrada manual -->
-              <ion-button expand="block" size="default" color="primary" class="font-bold" (click)="openReceiverScan()">
-                Escanear QR con Cámara
-              </ion-button>
-
-              <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <label class="text-xs font-bold text-slate-700 block">
-                  Pega o escanea el código del QR
-                </label>
-                <div class="flex gap-2">
-                  <ion-input
-                    [(ngModel)]="qrInputText"
-                    placeholder="https://.../public-trace/...#t=..."
-                    class="bg-white border border-slate-300 rounded-lg text-xs px-2 flex-1">
-                  </ion-input>
-                  <ion-button size="small" color="secondary" class="font-bold" (click)="searchReceiverUnit()" [disabled]="receiverLoading()">
-                    Buscar bulto
-                  </ion-button>
-                </div>
-              </div>
-
-              @if (receiverLoading()) {
-                <div class="p-3 text-center text-xs text-slate-500 font-medium">
-                  Cargando información del bulto...
-                </div>
-              }
-
-              @if (receiverError()) {
-                <div class="p-3 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-medium">
-                  {{ receiverError() }}
-                </div>
-              }
-
-              <!-- Ficha del Bulto Escaneado -->
-              @if (receiverActiveBox(); as box) {
-                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <span class="text-[11px] font-mono font-bold text-teal-800 bg-teal-100 px-2 py-0.5 rounded">
-                      {{ box.code }}
-                    </span>
-                    <span class="text-[11px] text-slate-500 font-medium">Destino: {{ box.destinationName }}</span>
-                  </div>
-
-                  <div class="text-xs space-y-2">
-                    @for (line of box.lines; track line.deliveryLineId) {
-                      <div class="p-2 bg-white border border-slate-200 rounded-lg space-y-1">
-                        <span class="font-black text-slate-900 block text-xs">{{ line.productName }}</span>
-                        <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-600">
-                          <div>Lote: <strong class="text-slate-800 font-mono">{{ line.lotCode }}</strong></div>
-                          <div>Cantidad: <strong class="text-slate-800">{{ line.quantity }} {{ line.unit }}</strong></div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Pregunta Clave: ¿Pasó algo malo al recibir? -->
-                <div class="space-y-2">
-                  <label class="text-xs font-black text-slate-800 block">
-                    ¿En qué estado recibes este bulto?
+        <ion-card class="m-0">
+          <ion-card-header><ion-card-title>Recibir insumos</ion-card-title></ion-card-header>
+          <ion-card-content class="space-y-4">
+            <ion-button expand="block" (click)="openReceiverScan()">Escanear QR con cámara</ion-button>
+            <label class="block">Enlace completo del QR
+              <ion-input [(ngModel)]="qrInputText" placeholder="Pega el enlace del bulto"></ion-input>
+            </label>
+            <ion-button (click)="searchReceiverUnit()" [disabled]="receiverLoading()">Buscar bulto</ion-button>
+            @if (receiverError()) { <p role="alert" class="text-rose-700">{{ receiverError() }}</p> }
+            @if (receiverCached()) {
+              <p class="text-amber-800">Última consulta guardada. La recepción se validará al recuperar señal.</p>
+            }
+            @if (receiverActiveBox(); as box) {
+              <h2 class="font-bold">{{ box.code }} · {{ box.destinationName }}</h2>
+              @for (line of receiverLines; track line.deliveryLineId) {
+                <div class="space-y-3 rounded border p-3">
+                  <h3 class="font-bold">{{ line.productName }}</h3>
+                  <p>Lote {{ line.lotCode }} · Enviadas {{ line.quantity }} {{ line.unit }}</p>
+                  <label class="block">Cantidad aceptada
+                    <input class="w-full border rounded p-2" type="number" min="0" [max]="line.quantity" step="0.001"
+                      [(ngModel)]="line.quantityAccepted" />
                   </label>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    <!-- Opción Todo Conforme -->
-                    <button
-                      type="button"
-                      (click)="setReceiverStatus('conforme')"
-                      [class.bg-emerald-600]="receiverStatus() === 'conforme'"
-                      [class.text-white]="receiverStatus() === 'conforme'"
-                      [class.border-emerald-600]="receiverStatus() === 'conforme'"
-                      [class.bg-white]="receiverStatus() !== 'conforme'"
-                      [class.text-emerald-900]="receiverStatus() !== 'conforme'"
-                      [class.border-emerald-300]="receiverStatus() !== 'conforme'"
-                      class="p-3 rounded-xl border text-left transition flex flex-col justify-between shadow-sm">
-                      <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <div>
-                        <div class="text-xs font-bold">Todo Conforme</div>
-                        <div class="text-[10px] opacity-80">Sin daños ni faltantes</div>
-                      </div>
-                    </button>
-
-                    <!-- Opción Pasó algo malo -->
-                    <button
-                      type="button"
-                      (click)="setReceiverStatus('problema')"
-                      [class.bg-rose-600]="receiverStatus() === 'problema'"
-                      [class.text-white]="receiverStatus() === 'problema'"
-                      [class.border-rose-600]="receiverStatus() === 'problema'"
-                      [class.bg-white]="receiverStatus() !== 'problema'"
-                      [class.text-rose-900]="receiverStatus() !== 'problema'"
-                      [class.border-rose-300]="receiverStatus() !== 'problema'"
-                      class="p-3 rounded-xl border text-left transition flex flex-col justify-between shadow-sm">
-                      <svg class="w-5 h-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <div>
-                        <div class="text-xs font-bold">Pasó algo malo</div>
-                        <div class="text-[10px] opacity-80">Reportar daño o faltante</div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Desglose si pasó algo malo -->
-                @if (receiverStatus() === 'problema') {
-                  <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
-                    <span class="text-xs font-black text-rose-900 block uppercase tracking-wide">
-                      Selecciona la novedad encontrada:
-                    </span>
-
-                    <div class="flex flex-wrap gap-1.5">
-                      @for (chip of receiverIssueChips; track chip.id) {
-                        <button
-                          type="button"
-                          (click)="toggleReceiverIssue(chip.label)"
-                          [class.bg-rose-700]="receiverSelectedIssues().includes(chip.label)"
-                          [class.text-white]="receiverSelectedIssues().includes(chip.label)"
-                          [class.bg-white]="!receiverSelectedIssues().includes(chip.label)"
-                          [class.text-rose-900]="!receiverSelectedIssues().includes(chip.label)"
-                          class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-rose-300 transition shadow-sm">
-                          {{ chip.label }}
-                        </button>
-                      }
-                    </div>
-
-                    <div class="space-y-1">
-                      <label class="text-[11px] font-bold text-rose-900 block">
-                        Detalle / Observaciones adicionales:
-                      </label>
-                      <textarea
-                        [(ngModel)]="receiverIssueNotes"
-                        rows="2"
-                        placeholder="Ej: Empaque perforado por impacto, faltaron 3 galones según remisión..."
-                        class="w-full text-xs p-2 rounded-lg border border-rose-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-rose-500"></textarea>
-                    </div>
-                  </div>
-                }
-
-                <!-- Botón de Confirmación -->
-                <div class="pt-1">
-                  <ion-button
-                    expand="block"
-                    color="success"
-                    class="font-black shadow-md"
-                    [disabled]="receiverLoading() || box.status !== 'Dispatched'"
-                    (click)="confirmReceiverAction()">
-                    Confirmar Recepción de Insumo
-                  </ion-button>
+                  <p>Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
+                  @if (line.quantityAccepted < line.quantity) {
+                    <label class="block">Motivo del rechazo *
+                      <select class="w-full border rounded p-2" [(ngModel)]="line.rejectionReason">
+                        <option value="">Selecciona un motivo</option>
+                        @for (reason of receiverReasons; track reason.code) {
+                          <option [value]="reason.code">{{ reason.label }}</option>
+                        }
+                      </select>
+                    </label>
+                  }
+                  <label class="block">Stock en percha antes de recibir ({{ line.unit }})
+                    <input class="w-full border rounded p-2" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
+                  </label>
+                  <label class="block">Cantidad solicitada para reabastecimiento ({{ line.unit }})
+                    <input class="w-full border rounded p-2" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
+                  </label>
                 </div>
               }
-
-              <!-- Mensaje de Confirmación Exitosa -->
-              @if (receiverConfirmedMessage()) {
-                <div class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 space-y-1">
-                  <div class="font-bold flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Recepción Registrada Exitosamente</span>
-                  </div>
-                  <p class="text-[11px] leading-relaxed">{{ receiverConfirmedMessage() }}</p>
-                </div>
-              }
-            </ion-card-content>
-          </ion-card>
-        </div>
+              <label class="block">Foto de la novedad (obligatoria si rechazas unidades)
+                <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" (change)="onReceiverPhoto($event)" />
+              </label>
+              @if (receiverPhoto(); as photo) { <p>Foto adjunta: {{ photo.name }}</p> }
+              <ion-button expand="block" color="success" (click)="confirmReceiverAction()"
+                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Dispatched'">
+                Guardar recepción
+              </ion-button>
+            }
+            @if (receiverConfirmedMessage()) { <p role="status">{{ receiverConfirmedMessage() }}</p> }
+          </ion-card-content>
+        </ion-card>
       }
 
       <!-- ======================================================== -->
@@ -449,17 +319,17 @@ export class HomePage implements OnInit {
   readonly receiverQr = signal<{ unitId: string; token: string } | null>(null);
   readonly receiverLoading = signal<boolean>(false);
   readonly receiverError = signal<string | null>(null);
-  readonly receiverStatus = signal<'conforme' | 'problema'>('conforme');
-  readonly receiverSelectedIssues = signal<string[]>([]);
-  receiverIssueNotes = '';
+  readonly receiverCached = signal(false);
+  readonly receiverSaved = signal(false);
+  readonly receiverPhoto = signal<File | null>(null);
   readonly receiverConfirmedMessage = signal<string | null>(null);
-
-  readonly receiverIssueChips = [
-    { id: 'damaged', label: 'Empaque roto o golpeado' },
-    { id: 'seal_broken', label: 'Sello de seguridad roto / alterado' },
-    { id: 'missing', label: 'Faltan galones / unidades' },
-    { id: 'lot_mismatch', label: 'Lote o fecha no coincide' }
-  ];
+  readonly receiverReasons = RECEIPT_REJECTION_REASONS;
+  receiverLines: (ReceiverUnit['lines'][number] & {
+    quantityAccepted: number;
+    rejectionReason: string;
+    remainingQuantity: number | null;
+    nextRequestedQuantity: number | null;
+  })[] = [];
 
   readonly pendingCount = this.outboxService.pendingCount;
 
@@ -483,15 +353,36 @@ export class HomePage implements OnInit {
     return 'primary';
   });
 
+  constructor() {
+    let accountId = this.authService.me?.()?.accountId ?? null;
+    effect(() => {
+      const nextAccountId = this.authService.me?.()?.accountId ?? null;
+      if (nextAccountId === accountId) return;
+      accountId = nextAccountId;
+      this.qrInputText = '';
+      this.receiverQr.set(null);
+      this.receiverActiveBox.set(null);
+      this.receiverPhoto.set(null);
+      this.receiverLines = [];
+      this.receiverSaved.set(false);
+      this.receiverCached.set(false);
+      this.receiverError.set(null);
+      this.receiverConfirmedMessage.set(null);
+    });
+  }
+
   async ngOnInit(): Promise<void> {
     // Si es conductor y no hay ruta en caché, intentar descargarla
     if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
 
-    const receiverQr = history.state?.receiverQr;
-    if (receiverQr?.unitId && receiverQr?.token) {
-      await this.loadReceiverUnit(receiverQr.unitId, receiverQr.token);
+  }
+
+  ionViewWillEnter(): void {
+    const qr = history.state?.receiverQr;
+    if (this.authService.currentRole() === 'Receptor' && qr?.unitId && qr?.token) {
+      void this.loadReceiverUnit(qr.unitId, qr.token);
     }
   }
 
@@ -517,13 +408,18 @@ export class HomePage implements OnInit {
     this.receiverError.set(null);
     this.receiverConfirmedMessage.set(null);
     this.receiverQr.set({ unitId, token });
-    this.receiverStatus.set('conforme');
-    this.receiverSelectedIssues.set([]);
-    this.receiverIssueNotes = '';
+    this.receiverActiveBox.set(null);
+    this.receiverPhoto.set(null);
+    this.receiverSaved.set(false);
+    this.receiverCached.set(false);
+    this.receiverLines = [];
 
     try {
-      const unit = await firstValueFrom(this.fieldApi.getReceiverUnit(unitId, token));
+      const { unit, cached } = await this.outboxService.loadReceiverUnit(unitId, token);
+      this.receiverCached.set(cached);
       this.receiverActiveBox.set(unit);
+      this.receiverLines = unit.lines.map(line => ({ ...line, quantityAccepted: line.quantity,
+        rejectionReason: '', remainingQuantity: null, nextRequestedQuantity: null }));
       if (unit.status !== 'Dispatched') {
         this.receiverError.set('Este bulto ya fue recibido');
       }
@@ -539,84 +435,65 @@ export class HomePage implements OnInit {
         } else {
           this.receiverError.set(err.error?.detail || err.message || 'Error al cargar bulto');
         }
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        this.receiverError.set('Necesitas señal para confirmar');
       } else {
-        this.receiverError.set('QR no válido o vencido');
+        this.receiverError.set(err instanceof Error ? err.message : 'QR no válido o vencido');
       }
     } finally {
       this.receiverLoading.set(false);
     }
   }
 
-  setReceiverStatus(status: 'conforme' | 'problema'): void {
-    this.receiverStatus.set(status);
-    if (status === 'conforme') {
-      this.receiverSelectedIssues.set([]);
-      this.receiverIssueNotes = '';
+  onReceiverPhoto(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    this.receiverPhoto.set(null);
+    if (file && (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024 || file.size === 0)) {
+      this.receiverError.set('Selecciona una imagen JPEG, PNG o WebP de hasta 10 MB.');
+      return;
     }
-  }
-
-  toggleReceiverIssue(issueLabel: string): void {
-    const current = this.receiverSelectedIssues();
-    if (current.includes(issueLabel)) {
-      this.receiverSelectedIssues.set(current.filter((i) => i !== issueLabel));
-    } else {
-      this.receiverSelectedIssues.set([...current, issueLabel]);
-    }
+    this.receiverError.set(null);
+    this.receiverPhoto.set(file);
   }
 
   async confirmReceiverAction(): Promise<void> {
     const box = this.receiverActiveBox();
     const qr = this.receiverQr();
-    if (!box || !qr || box.status !== 'Dispatched') return;
-
-    this.receiverLoading.set(true);
+    if (!box || !qr || box.status !== 'Dispatched' || this.receiverLoading() || this.receiverSaved()) return;
     this.receiverError.set(null);
-    this.receiverConfirmedMessage.set(null);
-
-    const ok = this.receiverStatus() === 'conforme';
-    const req: CreateReceiptRequest = {
-      operationId: crypto.randomUUID(),
-      expectedDeliveryVersion: box.deliveryVersion,
-      occurredAtDevice: new Date().toISOString(),
-      lines: box.lines.map((l) => ({
-        deliveryLineId: l.deliveryLineId,
-        lotId: l.lotId,
-        unit: l.unit,
-        quantityAccepted: ok ? l.quantity : 0,
-        quantityRejected: ok ? 0 : l.quantity,
-        rejectionReason: ok ? undefined : this.receiverSelectedIssues().join(', ') || 'Novedad'
-      }))
-    };
-
+    if (!this.receiverLines.length || this.receiverLines.some(l =>
+      !Number.isFinite(l.quantityAccepted) || l.quantityAccepted < 0 || l.quantityAccepted > l.quantity ||
+      [l.remainingQuantity, l.nextRequestedQuantity].some(q => q !== null && (!Number.isFinite(q) || q < 0)))) {
+      this.receiverError.set('Revisa las cantidades: no pueden ser negativas ni superar lo enviado.');
+      return;
+    }
+    if (this.receiverLines.some(l => l.quantityAccepted < l.quantity && !this.receiverReasons.some(r => r.code === l.rejectionReason))) {
+      this.receiverError.set('Selecciona un motivo de catálogo por cada línea rechazada.');
+      return;
+    }
+    if (this.receiverLines.some(l => l.quantityAccepted < l.quantity) && !this.receiverPhoto()) {
+      this.receiverError.set('Adjunta una foto cuando hay rechazo.');
+      return;
+    }
+    this.receiverLoading.set(true);
     try {
-      const receipt = await firstValueFrom(
-        this.fieldApi.receiveAsReceiver(qr.unitId, qr.token, req, req.operationId)
-      );
-      this.receiverConfirmedMessage.set(
-        `Recepción registrada: entrega ${receipt.deliveryStatus === 'Delivered' ? 'completa' : 'con novedades'}.`
-      );
-      this.receiverActiveBox.set({
-        ...box,
-        status: receipt.deliveryStatus === 'Delivered' ? 'Received' : 'Partial'
+      await this.outboxService.saveReceiptAtomic({
+        deliveryId: box.deliveryId,
+        expectedDeliveryVersion: box.deliveryVersion,
+        recipientName: this.authService.me()?.displayName ?? 'Receptor',
+        receiverContext: { unitId: qr.unitId, traceToken: qr.token },
+        lines: this.receiverLines.map(l => ({
+          deliveryLineId: l.deliveryLineId, lotId: l.lotId, unit: l.unit,
+          quantityAccepted: l.quantityAccepted,
+          quantityRejected: Number((l.quantity - l.quantityAccepted).toFixed(3)),
+          rejectionReason: l.quantityAccepted < l.quantity ? l.rejectionReason : undefined,
+          remainingQuantity: l.remainingQuantity ?? undefined,
+          nextRequestedQuantity: l.nextRequestedQuantity ?? undefined
+        })),
+        photoBlob: this.receiverPhoto() ?? undefined
       });
-    } catch (err: unknown) {
-      if (err instanceof HttpErrorResponse) {
-        if (err.status === 404) {
-          this.receiverError.set('QR no válido o vencido');
-        } else if (err.status === 409) {
-          this.receiverError.set('Este bulto ya fue recibido');
-        } else if (err.status === 0 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-          this.receiverError.set('Necesitas señal para confirmar');
-        } else {
-          this.receiverError.set(err.error?.detail || err.message || 'Error al registrar recepción');
-        }
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        this.receiverError.set('Necesitas señal para confirmar');
-      } else {
-        this.receiverError.set('Error al registrar recepción');
-      }
+      this.receiverSaved.set(true);
+      this.receiverConfirmedMessage.set('Guardado en este teléfono para tu cuenta. Consulta la cola para ver la confirmación del servidor y el envío de la foto.');
+    } catch (error) {
+      this.receiverError.set(error instanceof Error ? error.message : 'No se pudo guardar la recepción.');
     } finally {
       this.receiverLoading.set(false);
     }
