@@ -181,7 +181,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 
 > **Calendario:** el congelamiento de funcionalidades fue el 15-oct 14:00 (D8). ISS-02 e ISS-03 corrigen defectos que afectan el recorrido de la demo y se proponen **antes del evento** si el equipo lo aprueba. Los demás se proponen para **después del 17-oct** (piloto), porque requieren migración o cambian contratos. Las personas sugeridas siguen la asignación de 013 y #55; la asignación final la decide el equipo.
 
-### ISS-01 — Backend: el Receptor asienta la recepción con su identidad
+### ISS-01 (#110) — Backend: el Receptor asienta la recepción con su identidad
 
 - **Área:** Backend · **Sugerido:** Alexander Martínez (dueño de 004) · **Revisa:** Joseph Baño · **Prioridad:** P1 del piloto (requiere migración)
 - **Descripción:** mover el registro de la recepción al Receptor, de modo que `Receipt` guarde `ReceiverAccountId` y el estado «pendiente de descargo» → «cerrada». El Conductor aporta la evidencia de descargo. El Receptor solo puede recibir entregas destinadas a su punto, lo que exige una afiliación cuenta–punto (`AccountServicePoint` o un campo en `Account`).
@@ -194,7 +194,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 - **Criterios de aceptación:** ESC-04, ESC-11 y ESC-26.
 - **Colaboración:** acordar con ISS-06 (PWA) el payload de `POST /receipts` (dictamen, líneas, motivo de catálogo) y el QR (token de entrega, nunca IDs internos). Acordar con ISS-08 el catálogo de motivos. Acordar con Jorge cómo se carga la afiliación (columna del CSV de `--provision-accounts` o pantalla «Usuarios»).
 
-### ISS-02 — Backend: conciliación de stock en percha y pedido en campo sin colisiones
+### ISS-02 (#111) — Backend: conciliación de stock en percha y pedido en campo sin colisiones
 
 - **Área:** Backend · **Sugerido:** Anthony Pilatasig · **Revisa:** Alexander Martínez · **Prioridad:** Alta (defecto que rompe la recepción)
 - **Descripción:** corregir HZ-04, HZ-05 y HZ-06 en `FieldService`.
@@ -207,7 +207,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 - **Criterios de aceptación:** ESC-07 a ESC-10; el saldo del lote se reconstruye a partir de sus movimientos.
 - **Colaboración:** confirmar con el dueño de 007 que `FieldAdjustment` y la acumulación no contradicen la regla de día cerrado de 007. Si 007 decide otra tabla de hechos, esta corrección es el puente hasta esa migración.
 
-### ISS-03 — Backend: alinear la autorización con ADR-24 y ADR-26
+### ISS-03 (#112) — Backend: alinear la autorización con ADR-24 y ADR-26
 
 - **Área:** Backend / Seguridad · **Sugerido:** Joseph Baño (Auditor y revisor de 013) · **Prioridad:** Alta
 - **Tareas:**
@@ -217,7 +217,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 - **Criterios de aceptación:** ESC-05 y ESC-14; 013 CE-07.
 - **Colaboración:** la matriz de la sección 2.3 es el contrato: la aprueban Bryan y Joseph antes de cambiar el código.
 
-### ISS-04 — Automatización/n8n: workflow de error y diagnóstico de fallos
+### ISS-04 (#113) — Automatización/n8n: workflow de error y diagnóstico de fallos
 
 - **Área:** n8n · **Sugerido:** Bryan (n8n en producción) con Anthony (API) · **Prioridad:** P2
 - **Tareas:**
@@ -228,7 +228,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 - **Criterios de aceptación:** ESC-19; ESC-16 y ESC-17 siguen igual.
 - **Colaboración:** payload `{ runId, executionId, workflow, node, message }`, sin datos del escenario (G1). El `runId` llega en el cuerpo firmado del webhook original.
 
-### ISS-05 — Backend: aislar los elementos del outbox que fallan siempre
+### ISS-05 (#114) — Backend: aislar los elementos del outbox que fallan siempre
 
 - **Área:** Backend + PWA · **Sugerido:** Alexander Martínez · **Prioridad:** P1 del piloto
 - **Tareas:**
@@ -238,7 +238,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
 - **Criterios de aceptación:** ESC-23 y ESC-25.
 - **Colaboración:** códigos de error estables en Problem Details (`type`) acordados entre API y PWA.
 
-### ISS-06 — Frontend PWA: flujo del Receptor sobre el contrato real
+### ISS-06 (#115) — Frontend PWA: flujo del Receptor sobre el contrato real
 
 - **Área:** Frontend móvil · **Sugerido:** Alexander Martínez, con Anthony (autor de la rama `feature/pruebas-rol-receptor`) · **Depende de:** ISS-01
 - **Tareas:**
@@ -247,7 +247,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
   - [ ] Outbox separado por identidad (013 FR-09) también para el Receptor
 - **Criterios de aceptación:** ESC-04, ESC-06 y ESC-15 en dos teléfonos distintos.
 
-### ISS-07 — Frontend web: excepciones de recepción y pedidos de campo para el Planificador
+### ISS-07 (#116) — Frontend web: excepciones de recepción y pedidos de campo para el Planificador
 
 - **Área:** Frontend web · **Sugerido:** a definir por el equipo · **Prioridad:** P2
 - **Tareas:**
@@ -256,7 +256,7 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
   - [ ] Vista de solo lectura para el Auditor
 - **Criterios de aceptación:** ESC-06 y ESC-09 visibles en la web; el Auditor no ve botones.
 
-### ISS-08 — Datos: catálogo de motivos y fixtures de caos
+### ISS-08 (#117) — Datos: catálogo de motivos y fixtures de caos
 
 - **Área:** Data/QA · **Sugerido:** Jorge Doicela con Joseph Baño · **Prioridad:** P2
 - **Tareas:**
@@ -265,13 +265,26 @@ Estado: ✅ cubierto por código o spec · ⚠️ brecha (HZ-xx) · 🔲 sin pru
   - [ ] Generador de 10 000 filas de consumo para medir 001 NFR-01
 - **Criterios de aceptación:** ESC-21, ESC-22 y ESC-28 reproducibles con un comando.
 
-### ISS-09 — QA: ronda E2E por roles (continuación de #55)
+### ISS-09 (#118) — QA: ronda E2E por roles (continuación de #55)
 
 - **Área:** QA · **Coordina:** Joseph Baño · **Participan:** las seis cuentas de #55
 - **Tareas:**
   - [ ] Ejecutar ESC-01 a ESC-28 en HTTPS con las cuentas reales; la evidencia se registra sin correos ni contraseñas
   - [ ] Registrar los resultados en [[Seguimiento de implementacion y pruebas]]
 - **Criterios de aceptación:** cada escenario en ✅ o con un issue abierto que lo cubra.
+
+### 7.1 Resumen por persona
+
+Los issues se crearon sin asignar; esta tabla es la asignación **sugerida**.
+
+| Persona | Responsable de | Revisa o colabora en | Decisiones pendientes |
+|---|---|---|---|
+| Anthony Pilatasig | #111 (conciliación de stock en percha) | #113 (endpoint de fallo en la API); #115 (integrar su rama `feature/pruebas-rol-receptor` y el stash de `GetAssignments`) | — |
+| Alexander Martínez | #110 (Receptor con identidad), #114 (outbox), #115 (PWA del Receptor) | Revisa #111 | Cambio en spec 004 y su relación con ADR-24 y ADR-25 |
+| Joseph Baño | #112 (autorización), #118 (ronda E2E) | Revisa #110; co-responsable de #117 | Aprobar la matriz de la sección 2.3 junto con Bryan; nota en CE-07 de 013 |
+| Bryan | #113 (workflow de error en n8n) | Aprueba la matriz de la sección 2.3 | Si Gerencia conserva la escritura de campo (HZ-02, ADR-24); si #111 y #112 entran antes del evento |
+| Jorge Doicela | #117 (catálogo de motivos y fixtures de caos) | Columna de afiliación en el CSV de `--provision-accounts` (#110) | Documentar que `ISTPETDEV_WEBHOOK_SECRET` y `AGENT_N8N_WEBHOOK_SECRET` llevan el mismo valor |
+| Equipo | Asignar #116 (web del Planificador) | — | Cambios de specs de la sección 8 |
 
 ## 8. Cambios propuestos en los specs
 
