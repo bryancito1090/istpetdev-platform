@@ -161,3 +161,17 @@ Fuentes: [evidencia de preparación](../../specs/003-agente-logistico/evidencia/
 [task.md](../../specs/003-agente-logistico/task.md), [[Runbook de DevOps y base de datos para la demo]]
 y [[Registro de seguimiento y hallazgos]]. Las secciones anteriores son registros
 históricos fechados, no el estado de cierre actual.
+
+## Cierre productivo verificado — 15 de octubre de 2026
+
+En la ventana exclusiva 08:00–10:00 (Guayaquil) se completó la aceptación de
+#39 con evidencia real: matriz oficial 30/30 (herramientas 72/72, p95 7804 ms,
+decisiones LLM 58/60, inyección 10/10), Completed/Fallback/recuperación sobre
+la API productiva y CE-03 con dos decisiones (VEH-01 AutoExecuted y VEH-02
+Escalated por CLI-S09, revisión escalada sin ejecutar). Los workflows publicados
+incorporan el tuning de tiempos/reintentos sincronizado desde el repo
+(`5c8a5a77…` vigía, `209bd29b…` incidente) con credenciales remapeadas y
+Schedule apagado. Estado final: agente activo, incidente automático apagado
+(`AGENT_AUTO_ON_INCIDENT=false`), demo apagada; runbook y evidencia en
+[evidencia/2026-10-15-cierre-39.md](../../specs/003-agente-logistico/evidencia/2026-10-15-cierre-39.md).
+Las secciones anteriores son registros históricos fechados.

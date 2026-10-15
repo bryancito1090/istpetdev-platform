@@ -187,3 +187,17 @@ Estas filas sustituyen el pendiente de cuentas de los checkpoints anteriores.
 Completed/Fallback/recuperación, matriz oficial de 30 corridas y CE-03 quedan
 pendientes de promoción/verificación de la corrección, con ventana exclusiva
 ya autorizada. La cuenta propia completó MFA; no se deshabilitó el de terceros.
+
+### Cierre productivo — 15-oct-2026, ventana 08:00–10:00 Guayaquil
+
+| Fecha | Commit | Entorno | Escenario | Resultado | Evidencia | Quién |
+|---|---|---|---|---|---|---|
+| 2026-10-15 | Desplegado `3c55e96` (main `40cec19`; harness `6946705`) | API productiva + n8n de Bryan 2.39.5 | E2E-07 (matriz oficial 30 corridas) | pasó | 30/30: herramientas 72/72 (100%), p95 7804 ms, LLM 58/60 (96,7%), inyección 10/10, exit 0. `artifacts/agent-acceptance/20261015-082412-298442/report.md` | Codex |
+| 2026-10-15 | idem | idem | E2E-02 / CE-03 (incidente predefinido en vivo) | pasó | 2 rutas afectadas; VEH-01 AutoExecuted (+14,01%, mensaje 88) y VEH-02 Escalated por CLI-S09 (mensaje 105), ambos LLM; revisiones Published/Proposed sin ejecutar la escalada. Run `01a13fbc-6119-7179-8491-92a09395ea02` | Codex |
+| 2026-10-15 | idem | idem | GC-4 Completed/Fallback/recuperación | pasó | Completed 8077 ms (`01a13fb6…`), Fallback 1248 ms `n8n_unreachable` (`01a13fb7-1dd2…`), recuperación 7048 ms (`01a13fb7-330c…`), estado final 8398 ms (`01a13fbe…`) | Codex |
+| 2026-10-15 | idem | idem | E2E-04 (permisos reales) | pasó | M2M risks 200 y cinco acciones humanas 403; humano /me 200 | Codex |
+
+Intentos conservados: matriz `20261015-081914-646750` (403 de Cloudflare al
+User-Agent por defecto de Python; corregido en #94) y Watch `01a13faf-3974…`
+(fallback `agent_error` con base sin fixture). Detalle en
+[evidencia/2026-10-15-cierre-39.md](evidencia/2026-10-15-cierre-39.md).
