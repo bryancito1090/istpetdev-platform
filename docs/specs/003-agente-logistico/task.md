@@ -771,3 +771,19 @@ expuesto no aplican a este recorrido. Las pruebas de autorización y scans
 vigentes se reutilizan en lo que no cambió; el runtime ESC-19 sigue pendiente
 hasta la prueba real. No se promueve a main ni se modifica la instancia
 productiva al ejecutar esta validación.
+
+## Issue #195 — herramientas n8n de abastecimiento — 16-oct-2026
+
+- [x] Revisar workflows, prompt, traza y pruebas; preparar el
+  [plan de implementación y entrega](plan-195-herramientas-n8n.md).
+- [ ] OpenCode: crear checkout y rama independientes desde develop; contrastar
+  contratos finales de #194/#193 sin editar el trabajo de Antigravity ni #201.
+- [ ] Añadir find_stock, plan_sourcing y vehicle_availability a ambas plantillas;
+  ajustar prompt, esquemas, contexto firmado, deadline y exportaciones.
+- [ ] Verificar origen, vehículo y prioridad deterministas visibles en AgentRun;
+  probar seguridad, fallback, generación y ejecución real de n8n/DeepSeek.
+- [ ] Actualizar contratos, allowlists y evidencia; publicar PR a develop,
+  resolver conflictos, verificar CI/aprobación e integrar si cumple criterios.
+
+Estado: planificación únicamente. Implementación, pruebas, ejecución real, CI y
+merge pendientes; transferencia solicitada a OpenCode. Sin despliegue incluido.
