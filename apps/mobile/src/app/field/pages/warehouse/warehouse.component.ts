@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -120,25 +120,62 @@ import { FIELD_API } from '../../field-api.interface';
             </ion-card-header>
 
             <ion-card-content class="p-4 space-y-4">
-              <!-- Líneas planificadas -->
+              <!-- Líneas planificadas con doble verificación de empaque (Checkbox) -->
               <div>
-                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                  Líneas de la Entrega (Productos y Lotes)
-                </h4>
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Líneas de la Entrega (Productos y Lotes)
+                  </h4>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                          [class.bg-emerald-100]="allLinesVerified()"
+                          [class.text-emerald-800]="allLinesVerified()"
+                          [class.bg-amber-100]="!allLinesVerified()"
+                          [class.text-amber-800]="!allLinesVerified()">
+                      {{ verifiedLineIds().size }} / {{ detail.lines.length }} verificados
+                    </span>
+                    <button
+                      type="button"
+                      class="text-xs font-bold text-sky-700 hover:text-sky-900 underline"
+                      (click)="toggleVerifyAllLines()">
+                      {{ allLinesVerified() ? 'Desmarcar todos' : 'Verificar todos' }}
+                    </button>
+                  </div>
+                </div>
+
                 <div class="space-y-2">
                   @for (line of detail.lines; track line.deliveryLineId) {
-                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
-                      <div>
-                        <span class="font-bold text-slate-900 block">{{ line.productName }}</span>
-                        <span class="text-[11px] text-slate-500 font-mono">
-                          SKU: {{ line.sku }} • Lote: {{ line.lotCode }}
-                        </span>
+                    <div class="p-3 border rounded-xl flex items-center justify-between text-xs transition cursor-pointer select-none"
+                         [class.bg-emerald-50]="isLineVerified(line.deliveryLineId)"
+                         [class.border-emerald-300]="isLineVerified(line.deliveryLineId)"
+                         [class.bg-slate-50]="!isLineVerified(line.deliveryLineId)"
+                         [class.border-slate-200]="!isLineVerified(line.deliveryLineId)"
+                         (click)="toggleLineVerify(line.deliveryLineId)">
+                      <div class="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                          [checked]="isLineVerified(line.deliveryLineId)"
+                          (click)="$event.stopPropagation()"
+                          (change)="toggleLineVerify(line.deliveryLineId)" />
+                        <div>
+                          <span class="font-bold text-slate-900 block" [class.line-through]="isLineVerified(line.deliveryLineId)">
+                            {{ line.productName }}
+                          </span>
+                          <span class="text-[11px] text-slate-500 font-mono">
+                            SKU: {{ line.sku }} • <strong class="text-sky-800">Lote: {{ line.lotCode }}</strong>
+                          </span>
+                        </div>
                       </div>
                       <div class="text-right">
-                        <span class="text-sm font-black text-slate-800 block">
+                        <span class="text-sm font-black block"
+                              [class.text-emerald-800]="isLineVerified(line.deliveryLineId)"
+                              [class.text-slate-800]="!isLineVerified(line.deliveryLineId)">
                           {{ line.plannedQuantity }} {{ line.unit }}
                         </span>
-                        <span class="text-[10px] text-slate-400">Planificado</span>
+                        <span class="text-[10px] text-slate-400">
+                          {{ isLineVerified(line.deliveryLineId) ? '✓ Verificado' : 'Pendiente' }}
+                        </span>
                       </div>
                     </div>
                   }
@@ -170,12 +207,18 @@ import { FIELD_API } from '../../field-api.interface';
               <!-- Acciones: Preparar bulto o Despachar -->
               <div class="pt-2 border-t border-slate-200 space-y-2">
                 @if (detail.status === 'Draft' || detail.handlingUnits.length === 0) {
+                  @if (!allLinesVerified() && detail.lines.length > 0) {
+                    <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950 flex items-center gap-2">
+                      <span class="text-amber-700 font-bold text-sm">⚠️</span>
+                      <span>Doble verificación requerida: chequea físicamente todos los productos y lotes antes de preparar el bulto.</span>
+                    </div>
+                  }
                   <ion-button
                     expand="block"
                     size="default"
                     color="primary"
                     class="font-bold"
-                    [disabled]="preparing()"
+                    [disabled]="preparing() || (!allLinesVerified() && detail.lines.length > 0)"
                     (click)="createHandlingUnit(detail)">
                     @if (preparing()) {
                       <ion-spinner name="crescent" class="mr-2"></ion-spinner>
@@ -381,6 +424,39 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
+  // Doble verificación física de productos y lotes en mesa de empaque
+  readonly verifiedLineIds = signal<Set<string>>(new Set<string>());
+  readonly allLinesVerified = computed(() => {
+    const detail = this.selectedDelivery();
+    if (!detail || !detail.lines || detail.lines.length === 0) return false;
+    const verified = this.verifiedLineIds();
+    return detail.lines.every((l) => verified.has(l.deliveryLineId));
+  });
+
+  toggleLineVerify(lineId: string): void {
+    const next = new Set(this.verifiedLineIds());
+    if (next.has(lineId)) {
+      next.delete(lineId);
+    } else {
+      next.add(lineId);
+    }
+    this.verifiedLineIds.set(next);
+  }
+
+  toggleVerifyAllLines(): void {
+    const detail = this.selectedDelivery();
+    if (!detail) return;
+    if (this.allLinesVerified()) {
+      this.verifiedLineIds.set(new Set());
+    } else {
+      this.verifiedLineIds.set(new Set(detail.lines.map((l) => l.deliveryLineId)));
+    }
+  }
+
+  isLineVerified(lineId: string): boolean {
+    return this.verifiedLineIds().has(lineId);
+  }
+
   ngOnInit(): void {
     this.loadDraftDeliveries();
   }
@@ -405,6 +481,7 @@ export class WarehouseComponent implements OnInit, OnDestroy {
     this.loadingDetail.set(true);
     this.errorMessage.set(null);
     this.createdHandlingUnit.set(null);
+    this.verifiedLineIds.set(new Set());
 
     this.fieldApi.getDelivery(del.deliveryId).subscribe({
       next: (detail) => {
@@ -421,6 +498,7 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   closeDetail(): void {
     this.selectedDelivery.set(null);
     this.createdHandlingUnit.set(null);
+    this.verifiedLineIds.set(new Set());
     this.loadDraftDeliveries();
   }
 

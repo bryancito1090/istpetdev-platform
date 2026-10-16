@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,9 +16,13 @@ import {
   IonButton,
   IonBadge,
   IonButtons,
+  IonIcon,
   IonInput,
-  AlertController
+  AlertController,
+  ToastController
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logOutOutline, mapOutline, syncOutline } from 'ionicons/icons';
 import { RECEIPT_REJECTION_REASONS, MobileAssignmentDelivery } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
@@ -45,33 +49,36 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     IonButton,
     IonBadge,
     IonButtons,
+    IonIcon,
     IonInput,
     WarehouseComponent
   ],
   template: `
     <ion-header [translucent]="true">
       <ion-toolbar color="primary">
-        <ion-title><span class="toolbar-brand">istpet<span>dev.</span><small>CAMPO / ECUADOR</small></span></ion-title>
-        <ion-buttons slot="end">
-          <ion-button (click)="openSyncQueue()">
-            Pendientes
-            @if (pendingCount() > 0) {
-              <ion-badge color="danger" class="ml-1">{{ pendingCount() }}</ion-badge>
-            }
+        <ion-title class="desktop-brand"><span class="toolbar-brand">istpet<span>dev.</span><small>CAMPO / ECUADOR</small></span></ion-title>
+        <ion-buttons slot="end" class="header-actions">
+          <ion-button fill="clear" aria-label="Ruta" title="Ruta" (click)="downloadRoute()">
+            <ion-icon slot="icon-only" name="map-outline"></ion-icon>
+            @if (pendingCount() > 0) { <ion-badge color="warning">{{ pendingCount() }}</ion-badge> }
           </ion-button>
-          <ion-button (click)="logout()">
-            Salir
+          <ion-button fill="clear" aria-label="Pendientes" title="Pendientes" (click)="openSyncQueue()">
+            <ion-icon slot="icon-only" name="sync-outline"></ion-icon>
+            @if (pendingCount() > 0) { <ion-badge color="danger">{{ pendingCount() }}</ion-badge> }
+          </ion-button>
+          <ion-button fill="clear" aria-label="Salir" title="Salir" (click)="logout()">
+            <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding field-home">
-      <section class="field-hero" aria-labelledby="field-heading">
-        <span class="eyebrow">EXPO CLEAN · ECUADOR 2026</span>
-        <h1 id="field-heading">Tu operación.<br><span>Todo bajo control.</span></h1>
-        <p>{{ authService.currentRole() === 'Bodega' ? 'Prepara, identifica y despacha con confianza.' : authService.currentRole() === 'Receptor' ? 'Escanea, revisa y confirma tus insumos.' : 'Tu ruta clara. Cada entrega, un paso más.' }}</p>
-        <div class="hero-status"><span class="status-dot" [class.is-offline]="authService.offline()"></span>{{ authService.offline() ? 'Trabajando sin conexión' : 'Listo para trabajar' }}</div>
+      <section class="field-hero field-hero-compact" aria-label="Identidad">
+        <div class="home-identity-line">
+          <span class="eyebrow">EXPO CLEAN ? ECUADOR 2026</span>
+          <span class="driver-name">{{ authService.me()?.displayName ?? '' }}</span>
+        </div>
       </section>
       <!-- Insignia fija: Datos Simulados (F7 / Spec 004) solo si usa mock -->
       @if (isMockApi()) {
@@ -94,26 +101,13 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
       }
 
-      <!-- Tarjeta de Perfil Activo -->
-      <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white identity-card">
-        <ion-card-header class="pb-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {{ roleSubtitle() }}
-            </span>
-            <span class="identity-mark" aria-hidden="true">✓</span>
-          </div>
-          <ion-card-title class="text-lg text-slate-900 font-bold">
-            {{ authService.me()?.displayName ?? '' }}
-          </ion-card-title>
-        </ion-card-header>
-      </ion-card>
-
+      @if (pendingCount() > 0) {
       <button type="button" class="pending-summary" (click)="openSyncQueue()">
         <span class="summary-icon" aria-hidden="true">↗</span>
         <span><strong>{{ pendingCount() }} operaciones pendientes</strong><small>Consulta el estado de tus registros</small></span>
         <span class="summary-arrow" aria-hidden="true">→</span>
       </button>
+      }
 
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
@@ -137,31 +131,70 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 Recepción por <strong>entrega completa</strong>: {{ box.boxes.length }} bulto(s)
                 ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma todas las líneas enviadas.
               </p>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Líneas a Recibir (Doble Validación)</span>
+                <button type="button" class="text-xs font-bold text-sky-700 hover:text-sky-900 underline"
+                        (click)="markAllReceiverLinesConform(true)">
+                  ✓ Marcar todos conformes
+                </button>
+              </div>
+
               @for (line of receiverLines; track line.deliveryLineId) {
-                <div class="space-y-3 rounded border p-3">
-                  <h3 class="font-bold">{{ line.productName }}</h3>
-                  <p>Lote {{ line.lotCode }} · Enviadas {{ line.quantity }} {{ line.unit }}</p>
-                  <label class="block">Cantidad aceptada
-                    <input class="w-full border rounded p-2" type="number" min="0" [max]="line.quantity" step="0.001"
-                      [(ngModel)]="line.quantityAccepted" />
-                  </label>
-                  <p>Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
-                  @if (line.quantityAccepted < line.quantity) {
-                    <label class="block">Motivo del rechazo *
-                      <select class="w-full border rounded p-2" [(ngModel)]="line.rejectionReason">
-                        <option value="">Selecciona un motivo</option>
-                        @for (reason of receiverReasons; track reason.code) {
-                          <option [value]="reason.code">{{ reason.label }}</option>
-                        }
-                      </select>
-                    </label>
+                <div class="space-y-3 rounded-xl border p-3 transition select-none"
+                     [class.bg-emerald-50]="line.isConform !== false"
+                     [class.border-emerald-300]="line.isConform !== false"
+                     [class.bg-slate-50]="line.isConform === false"
+                     [class.border-slate-200]="line.isConform === false">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-start gap-2.5">
+                      <input type="checkbox"
+                             class="mt-1 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                             [checked]="line.isConform !== false"
+                             (change)="line.isConform = !line.isConform; onConformToggle(line)" />
+                      <div>
+                        <h3 class="font-bold text-sm text-slate-900">{{ line.productName }}</h3>
+                        <p class="text-xs text-slate-600 font-mono">
+                          Lote: <strong class="text-sky-800">{{ line.lotCode }}</strong> · Enviadas: <strong>{{ line.quantity }} {{ line.unit }}</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded"
+                          [class.bg-emerald-200]="line.isConform !== false"
+                          [class.text-emerald-900]="line.isConform !== false"
+                          [class.bg-amber-200]="line.isConform === false"
+                          [class.text-amber-900]="line.isConform === false">
+                      {{ line.isConform !== false ? '✓ Conforme' : 'Con Novedad' }}
+                    </span>
+                  </div>
+
+                  @if (line.isConform === false) {
+                    <div class="pt-2 border-t border-slate-200 space-y-2">
+                      <label class="block text-xs font-bold text-slate-700">Cantidad aceptada
+                        <input class="w-full border rounded p-2 text-sm mt-1" type="number" min="0" [max]="line.quantity" step="0.001"
+                          [(ngModel)]="line.quantityAccepted" />
+                      </label>
+                      <p class="text-xs text-rose-700 font-semibold">Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
+                      @if (line.quantityAccepted < line.quantity) {
+                        <label class="block text-xs font-bold text-slate-700">Motivo del rechazo *
+                          <select class="w-full border rounded p-2 text-sm mt-1" [(ngModel)]="line.rejectionReason">
+                            <option value="">Selecciona un motivo</option>
+                            @for (reason of receiverReasons; track reason.code) {
+                              <option [value]="reason.code">{{ reason.label }}</option>
+                            }
+                          </select>
+                        </label>
+                      }
+                    </div>
                   }
-                  <label class="block">Stock en percha antes de recibir ({{ line.unit }})
-                    <input class="w-full border rounded p-2" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
-                  </label>
-                  <label class="block">Cantidad solicitada para reabastecimiento ({{ line.unit }})
-                    <input class="w-full border rounded p-2" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
-                  </label>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
+                    <label class="block text-slate-600">Stock en percha antes de recibir ({{ line.unit }})
+                      <input class="w-full border rounded p-1.5 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
+                    </label>
+                    <label class="block text-slate-600">Solicitado para reabastecimiento ({{ line.unit }})
+                      <input class="w-full border rounded p-1.5 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
+                    </label>
+                  </div>
                 </div>
               }
               <label class="block">Foto de la novedad (obligatoria si rechazas unidades)
@@ -205,61 +238,29 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       <!-- CASO 3: CONDUCTOR DE CUSTODIA (Móvil)                     -->
       <!-- ======================================================== -->
       @else {
-        <!-- Banner de Aviso de Revisión de Ruta (PA-02 / FR-12 / F5) -->
-        @if (outboxService.activeDriverNotice(); as notice) {
-          <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-950 rounded-xl shadow-sm flex items-start gap-3">
-            <svg class="w-6 h-6 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-black text-xs uppercase tracking-wider text-amber-900">
-                  Aviso de Revisión de Ruta (Rev {{ notice.revision }})
-                </span>
-                <span class="text-[10px] font-mono bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded font-bold">
-                  {{ notice.routePlanId }}
-                </span>
-              </div>
-              <p class="text-xs font-medium text-amber-900 leading-relaxed">{{ notice.message }}</p>
-              <div class="mt-2.5">
-                <button
-                  type="button"
-                  (click)="outboxService.acknowledgeNotice(notice.revision)"
-                  class="text-xs font-bold px-3 py-1.5 bg-amber-900 text-white rounded-lg active:bg-amber-950 transition shadow-sm">
-                  Entendido / Reconocer Aviso
-                </button>
-              </div>
-            </div>
+        @if (outboxService.activeAssignment()) {
+          <div class="driver-actions mb-4">
+            <ion-button expand="block" class="driver-action-tile" (click)="showAssignedRoute.set(!showAssignedRoute())">
+              {{ showAssignedRoute() ? 'Ocultar Ruta Asignada' : 'Ver Ruta Asignada' }}
+            </ion-button>
+            <ion-button expand="block" fill="outline" class="driver-action-tile"
+              [disabled]="loadingRoute()" (click)="downloadRoute()">
+              {{ loadingRoute() ? 'Actualizando...' : 'Actualizar Ruta' }}
+            </ion-button>
+          </div>
+        } @else {
+          <div class="driver-actions mb-4">
+            <ion-button expand="block" class="driver-action-tile" [disabled]="loadingRoute()" (click)="downloadRoute()">
+              {{ loadingRoute() ? 'Cargando...' : 'Descargar Ruta' }}
+            </ion-button>
+            <ion-button expand="block" fill="outline" class="driver-action-tile" (click)="openIncident()">
+              Reportar Incidente
+            </ion-button>
           </div>
         }
-
-        <!-- Acciones del Conductor -->
-        <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm">
-          <ion-card-content class="p-3">
-            <p class="action-kicker">TU SIGUIENTE PASO</p>
-            <div class="driver-actions">
-              <ion-button expand="block" class="flex-1 font-bold" (click)="openScan()">
-                Escanear QR
-              </ion-button>
-              <ion-button
-                expand="block"
-                size="small"
-                fill="outline"
-                class="flex-1 font-bold"
-                [disabled]="loadingRoute()"
-                (click)="downloadRoute()">
-                {{ loadingRoute() ? 'Cargando...' : 'Descargar Ruta' }}
-              </ion-button>
-            </div>
-          </ion-card-content>
-        </ion-card>
 
         <!-- Mensaje si se descarga la ruta -->
-        @if (downloadMessage()) {
-          <div class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-            {{ downloadMessage() }}
-          </div>
-        }
+        @if (showAssignedRoute() && outboxService.activeAssignment()) {
 
         <!-- Lista de Paradas Asignadas -->
         <div class="mb-2 flex items-center justify-between px-1">
@@ -279,10 +280,17 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
                   <span>Vehículo: {{ route.vehicleCode }}</span>
                 </div>
-                @if (route.originWarehouseName) {
-                  <div class="text-xs text-slate-600 px-1" data-origin-warehouse>
-                    Sale de: <strong>{{ route.originWarehouseName }}</strong>
-                  </div>
+                @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
+                  <ion-card class="m-0 border border-amber-300 shadow-sm bg-amber-50">
+                    <ion-card-header class="pb-2">
+                      <ion-badge color="warning">#{{ pickup.sequence }} - Recogida</ion-badge>
+                      <ion-card-title class="text-base">{{ pickup.pointName }}</ion-card-title>
+                      @if (pickup.address) { <ion-card-subtitle>{{ pickup.address }}</ion-card-subtitle> }
+                    </ion-card-header>
+                    <ion-card-content class="pt-0 text-xs font-semibold text-amber-950">
+                      Punto de recogida - {{ pickup.pointCode }}
+                    </ion-card-content>
+                  </ion-card>
                 }
 
                 @for (del of route.deliveries; track del.deliveryId) {
@@ -342,20 +350,22 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
             </ion-card-content>
           </ion-card>
         }
+        }
       }
     </ion-content>
   `
 })
-export class HomePage implements OnInit {
+export class HomePage {
   readonly authService = inject(MobileAuthService);
   readonly outboxService = inject(FieldOutboxService);
   private readonly fieldApi = inject<IFieldApi>(FIELD_API);
   readonly isMockApi = computed(() => this.fieldApi instanceof MockFieldApiService);
   private readonly router = inject(Router);
   private readonly alerts = inject(AlertController);
+  private readonly toastController = inject(ToastController);
 
   readonly loadingRoute = signal<boolean>(false);
-  readonly downloadMessage = signal<string | null>(null);
+  readonly showAssignedRoute = signal(false);
 
 
   // --- Estado para el Receptor Hospitalario ---
@@ -374,7 +384,27 @@ export class HomePage implements OnInit {
     rejectionReason: string;
     remainingQuantity: number | null;
     nextRequestedQuantity: number | null;
+    isConform?: boolean;
   })[] = [];
+
+  onConformToggle(line: (typeof this.receiverLines)[number]): void {
+    if (line.isConform) {
+      line.quantityAccepted = line.quantity;
+      line.rejectionReason = '';
+    } else {
+      line.quantityAccepted = 0;
+    }
+  }
+
+  markAllReceiverLinesConform(conform: boolean): void {
+    for (const line of this.receiverLines) {
+      line.isConform = conform;
+      if (conform) {
+        line.quantityAccepted = line.quantity;
+        line.rejectionReason = '';
+      }
+    }
+  }
 
   readonly pendingCount = this.outboxService.pendingCount;
 
@@ -399,6 +429,7 @@ export class HomePage implements OnInit {
   });
 
   constructor() {
+    addIcons({ logOutOutline, mapOutline, syncOutline });
     let accountId = this.authService.me?.()?.accountId ?? null;
     effect(() => {
       const nextAccountId = this.authService.me?.()?.accountId ?? null;
@@ -414,14 +445,6 @@ export class HomePage implements OnInit {
       this.receiverError.set(null);
       this.receiverConfirmedMessage.set(null);
     });
-  }
-
-  async ngOnInit(): Promise<void> {
-    // Si es conductor y no hay ruta en caché, intentar descargarla
-    if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
-      await this.downloadRoute();
-    }
-
   }
 
   ionViewWillEnter(): void {
@@ -464,7 +487,7 @@ export class HomePage implements OnInit {
       this.receiverCached.set(cached);
       this.receiverActiveBox.set(unit);
       this.receiverLines = unit.lines.map(line => ({ ...line, quantityAccepted: line.quantity,
-        rejectionReason: '', remainingQuantity: null, nextRequestedQuantity: null }));
+        rejectionReason: '', remainingQuantity: null, nextRequestedQuantity: null, isConform: true }));
       const stateMessage = this.receiverStateMessage(unit.status);
       if (stateMessage) {
         this.receiverError.set(stateMessage);
@@ -629,15 +652,13 @@ export class HomePage implements OnInit {
 
   async downloadRoute(): Promise<void> {
     this.loadingRoute.set(true);
-    this.downloadMessage.set(null);
     try {
       const assignment = await this.outboxService.downloadRouteAssignment();
       const total = assignment.routes ? assignment.routes.reduce((sum: number, r) => sum + r.deliveries.length, 0) : 0;
-      this.downloadMessage.set(
-        `Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`
-      );
+      this.showAssignedRoute.set(false);
+      await this.showToast(`Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`, 'success');
     } catch {
-      this.downloadMessage.set('Aviso: Utilizando asignación almacenada localmente.');
+      await this.showToast('Aviso: Utilizando asignación almacenada localmente.', 'warning');
     } finally {
       this.loadingRoute.set(false);
     }
@@ -645,6 +666,15 @@ export class HomePage implements OnInit {
 
   openScan(): void {
     this.router.navigate(['/scan']);
+  }
+
+  openIncident(): void {
+    this.router.navigate(['/scan']);
+  }
+
+  private async showToast(message: string, color: 'success' | 'warning'): Promise<void> {
+    const toast = await this.toastController.create({ message, duration: 3000, position: 'top', color });
+    await toast.present();
   }
 
   openSyncQueue(): void {

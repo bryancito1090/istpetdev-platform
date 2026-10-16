@@ -104,6 +104,7 @@ ion-content {
 }
 ion-content.ion-padding { --padding-start: 20px; --padding-end: 20px; --padding-top: 24px; }
 ion-header { box-shadow: 0 1px 0 #0a254010 !important; }
+.header-actions { display: flex; }
 ion-toolbar[color='primary'] {
   --background: #f8fafcf2;
   --color: #0a2540;
@@ -154,6 +155,10 @@ button { min-height: 44px; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #0284c7; outline-offset: 3px; }
 .eyebrow, .action-kicker { color: #0369a1; font: 600 10px/1.6 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 1.5px; }
 .field-hero { position: relative; isolation: isolate; padding: 16px 0 32px; }
+.field-hero-compact { padding: 4px 0 16px; }
+.field-hero-compact::before { display: none; }
+.home-identity-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.driver-name { min-width: 0; overflow: hidden; color: #425466; font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .field-hero::before { content: ''; position: absolute; z-index: -1; inset: -24px -20px 0; background: radial-gradient(ellipse at 95% 5%, #06b6d433, transparent 58%), radial-gradient(ellipse at 60% 75%, #10b98124, transparent 60%); clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
 .field-hero h1, .login-hero h1 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: clamp(28px, 7.8vw, 36px); font-weight: 800; line-height: 1.18; letter-spacing: -.04em; margin: 16px 0; color: #0a2540; }
 .field-hero h1 span, .login-hero h1 span { background: linear-gradient(100deg, #0369a1, #047857); background-clip: text; -webkit-text-fill-color: transparent; }
@@ -168,7 +173,31 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .pending-summary small { display: block; font-size: 11px; color: #c2d6e7; margin-top: 4px; }
 .summary-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #ffffff25; border-radius: 12px; color: #67e8f9; font-size: 22px; flex-shrink: 0; }
 .summary-arrow { margin-left: auto; color: #67e8f9; }
-.driver-actions { display: grid; gap: 8px; }
+.driver-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.driver-actions .driver-action-tile {
+  width: 100%;
+  min-width: 0;
+  min-height: 92px;
+  height: auto;
+  margin: 0;
+  --background: #fff;
+  --background-hover: #f8fafc;
+  --background-activated: #f1f5f9;
+  --color: #0a2540;
+  --border-color: #e3e8ef;
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: 12px;
+  --box-shadow: 0 1px 2px #0a25400a, 0 4px 12px -8px #0a254026;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+}
+.driver-actions .driver-action-tile::part(native) { min-height: 92px; padding: 12px; }
+.driver-actions .driver-action-tile[fill='outline'] { --border-width: 1px; --border-color: #e3e8ef; }
 .action-kicker { margin: 4px 8px 12px; }
 .login-layout { max-width: 440px; margin: auto; padding: 8px 4px 24px; }
 .login-brand { margin-bottom: 24px; }
@@ -197,6 +226,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   ion-toolbar ion-button { --padding-start: 8px; --padding-end: 8px; font-size: 12px; }
   .toolbar-brand { font-size: 20px; }
   .pass-top { letter-spacing: 0; }
+}
+@media (max-width: 600px) {
+  ion-header { box-shadow: none !important; }
+  ion-header ion-toolbar[color='primary'] {
+    --min-height: 52px;
+    --background: #fff;
+    border-radius: 16px 16px 0 0;
+  }
+  .header-actions ion-button { position: relative; min-height: 40px; height: 40px; margin: 0; --color: #12365a; --padding-start: 8px; --padding-end: 8px; }
+  .header-actions ion-icon { font-size: 21px; }
+  .header-actions ion-badge { position: absolute; top: 0; right: 0; min-width: 16px; padding: 2px 4px; font-size: 9px; }
+  .desktop-brand { display: none; }
+  ion-header ion-title { font-size: 15px; }
+  ion-header .toolbar-brand { font-size: 18px; }
+  ion-header .toolbar-brand small { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

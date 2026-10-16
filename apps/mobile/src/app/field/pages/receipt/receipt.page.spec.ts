@@ -148,4 +148,22 @@ describe('ReceiptPage custodia por turnos (#162)', () => {
     expect(fixture.nativeElement.textContent).toContain('Guardado en este teléfono');
     expect(fixture.nativeElement.textContent).toContain('aún no confirmado por el servidor');
   });
+
+  it('permite verificar bultos individualmente o todos a la vez mediante checklist', () => {
+    const { page } = render(delivery('Dispatched', 'Dispatched', 2));
+
+    expect(page.allUnitsChecked()).toBe(false);
+    expect(page.isUnitChecked('hu-0')).toBe(false);
+
+    page.toggleUnitCheck('hu-0');
+    expect(page.isUnitChecked('hu-0')).toBe(true);
+    expect(page.allUnitsChecked()).toBe(false);
+
+    page.toggleCheckAllUnits();
+    expect(page.allUnitsChecked()).toBe(true);
+    expect(page.isUnitChecked('hu-1')).toBe(true);
+
+    page.toggleCheckAllUnits();
+    expect(page.allUnitsChecked()).toBe(false);
+  });
 });

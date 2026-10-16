@@ -176,6 +176,7 @@ export class ScanPage {
     const unitId = extractUnitId(text) || text.toLowerCase();
     const code = text.toLowerCase();
     let targetDeliveryId: string | null = null;
+    let matchingUnitId: string | null = null;
 
     for (const route of assignment.routes) {
       for (const del of route.deliveries) {
@@ -184,22 +185,26 @@ export class ScanPage {
           break;
         }
 
-        if (
-          del.handlingUnits &&
-          del.handlingUnits.some((hu: HandlingUnitResponse) =>
+        if (del.handlingUnits) {
+          const matchedHu = del.handlingUnits.find((hu: HandlingUnitResponse) =>
             hu.handlingUnitId.toLowerCase() === unitId ||
             hu.handlingUnitId.toLowerCase() === code ||
             hu.code.toLowerCase() === code
-          )
-        ) {
-          targetDeliveryId = del.deliveryId;
-          break;
+          );
+          if (matchedHu) {
+            targetDeliveryId = del.deliveryId;
+            matchingUnitId = matchedHu.handlingUnitId;
+            break;
+          }
         }
       }
       if (targetDeliveryId) break;
     }
 
     if (targetDeliveryId) {
+      if (matchingUnitId && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('lastScannedUnitId', matchingUnitId);
+      }
       this.router.navigate(['/receipt', targetDeliveryId]);
     } else {
       this.errorMessage.set('Este bulto no pertenece a tu ruta');

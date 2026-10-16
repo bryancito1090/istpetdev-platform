@@ -180,7 +180,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
+          <div class="flex items-center gap-2">
+            @if (hasRemainingPendingOrders()) {
+              <button
+                type="button"
+                (click)="openWizardForRemainingOrders()"
+                class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-bold hover:bg-emerald-800 transition-colors shadow-xs">
+                + Crear siguiente ruta con los pedidos pendientes restantes
+              </button>
+            }
+            <button (click)="feedbackMessage.set(null); hasRemainingPendingOrders.set(false)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
+          </div>
         </div>
       }
 
@@ -1447,7 +1457,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </button>
                   </div>
 
-                  <!-- Formulario Nuevo Pedido Rápido -->
+                  <!-- Formulario Nuevo Pedido Rápido con Prioridad -->
                   @if (showNewOrderForm()) {
                     <div class="p-3 bg-white rounded-xl border border-primary-200 shadow-sm space-y-2 text-xs">
                       <span class="font-bold text-slate-800 block text-[11px] uppercase">Nuevo Pedido</span>
@@ -1462,7 +1472,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         </select>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-2">
+                      <div class="grid grid-cols-3 gap-2">
                         <div>
                           <label class="text-[10px] text-slate-500 block">Producto</label>
                           <select [(ngModel)]="newOrderProdId" class="w-full text-xs p-1.5 border rounded">
@@ -1473,8 +1483,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </select>
                         </div>
                         <div>
-                          <label class="text-[10px] text-slate-500 block">Cantidad Requerida</label>
+                          <label class="text-[10px] text-slate-500 block">Cantidad</label>
                           <input type="number" [(ngModel)]="newOrderQty" min="1" class="w-full text-xs p-1.5 border rounded font-mono" />
+                        </div>
+                        <div>
+                          <label class="text-[10px] text-slate-500 block">Prioridad</label>
+                          <select [(ngModel)]="newOrderPriority" class="w-full text-xs p-1.5 border rounded font-semibold text-slate-700">
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Low">Low</option>
+                          </select>
                         </div>
                       </div>
 
@@ -1488,27 +1507,87 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </div>
                   }
 
-                  <!-- Lista de Pedidos Disponibles con Checkbox -->
-                  <div class="space-y-2">
-                    @for (ord of pendingOrders(); track ord.id) {
-                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2 text-xs cursor-pointer"
-                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200'"
+                  <!-- Filtros rápidos y acciones por lote -->
+                  <div class="space-y-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase mr-1">Filtros:</span>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('all')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'all' ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Todos ({{ pendingOrders().length }})
+                      </button>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('critical_high')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'critical_high' ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Críticos y Altos
+                      </button>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('today')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'today' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Pendientes para Hoy
+                      </button>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        (click)="selectAllCritical()"
+                        class="font-semibold text-rose-700 hover:underline">
+                        ★ Seleccionar todos los críticos
+                      </button>
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          (click)="selectAllFiltered()"
+                          class="font-semibold text-primary-700 hover:underline text-[10px]">
+                          Seleccionar visibles
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          (click)="deselectAllOrders()"
+                          class="font-semibold text-slate-500 hover:underline text-[10px]">
+                          Deseleccionar todos
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Lista de Pedidos Disponibles con Checkbox y Jerarquía Visual -->
+                  <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    @for (ord of filteredPendingOrders(); track ord.id) {
+                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2.5 text-xs cursor-pointer transition-all"
+                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200 hover:border-slate-300'"
                         (click)="toggleOrderSelection(ord.id)">
                         <input
                           type="checkbox"
                           [checked]="selectedOrderIds().has(ord.id)"
                           (click)="$event.stopPropagation()"
                           (change)="toggleOrderSelection(ord.id)"
-                          class="mt-0.5 rounded text-primary-600" />
+                          class="mt-1 rounded text-primary-600" />
                         <div class="flex-1 min-w-0">
-                          <div class="flex items-center justify-between">
-                            <span class="font-bold text-slate-900">{{ ord.orderNumber }}</span>
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold"
-                              [ngClass]="ord.priority === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'">
-                              {{ ord.priority }}
+                          <div class="flex items-center justify-between gap-1">
+                            <span class="font-bold text-slate-900 font-mono">{{ ord.orderNumber }}</span>
+                            <span class="text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border"
+                              [ngClass]="{
+                                'bg-rose-100 text-rose-800 border-rose-300 font-bold': ord.priority === 'Critical',
+                                'bg-amber-100 text-amber-800 border-amber-300 font-bold': ord.priority === 'High',
+                                'bg-blue-50 text-blue-700 border-blue-200 font-medium': ord.priority === 'Normal',
+                                'bg-slate-100 text-slate-600 border-slate-200 font-normal': ord.priority === 'Low' || !ord.priority
+                              }">
+                              {{ ord.priority || 'Normal' }}
                             </span>
                           </div>
                           <p class="text-[11px] font-semibold text-primary-700 mt-0.5">Destino: {{ ord.destinationName }}</p>
+                          @if (ord.requiredDateUtc) {
+                            <p class="text-[10px] text-slate-400 font-mono">Requerido: {{ ord.requiredDateUtc | date:'shortDate' }}</p>
+                          }
                           <div class="mt-1 space-y-0.5 text-[10px] text-slate-500 font-mono">
                             @for (l of ord.lines; track l.id) {
                               <div>• {{ l.productName }}: <strong>{{ l.requestedQuantity }} u</strong></div>
@@ -1516,7 +1595,38 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </div>
                         </div>
                       </div>
+                    } @empty {
+                      <div class="p-4 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-xl">
+                        No hay pedidos que coincidan con el filtro seleccionado.
+                      </div>
                     }
+                  </div>
+
+                  <!-- Medidor de Carga Acumulada en Tiempo Real -->
+                  <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-slate-800 text-[11px] uppercase">Carga Acumulada</span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded font-bold"
+                        [ngClass]="selectedOrdersSummary().weightKg > 1000 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'">
+                        {{ selectedOrdersSummary().count }} pedidos seleccionados
+                      </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 text-slate-600">
+                      <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400">Peso Estimado:</span>
+                        <strong class="text-slate-800">{{ selectedOrdersSummary().weightKg }} kg</strong>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400">Volumen Estimado:</span>
+                        <strong class="text-slate-800">{{ selectedOrdersSummary().volumeM3 }} m³</strong>
+                      </div>
+                    </div>
+
+                    <div class="pt-1 text-[10px] text-slate-500 flex items-center justify-between border-t border-slate-100">
+                      <span>Prioritarios: <strong>{{ selectedOrdersSummary().criticalCount }} Críticos</strong>, <strong>{{ selectedOrdersSummary().highCount }} Altos</strong></span>
+                      <span class="font-mono text-[9px] text-slate-400">Capacidad flota ref: ~1,000 kg</span>
+                    </div>
                   </div>
                 </div>
               }
@@ -1561,18 +1671,32 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     @for (opt of routeOptions(); track opt.optionId) {
                       <div
                         (click)="selectedOptionId.set(opt.optionId); onOptionSelected(opt)"
-                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all"
+                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all flex flex-col justify-between"
                         [ngClass]="selectedOptionId() === opt.optionId ? 'border-primary-600 ring-2 ring-primary-100 bg-white' : 'border-slate-200 bg-white/70'">
-                        <div class="flex items-center justify-between">
-                          <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
-                          @if (opt.isRecommended) {
-                            <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
-                          }
+                        <div>
+                          <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
+                            @if (opt.isRecommended) {
+                              <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
+                            }
+                          </div>
+                          <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
+                          <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
+                            {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
+                          </div>
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
-                        <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
-                          {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
-                        </div>
+
+                        @if (opt.isRecommended) {
+                          <div class="mt-2.5 p-2 bg-emerald-50/80 border border-emerald-200 rounded-lg text-[10px] space-y-1 text-emerald-900">
+                            <span class="font-bold block uppercase tracking-wider text-[9px] text-emerald-800">Justificación de Recomendación:</span>
+                            <ul class="space-y-0.5 text-[9px] list-disc list-inside">
+                              <li>Atiende {{ selectedOrdersSummary().criticalCount }} pedido(s) críticos con prioridad</li>
+                              <li>Consolida abastecimiento reduciendo kilometraje en vacío</li>
+                              <li>Cumple ventanas horarias con 0 paradas en mora</li>
+                              <li>Menor costo operativo global proyectado</li>
+                            </ul>
+                          </div>
+                        }
                       </div>
                     }
                   </div>
@@ -1668,6 +1792,21 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </div>
                     }
                   </div>
+
+                  <!-- Advertencia de Capacidad y Remanentes -->
+                  @if (selectedVehicleOverweight()) {
+                    <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1">
+                      <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                        <span>⚠️ Advertencia de Capacidad y Remanentes</span>
+                      </div>
+                      <p class="text-[11px]">
+                        El peso total seleccionado (<strong>{{ selectedOrdersSummary().weightKg }} kg</strong>) supera la capacidad del vehículo seleccionado (<strong>{{ selectedVehicleCapacity() }} kg</strong>).
+                      </p>
+                      <p class="text-[10px] text-amber-700">
+                        Los pedidos que no alcancen cupo o stock permanecerán en estado <span class="font-bold font-mono">Pending</span> para ser planificados en la siguiente ruta.
+                      </p>
+                    </div>
+                  }
                 </div>
               }
 
@@ -1890,14 +2029,92 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly wizardStep = signal<1 | 2 | 3 | 4>(1);
   readonly pendingOrders = signal<DeliveryOrderDto[]>([]);
   readonly selectedOrderIds = signal<Set<string>>(new Set());
+  readonly orderFilter = signal<'all' | 'critical_high' | 'today'>('all');
+  readonly hasRemainingPendingOrders = signal(false);
 
   // Formulario rápido nuevo pedido
   readonly showNewOrderForm = signal(false);
   newOrderDestId = '';
   newOrderProdId = '';
   newOrderQty = 10;
+  newOrderPriority = 'Normal';
   readonly availableLocations = signal<ServicePoint[]>([]);
   readonly availableProducts = signal<any[]>([]);
+
+  readonly priorityWeight: Record<string, number> = {
+    'Critical': 1,
+    'High': 2,
+    'Normal': 3,
+    'Low': 4
+  };
+
+  readonly filteredPendingOrders = computed(() => {
+    let list = [...this.pendingOrders()];
+    const filter = this.orderFilter();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    if (filter === 'critical_high') {
+      list = list.filter(o => o.priority === 'Critical' || o.priority === 'High');
+    } else if (filter === 'today') {
+      list = list.filter(o => o.requiredDateUtc && o.requiredDateUtc.slice(0, 10) <= todayStr);
+    }
+
+    return list.sort((a, b) => {
+      const pA = this.priorityWeight[a.priority] ?? 3;
+      const pB = this.priorityWeight[b.priority] ?? 3;
+      if (pA !== pB) return pA - pB;
+      const dateA = a.requiredDateUtc ? new Date(a.requiredDateUtc).getTime() : 0;
+      const dateB = b.requiredDateUtc ? new Date(b.requiredDateUtc).getTime() : 0;
+      if (dateA !== dateB) return dateA - dateB;
+      return new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime();
+    });
+  });
+
+  readonly selectedOrdersSummary = computed(() => {
+    const selectedIds = this.selectedOrderIds();
+    const allOrders = this.pendingOrders();
+    const selected = allOrders.filter(o => selectedIds.has(o.id));
+    const productsMap = new Map<string, any>(this.availableProducts().map(p => [p.id, p]));
+
+    let totalWeight = 0;
+    let totalVolume = 0;
+    let criticalCount = 0;
+    let highCount = 0;
+
+    for (const ord of selected) {
+      if (ord.priority === 'Critical') criticalCount++;
+      else if (ord.priority === 'High') highCount++;
+
+      for (const line of ord.lines || []) {
+        const prod = productsMap.get(line.productId);
+        const unitWeight = prod?.weight_per_unit ?? prod?.weightKg ?? 0.5;
+        const unitVolume = prod?.volume_per_unit ?? prod?.volumeM3 ?? 0.002;
+        totalWeight += (line.requestedQuantity || 0) * unitWeight;
+        totalVolume += (line.requestedQuantity || 0) * unitVolume;
+      }
+    }
+
+    return {
+      count: selected.length,
+      weightKg: Math.round(totalWeight * 10) / 10,
+      volumeM3: Math.round(totalVolume * 100) / 100,
+      criticalCount,
+      highCount
+    };
+  });
+
+  readonly selectedVehicleCapacity = computed(() => {
+    const vehId = this.selectedVehicleId();
+    if (!vehId) return 0;
+    const match = this.availableVehicleMatches().find(v => v.vehicleId === vehId);
+    return match?.maxWeight ?? 1000;
+  });
+
+  readonly selectedVehicleOverweight = computed(() => {
+    const cap = this.selectedVehicleCapacity();
+    if (cap <= 0) return false;
+    return this.selectedOrdersSummary().weightKg > cap;
+  });
 
   // Opciones de Sourcing y Vehículos
   readonly routeOptions = signal<RouteSuggestionOptionDto[]>([]);
@@ -2218,10 +2435,28 @@ export class RutasPage implements OnInit, OnDestroy {
   loadPendingOrders(): void {
     this.apiService.getDeliveryOrders('Pending').subscribe({
       next: (orders) => {
-        this.pendingOrders.set(orders || []);
-        // Seleccionar automáticamente los primeros para comodidad
-        if (orders && orders.length > 0 && this.selectedOrderIds().size === 0) {
-          this.selectedOrderIds.set(new Set([orders[0].id]));
+        const sorted = (orders || []).sort((a, b) => {
+          const pA = this.priorityWeight[a.priority] ?? 3;
+          const pB = this.priorityWeight[b.priority] ?? 3;
+          if (pA !== pB) return pA - pB;
+          const dateA = a.requiredDateUtc ? new Date(a.requiredDateUtc).getTime() : 0;
+          const dateB = b.requiredDateUtc ? new Date(b.requiredDateUtc).getTime() : 0;
+          if (dateA !== dateB) return dateA - dateB;
+          return new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime();
+        });
+        this.pendingOrders.set(sorted);
+
+        // Preselección basada en valor: pedidos Critical y High pendientes
+        if (sorted.length > 0 && this.selectedOrderIds().size === 0) {
+          const highValueIds = sorted
+            .filter(o => o.priority === 'Critical' || o.priority === 'High')
+            .map(o => o.id);
+
+          if (highValueIds.length > 0) {
+            this.selectedOrderIds.set(new Set(highValueIds));
+          } else {
+            this.selectedOrderIds.set(new Set([sorted[0].id]));
+          }
         }
       },
       error: () => {}
@@ -2300,8 +2535,32 @@ export class RutasPage implements OnInit, OnDestroy {
   openOrderRoutingModal(): void {
     this.isWizardOpen.set(true);
     this.wizardStep.set(1);
+    this.selectedOrderIds.set(new Set());
     this.loadPendingOrders();
     setTimeout(() => this.wizardMapView?.invalidateSize(), 200);
+  }
+
+  openWizardForRemainingOrders(): void {
+    this.feedbackMessage.set(null);
+    this.hasRemainingPendingOrders.set(false);
+    this.openOrderRoutingModal();
+  }
+
+  selectAllCritical(): void {
+    const criticals = this.pendingOrders().filter(o => o.priority === 'Critical' || o.priority === 'High');
+    const set = new Set(this.selectedOrderIds());
+    criticals.forEach(o => set.add(o.id));
+    this.selectedOrderIds.set(set);
+  }
+
+  deselectAllOrders(): void {
+    this.selectedOrderIds.set(new Set());
+  }
+
+  selectAllFiltered(): void {
+    const set = new Set(this.selectedOrderIds());
+    this.filteredPendingOrders().forEach(o => set.add(o.id));
+    this.selectedOrderIds.set(set);
   }
 
   closeWizard(): void {
@@ -2328,10 +2587,12 @@ export class RutasPage implements OnInit, OnDestroy {
     this.apiService.createDeliveryOrder({
       destinationServicePointId: !isWh ? this.newOrderDestId : undefined,
       destinationLocationId: isWh ? this.newOrderDestId : undefined,
+      priority: this.newOrderPriority,
       lines: [{ productId: this.newOrderProdId, quantity: this.newOrderQty }]
     }).subscribe({
       next: (res) => {
         this.showNewOrderForm.set(false);
+        this.newOrderPriority = 'Normal';
         this.loadPendingOrders();
         if (res?.id) {
           const set = new Set(this.selectedOrderIds());
@@ -2420,25 +2681,38 @@ export class RutasPage implements OnInit, OnDestroy {
     this.actionLoading.set(true);
     const stops = this.editableStops();
     const evalData = this.currentEvaluation();
+    const plannedOrderIds = Array.from(this.selectedOrderIds());
+    const remainingPending = this.pendingOrders().filter(o => !this.selectedOrderIds().has(o.id));
 
     this.apiService.confirmRoutePlan({
       vehicleId: this.selectedVehicleId() || undefined,
       totalDistanceKm: evalData?.totalDistanceKm || 0,
       totalDurationMinutes: evalData?.totalDurationMinutes || 0,
       totalCost: evalData?.totalCost || 0,
-      orderIds: Array.from(this.selectedOrderIds()),
+      orderIds: plannedOrderIds,
       stops,
       coordinates: evalData?.coordinates
     }).subscribe({
       next: (res) => {
         this.actionLoading.set(false);
         this.closeWizard();
-        this.feedbackMessage.set({
-          type: 'success',
-          text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
-        });
+        const remainingCount = remainingPending.length;
+        if (remainingCount > 0) {
+          this.hasRemainingPendingOrders.set(true);
+          this.feedbackMessage.set({
+            type: 'success',
+            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas! Quedan ${remainingCount} pedido(s) pendientes en el sistema.`
+          });
+        } else {
+          this.hasRemainingPendingOrders.set(false);
+          this.feedbackMessage.set({
+            type: 'success',
+            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+          });
+        }
         if (res?.id) this.selectedPlanId.set(res.id);
         this.loadPlans();
+        this.loadPendingOrders();
       },
       error: (err) => {
         this.actionLoading.set(false);

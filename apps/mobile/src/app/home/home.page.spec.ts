@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { AlertController } from '@ionic/angular/standalone';
+import { AlertController, ToastController } from '@ionic/angular/standalone';
 import { MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API } from '../field/field-api.interface';
@@ -27,6 +27,7 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
   };
   let alertControllerMock: { create: ReturnType<typeof vi.fn> };
   let alertElementMock: { present: ReturnType<typeof vi.fn>; onDidDismiss: ReturnType<typeof vi.fn> };
+  let toastControllerMock: { create: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     authServiceMock = {
@@ -55,12 +56,17 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
       create: vi.fn(async () => alertElementMock)
     };
 
+    toastControllerMock = {
+      create: vi.fn(async () => ({ present: vi.fn(async () => undefined) }))
+    };
+
     TestBed.configureTestingModule({
       imports: [HomePage],
       providers: [
         { provide: MobileAuthService, useValue: authServiceMock },
         { provide: FieldOutboxService, useValue: outboxServiceMock },
         { provide: AlertController, useValue: alertControllerMock },
+        { provide: ToastController, useValue: toastControllerMock },
         { provide: Router, useValue: { navigate: vi.fn() } },
         { provide: FIELD_API, useValue: {} }
       ]
@@ -140,8 +146,11 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
       loadReceiverUnit: vi.fn(async () => ({ unit, cached: true })) };
     TestBed.configureTestingModule({ imports: [HomePage], providers: [
       { provide: MobileAuthService, useValue: { currentRole: signal('Receptor'), me: signal({ displayName: 'Receptor' }) } },
-      { provide: FieldOutboxService, useValue: outbox }, { provide: FIELD_API, useValue: {} },
-      { provide: Router, useValue: { navigate: vi.fn() } }, { provide: AlertController, useValue: {} }
+      { provide: FieldOutboxService, useValue: outbox },
+      { provide: FIELD_API, useValue: {} },
+      { provide: Router, useValue: { navigate: vi.fn() } },
+      { provide: AlertController, useValue: {} },
+      { provide: ToastController, useValue: { create: vi.fn().mockResolvedValue({ present: vi.fn() }) } }
     ] });
     page = TestBed.createComponent(HomePage).componentInstance;
     await page.loadReceiverUnit('hu', 'qr');

@@ -66,26 +66,110 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
           </ion-card-header>
         </ion-card>
 
-        <!-- Bultos de la entrega -->
+        <!-- Bultos de la entrega con Checkbox de Custodia -->
         <ion-card class="mb-4">
           <ion-card-header>
-            <ion-card-title class="text-base">Bultos de la parada</ion-card-title>
+            <div class="flex items-center justify-between mb-1">
+              <ion-card-title class="text-base font-bold">
+                @if (stage() === 'ToPickup') {
+                  Verificación de Carga (Subida al Vehículo)
+                } @else if (stage() === 'ToDeliver') {
+                  Verificación de Descarga (Entrega en Destino)
+                } @else {
+                  Bultos de la parada
+                }
+              </ion-card-title>
+              @if (del.handlingUnits.length > 0 && (stage() === 'ToPickup' || stage() === 'ToDeliver')) {
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                      [class.bg-emerald-100]="allUnitsChecked()"
+                      [class.text-emerald-800]="allUnitsChecked()"
+                      [class.bg-amber-100]="!allUnitsChecked()"
+                      [class.text-amber-800]="!allUnitsChecked()">
+                  {{ checkedUnits().size }} / {{ del.handlingUnits.length }} verificados
+                </span>
+              }
+            </div>
             <ion-card-subtitle>
-              {{ del.handlingUnits.length }} bulto(s) · el receptor confirmará las cantidades con su cuenta
+              @if (stage() === 'ToPickup') {
+                Marca los bultos con el checkbox físico o escanéalos con la cámara para certificar la subida.
+              } @else if (stage() === 'ToDeliver') {
+                Verifica los bultos descargados del vehículo antes de entregarlos al receptor.
+              } @else {
+                {{ del.handlingUnits.length }} bulto(s) · el receptor confirmará las cantidades con su cuenta
+              }
             </ion-card-subtitle>
-          </ion-card-header>
-          <ion-card-content class="space-y-2">
-            @for (hu of del.handlingUnits; track hu.handlingUnitId) {
-              <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
-                <div>
-                  <span class="font-bold text-xs text-slate-800 block">{{ hu.code }}</span>
-                  <span class="text-[11px] text-slate-500">
-                    {{ hu.lines.length }} línea(s) · {{ huStatusLabel(hu.status) }}
-                  </span>
-                </div>
-                <ion-badge color="medium">{{ hu.status }}</ion-badge>
+
+            @if (del.handlingUnits.length > 0 && (stage() === 'ToPickup' || stage() === 'ToDeliver')) {
+              <div class="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  class="text-xs font-bold text-sky-700 hover:text-sky-900 underline"
+                  (click)="toggleCheckAllUnits()">
+                  {{ allUnitsChecked() ? 'Desmarcar todos' : '✓ Marcar todos verificados' }}
+                </button>
+                <button
+                  type="button"
+                  class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1"
+                  (click)="openScanForVerification()">
+                  📷 Escanear QR
+                </button>
               </div>
             }
+          </ion-card-header>
+
+          <ion-card-content class="space-y-2">
+            @if (verifiedSuccessMsg(); as msg) {
+              <div class="p-2.5 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs font-bold flex items-center justify-between">
+                <span>✅ {{ msg }}</span>
+                <button type="button" class="text-emerald-800 text-sm font-bold" (click)="verifiedSuccessMsg.set(null)">✕</button>
+              </div>
+            }
+
+            @for (hu of del.handlingUnits; track hu.handlingUnitId) {
+              <div class="p-3 border rounded-xl flex flex-col gap-2 transition cursor-pointer select-none"
+                   [class.bg-emerald-50]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.border-emerald-300]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.bg-slate-50]="!isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.border-slate-200]="!isUnitChecked(hu.handlingUnitId, hu.code)"
+                   (click)="toggleUnitCheck(hu.handlingUnitId)">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    @if (stage() === 'ToPickup' || stage() === 'ToDeliver') {
+                      <input
+                        type="checkbox"
+                        class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                        [checked]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleUnitCheck(hu.handlingUnitId)" />
+                    }
+                    <div>
+                      <span class="font-bold text-xs text-slate-800 block" [class.line-through]="isUnitChecked(hu.handlingUnitId, hu.code)">
+                        {{ hu.code }}
+                      </span>
+                      <span class="text-[11px] text-slate-500">
+                        {{ hu.lines.length }} línea(s) · {{ huStatusLabel(hu.status) }}
+                      </span>
+                    </div>
+                  </div>
+                  <ion-badge [color]="isUnitChecked(hu.handlingUnitId, hu.code) ? 'success' : 'medium'">
+                    {{ isUnitChecked(hu.handlingUnitId, hu.code) ? '✓ Verificado' : hu.status }}
+                  </ion-badge>
+                </div>
+
+                <!-- Desglose de productos y líneas del bulto -->
+                @if (hu.lines.length > 0) {
+                  <div class="mt-1 pt-1.5 border-t border-slate-200/60 space-y-1">
+                    @for (l of hu.lines; track l.deliveryLineId) {
+                      <div class="flex justify-between items-center text-[11px] text-slate-600">
+                        <span>• SKU: {{ l.sku }}</span>
+                        <span class="font-bold text-slate-800">{{ l.quantity }} {{ l.unit }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
             @if (del.handlingUnits.length === 0) {
               <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
                 La entrega aún no tiene bultos empacados por Bodega.
@@ -106,13 +190,29 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
           }
 
           @if (stage() === 'ToPickup') {
-            <ion-button expand="block" size="large" color="warning" [disabled]="actionInFlight()" (click)="pickup()">
-              {{ actionInFlight() ? 'Registrando...' : 'Marcar Recogido' }}
+            @if (!allUnitsChecked() && del.handlingUnits.length > 0) {
+              <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950 flex items-center gap-2">
+                <span class="text-amber-700 font-bold text-sm">⚠️</span>
+                <span>Doble verificación: Marca o escanea todos los bultos para certificar que subiste la totalidad de la carga al vehículo.</span>
+              </div>
+            }
+            <ion-button expand="block" size="large" color="warning"
+              [disabled]="actionInFlight() || (!allUnitsChecked() && del.handlingUnits.length > 0)"
+              (click)="pickup()">
+              {{ actionInFlight() ? 'Registrando...' : 'Marcar Recogido (Carga Completa)' }}
             </ion-button>
           }
 
           @if (stage() === 'ToDeliver') {
-            <ion-button expand="block" size="large" color="success" [disabled]="actionInFlight()" (click)="deliver()">
+            @if (!allUnitsChecked() && del.handlingUnits.length > 0) {
+              <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950 flex items-center gap-2">
+                <span class="text-amber-700 font-bold text-sm">⚠️</span>
+                <span>Doble verificación: Verifica los bultos que estás bajando del vehículo antes de confirmar la entrega física.</span>
+              </div>
+            }
+            <ion-button expand="block" size="large" color="success"
+              [disabled]="actionInFlight() || (!allUnitsChecked() && del.handlingUnits.length > 0)"
+              (click)="deliver()">
               {{ actionInFlight() ? 'Registrando...' : 'Marcar Entregado en el Punto' }}
             </ion-button>
           }
@@ -188,6 +288,46 @@ export class ReceiptPage implements OnInit {
   readonly loadError = signal<string | null>(null);
   readonly busy = signal<boolean>(false);
 
+  // Doble verificación / checklist de custodia física del conductor
+  readonly checkedUnits = signal<Set<string>>(new Set<string>());
+  readonly verifiedSuccessMsg = signal<string | null>(null);
+
+  readonly allUnitsChecked = computed(() => {
+    const del = this.delivery();
+    if (!del || !del.handlingUnits || del.handlingUnits.length === 0) return true;
+    const checked = this.checkedUnits();
+    return del.handlingUnits.every((hu) => checked.has(hu.handlingUnitId) || checked.has(hu.code));
+  });
+
+  toggleUnitCheck(unitId: string): void {
+    const next = new Set(this.checkedUnits());
+    if (next.has(unitId)) {
+      next.delete(unitId);
+    } else {
+      next.add(unitId);
+    }
+    this.checkedUnits.set(next);
+  }
+
+  toggleCheckAllUnits(): void {
+    const del = this.delivery();
+    if (!del) return;
+    if (this.allUnitsChecked()) {
+      this.checkedUnits.set(new Set());
+    } else {
+      this.checkedUnits.set(new Set(del.handlingUnits.map((u) => u.handlingUnitId)));
+    }
+  }
+
+  isUnitChecked(unitId: string, code?: string): boolean {
+    const set = this.checkedUnits();
+    return set.has(unitId) || (!!code && set.has(code));
+  }
+
+  openScanForVerification(): void {
+    this.router.navigate(['/scan']);
+  }
+
   readonly stage = computed<CustodyStage>(() => {
     const del = this.delivery();
     if (!del) return 'WaitingWarehouse';
@@ -223,9 +363,23 @@ export class ReceiptPage implements OnInit {
   });
 
   ngOnInit(): void {
-    const deliveryId = this.route.snapshot.paramMap.get('deliveryId');
+    const deliveryId = this.route.snapshot.paramMap?.get('deliveryId');
     if (deliveryId) {
       this.loadDeliveryData(deliveryId);
+    }
+
+    const verifiedUnitId = this.route.snapshot.queryParamMap?.get('verifiedUnitId');
+    const scannedFromStorage = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('lastScannedUnitId') : null;
+    const unitToVerify = verifiedUnitId || scannedFromStorage;
+
+    if (unitToVerify) {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('lastScannedUnitId');
+      }
+      const next = new Set(this.checkedUnits());
+      next.add(unitToVerify);
+      this.checkedUnits.set(next);
+      this.verifiedSuccessMsg.set('Bulto verificado correctamente mediante código QR.');
     }
   }
 

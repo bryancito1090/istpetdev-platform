@@ -150,7 +150,7 @@ interface SyncFeedback {
             </ion-toggle>
           </ion-item>
 
-          <div class="flex flex-col sm:flex-row gap-2">
+          <div class="flex items-center gap-2">
             <ion-button
               expand="block"
               class="flex-1 font-bold"
@@ -158,6 +158,11 @@ interface SyncFeedback {
               (click)="syncAll()">
               {{ (outboxService.isSyncing() || isSyncingAll()) ? 'Sincronizando cola...' : 'Sincronizar Todo Ahora' }}
             </ion-button>
+            @if (outboxService.sendableCount() > 0) {
+              <ion-badge color="warning" class="shrink-0 text-sm font-bold">
+                {{ outboxService.sendableCount() }} pendientes
+              </ion-badge>
+            }
           </div>
         </ion-card-content>
       </ion-card>
@@ -166,8 +171,13 @@ interface SyncFeedback {
       <div class="mb-2 flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Operaciones ({{ outboxService.outboxItems().length }})
+            Operaciones
           </span>
+          @if (outboxService.outboxItems().length > 0) {
+            <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">
+              {{ outboxService.outboxItems().length }}
+            </span>
+          }
           @if (outboxService.sendableCount() > 0) {
             <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
               {{ outboxService.sendableCount() }} para enviar

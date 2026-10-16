@@ -1145,9 +1145,10 @@ public sealed class FieldService : IFieldService
             .Where(s => stopIds.Contains(s.Id) && s.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
-        var stopsById = stops.ToDictionary(s => s.Id, s => s);
-
         var planIds = stops.Select(s => s.RoutePlanId).Distinct().ToList();
+        stops = await _db.RouteStops
+            .Where(s => planIds.Contains(s.RoutePlanId) && s.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
         var plans = await _db.RoutePlans
             .Where(p => planIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
@@ -1155,6 +1156,15 @@ public sealed class FieldService : IFieldService
         var points = await _db.ServicePoints
             .Where(sp => sp.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(sp => sp.Id, sp => sp, ct);
+
+        var pickupLocationIds = stops
+            .Where(s => s.Kind == RouteStopKind.Pickup && s.LocationId.HasValue)
+            .Select(s => s.LocationId!.Value)
+            .Distinct()
+            .ToList();
+        var pickupLocations = await _db.Locations
+            .Where(location => pickupLocationIds.Contains(location.Id) && location.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(location => location.Id, location => location, ct);
 
         var vehicles = await _db.Vehicles
             .Where(v => v.OrganizationId == DemoOrganization.Id)
@@ -1197,6 +1207,22 @@ public sealed class FieldService : IFieldService
         {
             var planStops = stops.Where(s => s.RoutePlanId == plan.Id).OrderBy(s => s.SequenceNumber).ToList();
             var planDeliveries = new List<MobileAssignmentDelivery>();
+            var pickupStops = planStops
+                .Where(s => s.Kind == RouteStopKind.Pickup)
+                .Select(stop =>
+                {
+                    points.TryGetValue(stop.ServicePointId, out var servicePoint);
+                    pickupLocations.TryGetValue(stop.LocationId ?? Guid.Empty, out var location);
+                    return new MobileAssignmentPickupStop(
+                        stop.Id,
+                        stop.SequenceNumber,
+                        stop.LocationId,
+                        location?.Code ?? servicePoint?.Code ?? "BOD",
+                        location?.Name ?? servicePoint?.Name ?? "Bodega de recogida",
+                        "",
+                        stop.PlannedArrivalUtc ?? DateTime.UtcNow.AddHours(2));
+                })
+                .ToList();
 
             vehicles.TryGetValue(plan.VehicleId, out var vehicle);
 
@@ -1238,7 +1264,8 @@ public sealed class FieldService : IFieldService
                 vehicle?.Code ?? "",
                 planStops.Count,
                 planDeliveries,
-                await OriginWarehouseNameAsync(deliveries.Where(d => planStops.Any(s => s.Id == d.RouteStopId)).Select(d => d.OriginLocationId).FirstOrDefault(), ct)));
+                await OriginWarehouseNameAsync(deliveries.Where(d => planStops.Any(s => s.Id == d.RouteStopId)).Select(d => d.OriginLocationId).FirstOrDefault(), ct),
+                pickupStops));
         }
 
         return new MobileAssignmentResponse(
