@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IstpetDev.Api.Controllers;
 
-[ApiController, Route("api/v1/imports"), Authorize(Roles = Roles.Human), EnableRateLimiting("imports")]
+[ApiController, Route("api/v1/imports"), Authorize(Roles = Roles.Any), EnableRateLimiting("imports")]
 public sealed class ImportsController(IImportService importer, IApplicationDbContext db, ITabularReader reader) : ControllerBase
 {
     [HttpGet("data/{entity}")]
@@ -158,9 +158,12 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                 return Ok(Array.Empty<object>());
         }
     }
-    [HttpPost, Authorize(Roles = Roles.Planning), RequestSizeLimit(ImportLimits.RequestBytes), RequestFormLimits(MultipartBodyLengthLimit = ImportLimits.RequestBytes, ValueLengthLimit = ImportLimits.ProfileBytes)]
+    [HttpPost, Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion), RequestSizeLimit(ImportLimits.RequestBytes), RequestFormLimits(MultipartBodyLengthLimit = ImportLimits.RequestBytes, ValueLengthLimit = ImportLimits.ProfileBytes)]
     public async Task<IActionResult> Import([FromQuery] bool dryRun = true, [FromQuery] bool allowPartial = false, CancellationToken cancellationToken = default)
     {
+        // ADR-22: el M2M (n8n) solo revisa en seco; aplicar o descartar filas sigue siendo humano.
+        if (User.IsInRole(Roles.Automatizacion) && (!dryRun || allowPartial))
+            return Problem(statusCode: 403, title: "El token de automatización solo puede validar en seco (dryRun=true, allowPartial=false).");
         if (!Request.HasFormContentType) return Problem(statusCode: 400, title: "Envíe multipart/form-data con archivos CSV/XLSX.");
         var form = await Request.ReadFormAsync(cancellationToken);
         try

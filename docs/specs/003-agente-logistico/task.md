@@ -799,3 +799,33 @@ Estado del código: revisión final de Codex completada por encargo de Bryan; tr
 - [x] Manifiesto multibodega en `RoutePublisher`: soporte de recogida en múltiples bodegas con integridad de reservas y cargas por SKU.
 - [x] Pruebas unitarias y de integración dedicadas: `SingleProposalAndCostTests` (4/4 unitarias) y `SingleProposalIntegrationTests` (2/2 integración con PostGIS).
 - [x] Validación completa de la suite: 224/224 Unit tests, 267/267 Integration tests, 24/24 Python tests, 0 errores en check_vault y verificación de no-mock-login.
+
+## Issue #209 — revisión de viabilidad de datasets — 16-oct-2026
+
+- [x] Revisar el issue, el importador, los contratos #194 y el ADR-22; preparar
+  el alcance determinista en la API y la orquestación en n8n.
+- [x] Backend: `FeasibilityAnalyzer` y `feasibility`/`status` en el reporte del
+  dry-run, sin persistir datos operativos; `ImportService` acepta el reloj
+  operativo opcional.
+- [x] Autorización M2M acotada: `Automatizacion` solo ejecuta el dry-run
+  (`dryRun=true&allowPartial=false`); aplicar sigue siendo de `Planning`.
+- [x] Workflow `revision-dataset` con prompt propio, webhook con token, análisis
+  determinista, resumen LLM con fallback por cifras no fundamentadas y sin
+  `allowPartial=true`; `local-up.sh` solo resuelve el error de flags cuando el
+  workflow lo declara.
+- [x] Pruebas: `FeasibilityReportTests` (6), actualización de
+  `AuthorizationSafetyTests` y `WorkflowSecretsTests`, `test_dataset_review_workflow.py`
+  (7) y ajustes de generador/local-up.
+- [x] Verificación local completa: backend 566/566, scripts n8n 8/8 archivos,
+  generador `--check`, `npm run check`, `npm run audit:check`, bóveda y
+  `git diff --check` limpios.
+- [x] Ejecución real en n8n 2.39.5 local con puente HTTP: dictamen íntegro y
+  fallback determinista al caer el LLM; evidencia en
+  [2026-10-16-209-revision-dataset](evidencia/2026-10-16-209-revision-dataset.md).
+- [x] Abrir PR a `develop`, resolver conflictos si aparecen (PR #213 en vuelo),
+  CI verde, aprobación/merge y cierre de #209.
+
+Estado: código, pruebas locales y ejecución real n8n completados; sin
+despliegue. La revisión en seco conserva la regla de oro de ADR-22: la API
+calcula los hechos y decide; n8n y el LLM solo explican y nunca completan
+coordenadas, cantidades ni códigos.
