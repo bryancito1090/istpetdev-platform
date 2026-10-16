@@ -158,7 +158,7 @@ Las diapositivas acompañan el turno de 5 min. Si el proyector falla, el equipo 
 
 ---
 
-## 5. Banco de 20 preguntas difíciles (Respuestas de hasta 30 s)
+## 5. Banco de 24 preguntas difíciles (Respuestas de hasta 30 s)
 
 Ensayar cada respuesta con cronómetro (≤30 s). Cada afirmación técnica responde únicamente a lo probado en código o registrado en la matriz.
 
@@ -184,6 +184,10 @@ Ensayar cada respuesta con cronómetro (≤30 s). Cada afirmación técnica resp
 | 18 | ¿El sistema evita multas contractuales en hospitales? | El análisis documental del SERCOP demuestra que los contratos contemplan sanciones por incumplimiento de reposición; nuestra plataforma busca reducir ese riesgo operativo, pero no cuantificamos multas legales evitadas. | A-01, A-33 |
 | 19 | ¿Qué validación real tienen con el sector? | Contrastamos el problema y los supuestos con las ponencias y expositores de la feria ([[Hallazgos de la charla para el Reto 1]]); las métricas económicas concretas serán validadas durante el piloto. | A-29 sust. |
 | 20 | ¿Qué es trabajo previo y qué se desarrolló durante la hackathon? | La arquitectura base y lineamientos vienen de la preparación del equipo identificada con etiquetas; la integración de la cadena completa de 10 pasos, el simulador canónico y las pruebas se consolidaron durante el evento. | Matriz / Historial git |
+| 21 | ¿A quién atienden primero si no alcanza el camión? | El motor prioriza mediante un orden determinista y transparente: primero evalúa el nivel de riesgo (Crítico antes que Alto), luego la menor holgura de tiempo (cobertura menos lead time), después la criticidad del punto de servicio, y finalmente el código. Si no alcanza la capacidad, los puntos menos urgentes quedan formalmente clasificados como no atendidos con su motivo explícito (`ReplenishmentAllocator` y `RoutePlanner`). | AMP-01, Spec 002 |
+| 22 | ¿Qué pasa ante un cierre vial? | Se ejecuta una replanificación determinista que conserva las paradas ya realizadas y genera una nueva versión de ruta. El motor dispone de modos configurables: `Strict`, `LateService` si admite demoras, o `PrioritizeCritical`, que descarta paradas de consolidación para proteger las entregas críticas. Si el plan resultante supera los límites de costo o jornada, no se auto-ejecuta y escala a aprobación humana. | AMP-03, Spec 002 |
+| 23 | ¿Por qué no Dijkstra? | Dijkstra halla el camino mínimo entre nodos aislados en un grafo estático. En nuestro sistema, el servicio OSRM ya calcula distancias y tiempos mínimos sobre la red vial real de OpenStreetMap, respetando sentidos de giro y velocidades reales. Sobre esa matriz real, el algoritmo del motor resuelve el problema complejo de ruteo vehicular con ventanas horarias, jornadas y capacidades físicas. | AMP-10, OSRM |
+| 24 | ¿Qué pasa si nos dan otro Excel? | El sistema dispone de un importador canónico con perfiles de mapeo declarativos. Permite homologar archivos con distintas columnas, orden o unidades hacia el esquema interno sin modificar una sola línea de código fuente. Su funcionamiento está probado y validado con datasets externos, permitiendo incorporar nuevos datos estructurados con reglas de validación previas. | Spec 001, ADR-22 |
 
 ---
 
