@@ -28,12 +28,9 @@ Registro personal, ficha de acreditación, rol operativo y bitácora de activida
 
 ## 2. Ficha individual
 
-### 2.1 Datos de contacto e identificación
+### 2.1 Datos de presentación
 - **Nombre completo:** Bryan Baño
-- **Cédula de identidad:** PENDIENTE
 - **Usuario de GitHub:** `bryancito1090`
-- **Correo de contacto:** `banobryan1090@gmail.com`
-- **Teléfono móvil / WhatsApp:** PENDIENTE
 - **Especialidad técnica principal en el evento:** Coordinación de equipo / Backend (.NET 8) / Automatización (n8n) / Infraestructura
 
 ### 2.2 Equipamiento y conectividad en sede

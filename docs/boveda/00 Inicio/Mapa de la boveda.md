@@ -1,7 +1,7 @@
 ---
 tipo: indice
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [hackathon, equipo]
 ---
 
@@ -56,6 +56,7 @@ tags: [hackathon, equipo]
 - [[Coordinacion migracion schema95]] — histórico: aplicación personal y evidencia de Schema95.
 - [[Evidencias y ensayos de base de datos y despliegue]] — ensayos de fallo fail-fast, verificación de migraciones en RDS, rollback aditivo y Plan B local (Issue #35).
 - [[Registro de mentorias]].
+- [[Notas del evento]] — entrada a los apuntes de las jornadas y reglas para registrarlos en paralelo.
 
 ## Validación y presentación
 
@@ -68,6 +69,7 @@ tags: [hackathon, equipo]
 - Contenido de cada skill: [[istpetdev-contexto]] · [[istpetdev-docs]] · [[istpetdev-contrato]] · [[istpetdev-backend]] · [[istpetdev-dbflow]] · [[istpetdev-datos]] · [[istpetdev-frontend]] · [[istpetdev-revision]] · [[istpetdev-prelaunch]] · [[istpetdev-producto-pitch]].
 - [[Plantilla ADR]], [[Plantilla historia de usuario]].
 - [[Plantilla evidencia]], [[Plantilla mentoria]].
+- [[Plantilla nota del evento]], [[Plantilla notas del participante]].
 
 ## Lectura según el rol
 

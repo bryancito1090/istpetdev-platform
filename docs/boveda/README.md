@@ -23,6 +23,7 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 | Tema | Nota |
 |---|---|
 | Trabajo del equipo: integración y pruebas desde el 13-oct | [Seguimiento de implementación y pruebas](06%20Equipo/Seguimiento%20de%20implementacion%20y%20pruebas.md) |
+| Apuntes durante el evento | [Notas del evento](NotasEvento/Notas%20del%20evento.md) |
 | Tablero editable de responsables, resultados y faltantes | [Registro de seguimiento y hallazgos](06%20Equipo/Registro%20de%20seguimiento%20y%20hallazgos.md) |
 | Continuidad después del pase técnico | [Piloto y specs 007–012](06%20Equipo/Continuidad%20del%20piloto%20y%20specs%20007%20a%20012.md) |
 | Esquema completo y estado personal | [Esquema de base de datos](04%20Datos%20y%20algoritmos/Esquema%20completo%20de%20base%20de%20datos.md) |

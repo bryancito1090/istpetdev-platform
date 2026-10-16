@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [istpetdev, documentacion]
 ---
 
@@ -627,4 +627,8 @@ Fuente: inicio de actividades de los integrantes en `NotasEvento`. Se incorpora 
 
 Verificación documental: **90 notas Markdown**, **959 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
 
+## 16-oct-2026 — Registro colaborativo de notas del evento
 
+Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de [[NotasBryan]], ficha de preparación existente. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
+
+Verificación documental: **92 notas Markdown**, **980 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
