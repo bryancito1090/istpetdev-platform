@@ -1,0 +1,11 @@
+code,depot_code,max_weight,max_volume,cost_per_km,vehicle_type,usage_scope,matricula,marca,modelo,anio,combustible,kilometraje_actual,autonomia_km,rendimiento_km_gal_supuesto,estado_mecanico,pico_y_placa_dia
+VEH-0001,BOD-0001,3500,14,0.21,camion_liviano,urbano,PCB-2214,Hino,Dutro City,2022,diesel,86230,,26,operativo,martes
+VEH-0002,BOD-0001,4500,18,0.231,camion_pesado,extraurbano,PCA-1187,Hino,Dutro 616,2021,diesel,128450,,22,operativo,jueves
+VEH-0003,BOD-0001,720,3.1,0.159,camioneta,urbano,PBX-7896,Chevrolet,N400 Max Cargo,2023,gasolina,45210,,32,operativo,miércoles
+VEH-0004,BOD-0001,2700,12,0.075,camion_liviano,urbano,PCE-3021,BYD,T35,2025,electrico,18320,270,,operativo,lunes
+VEH-0005,BOD-0002,5500,22,0.266,camion_pesado,extraurbano,PCD-5540,Hino,Dutro 716,2018,diesel,214900,,20,mantenimiento_proximo,viernes
+VEH-0006,BOD-0002,720,3.1,0.176,camioneta,urbano,PBY-4412,Chevrolet,N400 Max Cargo,2020,gasolina,132880,,30,operativo,lunes
+VEH-0007,BOD-0002,3500,14,0.224,camion_liviano,urbano,PCC-0915,Hino,Dutro City,2019,diesel,175400,,25,operativo,miércoles
+VEH-0008,BOD-0003,720,3.1,0.159,camioneta,urbano,PBZ-6603,Chevrolet,N400 Max Cargo,2022,gasolina,61005,,32,operativo,martes
+VEH-0009,BOD-0003,2700,12,0.075,camion_liviano,urbano,PCF-1209,BYD,T35,2026,electrico,9870,270,,operativo,viernes
+VEH-0010,BOD-0003,6500,26,0.293,camion_pesado,extraurbano,PCG-8830,Hino,Dutro 816,2016,diesel,301250,,18,operativo,viernes

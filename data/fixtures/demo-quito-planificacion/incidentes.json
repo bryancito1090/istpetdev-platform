@@ -1,0 +1,69 @@
+{
+  "averia-matilde-alvarez": {
+    "kind": "VEHICLE_BREAKDOWN",
+    "severity": "ALTA",
+    "description": "Hino Dutro City PCB-2214 (VEH-0001, diésel, 86.230 km) se avería por falla de embrague en la Av. Matilde Álvarez (Quitumbe), con 50 km recorridos y paradas pendientes",
+    "vehicleCode": "VEH-0001",
+    "plate": "PCB-2214",
+    "kmIntoRoute": 50,
+    "lat": -0.28391,
+    "lon": -78.55291,
+    "radiusKm": 0.3,
+    "isSynthetic": true,
+    "basadoEn": "Caso planteado por el equipo; la calle existe (OSM w267622146)."
+  },
+  "accidente-simon-bolivar-san-martin": {
+    "kind": "Accidente",
+    "severity": "ALTA",
+    "slowdownFactor": 0.5,
+    "description": "Camioneta se impacta contra un árbol en la Av. Simón Bolívar, sector San Martín (sur); AMT cierra el carril derecho sentido norte-sur",
+    "lat": -0.30201,
+    "lon": -78.52142,
+    "radiusKm": 0.8,
+    "isSynthetic": true,
+    "basadoEn": "El Diario, 30-mar-2026: https://www.eldiario.ec/seguridad/alerta-vial-en-el-sur-de-quito-choque-contra-un-arbol-provoca-cierres-y-deja-dos-heridos-30032026/"
+  },
+  "accidente-redondel-zambiza": {
+    "kind": "Accidente",
+    "severity": "MEDIA",
+    "slowdownFactor": 0.4,
+    "description": "Choque en el Redondel de Zámbiza (Av. Simón Bolívar), uno de los cinco puntos críticos de siniestros",
+    "lat": -0.15036,
+    "lon": -78.45244,
+    "radiusKm": 0.8,
+    "isSynthetic": true,
+    "basadoEn": "Primicias, puntos críticos de la Av. Simón Bolívar según la AMT: https://primicias.ec/noticias/quito/avenida-simon-bolivar-problemas-vias"
+  },
+  "manifestacion-centro-historico": {
+    "kind": "Manifestacion",
+    "severity": "ALTA",
+    "slowdownFactor": 0.3,
+    "description": "Marcha desde la Av. 10 de Agosto y Bogotá hacia la Plaza Grande; cierres en Guayaquil, Flores y Montúfar",
+    "lat": -0.21951,
+    "lon": -78.51196,
+    "radiusKm": 1.0,
+    "isSynthetic": true,
+    "basadoEn": "Extra, movilización del 13-mar-2026: https://www.extra.ec/noticia/quito/marchas-quito-hoy-vias-afectadas-movilizaciones-viernes-148978.html"
+  },
+  "inundacion-24-de-mayo": {
+    "kind": "BloqueoVial",
+    "severity": "ALTA",
+    "description": "Acumulación de agua por lluvia en la Av. Maldonado y Av. 24 de Mayo; la AMT cierra el paso",
+    "lat": -0.22319,
+    "lon": -78.51642,
+    "radiusKm": 0.4,
+    "isSynthetic": true,
+    "basadoEn": "Extra, lluvias del 6-mar-2026: https://www.extra.ec/noticia/quito/lluvias-tormentas-quito-desvios-cierres-viales-viernes-148474.html"
+  },
+  "congestion-hora-pico-maldonado": {
+    "kind": "Congestion",
+    "severity": "MEDIA",
+    "slowdownFactor": 0.64,
+    "description": "Hora pico en la Av. Pedro Vicente Maldonado, salida de la Bodega Central Sur: 16 km/h frente a 25 km/h fuera de pico",
+    "lat": -0.31888,
+    "lon": -78.54932,
+    "radiusKm": 1.2,
+    "isSynthetic": true,
+    "basadoEn": "Primicias, Secretaría de Movilidad (16 km/h en hora pico, 25 km/h fuera): https://www.primicias.ec/noticias/sociedad/quito-hoy-no-circula-multas"
+  }
+}
