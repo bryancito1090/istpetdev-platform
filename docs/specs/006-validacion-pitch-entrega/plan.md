@@ -83,7 +83,7 @@ Una caída no detiene el cronómetro: cada operador pasa al siguiente hito dentr
 
 1. Kit y auditoría de afirmaciones en paralelo con ejecución de 001–005. La revisión de 15 min la hacen integrantes identificados en el registro.
 2. En 16-oct pausas, entrevistas. Tras la ficha final, actualizar guion y registrar diferencias frente a `pre-evento`.
-3. El 17-oct 11:00–12:30, prototipo con expositores y corrida final verificada en máquina dedicada; enlazar evidencia.
+3. El 17-oct 11:30–13:15 (Validación integral; agenda oficial), prototipo con expositores y corrida final verificada en máquina dedicada; enlazar evidencia.
 4. Antes de 15:00, cerrar o retirar todos los huecos del discurso. Entre 15:00 y 15:45, terminar racha de ensayos y congelar. La planificación inicial de tres ensayos antes del evento, uno de día 1, dos de noche, tres de día 2 y dos finales suma once oportunidades; solo cuentan diez **consecutivas completas sin fallo**. Si no alcanza el tiempo, reportar CE-04 pendiente y priorizar ensayo del corte oficial.
 
 ### Bloque de ensayos del 15-oct (revisión del 12-oct)
