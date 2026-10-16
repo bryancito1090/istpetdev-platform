@@ -663,3 +663,9 @@ Fuente: revisión solicitada por Bryan al reiterar la charla y pedir eliminar su
 Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inventario/rutas. Por instrucción expresa de Bryan se elimina su ficha personal de NotasEvento y se retiran las referencias activas; la charla y sus fuentes permanecen. Se conservan los registros históricos de su alta y limpieza, con referencias en texto. No cambia software, contrato, baseline, umbral ni estado de implementación; no se despliega.
 
 Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
+
+## 16-oct-2026 — Hora límite para puntos críticos en el planificador (issue #193)
+
+Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-24 y la tarea T14. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
+
+Verificación documental: **102 notas Markdown**, **1094 enlaces internos resueltos**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.

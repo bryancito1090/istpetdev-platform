@@ -34,7 +34,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/consumptions                    | Registrar uso de insumo                 |
 | GET /api/v1/risks                            | Riesgos con cálculo                     |
 | POST /api/v1/replenishment-requests          | Solicitar cantidad y fecha              |
-| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono |
+| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono; `criticalDeadlineLocal` opcional (#193) |
 | GET /api/v1/jobs/{id}                        | Estado y resultado de trabajo           |
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
@@ -182,3 +182,13 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; con cualquier `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
+
+## Hora límite para puntos críticos en `POST /api/v1/route-plans` (#193 — 16 de octubre de 2026)
+
+Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya decidía quién entra al camión, pero no a qué hora llega.
+
+- **Campo nuevo, opcional:** `criticalDeadlineLocal` en el cuerpo (`"HH:mm"`, p. ej. `"11:00"`, hora local). Si se omite o es `null`, el plan es el mismo de antes.
+- **A quién aplica:** a las paradas con riesgo `CRITICO` o con criticidad del punto `alta`. Su fin de ventana pasa a ser el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. Las demás paradas conservan su ventana.
+- **Resultado:** la parada crítica llega antes de la hora límite o queda en `unserved` con motivo `time_window`; no hay motivo nuevo.
+- **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
+- **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.

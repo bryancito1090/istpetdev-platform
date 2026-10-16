@@ -139,6 +139,7 @@
 | FR-16–FR-18 | T6–T7 | `AutonomyPolicyTests`, `ReplanningTests`, E2E-03/04 |
 | FR-19–FR-20 | T1, T6 | `FactsTests`, `ExplanationTemplatesTests`, E2E-01/03 |
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
+| FR-24 | T14 | `RoutePlannerTests`, `RoutePlanningTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -405,3 +406,32 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 **Verificación:**
 - Backend: 519 de 520. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 78 de 78; lint y `build:web` sin errores.
+
+### T14 — Hora límite para puntos críticos (#193, 16-oct)
+
+**Por qué:** la prioridad decidía quién entra al camión, pero no a qué hora llega. Un hospital crítico podía quedar como última parada. Es la pregunta que el sector dejó abierta en la charla del 16-oct (AMP-01).
+
+**Regla (FR-24):** `PlanRequest.CriticalDeadlineLocal` es opcional (`"HH:mm"`). Una parada es crítica si su riesgo es `CRITICO` o la criticidad del punto es `alta`. Su fin de ventana es el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. `RouteFeasibility` no cambia: ya rechaza con `time_window` las llegadas fuera de ventana.
+
+**Fuera de alcance:** replanificar (`ReplanAsync`) no recibe hora límite; el selector en la página Rutas y la comparación de costos (AMP-02) van en otros issues.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `PlanModels.cs` | Application | Campo opcional `CriticalDeadlineLocal` en `PlanRequest` | Recibir la hora límite sin romper llamadas existentes | Plan sin el campo | Hecho |
+| `RoutePlanner.cs` | Application | `ParseCriticalDeadline` y `ApplyCriticalDeadline` al crear cada `StopCandidate` | Recortar solo la ventana de los críticos | Plan con `"11:00"` | Hecho |
+| `RoutePlansController.cs` | API | Hora mal formada → 400 `invalid_critical_deadline` | Era un 500 por error del cliente | `"once"` | Hecho |
+| `RoutePlannerTests.cs` | Pruebas | Recorte, ventana que termina antes, ventana que empieza después, no crítico, sin límite, formato, `time_window` | Regla aislada | — | Pasan |
+| `RoutePlanningTests.cs` | Pruebas | Crítico llega antes de las 11:00; con jornada 10:00 y límite 10:00 el crítico queda `time_window` y el no crítico sigue en ruta | Regla con base real (PostGIS) | — | Pasan |
+
+**Escenarios de prueba:**
+
+| Escenario | Esperado | Estado |
+|---|---|---|
+| Sin `criticalDeadlineLocal` | El plan del fixture no cambia (prueba determinista existente) | Pasa |
+| Crítico con límite `"11:00"` y jornada 07:00 | HOS-01 llega antes de las 11:00, sin retraso | Pasa |
+| Crítico con límite `"10:00"` y jornada 10:00 | HOS-01 en `unserved` con `time_window` | Pasa |
+| No crítico (riesgo `ALTO`, criticidad `media`) con el mismo límite | HOS-02 conserva 08:00–17:00 y sigue en la ruta tras las 10:00 | Pasa |
+| Ventana del punto que empieza después del límite | Se respeta la ventana del punto | Pasa (unitaria) |
+| Valor `"once"` | `ArgumentException` en el motor; 400 en la API | Pasa la unitaria; el 400 no tiene prueba HTTP |
+
+**Verificación:** `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RoutePlanner|FullyQualifiedName~RoutePlanning"` → 20 de 20.

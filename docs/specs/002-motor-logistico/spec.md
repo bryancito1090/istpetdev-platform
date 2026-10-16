@@ -120,6 +120,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | FR-21 | DEBE existir el fixture `data/fixtures/demo-region` (≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos, 3 SKUs, tramos viales precalculados e incidentes predefinidos) y un script que regenera sus tramos con OSRM. | Dataset y escenarios, D6 |
 | FR-22 | `POST /api/v1/demo/incidents` DEBE disparar un incidente predefinido del fixture por su nombre, solo con `Demo:Enabled=true`. | Contratos API y eventos |
 | FR-23 | `GET /api/v1/route-plans` DEBE listar planes del día de forma paginada, filtrable por vehículo y estado, con revisión vigente, para que el panel 005 descubra IDs sin fijarlos en código; la respuesta no crea propuestas. Dueño: equipo 002; integrar antes de H4. | RF-07, spec 005 |
+| FR-24 | `POST /api/v1/route-plans` PUEDE recibir `criticalDeadlineLocal` (`HH:mm`, hora local). Las paradas críticas (riesgo `CRITICO` o criticidad del punto `alta`) toman como fin de ventana el mínimo entre la del punto y esa hora; si la ventana del punto empieza después, se respeta la del punto. Si no se llega a tiempo, quedan no atendidas con `time_window`. Sin el campo, el plan no cambia. (#193) | AMP-01 de Ampliacion de alcance - ideas del evento |
 
 ### No funcionales
 
@@ -141,7 +142,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | Método y ruta | Rol | Función |
 |---|---|---|
 | `GET /risks` | Cualquiera | Riesgos con entradas, nivel, cantidad sugerida y `facts` |
-| `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`) |
+| `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`); `criticalDeadlineLocal` opcional (FR-24) |
 | `GET /route-plans/{id}` | Cualquiera | Revisión con paradas, trazados, origen de distancias y `facts` |
 | `GET /route-plans` | Cualquiera | Lista paginada de planes del día, vehículo, estado y revisión vigente para el panel 005; no crea propuestas |
 | `POST /route-plans/{id}/publish` | Planificación | Crea entregas y reservas; idempotente |
