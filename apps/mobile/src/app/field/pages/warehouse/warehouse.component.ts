@@ -111,6 +111,12 @@ import { FIELD_API } from '../../field-api.interface';
                 <span class="text-slate-400">•</span>
                 <span class="font-mono text-[11px]">Versión {{ detail.version }}</span>
               </div>
+              <!-- #160: a qué vehículo y conductor va esta entrega -->
+              <div class="text-xs text-slate-700 mt-1" data-delivery-assignment>
+                Vehículo <strong>{{ detail.vehicleCode || '—' }}</strong> ·
+                Conductor <strong [class.text-rose-700]="!detail.driverName">{{ detail.driverName || 'sin asignar' }}</strong>
+                @if (detail.originWarehouseName) { · Sale de <strong>{{ detail.originWarehouseName }}</strong> }
+              </div>
             </ion-card-header>
 
             <ion-card-content class="p-4 space-y-4">

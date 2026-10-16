@@ -121,6 +121,17 @@ public sealed class RoutePlansController(
 
         var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
 
+        // #160: a qué bodega sale, con qué vehículo y qué conductor (de las entregas creadas al publicar).
+        var stopIdsOfPlan = stops.Select(s => s.Id).ToList();
+        var planDeliveries = await db.Deliveries.AsNoTracking()
+            .Where(d => d.RouteStopId.HasValue && stopIdsOfPlan.Contains(d.RouteStopId.Value))
+            .Select(d => new { d.OriginLocationId, d.AssignedAccountId })
+            .ToListAsync(ct);
+        var originId = planDeliveries.Select(d => (Guid?)d.OriginLocationId).FirstOrDefault() ?? vehicle?.DepotLocationId;
+        var origin = originId is { } oid ? await db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == oid, ct) : null;
+        var driverIds = planDeliveries.Where(d => d.AssignedAccountId.HasValue).Select(d => d.AssignedAccountId!.Value).Distinct().ToList();
+        var drivers = await db.Accounts.AsNoTracking().Where(a => driverIds.Contains(a.Id)).Select(a => new { a.Id, a.DisplayName }).ToListAsync(ct);
+
         var servicePointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
         var servicePoints = await db.ServicePoints
             .Where(sp => sp.OrganizationId == DemoOrganization.Id && servicePointIds.Contains(sp.Id))
@@ -152,6 +163,12 @@ public sealed class RoutePlansController(
             status = plan.Status,
             vehicleId = plan.VehicleId,
             vehicleCode = vehicle?.Code ?? "",
+            originWarehouseCode = origin?.Code ?? "",
+            originWarehouseName = origin?.Name ?? "",
+            driverAccountId = drivers.Count == 1 ? drivers[0].Id : (Guid?)null,
+            driverName = string.Join(", ", drivers.Select(d => d.DisplayName)),
+            deliveriesCount = planDeliveries.Count,
+            unassignedDeliveries = planDeliveries.Count(d => d.AssignedAccountId == null),
             totalKm = plan.TotalKm,
             totalDistanceKm = plan.TotalKm ?? 0m,
             totalMinutes = plan.TotalMinutes,
@@ -329,8 +346,41 @@ public sealed class RoutePlansController(
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
-        var res = await publisher.PublishAsync(request, ct);
-        return Ok(res);
+        try
+        {
+            var res = await publisher.PublishAsync(request, ct);
+            return Ok(res);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "invalid_driver", detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "publish_conflict", detail: ex.Message);
+        }
+    }
+
+    // #160: reasignar el conductor de una ruta ya publicada (entregas pendientes).
+    [HttpPut("{id:guid}/driver")]
+    [Authorize(Roles = Roles.Planning)]
+    public async Task<IActionResult> AssignDriver([FromRoute] Guid id, [FromBody] AssignDriverRequest req, CancellationToken ct = default)
+    {
+        try
+        {
+            var updated = await publisher.AssignDriverAsync(id, req.AccountId, ct);
+            return Ok(new { routePlanId = id, driverAccountId = req.AccountId, updatedDeliveries = updated });
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "invalid_driver", detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "assign_conflict", detail: ex.Message);
+        }
     }
 
     [HttpPost("{id:guid}/stops/{sequence:int}/complete")]
@@ -834,6 +884,8 @@ public sealed record EvaluateRouteRequest(
     Guid? VehicleId,
     DateTime? PlannedStartUtc
 );
+
+public sealed record AssignDriverRequest(Guid AccountId);
 
 public sealed record ConfirmRoutePlanRequest(
     string? Code,

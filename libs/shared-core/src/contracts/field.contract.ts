@@ -162,6 +162,8 @@ export interface MobileAssignmentRoute {
   totalDistanceKm?: number;
   estimatedDurationMinutes?: number;
   deliveries: MobileAssignmentDelivery[];
+  /** #160: bodega desde la que sale la ruta. */
+  originWarehouseName?: string | null;
 }
 
 export interface MobileAssignmentResponse {
@@ -219,6 +221,10 @@ export interface DeliveryDetailResponse {
   routePlanId: string;
   lines: DeliveryDetailLineDto[];
   handlingUnits: DeliveryDetailHandlingUnitDto[];
+  /** #160: vehículo y conductor al que va la entrega, y bodega de salida. */
+  vehicleCode?: string | null;
+  driverName?: string | null;
+  originWarehouseName?: string | null;
 }
 
 // ==========================================
