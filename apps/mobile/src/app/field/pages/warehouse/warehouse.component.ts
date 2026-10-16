@@ -1,16 +1,7 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonBadge,
-  IonSpinner
-} from '@ionic/angular/standalone';
+import { IonSpinner } from '@ionic/angular/standalone';
 import * as QRCode from 'qrcode';
 import {
   DeliveryListItem,
@@ -25,258 +16,236 @@ import { FIELD_API } from '../../field-api.interface';
   imports: [
     CommonModule,
     FormsModule,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardSubtitle,
-    IonCardContent,
-    IonButton,
-    IonBadge,
     IonSpinner
   ],
   template: `
     <div class="space-y-4">
       <!-- Encabezado Operativo de Bodega -->
-      <ion-card class="m-0 border border-sky-200 bg-white shadow-sm">
-        <ion-card-header class="pb-2 bg-sky-50 border-b border-sky-100">
-          <div class="flex items-center justify-between">
-            <div>
-              <ion-card-title class="text-base text-sky-950 font-bold">
-                Gestión de Bodega y Despacho Real
-              </ion-card-title>
-              <ion-card-subtitle class="text-xs text-sky-700">
-                Preparación de Bultos, Emisión QR y Custodia Digital (Spec 004)
-              </ion-card-subtitle>
-            </div>
-            <button
-              type="button"
-              (click)="loadDraftDeliveries()"
-              class="px-2.5 py-1 text-xs font-bold text-sky-700 bg-sky-100 hover:bg-sky-200 rounded-lg transition"
-              [disabled]="loadingDeliveries()">
-              @if (loadingDeliveries()) {
-                <ion-spinner name="crescent" class="w-3.5 h-3.5"></ion-spinner>
-              } @else {
-                ↻ Actualizar
-              }
-            </button>
+      <div class="driver-stop-card">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="stop-tag">Bodega y Despacho</span>
+            <h2 class="stop-title mt-1">Preparación y Custodia</h2>
+            <p class="stop-address">Preparación de bultos, emisión QR y custodia digital</p>
           </div>
-        </ion-card-header>
-      </ion-card>
+          <button
+            type="button"
+            (click)="loadDraftDeliveries()"
+            class="px-3 py-1.5 text-xs font-bold text-[#00A7C4] bg-sky-50 hover:bg-sky-100 rounded-lg transition"
+            [disabled]="loadingDeliveries()">
+            @if (loadingDeliveries()) {
+              <ion-spinner name="crescent" class="w-3.5 h-3.5"></ion-spinner>
+            } @else {
+              Actualizar
+            }
+          </button>
+        </div>
+      </div>
 
       <!-- Mensajes de Estado / Alertas -->
       @if (errorMessage()) {
-        <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-sm">
+        <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-xs">
           <div class="flex items-center gap-2">
-            <span class="font-bold">⚠️ Error:</span>
+            <span class="font-bold">Error:</span>
             <span>{{ errorMessage() }}</span>
           </div>
-          <button (click)="errorMessage.set(null)" class="text-rose-600 font-black text-sm">✕</button>
+          <button (click)="errorMessage.set(null)" class="text-rose-600 font-bold text-sm">✕</button>
         </div>
       }
 
       @if (successMessage()) {
-        <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-sm">
+        <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-start justify-between gap-2 shadow-xs">
           <div class="flex items-center gap-2">
-            <span class="font-bold">✅ Éxito:</span>
+            <span class="font-bold">Éxito:</span>
             <span>{{ successMessage() }}</span>
           </div>
-          <button (click)="successMessage.set(null)" class="text-emerald-600 font-black text-sm">✕</button>
+          <button (click)="successMessage.set(null)" class="text-emerald-600 font-bold text-sm">✕</button>
         </div>
       }
 
       <!-- VISTA 1: DETALLE DE ENTREGA SELECCIONADA -->
       @if (selectedDelivery(); as detail) {
         <div class="space-y-4">
-          <ion-card class="m-0 border border-slate-300 bg-white shadow-md">
-            <ion-card-header class="pb-2 bg-slate-50 border-b border-slate-200">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-mono font-bold text-slate-500 uppercase">
-                  Detalle de Entrega
+          <div class="driver-stop-card">
+            <div class="flex items-center justify-between mb-2">
+              <span class="stop-tag">Detalle de Entrega</span>
+              <button
+                type="button"
+                (click)="closeDetail()"
+                class="text-xs font-bold text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded bg-slate-100 transition">
+                ← Volver a lista
+              </button>
+            </div>
+
+            <h2 class="stop-title">
+              {{ detail.pointName }}
+            </h2>
+
+            <div class="flex items-center gap-2 text-xs text-slate-600 mb-2">
+              <span>Estado:</span>
+              <span class="status-badge">
+                {{ detail.status }}
+              </span>
+              <span class="text-slate-400">•</span>
+              <span class="font-mono text-[11px]">Versión {{ detail.version }}</span>
+            </div>
+
+            <!-- a qué vehículo y conductor va esta entrega -->
+            <div class="text-xs text-slate-700 pb-3 border-b border-slate-100" data-delivery-assignment>
+              Vehículo <strong>{{ detail.vehicleCode || '—' }}</strong> ·
+              Conductor <strong [class.text-rose-700]="!detail.driverName">{{ detail.driverName || 'sin asignar' }}</strong>
+              @if (detail.originWarehouseName) { · Sale de <strong>{{ detail.originWarehouseName }}</strong> }
+            </div>
+
+            <!-- Líneas planificadas con doble verificación de empaque (Checkbox) -->
+            <div class="stop-products-section">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="stop-products-title">
+                  Líneas de la Entrega (Productos y Lotes)
                 </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                        [class.bg-emerald-100]="allLinesVerified()"
+                        [class.text-emerald-800]="allLinesVerified()"
+                        [class.bg-amber-100]="!allLinesVerified()"
+                        [class.text-amber-800]="!allLinesVerified()">
+                    {{ verifiedLineIds().size }} / {{ detail.lines.length }} verificados
+                  </span>
+                  <button
+                    type="button"
+                    class="text-xs font-bold text-[#00A7C4] hover:underline"
+                    (click)="toggleVerifyAllLines()">
+                    {{ allLinesVerified() ? 'Desmarcar todos' : 'Verificar todos' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                @for (line of detail.lines; track line.deliveryLineId) {
+                  <div class="p-3 border rounded-xl flex items-center justify-between text-xs transition cursor-pointer select-none"
+                       [class.bg-emerald-50]="isLineVerified(line.deliveryLineId)"
+                       [class.border-emerald-200]="isLineVerified(line.deliveryLineId)"
+                       [class.bg-slate-50]="!isLineVerified(line.deliveryLineId)"
+                       [class.border-slate-200]="!isLineVerified(line.deliveryLineId)"
+                       (click)="toggleLineVerify(line.deliveryLineId)">
+                    <div class="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                        [checked]="isLineVerified(line.deliveryLineId)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleLineVerify(line.deliveryLineId)" />
+                      <div>
+                        <span class="font-bold text-slate-900 block" [class.line-through]="isLineVerified(line.deliveryLineId)">
+                          {{ line.productName }}
+                        </span>
+                        <span class="text-[11px] text-slate-500 font-mono">
+                          SKU: {{ line.sku }} · <strong class="text-slate-700">Lote: {{ line.lotCode }}</strong>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <span class="product-qty block mb-1">
+                        {{ line.plannedQuantity }} {{ line.unit }}
+                      </span>
+                      <span class="text-[10px] font-bold"
+                            [class.text-emerald-700]="isLineVerified(line.deliveryLineId)"
+                            [class.text-slate-400]="!isLineVerified(line.deliveryLineId)">
+                        {{ isLineVerified(line.deliveryLineId) ? 'Verificado' : 'Pendiente' }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Bultos ya creados -->
+            @if (detail.handlingUnits.length > 0) {
+              <div class="mb-3">
+                <span class="stop-products-title">
+                  Bultos Creados en esta Entrega ({{ detail.handlingUnits.length }})
+                </span>
+                <div class="space-y-1.5">
+                  @for (hu of detail.handlingUnits; track hu.handlingUnitId) {
+                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono font-bold text-slate-900">{{ hu.code }}</span>
+                        <span class="status-badge">
+                          {{ hu.status }}
+                        </span>
+                      </div>
+                      <span class="text-[10px] text-slate-400 font-mono">{{ hu.handlingUnitId.slice(0, 8) }}...</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Acciones: Preparar bulto o Despachar -->
+            <div class="pt-2 space-y-2">
+              @if (detail.status === 'Draft' || detail.handlingUnits.length === 0) {
+                @if (!allLinesVerified() && detail.lines.length > 0) {
+                  <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950">
+                    Doble verificación requerida: chequea físicamente todos los productos y lotes antes de preparar el bulto.
+                  </div>
+                }
                 <button
                   type="button"
-                  (click)="closeDetail()"
-                  class="text-xs font-bold text-slate-500 hover:text-slate-800 px-2 py-0.5 rounded bg-slate-200">
-                  ← Volver a lista
-                </button>
-              </div>
-              <ion-card-title class="text-base font-bold text-slate-900">
-                {{ detail.pointName }}
-              </ion-card-title>
-              <div class="flex items-center gap-2 text-xs text-slate-600">
-                <span>Estado:</span>
-                <ion-badge [color]="detail.status === 'Draft' ? 'warning' : 'primary'">
-                  {{ detail.status }}
-                </ion-badge>
-                <span class="text-slate-400">•</span>
-                <span class="font-mono text-[11px]">Versión {{ detail.version }}</span>
-              </div>
-              <!-- #160: a qué vehículo y conductor va esta entrega -->
-              <div class="text-xs text-slate-700 mt-1" data-delivery-assignment>
-                Vehículo <strong>{{ detail.vehicleCode || '—' }}</strong> ·
-                Conductor <strong [class.text-rose-700]="!detail.driverName">{{ detail.driverName || 'sin asignar' }}</strong>
-                @if (detail.originWarehouseName) { · Sale de <strong>{{ detail.originWarehouseName }}</strong> }
-              </div>
-            </ion-card-header>
-
-            <ion-card-content class="p-4 space-y-4">
-              <!-- Líneas planificadas con doble verificación de empaque (Checkbox) -->
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Líneas de la Entrega (Productos y Lotes)
-                  </h4>
-                  <div class="flex items-center gap-2">
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                          [class.bg-emerald-100]="allLinesVerified()"
-                          [class.text-emerald-800]="allLinesVerified()"
-                          [class.bg-amber-100]="!allLinesVerified()"
-                          [class.text-amber-800]="!allLinesVerified()">
-                      {{ verifiedLineIds().size }} / {{ detail.lines.length }} verificados
-                    </span>
-                    <button
-                      type="button"
-                      class="text-xs font-bold text-sky-700 hover:text-sky-900 underline"
-                      (click)="toggleVerifyAllLines()">
-                      {{ allLinesVerified() ? 'Desmarcar todos' : 'Verificar todos' }}
-                    </button>
-                  </div>
-                </div>
-
-                <div class="space-y-2">
-                  @for (line of detail.lines; track line.deliveryLineId) {
-                    <div class="p-3 border rounded-xl flex items-center justify-between text-xs transition cursor-pointer select-none"
-                         [class.bg-emerald-50]="isLineVerified(line.deliveryLineId)"
-                         [class.border-emerald-300]="isLineVerified(line.deliveryLineId)"
-                         [class.bg-slate-50]="!isLineVerified(line.deliveryLineId)"
-                         [class.border-slate-200]="!isLineVerified(line.deliveryLineId)"
-                         (click)="toggleLineVerify(line.deliveryLineId)">
-                      <div class="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                          [checked]="isLineVerified(line.deliveryLineId)"
-                          (click)="$event.stopPropagation()"
-                          (change)="toggleLineVerify(line.deliveryLineId)" />
-                        <div>
-                          <span class="font-bold text-slate-900 block" [class.line-through]="isLineVerified(line.deliveryLineId)">
-                            {{ line.productName }}
-                          </span>
-                          <span class="text-[11px] text-slate-500 font-mono">
-                            SKU: {{ line.sku }} • <strong class="text-sky-800">Lote: {{ line.lotCode }}</strong>
-                          </span>
-                        </div>
-                      </div>
-                      <div class="text-right">
-                        <span class="text-sm font-black block"
-                              [class.text-emerald-800]="isLineVerified(line.deliveryLineId)"
-                              [class.text-slate-800]="!isLineVerified(line.deliveryLineId)">
-                          {{ line.plannedQuantity }} {{ line.unit }}
-                        </span>
-                        <span class="text-[10px] text-slate-400">
-                          {{ isLineVerified(line.deliveryLineId) ? '✓ Verificado' : 'Pendiente' }}
-                        </span>
-                      </div>
-                    </div>
+                  class="stop-action-btn"
+                  [disabled]="preparing() || (!allLinesVerified() && detail.lines.length > 0)"
+                  (click)="createHandlingUnit(detail)">
+                  @if (preparing()) {
+                    <ion-spinner name="crescent" class="mr-2"></ion-spinner>
+                    Preparando Bulto...
+                  } @else {
+                    Preparar Bulto con Todas las Líneas
                   }
-                </div>
-              </div>
-
-              <!-- Bultos ya creados -->
-              @if (detail.handlingUnits.length > 0) {
-                <div>
-                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                    Bultos Creados en esta Entrega ({{ detail.handlingUnits.length }})
-                  </h4>
-                  <div class="space-y-1.5">
-                    @for (hu of detail.handlingUnits; track hu.handlingUnitId) {
-                      <div class="p-2 bg-sky-50 border border-sky-200 rounded-lg flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                          <span class="font-mono font-bold text-sky-900">{{ hu.code }}</span>
-                          <span class="text-[10px] bg-sky-200 text-sky-800 px-1.5 py-0.5 rounded font-bold">
-                            {{ hu.status }}
-                          </span>
-                        </div>
-                        <span class="text-[10px] text-slate-400 font-mono">{{ hu.handlingUnitId.slice(0, 8) }}...</span>
-                      </div>
-                    }
-                  </div>
-                </div>
+                </button>
               }
 
-              <!-- Acciones: Preparar bulto o Despachar -->
-              <div class="pt-2 border-t border-slate-200 space-y-2">
-                @if (detail.status === 'Draft' || detail.handlingUnits.length === 0) {
-                  @if (!allLinesVerified() && detail.lines.length > 0) {
-                    <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-950 flex items-center gap-2">
-                      <span class="text-amber-700 font-bold text-sm">⚠️</span>
-                      <span>Doble verificación requerida: chequea físicamente todos los productos y lotes antes de preparar el bulto.</span>
-                    </div>
+              @if (detail.handlingUnits.length > 0 || createdHandlingUnit()) {
+                <button
+                  type="button"
+                  class="stop-action-btn bg-emerald-700 hover:bg-emerald-800"
+                  [disabled]="dispatching()"
+                  (click)="dispatchToVehicle(detail)">
+                  @if (dispatching()) {
+                    <ion-spinner name="crescent" class="mr-2"></ion-spinner>
+                    Despachando...
+                  } @else {
+                    Despachar al Vehículo
                   }
-                  <ion-button
-                    expand="block"
-                    size="default"
-                    color="primary"
-                    class="font-bold"
-                    [disabled]="preparing() || (!allLinesVerified() && detail.lines.length > 0)"
-                    (click)="createHandlingUnit(detail)">
-                    @if (preparing()) {
-                      <ion-spinner name="crescent" class="mr-2"></ion-spinner>
-                      Preparando Bulto...
-                    } @else {
-                      📦 Preparar Bulto con Todas las Líneas
-                    }
-                  </ion-button>
-                }
-
-                @if (detail.handlingUnits.length > 0 || createdHandlingUnit()) {
-                  <ion-button
-                    expand="block"
-                    size="default"
-                    color="success"
-                    class="font-bold"
-                    [disabled]="dispatching()"
-                    (click)="dispatchToVehicle(detail)">
-                    @if (dispatching()) {
-                      <ion-spinner name="crescent" class="mr-2"></ion-spinner>
-                      Despachando...
-                    } @else {
-                      🚚 Despachar al Vehículo
-                    }
-                  </ion-button>
-                }
-              </div>
-            </ion-card-content>
-          </ion-card>
+                </button>
+              }
+            </div>
+          </div>
 
           <!-- Bulto recién creado con QR para impresión -->
           @if (createdHandlingUnit(); as created) {
-            <ion-card class="m-0 border-2 border-teal-500 bg-white shadow-lg overflow-hidden printable-label">
-              <div class="p-3 bg-teal-600 text-white flex items-center justify-between">
+            <div class="driver-stop-card printable-label overflow-hidden">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
-                  <span class="text-[10px] uppercase tracking-wider font-bold block text-teal-100">
-                    Bulto Preparado con Éxito (Spec 004)
-                  </span>
-                  <h3 class="text-base font-black font-mono">
+                  <span class="stop-tag">Bulto Preparado</span>
+                  <h3 class="stop-title font-mono mt-0.5">
                     {{ created.hu.code }}
                   </h3>
                 </div>
                 <button
                   type="button"
                   (click)="printLabel()"
-                  class="px-3 py-1.5 bg-white text-teal-900 rounded-lg text-xs font-bold shadow hover:bg-teal-50 transition flex items-center gap-1">
-                  🖨️ Imprimir
+                  class="px-3 py-1.5 bg-[#00A7C4] text-white rounded-lg text-xs font-bold hover:bg-[#008CA5] transition">
+                  Imprimir etiqueta
                 </button>
               </div>
-              <!-- El token #t= solo llega al crear el bulto: no se puede reimprimir después -->
-              <div class="print-hide px-3 py-2 bg-amber-100 text-amber-900 text-xs font-bold border-b border-amber-300">
-                ⚠️ Imprime ahora: este QR no se puede volver a mostrar
+
+              <div class="print-hide p-2.5 bg-amber-50 text-amber-900 text-xs font-medium border border-amber-200 rounded-lg my-3">
+                Imprime ahora: este QR no se puede volver a mostrar
               </div>
 
-              <ion-card-content class="p-4 space-y-3">
+              <div class="space-y-3 pt-1">
                 <div class="flex flex-col sm:flex-row items-center gap-4">
                   <!-- QR Code Dibujado -->
-                  <div class="shrink-0 p-2 bg-white border-2 border-slate-300 rounded-xl shadow-inner text-center">
+                  <div class="shrink-0 p-3 bg-white border border-slate-200 rounded-xl text-center shadow-xs">
                     <img
                       [src]="created.qrDataUrl"
                       alt="Código QR de Custodia"
@@ -289,34 +258,34 @@ import { FIELD_API } from '../../field-api.interface';
                   <!-- Datos de la Etiqueta -->
                   <div class="flex-1 space-y-2 text-xs w-full">
                     <div>
-                      <span class="text-[11px] text-slate-500 font-bold uppercase block">Destino</span>
-                      <span class="font-black text-slate-900 text-sm block">{{ detail.pointName }}</span>
+                      <span class="stop-products-title">Destino</span>
+                      <span class="font-bold text-slate-900 text-sm block">{{ detail.pointName }}</span>
                     </div>
 
                     <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                      <span class="text-[10px] text-slate-500 font-bold uppercase block">Contenido del Bulto</span>
+                      <span class="stop-products-title">Contenido del Bulto</span>
                       @for (l of created.hu.lines; track l.deliveryLineId) {
-                        <div class="flex justify-between items-center text-xs">
+                        <div class="flex justify-between items-center text-xs py-0.5">
                           <span class="font-semibold text-slate-800">{{ l.sku }}</span>
-                          <span class="font-bold text-slate-900">{{ l.quantity }} {{ l.unit }}</span>
+                          <span class="product-qty">{{ l.quantity }} {{ l.unit }}</span>
                         </div>
                       }
                     </div>
 
-                    <div class="text-[11px] text-slate-500">
+                    <div class="text-[11px] text-slate-500 pt-1">
                       <span>URL de Traza Pública:</span>
-                      <a [href]="created.hu.labelUrl" target="_blank" class="text-teal-700 font-mono block break-all underline">
+                      <a [href]="created.hu.labelUrl" target="_blank" class="text-[#00A7C4] font-mono block break-all underline mt-0.5">
                         {{ created.hu.labelUrl }}
                       </a>
                     </div>
                   </div>
                 </div>
 
-                <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 leading-relaxed">
-                  ⚠️ <strong>Aviso de Seguridad:</strong> El token de custodia solo se emite en esta respuesta de preparación. Imprima o adhiera la etiqueta antes de cerrar.
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 leading-relaxed">
+                  <strong>Aviso de Seguridad:</strong> El token de custodia solo se emite en esta respuesta de preparación. Imprima o adhiera la etiqueta antes de cerrar.
                 </div>
-              </ion-card-content>
-            </ion-card>
+              </div>
+            </div>
           }
         </div>
       }
@@ -325,10 +294,10 @@ import { FIELD_API } from '../../field-api.interface';
       @else {
         <div class="space-y-3">
           <div class="flex items-center justify-between px-1">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-600">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
               Entregas por Preparar
             </span>
-            <span class="text-[11px] text-slate-500 font-bold">
+            <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
               {{ draftDeliveries().length }} pendientes
             </span>
           </div>
@@ -339,47 +308,41 @@ import { FIELD_API } from '../../field-api.interface';
               <p class="text-xs text-slate-500 mt-2 font-medium">Cargando entregas desde la API...</p>
             </div>
           } @else if (draftDeliveries().length === 0) {
-            <ion-card class="m-0 border border-dashed border-slate-300 bg-white">
-              <ion-card-content class="text-center py-10 space-y-2">
-                <span class="text-3xl block">📦</span>
-                <p class="text-sm font-bold text-slate-700">No hay entregas por preparar</p>
-                <p class="text-xs text-slate-500">
-                  Las rutas publicadas con entregas en estado borrador aparecerán aquí.
-                </p>
-                <ion-button size="small" fill="outline" class="mt-2 font-bold" (click)="loadDraftDeliveries()">
-                  Verificar Nuevamente
-                </ion-button>
-              </ion-card-content>
-            </ion-card>
+            <div class="driver-stop-card text-center py-8">
+              <p class="text-sm font-bold text-slate-700">No hay entregas por preparar</p>
+              <p class="text-xs text-slate-500 mt-1 mb-3">
+                Las rutas publicadas con entregas en estado borrador aparecerán aquí.
+              </p>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-bold text-[#00A7C4] bg-sky-50 hover:bg-sky-100 rounded-lg transition"
+                (click)="loadDraftDeliveries()">
+                Verificar Nuevamente
+              </button>
+            </div>
           } @else {
             <div class="space-y-2">
               @for (del of draftDeliveries(); track del.deliveryId) {
-                <ion-card
-                  class="m-0 border border-slate-200 hover:border-sky-300 shadow-sm bg-white cursor-pointer transition active:scale-[0.99]"
+                <div
+                  class="driver-stop-card cursor-pointer hover:border-slate-300 transition"
                   (click)="selectDelivery(del)">
-                  <ion-card-header class="pb-2">
-                    <div class="flex items-center justify-between">
-                      <ion-badge color="warning">
-                        {{ del.status }}
-                      </ion-badge>
-                      <span class="text-[11px] text-slate-400 font-mono">
-                        {{ del.pointCode }}
-                      </span>
-                    </div>
-                    <ion-card-title class="text-sm font-bold text-slate-900 mt-1">
-                      {{ del.pointName }}
-                    </ion-card-title>
-                    <ion-card-subtitle class="text-xs text-slate-500">
-                      Fecha: {{ formatDate(del.dueAtUtc) }} • Bultos HU: {{ del.packagesCount }}
-                    </ion-card-subtitle>
-                  </ion-card-header>
-                  <ion-card-content class="pt-0">
-                    <div class="flex items-center justify-between text-xs text-sky-700 font-bold pt-1 border-t border-slate-100">
-                      <span>Ver líneas y preparar bulto</span>
-                      <span>→</span>
-                    </div>
-                  </ion-card-content>
-                </ion-card>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="stop-tag">Punto de distribución · {{ del.pointCode }}</span>
+                    <span class="status-badge">
+                      {{ del.status }}
+                    </span>
+                  </div>
+                  <h2 class="stop-title">
+                    {{ del.pointName }}
+                  </h2>
+                  <p class="stop-address">
+                    Fecha: {{ formatDate(del.dueAtUtc) }} · Bultos HU: {{ del.packagesCount }}
+                  </p>
+                  <div class="flex items-center justify-between text-xs text-[#00A7C4] font-bold pt-2 border-t border-slate-100">
+                    <span>Ver líneas y preparar bulto</span>
+                    <span>→</span>
+                  </div>
+                </div>
               }
             </div>
           }
@@ -388,6 +351,119 @@ import { FIELD_API } from '../../field-api.interface';
     </div>
   `,
   styles: [`
+    .driver-stop-card {
+      background: #ffffff;
+      border: 1px solid #E3E8EF;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .stop-tag {
+      font-size: 11px;
+      font-weight: 750;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .status-badge.is-done {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .stop-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0A2540;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+
+    .stop-address {
+      font-size: 12px;
+      color: #64748B;
+      margin: 0 0 12px;
+      line-height: 1.35;
+    }
+
+    .stop-products-section {
+      padding: 10px 0;
+      border-top: 1px solid #F1F5F9;
+      border-bottom: 1px solid #F1F5F9;
+      margin-bottom: 12px;
+    }
+
+    .stop-products-title {
+      display: block;
+      font-size: 11px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      padding: 3px 0;
+    }
+
+    .product-name {
+      color: #1E293B;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .product-qty {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 750;
+      color: #0A2540;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stop-action-btn {
+      width: 100%;
+      padding: 10px 16px;
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .stop-action-btn:hover {
+      background: #008CA5;
+    }
+
+    .stop-action-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
+    }
+
     @media print {
       :host {
         display: block;

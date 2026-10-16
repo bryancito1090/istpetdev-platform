@@ -5,8 +5,6 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   IonContent,
-  IonButton,
-  IonInput,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
@@ -27,8 +25,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     CommonModule,
     FormsModule,
     IonContent,
-    IonButton,
-    IonInput,
     WarehouseComponent
   ],
   template: `
@@ -134,124 +130,178 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
       @if (authService.currentRole() === 'Receptor') {
-        <div class="stripe-card mb-4">
-          <div class="stripe-card-header pb-2">
-            <span class="card-title-text">Recibir insumos</span>
+        <div class="driver-stop-card mb-4">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="stop-tag">Recepción de Insumos</span>
+            <span class="status-badge">Punto de distribución</span>
           </div>
-          <div class="space-y-4 pt-1">
-            <ion-button expand="block" (click)="openReceiverScan()" class="stripe-action-btn">
+          <h2 class="stop-title">Recepción y Validación</h2>
+          <p class="stop-address">Escanea el código QR del bulto o ingresa el enlace de custodia recibido.</p>
+
+          <div class="space-y-3 pt-2">
+            <button type="button" class="stop-action-btn" (click)="openReceiverScan()">
               Escanear QR con cámara
-            </ion-button>
-            <label class="block text-xs font-semibold text-slate-700">Enlace completo del QR
-              <ion-input [(ngModel)]="qrInputText" placeholder="Pega el enlace del bulto"></ion-input>
-            </label>
-            <ion-button (click)="searchReceiverUnit()" [disabled]="receiverLoading()" class="stripe-action-btn-secondary">
-              Buscar bulto
-            </ion-button>
-            @if (receiverError()) { <p role="alert" class="text-xs text-rose-700 font-semibold">{{ receiverError() }}</p> }
-            @if (receiverCached()) {
-              <p class="text-xs text-amber-800">Última consulta guardada. La recepción se validará al recuperar señal.</p>
-            }
-            @if (receiverActiveBox(); as box) {
-              <h2 class="font-bold">{{ box.code }} · {{ box.destinationName }}</h2>
-              <p class="text-xs text-slate-600">
-                Recepción por <strong>entrega completa</strong>: {{ box.boxes.length }} bulto(s)
-                ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma todas las líneas enviadas.
-              </p>
-              <div class="flex items-center justify-between pt-1">
-                <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Líneas a Recibir (Doble Validación)</span>
-                <button type="button" class="text-xs font-bold text-sky-700 hover:text-sky-900 underline"
-                        (click)="markAllReceiverLinesConform(true)">
-                  ✓ Marcar todos conformes
-                </button>
-              </div>
+            </button>
 
-              @for (line of receiverLines; track line.deliveryLineId) {
-                <div class="space-y-3 rounded-xl border p-3 transition select-none"
-                     [class.bg-emerald-50]="line.isConform !== false"
-                     [class.border-emerald-300]="line.isConform !== false"
-                     [class.bg-slate-50]="line.isConform === false"
-                     [class.border-slate-200]="line.isConform === false">
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-start gap-2.5">
-                      <input type="checkbox"
-                             class="mt-1 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                             [checked]="line.isConform !== false"
-                             (change)="line.isConform = !line.isConform; onConformToggle(line)" />
-                      <div>
-                        <h3 class="font-bold text-sm text-slate-900">{{ line.productName }}</h3>
-                        <p class="text-xs text-slate-600 font-mono">
-                          Lote: <strong class="text-sky-800">{{ line.lotCode }}</strong> · Enviadas: <strong>{{ line.quantity }} {{ line.unit }}</strong>
-                        </p>
-                      </div>
-                    </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded"
-                          [class.bg-emerald-200]="line.isConform !== false"
-                          [class.text-emerald-900]="line.isConform !== false"
-                          [class.bg-amber-200]="line.isConform === false"
-                          [class.text-amber-900]="line.isConform === false">
-                      {{ line.isConform !== false ? '✓ Conforme' : 'Con Novedad' }}
-                    </span>
-                  </div>
-
-                  @if (line.isConform === false) {
-                    <div class="pt-2 border-t border-slate-200 space-y-2">
-                      <label class="block text-xs font-bold text-slate-700">Cantidad aceptada
-                        <input class="w-full border rounded p-2 text-sm mt-1" type="number" min="0" [max]="line.quantity" step="0.001"
-                          [(ngModel)]="line.quantityAccepted" />
-                      </label>
-                      <p class="text-xs text-rose-700 font-semibold">Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
-                      @if (line.quantityAccepted < line.quantity) {
-                        <label class="block text-xs font-bold text-slate-700">Motivo del rechazo *
-                          <select class="w-full border rounded p-2 text-sm mt-1" [(ngModel)]="line.rejectionReason">
-                            <option value="">Selecciona un motivo</option>
-                            @for (reason of receiverReasons; track reason.code) {
-                              <option [value]="reason.code">{{ reason.label }}</option>
-                            }
-                          </select>
-                        </label>
-                      }
-                    </div>
-                  }
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-xs">
-                    <label class="block text-slate-600">Stock en percha antes de recibir ({{ line.unit }})
-                      <input class="w-full border rounded p-1.5 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
-                    </label>
-                    <label class="block text-slate-600">Solicitado para reabastecimiento ({{ line.unit }})
-                      <input class="w-full border rounded p-1.5 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
-                    </label>
-                  </div>
-                </div>
-              }
-              <label class="block">Foto de la novedad (obligatoria si rechazas unidades)
-                <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" (change)="onReceiverPhoto($event)" />
+            <div class="space-y-1.5 pt-2 border-t border-slate-100">
+              <label class="block text-xs font-semibold text-slate-700">Enlace o código de bulto:
+                <input
+                  type="text"
+                  [(ngModel)]="qrInputText"
+                  placeholder="Pega el enlace del bulto o UUID"
+                  class="w-full mt-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-[#00A7C4]" />
               </label>
-              @if (receiverPhoto(); as photo) { <p>Foto adjunta: {{ photo.name }}</p> }
-              <ion-button expand="block" color="success" (click)="confirmReceiverAction()"
-                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
-                Guardar recepción de la entrega completa
-              </ion-button>
+              <button
+                type="button"
+                (click)="searchReceiverUnit()"
+                [disabled]="receiverLoading() || !qrInputText.trim()"
+                class="w-full py-2 px-3 text-xs font-bold text-[#0A2540] bg-slate-100 hover:bg-slate-200 rounded-lg transition disabled:opacity-50">
+                {{ receiverLoading() ? 'Buscando...' : 'Buscar bulto' }}
+              </button>
+            </div>
+
+            @if (receiverError()) {
+              <div role="alert" class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 font-medium">
+                {{ receiverError() }}
+              </div>
             }
-            @if (receiverConfirmedMessage()) {
-              <div class="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs space-y-2" role="status">
-                <div class="flex items-center gap-1.5 font-bold">
-                  <span class="text-emerald-700 font-bold text-sm">✓</span>
-                  <span>Recepción guardada</span>
-                </div>
-                <p class="leading-relaxed">{{ receiverConfirmedMessage() }}</p>
-                <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                  <ion-button size="small" color="primary" class="flex-1 font-bold" (click)="resetReceiverScreen()">
-                    Registrar otro bulto / Limpiar
-                  </ion-button>
-                  <ion-button size="small" fill="outline" color="primary" class="flex-1 font-bold" (click)="openSyncQueue()">
-                    Ver cola de sincronización
-                  </ion-button>
-                </div>
+            @if (receiverCached()) {
+              <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                Última consulta guardada. La recepción se validará al recuperar señal.
               </div>
             }
           </div>
         </div>
+
+        @if (receiverActiveBox(); as box) {
+          <div class="driver-stop-card mb-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="stop-tag">Bulto: {{ box.code }}</span>
+              <span class="status-badge is-done">
+                {{ box.boxes.length }} bulto(s) en entrega
+              </span>
+            </div>
+            <h2 class="stop-title">{{ box.destinationName }}</h2>
+            <p class="stop-address">
+              Recepción por entrega completa ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma las líneas recibidas.
+            </p>
+
+            <div class="stop-products-section">
+              <div class="flex items-center justify-between mb-2">
+                <span class="stop-products-title">Líneas a Recibir (Doble Validación)</span>
+                <button type="button" class="text-xs font-bold text-[#00A7C4] hover:underline"
+                        (click)="markAllReceiverLinesConform(true)">
+                  Marcar todos conformes
+                </button>
+              </div>
+
+              <div class="space-y-2">
+                @for (line of receiverLines; track line.deliveryLineId) {
+                  <div class="p-3 rounded-lg border transition select-none"
+                       [class.bg-emerald-50]="line.isConform !== false"
+                       [class.border-emerald-200]="line.isConform !== false"
+                       [class.bg-slate-50]="line.isConform === false"
+                       [class.border-slate-200]="line.isConform === false">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex items-start gap-2.5">
+                        <input type="checkbox"
+                               class="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                               [checked]="line.isConform !== false"
+                               (change)="line.isConform = !line.isConform; onConformToggle(line)" />
+                        <div>
+                          <span class="font-bold text-sm text-slate-900 block">{{ line.productName }}</span>
+                          <span class="text-xs text-slate-600 font-mono">
+                            Lote: <strong class="text-slate-800">{{ line.lotCode }}</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <span class="product-qty block mb-1">{{ line.quantity }} {{ line.unit }}</span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                              [class.bg-emerald-200]="line.isConform !== false"
+                              [class.text-emerald-900]="line.isConform !== false"
+                              [class.bg-amber-200]="line.isConform === false"
+                              [class.text-amber-900]="line.isConform === false">
+                          {{ line.isConform !== false ? 'Conforme' : 'Con Novedad' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (line.isConform === false) {
+                      <div class="pt-2 mt-2 border-t border-slate-200 space-y-2 text-xs">
+                        <label class="block font-semibold text-slate-700">Cantidad aceptada
+                          <input class="w-full border border-slate-300 rounded p-1.5 text-xs mt-1" type="number" min="0" [max]="line.quantity" step="0.001"
+                            [(ngModel)]="line.quantityAccepted" />
+                        </label>
+                        <p class="text-rose-700 font-semibold">Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
+                        @if (line.quantityAccepted < line.quantity) {
+                          <label class="block font-semibold text-slate-700">Motivo del rechazo *
+                            <select class="w-full border border-slate-300 rounded p-1.5 text-xs mt-1" [(ngModel)]="line.rejectionReason">
+                              <option value="">Selecciona un motivo</option>
+                              @for (reason of receiverReasons; track reason.code) {
+                                <option [value]="reason.code">{{ reason.label }}</option>
+                              }
+                            </select>
+                          </label>
+                        }
+                      </div>
+                    }
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 mt-2 border-t border-slate-200/60 text-xs">
+                      <label class="block text-slate-600">Stock en percha antes de recibir ({{ line.unit }})
+                        <input class="w-full border border-slate-300 rounded p-1 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
+                      </label>
+                      <label class="block text-slate-600">Solicitado para reabastecimiento ({{ line.unit }})
+                        <input class="w-full border border-slate-300 rounded p-1 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <label class="block text-xs font-semibold text-slate-700">
+                Foto de la novedad (obligatoria si rechazas unidades)
+                <input class="w-full mt-1 text-xs" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" (change)="onReceiverPhoto($event)" />
+              </label>
+              @if (receiverPhoto(); as photo) {
+                <p class="text-xs text-slate-600 font-medium">Foto adjunta: {{ photo.name }}</p>
+              }
+
+              <button
+                type="button"
+                class="stop-action-btn"
+                (click)="confirmReceiverAction()"
+                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
+                {{ receiverLoading() ? 'Guardando...' : 'Guardar recepción de la entrega completa' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (receiverConfirmedMessage()) {
+          <div class="driver-stop-card mb-4 bg-emerald-50 border-emerald-200 text-xs space-y-2" role="status">
+            <div class="flex items-center gap-1.5 font-bold text-emerald-900 text-sm">
+              <span>Recepción guardada</span>
+            </div>
+            <p class="text-emerald-800 leading-relaxed">{{ receiverConfirmedMessage() }}</p>
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                class="flex-1 py-2 px-3 text-xs font-bold text-white bg-[#00A7C4] hover:bg-[#008CA5] rounded-lg transition"
+                (click)="resetReceiverScreen()">
+                Registrar otro bulto / Limpiar
+              </button>
+              <button
+                type="button"
+                class="flex-1 py-2 px-3 text-xs font-bold text-[#0A2540] bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition"
+                (click)="openSyncQueue()">
+                Ver cola de sincronización
+              </button>
+            </div>
+          </div>
+        }
       }
 
       <!-- ======================================================== -->
@@ -330,10 +380,10 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
 
         @if (outboxService.activeAssignment(); as assignment) {
-          <!-- Lista de Paradas Asignadas -->
+          <!-- Lista de Puntos de Distribución Asignados -->
           <div class="mb-2.5 flex items-center justify-between px-1">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Paradas de la Ruta Activa
+              Puntos de distribución de la ruta activa
             </span>
             <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
               {{ totalDeliveries() }} entregas
@@ -349,27 +399,27 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 </div>
 
                 @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
-                  <div class="driver-stop-card is-pickup cursor-pointer" (click)="openScan('pickup')">
+                  <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
                     <div class="flex items-center justify-between mb-1.5">
-                      <span class="stop-tag is-pickup">Parada #{{ pickup.sequence }} · Recogida</span>
-                      <span class="text-xs font-bold text-amber-800 underline">Escanear caja →</span>
+                      <span class="stop-tag">Parada #{{ pickup.sequence }} · Punto de distribución</span>
+                      <span class="text-xs font-bold text-[#00A7C4] underline">Escanear caja →</span>
                     </div>
                     <h2 class="stop-title">{{ pickup.pointName }}</h2>
                     @if (pickup.address) {
                       <p class="stop-address">{{ pickup.address }}</p>
                     }
-                    <div class="text-xs text-amber-900 font-medium">
-                      Toca aquí para escanear y verificar las cajas que subes al vehículo.
+                    <div class="text-xs text-slate-600 font-medium">
+                      Toca aquí para escanear y verificar las cajas para este punto de distribución.
                     </div>
                   </div>
                 }
 
                 @for (del of route.deliveries; track del.deliveryId) {
                   @if (del.kind === 'Pickup') {
-                    <div class="driver-stop-card is-pickup cursor-pointer" (click)="openScan('pickup')">
+                    <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
                       <div class="flex items-center justify-between mb-1.5">
-                        <span class="stop-tag is-pickup">Parada #{{ del.sequence }} · Recogida</span>
-                        <span class="text-xs font-bold text-amber-800 underline">Escanear caja →</span>
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Punto de distribución</span>
+                        <span class="text-xs font-bold text-[#00A7C4] underline">Escanear caja →</span>
                       </div>
                       <h2 class="stop-title">{{ del.pointName }}</h2>
                       @if (del.address) {
@@ -377,7 +427,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                       }
                       @if (getDeliveryProducts(del).length > 0) {
                         <div class="stop-products-section">
-                          <span class="stop-products-title">Cajas y productos a recoger:</span>
+                          <span class="stop-products-title">Productos a entregar:</span>
                           <div class="space-y-1.5">
                             @for (prod of getDeliveryProducts(del); track prod.name) {
                               <div class="product-row">
@@ -388,14 +438,14 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                           </div>
                         </div>
                       }
-                      <div class="text-xs text-amber-900 font-medium">
-                        Toca aquí para escanear y verificar las cajas que subes al vehículo.
+                      <div class="text-xs text-slate-600 font-medium">
+                        Toca aquí para escanear y verificar las cajas para este punto de distribución.
                       </div>
                     </div>
                   } @else {
                     <div class="driver-stop-card">
                       <div class="flex items-center justify-between mb-2">
-                        <span class="stop-tag">Parada #{{ del.sequence }}</span>
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Punto de distribución</span>
                         <span class="status-badge" [class.is-done]="driverStage(del) === 'Received' || driverStage(del) === 'Partial'">
                           {{ driverStageLabel(del) }}
                         </span>
@@ -407,9 +457,9 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                         <p class="stop-address">{{ del.address }}</p>
                       }
 
-                      <!-- Productos a dejar con cantidad y nombre -->
+                      <!-- Productos a entregar con cantidad y nombre -->
                       <div class="stop-products-section">
-                        <span class="stop-products-title">Productos a dejar:</span>
+                        <span class="stop-products-title">Productos a entregar:</span>
                         @if (getDeliveryProducts(del).length > 0) {
                           <div class="space-y-1.5">
                             @for (prod of getDeliveryProducts(del); track prod.name) {
@@ -1329,7 +1379,7 @@ export class HomePage {
     switch (this.driverStage(del)) {
       case 'WaitingWarehouse': return 'Esperando a Bodega';
       case 'Draft': return 'En preparación';
-      case 'Dispatched': return 'Listo para recoger';
+      case 'Dispatched': return 'Listo para entrega';
       case 'InTransit': return 'En ruta';
       case 'Delivered': return 'Entregado';
       case 'Received': return 'Recibido';
@@ -1346,7 +1396,7 @@ export class HomePage {
   driverActionLabel(del: MobileAssignmentDelivery): string {
     switch (this.driverStage(del)) {
       case 'WaitingWarehouse': return 'Esperando a Bodega';
-      case 'Dispatched': return 'Recoger →';
+      case 'Dispatched': return 'Entregar →';
       case 'InTransit': return 'Entregar →';
       case 'Delivered': return 'Esperando receptor';
       case 'Received':

@@ -79,7 +79,7 @@ function formatProductName(codeOrName: string): string {
         <ion-buttons slot="start">
           <ion-back-button defaultHref="/home"></ion-back-button>
         </ion-buttons>
-        <ion-title>{{ isPickupMode() ? 'Recogida: Escanear Cajas' : 'Escanear Unidad (QR)' }}</ion-title>
+        <ion-title>{{ isPickupMode() ? 'Punto de Distribución: Escanear Cajas' : 'Escanear Unidad (QR)' }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -94,7 +94,7 @@ function formatProductName(codeOrName: string): string {
         <div class="mb-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-amber-800 uppercase tracking-wide">
-              Bulto: {{ info.boxCode }} · Parada #{{ info.sequence }}
+              Bulto: {{ info.boxCode }} · Parada #{{ info.sequence }} (Punto de distribución)
             </span>
             <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
               En Ruta
@@ -109,10 +109,10 @@ function formatProductName(codeOrName: string): string {
             <p class="text-xs text-slate-500 mb-3">{{ info.address }}</p>
           }
 
-          <!-- Productos a dejar -->
+          <!-- Productos a entregar -->
           <div class="border-t border-slate-100 pt-2.5 mt-2">
             <span class="text-xs font-bold text-slate-700 block mb-2 uppercase tracking-wider">
-              Productos a dejar en este punto:
+              Productos a entregar en este punto:
             </span>
             @if (info.products.length > 0) {
               <div class="space-y-1.5">
