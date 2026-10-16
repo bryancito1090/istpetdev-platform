@@ -672,6 +672,6 @@ Se actualizan los horarios del plan, que seguían el manual: «Días del evento�
 
 ## 16-oct-2026 — Hora límite para puntos críticos en el planificador (issue #193)
 
-Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-24 y la tarea T16. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
+Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-25 y la tarea T16. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
 
 Verificación documental (tras integrar develop con #197, #201 y #192): **105 notas Markdown**, **1115 enlaces internos resueltos**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.

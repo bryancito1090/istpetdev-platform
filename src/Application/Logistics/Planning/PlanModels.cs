@@ -22,7 +22,22 @@ public sealed record StopLoad(
     Guid ProductId,
     string Sku,
     decimal Quantity,
-    string BaseUnit);
+    string BaseUnit)
+{
+    // #199: Quantity es lo planificado (lo que se publica y reserva); RequiredQuantity es lo sugerido o pedido
+    // (null en cargas anteriores: igual a Quantity) y PendingQuantity lo que de esa línea no quedó en ninguna ruta.
+    public decimal? RequiredQuantity { get; init; }
+    public decimal PendingQuantity { get; init; }
+}
+
+// #199: línea con remanente pendiente (atención parcial o sin atender).
+public sealed record PendingLine(
+    Guid ProductId,
+    string Sku,
+    string BaseUnit,
+    decimal RequiredQuantity,
+    decimal PlannedQuantity,
+    decimal PendingQuantity);
 
 public sealed record VehicleRoute(
     string VehicleCode,
@@ -39,7 +54,11 @@ public sealed record VehicleRoute(
 public sealed record Unserved(
     string PointCode,
     string Reason,
-    IReadOnlyList<Fact> Facts);
+    IReadOnlyList<Fact> Facts)
+{
+    // #199: cantidades por línea; vacío cuando el motivo no se refiere a una carga.
+    public IReadOnlyList<PendingLine> Lines { get; init; } = [];
+}
 
 public sealed record PlanResult(
     IReadOnlyList<VehicleRoute> Routes,
