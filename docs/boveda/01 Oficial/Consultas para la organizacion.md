@@ -25,10 +25,10 @@ Resolver en la capacitación del **8 de octubre** y conservar quién respondió,
 
 | ID | Consulta | Respuesta / evidencia |
 |---|---|---|
-| O-06 | ¿Dónde y en qué formatos se entrega presentación, ficha, código y video? | Parcial, 16-oct: carpeta de Drive con acceso para el correo del capitán. Faltan URL, acceso comprobado, formatos/límites y alcance de los cortes mencionados para hoy (13:00 en el apunte de Joseph; 18:00 en ambos). Sábado 20:00 aparece en una pregunta, sin ratificación; aclarar frente al manual (17-oct 16:00–16:15) |
+| O-06 | ¿Dónde y en qué formatos se entrega presentación, ficha, código y video? | Parcial, 16-oct: carpeta de Drive con acceso para el correo del capitán (faltan URL y formatos). Horarios de corte aclarados por la agenda general oficial ([[2026-10-16-1126-bb-agenda-general-y-mentorias]]): viernes 16 18:30–19:00 es Checkpoint de avances y sábado 17 16:00–16:15 es Entrega de hitos definitiva, ambos con Mónica Sevilla y William Chamorro |
 | O-07 | ¿Cuál es la sede, modalidad y enlace de capacitación/jornadas? | Pendiente. El listado público de la feria indica Centro de Exposiciones Quito (CEQ); el manual no fija dirección (p. 14). Confirmar |
 | O-08 | ¿Qué conectividad, proyección y acceso con teléfonos habrá? | Parcial, 16-oct: pantalla y HDMI anunciados; red de participantes con saturación relatada y oferta de datos móviles. Confirmar adaptador, conexión efectiva y acceso con teléfonos; sin prueba del equipo |
-| O-09 | ¿Está habilitado nuestro equipo y confirmado el Reto 1? | Inscripción declarada por el equipo; evidencia oficial pendiente |
+| O-09 | ¿Está habilitado nuestro equipo y confirmado el Reto 1? | Confirmado, 16-oct: IstpetDev figura formalmente habilitado en la lista de 14 equipos del Reto 1 en la matriz oficial de mentorías técnicas ([[2026-10-16-1126-bb-agenda-general-y-mentorias]]), asignado al mentor Mauro Zurita (16:15–17:00) |
 | O-10 | ¿Podemos llevar cajas vacías con QR y demostrar una firma voluntaria? | Pendiente |
 | O-11 | ¿Qué restricciones de publicación tienen los datos y materiales empresariales? | Pendiente |
 | O-12 | ¿Se mantienen fechas/pesos? ¿El registro abrió el 21 o el 22 de septiembre? | Pendiente; discrepancia pp. 6/14 frente a p. 16. La charla del 16-oct no anuncia cambio de pesos; nueva organización del jurado por confirmar en O-13 |
