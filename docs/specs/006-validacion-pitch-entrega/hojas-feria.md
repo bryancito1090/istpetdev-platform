@@ -42,7 +42,7 @@ Cambio propuesto o pendiente (enlace a issue/nota): __________
 Fuente complementaria ofrecida (sin datos personales): __________
 ```
 
-## Hoja de retorno con prototipo del 17-oct, 11:00–12:30
+## Hoja de retorno con prototipo del 17-oct, 11:30–13:15
 
 Se muestra primero la pantalla **sin explicar**. Se etiqueta lo mostrado (vivo / grabado / captura / diseño) igual que en el pitch.
 

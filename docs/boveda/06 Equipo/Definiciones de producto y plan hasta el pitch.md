@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [hackathon, istpetdev, alcance, demo, agente]
 ---
 
@@ -50,7 +50,7 @@ Diagnóstico del 12-oct sobre el repositorio unificado:
 | # | Definición | Por qué |
 |---|---|---|
 | D1 | Objetivo norte y métricas de esta nota | Un criterio común para decidir qué entra |
-| D2 | **Evidencia del sector solo durante el evento.** Antes del 16 los cinco construyen. Día 1: dos personas entrevistan expositores de la feria en las pausas (11:00–11:30 y 13:00–14:00) con un guion de 5 minutos. Día 2: se vuelve con el prototipo en el bloque de validación (11:00–12:30). Como cautela propia, el equipo evita entrevistar organizaciones con representante en el jurado; el manual §11.5 exige registrar vínculos de cada jurado con el proyecto y abstención individual ante conflicto, incluida mentoría. Antes del 16, un **kit previo sin horas del equipo**, preparado con IA: guion y hoja de entrevista, esqueleto del pitch con huecos, modelo de negocio, banco de preguntas e investigación de pliegos de compras públicas (SERCOP) para citar el costo de un quiebre **solo si aparece una fuente** | El equipo no tiene acceso al sector; la hackathon ocurre dentro de la Expo Clean, donde están las empresas |
+| D2 | **Evidencia del sector solo durante el evento.** Antes del 16 los cinco construyen. Día 1: dos personas entrevistan expositores de la feria en las pausas (11:00–11:30 y 13:00–14:00) con un guion de 5 minutos. Día 2: se vuelve con el prototipo en el bloque «Validación integral y revisión final» (11:30–13:15 según la agenda oficial; el 12-oct se planificó 11:00–12:30 con el manual). Como cautela propia, el equipo evita entrevistar organizaciones con representante en el jurado; el manual §11.5 exige registrar vínculos de cada jurado con el proyecto y abstención individual ante conflicto, incluida mentoría. Antes del 16, un **kit previo sin horas del equipo**, preparado con IA: guion y hoja de entrevista, esqueleto del pitch con huecos, modelo de negocio, banco de preguntas e investigación de pliegos de compras públicas (SERCOP) para citar el costo de un quiebre **solo si aparece una fuente** | El equipo no tiene acceso al sector; la hackathon ocurre dentro de la Expo Clean, donde están las empresas |
 | D3 | **Cortes de alcance** (tabla siguiente) | Liberar horas para el recorrido que ve el jurado |
 | D4 | **Agente con niveles.** A — vigía: detecta riesgos y propone reposición y ruta. B — gestor de incidentes: evalúa un cierre de vía, replanifica lo pendiente y avisa al conductor. Ambos obligatorios. C — «qué pasaría si» con el simulador, solo si A y B están terminados. **El LLM orquesta y explica; nunca calcula** rutas, cantidades ni fechas. **Modelo: DeepSeek** (decisión del 12-oct, sin comparación), validado con una **prueba de aceptación** de 3 escenarios (riesgo, incidente, dato con instrucciones inyectadas) × 10 ejecuciones y umbrales fijos: llamadas válidas ≥ 95%, latencia p95 ≤ 10 s, explicaciones con cifras coincidentes ≥ 90% e inyección 10/10. Si no los cumple en H1, el agente opera en fallback determinista y el equipo decide proveedor con la misma prueba | Innovación defendible ante el jurado técnico; un agente que opera, no un chatbot |
 | D5 | **Autonomía con límites.** Un motor de reglas determinista en el backend clasifica cada propuesta en «se ejecuta» o «se escala»; el LLM no puede saltarlo. Se ejecuta sola si no se retira ninguna parada obligatoria, se cumplen todas las ventanas, el costo sube ≤ 15% y ningún retraso supera 60 min. Se escala lo demás, con dos opciones calculadas («atender tarde» y «priorizar críticos»). Interruptor «solo proponer». Deshacer crea otra revisión y compensa únicamente reservas activas de entregas aún no despachadas; el stock movido físicamente requiere conciliación | Respuesta a «¿y si la IA se equivoca?»: la IA hace lo rutinario y deja a la persona lo que importa |
@@ -114,6 +114,30 @@ La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]
 | Simulador de 90 días | Sin plan B honesto: es prioridad por encima de los niveles del agente |
 
 ### Días del evento
+
+**Vigente desde el 16-oct**, ajustado a la agenda oficial (`areas-menotres.xlsx`, ver [[Cronograma oficial]]). IstpetDev no está convocado a cuatro conferencias; esos bloques se usan para ensayar. Trabajo de código según los issues #193–#201 con semáforo de prioridad.
+
+| Momento (agenda oficial) | Qué hace el equipo |
+|---|---|
+| 16-oct 11:30–13:00 · Ideación | Decidir qué entra de [[Ampliacion de alcance - ideas del evento]]; issues #193–#201 creados y asignados |
+| 16-oct 13:00–14:00 · Almuerzo | Dos personas abordan expositores con el guion de 5 min |
+| 16-oct 14:00–14:30 · Diseño | Cerrar el entregable 2: [[Entregable Solucion y propuesta de valor]] |
+| 16-oct 14:30–15:00 · libre (no convocados) | Ensayo 1 del pitch de 5 min |
+| 16-oct 15:00–16:15 · Desarrollo | Issues 🔴: #193 (Anthony), #194 (Bryan); #201 (Alexander) |
+| 16-oct 16:15–17:00 · Mentoría | Mauro Zurita; registrar en [[Registro de mentorias]] y comprobar si es jurado |
+| 16-oct 17:00–18:00 · libre (no convocados) | Integrar el consejo del mentor; #195 (Bryan); ensayo 2 |
+| 16-oct 18:00–18:30 · Prototipado | Desplegar el corte (#198, Jorge) y preparar evidencias |
+| 16-oct 18:30–19:00 · Checkpoint | Mostrar demo y entregable 2; preguntar canal/formato de entrega (O-06) y turno/cubículo (O-13) |
+| 17-oct 09:00–10:00 · Desarrollo final | Ronda E2E corta (#118); cerrar #195 y #196 |
+| 17-oct 10:00–10:30 · Conferencia de pitch | Todo el equipo asiste |
+| 17-oct 11:00–11:30 · libre (no convocados) | **Congelamiento del código a las 11:30**; ensayo con la versión congelada |
+| 17-oct 11:30–13:15 · Validación integral | Revisión con mentores; dos validan con expositores; corrida final del simulador |
+| 17-oct 14:00–15:00 · Ajustes finales | Completar huecos del pitch; manifiesto con SHA-256 |
+| 17-oct 15:00–15:45 · libre (no convocados) | Dos ensayos cronometrados; **15:45 congelamiento de materiales** |
+| 17-oct 16:00–16:15 · Entrega de hitos | Los siete entregables por el canal confirmado en O-06 |
+| 17-oct 16:15–18:15 · Presentaciones | Pitch de 5 min con demo |
+
+**Antecedente del 12-oct** (planificado con las tablas del manual; reemplazado por la tabla de arriba):
 
 Se superponen al [[Cronograma oficial]] y se **participa de verdad en la dinámica oficial**: «Proceso y equipo» observa la participación.
 

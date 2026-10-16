@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [arquitectura, contratos]
 ---
 
@@ -183,10 +183,23 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
 
+## Asistente de pedidos: orden de entregas y ventanas (#197 — 16 de octubre de 2026)
+
+`POST /api/v1/route-plans/suggest` conserva la forma de su respuesta (`options[].stops`, `evaluation`, `sourcingLines`, `vehicleMatches`); solo cambia cómo se arman las paradas de entrega:
+
+- **Orden:** las recogidas en bodega siguen primero. Las entregas se ordenan por `DeliveryOrder.Priority` (`Critical` → `High` → `Normal` → `Low`; un valor desconocido cuenta como `Normal`) y luego por el día de `RequiredDateUtc`. Dentro de cada nivel se elige el destino más cercano a la parada anterior, empezando en la última recogida. Si varios pedidos van al mismo destino, manda el más urgente y la fecha más temprana. `sequence` se renumera en ese orden.
+- **Ventanas:** `windowStart`, `windowEnd` y `serviceMinutes` de cada entrega salen de `WindowStartLocal`, `WindowEndLocal` y `ServiceMinutes` del punto de servicio. Si el punto no los tiene, o el destino es una bodega, se usan 08:00–17:00 y 15 min, los valores fijos anteriores.
+- **Fuera de alcance:** validar capacidad por prioridad en `/suggest` y `/confirm` es el issue #201.
+
 ## Carga parcial según capacidad (#199 — 16 de octubre de 2026)
 
-Cuando la carga sugerida o pedida no cabe en peso o volumen, la API planifica lo factible y conserva el remanente pendiente. Detalle en el FR-24 del spec 002 (`docs/specs/002-motor-logistico/spec.md`) y en su `plan.md`.
+Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factible y conserva el remanente pendiente. Detalle en el FR-24 del spec 002 (`docs/specs/002-motor-logistico/spec.md`) y en su `plan.md`.
 
 - **`POST /api/v1/route-plans`** (lo consume n8n con `propose_routes`): cada ruta trae `vehicleCode`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `stops[].loads[]` con `quantity` (planificada; es lo que se publica y reserva), `requiredQuantity` y `pendingQuantity`. Cada no atendido trae `lines[]` con `requiredQuantity`, `plannedQuantity` y `pendingQuantity`. Una entrega parcial es `reason: "capacity"` con `plannedQuantity > 0`. Los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`) permiten explicarla sin inventar cifras.
-- **`POST /api/v1/route-plans/confirm`** (asistente por pedidos): exige `vehicleId` de un vehículo activo (400 si falta, 422 si no existe). Recalcula la carga desde los pedidos sin usar los totales del panel y planifica lo que cabe. Suma lo planificado en `DeliveryOrderLine.PlannedQuantity` y marca `Planned` solo los pedidos sin remanente. Responde `lines[]`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`. Responde 422 si un pedido no existe, está cancelado, no tiene saldo o no tiene parada de entrega, o si no cabe ninguna unidad.
-- **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU.
+- **`POST /api/v1/route-plans/confirm`:** mantiene la validación de #201: vehículo obligatorio y 409 si la ruta no cabe; la parcial se pide con `lines`. Con #199:
+  - La cantidad de cada línea no puede superar lo pendiente (`RequestedQuantity − PlannedQuantity − DeliveredQuantity`); si lo supera, 409.
+  - Lo planificado se suma a `PlannedQuantity`.
+  - Un pedido sin nada pendiente no genera otra ruta: 409.
+  - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
+- **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
+- **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).

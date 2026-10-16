@@ -56,7 +56,8 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         return order.Id;
     }
 
-    private static Task<HttpResponseMessage> ConfirmAsync(HttpClient planner, Seed s, IReadOnlyList<Guid> orderIds, Guid? vehicleId, bool includeDelivery = true)
+    private static Task<HttpResponseMessage> ConfirmAsync(HttpClient planner, Seed s, IReadOnlyList<Guid> orderIds, Guid? vehicleId,
+        bool includeDelivery = true, decimal? plannedQuantity = null)
     {
         var stop = (int seq, string kind, Guid? point, Guid? location, string code) => new
         {
@@ -70,7 +71,10 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         return planner.PostAsJsonAsync("/api/v1/route-plans/confirm", new
         {
             code = $"WIZ-{Guid.NewGuid():N}"[..12], vehicleId, totalDistanceKm = 1m, totalDurationMinutes = 1m, totalCost = 0.01m,
-            orderIds, stops
+            orderIds, stops,
+            lines = plannedQuantity is { } qty
+                ? orderIds.Select(id => new { deliveryOrderId = id, productId = s.ProductId, plannedQuantity = qty }).ToArray()
+                : null
         });
     }
 
@@ -84,14 +88,21 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
     }
 
     [Fact]
-    public async Task Confirm_plans_what_fits_keeps_the_rest_pending_and_publishes_exactly_that()
+    public async Task Confirm_rejects_150kg_in_a_100kg_vehicle_and_plans_an_explicit_partial_keeping_the_rest_pending()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
         using var planner = api.ClientFor(TestTokens.Planner);
         var s = await ResetAsync(api, planner);
         var orderId = await OrderAsync(api, s, 150m);
 
-        var response = await ConfirmAsync(planner, s, [orderId], s.VehicleId);
+        // Todo el pedido no cabe: se rechaza (#201) y el pedido no cambia.
+        Assert.Equal(HttpStatusCode.Conflict, (await ConfirmAsync(planner, s, [orderId], s.VehicleId)).StatusCode);
+        Assert.Equal((DeliveryOrderStatus.Pending, 0m), await OrderStateAsync(api, orderId));
+        // No se puede pedir más de lo pendiente.
+        Assert.Equal(HttpStatusCode.Conflict, (await ConfirmAsync(planner, s, [orderId], s.VehicleId, plannedQuantity: 200m)).StatusCode);
+
+        // Atención parcial explícita: 100 de 150.
+        var response = await ConfirmAsync(planner, s, [orderId], s.VehicleId, plannedQuantity: 100m);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = json.RootElement;
@@ -127,7 +138,7 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         Assert.Equal((DeliveryOrderStatus.Planned, 150m), await OrderStateAsync(api, orderId));
 
         // Ya no queda nada que planificar.
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await ConfirmAsync(planner, s, [orderId], s.VehicleId)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await ConfirmAsync(planner, s, [orderId], s.VehicleId)).StatusCode);
     }
 
     [Fact]
@@ -138,8 +149,8 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         var s = await ResetAsync(api, planner);
         var orderId = await OrderAsync(api, s, 10m);
 
-        Assert.Equal(HttpStatusCode.BadRequest, (await ConfirmAsync(planner, s, [orderId], null)).StatusCode);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await ConfirmAsync(planner, s, [orderId], Guid.NewGuid())).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await ConfirmAsync(planner, s, [orderId], null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await ConfirmAsync(planner, s, [orderId], Guid.NewGuid())).StatusCode);
 
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -148,7 +159,7 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
     }
 
     [Fact]
-    public async Task Confirm_rejects_an_order_without_delivery_stop_or_when_nothing_fits()
+    public async Task Confirm_rejects_an_order_without_delivery_stop_or_when_not_even_one_unit_fits()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
         using var planner = api.ClientFor(TestTokens.Planner);
@@ -157,12 +168,11 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         var orderId = await OrderAsync(api, s, 5m);
 
         var noStop = await ConfirmAsync(planner, s, [orderId], s.VehicleId, includeDelivery: false);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, noStop.StatusCode);
-        Assert.Contains("no tiene parada de entrega", await noStop.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.Conflict, noStop.StatusCode);
+        Assert.Contains("no tienen cantidades pendientes", await noStop.Content.ReadAsStringAsync());
 
-        var tooHeavy = await ConfirmAsync(planner, s, [orderId], s.VehicleId);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, tooHeavy.StatusCode);
-        Assert.Contains("no tiene capacidad", await tooHeavy.Content.ReadAsStringAsync());
+        var tooHeavy = await ConfirmAsync(planner, s, [orderId], s.VehicleId, plannedQuantity: 1m);
+        Assert.Equal(HttpStatusCode.Conflict, tooHeavy.StatusCode);
         Assert.Equal((DeliveryOrderStatus.Pending, 0m), await OrderStateAsync(api, orderId));
     }
 }
