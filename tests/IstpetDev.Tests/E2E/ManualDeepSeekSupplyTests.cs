@@ -37,6 +37,9 @@ namespace IstpetDev.Tests.E2E;
 [Trait("Category", "Manual")]
 public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOutputHelper output)
 {
+    private readonly string _reportDirectory = Path.Combine(
+        Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../..")),
+        "artifacts/agent-acceptance", "manual-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"));
     private const string ClientId = "n8n-manual-supply";
     private const string M2mReference = "8e186867-4916-54b1-b968-c1c273f79a11";
     private const string DeepSeekReference = "3b8794f0-9241-5c0c-9e19-c531bed733c8";
@@ -72,6 +75,7 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
     {
         var deepSeekKey = Environment.GetEnvironmentVariable("ISTPETDEV_DEEPSEEK_KEY");
         Assert.False(string.IsNullOrWhiteSpace(deepSeekKey), "Define ISTPETDEV_DEEPSEEK_KEY (clave real de DeepSeek) para el ensayo manual.");
+        Directory.CreateDirectory(_reportDirectory);
         var runs = int.TryParse(Environment.GetEnvironmentVariable("ISTPETDEV_MATRIX_RUNS"), out var parsed) ? parsed : 2;
 
         var connection = postgres.NewDatabase();
@@ -93,7 +97,7 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
         var bridgeClient = api.CreateClient();
         using var _bridgeClient = bridgeClient;
         bridge.Forward = bridgeClient;
-        Assert.Equal(HttpStatusCode.OK, (await planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PrepareDemoAsync(() => planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null))).StatusCode);
         await using (var db = TestDb.Context(connection))
         {
             db.Accounts.Add(new Account { Kind = "technical", Issuer = TestTokens.Issuer, Subject = ClientId, Role = Roles.Automatizacion, IsActive = true });
@@ -187,7 +191,7 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
         };
         output.WriteLine(JsonSerializer.Serialize(summary, Json));
 
-        var target = Path.Combine(Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../..")), "artifacts/agent-acceptance", "manual-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss"));
+        var target = _reportDirectory;
         Directory.CreateDirectory(target);
         File.WriteAllText(Path.Combine(target, "report.json"), JsonSerializer.Serialize(new { summary, warmup, runs = results, agentErrors = bridge.AgentErrors.ToArray() }, Json));
         output.WriteLine("Informe: " + target);
@@ -213,14 +217,14 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
 
     private async Task<RunRecord> RunWatchAsync(HttpClient planner, string scenario, string fixture, string connection)
     {
-        var reset = await planner.PostAsync($"/api/v1/demo/reset?fixture={fixture}", null);
+        var reset = await PrepareDemoAsync(() => planner.PostAsync($"/api/v1/demo/reset?fixture={fixture}", null));
         Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
         return await StartAndWaitAsync(planner, scenario, new StartRunRequest(AgentRunKind.Watch, null));
     }
 
     private async Task<RunRecord> RunIncidentAsync(HttpClient planner, string scenario, string connection)
     {
-        Assert.Equal(HttpStatusCode.OK, (await planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PrepareDemoAsync(() => planner.PostAsync("/api/v1/demo/reset?fixture=demo-region", null))).StatusCode);
         var planResponse = await planner.PostAsJsonAsync("/api/v1/route-plans", new { includeConsolidation = true });
         Assert.Equal(HttpStatusCode.Created, planResponse.StatusCode);
         using var plans = JsonDocument.Parse(await planResponse.Content.ReadAsStringAsync());
@@ -229,7 +233,8 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
         {
             Assert.Equal(HttpStatusCode.OK, (await planner.PostAsJsonAsync($"/api/v1/route-plans/{planId}/publish", new { })).StatusCode);
         }
-        var advance = await planner.PostAsJsonAsync($"/api/v1/demo/route-plans/{planIds[0]}/advance", new { operationId = Guid.NewGuid().ToString(), stops = 2 });
+        var advanceRequest = new { operationId = Guid.NewGuid().ToString(), stops = 2 };
+        var advance = await PrepareDemoAsync(() => planner.PostAsJsonAsync($"/api/v1/demo/route-plans/{planIds[0]}/advance", advanceRequest));
         Assert.Equal(HttpStatusCode.OK, advance.StatusCode);
         var incidentResponse = await planner.PostAsJsonAsync("/api/v1/incidents", Fixtures.IncidentPreset("demo-region", "cierre-norte"));
         Assert.Equal(HttpStatusCode.Created, incidentResponse.StatusCode);
@@ -249,7 +254,23 @@ public sealed class ManualDeepSeekSupplyTests(PostgisContainer postgres, ITestOu
             await Task.Delay(250);
             view = (await planner.GetFromJsonAsync<AgentRunView>($"/api/v1/agent/runs/{view.RunId}", Json))!;
         }
-        return RunRecord.From(scenario, view);
+        var record = RunRecord.From(scenario, view);
+        File.WriteAllText(Path.Combine(_reportDirectory, scenario + ".json"), JsonSerializer.Serialize(record, Json));
+        return record;
+    }
+
+    // Solo preparación del fixture, fuera de la latencia del agente. Respeta el
+    // limitador real; nunca reintenta herramientas, proveedor ni una ejecución.
+    private static async Task<HttpResponseMessage> PrepareDemoAsync(Func<Task<HttpResponseMessage>> send)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var response = await send();
+            if (response.StatusCode != HttpStatusCode.TooManyRequests || attempt >= 3) return response;
+            var delay = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
+            response.Dispose();
+            await Task.Delay(TimeSpan.FromMilliseconds(Math.Clamp(delay.TotalMilliseconds, 1000, 60000)));
+        }
     }
 
     private static double P95(List<int> values)

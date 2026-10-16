@@ -353,7 +353,7 @@ validan UUIDs, listas acotadas a 100 únicas y campos de allowlist, y envían el
 `GET /api/v1/agent/runs/{id}` (y `GET /api/v1/agent/runs?limit=`) amplía
 `AgentDecisionView` con evidencia derivada por servidor del plan correlacionado,
 sin aceptar valores del callback LLM. Al completar la ejecución se conserva una
-instantánea en `ProposalJson.evidence` (vehículo, bodega y paradas), también en
+copia en `ProposalJson.evidence` (vehículo, bodega y paradas), también en
 el respaldo; para decisiones históricas sin copia guardada se conserva la proyección
 compatible desde el plan. Una renombración posterior no altera nuevas decisiones:
 

@@ -66,6 +66,67 @@ def subworkflow_of(tool):
 
 
 class WorkflowContextTests(unittest.TestCase):
+    def test_initial_context_is_authorized_bounded_and_cannot_replace_signed_fields(self):
+        runner = """
+const fs = require('fs'), vm = require('vm');
+const x = JSON.parse(fs.readFileSync(0, 'utf8'));
+const ctx = {$json: x.data, $: () => ({first: () => ({json: {payload: x.signed}})}),
+ Date: class extends Date {static now(){return Date.parse('2026-10-14T20:00:00Z');}}};
+process.stdout.write(JSON.stringify(vm.runInNewContext(x.expression.slice(3,-2),ctx)));
+"""
+        for filename in ("vigia.json", "incidente.json"):
+            workflow = load_workflow(filename)
+            nodes = {n["name"]: n for n in workflow["nodes"]}
+            self.assertEqual("Register Execution", workflow["connections"]["Valid Signature?"]["main"][0][0]["node"])
+            self.assertEqual("Respond Accepted", workflow["connections"]["Register Execution"]["main"][0][0]["node"])
+            self.assertEqual("Initial Context Allowed?", workflow["connections"]["Respond Accepted"]["main"][0][0]["node"])
+            params = nodes["Load Initial Context"]["parameters"]
+            self.assertIn("$env.ISTPETDEV_API_BASE_URL", params["url"])
+            self.assertEqual("={{ $('Verify Signature').first().json.payload.runId }}", params["headerParameters"]["parameters"][0]["value"])
+            self.assertIn("deadlineUtc", params["options"]["timeout"])
+            self.assertEqual("oAuth2Api", params["genericAuthType"])
+            signed = {"runId": "signed-run", "kind": "Watch" if filename == "vigia.json" else "Incident",
+                      "incidentId": "signed-incident", "deadlineUtc": "2026-10-14T20:00:10Z"}
+            for deadline, allowed in (("2026-10-14T20:00:10Z", True), ("2026-10-14T20:00:01Z", False)):
+                signed["deadlineUtc"] = deadline
+                expr = nodes["Initial Context Allowed?"]["parameters"]["conditions"]["conditions"][0]["leftValue"]
+                result = json.loads(subprocess.check_output(["node", "-e", runner], text=True,
+                    input=json.dumps({"expression": expr, "signed": signed, "data": {}})))
+                self.assertEqual(allowed, result)
+            hostile = {"runId": "forged", "deadlineUtc": "2099-01-01", "apiBaseUrl": "https://attacker.invalid"}
+            result = json.loads(json.loads(subprocess.check_output(["node", "-e", runner], text=True,
+                input=json.dumps({"expression": nodes["AI Agent"]["parameters"]["text"], "signed": signed, "data": hostile}))))
+            self.assertEqual("signed-run", result["runId"])
+            self.assertEqual(signed["deadlineUtc"], result["deadlineUtc"])
+            self.assertNotIn("apiBaseUrl", {k:v for k,v in result.items() if k != "initialContext"})
+
+    def test_final_json_rejects_extra_fields_wrong_types_and_duplicate_ids(self):
+        decision = {"agentDecisionId": ORDER_ID, "explanation": "Propuesta del motor", "driverMessage": "Consulta la ruta"}
+        valid = {"decisions": [decision], "summary": "Propuesta"}
+        invalid = [
+            {**valid, "warehouseId": WAREHOUSE_ID},
+            {**valid, "summary": 42},
+            {**valid, "decisions": [{**decision, "explanation": 42}]},
+            {**valid, "decisions": [{**decision, "facts": []}]},
+            {**valid, "decisions": [decision, decision]},
+            {**valid, "decisions": [{**decision, "agentDecisionId": "inventado"}]},
+            {**valid, "decisions": []},
+        ]
+        runner = """
+const fs = require('fs'), vm = require('vm');
+const x = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(vm.runInNewContext('(function(){' + x.code + '})()', {
+  $json: { output: JSON.stringify(x.value) }, $execution: { id: 'test' }
+}).json));
+"""
+        for name in ("vigia.json", "incidente.json"):
+            code = next(n for n in load_workflow(name)["nodes"] if n["name"] == "Prepare Result")["parameters"]["jsCode"]
+            for value in invalid:
+                result = json.loads(subprocess.check_output(["node", "-e", runner], text=True,
+                    input=json.dumps({"code": code, "value": value})))
+                self.assertTrue(result["agentError"], value)
+                self.assertEqual([], result["decisions"])
+
     def test_risk_projection_preserves_motor_values_without_duplicate_facts(self):
         rows = [
             {"servicePointId": POINT_ID, "productId": PRODUCT_ID, "level": level,

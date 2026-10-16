@@ -853,3 +853,9 @@ de #194 sigue pendiente y es requisito para el merge.
 - Corregido el ensayo manual: opt-in por credencial (no falla la suite sin clave); comparación de políticas por contenido; proveedor caído separado de métricas de aceptación; trazas preservadas. Resultados todavía pendientes.
 
 - Ensayo optimizado intermedio: 15/15 herramientas 2xx; Incident completo con 2/2 explicaciones LLM. Watch/Injection omitían la ruta por el guard fijo de 3200 ms. Ajustado a 2200 ms (HTTP mínimo 1000 + reserva 1200), sin ampliar los 10 s totales; proyección de sourcing sin datos redundantes. Validación real final pendiente.
+
+- Matriz de 30 corridas intermedia: 107/107 herramientas 2xx, pero hubo errores reales de conexión del proveedor y timeouts; NO acredita aceptación. Cambio final del prompt: consultas y propuesta en un grupo (en orden lógico), seguido de explicación breve y hechos por vehículo. La propuesta no reserva ni publica y el motor mantiene toda asignación. Ensayo final en ejecución.
+
+- La repetición completa mostró errores del parser estructurado n8n aun con consultas correctas. Se elimina el parser adjunto (limitación documentada por n8n) y se valida forma, tipos, UUIDs y duplicados en Prepare Result; la API mantiene autorización/correlación/cifras/mensajes. 34/34 pruebas Python, incluida regresión de salidas inválidas. Matriz real de esta corrección en ejecución.
+
+- La matriz sin parser confirmó que desaparecieron errores de formato; persistieron timeouts del proveedor. Optimización final: carga inicial de riesgos/impacto por el workflow tras HMAC/registro, con OAuth/contexto firmado y traza. El LLM conserva la elección de stock/origen/vehículos/propuestas y las ocho herramientas. 35/35 Python, incluida seguridad de carga inicial; nueva matriz en ejecución.

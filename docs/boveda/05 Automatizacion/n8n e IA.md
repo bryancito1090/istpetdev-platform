@@ -222,7 +222,9 @@ rutas las calcula el motor (ADR-22).
 Recorrido de Watch en el prompt: `get_risks` → `find_stock` por producto →
 `plan_sourcing` con puntos/pedidos reales → `vehicle_availability` una sola vez
 → `propose_routes` → explicación. Después de riesgos, stock, origen y disponibilidad
-son lecturas independientes y el modelo las solicita juntas para reducir rondas
+son lecturas independientes. El modelo solicita ese grupo y, al final del
+mismo, la propuesta determinista: ninguna de estas operaciones reserva stock
+ni publica. Espera los resultados para explicar; así evita una ronda intermedia
 sin calcular asignaciones. `get_risks` conserva las filas con demanda positiva
 y nivel Critico/Alto/Vigilar; omite la copia redundante de facts, sin recalcular
 valores. `plan_sourcing` conserva cantidades, faltantes, asignaciones y opciones
@@ -256,3 +258,19 @@ se guarda en `ProposalJson.evidence` una copia de los valores de esos campos; lo
 posteriores del catálogo no alteran el historial. La secuencia final de visita se
 distingue de la prioridad de asignación del motor. Detalle de contratos y
 evidencia en `docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.
+
+El formato final se valida en `Prepare Result`: JSON con campos permitidos,
+tipos de texto, UUIDs y decisiones sin duplicar; luego la API valida correlación,
+cifras y mensaje. Se elimina el parser estructurado adjunto al agente, que
+produjo errores de formato durante la matriz real, sin añadir otra llamada LLM.
+n8n documenta esa limitación del parser con agentes en sus
+[incidencias de formato estructurado](https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.outputparserstructured/common-issues/).
+Salida inválida conserva el camino de respaldo determinista.
+
+Para mantener el presupuesto interactivo, tras firma/ACK/registro el workflow
+consulta una vez el contexto inicial: riesgos en Watch o impacto firmado en
+Incident. Es una lectura OAuth M2M a la URL configurada con X-Agent-Run-Id
+firmado, guard de plazo y timeout acotado; también queda en la traza. El agente
+recibe ese resultado como `initialContext` y elige las herramientas posteriores;
+get_risks/get_incident_impact siguen disponibles cuando falta ese contexto.
+Los datos de la respuesta se anidan y no pueden reemplazar identidad ni plazo.

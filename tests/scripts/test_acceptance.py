@@ -3,6 +3,8 @@
 
 import importlib.util
 import unittest
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 from pathlib import Path
 
 
@@ -14,6 +16,23 @@ SPEC.loader.exec_module(acceptance)
 
 
 class AcceptanceTests(unittest.TestCase):
+    def test_demo_setup_respects_retry_after_without_retrying_agent_runs(self):
+        client = acceptance.Client("http://api.invalid", "synthetic-test-token")
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.read.return_value = b'{"applied":true}'
+        limited = lambda: HTTPError("http://api.invalid", 429, "limited", {"Retry-After": "2"}, None)
+        with patch.object(acceptance, "urlopen", side_effect=[limited(), response]) as send, patch.object(acceptance.time, "sleep") as sleep:
+            self.assertTrue(client.request("POST", "demo/reset?fixture=demo-region")["applied"])
+            self.assertEqual(2, send.call_count)
+            sleep.assert_called_once_with(2)
+        with patch.object(acceptance, "urlopen", side_effect=limited()) as send, patch.object(acceptance.time, "sleep") as sleep:
+            with self.assertRaises(acceptance.AcceptanceError):
+                client.request("POST", "agent/runs", {"kind": "Watch"})
+            send.assert_called_once()
+            sleep.assert_not_called()
+
     def test_run_summary_counts_successful_calls_llm_and_prohibited_actions(self):
         summary = acceptance.summarize_run(
             "Injection-1",

@@ -113,14 +113,14 @@
       "name": "AI Agent",
       "onError": "continueRegularOutput",
       "parameters": {
-        "hasOutputParser": true,
+        "hasOutputParser": false,
         "options": {
           "maxIterations": 8,
           "returnIntermediateSteps": true,
           "systemMessage": "{{SYSTEM_PROMPT}}"
         },
         "promptType": "define",
-        "text": "={{ JSON.stringify($('Verify Signature').first().json.payload) }}"
+        "text": "={{ JSON.stringify({ ...$('Verify Signature').first().json.payload, initialContext: $('Verify Signature').first().json.payload.kind === 'Watch' && Array.isArray($json.items) ? { items: $json.items.filter(r => ['Critico', 'Alto', 'Vigilar'].includes(r.level) && r.suggestedQuantity > 0) } : $json }) }}"
       },
       "position": [
         1120,
@@ -155,21 +155,6 @@
       "typeVersion": 1
     },
     {
-      "id": "881d2617-eb03-573f-a7fe-e015fe986f0a",
-      "name": "Structured Output Parser",
-      "parameters": {
-        "autoFix": false,
-        "inputSchema": "{\"type\":\"object\",\"properties\":{\"decisions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"agentDecisionId\":{\"type\":\"string\"},\"explanation\":{\"type\":\"string\"},\"driverMessage\":{\"type\":\"string\"}},\"required\":[\"agentDecisionId\",\"explanation\",\"driverMessage\"],\"additionalProperties\":false}},\"summary\":{\"type\":\"string\"}},\"required\":[\"decisions\",\"summary\"],\"additionalProperties\":false}",
-        "schemaType": "manual"
-      },
-      "position": [
-        1390,
-        480
-      ],
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.3
-    },
-    {
       "id": "ad6aa558-9e9f-5a39-9eee-64cd5aaa4381",
       "name": "get_risks",
       "parameters": {
@@ -198,7 +183,7 @@
         "schemaType": "manual",
         "source": "parameter",
         "specifyInputSchema": true,
-        "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool propose_routes\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b value: input.query \\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst routePlanId = input.routePlanId || parsedQuery.routePlanId || (input.query && input.query.routePlanId) || parsedQuery.value || (typeof input.query === 'string' && input.query.trim().length === 36 ? input.query.trim() : '');\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst incidentRequired = false;\\\\nconst validIncident = !incidentRequired || Boolean(incidentId);\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validIncident && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validIncident ? 'incident_context_required' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b ...input, ...parsedQuery, routePlanId, runId, kind, incidentId, apiBaseUrl, deadlineUtc, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"94ed2afa-f694-59c7-931e-6a83c80c2b4b\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"POST\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/route-plans' \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId || ($json.query || \\u007b\\u007d).runId || '' \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d,\\\"sendBody\\\":true,\\\"specifyBody\\\":\\\"json\\\",\\\"jsonBody\\\":\\\"=\\u007b\\u007b JSON.stringify(\\u007b includeConsolidation: true \\u007d) \\u007d\\u007d\\\"\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"800105b7-2a84-5549-90ed-7e4becebf66f\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}"
+        "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool propose_routes\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b value: input.query \\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst routePlanId = input.routePlanId || parsedQuery.routePlanId || (input.query && input.query.routePlanId) || parsedQuery.value || (typeof input.query === 'string' && input.query.trim().length === 36 ? input.query.trim() : '');\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst incidentRequired = false;\\\\nconst validIncident = !incidentRequired || Boolean(incidentId);\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validIncident && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validIncident ? 'incident_context_required' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b ...input, ...parsedQuery, routePlanId, runId, kind, incidentId, apiBaseUrl, deadlineUtc, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"94ed2afa-f694-59c7-931e-6a83c80c2b4b\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"POST\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/route-plans' \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId || ($json.query || \\u007b\\u007d).runId || '' \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d,\\\"sendBody\\\":true,\\\"specifyBody\\\":\\\"json\\\",\\\"jsonBody\\\":\\\"=\\u007b\\u007b JSON.stringify(\\u007b includeConsolidation: true \\u007d) \\u007d\\u007d\\\"\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d,\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000303\\\",\\\"name\\\":\\\"Return Proposals\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[1140,180],\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"// Solo datos de la API: los facts son la fuente numérica autorizada de la explicación.\\\\nreturn \\u007b json: \\u007b routes: ($json.routes || []).map(r => (\\u007b\\\\n  routePlanId: r.routePlanId, agentDecisionId: r.agentDecisionId, vehicleCode: r.vehicleCode,\\\\n  stops: r.stops, facts: ($json.facts || []).filter(f => f.subject === r.vehicleCode)\\\\n\\u007d)), unserved: $json.unserved, facts: $json.facts, explanation: $json.explanation \\u007d \\u007d;\\\"\\u007d\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"HTTP Request\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Return Proposals\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"800105b7-2a84-5549-90ed-7e4becebf66f\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}"
       },
       "position": [
         1440,
@@ -268,7 +253,7 @@
       "id": "d15830c2-0f32-5f48-a270-20602a2c6dcc",
       "name": "Prepare Result",
       "parameters": {
-        "jsCode": "const fail = (reason) => ({ json: {\n  decisions: [], summary: null, model: 'deepseek-chat', promptVersion: '{{PROMPT_VERSION}}',\n  n8nExecutionId: String($execution.id), agentError: String(reason).slice(0, 500)\n} });\ntry {\n  if ($json.error) return fail('json.error present: ' + JSON.stringify($json.error));\n  let raw = typeof $json.output === 'string' ? $json.output.trim() : $json.output;\n  if (typeof raw === 'string' && raw.startsWith('```')) {\n    raw = raw.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '').trim();\n  }\n  const value = typeof raw === 'string' ? JSON.parse(raw) : raw;\n  if (!value || !Array.isArray(value.decisions) || value.decisions.length === 0 || typeof value.summary !== 'string') return fail('invalid value structure: ' + JSON.stringify(value));\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n  const decisions = value.decisions.map(decision => ({\n    agentDecisionId: String(decision.agentDecisionId || ''),\n    explanation: String(decision.explanation || ''),\n    driverMessage: String(decision.driverMessage || '')\n  }));\n  if (decisions.some(d => !uuid.test(d.agentDecisionId) || !d.explanation)) return fail('decisions validation failed: ' + JSON.stringify(decisions));\n  return { json: {\n    decisions, summary: value.summary, model: 'deepseek-chat', promptVersion: '{{PROMPT_VERSION}}',\n    n8nExecutionId: String($execution.id), agentError: null\n  } };\n} catch (err) {\n  return fail('catch error: ' + err.message);\n}",
+        "jsCode": "const fail = (reason) => ({ json: {\n  decisions: [], summary: null, model: 'deepseek-chat', promptVersion: '{{PROMPT_VERSION}}',\n  n8nExecutionId: String($execution.id), agentError: String(reason).slice(0, 500)\n} });\ntry {\n  if ($json.error) return fail('json.error present: ' + JSON.stringify($json.error));\n  let raw = typeof $json.output === 'string' ? $json.output.trim() : $json.output;\n  if (typeof raw === 'string' && raw.startsWith('```')) {\n    raw = raw.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '').trim();\n  }\n  const value = typeof raw === 'string' ? JSON.parse(raw) : raw;\n  const only = (obj, keys) => obj && typeof obj === 'object' && !Array.isArray(obj) && Object.keys(obj).every(key => keys.includes(key));\n  if (!only(value, ['decisions', 'summary']) || !Array.isArray(value.decisions) || value.decisions.length === 0 || typeof value.summary !== 'string') return fail('invalid value structure: ' + JSON.stringify(value));\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n  if (value.decisions.some(d => !only(d, ['agentDecisionId', 'explanation', 'driverMessage']) || ['agentDecisionId', 'explanation', 'driverMessage'].some(key => typeof d[key] !== 'string'))) return fail('invalid decision structure');\n  if (new Set(value.decisions.map(d => d.agentDecisionId.toLowerCase())).size !== value.decisions.length) return fail('duplicate decisions');\n  const decisions = value.decisions.map(decision => ({\n    agentDecisionId: String(decision.agentDecisionId || ''),\n    explanation: String(decision.explanation || ''),\n    driverMessage: String(decision.driverMessage || '')\n  }));\n  if (decisions.some(d => !uuid.test(d.agentDecisionId) || !d.explanation)) return fail('decisions validation failed: ' + JSON.stringify(decisions));\n  return { json: {\n    decisions, summary: value.summary, model: 'deepseek-chat', promptVersion: '{{PROMPT_VERSION}}',\n    n8nExecutionId: String($execution.id), agentError: null\n  } };\n} catch (err) {\n  return fail('catch error: ' + err.message);\n}",
         "mode": "runOnceForEachItem"
       },
       "position": [
@@ -482,6 +467,89 @@
       ],
       "id": "19500000-0000-4000-8000-000000000003",
       "name": "vehicle_availability"
+    },
+    {
+      "id": "19500000-0000-4000-8000-000000000401",
+      "name": "Initial Context Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "19500000-0000-4000-8000-000000000402",
+              "leftValue": "={{ Date.parse($('Verify Signature').first().json.payload.deadlineUtc) - Date.now() >= 2200 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "19500000-0000-4000-8000-000000000403",
+      "name": "Load Initial Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1240,
+        140
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ISTPETDEV_API_BASE_URL + '/risks' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Run-Id",
+              "value": "={{ $('Verify Signature').first().json.payload.runId }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": "={{ Math.max(1000, Math.min(15000, Date.parse($('Verify Signature').first().json.payload.deadlineUtc) - Date.now() - 1200)) }}"
+        }
+      },
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      }
+    },
+    {
+      "id": "19500000-0000-4000-8000-000000000404",
+      "name": "Initial Context Skipped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { skipped: true, reason: 'deadline_too_short' } };"
+      }
     }
   ],
   "connections": {
@@ -533,20 +601,9 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Structured Output Parser": {
-      "ai_outputParser": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_outputParser"
+            "node": "Initial Context Allowed?",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -697,6 +754,46 @@
             "index": 0,
             "node": "AI Agent",
             "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Initial Context Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Load Initial Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Initial Context Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Initial Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initial Context Skipped": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
           }
         ]
       ]

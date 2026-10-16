@@ -53,15 +53,27 @@ class Client:
                 "User-Agent": "istpetdev-acceptance/1.0",
             },
         )
-        try:
-            with urlopen(request, timeout=12) as response:
-                body = response.read()
-                status = response.status
-        except HTTPError as exc:
-            raise AcceptanceError(f"{method} {path}: HTTP {exc.code}") from None
-        except (URLError, TimeoutError) as exc:
-            reason = "timeout" if isinstance(exc, TimeoutError) else "network error"
-            raise AcceptanceError(f"{method} {path}: {reason}") from None
+        for attempt in range(4):
+            try:
+                with urlopen(request, timeout=12) as response:
+                    body = response.read()
+                    status = response.status
+                break
+            except HTTPError as exc:
+                # Solo preparación del fixture: no reintentar una ejecución ni
+                # ocultar fallos del proveedor dentro de la medición del agente.
+                if exc.code == 429 and method == "POST" and path.lstrip("/").startswith("demo/") and attempt < 3:
+                    try:
+                        delay = float((exc.headers or {}).get("Retry-After", "1"))
+                    except ValueError:
+                        delay = 1
+                    exc.close()
+                    time.sleep(max(1, min(60, delay)))
+                    continue
+                raise AcceptanceError(f"{method} {path}: HTTP {exc.code}") from None
+            except (URLError, TimeoutError) as exc:
+                reason = "timeout" if isinstance(exc, TimeoutError) else "network error"
+                raise AcceptanceError(f"{method} {path}: {reason}") from None
         if status not in expected:
             raise AcceptanceError(f"{method} {path}: HTTP {status}")
         if not body:
