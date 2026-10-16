@@ -7,12 +7,6 @@ import {
   IonContent,
   IonButton,
   IonInput,
-  IonBadge,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
@@ -35,12 +29,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     IonContent,
     IonButton,
     IonInput,
-    IonBadge,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardSubtitle,
-    IonCardContent,
     WarehouseComponent
   ],
   template: `
@@ -359,61 +347,97 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
                   <span>Vehículo: {{ route.vehicleCode }}</span>
                 </div>
+
                 @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
-                  <ion-card class="m-0 border border-amber-300 shadow-sm bg-amber-50">
-                    <ion-card-header class="pb-2">
-                      <ion-badge color="warning">#{{ pickup.sequence }} - Recogida</ion-badge>
-                      <ion-card-title class="text-base">{{ pickup.pointName }}</ion-card-title>
-                      @if (pickup.address) { <ion-card-subtitle>{{ pickup.address }}</ion-card-subtitle> }
-                    </ion-card-header>
-                    <ion-card-content class="pt-0 text-xs font-semibold text-amber-950">
-                      Punto de recogida - {{ pickup.pointCode }}
-                    </ion-card-content>
-                  </ion-card>
+                  <div class="driver-stop-card is-pickup cursor-pointer" (click)="openScan('pickup')">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="stop-tag is-pickup">Parada #{{ pickup.sequence }} · Recogida</span>
+                      <span class="text-xs font-bold text-amber-800 underline">Escanear caja →</span>
+                    </div>
+                    <h2 class="stop-title">{{ pickup.pointName }}</h2>
+                    @if (pickup.address) {
+                      <p class="stop-address">{{ pickup.address }}</p>
+                    }
+                    <div class="text-xs text-amber-900 font-medium">
+                      Toca aquí para escanear y verificar las cajas que subes al vehículo.
+                    </div>
+                  </div>
                 }
 
                 @for (del of route.deliveries; track del.deliveryId) {
-                  <div class="stripe-card" [class.border-amber-300]="del.kind === 'Pickup'">
-                    <div class="stripe-card-header pb-2">
-                      <div class="flex items-center gap-1.5">
-                        <span class="stripe-tag" [class.is-warning]="del.kind === 'Pickup'">
-                          #{{ del.sequence }} {{ del.kind === 'Pickup' ? '📦 Recogida' : '🏥 Entrega' }}
+                  @if (del.kind === 'Pickup') {
+                    <div class="driver-stop-card is-pickup cursor-pointer" (click)="openScan('pickup')">
+                      <div class="flex items-center justify-between mb-1.5">
+                        <span class="stop-tag is-pickup">Parada #{{ del.sequence }} · Recogida</span>
+                        <span class="text-xs font-bold text-amber-800 underline">Escanear caja →</span>
+                      </div>
+                      <h2 class="stop-title">{{ del.pointName }}</h2>
+                      @if (del.address) {
+                        <p class="stop-address">{{ del.address }}</p>
+                      }
+                      @if (getDeliveryProducts(del).length > 0) {
+                        <div class="stop-products-section">
+                          <span class="stop-products-title">Cajas y productos a recoger:</span>
+                          <div class="space-y-1.5">
+                            @for (prod of getDeliveryProducts(del); track prod.name) {
+                              <div class="product-row">
+                                <span class="product-name">{{ prod.name }}</span>
+                                <span class="product-qty">{{ prod.quantity }} {{ prod.unit }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                      <div class="text-xs text-amber-900 font-medium">
+                        Toca aquí para escanear y verificar las cajas que subes al vehículo.
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="driver-stop-card">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="stop-tag">Parada #{{ del.sequence }}</span>
+                        <span class="status-badge" [class.is-done]="driverStage(del) === 'Received' || driverStage(del) === 'Partial'">
+                          {{ driverStageLabel(del) }}
                         </span>
-                        @if (del.kind === 'Pickup') {
-                          <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Bodega</span>
+                      </div>
+
+                      <!-- Nombre del lugar (Prominente, limpio, sin iconos) -->
+                      <h2 class="stop-title">{{ del.pointName }}</h2>
+                      @if (del.address) {
+                        <p class="stop-address">{{ del.address }}</p>
+                      }
+
+                      <!-- Productos a dejar con cantidad y nombre -->
+                      <div class="stop-products-section">
+                        <span class="stop-products-title">Productos a dejar:</span>
+                        @if (getDeliveryProducts(del).length > 0) {
+                          <div class="space-y-1.5">
+                            @for (prod of getDeliveryProducts(del); track prod.name) {
+                              <div class="product-row">
+                                <span class="product-name">{{ prod.name }}</span>
+                                <span class="product-qty">{{ prod.quantity }} {{ prod.unit }}</span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <p class="text-xs text-slate-500 italic">
+                            {{ del.handlingUnits.length > 0 ? (del.handlingUnits.length + ' bulto(s) asignados') : 'Sin bultos asignados' }}
+                          </p>
                         }
                       </div>
-                      <span class="text-xs font-semibold text-slate-500">ID: {{ del.pointCode }}</span>
-                    </div>
 
-                    <h3 class="font-bold text-sm text-slate-900 px-4 mb-1">{{ del.pointName }}</h3>
-                    <p class="text-xs text-slate-500 px-4 mb-3">{{ del.address }}</p>
-
-                    <div class="px-4 pb-3">
-                      <div class="p-2.5 rounded-lg border flex items-center justify-between"
-                           [class.bg-amber-50]="del.kind === 'Pickup'"
-                           [class.border-amber-200]="del.kind === 'Pickup'"
-                           [class.bg-slate-50]="del.kind !== 'Pickup'"
-                           [class.border-slate-200]="del.kind !== 'Pickup'">
-                        <div>
-                          <span class="text-xs font-bold block" [class.text-amber-950]="del.kind === 'Pickup'" [class.text-slate-800]="del.kind !== 'Pickup'">
-                            {{ del.kind === 'Pickup' ? 'Carga / Retiro' : 'Entrega' }} {{ del.deliveryId }}
-                          </span>
-                          <span class="text-[11px] text-slate-500">
-                            Bultos HU: {{ del.handlingUnits.length }} • {{ driverStageLabel(del) }}
-                          </span>
-                        </div>
-
-                        <ion-button
-                          size="small"
-                          [color]="driverActionColor(del)"
+                      <!-- Botón de acción al pie de la tarjeta sin cajas anidadas -->
+                      <div class="stop-card-footer">
+                        <button
+                          type="button"
+                          class="stop-action-btn"
                           [disabled]="!driverActionable(del)"
                           (click)="goToDelivery(del.deliveryId)">
                           {{ driverActionLabel(del) }}
-                        </ion-button>
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  }
                 }
               </div>
             }
@@ -801,105 +825,133 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     }
 
     /* --- Guía de Configuración Inferior Flotante (Stripe Setup Guide) --- */
-    .stripe-setup-dock {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
+    /* --- Tarjetas de Parada y Entrega para el Conductor (Sin cajas dentro de cajas) --- */
+    .driver-stop-card {
       background: #ffffff;
-      border-top: 1px solid #E3E8EF;
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
-      box-shadow: 0 -4px 18px rgba(10, 37, 64, 0.08);
-      padding: 14px 18px max(14px, env(safe-area-inset-bottom));
-      transition: all 0.25s ease-in-out;
+      border: 1px solid #E3E8EF;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+      transition: all 0.15s ease-in-out;
     }
 
-    .setup-dock-header {
+    .driver-stop-card.is-pickup {
+      border-left: 4px solid #EA601F;
+      background: #FFFDFB;
+    }
+
+    .stop-tag {
+      font-size: 11px;
+      font-weight: 750;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .stop-tag.is-pickup {
+      color: #C2410C;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .status-badge.is-done {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .stop-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0A2540;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+
+    .stop-address {
+      font-size: 12px;
+      color: #64748B;
+      margin: 0 0 12px;
+      line-height: 1.35;
+    }
+
+    .stop-products-section {
+      padding: 10px 0;
+      border-top: 1px solid #F1F5F9;
+      border-bottom: 1px solid #F1F5F9;
+      margin-bottom: 12px;
+    }
+
+    .stop-products-title {
+      display: block;
+      font-size: 11px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .product-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      cursor: pointer;
+      gap: 8px;
+      font-size: 13px;
+      padding: 3px 0;
     }
 
-    .setup-dock-title {
-      font-size: 14px;
+    .product-name {
+      color: #1E293B;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .product-qty {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-weight: 750;
       color: #0A2540;
-      letter-spacing: -0.01em;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
     }
 
-    .setup-dock-chevron {
-      background: transparent;
-      border: none;
-      color: #64748B;
-      cursor: pointer;
+    .stop-card-footer {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 4px;
+      justify-content: flex-end;
     }
 
-    .setup-dock-progress-bar {
+    .stop-action-btn {
       width: 100%;
-      height: 4px;
-      background: #E3E8EF;
-      border-radius: 9999px;
-      overflow: hidden;
-      margin: 10px 0 8px;
-    }
-
-    .setup-dock-progress-fill {
-      height: 100%;
-      background: #00A7C4; /* Clean Cyan Oficial */
-      border-radius: 9999px;
-      transition: width 0.3s ease;
-    }
-
-    .setup-dock-subtitle {
-      font-size: 12px;
-      color: #64748B;
-      font-weight: 500;
-    }
-
-    .setup-step-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 6px 0;
-    }
-
-    .setup-step-item .step-icon {
+      padding: 10px 16px;
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
       font-size: 13px;
-      font-weight: 700;
-      width: 20px;
-      display: flex;
-      justify-content: center;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background-color 0.15s;
     }
 
-    .setup-step-item .step-icon.done {
-      color: #00A7C4;
+    .stop-action-btn:hover {
+      background: #008CA5;
     }
 
-    .setup-step-item .step-icon.current {
-      color: #EA601F;
-    }
-
-    .setup-step-item .step-icon.pending {
-      color: #CBD5E1;
-    }
-
-    .setup-step-item .step-text strong {
-      display: block;
-      font-size: 12px;
-      color: #0A2540;
-    }
-
-    .setup-step-item .step-text small {
-      display: block;
-      font-size: 11px;
-      color: #64748B;
+    .stop-action-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
     }
   `]
 })
@@ -1328,8 +1380,47 @@ export class HomePage {
     }
   }
 
-  openScan(): void {
-    this.router.navigate(['/scan']);
+  openScan(mode?: string): void {
+    if (mode) {
+      this.router.navigate(['/scan'], { queryParams: { mode } });
+    } else {
+      this.router.navigate(['/scan']);
+    }
+  }
+
+  getDeliveryProducts(del: MobileAssignmentDelivery): Array<{ name: string; quantity: number; unit: string }> {
+    if (!del || !del.handlingUnits) return [];
+    const productMap = new Map<string, { name: string; quantity: number; unit: string }>();
+
+    for (const hu of del.handlingUnits) {
+      if (!hu.lines) continue;
+      for (const line of hu.lines) {
+        const rawName = (line as any).productName || line.sku || 'Producto';
+        const displayName = this.formatProductName(rawName);
+        const key = `${displayName}__${line.unit}`;
+        const existing = productMap.get(key);
+        if (existing) {
+          existing.quantity += line.quantity;
+        } else {
+          productMap.set(key, {
+            name: displayName,
+            quantity: line.quantity,
+            unit: line.unit
+          });
+        }
+      }
+    }
+    return Array.from(productMap.values());
+  }
+
+  formatProductName(codeOrName: string): string {
+    if (!codeOrName) return 'Producto';
+    const upper = codeOrName.toUpperCase();
+    if (upper.includes('PINOK') || upper.includes('DESINF')) return 'Pinoklin Desinfectante 5L';
+    if (upper.includes('AMOX')) return 'Amoxicilina 500mg';
+    if (upper.includes('ALCOHOL') || upper.includes('ALC')) return 'Alcohol 70% 1L';
+    if (upper.includes('SUERO') || upper.includes('FISIO')) return 'Suero Fisiológico 500ml';
+    return codeOrName;
   }
 
   openIncident(): void {
