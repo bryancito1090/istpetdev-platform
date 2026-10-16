@@ -776,14 +776,42 @@ productiva al ejecutar esta validación.
 
 - [x] Revisar workflows, prompt, traza y pruebas; preparar el
   [plan de implementación y entrega](plan-195-herramientas-n8n.md).
-- [ ] OpenCode: crear checkout y rama independientes desde develop; contrastar
+- [x] OpenCode: crear checkout y rama independientes desde develop; contrastar
   contratos finales de #194/#193 sin editar el trabajo de Antigravity ni #201.
-- [ ] Añadir find_stock, plan_sourcing y vehicle_availability a ambas plantillas;
+- [x] Añadir find_stock, plan_sourcing y vehicle_availability a ambas plantillas;
   ajustar prompt, esquemas, contexto firmado, deadline y exportaciones.
 - [ ] Verificar origen, vehículo y prioridad deterministas visibles en AgentRun;
   probar seguridad, fallback, generación y ejecución real de n8n/DeepSeek.
 - [ ] Actualizar contratos, allowlists y evidencia; publicar PR a develop,
   resolver conflictos, verificar CI/aprobación e integrar si cumple criterios.
 
-Estado: planificación únicamente. Implementación, pruebas, ejecución real, CI y
-merge pendientes; transferencia solicitada a OpenCode. Sin despliegue incluido.
+Estado: implementación y pruebas locales en curso. Rama
+`feature/195-herramientas-n8n-abastecimiento` creada en checkout Orca aislado
+desde `origin/develop` `1dcfb51`; plan y esta entrada copiados sin los cambios
+ajenos del spec 006 ni el seguimiento de #194.
+
+Avance del 16-oct-2026:
+
+- Prompt v2 (`automation/n8n/prompts/agente-logistico-v2.md`) con recorrido
+  riesgos → stock → origen → vehículos → rutas, criterio del motor y casos sin
+  datos; generador y `acceptance.py` apuntan a v2.
+- Ambas plantillas tienen ocho tools `toolWorkflow` conectados al AI Agent
+  (cinco existentes + `find_stock`, `plan_sourcing`, `vehicle_availability`),
+  esquemas estrictos y wrappers que solo reenvían campos de allowlist desde el
+  contexto firmado; timeout HTTP dinámico acotado al deadline (margen 1200 ms)
+  en los ocho tools y en el callback; HMAC, ACK 202, registro de ejecución y
+  Error Trigger sin cambios.
+- `vehicle_availability` no acepta fecha libre: el contexto firmado no autoriza
+  otro día; consulta el reloj operativo del servidor. `criticalDeadline` (#193)
+  queda fuera de este PR al no existir el campo publicado en develop; hueco
+  documentado en la evidencia.
+- Pruebas: `test_workflow_context` cubre los ocho tools, argumentos hostiles,
+  allowlists, deadline y URLs; `test_build_workflows`, `test_acceptance`,
+  `WorkflowSecretsTests` (plantillas + subworkflows embebidos + pinData) y el
+  ensayo nuevo `N8nSupplyToolsTests` con n8n 2.39.5 real sobre stub.
+- Evidencia determinista en `AgentRunView`: por decisión se exponen
+  `originWarehouseCode`/`originWarehouseName` (bodega base del vehículo) y
+  `orderedStops` (secuencia real de paradas del plan), derivados por servidor;
+  cubierto en `AgentRunTraceTests` y `AgentJourneyTests` para LLM y fallback.
+- Pendiente en esta entrada: suite completa, ensayo real local con DeepSeek,
+  documentación de bóveda/contratos, PR, integración de #194/#193, CI y merge.
