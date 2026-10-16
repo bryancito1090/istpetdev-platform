@@ -66,16 +66,10 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
     private static async Task<(Guid UnitId, FieldSeed.Dispatched Delivery)> SeedUnitAsync(ApiFactory api, decimal quantity = 12m)
     {
         var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
-        var d = await FieldSeed.DispatchedDeliveryAsync(api, quantity, suffix);
-        using var scope = api.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var actor = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
-        var unit = new HandlingUnit { Code = $"CAJA-{suffix}", LocationId = d.VehicleLocationId, Status = "Dispatched", DeliveryId = d.DeliveryId };
-        db.AddRange(unit,
-            new HandlingUnitLine { HandlingUnitId = unit.Id, LotId = d.LotId, Quantity = quantity },
-            new QrAccessToken { HandlingUnitId = unit.Id, TokenHash = Hash(Token), ExpiresAtUtc = DateTime.UtcNow.AddDays(7), CreatedByAccountId = actor.Id });
-        await db.SaveChangesAsync();
-        return (unit.Id, d);
+        // #162: el receptor solo recibe un bulto que el conductor ya entregó físicamente.
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, quantity, suffix, withHandlingUnit: true, unitToken: Token);
+        await FieldSeed.DeliverUnitAsync(api, d);
+        return (d.UnitId!.Value, d);
     }
 
     private static HttpRequestMessage Request(HttpMethod method, string url, string? token, object? body = null, Guid? operationId = null)
@@ -108,7 +102,7 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
         using var json = JsonDocument.Parse(text);
         var root = json.RootElement;
         Assert.Equal(d.DeliveryId, root.GetProperty("deliveryId").GetGuid());
-        Assert.Equal("Dispatched", root.GetProperty("status").GetString());
+        Assert.Equal("Delivered", root.GetProperty("status").GetString());
         Assert.Equal("Punto de prueba", root.GetProperty("destinationName").GetString());
         var line = Assert.Single(root.GetProperty("lines").EnumerateArray());
         Assert.Equal(d.DeliveryLineId, line.GetProperty("deliveryLineId").GetGuid());
@@ -147,7 +141,7 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var receiver = await db.Accounts.SingleAsync(a => a.Subject == Receiver);
-        Assert.Equal("Delivered", (await db.Deliveries.SingleAsync(x => x.Id == d.DeliveryId)).Status);
+        Assert.Equal("Received", (await db.Deliveries.SingleAsync(x => x.Id == d.DeliveryId)).Status);
         Assert.Equal("Received", (await db.HandlingUnits.SingleAsync(x => x.Id == unitId)).Status);
         Assert.True(await db.Receipts.AnyAsync(r => r.DeliveryId == d.DeliveryId && r.ActorAccountId == receiver.Id));
     }
@@ -185,7 +179,7 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.Equal("Dispatched", (await db.Deliveries.SingleAsync(x => x.Id == d.DeliveryId)).Status);
+        Assert.Equal("Delivered", (await db.Deliveries.SingleAsync(x => x.Id == d.DeliveryId)).Status);
         Assert.False(await db.Receipts.AnyAsync(r => r.DeliveryId == d.DeliveryId));
     }
     [Fact]

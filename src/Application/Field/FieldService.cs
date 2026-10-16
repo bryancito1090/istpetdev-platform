@@ -54,9 +54,17 @@ public sealed class FieldService : IFieldService
             .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
 
-        if (delivery.Status == "Dispatched" || delivery.Status == "Delivered")
+        // #162: solo una entrega Draft admite empaque; no hay preparación retroactiva tras despachar.
+        if (delivery.Status != DeliveryStates.Draft)
         {
-            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, "La entrega ya fue despachada o recibida.");
+            throw new FieldConflictException(FieldErrorCodes.InvalidStateTransition,
+                $"No se puede preparar bultos en una entrega en estado {delivery.Status}; solo una entrega Draft admite empaque.");
+        }
+
+        if (request.Lines.Count == 0 || request.Lines.Any(l => l.Quantity <= 0m))
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded,
+                "La preparación debe incluir al menos una línea con cantidad positiva.");
         }
 
         var deliveryLines = await _db.DeliveryLines
@@ -133,7 +141,7 @@ public sealed class FieldService : IFieldService
             Code = huCode,
             DeliveryId = delivery.Id,
             LocationId = delivery.OriginLocationId,
-            Status = "Prepared",
+            Status = HandlingUnitStates.Sealed,
             SealedAtUtc = DateTime.UtcNow
         };
 
@@ -199,30 +207,35 @@ public sealed class FieldService : IFieldService
         string idempotencyKey,
         CancellationToken ct = default)
     {
-        // 1. Idempotencia
-        var existingRecord = await _db.IdempotencyRecords
-            .FirstOrDefaultAsync(r => r.OrganizationId == DemoOrganization.Id &&
-                                      r.AccountId == actorAccountId &&
-                                      r.OperationId == request.OperationId &&
-                                      r.ActionCode == "Dispatch", ct);
+        const string actionCode = "Dispatch";
 
-        if (existingRecord != null)
-        {
-            if (existingRecord.ResponseStatus == 200 && !string.IsNullOrWhiteSpace(existingRecord.ResponseJson))
-            {
-                return JsonSerializer.Deserialize<DispatchResponse>(existingRecord.ResponseJson, JsonOptions)
-                    ?? throw new InvalidOperationException("No se pudo deserializar respuesta previa.");
-            }
-            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, "Operación de despacho ya en curso o duplicada con conflicto.");
-        }
+        // 1. Replay rápido de la misma operación (respuesta idempotente antes de cualquier efecto).
+        var replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
+
+        // El bloqueo de organización serializa despachos y recepciones concurrentes sobre la misma demo.
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.LockOrganizationAsync(ct);
+
+        // Un reintento concurrente de la misma operación ya entró: devolver su respuesta sin volver a mover stock.
+        replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
 
         var delivery = await _db.Deliveries
             .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
 
-        if (delivery.Status == "Dispatched" || delivery.Status == "Delivered")
+        // #162: el despacho solo procede desde Draft; no hay despacho retroactivo ni repetido.
+        if (delivery.Status != DeliveryStates.Draft)
         {
-            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, "La entrega ya se encuentra despachada.");
+            throw new FieldConflictException(FieldErrorCodes.InvalidStateTransition,
+                $"Solo una entrega Draft puede despacharse; la entrega está en {delivery.Status}.");
+        }
+
+        if (request.HandlingUnitIds is null || request.HandlingUnitIds.Count == 0)
+        {
+            throw new FieldConflictException(FieldErrorCodes.NoHandlingUnits,
+                "El despacho debe incluir al menos un bulto preparado por Bodega.");
         }
 
         var handlingUnits = await _db.HandlingUnits
@@ -238,7 +251,13 @@ public sealed class FieldService : IFieldService
         {
             if (hu.DeliveryId != delivery.Id)
             {
-                throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, $"La caja {hu.Code} no pertenece a esta entrega.");
+                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict, $"La caja {hu.Code} no pertenece a esta entrega.");
+            }
+
+            if (!HandlingUnitStates.IsPrepared(hu.Status))
+            {
+                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                    $"La caja {hu.Code} no está preparada para despacho (estado {hu.Status}).");
             }
         }
 
@@ -344,7 +363,8 @@ public sealed class FieldService : IFieldService
 
         foreach (var hu in handlingUnits)
         {
-            hu.Status = "Dispatched";
+            hu.Status = HandlingUnitStates.Dispatched;
+            hu.LocationId = vehicleLocationId;
 
             var custodyEvent = new CustodyEvent
             {
@@ -354,7 +374,7 @@ public sealed class FieldService : IFieldService
                 FromLocationId = delivery.OriginLocationId,
                 ToLocationId = vehicleLocationId,
                 ActorAccountId = actorAccountId,
-                EventKind = "Dispatched",
+                EventKind = CustodyEventKinds.Dispatched,
                 OperationId = request.OperationId,
                 OccurredAtDevice = request.OccurredAtDevice,
                 ReceivedAtServer = now
@@ -367,12 +387,12 @@ public sealed class FieldService : IFieldService
             }
         }
 
-        delivery.Status = "Dispatched";
+        delivery.Status = DeliveryStates.Dispatched;
         delivery.DispatchedAtUtc = now;
 
         var response = new DispatchResponse(
             delivery.Id,
-            "Dispatched",
+            DeliveryStates.Dispatched,
             handlingUnits.Select(h => h.Id).ToList(),
             now,
             firstCustodyEventId != Guid.Empty ? firstCustodyEventId : Guid.NewGuid());
@@ -382,7 +402,7 @@ public sealed class FieldService : IFieldService
             OrganizationId = DemoOrganization.Id,
             AccountId = actorAccountId,
             OperationId = request.OperationId,
-            ActionCode = "Dispatch",
+            ActionCode = actionCode,
             RequestHash = ComputeSha256(idempotencyKey + request.OperationId),
             ResponseStatus = 200,
             ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
@@ -392,17 +412,158 @@ public sealed class FieldService : IFieldService
         _db.IdempotencyRecords.Add(record);
 
         await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return response;
     }
 
-    public async Task<ReceiptResponse> CreateReceiptAsync(
+    // #162: el conductor asignado toma la custodia (Dispatched → InTransit) y la entrega
+    // físicamente en el punto (InTransit → Delivered). Son eventos de custodia sin movimiento de stock.
+    public Task<CustodyTransitionResponse> PickupAsync(
         Guid deliveryId,
-        CreateReceiptRequest request,
+        CustodyTransitionRequest request,
         Guid actorAccountId,
         string idempotencyKey,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        AdvanceCustodyAsync(deliveryId, request, actorAccountId, idempotencyKey, "Pickup",
+            DeliveryStates.Dispatched, DeliveryStates.InTransit, HandlingUnitStates.Dispatched,
+            HandlingUnitStates.InTransit, CustodyEventKinds.PickedUp, ct);
+
+    public Task<CustodyTransitionResponse> DeliverAsync(
+        Guid deliveryId,
+        CustodyTransitionRequest request,
+        Guid actorAccountId,
+        string idempotencyKey,
+        CancellationToken ct = default) =>
+        AdvanceCustodyAsync(deliveryId, request, actorAccountId, idempotencyKey, "Deliver",
+            DeliveryStates.InTransit, DeliveryStates.Delivered, HandlingUnitStates.InTransit,
+            HandlingUnitStates.Delivered, CustodyEventKinds.Delivered, ct);
+
+    private async Task<CustodyTransitionResponse> AdvanceCustodyAsync(
+        Guid deliveryId,
+        CustodyTransitionRequest request,
+        Guid actorAccountId,
+        string idempotencyKey,
+        string actionCode,
+        string fromDeliveryState,
+        string toDeliveryState,
+        string fromUnitState,
+        string toUnitState,
+        string eventKind,
+        CancellationToken ct,
+        bool requireAssignedDriver = true)
     {
-        return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, requireAssignedDriver: true, ct);
+        var replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.LockOrganizationAsync(ct);
+
+        replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
+
+        var delivery = await _db.Deliveries
+            .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
+            ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
+
+        // La ausencia de asignación no concede permiso: sin conductor asignado la transición es 403.
+        if (requireAssignedDriver && delivery.AssignedAccountId != actorAccountId)
+        {
+            throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment,
+                "El conductor no está asignado a esta entrega.");
+        }
+
+        if (delivery.Status != fromDeliveryState)
+        {
+            if (delivery.Status is DeliveryStates.Received or DeliveryStates.Partial)
+            {
+                throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
+                    "La entrega ya fue recibida en el punto; no admite más transiciones de custodia.");
+            }
+
+            if (delivery.Status is DeliveryStates.Draft)
+            {
+                throw new FieldConflictException(FieldErrorCodes.NotDispatched,
+                    "La entrega aún no fue despachada por Bodega.");
+            }
+
+            var expectation = actionCode == "Pickup"
+                ? "solo una entrega despachada puede recogerse"
+                : "solo una entrega en ruta puede marcarse como entregada";
+            throw new FieldConflictException(FieldErrorCodes.InvalidStateTransition,
+                $"Transición inválida: {expectation} (estado actual {delivery.Status}).");
+        }
+
+        var handlingUnits = await _db.HandlingUnits
+            .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        if (handlingUnits.Count == 0)
+        {
+            throw new FieldConflictException(FieldErrorCodes.NoHandlingUnits,
+                "La entrega no tiene bultos preparados por Bodega; el conductor no puede asumir custodia.");
+        }
+
+        foreach (var hu in handlingUnits)
+        {
+            if (hu.Status != fromUnitState)
+            {
+                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                    $"El bulto {hu.Code} no está en el estado esperado ({fromUnitState}); estado actual {hu.Status}.");
+            }
+        }
+
+        // Evento de custodia: sin movimiento de inventario. Las ubicaciones describen la cadena física.
+        var (vehicleLocationId, destinationLocationId) = await ResolveVehicleAndDestinationAsync(delivery, handlingUnits, ct);
+        var now = DateTime.UtcNow;
+        var fromLocationId = actionCode == "Pickup" ? delivery.OriginLocationId : vehicleLocationId;
+        var toLocationId = actionCode == "Pickup" ? vehicleLocationId : destinationLocationId;
+
+        delivery.Status = toDeliveryState;
+        Guid firstCustodyEventId = Guid.Empty;
+        foreach (var hu in handlingUnits)
+        {
+            hu.Status = toUnitState;
+
+            var custodyEvent = new CustodyEvent
+            {
+                OrganizationId = DemoOrganization.Id,
+                HandlingUnitId = hu.Id,
+                DeliveryId = delivery.Id,
+                FromLocationId = fromLocationId,
+                ToLocationId = toLocationId,
+                ActorAccountId = actorAccountId,
+                EventKind = eventKind,
+                OperationId = request.OperationId,
+                OccurredAtDevice = request.OccurredAtDevice,
+                ReceivedAtServer = now
+            };
+            _db.CustodyEvents.Add(custodyEvent);
+            if (firstCustodyEventId == Guid.Empty) firstCustodyEventId = custodyEvent.Id;
+        }
+
+        var response = new CustodyTransitionResponse(
+            delivery.Id,
+            toDeliveryState,
+            handlingUnits.Select(h => h.Id).ToList(),
+            now,
+            firstCustodyEventId != Guid.Empty ? firstCustodyEventId : Guid.NewGuid());
+
+        _db.IdempotencyRecords.Add(new IdempotencyRecord
+        {
+            OrganizationId = DemoOrganization.Id,
+            AccountId = actorAccountId,
+            OperationId = request.OperationId,
+            ActionCode = actionCode,
+            RequestHash = ComputeSha256(idempotencyKey + request.OperationId),
+            ResponseStatus = 200,
+            ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
+            CompletedAtUtc = now,
+            RetainUntilUtc = now.AddDays(7)
+        });
+
+        await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return response;
     }
 
     private async Task<ReceiptResponse> CreateReceiptCoreAsync(
@@ -410,41 +571,85 @@ public sealed class FieldService : IFieldService
         CreateReceiptRequest request,
         Guid actorAccountId,
         string idempotencyKey,
-        bool requireAssignedDriver,
         CancellationToken ct)
     {
-        // 1. Idempotencia
-        var existingRecord = await _db.IdempotencyRecords
-            .FirstOrDefaultAsync(r => r.OrganizationId == DemoOrganization.Id &&
-                                      r.AccountId == actorAccountId &&
-                                      r.OperationId == request.OperationId &&
-                                      r.ActionCode == "Receipt", ct);
+        const string actionCode = "Receipt";
 
-        if (existingRecord != null)
-        {
-            if (existingRecord.ResponseStatus == 200 && !string.IsNullOrWhiteSpace(existingRecord.ResponseJson))
-            {
-                return JsonSerializer.Deserialize<ReceiptResponse>(existingRecord.ResponseJson, JsonOptions)
-                    ?? throw new InvalidOperationException("No se pudo deserializar recibo previo.");
-            }
-            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict, "Recepción ya procesada con conflicto.");
-        }
+        // 1. Replay rápido de la misma operación válida: devuelve la respuesta previa incluso
+        //    después de que la entrega avanzó a un estado terminal.
+        var replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
+
+        // El bloqueo de organización serializa recepciones concurrentes: dos cuentas o claves no duplican stock.
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.LockOrganizationAsync(ct);
+
+        replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        if (replay is not null) return replay;
 
         var delivery = await _db.Deliveries
             .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
 
-        // 2. Autorización por asignación de conductor
-        if (requireAssignedDriver && delivery.AssignedAccountId.HasValue && delivery.AssignedAccountId.Value != actorAccountId)
-        {
-            throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment, "El conductor no está asignado a esta entrega.");
-        }
-
-        // 3. Validación de versión esperada
+        // 2. Validación de versión esperada
         if (request.ExpectedDeliveryVersion > 0 && delivery.Version != request.ExpectedDeliveryVersion)
         {
             throw new FieldConflictException(FieldErrorCodes.AssignmentChanged,
                 $"Conflicto de versión de entrega (servidor: {delivery.Version}, esperado: {request.ExpectedDeliveryVersion}).");
+        }
+
+        if (request.Lines.Count == 0)
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded, "La recepción debe incluir al menos una línea.");
+        }
+
+        // 3. Máquina de estados #162: solo un bulto entregado por el conductor puede recibirse.
+        //    Compatibilidad: el estado legado "Delivered" con un recibo previo ya es recepción final.
+        var previousReceipt = await _db.Receipts
+            .AnyAsync(r => r.DeliveryId == delivery.Id && r.OrganizationId == DemoOrganization.Id, ct);
+
+        if (delivery.Status == DeliveryStates.Received ||
+            (delivery.Status == DeliveryStates.Delivered && previousReceipt))
+        {
+            throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
+                "La entrega ya tiene un recibo final; no se repiten efectos.");
+        }
+
+        if (delivery.Status == DeliveryStates.Draft)
+        {
+            throw new FieldConflictException(FieldErrorCodes.NotDispatched,
+                "La entrega aún no fue despachada por Bodega.");
+        }
+
+        if (delivery.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit)
+        {
+            throw new FieldConflictException(FieldErrorCodes.NotDelivered,
+                "El Conductor aún no entrega este bulto en el punto.");
+        }
+
+        if (delivery.Status is not (DeliveryStates.Delivered or DeliveryStates.Partial))
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.InvalidStateTransition,
+                $"La entrega está en un estado que no admite recepción ({delivery.Status}).");
+        }
+
+        var handlingUnits = await _db.HandlingUnits
+            .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        foreach (var hu in handlingUnits)
+        {
+            if (hu.Status == HandlingUnitStates.Received)
+            {
+                throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
+                    $"El bulto {hu.Code} ya fue recibido; no se repiten efectos.");
+            }
+
+            if (hu.Status is not (HandlingUnitStates.Delivered or HandlingUnitStates.Partial))
+            {
+                throw new FieldConflictException(FieldErrorCodes.NotDelivered,
+                    $"El bulto {hu.Code} no está entregado por el conductor (estado {hu.Status}).");
+            }
         }
 
         var deliveryLines = await _db.DeliveryLines
@@ -452,6 +657,22 @@ public sealed class FieldService : IFieldService
             .ToListAsync(ct);
 
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
+
+        // Reintento con clave nueva sobre una entrega parcial: solo si queda cantidad pendiente.
+        if (delivery.Status == DeliveryStates.Partial)
+        {
+            var requested = deliveryLines.Where(dl => request.Lines.Any(l => l.DeliveryLineId == dl.Id)).ToList();
+            var fullyAccounted = requested.Count > 0 && requested.All(dl =>
+            {
+                var max = dl.DispatchedQuantity > 0 ? dl.DispatchedQuantity : dl.PlannedQuantity;
+                return dl.AcceptedQuantity + dl.RejectedQuantity >= max;
+            });
+            if (fullyAccounted)
+            {
+                throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
+                    "La entrega no tiene cantidades pendientes por recibir; no se repiten efectos.");
+            }
+        }
 
         // Ubicaciones para movimiento
         Guid? vehicleLocationId = delivery.OriginLocationId;
@@ -744,16 +965,12 @@ public sealed class FieldService : IFieldService
             }
         }
 
-        var handlingUnits = await _db.HandlingUnits
-            .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
-            .ToListAsync(ct);
-
-        var finalStatus = hasRejections ? "Partial" : "Delivered";
+        var finalStatus = hasRejections ? DeliveryStates.Partial : DeliveryStates.Received;
         delivery.Status = finalStatus;
 
         foreach (var hu in handlingUnits)
         {
-            hu.Status = hasRejections ? "Partial" : "Received";
+            hu.Status = hasRejections ? HandlingUnitStates.Partial : HandlingUnitStates.Received;
 
             var custodyEvent = new CustodyEvent
             {
@@ -764,7 +981,7 @@ public sealed class FieldService : IFieldService
                 FromLocationId = vehicleLocationId,
                 ToLocationId = destinationLocationId,
                 ActorAccountId = actorAccountId,
-                EventKind = hasRejections ? "Partial" : "Received",
+                EventKind = hasRejections ? CustodyEventKinds.Partial : CustodyEventKinds.Received,
                 OperationId = request.OperationId,
                 OccurredAtDevice = request.OccurredAtDevice,
                 ReceivedAtServer = DateTime.UtcNow
@@ -809,6 +1026,7 @@ public sealed class FieldService : IFieldService
         _db.IdempotencyRecords.Add(record);
 
         await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return response;
     }
 
@@ -846,6 +1064,31 @@ public sealed class FieldService : IFieldService
 
         var huByDelivery = handlingUnits.GroupBy(hu => hu.DeliveryId!.Value).ToDictionary(g => g.Key, g => g.ToList());
 
+        // #162: el conductor necesita ver los bultos y sus líneas para poder recoger y entregar.
+        var assignmentHuIds = handlingUnits.Select(hu => hu.Id).ToList();
+        var huLines = await _db.HandlingUnitLines
+            .Where(l => assignmentHuIds.Contains(l.HandlingUnitId) && l.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+        var huLinesByUnit = huLines.GroupBy(l => l.HandlingUnitId).ToDictionary(g => g.Key, g => g.ToList());
+        var assignmentLots = await _db.Lots
+            .Where(l => l.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(l => l.Id, l => l, ct);
+        var assignmentProducts = await _db.Products
+            .Where(p => p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Id, p => p, ct);
+
+        HandlingUnitLineDto ToAssignmentLineDto(HandlingUnitLine line)
+        {
+            var sku = "MED-001";
+            var unit = "U";
+            if (assignmentLots.TryGetValue(line.LotId, out var lot) && assignmentProducts.TryGetValue(lot.ProductId, out var product))
+            {
+                sku = product.Sku;
+                unit = product.BaseUnit;
+            }
+            return new HandlingUnitLineDto(line.DeliveryLineId ?? Guid.Empty, line.LotId, sku, line.Quantity, unit);
+        }
+
         var routes = new List<MobileAssignmentRoute>();
 
         foreach (var plan in plans)
@@ -870,7 +1113,7 @@ public sealed class FieldService : IFieldService
                         hu.Status,
                         $"https://istpetdev.doicela.dev/public-trace/{hu.Id}",
                         null,
-                        Array.Empty<HandlingUnitLineDto>(),
+                        huLinesByUnit.GetValueOrDefault(hu.Id, new List<HandlingUnitLine>()).Select(ToAssignmentLineDto).ToList(),
                         hu.CreatedAtUtc)).ToList();
 
                     planDeliveries.Add(new MobileAssignmentDelivery(
@@ -1089,9 +1332,11 @@ public sealed class FieldService : IFieldService
         {
             var stage = ce.EventKind switch
             {
-                "Dispatched" => "Despachada",
-                "Received" => "Recibida",
-                "Partial" => "Recibida Parcial",
+                CustodyEventKinds.Dispatched => "Despachada",
+                CustodyEventKinds.PickedUp => "En ruta",
+                CustodyEventKinds.Delivered => "Entregada",
+                CustodyEventKinds.Received => "Recibida",
+                CustodyEventKinds.Partial => "Recibida Parcial",
                 _ => ce.EventKind
             };
             events.Add(new(stage, ce.ReceivedAtServer));
@@ -1137,8 +1382,9 @@ public sealed class FieldService : IFieldService
         foreach (var line in request.Lines.Where(l => l.QuantityRejected > 0))
             if (!ReceiptRejectionReasons.IsValid(line.RejectionReason))
                 throw new FieldUnprocessableException("INVALID_REJECTION_REASON", "Selecciona un motivo del catálogo V1.");
-        // El QR prueba que el Receptor tiene el bulto en la mano; no hay conductor asignado que validar.
-        return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, requireAssignedDriver: false, ct);
+        // El QR prueba que el Receptor tiene el bulto en la mano; el estado de la entrega y de TODOS
+        // sus bultos lo valida la máquina de estados del recibo compartido.
+        return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, ct);
     }
 
     public async Task<HandlingUnitTraceResponse> GetOperativeTraceAsync(
@@ -1226,6 +1472,10 @@ public sealed class FieldService : IFieldService
         Guid actorAccountId,
         CancellationToken ct = default)
     {
+        // Idempotencia de la operación de demo completa: repetir el mismo operationId devuelve el resultado previo.
+        var replay = await FindReplayAsync<DemoAdvanceResponse>(actorAccountId, request.OperationId, "DemoAdvance", ct);
+        if (replay is not null) return replay;
+
         var plan = await _db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Ruta {routePlanId} no encontrada.");
@@ -1253,6 +1503,10 @@ public sealed class FieldService : IFieldService
                     .Where(dl => dl.DeliveryId == del.Id && dl.OrganizationId == DemoOrganization.Id)
                     .ToListAsync(ct);
 
+                // El avance de demo usa las operaciones reales: no salta estados de custodia.
+                // La custodia se atribuye al conductor asignado cuando existe.
+                var custodyActor = del.AssignedAccountId ?? actorAccountId;
+
                 // 1. Preparar HandlingUnit si no existe
                 var existingHu = await _db.HandlingUnits
                     .FirstOrDefaultAsync(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id, ct);
@@ -1272,21 +1526,37 @@ public sealed class FieldService : IFieldService
                     huId = existingHu.Id;
                 }
 
-                // 2. Despachar si no está despachada
-                if (del.Status != "Dispatched" && del.Status != "Delivered")
+                // 2. Despachar (solo desde Draft; una entrega ya avanzada no se re-despacha)
+                if (del.Status == DeliveryStates.Draft)
                 {
                     var dispReq = new DispatchRequest(Guid.NewGuid(), new[] { huId }, occurredAt);
                     await DispatchAsync(del.Id, dispReq, actorAccountId, $"adv-{Guid.NewGuid()}", ct);
                 }
 
-                // 3. Recibir 100% aceptado
+                // 3. Recoger y entregar: pickup (Dispatched → InTransit) y deliver (InTransit → Delivered)
+                if (del.Status == DeliveryStates.Dispatched)
+                {
+                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(Guid.NewGuid(), occurredAt),
+                        custodyActor, $"adv-{Guid.NewGuid()}", "Pickup",
+                        DeliveryStates.Dispatched, DeliveryStates.InTransit, HandlingUnitStates.Dispatched,
+                        HandlingUnitStates.InTransit, CustodyEventKinds.PickedUp, ct, requireAssignedDriver: false);
+                }
+                if (del.Status == DeliveryStates.InTransit)
+                {
+                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(Guid.NewGuid(), occurredAt),
+                        custodyActor, $"adv-{Guid.NewGuid()}", "Deliver",
+                        DeliveryStates.InTransit, DeliveryStates.Delivered, HandlingUnitStates.InTransit,
+                        HandlingUnitStates.Delivered, CustodyEventKinds.Delivered, ct, requireAssignedDriver: false);
+                }
+
+                // 4. Recibir 100% aceptado (el rol Receptor no participa en el avance de demo)
                 var receiptReq = new CreateReceiptRequest(
                     Guid.NewGuid(),
                     del.Version,
                     occurredAt,
                     delLines.Select(dl => new ReceiptLineRequest(dl.Id, dl.LotId, dl.PlannedQuantity, 0m, "U")).ToList());
 
-                var receiptResp = await CreateReceiptAsync(del.Id, receiptReq, actorAccountId, $"rec-{Guid.NewGuid()}", ct);
+                var receiptResp = await CreateReceiptCoreAsync(del.Id, receiptReq, custodyActor, $"rec-{Guid.NewGuid()}", ct);
 
                 completedStops.Add(new CompletedStopDto(
                     stop.SequenceNumber,
@@ -1296,7 +1566,21 @@ public sealed class FieldService : IFieldService
             }
         }
 
-        return new DemoAdvanceResponse(completedStops);
+        var response = new DemoAdvanceResponse(completedStops);
+        _db.IdempotencyRecords.Add(new IdempotencyRecord
+        {
+            OrganizationId = DemoOrganization.Id,
+            AccountId = actorAccountId,
+            OperationId = request.OperationId,
+            ActionCode = "DemoAdvance",
+            RequestHash = ComputeSha256($"demo-advance:{routePlanId}:{request.Stops}"),
+            ResponseStatus = 200,
+            ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
+            CompletedAtUtc = DateTime.UtcNow,
+            RetainUntilUtc = DateTime.UtcNow.AddDays(7)
+        });
+        await _db.SaveChangesAsync(ct);
+        return response;
     }
 
     public async Task<EvidenceUploadResponse> CreateEvidenceUploadAsync(
@@ -1370,6 +1654,67 @@ public sealed class FieldService : IFieldService
             .Select(code => new RejectionReasonDto(code, ReceiptRejectionReasons.GetDescription(code)))
             .ToList();
         return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
+    }
+
+    private async Task<T?> FindReplayAsync<T>(Guid actorAccountId, Guid operationId, string actionCode, CancellationToken ct)
+        where T : class
+    {
+        var record = await _db.IdempotencyRecords
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.OrganizationId == DemoOrganization.Id &&
+                                      r.AccountId == actorAccountId &&
+                                      r.OperationId == operationId &&
+                                      r.ActionCode == actionCode, ct);
+
+        if (record is null) return null;
+        if (record.ResponseStatus == 200 && !string.IsNullOrWhiteSpace(record.ResponseJson))
+        {
+            return JsonSerializer.Deserialize<T>(record.ResponseJson, JsonOptions)
+                ?? throw new InvalidOperationException("No se pudo deserializar la respuesta idempotente previa.");
+        }
+
+        throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
+            "La operación ya fue procesada con un conflicto.");
+    }
+
+    // Ubicación del vehículo y del punto de destino para eventos de custodia y movimientos.
+    private async Task<(Guid? VehicleLocationId, Guid DestinationLocationId)> ResolveVehicleAndDestinationAsync(
+        Delivery delivery,
+        IReadOnlyList<HandlingUnit> handlingUnits,
+        CancellationToken ct)
+    {
+        Guid? vehicleLocationId = null;
+        var destinationLocationId = delivery.OriginLocationId;
+
+        if (delivery.RouteStopId.HasValue)
+        {
+            var stop = await _db.RouteStops.FirstOrDefaultAsync(s => s.Id == delivery.RouteStopId.Value && s.OrganizationId == DemoOrganization.Id, ct);
+            if (stop != null)
+            {
+                var plan = await _db.RoutePlans.FirstOrDefaultAsync(p => p.Id == stop.RoutePlanId && p.OrganizationId == DemoOrganization.Id, ct);
+                if (plan != null)
+                {
+                    var vLoc = await _db.Locations.FirstOrDefaultAsync(l => l.VehicleId == plan.VehicleId && l.OrganizationId == DemoOrganization.Id, ct);
+                    if (vLoc != null) vehicleLocationId = vLoc.Id;
+                }
+
+                var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == stop.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+                if (pLoc != null) destinationLocationId = pLoc.Id;
+            }
+        }
+
+        if (vehicleLocationId is null)
+        {
+            vehicleLocationId = handlingUnits.Count > 0 ? handlingUnits[0].LocationId : delivery.OriginLocationId;
+        }
+
+        if (destinationLocationId == delivery.OriginLocationId)
+        {
+            var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == delivery.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+            if (pLoc != null) destinationLocationId = pLoc.Id;
+        }
+
+        return (vehicleLocationId, destinationLocationId);
     }
 
     private static string ComputeSha256(string input)

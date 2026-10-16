@@ -147,11 +147,24 @@ public class PublicTraceService : IPublicTraceService
             .OrderBy(e => e.ReceivedAtServer)
             .ToListAsync(cancellationToken);
 
-        var events = custodyEvents.Select(e => new PublicTraceEventDto
+        // #162: hitos legibles de la cadena Bodega → Conductor → Receptor.
+        var events = new List<PublicTraceEventDto>
         {
-            Stage = e.EventKind,
+            new() { Stage = "Preparada", Timestamp = unit.SealedAtUtc ?? unit.CreatedAtUtc }
+        };
+        events.AddRange(custodyEvents.Select(e => new PublicTraceEventDto
+        {
+            Stage = e.EventKind switch
+            {
+                "Dispatched" => "Despachada",
+                "PickedUp" => "En ruta",
+                "Delivered" => "Entregada",
+                "Received" => "Recibida",
+                "Partial" => "Recibida Parcial",
+                _ => e.EventKind
+            },
             Timestamp = e.ReceivedAtServer
-        }).ToList();
+        }));
 
         var responseDto = new PublicTraceResponseDto
         {

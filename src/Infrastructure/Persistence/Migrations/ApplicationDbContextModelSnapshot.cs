@@ -361,8 +361,7 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "HandlingUnitId");
 
-                    b.HasIndex("OrganizationId", "OperationId")
-                        .IsUnique();
+                    b.HasIndex("OrganizationId", "OperationId");
 
                     b.ToTable("CustodyEvent");
                 });

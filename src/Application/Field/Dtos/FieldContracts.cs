@@ -20,6 +20,15 @@ public static class FieldErrorCodes
     public const string UnauthorizedAssignment = "UNAUTHORIZED_ASSIGNMENT";
     public const string UnitNotFound = "UNIT_NOT_FOUND";
     public const string TokenRevokedOrExpired = "TOKEN_REVOKED_OR_EXPIRED";
+
+    // #162: transiciones de custodia fuera de orden.
+    public const string NotDispatched = "NOT_DISPATCHED";
+    public const string NotDelivered = "NOT_DELIVERED";
+    public const string AlreadyReceived = "ALREADY_RECEIVED";
+    public const string InvalidStateTransition = "INVALID_STATE_TRANSITION";
+    public const string HandlingUnitStateConflict = "HANDLING_UNIT_STATE_CONFLICT";
+    public const string NoHandlingUnits = "NO_HANDLING_UNITS";
+    public const string ReceiptRequiresReceiver = "RECEIPT_REQUIRES_RECEIVER";
 }
 
 // ==========================================
@@ -66,6 +75,21 @@ public sealed record DispatchResponse(
     string Status,
     IReadOnlyList<Guid> DispatchedHandlingUnits,
     DateTime DispatchedAtUtc,
+    Guid CustodyEventId);
+
+// ==========================================
+// #162: Custodia del conductor (recogida y entrega física)
+// ==========================================
+
+public sealed record CustodyTransitionRequest(
+    Guid OperationId,
+    DateTime? OccurredAtDevice = null);
+
+public sealed record CustodyTransitionResponse(
+    Guid DeliveryId,
+    string Status,
+    IReadOnlyList<Guid> HandlingUnitIds,
+    DateTime ChangedAtUtc,
     Guid CustodyEventId);
 
 // ==========================================

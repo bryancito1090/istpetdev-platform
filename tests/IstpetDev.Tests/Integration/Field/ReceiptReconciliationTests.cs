@@ -18,7 +18,7 @@ namespace IstpetDev.Tests.Integration.Field;
 public class ReceiptReconciliationTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
     private sealed record Seeded(Guid DeliveryId, Guid LineA, Guid LotA, Guid LineB, Guid LotB, Guid ProductA, Guid ProductB,
-        Guid ServicePointId, Guid PointLocationId, Guid DriverId);
+        Guid ServicePointId, Guid PointLocationId, Guid DriverId, Guid UnitId, string UnitToken);
 
     // Entrega con parada de ruta (destino = punto) y dos lotes; secondProduct = false pone ambos lotes en el mismo SKU.
     private static async Task<Seeded> SeedAsync(ApiFactory api, decimal shelfA, decimal shelfB, bool secondProduct = false,
@@ -62,22 +62,32 @@ public class ReceiptReconciliationTests(PostgisContainer postgres) : IClassFixtu
                                       Status = "Dispatched", AssignedAccountId = driver.Id, DispatchedAtUtc = DateTime.UtcNow };
         var lineA = new DeliveryLine { DeliveryId = delivery.Id, LotId = lotA.Id, PlannedQuantity = 10m, DispatchedQuantity = 10m };
         var lineB = new DeliveryLine { DeliveryId = delivery.Id, LotId = lotB.Id, PlannedQuantity = 10m, DispatchedQuantity = 10m };
+        var unit = new HandlingUnit { Code = $"HU-{s}", DeliveryId = delivery.Id, LocationId = vehicleLocation.Id, Status = HandlingUnitStates.Dispatched };
+        var unitToken = $"token-111-{s}-0123456789abcdef";
 
-        db.AddRange(lotA, lotB, warehouse, vehicle, vehicleLocation, plan, stop, delivery, lineA, lineB,
+        db.AddRange(lotA, lotB, warehouse, vehicle, vehicleLocation, plan, stop, delivery, lineA, lineB, unit,
+            new HandlingUnitLine { HandlingUnitId = unit.Id, DeliveryLineId = lineA.Id, LotId = lotA.Id, Quantity = 10m },
+            new QrAccessToken { HandlingUnitId = unit.Id, TokenHash = FieldSeed.HashToken(unitToken), ExpiresAtUtc = DateTime.UtcNow.AddDays(7) },
             new StockBalance { LocationId = vehicleLocation.Id, LotId = lotA.Id, QuantityOnHand = 10m },
             new StockBalance { LocationId = vehicleLocation.Id, LotId = lotB.Id, QuantityOnHand = 10m },
             new StockBalance { LocationId = pointLocation.Id, LotId = lotA.Id, QuantityOnHand = shelfA },
             new StockBalance { LocationId = pointLocation.Id, LotId = lotB.Id, QuantityOnHand = shelfB });
         await db.SaveChangesAsync();
-        return new Seeded(delivery.Id, lineA.Id, lotA.Id, lineB.Id, lotB.Id, productA.Id, productB.Id, point.Id, pointLocation.Id, driver.Id);
+
+        // #162: la recepción exige que el conductor haya entregado el bulto; se ejecutan los comandos reales.
+        await FieldSeed.DeliverUnitAsync(api, new FieldSeed.Dispatched(delivery.Id, lineA.Id, lotA.Id, pointLocation.Id, vehicleLocation.Id, delivery.Version, unit.Id, driver.Id, unitToken));
+
+        return new Seeded(delivery.Id, lineA.Id, lotA.Id, lineB.Id, lotB.Id, productA.Id, productB.Id, point.Id, pointLocation.Id, driver.Id, unit.Id, unitToken);
     }
 
     private static async Task<ReceiptResponse> ReceiveAsync(ApiFactory api, Seeded d, ReceiptLineRequest a, ReceiptLineRequest b, Guid? operationId = null)
     {
         using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
+        var receiver = await db.Accounts.SingleAsync(x => x.Subject == TestTokens.Receiver);
         var op = operationId ?? BaseEntity.NewId();
-        return await field.CreateReceiptAsync(d.DeliveryId, new CreateReceiptRequest(op, 0, DateTime.UtcNow, [a, b]), d.DriverId, op.ToString());
+        return await field.CreateReceiverReceiptAsync(d.UnitId, d.UnitToken, new CreateReceiptRequest(op, 0, DateTime.UtcNow, [a, b]), receiver.Id, op.ToString());
     }
 
     private static ReceiptLineRequest Line(Guid lineId, Guid lotId, decimal accepted, decimal? remaining = null, decimal? next = null) =>
