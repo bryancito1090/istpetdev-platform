@@ -36,6 +36,13 @@ public class DemoQuitoPlanificacionTests(PostgisContainer postgres) : IClassFixt
             Assert.Equal(12, await db.Products.CountAsync(p => p.OrganizationId == DemoOrganization.Id));
             Assert.Equal(1806, await db.RoadMatrixEdges.CountAsync(e => e.OrganizationId == DemoOrganization.Id));
 
+            // Columnas de #240: tipo y uso del vehículo, valor y bulto del producto.
+            var ev = await db.Vehicles.SingleAsync(v => v.OrganizationId == DemoOrganization.Id && v.Code == "VEH-0004");
+            Assert.Equal(("camion_liviano", "urbano"), (ev.VehicleType, ev.UsageScope));
+            var sack = await db.Products.SingleAsync(p => p.OrganizationId == DemoOrganization.Id && p.Sku == "PRD-0003");
+            Assert.Equal((42.00m, 1m), (sack.UnitValue, sack.UnitsPerPackage));
+            Assert.True(sack.WeightPerBaseUnit > 25m);
+
             // El brote del Enrique Garcés deja el hipoclorito por debajo del tiempo de reposición.
             var risks = await scope.ServiceProvider.GetRequiredService<IRiskCalculator>().CalculateAsync(persistSnapshots: false);
             var garces = risks.Single(r => r.PointCode == "PTO-0005" && r.Sku == "PRD-0001");
