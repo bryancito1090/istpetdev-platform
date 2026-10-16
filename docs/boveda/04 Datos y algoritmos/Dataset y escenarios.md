@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-15
+actualizado: 2026-10-16
 tags: [datos, algoritmo, validacion]
 ---
 
@@ -14,6 +14,10 @@ Propuesta: **80 puntos, 90 días**, una red de productos, bodegas/vehículos y d
 El fixture sintético **national-v1** (seed 11, escenario base, 2026-10-12) ya está generado con `ScenarioGenerator` y la configuración existentes en `docs/dataset/test/national-v1-seed-11/`: 80 puntos, 6 bodegas, 12 vehículos, 2 productos y 90 días. Es salida sintética reproducible, no una observación ni un resultado de simulación; procedencia y hashes en `docs/dataset/README.md`.
 
 Comenzar con fixture pequeño de **6 puntos y 2 SKU** para verificar invariantes; ampliar después. No forzar toda la operación nacional en el mismo vehículo/circuito diario.
+
+## Dataset propio del equipo — 16-oct-2026
+
+La organización no entregará un dataset para el Reto 1: lo **generamos y alimentamos nosotros**. Tenemos libertad para crear o ampliar los datos de modo que cada decisión del módulo de planificación sea visible en la demo (ventanas, horas pico, tipos de vehículo, costos, mermas, operador contratado e incidentes), con dos condiciones: todo se presenta como **sintético** y cada fixture es reproducible y versionado. El fixture propuesto `demo-quito-planificacion` y sus archivos están en [[Planificacion potenciada - propuesta del evento]].
 
 ## Campos
 

@@ -25,6 +25,7 @@ tags: [hackathon, equipo]
 
 ## Producto
 
+- [[Planificacion potenciada - propuesta del evento]] — **norte vigente desde el 16-oct**: módulo de planificación, flota propia o contratada, costo total de servir, dataset propio, indicadores, capacitación y riesgos con mitigación. Coordinación en el issue fijado #253.
 - [[Logistica integral para el Reto 1 - hallazgos y evidencia]] — charla prioritaria señalada por Bryan; recomendaciones, ejemplos, indicadores y casos por comprobar.
 
 - [[Historia y propuesta de valor]], [[Alcance y prioridades]].

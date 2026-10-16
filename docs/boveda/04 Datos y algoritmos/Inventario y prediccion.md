@@ -75,3 +75,7 @@ Guardar snapshotId, inputCutoff, formulaVersion y parámetros. La explicación n
 [[Logistica integral para el Reto 1 - hallazgos y evidencia]] explica que la falta de visibilidad puede empezar antes de la recepción en bodega: horarios y especificaciones del proveedor, presentación/ergonomía, catálogo común, movimientos y conteos físicos por muestreo. Propone anticipar necesidades del cliente y del almacén central con históricos y mínimos/máximos; no aporta valores calibrados ni un algoritmo nuevo.
 
 Para contrastar la recomendación, registrar unidad base/conversiones validadas, saldo y fecha, consumo, entradas confirmadas, merma investigada y diferencia físico/digital. El ejemplo de cajas de 12/6 y dimensiones tiene unidades ambiguas: no usarlo como ficha técnica. El inventario “en tiempo real” descrito en la charla es un objetivo operativo; la captura offline debe conservar la distinción entre dato local y saldo confirmado. Estas observaciones orientan V-01/V-03/V-04/V-19, sin certificar ejecución ni modificar fórmulas o contratos.
+
+## Propuesta del 16-oct — medir el error del pronóstico
+
+La lámina de riesgos de la charla recomienda «iniciar con modelos de referencia, medir el error y actualizar los parámetros periódicamente». #248 propone medir el MAE de la media móvil actual con ventanas de 7, 14 y 28 días sobre el dataset propio (#243), sin anticipación artificial. El resultado será sintético. La estacionalidad queda como hoja de ruta del pitch. Ver [[Planificacion potenciada - propuesta del evento]].
