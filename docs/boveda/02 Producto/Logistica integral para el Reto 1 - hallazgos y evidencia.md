@@ -101,6 +101,10 @@ Para cualquier resultado: versión, entorno, dataset, fuente, supuestos, baselin
 | Rutas poco realistas | Validar restricciones, capacidad, tráfico y condiciones de acceso antes de ejecutar | Distinguir matriz estimada, dato antiguo y tráfico actual; no inventar condiciones |
 | Sistemas aislados | Definir interfaces, responsables de datos y plan gradual por operación/cliente | Levantar fuentes, permisos, periodicidad y propiedad del dato antes de comprometer integración |
 | Proveedor que incumple | Negociar horarios, empaque, especificaciones y apertura al requerimiento | Medir cumplimiento y su efecto en la salida; gestión contractual fuera del alcance automático |
+| Pronósticos imprecisos (solo en diapositiva) | Iniciar con modelos de referencia, medir el error y actualizar los parámetros periódicamente | Coincide con nuestro cálculo determinista comparado con baselines; falta medir el error del pronóstico con datos fuera del período usado |
+| Costos de implementación superiores a lo previsto (solo en diapositiva) | Comenzar con un MVP y priorizar funcionalidades que demuestren beneficios medibles | Presentar el prototipo como MVP y ligar cada pantalla a uno de los seis indicadores de la lámina de evidencia |
+
+Las dos últimas filas y el objetivo «insumos adecuados, en las cantidades necesarias y en el momento oportuno» provienen de las diapositivas fotografiadas, no de la transcripción oral. Ver la sección «Diapositivas fotografiadas» de [[Charla de logistica integral - transcripcion recibida]]. El error de rotulado o identificación de empaque también aparece solo en pantalla, como problema del punto de servicio.
 
 ## Preguntas finales: combustible y flota
 
