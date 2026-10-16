@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160">
+  <g transform="translate(20,10)">
+    <polygon points="70,10 130,42 70,74 10,42" fill="#00A7C4"/>
+    <polygon points="10,50 66,80 66,145 10,113" fill="#2D3748"/>
+    <polygon points="74,80 130,50 130,113 74,145" fill="#9EC200"/>
+    <rect x="62" y="18" width="16" height="34" fill="#ffffff" opacity="0.85" transform="skewY(28) translate(0,-30)"/>
+  </g>
+  <text x="170" y="98" font-family="DejaVu Sans" font-weight="bold" font-size="64" fill="#2D3748">Istpet<tspan fill="#00A7C4">Dev</tspan></text>
+  <text x="172" y="134" font-family="DejaVu Sans" font-size="20" letter-spacing="3" fill="#64748B">ABASTECIMIENTO · RUTAS · CUSTODIA</text>
+</svg>
