@@ -7,6 +7,12 @@ import {
   IonContent,
   IonButton,
   IonInput,
+  IonBadge,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
@@ -29,6 +35,12 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     IonContent,
     IonButton,
     IonInput,
+    IonBadge,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+    IonCardContent,
     WarehouseComponent
   ],
   template: `

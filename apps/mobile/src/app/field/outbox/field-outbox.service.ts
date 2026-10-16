@@ -141,6 +141,8 @@ export async function calculateBlobSha256(blob: Blob): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+const DRIVER_ACK_REVISION_KEY = 'istpetdev_driver_ack_route_revision';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -157,6 +159,7 @@ export class FieldOutboxService {
   readonly isSimulatingOffline = signal<boolean>(false);
   /** 015: la sesión se abrió sin señal; se guarda en el teléfono y no se envía hasta renovar la sesión. */
   readonly syncHeld = signal<boolean>(false);
+  readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
   private readonly owner = signal<string | null>(null);
   private readonly legacyPendingCount = signal<number>(0);
   readonly legacyCount = this.legacyPendingCount.asReadonly();
@@ -187,6 +190,7 @@ export class FieldOutboxService {
     this.sessionRevision++;
     this.owner.set(accountId);
     this.activeAssignment.set(null);
+    this.activeDriverNotice.set(null);
     await this.refreshOutboxItems();
     if (accountId) await this.loadCachedAssignment();
   }
@@ -291,6 +295,7 @@ export class FieldOutboxService {
     const db = await this.getDb();
     await db.put('assignments', assignment);
     this.activeAssignment.set(assignment);
+    this.checkDriverNotices(assignment);
   }
 
   /**
@@ -303,7 +308,44 @@ export class FieldOutboxService {
     const assignment = (await db.get('assignments', owner)) as MobileAssignmentResponse | undefined;
     if (!assignment) return null;
     this.activeAssignment.set(assignment);
+    this.checkDriverNotices(assignment);
     return assignment;
+  }
+
+  /**
+   * Evalúa si existe un aviso de revisión de ruta (driverMessage) no reconocido aún (PA-02).
+   */
+  checkDriverNotices(assignment: MobileAssignmentResponse): void {
+    if (!assignment || !assignment.routes) return;
+    try {
+      const lastAckStr = localStorage.getItem(DRIVER_ACK_REVISION_KEY);
+      const lastAck = lastAckStr ? parseInt(lastAckStr, 10) : 0;
+
+      for (const route of assignment.routes) {
+        if (route.driverMessage && route.revision > lastAck) {
+          this.activeDriverNotice.set({
+            revision: route.revision,
+            message: route.driverMessage,
+            routePlanId: route.routePlanId
+          });
+          break;
+        }
+      }
+    } catch {
+      // Ignorar fallo de localStorage
+    }
+  }
+
+  /**
+   * Marca el aviso de revisión de ruta como reconocido para no insistir (PA-02).
+   */
+  acknowledgeNotice(revision: number): void {
+    try {
+      localStorage.setItem(DRIVER_ACK_REVISION_KEY, revision.toString());
+    } catch {
+      // Ignorar fallo de storage
+    }
+    this.activeDriverNotice.set(null);
   }
 
   /**
