@@ -19,7 +19,7 @@ public sealed class RoutePlanningTests(PostgisContainer postgres) : IClassFixtur
 {
     private static readonly GeometryFactory Gf = new(new PrecisionModel(), 4326);
 
-    private static IOptions<LogisticsOptions> DefaultOptions() =>
+    private static IOptions<LogisticsOptions> DefaultOptions(string workdayStart = "07:00") =>
         Options.Create(new LogisticsOptions
         {
             DemandWindowDays = 14,
@@ -32,6 +32,7 @@ public sealed class RoutePlanningTests(PostgisContainer postgres) : IClassFixtur
             WarehouseSafetyStockPct = 10m,
             DefaultCostPerKm = 0.50m,
             CostPerHour = 10.00m,
+            WorkdayStart = workdayStart,
             WorkdayHours = 8,
             MaxDetourMinutes = 30,
             DefaultServiceMinutes = 15,
@@ -48,7 +49,80 @@ public sealed class RoutePlanningTests(PostgisContainer postgres) : IClassFixtur
     public async Task Route_planner_produces_identical_deterministic_json_for_same_db_state_and_clock()
     {
         await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        await SeedAsync(db);
 
+        // 2. Ejecutar dos planificaciones independientes con el mismo reloj
+        var options = DefaultOptions();
+        var clock = new OperationalClock(db, options);
+        var riskCalc = new RiskCalculator(db, clock, options);
+        var allocator = new ReplenishmentAllocator();
+        var distProvider = new DistanceProvider(db, new HttpClient(), options, NullLogger<DistanceProvider>.Instance);
+
+        var planner1 = new RoutePlanner(db, clock, riskCalc, allocator, distProvider, options);
+        var planner2 = new RoutePlanner(db, clock, riskCalc, allocator, distProvider, options);
+
+        var result1 = await planner1.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
+        var result2 = await planner2.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
+
+        // 3. Serializar y comparar JSON canónico
+        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+        var json1 = JsonSerializer.Serialize(result1, jsonOptions);
+        var json2 = JsonSerializer.Serialize(result2, jsonOptions);
+
+        Assert.Equal(json1, json2);
+        Assert.NotEmpty(result1.Routes);
+        Assert.Empty(result1.Unserved);
+    }
+
+    [Fact]
+    public async Task Critical_deadline_keeps_critical_stop_before_limit()
+    {
+        await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        await SeedAsync(db);
+        var planner = CreatePlanner(db, DefaultOptions());
+
+        // Jornada 07:00: HOS-01 (crítico) debe llegar antes de las 11:00
+        var result = await planner.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null, true, "11:00"));
+
+        Assert.Empty(result.Unserved);
+        var hos01 = result.Routes.SelectMany(r => r.Stops).Single(s => s.PointCode == "HOS-01");
+        Assert.True(TimeOnly.FromDateTime(hos01.ArrivalUtc.AddHours(-5)) <= new TimeOnly(11, 0));
+        Assert.Null(hos01.LateMinutes);
+    }
+
+    [Fact]
+    public async Task Critical_deadline_leaves_late_critical_unserved_and_keeps_non_critical_window()
+    {
+        await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        // HOS-02 con 4 días de cobertura: riesgo Alto y criticidad media -> no crítico
+        await SeedAsync(db, hos02Stock: 40m);
+        var planner = CreatePlanner(db, DefaultOptions(workdayStart: "10:00"));
+
+        // Sin hora límite ambos se atienden dentro de su ventana 08:00-17:00
+        var baseline = await planner.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
+        Assert.Empty(baseline.Unserved);
+
+        // Jornada 10:00 y hora límite 10:00: el crítico ya no llega a tiempo
+        var result = await planner.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null, true, "10:00"));
+
+        var unserved = Assert.Single(result.Unserved);
+        Assert.Equal("HOS-01", unserved.PointCode);
+        Assert.Equal("time_window", unserved.Reason);
+        // El no crítico conserva su ventana y sigue en la ruta pese a llegar después de las 10:00
+        var hos02 = result.Routes.SelectMany(r => r.Stops).Single(s => s.PointCode == "HOS-02");
+        Assert.True(TimeOnly.FromDateTime(hos02.ArrivalUtc.AddHours(-5)) > new TimeOnly(10, 0));
+        Assert.Null(hos02.LateMinutes);
+    }
+
+    private static RoutePlanner CreatePlanner(ApplicationDbContext db, IOptions<LogisticsOptions> options)
+    {
+        var clock = new OperationalClock(db, options);
+        return new RoutePlanner(db, clock, new RiskCalculator(db, clock, options), new ReplenishmentAllocator(),
+            new DistanceProvider(db, new HttpClient(), options, NullLogger<DistanceProvider>.Instance), options);
+    }
+
+    private static async Task SeedAsync(ApplicationDbContext db, decimal hos02Stock = 20m)
+    {
         // 1. Configurar datos: Bodega, 2 Puntos, 1 Producto, Stock, Consumos, Vehículos
         var warehouseLoc = new DomainLocation
         {
@@ -179,7 +253,7 @@ public sealed class RoutePlanningTests(PostgisContainer postgres) : IClassFixtur
                 OrganizationId = DemoOrganization.Id,
                 LocationId = sp2Loc.Id,
                 LotId = lot.Id,
-                QuantityOnHand = 20m,
+                QuantityOnHand = hos02Stock,
                 QuantityReserved = 0m
             });
 
@@ -206,27 +280,5 @@ public sealed class RoutePlanningTests(PostgisContainer postgres) : IClassFixtur
             });
 
         await db.SaveChangesAsync();
-
-        // 2. Ejecutar dos planificaciones independientes con el mismo reloj
-        var options = DefaultOptions();
-        var clock = new OperationalClock(db, options);
-        var riskCalc = new RiskCalculator(db, clock, options);
-        var allocator = new ReplenishmentAllocator();
-        var distProvider = new DistanceProvider(db, new HttpClient(), options, NullLogger<DistanceProvider>.Instance);
-
-        var planner1 = new RoutePlanner(db, clock, riskCalc, allocator, distProvider, options);
-        var planner2 = new RoutePlanner(db, clock, riskCalc, allocator, distProvider, options);
-
-        var result1 = await planner1.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
-        var result2 = await planner2.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
-
-        // 3. Serializar y comparar JSON canónico
-        var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-        var json1 = JsonSerializer.Serialize(result1, jsonOptions);
-        var json2 = JsonSerializer.Serialize(result2, jsonOptions);
-
-        Assert.Equal(json1, json2);
-        Assert.NotEmpty(result1.Routes);
-        Assert.Empty(result1.Unserved);
     }
 }

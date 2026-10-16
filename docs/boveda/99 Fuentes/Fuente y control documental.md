@@ -669,3 +669,9 @@ Verificación documental: **101 notas Markdown**, **1077 enlaces internos resuel
 Fuente: archivo oficial `areas-menotres.xlsx` (hojas «AGENDA DE MENTORIAS», «AGENDA GENERAL VIERNES 16» y «SABADO 17»), cotejado con [[Cronograma oficial]]: las agendas coinciden. Se agrega la convocatoria a conferencias (IstpetDev no está convocado a cuatro conferencias; esos bloques quedan para ensayar) y los hitos del equipo.
 
 Se actualizan los horarios del plan, que seguían el manual: «Días del evento» de [[Definiciones de producto y plan hasta el pitch]] (tabla vigente según la agenda oficial; la del 12-oct queda como antecedente), [[Plan de ejecucion]], [[Registro de mentorias]] y el spec 006 (validación del 17-oct de 11:00–12:30 a 11:30–13:15; congelamiento del código a las 11:30). Nuevas notas: [[Entregable Solucion y propuesta de valor]] (entregable oficial n.º 2, con PDF de una página en el spec 006) y [[Ampliacion de alcance - ideas del evento]]. Los issues #193–#201 ordenan el trabajo del evento con semáforo de prioridad. Redactado por Claude Code (Opus 5.5) a pedido de Joseph Baño; sin cambios de software.
+
+## 16-oct-2026 — Hora límite para puntos críticos en el planificador (issue #193)
+
+Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-25 y la tarea T16. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
+
+Verificación documental (tras integrar develop con #197, #201 y #192): **105 notas Markdown**, **1115 enlaces internos resueltos**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
