@@ -128,6 +128,26 @@ export interface RouteStopLineDto {
   handlingUnitStatus?: string;
 }
 
+/** #199: cantidades de una línea: lo requerido (sugerido o pedido), lo planificado en la ruta y lo pendiente. */
+export interface PendingLoadLineDto {
+  sku: string;
+  baseUnit: string;
+  requiredQuantity: number;
+  plannedQuantity: number;
+  pendingQuantity: number;
+  pointCode?: string;
+  orderNumber?: string;
+}
+
+/** #199: resume las líneas con remanente («SKU: 100 de 150 u, pendientes 50»); vacío si no queda nada pendiente. */
+export function describePendingLines(lines: PendingLoadLineDto[] | null | undefined): string {
+  const pending = (lines || []).filter(l => Number(l.pendingQuantity) > 0);
+  if (pending.length === 0) return '';
+  return pending
+    .map(l => `${l.pointCode ? l.pointCode + ' ' : ''}${l.sku}: ${l.plannedQuantity} de ${l.requiredQuantity} ${l.baseUnit} planificadas, pendientes ${l.pendingQuantity}`)
+    .join('; ');
+}
+
 export interface RouteStopHandlingUnitDto {
   id: string;
   code: string;
@@ -200,6 +220,8 @@ export interface RoutePlanDetailDto {
     deliveryStatus?: string;
     handlingUnits?: RouteStopHandlingUnitDto[];
     lines?: RouteStopLineDto[];
+    // #199: requerida, planificada y pendiente por línea (rutas guardadas con atención parcial).
+    loadQuantities?: PendingLoadLineDto[];
   }>;
   productsSummary?: RouteProductSummaryDto[];
   driverRoutes?: RouteDriverAssignmentDto[];
@@ -265,6 +287,22 @@ export interface WarehouseAnalysisDto {
   minStock: number;
   maxStock: number;
   status: 'Normal' | 'Critico' | 'Exceso' | 'SinStock';
+}
+
+export interface WarehouseStockDto {
+  locationId: string;
+  locationCode: string;
+  locationName?: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  quantityOnHand: number;
+  quantityReserved: number;
+  availableQuantity: number;
+  coverageDays?: number;
+  minStock?: number;
+  maxStock?: number;
+  status: 'Normal' | 'Critico' | 'Exceso' | 'SinStock' | string;
 }
 
 export interface TransferSuggestionDto {
@@ -550,7 +588,8 @@ export class ApiService {
             deliveryCode: s.deliveryCode || '',
             deliveryStatus: s.deliveryStatus || '',
             handlingUnits: s.handlingUnits || [],
-            lines: s.lines || []
+            lines: s.lines || [],
+            loadQuantities: s.loadQuantities || []
           })),
           productsSummary: res.productsSummary || [],
           driverRoutes: res.driverRoutes || []
@@ -563,7 +602,12 @@ export class ApiService {
     );
   }
 
-  createRoutePlan(req: { date?: string; vehicleCodes?: string[]; includeConsolidation?: boolean } = {}): Observable<any> {
+  createRoutePlan(req: {
+    date?: string;
+    vehicleCodes?: string[];
+    includeConsolidation?: boolean;
+    criticalDeadlineLocal?: string;
+  } = {}): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/route-plans`, req);
   }
 
@@ -635,6 +679,43 @@ export class ApiService {
   // --- MÉTODOS DE BODEGAS & REBALANCEO ---
   getWarehouseAnalysis(): Observable<WarehouseAnalysisDto[]> {
     return this.http.get<WarehouseAnalysisDto[]>(`${this.baseUrl}/api/v1/warehouses/analysis`);
+  }
+
+  getWarehouseStock(params?: { productId?: string; sku?: string; locationId?: string }): Observable<WarehouseStockDto[]> {
+    const query = new URLSearchParams();
+    if (params?.productId) query.append('productId', params.productId);
+    if (params?.sku) query.append('sku', params.sku);
+    if (params?.locationId) query.append('locationId', params.locationId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+
+    return this.http.get<WarehouseStockDto[]>(`${this.baseUrl}/api/v1/warehouses/stock${qs}`).pipe(
+      catchError(() => {
+        return this.http.get<any[]>(`${this.baseUrl}/api/v1/warehouses/analysis`).pipe(
+          map(items => {
+            let filtered = items || [];
+            if (params?.productId) filtered = filtered.filter(i => i.productId === params.productId);
+            if (params?.sku) filtered = filtered.filter(i => (i.sku || '').toLowerCase() === (params.sku || '').toLowerCase());
+            if (params?.locationId) filtered = filtered.filter(i => i.locationId === params.locationId);
+            return filtered.map(i => ({
+              locationId: i.locationId,
+              locationCode: i.locationCode,
+              locationName: i.locationName,
+              productId: i.productId,
+              sku: i.sku,
+              productName: i.productName,
+              quantityOnHand: i.quantityOnHand ?? 0,
+              quantityReserved: i.quantityReserved ?? 0,
+              availableQuantity: i.availableQuantity ?? 0,
+              coverageDays: i.coverageDays,
+              minStock: i.minStock,
+              maxStock: i.maxStock,
+              status: i.status || 'Normal'
+            } as WarehouseStockDto));
+          }),
+          catchError(() => of([]))
+        );
+      })
+    );
   }
 
   getWarehousePolicies(): Observable<any[]> {

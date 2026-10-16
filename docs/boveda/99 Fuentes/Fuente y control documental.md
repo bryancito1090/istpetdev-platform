@@ -664,6 +664,12 @@ Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inv
 
 Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
 
+## 16-oct-2026 — Agenda oficial en el plan, entregable 2 e ideas del evento (PR #192)
+
+Fuente: archivo oficial `areas-menotres.xlsx` (hojas «AGENDA DE MENTORIAS», «AGENDA GENERAL VIERNES 16» y «SABADO 17»), cotejado con [[Cronograma oficial]]: las agendas coinciden. Se agrega la convocatoria a conferencias (IstpetDev no está convocado a cuatro conferencias; esos bloques quedan para ensayar) y los hitos del equipo.
+
+Se actualizan los horarios del plan, que seguían el manual: «Días del evento» de [[Definiciones de producto y plan hasta el pitch]] (tabla vigente según la agenda oficial; la del 12-oct queda como antecedente), [[Plan de ejecucion]], [[Registro de mentorias]] y el spec 006 (validación del 17-oct de 11:00–12:30 a 11:30–13:15; congelamiento del código a las 11:30). Nuevas notas: [[Entregable Solucion y propuesta de valor]] (entregable oficial n.º 2, con PDF de una página en el spec 006) y [[Ampliacion de alcance - ideas del evento]]. Los issues #193–#201 ordenan el trabajo del evento con semáforo de prioridad. Redactado por Claude Code (Opus 5.5) a pedido de Joseph Baño; sin cambios de software.
+
 ## 16-oct-2026 — Herramientas de abastecimiento del agente (issue #195)
 
 Fuente: implementación en la rama `feature/195-herramientas-n8n-abastecimiento`
@@ -675,3 +681,4 @@ allowlist/deadline y la evidencia determinista en `AgentRun`, y
 resultados históricos de cinco herramientas y prompt v1 permanecen como
 históricos; no se reescriben. Verificación documental y estado real por separado
 en la evidencia del issue; este registro no acredita por sí solo merge ni ensayo.
+
