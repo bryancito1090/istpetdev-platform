@@ -771,6 +771,22 @@ expuesto no aplican a este recorrido. Las pruebas de autorización y scans
 vigentes se reutilizan en lo que no cambió; el runtime ESC-19 sigue pendiente
 hasta la prueba real. No se promueve a main ni se modifica la instancia
 productiva al ejecutar esta validación.
+## Issue #194 — consultas de abastecimiento — 16-oct-2026
+
+- [x] Revisar código, issue y contratos; preparar el
+  [plan de implementación y entrega](plan-194-consultas-abastecimiento.md).
+- [x] Implementar los tres endpoints de lectura en un controlador nuevo (`LogisticsQueriesController`),
+  reutilizando `SourcingService` y `VehicleMatcher`, sin editar `RoutePlansController` (#201).
+- [x] Verificar RBAC humano/M2M, stock de seguridad, fecha operativa y ausencia
+  de efectos logísticos con integración sobre demo-region/PostGIS descartable (`LogisticsQueriesTests` 8/8, suite backend 528/528, `npm run check`, `npm run audit:check`).
+- [x] Actualizar Contratos API y eventos, Fuente y control documental y registrar
+  [evidencia real de pruebas y prelaunch](evidencia/2026-10-16-194-consultas-abastecimiento.md).
+- [x] Publicar [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) a develop y resolver conflictos de los avances #197/#196/#201/#199.
+- [x] Revisión final: reproducir y corregir la sobreasignación de pedidos parcialmente planificados; unificar carga de demandas con `/suggest` y corregir el contrato documentado.
+- [x] Integrar el último develop (`5cfc657`, #193), aprobar revisión técnica del alcance y verificar 560/560 pruebas locales y 7/7 checks del código `13c80b2`.
+- Integración y cierre operativo: [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) e [issue #194](https://github.com/bryancito1090/istpetdev-platform/issues/194) son las fuentes del estado remoto y SHA de merge; la cuenta autora no puede emitir aprobación formal.
+
+Estado del código: revisión final de Codex completada por encargo de Bryan; tres consultas con RBAC y sin efectos logísticos, contrato cotejado con DTOs. La regresión falla antes y pasa después; 21/21 dirigidas y 560/560 en la suite completa, npm check/auditoría y bóveda aprobados. Se conserva el intento local abortado bajo concurrencia en la evidencia. CI sobre el código revisado 7/7 verde; la finalización del PR y issue se acredita en sus estados de GitHub. Sin despliegue.
 
 ## Issue #195 — herramientas n8n de abastecimiento — 16-oct-2026
 
@@ -827,3 +843,4 @@ forzará al marcar listo tras el ensayo. Dependencias: #194 tiene PR #215 con CI
 en curso (contratos compatibles); #193 tiene PR #205 en conflicto y su extensión
 opcional queda fuera, documentada. El ensayo real con DeepSeek y los endpoints
 de #194 sigue pendiente y es requisito para el merge.
+

@@ -257,3 +257,113 @@ Si pasa solo el entorno local, registrar **«verificado localmente; entorno expu
 | Tras el pase técnico | Iniciar continuidad planificada hacia el piloto, preservando la versión de demo. Entre congelamiento y entrega, las funciones posteriores se trabajan separadas de esa versión; el plan no cambia el congelamiento existente. |
 
 Al cerrar cada jornada debe quedar visible: versión que se puede repetir, qué está verificado, qué impide avanzar, quién lo atiende y qué se prueba después. Los estados reales se mantienen en el registro, no en copias de esta guía.
+
+## Guion de la ronda corta E2E por roles — Sábado 17-oct 09:00–10:00 (Issue #118)
+
+> [!important] Ronda de validación E2E previa al congelamiento de código (11:30)
+> **Coordinador:** Joseph Baño (@JosephBano)  
+> **Participan:** Todo el equipo (6 roles con las cuentas aprovisionadas de #55)  
+> **Entorno:** Producción/Staging HTTPS (`https://istpetdev.doicela.dev/`) con backend desplegado y PWA en `/campo/`.  
+> **Regla de seguridad:** Registrar evidencias **estrictamente sin correos ni contraseñas**.  
+> **Criterio de cierre:** Cada escenario en ✅ o con un issue abierto asignado a su responsable.
+
+### 1. Asignación de Roles y Dispositivos (#55)
+
+| Persona | Rol (Cuenta) | Plataforma y Dispositivo | Foco Principal |
+|---|---|---|---|
+| **Bryan** (@bryancito1090) | **Gerencia** | Web (Laptop) | Administración, vistas consolidadas, permisos y control de acceso |
+| **Anthony** (@AnthonyPilatasig) | **Planificador** | Web (Laptop) | Importación, motor logístico, hora límite, incidentes y agente |
+| **Jorge** (@JorgeDoicela) | **Bodega** | PWA (Teléfono) | Empaque, etiquetado QR, despacho de cajas y verificación de stock |
+| **Alexander** (@AlexanderMartinez0410) | **Conductor** | PWA (Teléfono) | Ruta asignada, modo offline/avión, captura de entregas y outbox |
+| **Joseph** (@JosephBano) | **Receptor** | PWA (Teléfono distinto) | Escaneo de entrega, firma de recepción conforme/parcial y stock en percha |
+| **Joseph** (@JosephBano) | **Auditor** | Web (Laptop) | Vista de solo lectura, consulta de custodia e invariabilidad de registros |
+
+---
+
+### 2. Cronograma de Ejecución (60 Minutos)
+
+```mermaid
+flowchart LR
+  A["09:00–09:15<br/>Bloque 1: Datos y Despacho<br/>(ESC-01..02, 12..13, 16..22)"] --> B["09:15–09:35<br/>Bloque 2: Campo, QR y Offline<br/>(ESC-03..04, 06..11, 23..26, 28)"]
+  B --> C["09:35–09:50<br/>Bloque 3: Seguridad y Auditoría<br/>(ESC-05, 14, 15, 27)"]
+  C --> D["09:50–10:00<br/>Bloque 4: Consolidación y Triage<br/>(Cierre y reporte en #118)"]
+```
+
+#### Bloque 1 (09:00–09:15) — Datos, Planificación, Motor y Agente
+- **Participan:** Anthony (Planificador) y Jorge (Bodega).
+- **Escenarios a validar:**
+  - `ESC-01`: Importación en seco y aplicación del dataset `demo-region` → `ImportBatch` en estado `Applied`.
+  - `ESC-02`: «Pedir al agente» con DeepSeek activo → propuesta de ruta por vehículo en ≤ 10 s con traza de herramientas.
+  - `ESC-12`: Importación de dataset con unidades variantes o sin ventanas → advertencias coherentes y conversión a unidades base.
+  - `ESC-13`: Filas duplicadas en archivo de consumo → suma agregada con advertencia.
+  - `ESC-16` / `ESC-17`: Resiliencia del agente ante caída o lentitud de n8n/DeepSeek (>10 s) → fallback determinista por plantilla en ≤ 11 s.
+  - `ESC-18`: Validación anti-alucinación de IA → si la cifra no está en `facts`, aplica plantilla.
+  - `ESC-20`: Protección contra inyección de prompt en datos de importación → 100% inmune.
+  - `ESC-21` / `ESC-22`: CSV corrupto (422) y archivo masivo (límite y tiempo de procesamiento).
+
+#### Bloque 2 (09:15–09:35) — Campo, QR, Despacho, Modo Offline y Recepción
+- **Participan:** Jorge (Bodega), Alexander (Conductor) y Joseph (Receptor).
+- **Escenarios a validar:**
+  - `ESC-03`: Bodega empaca y despacha caja con QR → custodia transferida al vehículo; Conductor visualiza ruta offline.
+  - `ESC-04`: Receptor escanea QR del Conductor con recepción conforme → firma registrada y saldo del punto actualizado una sola vez.
+  - `ESC-06`: Recepción parcial (ej. 6 aceptadas, 4 rechazadas por rotura) → motivo de catálogo registrado y custodia retenida.
+  - `ESC-07` / `ESC-08`: Múltiples lotes del mismo SKU y recepciones sucesivas el mismo día → saldos y consumos conciliados.
+  - `ESC-09`: Conteo físico mayor al saldo del sistema → genera movimiento de ajuste con justificación, sin sobrescritura ciega.
+  - `ESC-10`: Múltiples SKUs solicitando reposición simultánea → generación consolidada de `DeliveryOrder`.
+  - `ESC-11`: Receptor de un punto intentando recibir entrega de otro punto → respuesta 403 Forbidden.
+  - `ESC-23`: Gestión de cola outbox ante error recurrente → aislamiento del ítem conflictivo sin bloquear el resto.
+  - `ESC-24`: Carrera entre recepción física y replanificación de ruta → se respeta la parada ejecutada y se recomputa lo restante.
+  - `ESC-26`: Envío concurrente de recepción desde dos dispositivos → idempotencia estricta, un solo movimiento de kardex.
+  - `ESC-28`: Reimportación de corte de inventario desfasado → rechazo para no sobreescribir recepciones en firme.
+
+#### Bloque 3 (09:35–09:50) — Seguridad, Permisos por Rol y Auditoría
+- **Participan:** Joseph (Auditor) y Bryan (Gerencia).
+- **Escenarios a validar:**
+  - `ESC-05`: Auditor accede a custodia, rutas y simulaciones → respuesta 200 en lectura y ausencia total de botones de mutación/acción.
+  - `ESC-14`: Intento de despacho o recepción con rol Gerencia → 403 o redirección indicando que opera en panel web.
+  - `ESC-15`: Cuenta desactivada con ítems pendientes en outbox → rechazo 403 al sincronizar conservando el outbox seguro.
+  - `ESC-25`: Carrera entre desactivación de cuenta y sincronización → rechazo atómico sin estados intermedios inconsistentes.
+  - `ESC-27`: Indisponibilidad de proveedor de identidad → sesiones vigentes continúan operando sin caída abrupta.
+
+#### Bloque 4 (09:50–10:00) — Consolidación de Resultados y Triage
+- **Participa:** Todo el equipo bajo la coordinación de Joseph Baño.
+- **Acciones:**
+  1. Consolidar el estado de los 28 escenarios en la tabla de registro inferior.
+  2. Para cada escenario no aprobado (⚠️ o ❌), abrir inmediatamente un issue en GitHub con etiqueta de semáforo y asignarlo al responsable.
+  3. Publicar el informe consolidado en el issue #118.
+  4. Dejar el código listo para el congelamiento definitivo a las **11:30**.
+
+---
+
+### 3. Matriz de Registro de la Ronda (ESC-01 a ESC-28)
+
+| Escenario | Rol Evaluador | Descripción Breve | Estado Real | Issue Asociado (si falla) | Evidencia Anonimizada |
+|---|---|---|---|---|---|
+| `ESC-01` | Planificador | Importación `demo-region` y aplicación limpia | [ ] | — | — |
+| `ESC-02` | Planificador | Consulta al agente con DeepSeek ≤ 10 s | [ ] | — | — |
+| `ESC-03` | Bodega / Conductor | Empaque, QR, despacho y lectura offline | [ ] | — | — |
+| `ESC-04` | Receptor / Conductor | Recepción conforme con QR y firma | [ ] | — | — |
+| `ESC-05` | Auditor | Solo lectura en custodia, rutas y auditoría | [ ] | — | — |
+| `ESC-06` | Receptor | Recepción parcial con motivo y retención | [ ] | — | — |
+| `ESC-07` | Receptor | Múltiples lotes de mismo SKU en recepción | [ ] | — | — |
+| `ESC-08` | Receptor | Segunda recepción mismo día y SKU | [ ] | — | — |
+| `ESC-09` | Receptor | Ajuste de stock físico mayor a kardex | [ ] | — | — |
+| `ESC-10` | Receptor | Reposición multi-línea en un solo pedido | [ ] | — | — |
+| `ESC-11` | Receptor | Intento de recepción en punto ajeno (403) | [ ] | — | — |
+| `ESC-12` | Planificador | Dataset con unidades variantes y supuestos | [ ] | — | — |
+| `ESC-13` | Planificador | Filas duplicadas agregadas con advertencia | [ ] | — | — |
+| `ESC-14` | Gerencia | Acceso indebido de Gerencia a PWA (403) | [ ] | — | — |
+| `ESC-15` | Conductor | Sincronización desde cuenta desactivada | [ ] | — | — |
+| `ESC-16` | Planificador | Fallback ante n8n caído en ≤ 11 s | [ ] | — | — |
+| `ESC-17` | Planificador | Timeout de DeepSeek (>10 s) con plantilla | [ ] | — | — |
+| `ESC-18` | Planificador | Descarte de cifras alucinadas fuera de facts | [ ] | — | — |
+| `ESC-19` | Planificador | Registro de excepciones en nodo n8n | [ ] | — | — |
+| `ESC-20` | Planificador | Resistencia a inyección de prompts (10/10) | [ ] | — | — |
+| `ESC-21` | Planificador | CSV corrupto genera error 422 descriptivo | [ ] | — | — |
+| `ESC-22` | Planificador | Archivo masivo procesado sin saturación | [ ] | — | — |
+| `ESC-23` | Conductor | Aislamiento de ítem fallido en outbox | [ ] | — | — |
+| `ESC-24` | Receptor / Planificador | Replanificación concurrente con recepción | [ ] | — | — |
+| `ESC-25` | Conductor / Gerencia | Desactivación de cuenta en plena sincronización | [ ] | — | — |
+| `ESC-26` | Conductor / Receptor | Doble envío de recepción con idempotencia | [ ] | — | — |
+| `ESC-27` | Gerencia | Resiliencia de sesión ante indisponibilidad IDP | [ ] | — | — |
+| `ESC-28` | Planificador | Rechazo de importación retroactiva destructiva | [ ] | — | — |
