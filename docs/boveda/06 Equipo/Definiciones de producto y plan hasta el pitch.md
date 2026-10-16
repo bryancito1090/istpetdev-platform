@@ -56,7 +56,7 @@ Diagnóstico del 12-oct sobre el repositorio unificado:
 | D5 | **Autonomía con límites.** Un motor de reglas determinista en el backend clasifica cada propuesta en «se ejecuta» o «se escala»; el LLM no puede saltarlo. Se ejecuta sola si no se retira ninguna parada obligatoria, se cumplen todas las ventanas, el costo sube ≤ 15% y ningún retraso supera 60 min. Se escala lo demás, con dos opciones calculadas («atender tarde» y «priorizar críticos»). Interruptor «solo proponer». Deshacer crea otra revisión y compensa únicamente reservas activas de entregas aún no despachadas; el stock movido físicamente requiere conciliación | Respuesta a «¿y si la IA se equivoca?»: la IA hace lo rutinario y deja a la persona lo que importa |
 | D6 | **Recorrido en vivo regional:** unos 15 puntos sintéticos de Quito, 1 bodega y 2 vehículos (fixture `demo-region`); el incidente afecta a un vehículo y no al otro. La escala nacional (80 puntos) se muestra en el simulador | Con 6 puntos el mapa parece un juguete; con 80 no se entiende en 3 minutos |
 | D7 | **Doble baseline:** el simulador compara contra reposición reactiva (cuando el punto avisa) y contra calendario fijo (cada N días, cantidad fija). Ambas políticas se escriben antes de la primera simulación y no se ajustan después de ver resultados | Sin datos del sector no sabemos cuál usan; ganar a ambas hace el resultado robusto (ver [[Simulador y metricas]]) |
-| D8 | **Congelamiento de funcionalidades: 15-oct a las 14:00**, con hitos de control y plan B por componente | Asegura ensayos, simulacro de dataset sorpresa y video de respaldo |
+| D8 | **Congelamiento de funcionalidades: 15-oct a las 14:00** (reemplazado el 16-oct: código sáb 11:30, materiales 15:45), con hitos de control y plan B por componente | Asegura ensayos, simulacro de dataset sorpresa y video de respaldo |
 
 ### Cortes de alcance hasta el 17-oct (D3)
 
@@ -100,7 +100,7 @@ La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]
 | H2 | 13-oct 20:00 | Spec 001 integrado en `develop` | Prioridad del equipo entero: bloquea 002–005 |
 | H3 | 14-oct 20:00 | Recorrido sin agente de punta a punta: riesgo → ruta de 2 vehículos → despacho con QR → recepción offline → saldo actualizado, **desde los teléfonos con sesión PKCE y la PWA publicada por HTTPS** (FR-17 y FR-18 del spec 004) | El nivel B del agente pasa a su plan B |
 | H4 | 15-oct 11:00 | Agente A y B, panel con decisiones y simulador con resultados frente a los dos baselines | Se aplican los planes B |
-| H5 | 15-oct 14:00 | Congelamiento de funcionalidades | — |
+| H5 | ~~15-oct 14:00~~ | Congelamiento de funcionalidades. **Reemplazado:** código sáb 17-oct 11:30 y materiales 15:45 (ver «Días del evento») | — |
 
 ### Plan B por componente
 
@@ -137,6 +137,18 @@ La ficha final del reto se presenta el 16-oct a las 09:30 ([[Cronograma oficial]
 | 17-oct 16:00–16:15 · Entrega de hitos | Los siete entregables por el canal confirmado en O-06 |
 | 17-oct 16:15–18:15 · Presentaciones | Pitch de 5 min con demo |
 
+### Noche del 16-oct y mañana del 17 — norte vigente
+
+Desde las 17:30 del 16-oct el foco del pitch es el **módulo de planificación** ([[Planificacion potenciada - propuesta del evento]]). Las colas por persona, los archivos compartidos y el orden de fusión están en el issue fijado **#253**, que manda si algo de esta nota lo contradice. Resumen:
+
+| Persona | Cola |
+|---|---|
+| Bryan | #243 (configuración primero) → #230 → #240 🗄️ → #241 |
+| Anthony | #199 → #236 → #237 → #245 → #246 |
+| Alexander | #210 → #242 → #231 → #247 → #167 |
+| Jorge | #198 → PR #250 (#166) → #235 → #244 |
+| Joseph | #200 (pitch) → #249 → #248 → #204 |
+
 **Antecedente del 12-oct** (planificado con las tablas del manual; reemplazado por la tabla de arriba):
 
 Se superponen al [[Cronograma oficial]] y se **participa de verdad en la dinámica oficial**: «Proceso y equipo» observa la participación.
@@ -148,7 +160,7 @@ Se superponen al [[Cronograma oficial]] y se **participa de verdad en la dinámi
 | 16-oct 14:00–16:00 | Tres adaptan el código; dos trabajan negocio y rellenan el esqueleto del pitch |
 | 16-oct 16:00–16:30 | Mentoría con 3 preguntas preparadas; registrar en [[Registro de mentorias]] y comprobar si el mentor es jurado |
 | 16-oct 16:30–19:00 | Integrar el consejo del mentor; ensayo 1 con los datos del evento; checkpoint |
-| 17-oct 10:30 | Congelamiento del código; después solo se corrige lo que bloquee |
+| ~~17-oct 10:30~~ | Congelamiento del código (reemplazado: 11:30, tabla vigente de arriba) |
 | 17-oct 11:00–12:30 | Dos validan con expositores usando el prototipo; tres ejecutan la simulación final y 3 ensayos |
 | 17-oct 14:00–15:45 | Completar huecos del pitch (citas, cifras, precio); 2 ensayos cronometrados; 15:45 congelamiento de materiales |
 

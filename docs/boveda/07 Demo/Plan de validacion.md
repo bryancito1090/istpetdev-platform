@@ -124,7 +124,7 @@ Los siguientes IDs solo se definen aquí; su ejecución sigue pendiente. Usar [[
 | V-40 | Conversaciones en feria | ≥3 documentadas antes del 17-oct 12:30, ≥1 reacción al prototipo; evitar organizaciones cauteladas | Hojas consentidas y anonimizadas, objeción/cambio |
 | V-41 | Ensayos de pitch | Diez completos consecutivos sin fallo, últimos dos sin wifi del recinto, cada uno ≤ tiempo oficial −20 s | Cronómetro, corte, versión, roles, conexión y racha |
 | V-42 | Auditoría de afirmaciones | Cada número/cita/capacidad de la versión final enlaza ejecución y CE o se retira; simulado rotulado | Tarjetas, ZIP de 005, CE de 001–005, hashes de PDF |
-| V-43 | Paquete y trabajo previo | Siete entregables, editable/PDF, video fechado, tag `pre-evento`, registro de cambios y congelamiento 15:45 | Manifiesto, archivos locales, tag, registro y acuse de entrega |
+| V-43 | Paquete y trabajo previo | Siete entregables, editable/PDF, video fechado, tag `pre-evento`, registro de cambios y congelamiento de materiales 15:45 (código 11:30) | Manifiesto, archivos locales, tag, registro y acuse de entrega |
 
 La revisión de fichas SERCOP en [[SERCOP limpieza hospitalaria y sanciones]] aporta contexto de preguntas, no medición del costo de un faltante ni prueba de sanción causada por este prototipo. Si O-04 u O-06 siguen pendientes, V-41/V-43 no se marcan validados aunque haya ensayos de preparación.
 

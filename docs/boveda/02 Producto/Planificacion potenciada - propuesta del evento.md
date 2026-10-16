@@ -199,18 +199,18 @@ Ideas valiosas que **no** se implementan antes del sábado y se presentan como e
 5. **Marketplace de operadores contratados**: cotizar con varios operadores y calificar su cumplimiento.
 6. **Calibrar el costo con viajes reales** y su margen de error (#204).
 
-## Reparto aprobado — issues del 16-oct
+## Reparto vigente — issues del 16-oct
 
-Joseph aprobó el reparto con carga equilibrada. Cada issue trae su lugar en la cola de su responsable y una sección «Para el pitch»; la guía para el pitch quedó como comentario en #200. La migración de base de datos está permitida y se marca con la etiqueta `🗄️ migración-db`.
+Reparto con carga equilibrada; Joseph queda fuera de lo crítico para concentrarse en el pitch. **El issue fijado #253 manda** si algo de esta tabla queda desactualizado. Cada issue trae su lugar en la cola y una sección «Para el pitch (#200)». La migración de base de datos se marca con la etiqueta `🗄️ migración-db`.
 
 | Persona | Cola (en orden) |
 |---|---|
-| Bryan | #230 🔴 → #240 🔴 costo total de servir (🗄️ migración: `Product.UnitValue`, `UnitsPerPackage`, `Vehicle.VehicleType`, `UsageScope`) → #241 🟡 operador contratado y recomendación → #247 🟢 guía de retorno |
+| Bryan | #243 🔴 dataset (primero solo `appsettings.demo-quito.json`) → #230 🔴 (después del PR de #210) → #240 🔴 🗄️ costo total de servir → #241 🟡 operador contratado y recomendación |
 | Anthony | #199 → #236 🟡 → #237 🟡 → #245 🟢 horas pico → #246 🟢 congestión y manifestación |
-| Alexander | #210 🟡 → #242 🟡 pantalla A/B/C → #231 🟢 → #167 🟢 → #249 🟢 hojas de capacitación e indicadores |
-| Jorge | #198 🔴 → #235 🔴 → #244 🟢 restricción horaria por tipo de vehículo → #166 🟢 |
-| Joseph | #200 🔴 → #243 🔴 dataset `demo-quito-planificacion` (absorbe #238) → #248 🟢 error del pronóstico → #204 🟢 |
+| Alexander | #210 🟡 (abrir PR) → #242 🟡 pantalla A/B/C → #231 🟢 → #247 🟢 guía de retorno → #167 🟢 |
+| Jorge | #198 🔴 → PR #250 (#166, sin `rutas.page.ts`) → #235 🔴 → #244 🟢 restricción horaria |
+| Joseph | #200 🔴 pitch → #249 🟢 capacitación e indicadores → #248 🟢 error del pronóstico → #204 🟢 |
 
-Dependencias: #243 publica primero los valores de configuración; #241, #244 y #237 usan el desglose de #240; #242 consume el contrato de #241; #245 y #246 comparten `RouteFeasibility.cs` y van en secuencia.
+**Orden de fusión en archivos compartidos:** `rutas.page.ts`: #210 → #250 → #242 → #231. PWA de campo y `FieldService.cs`: #210 → #230 → #237 → #247 → #167. `VehicleMatcher.cs` y `RouteEvaluator.cs`: #240 primero, luego #244 y #245 rebasando. Opciones nuevas: un archivo propio por issue y una sola propiedad en `LogisticsOptions.cs`. La migración de #240 se aplica en RDS en su despliegue porque `/health/ready` falla con migraciones pendientes.
 
 Relacionado: [[Rutas y sobrecostos]], [[Inventario y prediccion]], [[Simulador y metricas]], [[Guion del pitch]], [[Plan de validacion]] y [[Ampliacion de alcance - ideas del evento]].

@@ -1,11 +1,13 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [hackathon, istpetdev]
 ---
 
 # Riesgos y decisiones pendientes
+
+> **16-oct:** los riesgos del módulo de planificación y sus estrategias de mitigación (las 6 filas de la lámina de la charla, 13 riesgos propios y los del día de la demo) están en [[Planificacion potenciada - propuesta del evento]], sección «Riesgos y estrategias de mitigación». Son prioridad del pitch.
 
 ## Riesgos principales
 
@@ -26,7 +28,7 @@ tags: [hackathon, istpetdev]
 | R-13 | Asistentes de IA reciben datos contradictorios o incompletos | Código y documentos con datos inventados | [[Hechos canonicos]], [[Catalogo y plan de skills]] y `check_vault.py` en CI |
 | R-14 | Sin acceso al sector de limpieza antes del evento | Comprensión del problema e Impacto sin evidencia | Entrevistas en la feria el 16 y validación con el prototipo el 17 (D2); kit previo; decirlo con honestidad si no se logra |
 | R-15 | Cifras, puntos, rutas y relato fijos en el widget de rutas y dashboard web («418 km», «Ahorro: 24.8%») | Pérdida de credibilidad si el jurado pregunta su origen | **Resuelto:** `RoutePlansController.cs` calcula dinámicamente revisiones y paradas (`stopsCount`), y `rutas.page.ts` consume la API real con estado reactivo y feedback dinámico. |
-| R-16 | 2,5 días para construir el P0 completo | Demo incompleta o sin ensayar | Congelamiento el 15-oct 14:00, hitos H1–H5 y plan B por componente (D8) |
+| R-16 | 2,5 días para construir el P0 completo | Demo incompleta o sin ensayar | Congelamiento el 15-oct 14:00 (reemplazado el 16-oct: código sáb 11:30, materiales 15:45), hitos H1–H5 y plan B por componente (D8) |
 | R-17 | El incidente predefinido no produce «uno solo, uno escalado» con las rutas reales | Se pierde el momento central de la demo | Calibración tras implementar el planificador y prueba E2E que fija el resultado (spec 002) |
 | R-18 | LLM lento, caído o manipulado por texto de los datos importados | Agente que falla o actúa fuera de la política en escena | Política determinista en el backend, fallback por plantilla en ≤ 10 s y datos delimitados (ADR-22) |
 | R-20 | DeepSeek no cumple los umbrales de aceptación (latencia desde Ecuador o uso de herramientas en el nodo de n8n) | Agente que no responde a tiempo en la demo | Prueba de aceptación en H1; fallback determinista a los 10 s; nodo compatible con OpenAI como alternativa de conexión |
