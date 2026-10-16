@@ -108,40 +108,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
       }
 
-      <!-- Barra de Filtros en Píldoras -->
-      <div class="stripe-pills-bar">
-        <div class="stripe-pills-scroll">
-          <button type="button" class="stripe-pill-item" (click)="cycleDateRange()">
-            <span>{{ selectedDateRange() }}</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-
-          <button type="button" class="stripe-pill-item" (click)="cycleFrequency()">
-            <span>{{ selectedFrequency() }}</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-
-          <button type="button" class="stripe-pill-item" [class.is-active]="comparePrevious()" (click)="toggleComparePrevious()">
-            <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-            </svg>
-            <span>Período anterior</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-        </div>
-
-        <button type="button" class="stripe-plus-btn" aria-label="Agregar acción" (click)="openQuickAction()">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
-      </div>
     </div>
 
     <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
@@ -175,34 +141,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
           <span class="summary-arrow" aria-hidden="true">→</span>
         </button>
       }
-
-      <!-- TARJETA 1: VOLUMEN BRUTO (Idéntica al screenshot de Stripe con colores oficiales) -->
-      <div class="stripe-card mb-4">
-        <div class="stripe-card-header">
-          <div class="stripe-card-title-group">
-            <span class="card-title-text">Volumen bruto</span>
-            <span class="info-icon-badge" title="Volumen logístico acumulado en el período">ⓘ</span>
-          </div>
-
-          <button type="button" class="stripe-card-action-btn" aria-label="Inspeccionar volumen" (click)="inspectVolumeDetails()">
-            <svg class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10 10h4" />
-              <path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3" />
-              <path d="M8 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v3" />
-              <circle cx="7" cy="15" r="5" />
-              <circle cx="17" cy="15" r="5" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="stripe-card-main-val">
-          0,00 US$
-        </div>
-
-        <div class="stripe-card-sub-val">
-          0,00 US$ período anterior
-        </div>
-      </div>
 
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
@@ -340,7 +278,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       <!-- ======================================================== -->
       @else {
         <!-- Banner de Aviso de Revisión de Ruta (PA-02 / FR-12 / F5) -->
-        @if (outboxService.activeDriverNotice(); as notice) {
+        @if (shouldShowDriverNotice(); as notice) {
           <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-950 rounded-xl shadow-xs flex items-start gap-3">
             <svg class="w-6 h-6 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -367,18 +305,26 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
           </div>
         }
 
-        <!-- Acciones del Conductor con estilo Stripe Tile -->
+        <!-- Acciones del Conductor: Únicos botones requeridos -->
         <div class="stripe-actions-grid mb-4">
-          <button type="button" class="stripe-action-tile" (click)="openScan()">
-            <div class="tile-icon">
-              <svg class="w-5 h-5 text-[#00A7C4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 15h.008v.008H15V15zm0 3h.008v.008H15V18zm3-3h.008v.008H18V15zm0 3h.008v.008H18V18zm-3-6h.008v.008H15V12z" />
-              </svg>
+          @if (!isRouteCompleted()) {
+            <button type="button" class="stripe-action-tile" (click)="openScan()">
+              <div class="tile-icon">
+                <svg class="w-5 h-5 text-[#00A7C4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 15h.008v.008H15V15zm0 3h.008v.008H15V18zm3-3h.008v.008H18V15zm0 3h.008v.008H18V18zm-3-6h.008v.008H15V12z" />
+                </svg>
+              </div>
+              <span class="tile-title">Escanear QR</span>
+              <span class="tile-subtitle">Custodia y entrega</span>
+            </button>
+          } @else {
+            <div class="stripe-action-tile opacity-75 bg-slate-50 border-slate-200">
+              <div class="tile-icon text-emerald-600 font-bold">✓</div>
+              <span class="tile-title text-slate-800">Ruta Cerrada</span>
+              <span class="tile-subtitle">Entregas completadas</span>
             </div>
-            <span class="tile-title">Escanear QR</span>
-            <span class="tile-subtitle">Custodia y entrega</span>
-          </button>
+          }
 
           <button type="button" class="stripe-action-tile" [disabled]="loadingRoute()" (click)="downloadRoute()">
             <div class="tile-icon">
@@ -386,35 +332,26 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
             </div>
-            <span class="tile-title">{{ loadingRoute() ? 'Cargando...' : 'Descargar Ruta' }}</span>
-            <span class="tile-subtitle">Asignación local</span>
+            <span class="tile-title">
+              {{ loadingRoute() ? (hasDownloadedRoute() ? 'Actualizando...' : 'Cargando...') : (hasDownloadedRoute() ? 'Actualizar Ruta' : 'Descargar Ruta') }}
+            </span>
+            <span class="tile-subtitle">
+              {{ hasDownloadedRoute() ? 'Sincronizar cambios' : 'Asignación local' }}
+            </span>
           </button>
         </div>
 
-        @if (outboxService.activeAssignment()) {
-          <div class="mb-3 flex items-center justify-between">
-            <button type="button" class="text-xs font-semibold text-primary-700 underline" (click)="showAssignedRoute.set(!showAssignedRoute())">
-              {{ showAssignedRoute() ? 'Ocultar Paradas Asignadas' : 'Ver Paradas Asignadas' }}
-            </button>
-            <button type="button" class="text-xs font-semibold text-rose-700 underline" (click)="openIncident()">
-              Reportar Incidente
-            </button>
-          </div>
-        }
-        <!-- Mensaje si se descarga la ruta -->
-        @if (showAssignedRoute() && outboxService.activeAssignment()) {
-
-        <!-- Lista de Paradas Asignadas -->
-        <div class="mb-2.5 flex items-center justify-between px-1">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Paradas de la Ruta Activa
-          </span>
-          <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
-            {{ totalDeliveries() }} entregas
-          </span>
-        </div>
-
         @if (outboxService.activeAssignment(); as assignment) {
+          <!-- Lista de Paradas Asignadas -->
+          <div class="mb-2.5 flex items-center justify-between px-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Paradas de la Ruta Activa
+            </span>
+            <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
+              {{ totalDeliveries() }} entregas
+            </span>
+          </div>
+
           <div class="space-y-3">
             @for (route of filteredRoutes(); track route.routePlanId) {
               <div class="space-y-3">
@@ -489,70 +426,11 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
             </button>
           </div>
         }
-        }
       }
 
-      <!-- Espaciador para no quedar oculto por la Guía de Configuración -->
-      <div class="h-28"></div>
+      <!-- Espacio inferior normal -->
+      <div class="h-6"></div>
     </ion-content>
-
-    <!-- GUÍA DE CONFIGURACIÓN (Dock Flotante Inferior Estilo Stripe) -->
-    <div class="stripe-setup-dock" [class.is-expanded]="setupExpanded()">
-      <div class="setup-dock-header" (click)="toggleSetupGuide()">
-        <span class="setup-dock-title">Guía de configuración</span>
-        <button type="button" class="setup-dock-chevron" aria-label="Desplegar guía de configuración">
-          <svg class="w-4 h-4 transform transition-transform" [class.rotate-180]="setupExpanded()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Barra de progreso con color oficial Clean Cyan (#00A7C4) -->
-      <div class="setup-dock-progress-bar">
-        <div class="setup-dock-progress-fill" [style.width.%]="setupProgress()"></div>
-      </div>
-
-      <div class="setup-dock-subtitle">
-        Verifica tu empresa...
-      </div>
-
-      <!-- Pasos desplegables de la guía -->
-      @if (setupExpanded()) {
-        <div class="setup-dock-steps mt-3 pt-3 border-t border-slate-100 space-y-2.5">
-          <div class="setup-step-item done">
-            <span class="step-icon done">✓</span>
-            <div class="step-text">
-              <strong>1. Registro en la plataforma</strong>
-              <small>Credenciales y rol vinculados exitosamente</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item current cursor-pointer" (click)="openVerifyModal()">
-            <span class="step-icon current">◉</span>
-            <div class="step-text">
-              <strong>2. Verifica tu empresa</strong>
-              <small>Razón social y certificación de custodia digital</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item pending cursor-pointer" (click)="downloadRoute()">
-            <span class="step-icon pending">○</span>
-            <div class="step-text">
-              <strong>3. Descarga tu ruta de campo</strong>
-              <small>Sincroniza paradas y bultos logísticos en memoria</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item pending cursor-pointer" (click)="openScan()">
-            <span class="step-icon pending">○</span>
-            <div class="step-text">
-              <strong>4. Escaneo de custodia QR offline</strong>
-              <small>Verifica transferencias de bulto con firma digital</small>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
   `,
   styles: [`
     :host {
@@ -1037,14 +915,50 @@ export class HomePage {
   readonly loadingRoute = signal<boolean>(false);
   readonly showAssignedRoute = signal(false);
 
-  // Estados visuales del nuevo diseño Stripe-style
+  // Estados visuales
   readonly searchOpen = signal<boolean>(false);
   searchQuery = '';
-  readonly selectedDateRange = signal<string>('Últimos 7 días');
-  readonly selectedFrequency = signal<string>('Diario');
-  readonly comparePrevious = signal<boolean>(true);
-  readonly setupExpanded = signal<boolean>(false);
-  readonly setupProgress = signal<number>(45);
+
+  readonly hasDownloadedRoute = computed(() => {
+    const a = this.outboxService.activeAssignment();
+    return !!(a && a.routes && a.routes.length > 0);
+  });
+
+  readonly isRouteCompleted = computed(() => {
+    const a = this.outboxService.activeAssignment();
+    if (!a || !a.routes || a.routes.length === 0) return false;
+    const allDeliveries = a.routes.flatMap((r) => r.deliveries || []);
+    if (allDeliveries.length === 0) return false;
+    return allDeliveries.every((d) => {
+      const stage = this.driverStage(d);
+      return stage === 'Received' || stage === 'Partial';
+    });
+  });
+
+  readonly shouldShowDriverNotice = computed(() => {
+    const notice = this.outboxService.activeDriverNotice();
+    if (!notice) return null;
+
+    const lastDownload = this.outboxService.lastDownloadTimestamp ? this.outboxService.lastDownloadTimestamp() : 0;
+    if (!lastDownload) {
+      return notice;
+    }
+
+    const now = new Date();
+    const downloadDate = new Date(lastDownload);
+
+    // Más de 12 horas sin actualizar (12 * 60 * 60 * 1000 = 43,200,000 ms)
+    const isMoreThan12Hours = (now.getTime() - lastDownload) >= (12 * 60 * 60 * 1000);
+
+    // Descargado el día de ayer o antes (fechas calendario distintas)
+    const isPreviousDay = now.toDateString() !== downloadDate.toDateString();
+
+    if (isMoreThan12Hours || isPreviousDay) {
+      return notice;
+    }
+
+    return null;
+  });
 
   // --- Estado para el Receptor Hospitalario ---
   qrInputText = '';
@@ -1159,26 +1073,6 @@ export class HomePage {
     this.searchOpen.set(!this.searchOpen());
   }
 
-  cycleDateRange(): void {
-    const ranges = ['Últimos 7 días', 'Últimos 30 días', 'Hoy', 'Este mes'];
-    const idx = ranges.indexOf(this.selectedDateRange());
-    this.selectedDateRange.set(ranges[(idx + 1) % ranges.length]);
-  }
-
-  cycleFrequency(): void {
-    const freqs = ['Diario', 'Semanal', 'Mensual'];
-    const idx = freqs.indexOf(this.selectedFrequency());
-    this.selectedFrequency.set(freqs[(idx + 1) % freqs.length]);
-  }
-
-  toggleComparePrevious(): void {
-    this.comparePrevious.set(!this.comparePrevious());
-  }
-
-  toggleSetupGuide(): void {
-    this.setupExpanded.set(!this.setupExpanded());
-  }
-
   async openTestEnvInfo(): Promise<void> {
     const alert = await this.alerts.create({
       header: 'Entorno de prueba activo',
@@ -1193,7 +1087,7 @@ export class HomePage {
     const alert = await this.alerts.create({
       header: 'Verificación de Empresa',
       subHeader: 'Certificación de Custodia Digital',
-      message: 'Empresa: IstpetDev Operaciones Nacionales\\nRUC: 1793148291001\\nEstado: Validación en proceso (45%)\\nProtocolo de custodia digital activo con claves M2M.',
+      message: 'Empresa: IstpetDev Operaciones Nacionales\nRUC: 1793148291001\nEstado: Validación en proceso (45%)\nProtocolo de custodia digital activo con claves M2M.',
       buttons: ['Aceptar']
     });
     await alert.present();
@@ -1209,29 +1103,6 @@ export class HomePage {
         { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
         { text: 'Cancelar', role: 'cancel' }
       ]
-    });
-    await alert.present();
-  }
-
-  async openQuickAction(): Promise<void> {
-    const alert = await this.alerts.create({
-      header: 'Acción Rápida',
-      buttons: [
-        { text: 'Escanear QR', handler: () => this.openScan() },
-        { text: 'Descargar / Actualizar Ruta', handler: () => this.downloadRoute() },
-        { text: 'Ver Cola Pendientes', handler: () => this.openSyncQueue() },
-        { text: 'Cancelar', role: 'cancel' }
-      ]
-    });
-    await alert.present();
-  }
-
-  async inspectVolumeDetails(): Promise<void> {
-    const alert = await this.alerts.create({
-      header: 'Detalle de Volumen Bruto',
-      subHeader: this.selectedDateRange(),
-      message: `Volumen actual: 0,00 US$\\nPeríodo anterior: 0,00 US$\\nEntregas activas: ${this.totalDeliveries()}\\nEstado del inventario: En regla`,
-      buttons: ['Cerrar']
     });
     await alert.present();
   }
@@ -1388,13 +1259,15 @@ export class HomePage {
 
   // --- Métodos de Conductor ---
   private driverStage(del: MobileAssignmentDelivery): string {
-    const status = this.outboxService.effectiveDeliveryStatus(
-      del.deliveryId,
-      del.status,
-      del.handlingUnits.map((hu) => hu.status),
-    );
+    const status = typeof this.outboxService.effectiveDeliveryStatus === 'function'
+      ? this.outboxService.effectiveDeliveryStatus(
+          del.deliveryId,
+          del.status,
+          del.handlingUnits ? del.handlingUnits.map((hu) => hu.status) : [],
+        )
+      : del.status;
     if (status === 'Dispatched') {
-      const unitsReady = del.handlingUnits.length > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
+      const unitsReady = (del.handlingUnits?.length || 0) > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
       return unitsReady ? 'Dispatched' : 'WaitingWarehouse';
     }
     return status;

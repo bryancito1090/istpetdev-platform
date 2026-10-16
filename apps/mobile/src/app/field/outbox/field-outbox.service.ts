@@ -142,6 +142,7 @@ export async function calculateBlobSha256(blob: Blob): Promise<string> {
 }
 
 const DRIVER_ACK_REVISION_KEY = 'istpetdev_driver_ack_route_revision';
+export const DRIVER_LAST_DOWNLOAD_TIME_KEY = 'istpetdev_driver_last_download_time';
 
 @Injectable({
   providedIn: 'root'
@@ -160,6 +161,7 @@ export class FieldOutboxService {
   /** 015: la sesión se abrió sin señal; se guarda en el teléfono y no se envía hasta renovar la sesión. */
   readonly syncHeld = signal<boolean>(false);
   readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
+  readonly lastDownloadTimestamp = signal<number>(this.readInitialDownloadTimestamp());
   private readonly owner = signal<string | null>(null);
   private readonly legacyPendingCount = signal<number>(0);
   readonly legacyCount = this.legacyPendingCount.asReadonly();
@@ -178,6 +180,26 @@ export class FieldOutboxService {
     this.outboxItems().filter((i) => i.status === 'RequiresReview' || i.status === 'Conflict').length
   );
 
+  private readInitialDownloadTimestamp(): number {
+    try {
+      const val = typeof localStorage !== 'undefined' ? localStorage.getItem(DRIVER_LAST_DOWNLOAD_TIME_KEY) : null;
+      return val ? parseInt(val, 10) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  recordDownloadTimestamp(timestamp: number = Date.now()): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(DRIVER_LAST_DOWNLOAD_TIME_KEY, timestamp.toString());
+      }
+    } catch {
+      // Ignorar fallo de storage
+    }
+    this.lastDownloadTimestamp.set(timestamp);
+  }
+
   constructor() {
     this.init();
     if (typeof window !== 'undefined') {
@@ -191,6 +213,9 @@ export class FieldOutboxService {
     this.owner.set(accountId);
     this.activeAssignment.set(null);
     this.activeDriverNotice.set(null);
+    if (!accountId) {
+      this.lastDownloadTimestamp.set(0);
+    }
     await this.refreshOutboxItems();
     if (accountId) await this.loadCachedAssignment();
   }
@@ -355,6 +380,7 @@ export class FieldOutboxService {
     return new Promise((resolve, reject) => {
       this.fieldApi.getAssignments().subscribe({
         next: async (assignment: MobileAssignmentResponse) => {
+          this.recordDownloadTimestamp();
           await this.cacheAssignment(assignment);
           resolve(assignment);
         },
