@@ -167,7 +167,9 @@ public sealed class SourcingService : ISourcingService
             foreach (var line in ordLines)
             {
                 products.TryGetValue(line.ProductId, out var prod);
-                decimal requested = line.RequestedQuantity;
+                // #199: solo el remanente sin planificar; lo ya confirmado en otra ruta no se vuelve a ofrecer.
+                decimal requested = Math.Max(0m, line.RequestedQuantity - line.PlannedQuantity);
+                if (requested <= 0) continue;
 
                 // Ordenar bodegas por distancia por carretera al destino
                 var rankedWarehouses = warehouses

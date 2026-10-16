@@ -186,6 +186,8 @@ public sealed class RoutePlansController(
 
         // Cargas planificadas de InputJson por si la ruta no tiene entregas creadas aún (propuesta)
         var plannedLoadsBySeq = new Dictionary<int, List<(Guid ProductId, string Sku, decimal Quantity, string BaseUnit)>>();
+        // #199: cantidades requerida, planificada y pendiente por línea, tal como las guardó el motor o el asistente.
+        var loadQuantitiesBySeq = new Dictionary<int, List<object>>();
         string? polyline = null;
         List<double[]>? coordinates = null;
         IReadOnlyList<Guid> orderIds = [];
@@ -220,6 +222,12 @@ public sealed class RoutePlansController(
                                     var unit = lElem.TryGetProperty("baseUnit", out var b1) ? b1.GetString() : (lElem.TryGetProperty("BaseUnit", out var b2) ? b2.GetString() : "U");
                                     if (pId != Guid.Empty) allProductIds.Add(pId);
                                     loadsList.Add((pId, sku ?? "", qty, unit ?? "U"));
+                                    if (lElem.TryGetProperty("requiredQuantity", out var r1) && r1.ValueKind == JsonValueKind.Number)
+                                    {
+                                        var pending = lElem.TryGetProperty("pendingQuantity", out var pq) && pq.ValueKind == JsonValueKind.Number ? pq.GetDecimal() : 0m;
+                                        if (!loadQuantitiesBySeq.TryGetValue(seq, out var quantities)) loadQuantitiesBySeq[seq] = quantities = [];
+                                        quantities.Add(new { sku = sku ?? "", baseUnit = unit ?? "U", requiredQuantity = r1.GetDecimal(), plannedQuantity = qty, pendingQuantity = pending });
+                                    }
                                 }
                             }
                             plannedLoadsBySeq[seq] = loadsList;
@@ -400,7 +408,8 @@ public sealed class RoutePlansController(
                     locationId = hu.LocationId,
                     sealedAtUtc = hu.SealedAtUtc
                 }),
-                lines = stopLines
+                lines = stopLines,
+                loadQuantities = loadQuantitiesBySeq.GetValueOrDefault(s.SequenceNumber) ?? []
             };
         }).ToList();
 
@@ -641,16 +650,32 @@ public sealed class RoutePlansController(
 
         var explanation = templates.Explain("plan", allFacts);
 
+        // #199: carga usada frente a capacidad y cantidades por línea (requerida, planificada, pendiente) para panel y n8n.
+        var routeVehicleIds = result.Routes.Select(r => r.VehicleId).ToList();
+        var capacities = await db.Vehicles.Where(v => routeVehicleIds.Contains(v.Id))
+            .ToDictionaryAsync(v => v.Id, v => new { v.MaxWeight, v.MaxVolume }, ct);
+
         return StatusCode(StatusCodes.Status201Created, new
         {
-            routes = createdPlans.Select(p => new
+            routes = createdPlans.Select(p =>
             {
-                routePlanId = p.Id,
-                id = p.Id,
-                code = p.Code,
-                revision = p.Revision,
-                status = p.Status,
-                agentDecisionId = agentDecisions.TryGetValue(p.Id, out var decisionId) ? decisionId : (Guid?)null
+                var r = result.Routes.First(x => x.VehicleId == p.VehicleId);
+                var capacity = capacities.GetValueOrDefault(r.VehicleId);
+                return new
+                {
+                    routePlanId = p.Id,
+                    id = p.Id,
+                    code = p.Code,
+                    revision = p.Revision,
+                    status = p.Status,
+                    agentDecisionId = agentDecisions.TryGetValue(p.Id, out var decisionId) ? decisionId : (Guid?)null,
+                    vehicleCode = r.VehicleCode,
+                    loadWeight = r.LoadWeight,
+                    loadVolume = r.LoadVolume,
+                    maxWeight = capacity?.MaxWeight,
+                    maxVolume = capacity?.MaxVolume,
+                    stops = r.Stops.Select(s => new { sequence = s.Sequence, pointCode = s.PointCode, isConsolidation = s.IsConsolidation, loads = s.Loads })
+                };
             }),
             unserved = result.Unserved,
             facts = allFacts,
@@ -934,13 +959,37 @@ public sealed class RoutePlansController(
             return BadRequest(new { message = "La ruta debe contener al menos una parada." });
         }
 
-        var today = await clock.TodayAsync(ct);
-        var vehicles = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive).ToListAsync(ct);
-        var vehicle = (req.VehicleId.HasValue ? vehicles.FirstOrDefault(v => v.Id == req.VehicleId.Value) : null)
-                      ?? vehicles.FirstOrDefault();
+        // #199: el vehículo es obligatorio y debe estar activo; antes se tomaba el primero sin validar capacidad.
+        if (req.VehicleId is not { } requestedVehicleId || requestedVehicleId == Guid.Empty)
+        {
+            return BadRequest(new { message = "Debe indicar el vehículo de la ruta." });
+        }
 
-        var vehicleId = vehicle?.Id ?? (vehicles.Count > 0 ? vehicles[0].Id : Guid.NewGuid());
-        var vehicleCode = vehicle?.Code ?? "C-01";
+        var today = await clock.TodayAsync(ct);
+        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.IsActive && v.Id == requestedVehicleId, ct);
+        if (vehicle is null)
+        {
+            return UnprocessableEntity(new { message = "El vehículo indicado no existe o no está activo." });
+        }
+
+        var vehicleId = vehicle.Id;
+        var vehicleCode = vehicle.Code;
+
+        // Secuencia efectiva de cada parada: la misma que se guarda en RouteStop y en InputJson.
+        var routeStops = req.Stops.Select((s, i) => new OrderRouteStop(
+            s.Sequence > 0 ? s.Sequence : i + 1, s.Kind ?? RouteStopKind.Delivery, s.ServicePointId, s.LocationId, s.Code)).ToList();
+
+        // #199: cargas recalculadas desde los pedidos y limitadas por la capacidad del vehículo.
+        var orderIds = req.OrderIds ?? [];
+        OrderLoadPlan? loadPlan = null;
+        if (orderIds.Count > 0)
+        {
+            loadPlan = await OrderStopLoads.PlanForVehicleAsync(db, vehicle, orderIds, routeStops, ct);
+            if (loadPlan.Error is not null)
+            {
+                return UnprocessableEntity(new { message = loadPlan.Error });
+            }
+        }
 
         var baseCode = string.IsNullOrWhiteSpace(req.Code)
             ? $"PLAN-{today:yyyyMMdd}-{vehicleCode}"
@@ -965,7 +1014,7 @@ public sealed class RoutePlansController(
             PlannedEndUtc = (req.PlannedStartUtc ?? now).AddMinutes((double)req.TotalDurationMinutes),
             TotalKm = req.TotalDistanceKm,
             TotalMinutes = req.TotalDurationMinutes,
-            TotalCost = req.TotalCost > 0 ? req.TotalCost : Math.Round(req.TotalDistanceKm * (vehicle?.CostPerKm ?? 0.45m), 2),
+            TotalCost = req.TotalCost > 0 ? req.TotalCost : Math.Round(req.TotalDistanceKm * (vehicle.CostPerKm ?? 0.45m), 2),
             AlgorithmVersion = "order-based-routing-1.0",
             InputJson = JsonSerializer.Serialize(new
             {
@@ -973,15 +1022,18 @@ public sealed class RoutePlansController(
                 orderIds = req.OrderIds,
                 polyline = req.Polyline,
                 coordinates = req.Coordinates,
-                stops = req.Stops.Select(s => new
+                // #199: las cargas planificadas quedan en cada parada; la publicación reserva exactamente esto.
+                stops = req.Stops.Select((s, i) => new
                 {
-                    sequence = s.Sequence,
+                    sequence = routeStops[i].Sequence,
                     kind = s.Kind,
                     code = s.Code,
                     name = s.Name,
                     servicePointId = s.ServicePointId,
-                    locationId = s.LocationId
-                })
+                    locationId = s.LocationId,
+                    loads = loadPlan?.LoadsBySeq.GetValueOrDefault(routeStops[i].Sequence)
+                }),
+                orderLines = loadPlan?.Lines
             }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
         };
 
@@ -1003,7 +1055,7 @@ public sealed class RoutePlansController(
                 ServicePointId = s.ServicePointId ?? defaultSpId,
                 LocationId = s.LocationId,
                 Kind = s.Kind ?? RouteStopKind.Delivery,
-                SequenceNumber = s.Sequence > 0 ? s.Sequence : (i + 1),
+                SequenceNumber = routeStops[i].Sequence,
                 PlannedArrivalUtc = arrival,
                 PlannedDepartureUtc = arrival.AddMinutes(15),
                 Status = RouteStopStatus.Pending
@@ -1011,28 +1063,56 @@ public sealed class RoutePlansController(
             db.RouteStops.Add(stop);
         }
 
-        // Marcar pedidos como planificados
-        if (req.OrderIds != null && req.OrderIds.Count > 0)
+        // #199: sumar lo planificado por línea; solo pasa a Planned el pedido sin remanente.
+        // El pedido con remanente sigue Pending y vuelve a ofrecerse con lo que falta.
+        if (loadPlan is not null)
         {
-            var ordersToUpdate = await db.DeliveryOrders
-                .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
-                .ToListAsync(ct);
+            var plannedByLine = loadPlan.Lines.ToDictionary(l => l.OrderLineId, l => l.PlannedQuantity);
+            var orderLines = await db.DeliveryOrderLines.Where(l => orderIds.Contains(l.DeliveryOrderId)).ToListAsync(ct);
+            foreach (var line in orderLines)
+            {
+                line.PlannedQuantity += plannedByLine.GetValueOrDefault(line.Id);
+            }
 
+            var ordersToUpdate = await db.DeliveryOrders
+                .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id))
+                .ToListAsync(ct);
             foreach (var ord in ordersToUpdate)
             {
-                ord.Status = DeliveryOrderStatus.Planned;
+                if (orderLines.Where(l => l.DeliveryOrderId == ord.Id).All(l => l.RequestedQuantity - l.PlannedQuantity <= 0))
+                {
+                    ord.Status = DeliveryOrderStatus.Planned;
+                }
             }
         }
 
         await db.SaveChangesAsync(ct);
 
+        var lines = loadPlan?.Lines ?? [];
         return StatusCode(StatusCodes.Status201Created, new
         {
             id = plan.Id,
             routePlanId = plan.Id,
             code = plan.Code,
             revision = plan.Revision,
-            status = plan.Status
+            status = plan.Status,
+            vehicleCode,
+            loadWeight = loadPlan?.LoadWeight ?? 0m,
+            loadVolume = loadPlan?.LoadVolume ?? 0m,
+            maxWeight = vehicle.MaxWeight,
+            maxVolume = vehicle.MaxVolume,
+            partial = lines.Any(l => l.PendingQuantity > 0),
+            lines = lines.Select(l => new
+            {
+                l.OrderId,
+                l.OrderNumber,
+                l.PointCode,
+                l.Sku,
+                l.BaseUnit,
+                l.RequiredQuantity,
+                l.PlannedQuantity,
+                l.PendingQuantity
+            })
         });
     }
 
