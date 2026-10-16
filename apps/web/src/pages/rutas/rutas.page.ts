@@ -317,6 +317,36 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
+                <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600" data-route-assignment>
+                  <span><span class="text-slate-400">Bodega:</span> <strong>{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
+                  <span><span class="text-slate-400">Vehículo:</span> <strong>{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
+                  @if (selectedDetail()!.status === 'Published') {
+                    <span>
+                      <span class="text-slate-400">Conductor:</span>
+                      <strong [class.text-rose-700]="!selectedDetail()!.driverName">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
+                    </span>
+                    @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
+                      <span class="text-rose-700">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
+                    }
+                    @if (session.canWrite()) {
+                      <span class="flex items-center gap-2">
+                        <select class="border border-slate-300 rounded-lg px-2 py-1 text-xs" aria-label="Reasignar conductor"
+                          [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
+                          <option value="">Cambiar conductor…</option>
+                          @for (driver of drivers(); track driver.accountId) {
+                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
+                          }
+                        </select>
+                        <button type="button" class="text-xs font-semibold text-slate-700 underline disabled:opacity-50"
+                          [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
+                          Asignar
+                        </button>
+                      </span>
+                    }
+                  }
+                </div>
+
                 <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
                   <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
@@ -914,6 +944,7 @@ export class RutasPage implements OnInit {
   readonly routeLegend = signal<RouteLegendItem[]>([]);
   readonly drivers = signal<DriverOptionDto[]>([]);
   readonly selectedDriverId = signal('');
+  readonly reassignDriverId = signal('');
   readonly routeLegendHasApproximate = computed(() => this.routeLegend().some(i => i.source === 'approximate'));
   private readonly geometries = new Map<string, RouteGeometryDto>();
 
@@ -1079,6 +1110,25 @@ export class RutasPage implements OnInit {
     this.apiService.getEntityData('products').subscribe({
       next: (prods) => this.availableProducts.set(prods || []),
       error: () => {}
+    });
+  }
+
+  /** #160: reasignar el conductor de una ruta publicada (por ejemplo, las publicadas antes sin conductor). */
+  reassignDriver(id: string): void {
+    const accountId = this.reassignDriverId();
+    if (!this.session.canWrite() || !accountId) return;
+    this.actionLoading.set(true);
+    this.apiService.assignRouteDriver(id, accountId).subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        this.reassignDriverId.set('');
+        this.feedbackMessage.set({ type: 'success', text: `Conductor asignado a ${res?.updatedDeliveries ?? 0} entregas.` });
+        this.selectPlan(id);
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({ type: 'error', text: err?.error?.detail || 'No se pudo asignar el conductor.' });
+      }
     });
   }
 

@@ -187,7 +187,8 @@ public sealed record MobileAssignmentRoute(
     string? DriverMessage,
     string VehicleCode,
     int StopsCount,
-    IReadOnlyList<MobileAssignmentDelivery> Deliveries);
+    IReadOnlyList<MobileAssignmentDelivery> Deliveries,
+    string? OriginWarehouseName = null);
 
 public sealed record MobileAssignmentResponse(
     DateTime ServerTimeUtc,
@@ -238,7 +239,11 @@ public sealed record DeliveryDetailResponse(
     string PointName,
     Guid RoutePlanId,
     IReadOnlyList<DeliveryDetailLineDto> Lines,
-    IReadOnlyList<DeliveryDetailHandlingUnitDto> HandlingUnits);
+    IReadOnlyList<DeliveryDetailHandlingUnitDto> HandlingUnits,
+    // #160: la Bodega ve a qué vehículo y conductor va la entrega y desde qué bodega sale.
+    string? VehicleCode = null,
+    string? DriverName = null,
+    string? OriginWarehouseName = null);
 
 // ==========================================
 // FR-16: Demo Advance

@@ -1235,9 +1235,10 @@ public sealed class FieldService : IFieldService
                 plan.Revision,
                 DateTime.UtcNow,
                 "Ruta asignada verificada por plataforma.",
-                vehicle?.Code ?? "VEH-01",
+                vehicle?.Code ?? "",
                 planStops.Count,
-                planDeliveries));
+                planDeliveries,
+                await OriginWarehouseNameAsync(deliveries.Where(d => planStops.Any(s => s.Id == d.RouteStopId)).Select(d => d.OriginLocationId).FirstOrDefault(), ct)));
         }
 
         return new MobileAssignmentResponse(
@@ -1379,6 +1380,12 @@ public sealed class FieldService : IFieldService
                 hu.Status))
             .ToListAsync(ct);
 
+        var vehicleCode = routePlanId == Guid.Empty ? null : await _db.RoutePlans.Where(p => p.Id == routePlanId)
+            .Join(_db.Vehicles, p => p.VehicleId, v => v.Id, (p, v) => v.Code).FirstOrDefaultAsync(ct);
+        var driverName = delivery.AssignedAccountId is { } driverId
+            ? await _db.Accounts.Where(a => a.Id == driverId).Select(a => a.DisplayName).FirstOrDefaultAsync(ct)
+            : null;
+
         return new DeliveryDetailResponse(
             delivery.Id,
             delivery.Status,
@@ -1386,8 +1393,15 @@ public sealed class FieldService : IFieldService
             servicePoint?.Name ?? "Punto de Entrega",
             routePlanId,
             lineDtos,
-            handlingUnits);
+            handlingUnits,
+            vehicleCode,
+            driverName,
+            await OriginWarehouseNameAsync(delivery.OriginLocationId, ct));
     }
+
+    private async Task<string?> OriginWarehouseNameAsync(Guid locationId, CancellationToken ct) =>
+        locationId == Guid.Empty ? null
+            : await _db.Locations.Where(l => l.Id == locationId).Select(l => l.Name).FirstOrDefaultAsync(ct);
 
     public async Task<PublicTraceUnitDto> GetPublicTraceAsync(
         Guid unitId,

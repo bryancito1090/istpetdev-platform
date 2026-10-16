@@ -252,6 +252,11 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
                   <span>Vehículo: {{ route.vehicleCode }}</span>
                 </div>
+                @if (route.originWarehouseName) {
+                  <div class="text-xs text-slate-600 px-1" data-origin-warehouse>
+                    Sale de: <strong>{{ route.originWarehouseName }}</strong>
+                  </div>
+                }
 
                 @for (del of route.deliveries; track del.deliveryId) {
                   <ion-card class="m-0 border shadow-sm" [class.border-amber-300]="del.kind === 'Pickup'">

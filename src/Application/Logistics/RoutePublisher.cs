@@ -12,7 +12,8 @@ namespace IstpetDev.Application.Logistics;
 
 public sealed record PublishRequest(
     Guid RoutePlanId,
-    IReadOnlyDictionary<string, string>? DriverAssignments = null, // vehicleCode -> driverAccountId / sub
+    // vehicleCode -> Account.Id interno del conductor (no el sub de Cognito): se compara con User.AccountId().
+    IReadOnlyDictionary<string, string>? DriverAssignments = null,
     Guid? PublishedByAccountId = null);
 
 public sealed record PublishResult(
@@ -31,6 +32,7 @@ public interface IRoutePublisher
 {
     Task<PublishResult> PublishAsync(PublishRequest request, CancellationToken ct = default);
     Task<RouteStop> CompleteStopAsync(CompleteStopRequest request, CancellationToken ct = default);
+    Task<int> AssignDriverAsync(Guid routePlanId, Guid driverAccountId, CancellationToken ct = default);
 }
 
 public sealed class RoutePublisher(
@@ -133,9 +135,7 @@ public sealed class RoutePublisher(
         if (request.DriverAssignments != null && vehicle != null &&
             request.DriverAssignments.TryGetValue(vehicle.Code, out var driverText))
         {
-            if (!Guid.TryParse(driverText, out var driverId) ||
-                !await db.Accounts.AnyAsync(a => a.Id == driverId && a.IsActive && a.Role == Roles.Conductor &&
-                                                  a.OrganizationId == DemoOrganization.Id, ct))
+            if (!Guid.TryParse(driverText, out var driverId) || !await IsActiveDriverAsync(driverId, ct))
                 throw new ArgumentException($"La cuenta indicada para {vehicle.Code} no es un Conductor activo.");
             assignedAccountId = driverId;
         }
@@ -262,6 +262,38 @@ public sealed class RoutePublisher(
         await db.SaveChangesAsync(ct);
 
         return new PublishResult(plan.Id, plan.Status, createdDeliveries, createdReservations);
+    }
+
+    private Task<bool> IsActiveDriverAsync(Guid accountId, CancellationToken ct) =>
+        db.Accounts.AnyAsync(a => a.Id == accountId && a.IsActive && a.Role == Roles.Conductor &&
+                                  a.OrganizationId == DemoOrganization.Id, ct);
+
+    /// <summary>
+    /// #160: cambia el conductor de una ruta ya publicada. Publicar es idempotente y no sirve para reasignar.
+    /// Solo toca entregas pendientes (no entregadas, parciales ni canceladas); su Version sube al guardar y la PWA
+    /// detecta el cambio en la siguiente descarga.
+    /// </summary>
+    public async Task<int> AssignDriverAsync(Guid routePlanId, Guid driverAccountId, CancellationToken ct = default)
+    {
+        var plan = await db.RoutePlans
+            .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
+            ?? throw new KeyNotFoundException($"RoutePlan {routePlanId} no encontrado.");
+        if (plan.Status != "Published")
+            throw new InvalidOperationException("Solo se reasigna el conductor de una ruta publicada; al publicar se elige el conductor.");
+        if (!await IsActiveDriverAsync(driverAccountId, ct))
+            throw new ArgumentException("La cuenta indicada no es un Conductor activo.");
+
+        var closed = new[] { DeliveryStates.Delivered, DeliveryStates.Partial, DeliveryStates.Received, DeliveryStates.Cancelled };
+        var pending = await db.Deliveries
+            .Where(d => d.OrganizationId == DemoOrganization.Id && !closed.Contains(d.Status) &&
+                        db.RouteStops.Any(s => s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
+            .ToListAsync(ct);
+        if (pending.Count == 0)
+            throw new InvalidOperationException("La ruta no tiene entregas pendientes a las que asignar conductor.");
+
+        foreach (var delivery in pending) delivery.AssignedAccountId = driverAccountId;
+        await db.SaveChangesAsync(ct);
+        return pending.Count;
     }
 
     // Rutas del asistente (pedidos y emergencia): sus paradas no guardan cargas, pero el plan guarda los pedidos.

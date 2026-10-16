@@ -198,4 +198,102 @@ public class PublishToDriverTests(PostgisContainer postgres) : IClassFixture<Pos
         var reserved = await database.StockBalances.Where(b => b.LocationId == secondWarehouse).SumAsync(b => b.QuantityReserved);
         Assert.Equal(3m, reserved);
     }
+
+    // #160: cuentas adicionales para los criterios de aceptación (otro conductor y Bodega).
+    private const string OtherDriver = "driver-fixture-duplicate";
+    private const string Warehouse = "bodega-160";
+    private static readonly Dictionary<string, string?> WithWarehouse = new()
+    {
+        ["Demo:Accounts:5:Subject"] = Warehouse,
+        ["Demo:Accounts:5:DisplayName"] = "Bodega de prueba",
+        ["Demo:Accounts:5:Role"] = Roles.Bodega,
+    };
+
+    private static async Task<Guid> AccountIdAsync(ApiFactory api, string subject)
+    {
+        using var scope = api.Services.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Accounts.Where(a => a.Subject == subject).Select(a => a.Id).SingleAsync();
+    }
+
+    private static async Task<bool> SeesRouteAsync(ApiFactory api, string subject, Guid planId)
+    {
+        using var client = api.ClientFor(subject);
+        using var json = JsonDocument.Parse(await (await client.GetAsync("/api/v1/mobile/assignments")).Content.ReadAsStringAsync());
+        return json.RootElement.GetProperty("routes").EnumerateArray().Any(r => r.GetProperty("routePlanId").GetGuid() == planId);
+    }
+
+    [Fact]
+    public async Task Planner_assigns_driver_X_warehouse_sees_vehicle_and_driver_and_only_X_downloads_the_route()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase(), overrides: WithWarehouse);
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        var planId = await ConfirmAsync(planner, s, s.WarehouseId, [await OrderAsync(api, s, 5m)]);
+        var vehicleCode = await VehicleCodeAsync(api, s.VehicleId);
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, planId, vehicleCode, s.DriverId)).StatusCode);
+
+        // Planificador: bodega, vehículo y conductor visibles en la ruta publicada.
+        using var plan = JsonDocument.Parse(await (await planner.GetAsync($"/api/v1/route-plans/{planId}")).Content.ReadAsStringAsync());
+        Assert.Equal(vehicleCode, plan.RootElement.GetProperty("vehicleCode").GetString());
+        Assert.Equal("Conductor de prueba", plan.RootElement.GetProperty("driverName").GetString());
+        Assert.False(string.IsNullOrEmpty(plan.RootElement.GetProperty("originWarehouseName").GetString()));
+        Assert.Equal(0, plan.RootElement.GetProperty("unassignedDeliveries").GetInt32());
+
+        // Bodega: «Vehículo V · Conductor X» en el detalle de la entrega.
+        Guid deliveryId;
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            deliveryId = await db.Deliveries.Where(d => db.RouteStops.Any(st => st.Id == d.RouteStopId && st.RoutePlanId == planId)).Select(d => d.Id).SingleAsync();
+        }
+        using var warehouse = api.ClientFor(Warehouse);
+        using var detail = JsonDocument.Parse(await (await warehouse.GetAsync($"/api/v1/deliveries/{deliveryId}")).Content.ReadAsStringAsync());
+        Assert.Equal(vehicleCode, detail.RootElement.GetProperty("vehicleCode").GetString());
+        Assert.Equal("Conductor de prueba", detail.RootElement.GetProperty("driverName").GetString());
+        Assert.False(string.IsNullOrEmpty(detail.RootElement.GetProperty("originWarehouseName").GetString()));
+
+        // Conductor X la descarga con su vehículo y bodega; otro conductor no la ve.
+        using var driver = api.ClientFor(TestTokens.Driver);
+        using var assignments = JsonDocument.Parse(await (await driver.GetAsync("/api/v1/mobile/assignments")).Content.ReadAsStringAsync());
+        var route = assignments.RootElement.GetProperty("routes").EnumerateArray().Single(r => r.GetProperty("routePlanId").GetGuid() == planId);
+        Assert.Equal(vehicleCode, route.GetProperty("vehicleCode").GetString());
+        Assert.False(string.IsNullOrEmpty(route.GetProperty("originWarehouseName").GetString()));
+        Assert.False(await SeesRouteAsync(api, OtherDriver, planId));
+    }
+
+    [Fact]
+    public async Task A_published_route_can_be_reassigned_to_another_driver()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        var planId = await ConfirmAsync(planner, s, s.WarehouseId, [await OrderAsync(api, s, 5m)]);
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, planId, await VehicleCodeAsync(api, s.VehicleId), s.DriverId)).StatusCode);
+        var otherId = await AccountIdAsync(api, OtherDriver);
+
+        var reassign = await planner.PutAsJsonAsync($"/api/v1/route-plans/{planId}/driver", new { accountId = otherId });
+        Assert.Equal(HttpStatusCode.OK, reassign.StatusCode);
+
+        Assert.True(await SeesRouteAsync(api, OtherDriver, planId));
+        Assert.False(await SeesRouteAsync(api, TestTokens.Driver, planId));
+    }
+
+    [Fact]
+    public async Task Reassignment_needs_a_published_route_and_an_active_driver()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        var planId = await ConfirmAsync(planner, s, s.WarehouseId, [await OrderAsync(api, s, 5m)]);
+
+        var notPublished = await planner.PutAsJsonAsync($"/api/v1/route-plans/{planId}/driver", new { accountId = s.DriverId });
+        Assert.Equal(HttpStatusCode.Conflict, notPublished.StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, planId, await VehicleCodeAsync(api, s.VehicleId), s.DriverId)).StatusCode);
+        var notADriver = await planner.PutAsJsonAsync($"/api/v1/route-plans/{planId}/driver", new { accountId = s.PlannerId });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, notADriver.StatusCode);
+
+        using var driver = api.ClientFor(TestTokens.Driver);
+        Assert.Equal(HttpStatusCode.Forbidden, (await driver.PutAsJsonAsync($"/api/v1/route-plans/{planId}/driver", new { accountId = s.DriverId })).StatusCode);
+    }
 }

@@ -143,6 +143,7 @@ describe('RutasPage (FR-21)', () => {
             getRoutePlans: vi.fn(() => of([])),
             getRoutePlanById: vi.fn(() => of(null)),
             getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([])),
             getServicePoints: vi.fn(() => of([{ id: 'sp-1', code: 'CS-NORTE', name: 'Centro de Salud Norte' }])),
             getDeliveryOrders: vi.fn(() => of([])),
             getWarehouses: vi.fn(() => of([])),

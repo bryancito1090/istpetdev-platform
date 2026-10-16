@@ -118,6 +118,12 @@ export interface RoutePlanDetailDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
+  /** #160: bodega de salida, conductor asignado y entregas sin conductor de la ruta publicada. */
+  originWarehouseName?: string;
+  driverAccountId?: string | null;
+  driverName?: string;
+  deliveriesCount?: number;
+  unassignedDeliveries?: number;
   stops: Array<{
     sequence: number;
     servicePointId: string;
@@ -455,6 +461,11 @@ export class ApiService {
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
           totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
           polyline: res.polyline || '',
+          originWarehouseName: res.originWarehouseName || '',
+          driverAccountId: res.driverAccountId ?? null,
+          driverName: res.driverName || '',
+          deliveriesCount: res.deliveriesCount ?? 0,
+          unassignedDeliveries: res.unassignedDeliveries ?? 0,
           stops: (res.stops || []).map((s: any) => ({
             sequence: s.sequence ?? s.sequenceNumber,
             servicePointId: s.servicePointId,
@@ -587,6 +598,11 @@ export class ApiService {
   /** Conductores activos que el Planificador puede asignar al publicar. */
   getDrivers(): Observable<DriverOptionDto[]> {
     return this.http.get<DriverOptionDto[]>(`${this.baseUrl}/api/v1/drivers`).pipe(catchError(() => of([])));
+  }
+
+  /** #160: cambia el conductor de una ruta ya publicada (entregas pendientes). */
+  assignRouteDriver(id: string, accountId: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/driver`, { accountId });
   }
 
   /** Sin conductor, las entregas se crean sin asignar y ningún conductor las ve en la PWA. */

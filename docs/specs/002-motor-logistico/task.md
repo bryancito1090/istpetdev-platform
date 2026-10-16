@@ -310,3 +310,35 @@ La base de producción no se consultó: requiere el túnel SSM. Corre el mismo c
 | `PublishToDriverTests.cs` | Pruebas | 6 escenarios, incluido el conductor que ve su ruta en `/mobile/assignments` | Regresión | 6/6 |
 
 Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también falla sin estos cambios porque necesita un n8n real en local. Web 75/75 y `build:web` sin errores.
+
+#### T13b — Bodega, vehículo y conductor visibles en web y PWA (#160, 15-oct)
+
+**Problema:** al publicar ya se elige conductor (T13), pero:
+- Nadie veía después a quién se asignó la ruta.
+- Las rutas publicadas antes sin conductor no tenían forma de corregirse, porque publicar es idempotente.
+- La Bodega no sabía a qué vehículo iba cada entrega.
+
+**Corrección:**
+- **Reasignar conductor:** `PUT /api/v1/route-plans/{id}/driver` (Gerencia y Planificador) cambia el conductor de las entregas **pendientes** de una ruta publicada. Las entregadas, parciales, recibidas y canceladas no se tocan.
+  - 404 si el plan no existe.
+  - 409 si no está publicado o no tiene entregas pendientes.
+  - 422 si la cuenta no es un Conductor activo.
+  - Los roles de campo reciben 403.
+- **Detalle del plan:** devuelve `originWarehouseName`, `driverName`, `deliveriesCount` y `unassignedDeliveries`. La web muestra Bodega, Vehículo y Conductor, avisa de las entregas sin conductor y permite cambiar el conductor.
+- **PWA, Bodega:** el detalle de la entrega muestra vehículo, conductor y bodega de salida.
+- **PWA, Conductor:** su ruta muestra «Sale de: {bodega}». Si el vehículo es desconocido ya no se inventa «VEH-01»; se deja vacío.
+
+**Límite del esquema:** `Vehicle` no tiene campo de placa, así que se muestra el código del vehículo.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `RoutePublisher.AssignDriverAsync` | Backend | Reasignar las entregas pendientes | Publicar no reasigna | Rutas antiguas sin conductor | Hecho |
+| `RoutePlansController` | Backend | `PUT …/driver` y campos de asignación en el detalle | La web no mostraba la asignación | Planificador revisa la ruta | Hecho |
+| `FieldService`, `FieldContracts` | Backend | Vehículo, conductor y bodega en el detalle y en la ruta móvil | Bodega y Conductor sin contexto | Despacho en bodega | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Fila de asignación y «Cambiar conductor» | Visibilidad y corrección | Planificador | Hecho |
+| `warehouse.component.ts`, `home.page.ts`, `field.contract.ts` | PWA | Vehículo, conductor y «Sale de» | Visibilidad en campo | Bodega y Conductor | Hecho |
+| `PublishToDriverTests.cs` | Pruebas | Asignación vista por Bodega y Conductor, reasignación, 403/404/409/422 | Regresión | Todos | 9/9 |
+
+**Verificación:**
+- Backend: 512 de 514. Fallan `N8nErrorWorkflowTests`, que necesita un n8n real en local, y `AgentJourneyTests(partial_watch)`, que es intermitente. Los dos fallaban ya antes de #160.
+- Web: 76 de 76; `build:web` y `check:mobile` sin errores.
