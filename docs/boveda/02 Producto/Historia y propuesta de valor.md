@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-producto
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-16
 tags: [producto, reto-1]
 ---
 
@@ -12,6 +12,20 @@ tags: [producto, reto-1]
 Una empresa de limpieza necesita abastecer insumos a muchos puntos con consumo, acceso y horarios diferentes. Su planificador dispone de información tardía; bodega pierde visibilidad después del despacho; el conductor resuelve imprevistos por canales separados; el cliente recibe sin una cadena de evidencia fácil de consultar.
 
 El escenario de **80 puntos** y un hospital sin desinfectante proviene de [[Informacion inicial del equipo]]. Debe presentarse como ilustración hasta que una empresa lo valide.
+
+## Necesidades recogidas en la charla — 16-oct-2026
+
+Fuente: [[2026-10-16-1109-bb-charla-limpieza-logistica|charla sectorial aportada por Bryan]]. **Síntesis interpretativa de tres dolores**, no lista literal del expositor ni entrevista al comprador. La pregunta se refiere a empresas que contratan limpieza; la respuesta procede de la perspectiva del prestador y después distingue comercializadoras y fabricantes.
+
+| Dolor | Necesidad que expresa el testimonio | Relación con IstpetDev |
+|---|---|---|
+| Aplicación correcta y verificable | Capacitación, producto y dosificación según área; la supervisión visual posterior no comprueba qué se aplicó | La custodia hasta recepción aporta evidencia logística; verificar dosificación y eficacia requiere otro alcance |
+| Consumo y cantidades por área | Relacionar litros, dilución y m² para saber cuánto suministrar y comprobar su uso | Contrastar los consumos declarados con datos reales; la plataforma no obtiene rendimiento por superficie sin medición y ficha técnica |
+| Abastecimiento y transporte viables | Conciliar empaques/unidades y promociones, pedidos no programados y rutas consolidadas por zona | Es el vínculo directo con el Reto 1: inventario, reposición, capacidad, ventanas y trazabilidad; no acredita impacto todavía |
+
+El abastecimiento semanal/quincenal es una práctica relatada que permite discutir el baseline de calendario fijo; no valida exactamente sus parámetros. Las casi 400 referencias, cinco fábricas, promociones 6+1/12+2 y mínimo personal de 15 entregas por camión son ejemplos del expositor, no datos del escenario ni límites globales. La cifra aproximada de USD 1.000 y la capacidad del camión requieren aclaración en la fuente.
+
+**Límites del hallazgo:** no se obtuvo un número de días de anticipación ni una regla de prioridad ante cierre vial. No se validaron los 80 puntos, el caso concreto del hospital, ahorro, disposición de pago ni aceptación del producto. Dosificador, protocolos químicos, conversión a m² y facturación de promociones quedan como necesidades por evaluar, sin ampliar el alcance implementado.
 
 ## Hilo conductor
 

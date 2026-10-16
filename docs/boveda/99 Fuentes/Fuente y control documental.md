@@ -636,3 +636,13 @@ Verificación documental: **92 notas Markdown**, **980 enlaces internos resuelto
 ## 16-oct-2026 — Primeras observaciones orales del evento
 
 Fuente: dictado de Joseph Baño durante la jornada. Se registran por separado [[2026-10-16-1102-jb-agenda-entregas-y-pitch]], [[2026-10-16-1102-jb-dolores-del-servicio-limpieza]], [[2026-10-16-1102-jb-bodega-inventario-y-rutas]] y [[2026-10-16-1102-jb-personal-especializado-y-emergencias]]. Son relatos de lo oído, no actas oficiales ni entrevistas con consentimiento registrado. Los avisos de horario, Drive y jurados se trasladan como confirmaciones pendientes a [[Consultas para la organizacion]] y al `task.md` del spec 006. Las reglas del manual permanecen vigentes hasta recibir instrucciones comprobables de la organización.
+
+## 16-oct-2026 — Charla del sector y anuncios de organización (issue #184)
+
+Fuente: transcripción compartida por Bryan, registrada en [[2026-10-16-1109-bb-charla-limpieza-logistica|nota de la charla]]. Se conservan extractos, ejemplos empresariales y pasajes dudosos; se distingue el testimonio de la síntesis de tres dolores: aplicación/dosificación, consumo por área y abastecimiento/distribución. No se presenta como entrevista individual consentida, medición, regla técnica de dilución ni validación de la plataforma.
+
+[[Historia y propuesta de valor]], [[Contexto maestro]] y el README enlazan el nuevo contexto. [[Consultas para la organizacion]], [[Hechos canonicos]], [[Evaluacion y entregables]], [[Cronograma oficial]], [[Guion del pitch]] y la plantilla de preparación reciben las precisiones: turno oral de cinco minutos con meta interna 4:40, canal Drive para el capitán y pendientes sobre preguntas, horarios y paneles del jurado. Se conserva el manual y se registran contradicciones; no se alteran pesos, contratos, baselines ni umbrales del motor. Sin ensayo, subida de materiales, despliegue ni cambio de software.
+
+Se integraron los apuntes de Joseph publicados simultáneamente en el PR #181, conservando sus archivos y el seguimiento del spec 006. Se resolvieron los conflictos de hechos canónicos, consultas y este registro: se enlazan ambas fuentes del jurado y se preserva el posible corte de las 13:00 de Joseph junto con los anuncios de la transcripción aportada por Bryan.
+
+Verificación documental tras la integración: **98 notas Markdown**, **1034 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes. Los nueve enlaces Markdown nuevos a las fuentes resuelven y `git diff --check` no reporta errores.
