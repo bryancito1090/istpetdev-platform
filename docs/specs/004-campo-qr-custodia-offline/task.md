@@ -20,6 +20,7 @@
 | T10 | Ensayo físico, evidencias y bóveda | T9 | — | completado (verificado en PWA, Web y backend C#) |
 | T11 | Recepción con stock en percha y pedido en campo sin colisiones (#111) | T4 | — | completado en backend (5 pruebas nuevas; 403/403 en la suite); sin cambios de PWA |
 | T12 | Novedades de campo en la web del Planificador (#116) | T11 | — | completado (API y web; 413/413 backend, 58/58 web); pendiente validación con cuentas reales en #118 |
+| T13 | Estados del bulto y custodia por turnos Bodega → Conductor → Receptor (#162) | T11, T12 | — | completado en backend y PWA (462/462 backend; web 74/74 y mobile 76/76); pendiente ensayo físico y validación con cuentas reales |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
@@ -233,6 +234,38 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet test tests/IstpetDev.Tests -c Rel
 - Suite del backend: 413/413 en Release, con PostGIS en Testcontainers.
 - Web: `lint:web` limpio, `test:web` 58/58 y `build:web` en producción sin errores.
 - Pendiente: validación con cuentas reales (Planificador y Auditor) en la ronda de #118.
+
+
+### T13 — Estados del bulto y custodia por turnos (#162)
+
+**Responsable:** OpenCode (rama `fix/162-estados-bulto-custodia`). **Revisa e integra:** coordinador. **Origen:** issue #162 (ronda E2E #118). **Plan:** [plan-issue-162.md](plan-issue-162.md); **evidencia:** [evidencia-issue-162.md](evidencia-issue-162.md).
+
+**Problema comprobado.** El receptor podía recibir un bulto que el conductor nunca recogió ni entregó (`CreateReceiptCoreAsync` no validaba el estado de la entrega y la ruta del Receptor pasaba `requireAssignedDriver: false`), y el conductor no tenía estados intermedios de custodia (`Draft → Dispatched → Delivered`).
+
+**Implementación:**
+
+- Máquina de estados `Sealed → Dispatched → InTransit → Delivered → Received/Partial` en `src/Domain/Common/CustodyStates.cs`, con comandos `pickup`/`deliver` del conductor asignado y recepción final del Receptor (spec 014).
+- Guardas y códigos estables: `NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`, `HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`, `RECEIPT_REQUIRES_RECEIVER`; validación de **todos** los bultos y de la asignación (la ausencia no concede permiso).
+- Idempotencia por `(cuenta, acción, operationId)` con replay tras avanzar el estado; bloqueo de organización + transacción para concurrencia real; `Version` como red de seguridad.
+- PWA con outbox `commandKind` para recoger/entregar, estados de espera por rol y mensajes honestos; `/receipt/:deliveryId` solo para Conductor.
+- Migración `20261015234714_CustodyChainStates`: índice de `CustodyEvent` no único (una operación por bulto).
+
+**Pruebas:** `CustodyChainHttpTests` (6 pruebas), `DemoAdvanceTests` (1), ajustes en recepción, novedades, capturas rechazadas, reimportación y migraciones; suite completa 462/462. `npm run check`, `npm run test:frontend`, `npm run audit:check`, `check_vault.py` y `branch-policy.sh` en verde.
+
+**Límite conocido.** Falta el ensayo físico (teléfono, modo avión, QR del jurado) y la validación con cuentas reales; el recorrido del planificador depende de #160/PR #159 (abierto), verificado aquí con asignación explícita por API. Sin PR, merge ni cierre de issue: a cargo del coordinador.
+
+**Registro de cambios de T13:**
+
+| Archivo | Componente | Qué se hizo | Por qué | Estado |
+|---|---|---|---|---|
+| `src/Domain/Common/CustodyStates.cs` | Dominio | Estados y tipos de evento de custodia | Fuente única de la máquina de estados | Hecho |
+| `src/Application/Field/FieldService.cs` | Backend | Guardas de preparación/despacho/recepción, `pickup`/`deliver`, transacción y replay | #162: turnos, no doble stock, no saltos | Hecho y probado |
+| `src/Api/Controllers/DeliveriesController.cs` | API | Rutas `pickup`/`deliver`; `receipts` responde 409 `RECEIPT_REQUIRES_RECEIVER` | El conductor ya no confirma stock en destino | Hecho |
+| `src/Application/PublicTrace/Services/PublicTraceService.cs` | Backend | Hitos Preparada/Despachada/En ruta/Entregada/Recibida | Traza pública con estados nuevos | Hecho |
+| `libs/shared-core` + `apps/mobile` | Frontend | Contratos, outbox de comandos, esperas por rol, guards de ruta | #162 PWA conductor/receptor | Hecho |
+| Migración `CustodyChainStates` | DB | Índice `CustodyEvent` no único | Despacho/recepción de varios bultos fallaba con 23505 | Hecho; aplicada en PostgreSQL efímero |
+| `tests/.../CustodyChainHttpTests.cs`, `E2E/DemoAdvanceTests.cs` | Pruebas | Recorrido por roles, transiciones inválidas, concurrencia, replay, parcial, legado | Criterios del issue | 7/7 en verde |
+| Bóveda (`Contratos API y eventos`, `Movil offline`, `Usuarios y flujos`, `Hechos canonicos`) | Documentación | Máquina de estados, responsables y compatibilidad legada | Coherencia documental | Hecho; `check_vault.py` 0 errores |
 
 
 ## Código de las pruebas clave

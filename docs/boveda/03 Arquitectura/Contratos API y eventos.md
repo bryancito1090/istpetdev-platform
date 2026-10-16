@@ -151,9 +151,29 @@ La actualización de plantillas requiere texto/rich content del tipo admitido; J
 Los contratos del spec 004 (`docs/specs/004-campo-qr-custodia-offline/`) han sido implementados e integrados en el backend C# .NET y consumidos por las aplicaciones Web y Móvil:
 - `POST /api/v1/deliveries/{id}/handling-units`: Creación de unidades de manipulación con generación de token SHA-256 efímero (`DeliveriesController`).
 - `POST /api/v1/deliveries/{id}/dispatch`: Despacho atómico e idempotente con bloqueo transaccional, deducción de reservas y transferencia de custodia de bodega a vehículo (`DeliveriesController`, `FieldService`).
-- `POST /api/v1/deliveries/{id}/receipts`: Recepción física con conciliación de líneas aceptadas/rechazadas y transferencia de inventario a punto de servicio (`DeliveriesController`, `FieldService`).
+- `POST /api/v1/deliveries/{id}/receipts`: **Superado por #162**: la recepción final la registra el Receptor en `POST /api/v1/receiver/handling-units/{unitId}/receipt`; esta ruta responde 409 `RECEIPT_REQUIRES_RECEIVER`.
 - `POST /api/v1/receipts/{id}/evidence-uploads` y `POST /api/v1/receipts/{id}/evidence-confirm`: Generación de URLs presignadas y confirmación desacoplada de evidencias fotográficas y firmas (`EvidenceController`).
 - `GET /api/v1/public/trace/{unitId}`: Consulta pública de trazabilidad sanitaria con token en cabecera `X-Trace-Token` o query string, limitación de tasa (`PublicTraceRateLimiter`), sanitización del fragmento `#t=` en frontend y protección estricta de datos clínicos (`PublicTraceController`, `PublicTraceService`).
 - `GET /api/v1/deliveries`: Consulta paginada de entregas para la torre de control y panel 005 (`DeliveriesController`).
 - `GET /api/v1/mobile/assignments`: Asignaciones de conductor y control de revisiones incrementadas (`MobileAssignmentsController`).
 - `POST /api/v1/demo/route-plans/{id}/advance`: Avance operativo de paradas para la demo que ejecuta la cadena contable real: preparación, despacho y recepción (`DemoController`).
+
+## Máquina de estados de custodia Bodega → Conductor → Receptor (#162 — 15 de octubre de 2026)
+
+El issue #162 exige que cada rol actúe solo en su turno y que la traza pública muestre Despachada → En ruta → Entregada → Recibida. La cadena se implementa sobre los campos string existentes (`Delivery.Status`, `HandlingUnit.Status`, `CustodyEvent.EventKind`); no hay migración de estados. La migración `CustodyChainStates` solo quita la unicidad del índice `CustodyEvent(OrganizationId, OperationId)`, porque una operación con varios bultos emite un evento de custodia por bulto.
+
+| Paso | Entrega | Bulto | Actor | Efecto contable |
+|---|---|---|---|---|
+| Preparación | `Draft` | `Sealed` | Bodega | Ninguno; empaque y QR |
+| Despacho | `Dispatched` | `Dispatched` | Bodega | Movimiento bodega → vehículo (una sola vez) |
+| Recogida | `InTransit` | `InTransit` | Conductor asignado | Evento de custodia; sin movimiento de stock |
+| Entrega física | `Delivered` | `Delivered` | Conductor asignado | Evento de custodia; sin movimiento de stock |
+| Recepción | `Received` / `Partial` | `Received` / `Partial` | Receptor autorizado (QR) | Recibo único; movimiento vehículo → punto de lo aceptado |
+
+- **Ubicación contable vs. custodia física:** la ubicación contable cambia solo en Despacho (bodega → vehículo) y Recepción (vehículo → punto). Recogida y entrega solo agregan `CustodyEvent` (`PickedUp`, `Delivered`) con actor y hora de servidor.
+- **Rutas nuevas:** `POST /api/v1/deliveries/{id}/pickup` (Conductor asignado) y `POST /api/v1/deliveries/{id}/deliver` (Conductor asignado), con `operationId` = `Idempotency-Key`. Rechazan sin asignación con 403 `UNAUTHORIZED_ASSIGNMENT` (la ausencia de asignación no concede permiso).
+- **Guardas de recepción:** `Draft` → 409 `NOT_DISPATCHED`; `Dispatched`/`InTransit` → 409 `NOT_DELIVERED`; recibo final previo o estado `Received` → 409 `ALREADY_RECEIVED`. Todos los bultos de la entrega se validan (`HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`).
+- **Idempotencia y concurrencia:** el replay por `(cuenta, acción, operationId)` devuelve la respuesta previa incluso después de avanzar el estado; el bloqueo de organización (`LockOrganizationAsync`) más la transacción serializa despachos y recepciones concurrentes, y el guardado de cantidades usa la concurrencia por `Version` como red de seguridad.
+- **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; si existe un `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
+- **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
+- **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` ejecuta preparación, despacho, recogida, entrega y recepción reales (atribuidas al conductor asignado), es idempotente por `operationId` y ya no marca paradas con horas planificadas.
