@@ -1,22 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
   IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonBadge,
-  IonItem,
-  IonLabel,
-  IonToggle
+  IonToggle,
+  AlertController
 } from '@ionic/angular/standalone';
 import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.service';
 
@@ -31,34 +19,49 @@ interface SyncFeedback {
   standalone: true,
   imports: [
     CommonModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
     IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardSubtitle,
-    IonCardContent,
-    IonButton,
-    IonBadge,
-    IonItem,
-    IonLabel,
     IonToggle
   ],
   template: `
-    <ion-header>
-      <ion-toolbar color="primary">
-        <ion-buttons slot="start">
-          <ion-back-button defaultHref="/home"></ion-back-button>
-        </ion-buttons>
-        <ion-title>Cola de Sincronización</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <!-- Barra Superior: Entorno de Prueba (Dark Cyan Bar) -->
+    <div class="stripe-top-banner">
+      <div class="stripe-banner-left">
+        <span class="banner-title">Entorno de prueba</span>
+        <button type="button" class="info-bubble-btn" (click)="openTestEnvInfo()" aria-label="Información de entorno">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
 
-    <ion-content class="ion-padding">
+      <button type="button" class="stripe-verify-pill" (click)="openVerifyModal()">
+        Verificar tu empresa
+      </button>
+    </div>
+
+    <!-- Contenedor Principal con Bordes Redondeados Superiores -->
+    <div class="stripe-header-card">
+      <div class="stripe-nav-header">
+        <button type="button" class="stripe-nav-btn" aria-label="Volver" (click)="goHome()">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </button>
+
+        <h1 class="stripe-user-title">
+          Cola de Sincronización
+        </h1>
+
+        <div class="stripe-header-actions">
+          @if (pendingCount() > 0) {
+            <span class="stripe-bell-badge static relative-none">{{ pendingCount() }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
+    <ion-content class="ion-padding stripe-main-content">
       <!-- Banner de Retroalimentación de Sincronización (#163) -->
       @if (syncFeedback(); as feedback) {
         <div
@@ -97,9 +100,12 @@ interface SyncFeedback {
           <p class="leading-relaxed">
             Las operaciones se guardan en el teléfono y no se enviarán al servidor hasta que desactives esta simulación.
           </p>
-          <ion-button size="small" color="danger" (click)="disableOfflineAndSync()">
+          <button
+            type="button"
+            class="py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+            (click)="disableOfflineAndSync()">
             Desactivar «Sin señal» y sincronizar ahora
-          </ion-button>
+          </button>
         </div>
       }
 
@@ -117,64 +123,78 @@ interface SyncFeedback {
             Puedes asignarlas a tu cuenta activa para sincronizarlas, o descartarlas si ya no son necesarias.
           </p>
           <div class="flex gap-2 pt-1">
-            <ion-button size="small" color="primary" class="flex-1 font-bold" (click)="claimLegacy()">
+            <button
+              type="button"
+              class="flex-1 stop-action-btn py-2"
+              (click)="claimLegacy()">
               Asignar a mi cuenta
-            </ion-button>
-            <ion-button size="small" fill="outline" color="danger" class="flex-1 font-bold" (click)="discardLegacy()">
+            </button>
+            <button
+              type="button"
+              class="flex-1 py-2 px-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition"
+              (click)="discardLegacy()">
               Descartar
-            </ion-button>
+            </button>
           </div>
         </div>
       }
 
       <!-- Tarjeta de Control y Estado de Red -->
-      <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm">
-        <ion-card-header>
-          <div class="flex items-center justify-between">
-            <ion-card-title class="text-base">Control de Conectividad</ion-card-title>
-            <ion-badge [color]="outboxService.isSimulatingOffline() ? 'danger' : 'success'">
-              {{ outboxService.isSimulatingOffline() ? 'Sin señal (prueba)' : 'Online' }}
-            </ion-badge>
-          </div>
-          <ion-card-subtitle>Pruebe el comportamiento desconectado de campo</ion-card-subtitle>
-        </ion-card-header>
-        <ion-card-content class="space-y-3">
-          <ion-item lines="none" class="bg-slate-50 rounded-lg">
-            <ion-label>
-              <h3>Simular Sin Conexión (Offline)</h3>
-              <p>Mantiene las capturas en almacenamiento IndexedDB local</p>
-            </ion-label>
-            <ion-toggle
-              [checked]="outboxService.isSimulatingOffline()"
-              (ionChange)="toggleOffline()">
-            </ion-toggle>
-          </ion-item>
+      <div class="driver-stop-card mb-4">
+        <div class="flex items-center justify-between mb-1">
+          <span class="stop-tag">Red y Almacenamiento</span>
+          <span class="status-badge" [class.is-done]="!outboxService.isSimulatingOffline()">
+            {{ outboxService.isSimulatingOffline() ? 'Sin señal (prueba)' : 'Online' }}
+          </span>
+        </div>
+        <h2 class="stop-title">Control de Conectividad</h2>
+        <p class="stop-address">Pruebe el comportamiento desconectado de campo.</p>
 
-          <div class="flex flex-col sm:flex-row gap-2">
-            <ion-button
-              expand="block"
-              class="flex-1 font-bold"
-              [disabled]="outboxService.isSyncing() || isSyncingAll()"
-              (click)="syncAll()">
-              {{ (outboxService.isSyncing() || isSyncingAll()) ? 'Sincronizando cola...' : 'Sincronizar Todo Ahora' }}
-            </ion-button>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between mb-3">
+          <div>
+            <span class="font-bold text-xs text-slate-800 block">Simular Sin Conexión (Offline)</span>
+            <span class="text-[11px] text-slate-500">Mantiene las capturas en almacenamiento local</span>
           </div>
-        </ion-card-content>
-      </ion-card>
+          <ion-toggle
+            [checked]="outboxService.isSimulatingOffline()"
+            (ionChange)="toggleOffline()">
+          </ion-toggle>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="stop-action-btn flex-1"
+            [disabled]="outboxService.isSyncing() || isSyncingAll()"
+            (click)="syncAll()">
+            {{ (outboxService.isSyncing() || isSyncingAll()) ? 'Sincronizando cola...' : 'Sincronizar Todo Ahora' }}
+          </button>
+          @if (outboxService.sendableCount() > 0) {
+            <span class="text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-2 rounded-xl shrink-0">
+              {{ outboxService.sendableCount() }} pendientes
+            </span>
+          }
+        </div>
+      </div>
 
       <!-- Lista de Ítems en Cola -->
-      <div class="mb-2 flex items-center justify-between px-1">
+      <div class="mb-2.5 flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Operaciones ({{ outboxService.outboxItems().length }})
+            Operaciones
           </span>
+          @if (outboxService.outboxItems().length > 0) {
+            <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded-full">
+              {{ outboxService.outboxItems().length }}
+            </span>
+          }
           @if (outboxService.sendableCount() > 0) {
-            <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
+            <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded-full">
               {{ outboxService.sendableCount() }} para enviar
             </span>
           }
           @if (outboxService.reviewCount() > 0) {
-            <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded border border-amber-300">
+            <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded-full border border-amber-300">
               {{ outboxService.reviewCount() }} revisión
             </span>
           }
@@ -183,30 +203,27 @@ interface SyncFeedback {
       </div>
 
       @if (outboxService.outboxItems().length === 0) {
-        <ion-card class="m-0 border shadow-sm">
-          <ion-card-content class="text-center py-8">
-            <p class="text-sm text-slate-500">No hay operaciones en la cola para tu cuenta.</p>
-            <p class="text-xs text-slate-400 mt-1">Realice una entrega o recepción desde Inicio para generar operaciones.</p>
-          </ion-card-content>
-        </ion-card>
+        <div class="driver-stop-card text-center py-8">
+          <p class="text-sm text-slate-500">No hay operaciones en la cola para tu cuenta.</p>
+          <p class="text-xs text-slate-400 mt-1">Realice una entrega o recepción desde Inicio para generar operaciones.</p>
+        </div>
       }
 
       <div class="space-y-3">
         @for (item of outboxService.outboxItems(); track item.operationId) {
-          <ion-card class="m-0 border shadow-sm" [class.border-rose-300]="item.status === 'Failed' || (item.status === 'SavedOnDevice' && item.errorCode)">
-            <ion-card-header class="pb-2">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] font-mono text-slate-500">Op: {{ item.operationId.slice(0, 13) }}...</span>
-                <span [class]="getBadgeClass(item.status)">
-                  {{ getStatusLabel(item.status) }}
-                </span>
-              </div>
-              <ion-card-title class="text-sm font-bold">{{ item.recipientName }}</ion-card-title>
-              <ion-card-subtitle class="text-xs">Entrega: {{ item.deliveryId }}</ion-card-subtitle>
-            </ion-card-header>
+          <div class="driver-stop-card" [class.border-rose-300]="item.status === 'Failed' || (item.status === 'SavedOnDevice' && item.errorCode)">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono text-slate-500">Op: {{ item.operationId.slice(0, 13) }}...</span>
+              <span [class]="getBadgeClass(item.status)">
+                {{ getStatusLabel(item.status) }}
+              </span>
+            </div>
 
-            <ion-card-content class="pt-0 space-y-2 text-xs">
-              <div class="p-2.5 bg-slate-50 rounded-lg text-slate-600 space-y-1.5">
+            <h2 class="stop-title">{{ item.recipientName }}</h2>
+            <p class="stop-address mb-2">Entrega: {{ item.deliveryId }}</p>
+
+            <div class="space-y-2 text-xs">
+              <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-600 space-y-1.5">
                 <div class="flex justify-between">
                   <span>Capturado en dispositivo:</span>
                   <span class="font-mono text-slate-800">{{ item.capturedAtUtc | date:'shortTime' }}</span>
@@ -260,7 +277,7 @@ interface SyncFeedback {
 
               <!-- Mensaje visible de Error Transitorio o Fallido (#163) -->
               @if ((item.status === 'SavedOnDevice' || item.status === 'Failed') && item.errorMessage) {
-                <div class="p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-950 text-xs space-y-1">
+                <div class="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-950 text-xs space-y-1">
                   <div class="flex items-center justify-between">
                     <span class="font-bold">Error en último intento ({{ item.errorCode || 'Fallo de red' }}):</span>
                     <span class="text-[10px] bg-rose-200 text-rose-900 px-1.5 py-0.5 rounded font-mono font-bold">Reintento disponible</span>
@@ -274,7 +291,7 @@ interface SyncFeedback {
 
               <!-- Mensaje de Conflicto 409 (FR-12 / F5) -->
               @if (item.status === 'Conflict' && item.errorMessage) {
-                <div class="p-3 bg-rose-50 border border-rose-300 rounded-lg text-rose-950 text-xs space-y-1.5">
+                <div class="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-950 text-xs space-y-1.5">
                   <div class="flex items-center justify-between">
                     <span class="font-bold">Conflicto de Servidor ({{ item.errorCode }}):</span>
                     <span class="text-[10px] bg-rose-200 text-rose-900 px-1.5 py-0.5 rounded font-mono font-bold">Datos Protegidos</span>
@@ -288,7 +305,7 @@ interface SyncFeedback {
 
               <!-- Mensaje de Requiere Revisión (Issue #114 / ESC-23 / ESC-25) -->
               @if (item.status === 'RequiresReview' && item.errorMessage) {
-                <div class="p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-950 text-xs space-y-1.5">
+                <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 text-xs space-y-1.5">
                   <div class="flex items-center justify-between">
                     <span class="font-bold">Aislado en Outbox ({{ item.errorCode || 'Error de Negocio' }}):</span>
                     <span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">Requiere Revisión</span>
@@ -306,7 +323,7 @@ interface SyncFeedback {
               }
 
               @if (item.status === 'SessionRequired') {
-                <p role="alert" class="p-3 rounded border border-amber-300 text-amber-900 text-xs">
+                <p role="alert" class="p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-xs">
                   {{ item.errorMessage }} Cierra sesión y vuelve a entrar con esta cuenta; después pulsa Reintentar sincronización.
                 </p>
               }
@@ -314,47 +331,278 @@ interface SyncFeedback {
               <!-- Botones de Acción -->
               <div class="flex flex-col sm:flex-row gap-2 pt-1">
                 @if (item.status === 'Conflict') {
-                  <ion-button
-                    size="small"
-                    color="warning"
-                    class="flex-1"
+                  <button
+                    type="button"
+                    class="flex-1 py-2 px-3 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg transition"
                     (click)="resolveConflict(item)">
                     Resolver con Nueva Versión y Reintentar
-                  </ion-button>
+                  </button>
                 }
 
                 @if (item.status === 'RequiresReview' && !item.receiverContext && !item.commandKind) {
-                  <ion-button
-                    size="small"
-                    color="warning"
-                    class="flex-1"
+                  <button
+                    type="button"
+                    class="flex-1 py-2 px-3 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg transition"
                     (click)="resolveRequiresReview(item)">
                     Revisar y Adaptar Versión
-                  </ion-button>
+                  </button>
                 }
 
                 @if (item.status !== 'Complete') {
-                  <ion-button
-                    size="small"
-                    fill="outline"
-                    class="flex-1"
+                  <button
+                    type="button"
+                    class="flex-1 py-2 px-3 text-xs font-bold text-[#0A2540] bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition"
                     [disabled]="outboxService.isSimulatingOffline()"
                     (click)="syncSingle(item.operationId)">
                     Reintentar Sincronización
-                  </ion-button>
+                  </button>
                 }
               </div>
-            </ion-card-content>
-          </ion-card>
+            </div>
+          </div>
         }
       </div>
     </ion-content>
-  `
+  `,
+  styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background-color: #04303B;
+    }
+
+    .stripe-top-banner {
+      background: #04303B;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 14px;
+      min-height: 48px;
+    }
+
+    .stripe-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .banner-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .info-bubble-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+    }
+
+    .stripe-verify-pill {
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 6px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .stripe-verify-pill:hover {
+      background: #008CA5;
+    }
+
+    .stripe-verify-pill:active {
+      transform: scale(0.97);
+    }
+
+    .stripe-header-card {
+      background: #ffffff;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding-top: 14px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 20;
+    }
+
+    .stripe-nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px 10px;
+    }
+
+    .stripe-user-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 750;
+      color: #0A2540;
+      letter-spacing: -0.02em;
+      flex: 1;
+      margin-left: 8px;
+    }
+
+    .stripe-nav-btn {
+      background: transparent;
+      border: none;
+      color: #0A2540;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .stripe-nav-btn:hover {
+      background: #f1f5f9;
+    }
+
+    .stripe-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stripe-bell-badge {
+      background: #EA601F;
+      color: white;
+      font-size: 11px;
+      font-weight: 750;
+      border-radius: 9999px;
+      min-width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+    }
+
+    .stripe-main-content {
+      --background: #F8FAFC;
+      flex: 1;
+    }
+
+    .driver-stop-card {
+      background: #ffffff;
+      border: 1px solid #E3E8EF;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .stop-tag {
+      font-size: 11px;
+      font-weight: 750;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .status-badge.is-done {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .stop-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0A2540;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+
+    .stop-address {
+      font-size: 12px;
+      color: #64748B;
+      margin: 0 0 12px;
+      line-height: 1.35;
+    }
+
+    .stop-action-btn {
+      width: 100%;
+      padding: 11px 16px;
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .stop-action-btn:hover {
+      background: #008CA5;
+    }
+
+    .stop-action-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
+    }
+  `]
 })
 export class SyncPage {
+  private readonly router = inject(Router);
   readonly outboxService = inject(FieldOutboxService);
+  private readonly alerts = inject(AlertController, { optional: true });
+
   readonly syncFeedback = signal<SyncFeedback | null>(null);
   readonly isSyncingAll = signal<boolean>(false);
+
+  readonly pendingCount = computed(() => {
+    return typeof this.outboxService.pendingCount === 'function' ? this.outboxService.pendingCount() : 0;
+  });
+
+  goHome(): void {
+    this.router.navigate(['/home']);
+  }
+
+  async openTestEnvInfo(): Promise<void> {
+    if (!this.alerts) return;
+    const alert = await this.alerts.create({
+      header: 'Entorno de prueba activo',
+      subHeader: 'Expo Clean Ecuador 2026',
+      message: 'Estás operando en el modo seguro de validación de campo. Las operaciones offline se concilian mediante firma y código QR trazable.',
+      buttons: ['Entendido']
+    });
+    await alert.present();
+  }
+
+  async openVerifyModal(): Promise<void> {
+    if (!this.alerts) return;
+    const alert = await this.alerts.create({
+      header: 'Verificación de Empresa',
+      subHeader: 'Certificación de Custodia Digital',
+      message: 'Empresa: IstpetDev Operaciones Nacionales\nRUC: 1793148291001\nEstado: Validación en proceso (45%)\nProtocolo de custodia digital activo con claves M2M.',
+      buttons: ['Aceptar']
+    });
+    await alert.present();
+  }
 
   clearFeedback(): void {
     this.syncFeedback.set(null);

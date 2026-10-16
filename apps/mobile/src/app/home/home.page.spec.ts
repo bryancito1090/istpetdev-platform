@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { AlertController } from '@ionic/angular/standalone';
+import { AlertController, ToastController } from '@ionic/angular/standalone';
 import { MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API } from '../field/field-api.interface';
@@ -23,10 +23,12 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
     isSimulatingOffline: ReturnType<typeof signal<boolean>>;
     isSyncing: ReturnType<typeof signal<boolean>>;
     activeDriverNotice: ReturnType<typeof signal<any>>;
+    lastDownloadTimestamp: ReturnType<typeof signal<number>>;
     downloadRouteAssignment: ReturnType<typeof vi.fn>;
   };
   let alertControllerMock: { create: ReturnType<typeof vi.fn> };
   let alertElementMock: { present: ReturnType<typeof vi.fn>; onDidDismiss: ReturnType<typeof vi.fn> };
+  let toastControllerMock: { create: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     authServiceMock = {
@@ -43,6 +45,7 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
       isSimulatingOffline: signal(false),
       isSyncing: signal(false),
       activeDriverNotice: signal(null),
+      lastDownloadTimestamp: signal(0),
       downloadRouteAssignment: vi.fn(async () => ({} as any))
     };
 
@@ -55,12 +58,17 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
       create: vi.fn(async () => alertElementMock)
     };
 
+    toastControllerMock = {
+      create: vi.fn(async () => ({ present: vi.fn(async () => undefined) }))
+    };
+
     TestBed.configureTestingModule({
       imports: [HomePage],
       providers: [
         { provide: MobileAuthService, useValue: authServiceMock },
         { provide: FieldOutboxService, useValue: outboxServiceMock },
         { provide: AlertController, useValue: alertControllerMock },
+        { provide: ToastController, useValue: toastControllerMock },
         { provide: Router, useValue: { navigate: vi.fn() } },
         { provide: FIELD_API, useValue: {} }
       ]
@@ -140,8 +148,11 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
       loadReceiverUnit: vi.fn(async () => ({ unit, cached: true })) };
     TestBed.configureTestingModule({ imports: [HomePage], providers: [
       { provide: MobileAuthService, useValue: { currentRole: signal('Receptor'), me: signal({ displayName: 'Receptor' }) } },
-      { provide: FieldOutboxService, useValue: outbox }, { provide: FIELD_API, useValue: {} },
-      { provide: Router, useValue: { navigate: vi.fn() } }, { provide: AlertController, useValue: {} }
+      { provide: FieldOutboxService, useValue: outbox },
+      { provide: FIELD_API, useValue: {} },
+      { provide: Router, useValue: { navigate: vi.fn() } },
+      { provide: AlertController, useValue: {} },
+      { provide: ToastController, useValue: { create: vi.fn().mockResolvedValue({ present: vi.fn() }) } }
     ] });
     page = TestBed.createComponent(HomePage).componentInstance;
     await page.loadReceiverUnit('hu', 'qr');
@@ -229,4 +240,103 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
     expect(page.receiverPhoto()).toBeNull();
   });
 });
+
+describe('Conductor: Botones simplificados y regla de aviso de revisión 12h / día anterior', () => {
+  let page: HomePage;
+  let outbox: {
+    pendingCount: ReturnType<typeof signal<number>>;
+    activeAssignment: ReturnType<typeof signal<any>>;
+    activeDriverNotice: ReturnType<typeof signal<any>>;
+    lastDownloadTimestamp: ReturnType<typeof signal<number>>;
+    downloadRouteAssignment: ReturnType<typeof vi.fn>;
+    effectiveDeliveryStatus?: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    outbox = {
+      pendingCount: signal(0),
+      activeAssignment: signal(null),
+      activeDriverNotice: signal(null),
+      lastDownloadTimestamp: signal(0),
+      downloadRouteAssignment: vi.fn(async () => ({} as any)),
+      effectiveDeliveryStatus: vi.fn((_id: string, status: string) => status)
+    };
+
+    TestBed.configureTestingModule({
+      imports: [HomePage],
+      providers: [
+        { provide: MobileAuthService, useValue: { currentRole: signal('Conductor'), me: signal({ displayName: 'Conductor' }) } },
+        { provide: FieldOutboxService, useValue: outbox },
+        { provide: FIELD_API, useValue: {} },
+        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: AlertController, useValue: {} },
+        { provide: ToastController, useValue: { create: vi.fn().mockResolvedValue({ present: vi.fn() }) } }
+      ]
+    });
+
+    page = TestBed.createComponent(HomePage).componentInstance;
+  });
+
+  it('no muestra aviso si no hay activeDriverNotice', () => {
+    outbox.activeDriverNotice.set(null);
+    expect(page.shouldShowDriverNotice()).toBeNull();
+  });
+
+  it('no muestra aviso si descargó hoy hace menos de 12 horas', () => {
+    outbox.activeDriverNotice.set({ revision: 2, message: 'Ruta editada', routePlanId: 'RP-1' });
+    // Descargó hace 10 minutos hoy
+    outbox.lastDownloadTimestamp.set(Date.now() - 10 * 60 * 1000);
+    expect(page.shouldShowDriverNotice()).toBeNull();
+  });
+
+  it('muestra aviso si han pasado más de 12 horas sin actualizar', () => {
+    outbox.activeDriverNotice.set({ revision: 2, message: 'Ruta editada', routePlanId: 'RP-1' });
+    // Descargó hace 13 horas
+    outbox.lastDownloadTimestamp.set(Date.now() - 13 * 60 * 60 * 1000);
+    expect(page.shouldShowDriverNotice()).toEqual(expect.objectContaining({ revision: 2 }));
+  });
+
+  it('muestra aviso si se descargó el día de ayer', () => {
+    outbox.activeDriverNotice.set({ revision: 2, message: 'Ruta editada', routePlanId: 'RP-1' });
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(20, 0, 0, 0);
+    outbox.lastDownloadTimestamp.set(yesterday.getTime());
+    expect(page.shouldShowDriverNotice()).toEqual(expect.objectContaining({ revision: 2 }));
+  });
+
+  it('hasDownloadedRoute cambia a true cuando hay rutas asignadas', () => {
+    expect(page.hasDownloadedRoute()).toBe(false);
+
+    outbox.activeAssignment.set({
+      routes: [{ routePlanId: 'RP-1', deliveries: [] }]
+    });
+    expect(page.hasDownloadedRoute()).toBe(true);
+  });
+
+  it('isRouteCompleted es true solo cuando todas las entregas están cerradas (Received/Partial)', () => {
+    outbox.activeAssignment.set({
+      routes: [{
+        routePlanId: 'RP-1',
+        deliveries: [
+          { deliveryId: 'd-1', status: 'Delivered', kind: 'Delivery', pointName: 'P1', pointCode: 'C1', address: 'A1', handlingUnits: [] }
+        ]
+      }]
+    });
+    // Entregado no es Received aún
+    expect(page.isRouteCompleted()).toBe(false);
+
+    // Cambiar a Received
+    outbox.activeAssignment.set({
+      routes: [{
+        routePlanId: 'RP-1',
+        deliveries: [
+          { deliveryId: 'd-1', status: 'Received', kind: 'Delivery', pointName: 'P1', pointCode: 'C1', address: 'A1', handlingUnits: [] }
+        ]
+      }]
+    });
+    expect(page.isRouteCompleted()).toBe(true);
+  });
+});
+
 

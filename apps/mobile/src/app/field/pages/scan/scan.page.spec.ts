@@ -238,5 +238,59 @@ describe('ScanPage (Issue #122)', () => {
         expect(routerNavigateSpy).toHaveBeenCalledWith(['/receipt', 'del-uuid-fresh']);
       });
     });
+
+    it('en modo pickup muestra la tarjeta del bulto con destino y productos sin navegar', () => {
+      mockCurrentRole.set('Conductor');
+      mockRoute.snapshot.queryParamMap.get.mockReturnValue('pickup');
+      mockActiveAssignment.set({
+        routes: [
+          {
+            deliveries: [
+              {
+                deliveryId: 'del-uuid-001',
+                sequence: 2,
+                pointName: 'Hospital General San Francisco',
+                address: 'Av. Jaime Roldós',
+                handlingUnits: [
+                  {
+                    handlingUnitId: 'hu-001',
+                    code: 'CAJA-MED-001',
+                    lines: [
+                      {
+                        sku: 'PINOKLIN-DESINF-5L',
+                        quantity: 12,
+                        unit: 'Galón'
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
+
+      component.onQrScanned('https://istpetdev.doicela.dev/public-trace/hu-001#t=tok');
+
+      expect(routerNavigateSpy).not.toHaveBeenCalled();
+      const info = component.scannedBoxInfo();
+      expect(info).not.toBeNull();
+      expect(info?.pointName).toBe('Hospital General San Francisco');
+      expect(info?.boxCode).toBe('CAJA-MED-001');
+      expect(info?.sequence).toBe(2);
+      expect(info?.products.length).toBe(1);
+      expect(info?.products[0].name).toBe('Pinoklin Desinfectante 5L');
+      expect(info?.products[0].quantity).toBe(12);
+
+      // Limpiar caja escaneada
+      component.clearScannedBox();
+      expect(component.scannedBoxInfo()).toBeNull();
+      expect(component.scannedCode).toBe('');
+
+      // Ir a entrega
+      component.goToDelivery('del-uuid-001');
+      expect(routerNavigateSpy).toHaveBeenCalledWith(['/receipt', 'del-uuid-001']);
+    });
+    });
   });
 });

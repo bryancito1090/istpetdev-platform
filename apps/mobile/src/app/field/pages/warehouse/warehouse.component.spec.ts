@@ -334,4 +334,33 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
       expect(component.successMessage()).toContain('Despacho guardado en este dispositivo');
     });
   });
+
+  it('valida que todas las líneas estén verificadas físicamente mediante checkbox antes de preparar', () => {
+    const fixture = TestBed.createComponent(WarehouseComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.selectedDelivery.set({
+      ...sampleDeliveryDetail,
+      lines: [
+        { ...sampleDeliveryDetail.lines[0], deliveryLineId: 'l-1' },
+        { ...sampleDeliveryDetail.lines[0], deliveryLineId: 'l-2' }
+      ]
+    });
+
+    expect(component.allLinesVerified()).toBe(false);
+    expect(component.isLineVerified('l-1')).toBe(false);
+
+    component.toggleLineVerify('l-1');
+    expect(component.isLineVerified('l-1')).toBe(true);
+    expect(component.allLinesVerified()).toBe(false);
+
+    component.toggleVerifyAllLines();
+    expect(component.allLinesVerified()).toBe(true);
+    expect(component.isLineVerified('l-2')).toBe(true);
+
+    component.toggleVerifyAllLines();
+    expect(component.allLinesVerified()).toBe(false);
+  });
+  });
 });

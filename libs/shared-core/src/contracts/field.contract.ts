@@ -165,6 +165,18 @@ export interface MobileAssignmentRoute {
   deliveries: MobileAssignmentDelivery[];
   /** #160: bodega desde la que sale la ruta. */
   originWarehouseName?: string | null;
+  /** Puntos de recogida de bodega que forman parte de la ruta. */
+  pickupStops?: MobileAssignmentPickupStop[];
+}
+
+export interface MobileAssignmentPickupStop {
+  stopId: string;
+  sequence: number;
+  locationId?: string | null;
+  pointCode: string;
+  pointName: string;
+  address: string;
+  dueAtUtc: string;
 }
 
 export interface MobileAssignmentResponse {

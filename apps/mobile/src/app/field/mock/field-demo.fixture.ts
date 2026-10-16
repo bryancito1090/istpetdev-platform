@@ -136,8 +136,34 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Clínica Metropolitana Norte',
             address: 'Av. Naciones Unidas y Amazonas, Quito',
             dueAtUtc: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-            status: 'Draft',
-            handlingUnits: []
+            status: 'Dispatched',
+            handlingUnits: [
+              {
+                handlingUnitId: 'hu-caja-002',
+                code: 'CAJA-MED-002',
+                deliveryId: 'del-clin-002',
+                status: 'Dispatched',
+                labelUrl: 'https://istpetdev.local/campo/label/hu-caja-002',
+                token: 'tok-sec-demo-clin-002',
+                lines: [
+                  {
+                    deliveryLineId: 'dl-002-1',
+                    lotId: 'LOT-AMOX-01',
+                    sku: 'AMOXICILINA-500MG',
+                    quantity: 15,
+                    unit: 'Frascos'
+                  },
+                  {
+                    deliveryLineId: 'dl-002-2',
+                    lotId: 'LOT-ALC-01',
+                    sku: 'ALCOHOL-70-1L',
+                    quantity: 8,
+                    unit: 'Litros'
+                  }
+                ],
+                createdAtUtc: new Date().toISOString()
+              }
+            ]
           },
           {
             deliveryId: 'del-salud-003',
@@ -147,8 +173,34 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Centro de Salud Nro 3',
             address: 'Calle Guayaquil y Espejo, Centro Histórico, Quito',
             dueAtUtc: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-            status: 'Draft',
-            handlingUnits: []
+            status: 'Dispatched',
+            handlingUnits: [
+              {
+                handlingUnitId: 'hu-caja-003',
+                code: 'CAJA-MED-003',
+                deliveryId: 'del-salud-003',
+                status: 'Dispatched',
+                labelUrl: 'https://istpetdev.local/campo/label/hu-caja-003',
+                token: 'tok-sec-demo-salud-003',
+                lines: [
+                  {
+                    deliveryLineId: 'dl-003-1',
+                    lotId: 'LOT-SUERO-01',
+                    sku: 'SUERO-FISIOLOGICO-500ML',
+                    quantity: 24,
+                    unit: 'Fundas'
+                  },
+                  {
+                    deliveryLineId: 'dl-003-2',
+                    lotId: 'LOT-PINOK-01',
+                    sku: 'PINOKLIN-DESINF-5L',
+                    quantity: 6,
+                    unit: 'Galón'
+                  }
+                ],
+                createdAtUtc: new Date().toISOString()
+              }
+            ]
           }
         ]
       }
@@ -181,9 +233,9 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       pointCode: 'PTO-CLIN-02',
       pointName: 'Clínica Metropolitana Norte',
       dueAtUtc: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-      status: 'Draft',
+      status: 'Dispatched',
       evidenceStatus: 'Pending',
-      packagesCount: 0
+      packagesCount: 1
     },
     {
       deliveryId: 'del-salud-003',
@@ -191,9 +243,9 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       pointCode: 'PTO-SALUD-03',
       pointName: 'Centro de Salud Nro 3',
       dueAtUtc: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-      status: 'Draft',
+      status: 'Dispatched',
       evidenceStatus: 'Pending',
-      packagesCount: 0
+      packagesCount: 1
     }
   ],
   handlingUnits: {
@@ -225,10 +277,60 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       lines: [
         {
           deliveryLineId: 'dl-001-1',
-          lotId: 'LOT-DESINF-A1',
-          sku: 'SKU-AMONIO-CUAT-4L',
+          lotId: 'LOT-PINOK-01',
+          sku: 'PINOKLIN-DESINF-5L',
           quantity: 12,
-          unit: 'L'
+          unit: 'Galón'
+        }
+      ],
+      createdAtUtc: new Date().toISOString()
+    },
+    'hu-caja-002': {
+      handlingUnitId: 'hu-caja-002',
+      code: 'CAJA-MED-002',
+      deliveryId: 'del-clin-002',
+      status: 'Dispatched',
+      labelUrl: 'https://istpetdev.local/campo/label/hu-caja-002',
+      token: 'tok-sec-demo-clin-002',
+      lines: [
+        {
+          deliveryLineId: 'dl-002-1',
+          lotId: 'LOT-AMOX-01',
+          sku: 'AMOXICILINA-500MG',
+          quantity: 15,
+          unit: 'Frascos'
+        },
+        {
+          deliveryLineId: 'dl-002-2',
+          lotId: 'LOT-ALC-01',
+          sku: 'ALCOHOL-70-1L',
+          quantity: 8,
+          unit: 'Litros'
+        }
+      ],
+      createdAtUtc: new Date().toISOString()
+    },
+    'hu-caja-003': {
+      handlingUnitId: 'hu-caja-003',
+      code: 'CAJA-MED-003',
+      deliveryId: 'del-salud-003',
+      status: 'Dispatched',
+      labelUrl: 'https://istpetdev.local/campo/label/hu-caja-003',
+      token: 'tok-sec-demo-salud-003',
+      lines: [
+        {
+          deliveryLineId: 'dl-003-1',
+          lotId: 'LOT-SUERO-01',
+          sku: 'SUERO-FISIOLOGICO-500ML',
+          quantity: 24,
+          unit: 'Fundas'
+        },
+        {
+          deliveryLineId: 'dl-003-2',
+          lotId: 'LOT-PINOK-01',
+          sku: 'PINOKLIN-DESINF-5L',
+          quantity: 6,
+          unit: 'Galón'
         }
       ],
       createdAtUtc: new Date().toISOString()
