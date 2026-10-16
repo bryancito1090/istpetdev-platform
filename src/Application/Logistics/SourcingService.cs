@@ -16,6 +16,111 @@ public sealed record ProductWarehouseStock(
     IReadOnlyList<WarehouseLotStock> UsableLots
 );
 
+public sealed record WarehouseLotStockDetailDto(
+    Guid LotId,
+    string LotCode,
+    DateOnly? ExpiresOn,
+    decimal QuantityOnHand,
+    decimal QuantityReserved,
+    decimal NetUsableQuantity
+);
+
+public sealed record WarehouseProductStockDto(
+    Guid WarehouseId,
+    string WarehouseCode,
+    string WarehouseName,
+    decimal QuantityOnHand,
+    decimal QuantityReserved,
+    decimal NetUsableQuantity,
+    decimal SafetyStock,
+    decimal AvailableQuantity,
+    IReadOnlyList<WarehouseLotStockDetailDto> Lots
+);
+
+public sealed record WarehouseStockQueryResult(
+    DateOnly OperationalDate,
+    decimal SafetyStockPct,
+    Guid ProductId,
+    string Sku,
+    string ProductName,
+    string BaseUnit,
+    IReadOnlyList<WarehouseProductStockDto> Warehouses
+);
+
+public sealed record SourcingDemandInput(
+    Guid? OrderId,
+    string? OrderNumber,
+    string SourceKind, // "Order" o "Risk"
+    Guid DestinationId,
+    bool IsDestinationWarehouse,
+    string DestinationCode,
+    string DestinationName,
+    GeoPoint DestinationPosition,
+    Guid ProductId,
+    decimal RequestedQuantity,
+    string? RiskLevel = null,
+    decimal? CoverageDays = null
+);
+
+public sealed record LotAllocationDto(
+    Guid LotId,
+    string LotCode,
+    DateOnly? ExpiresOn,
+    decimal Quantity
+);
+
+public sealed record WarehouseAllocationDto(
+    Guid WarehouseId,
+    string WarehouseCode,
+    string WarehouseName,
+    decimal DistanceKm,
+    GeoPoint WarehousePosition,
+    decimal Quantity,
+    IReadOnlyList<LotAllocationDto> Lots
+);
+
+public sealed record DemandLineSourcingDto(
+    Guid? OrderId,
+    string? OrderNumber,
+    string SourceKind,
+    Guid DestinationId,
+    bool IsDestinationWarehouse,
+    string DestinationCode,
+    string DestinationName,
+    GeoPoint DestinationPosition,
+    Guid ProductId,
+    string Sku,
+    string ProductName,
+    string BaseUnit,
+    decimal RequestedQuantity,
+    decimal AllocatedQuantity,
+    decimal TotalAllocated,
+    decimal ShortageQuantity,
+    bool FullySourced,
+    string? RiskLevel,
+    decimal? CoverageDays,
+    IReadOnlyList<WarehouseAllocationDto> Allocations
+);
+
+public sealed record DemandSourcingOptionDto(
+    string OptionId,
+    string Title,
+    string Description,
+    bool IsRecommended,
+    bool FullySourced,
+    IReadOnlyList<DemandLineSourcingDto> Lines,
+    IReadOnlyList<Guid> InvolvedWarehouseIds
+);
+
+public sealed record DemandSourcingResult(
+    DateOnly OperationalDate,
+    string SourceKind,
+    decimal SafetyStockPct,
+    bool FullySourced,
+    IReadOnlyList<DemandLineSourcingDto> Demands,
+    IReadOnlyList<DemandSourcingOptionDto> Options
+);
+
 public sealed record OrderLineSourcing(
     Guid OrderId,
     string OrderNumber,
@@ -53,6 +158,9 @@ public sealed record SourcingPlanOption(
 public interface ISourcingService
 {
     Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
+    Task<DemandSourcingResult> QueryOrderSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
+    Task<WarehouseStockQueryResult?> GetWarehouseStockAsync(Guid productId, Guid? warehouseId = null, CancellationToken ct = default);
+    Task<DemandSourcingResult> PlanDemandSourcingAsync(IReadOnlyList<SourcingDemandInput> demands, string sourceKind, CancellationToken ct = default);
 }
 
 public sealed class SourcingService : ISourcingService
@@ -74,54 +182,177 @@ public sealed class SourcingService : ISourcingService
         _options = options.Value;
     }
 
-    public async Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    public static decimal ComputeSafetyStock(decimal netUsableQuantity, decimal safetyStockPct)
+        => netUsableQuantity <= 0m || safetyStockPct <= 0m
+            ? 0m
+            : netUsableQuantity * (safetyStockPct / 100m);
+
+    public static decimal ComputeAvailableQuantity(decimal netUsableQuantity, decimal safetyStockPct)
+        => Math.Max(0m, netUsableQuantity - ComputeSafetyStock(netUsableQuantity, safetyStockPct));
+
+    public async Task<WarehouseStockQueryResult?> GetWarehouseStockAsync(
+        Guid productId,
+        Guid? warehouseId = null,
+        CancellationToken ct = default)
     {
         var today = await _clock.TodayAsync(ct);
 
-        // 1. Cargar pedidos y líneas
-        var orders = await _db.DeliveryOrders
-            .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id))
-            .ToListAsync(ct);
+        var product = await _db.Products
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.OrganizationId == DemoOrganization.Id && p.Id == productId, ct);
 
-        var lines = await _db.DeliveryOrderLines
-            .Where(l => l.OrganizationId == DemoOrganization.Id && orderIds.Contains(l.DeliveryOrderId))
-            .ToListAsync(ct);
+        if (product is null)
+        {
+            return null;
+        }
 
-        // 2. Cargar bodegas y puntos de servicio
-        var warehouses = await _db.Locations
-            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.IsActive)
+        var warehousesQuery = _db.Locations
+            .AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.IsActive);
+
+        if (warehouseId.HasValue)
+        {
+            warehousesQuery = warehousesQuery.Where(l => l.Id == warehouseId.Value);
+        }
+
+        var warehouses = await warehousesQuery
+            .OrderBy(l => l.Code)
+            .ThenBy(l => l.Id)
             .ToListAsync(ct);
 
         var warehouseIds = warehouses.Select(w => w.Id).ToHashSet();
 
+        var usableLots = await _db.Lots
+            .AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id &&
+                        l.ProductId == productId &&
+                        !l.IsBlocked &&
+                        (l.ExpiresOn == null || l.ExpiresOn > today))
+            .ToDictionaryAsync(l => l.Id, ct);
+
+        var usableLotIds = usableLots.Keys.ToHashSet();
+
+        var balances = warehouseIds.Count == 0 || usableLotIds.Count == 0
+            ? []
+            : await _db.StockBalances
+                .AsNoTracking()
+                .Where(b => b.OrganizationId == DemoOrganization.Id &&
+                            warehouseIds.Contains(b.LocationId) &&
+                            usableLotIds.Contains(b.LotId))
+                .ToListAsync(ct);
+
+        var warehouseDtos = new List<WarehouseProductStockDto>(warehouses.Count);
+
+        foreach (var wh in warehouses)
+        {
+            var whBalancesByLot = balances
+                .Where(b => b.LocationId == wh.Id)
+                .GroupBy(b => b.LotId);
+
+            var lotDtos = new List<WarehouseLotStockDetailDto>();
+
+            foreach (var grp in whBalancesByLot)
+            {
+                if (!usableLots.TryGetValue(grp.Key, out var lot)) continue;
+
+                decimal onHand = grp.Sum(b => b.QuantityOnHand);
+                decimal reserved = grp.Sum(b => b.QuantityReserved);
+                if (onHand <= 0m && reserved <= 0m) continue;
+
+                decimal netUsable = Math.Max(0m, onHand - reserved);
+                lotDtos.Add(new WarehouseLotStockDetailDto(
+                    lot.Id,
+                    lot.Code,
+                    lot.ExpiresOn,
+                    onHand,
+                    reserved,
+                    netUsable
+                ));
+            }
+
+            var orderedLots = lotDtos
+                .OrderBy(l => l.ExpiresOn ?? DateOnly.MaxValue)
+                .ThenBy(l => l.LotCode, StringComparer.Ordinal)
+                .ThenBy(l => l.LotId)
+                .ToList();
+
+            decimal totalOnHand = orderedLots.Sum(l => l.QuantityOnHand);
+            decimal totalReserved = orderedLots.Sum(l => l.QuantityReserved);
+            decimal totalNetUsable = orderedLots.Sum(l => l.NetUsableQuantity);
+            decimal safetyStock = ComputeSafetyStock(totalNetUsable, _options.WarehouseSafetyStockPct);
+            decimal available = Math.Max(0m, totalNetUsable - safetyStock);
+
+            warehouseDtos.Add(new WarehouseProductStockDto(
+                wh.Id,
+                wh.Code,
+                wh.Name,
+                totalOnHand,
+                totalReserved,
+                totalNetUsable,
+                safetyStock,
+                available,
+                orderedLots
+            ));
+        }
+
+        return new WarehouseStockQueryResult(
+            today,
+            _options.WarehouseSafetyStockPct,
+            product.Id,
+            product.Sku,
+            product.Name,
+            product.BaseUnit,
+            warehouseDtos
+        );
+    }
+
+    private async Task<List<SourcingDemandInput>> LoadOrderDemandsAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct)
+    {
+        var distinctOrderIds = orderIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        var orders = distinctOrderIds.Count == 0
+            ? []
+            : await _db.DeliveryOrders
+                .AsNoTracking()
+                .Where(o => o.OrganizationId == DemoOrganization.Id && distinctOrderIds.Contains(o.Id))
+                .ToListAsync(ct);
+
+        var lines = distinctOrderIds.Count == 0
+            ? []
+            : await _db.DeliveryOrderLines
+                .AsNoTracking()
+                .Where(l => l.OrganizationId == DemoOrganization.Id && distinctOrderIds.Contains(l.DeliveryOrderId))
+                .ToListAsync(ct);
+
+        var warehouses = await _db.Locations
+            .AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.IsActive)
+            .OrderBy(l => l.Code)
+            .ThenBy(l => l.Id)
+            .ToListAsync(ct);
+
         var servicePoints = await _db.ServicePoints
+            .AsNoTracking()
             .Where(sp => sp.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(sp => sp.Id, ct);
 
-        // 3. Cargar existencias por bodega y producto
-        var balances = await _db.StockBalances
-            .Where(b => b.OrganizationId == DemoOrganization.Id && warehouseIds.Contains(b.LocationId))
-            .ToListAsync(ct);
+        var ordersById = orders.ToDictionary(o => o.Id);
+        var demandInputs = new List<SourcingDemandInput>();
 
-        var lotIds = balances.Select(b => b.LotId).Distinct().ToHashSet();
-        var lots = await _db.Lots
-            .Where(l => l.OrganizationId == DemoOrganization.Id && lotIds.Contains(l.Id))
-            .ToDictionaryAsync(l => l.Id, ct);
-
-        var products = await _db.Products
-            .Where(p => p.OrganizationId == DemoOrganization.Id)
-            .ToDictionaryAsync(p => p.Id, ct);
-
-        // 4. Preparar destinos de pedidos con coordenadas
-        var orderDestinations = new Dictionary<Guid, (Guid Id, string Code, string Name, bool IsWh, GeoPoint Pos)>();
-        foreach (var ord in orders)
+        foreach (var orderId in distinctOrderIds)
         {
+            if (!ordersById.TryGetValue(orderId, out var ord)) continue;
+
+            (Guid Id, string Code, string Name, bool IsWh, GeoPoint Pos) dest;
             if (ord.DestinationServicePointId.HasValue && servicePoints.TryGetValue(ord.DestinationServicePointId.Value, out var sp))
             {
                 var pos = sp.Position != null
                     ? new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X)
                     : new GeoPoint(-0.2295m, -78.5243m);
-                orderDestinations[ord.Id] = (sp.Id, sp.Code, sp.Name, false, pos);
+                dest = (sp.Id, sp.Code, sp.Name, false, pos);
             }
             else if (ord.DestinationLocationId.HasValue)
             {
@@ -129,164 +360,332 @@ public sealed class SourcingService : ISourcingService
                 var pos = wh?.Position != null
                     ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X)
                     : new GeoPoint(-0.2295m, -78.5243m);
-                orderDestinations[ord.Id] = (wh?.Id ?? Guid.Empty, wh?.Code ?? "WH", wh?.Name ?? "Bodega", true, pos);
+                dest = (wh?.Id ?? Guid.Empty, wh?.Code ?? "WH", wh?.Name ?? "Bodega", true, pos);
             }
             else
             {
-                orderDestinations[ord.Id] = (Guid.Empty, "UNK", "Destino Desconocido", false, new GeoPoint(-0.2295m, -78.5243m));
+                dest = (Guid.Empty, "UNK", "Destino Desconocido", false, new GeoPoint(-0.2295m, -78.5243m));
             }
-        }
 
-        // Matriz de distancias entre bodegas y destinos
-        var allPoints = new List<GeoPoint>();
-        foreach (var w in warehouses)
-        {
-            if (w.Position != null) allPoints.Add(new GeoPoint((decimal)w.Position.Y, (decimal)w.Position.X));
-        }
-        foreach (var dest in orderDestinations.Values)
-        {
-            allPoints.Add(dest.Pos);
-        }
-        var distanceMatrix = await _distanceProvider.MatrixAsync(allPoints, ct);
-
-        // 5. Simular asignación FEFO desde bodegas ordenadas por distancia para cada destino
-        var sourcedLinesOptionA = new List<OrderLineSourcing>();
-        var sourcedLinesOptionB = new List<OrderLineSourcing>();
-        bool splitOccurred = false;
-
-        // Mantener control de stock disponible en memoria por bodega/lote durante la asignación
-        var availableStockByWarehouseLot = balances
-            .Where(b => lots.TryGetValue(b.LotId, out var lot) && !lot.IsBlocked && (lot.ExpiresOn == null || lot.ExpiresOn > today))
-            .ToDictionary(b => (b.LocationId, b.LotId), b => Math.Max(0m, b.QuantityOnHand - b.QuantityReserved));
-
-        foreach (var ord in orders)
-        {
-            var dest = orderDestinations[ord.Id];
-            var ordLines = lines.Where(l => l.DeliveryOrderId == ord.Id).ToList();
+            var ordLines = lines
+                .Where(l => l.DeliveryOrderId == ord.Id)
+                .OrderBy(l => l.ProductId)
+                .ThenBy(l => l.Id)
+                .ToList();
 
             foreach (var line in ordLines)
             {
-                products.TryGetValue(line.ProductId, out var prod);
                 // #199: solo el remanente sin planificar; lo ya confirmado en otra ruta no se vuelve a ofrecer.
                 decimal requested = Math.Max(0m, line.RequestedQuantity - line.PlannedQuantity);
-                if (requested <= 0) continue;
+                if (requested <= 0m) continue;
 
-                // Ordenar bodegas por distancia por carretera al destino
-                var rankedWarehouses = warehouses
-                    .Where(w => w.Position != null)
-                    .Select(w =>
-                    {
-                        var wPos = new GeoPoint((decimal)w.Position!.Y, (decimal)w.Position.X);
-                        var legKey = (wPos, dest.Pos);
-                        decimal km = distanceMatrix.TryGetValue(legKey, out var leg) ? leg.Km : DistanceProvider.HaversineDistanceKm(wPos, dest.Pos);
-                        return new { Warehouse = w, Position = wPos, DistanceKm = km };
-                    })
-                    .OrderBy(x => x.DistanceKm)
-                    .ToList();
-
-                var allocationsA = new List<WarehouseAllocation>();
-                decimal remainingNeeded = requested;
-
-                foreach (var rw in rankedWarehouses)
-                {
-                    if (remainingNeeded <= 0) break;
-
-                    // Buscar lotes FEFO para este producto en esta bodega
-                    var whLots = lots.Values
-                        .Where(l => l.ProductId == line.ProductId && !l.IsBlocked && (l.ExpiresOn == null || l.ExpiresOn > today))
-                        .OrderBy(l => l.ExpiresOn ?? DateOnly.MaxValue)
-                        .ThenBy(l => l.Code, StringComparer.Ordinal)
-                        .ToList();
-
-                    var lotAllocations = new List<LotAllocation>();
-                    decimal allocatedFromThisWh = 0m;
-
-                    foreach (var lot in whLots)
-                    {
-                        if (remainingNeeded <= 0) break;
-                        var key = (rw.Warehouse.Id, lot.Id);
-                        if (!availableStockByWarehouseLot.TryGetValue(key, out var avail) || avail <= 0) continue;
-
-                        decimal take = Math.Min(remainingNeeded, avail);
-                        lotAllocations.Add(new LotAllocation(lot.Id, lot.Code, take));
-                        availableStockByWarehouseLot[key] = avail - take;
-                        remainingNeeded -= take;
-                        allocatedFromThisWh += take;
-                    }
-
-                    if (allocatedFromThisWh > 0)
-                    {
-                        allocationsA.Add(new WarehouseAllocation(
-                            rw.Warehouse.Id,
-                            rw.Warehouse.Code,
-                            rw.Position,
-                            allocatedFromThisWh,
-                            lotAllocations
-                        ));
-                    }
-                }
-
-                if (allocationsA.Count > 1)
-                {
-                    splitOccurred = true;
-                }
-
-                decimal totalAlloc = allocationsA.Sum(a => a.Quantity);
-                bool fullySourced = totalAlloc >= requested;
-
-                sourcedLinesOptionA.Add(new OrderLineSourcing(
+                demandInputs.Add(new SourcingDemandInput(
                     ord.Id,
                     ord.OrderNumber,
+                    "Order",
                     dest.Id,
                     dest.IsWh,
                     dest.Code,
                     dest.Name,
                     dest.Pos,
                     line.ProductId,
-                    prod?.Sku ?? "SKU",
-                    prod?.Name ?? "Producto",
-                    requested,
-                    allocationsA,
-                    totalAlloc,
-                    fullySourced
+                    requested
                 ));
             }
         }
 
-        // Opción A: Unificada (1 viaje que recoge en las bodegas necesarias)
+        return demandInputs;
+    }
+
+    public async Task<DemandSourcingResult> QueryOrderSourcingAsync(
+        IReadOnlyList<Guid> orderIds,
+        CancellationToken ct = default)
+    {
+        var demands = await LoadOrderDemandsAsync(orderIds, ct);
+        return await AllocateDemandsCoreAsync(demands, "Order", includeEmptyDefaultOption: false, ct);
+    }
+
+    public async Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        var demands = await LoadOrderDemandsAsync(orderIds, ct);
+        var result = await AllocateDemandsCoreAsync(demands, "Order", includeEmptyDefaultOption: true, ct);
+
+        return result.Options
+            .Select(opt => new SourcingPlanOption(
+                opt.OptionId,
+                opt.Title,
+                opt.Description,
+                opt.IsRecommended,
+                opt.Lines.Select(l => new OrderLineSourcing(
+                    l.OrderId ?? Guid.Empty,
+                    l.OrderNumber ?? string.Empty,
+                    l.DestinationId,
+                    l.IsDestinationWarehouse,
+                    l.DestinationCode,
+                    l.DestinationName,
+                    l.DestinationPosition,
+                    l.ProductId,
+                    l.Sku,
+                    l.ProductName,
+                    l.RequestedQuantity,
+                    l.Allocations.Select(a => new WarehouseAllocation(
+                        a.WarehouseId,
+                        a.WarehouseCode,
+                        a.WarehousePosition,
+                        a.Quantity,
+                        a.Lots.Select(lot => new LotAllocation(lot.LotId, lot.LotCode, lot.Quantity)).ToList()
+                    )).ToList(),
+                    l.AllocatedQuantity,
+                    l.FullySourced
+                )).ToList(),
+                opt.InvolvedWarehouseIds
+            ))
+            .ToList();
+    }
+
+    public Task<DemandSourcingResult> PlanDemandSourcingAsync(
+        IReadOnlyList<SourcingDemandInput> demands,
+        string sourceKind,
+        CancellationToken ct = default)
+        => AllocateDemandsCoreAsync(demands, sourceKind, includeEmptyDefaultOption: false, ct);
+
+    private async Task<DemandSourcingResult> AllocateDemandsCoreAsync(
+        IReadOnlyList<SourcingDemandInput> demands,
+        string sourceKind,
+        bool includeEmptyDefaultOption,
+        CancellationToken ct)
+    {
+        var today = await _clock.TodayAsync(ct);
+
+        if (demands.Count == 0 && !includeEmptyDefaultOption)
+        {
+            return new DemandSourcingResult(
+                today,
+                sourceKind,
+                _options.WarehouseSafetyStockPct,
+                FullySourced: true,
+                Array.Empty<DemandLineSourcingDto>(),
+                Array.Empty<DemandSourcingOptionDto>()
+            );
+        }
+
+        var warehouses = await _db.Locations
+            .AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.IsActive)
+            .OrderBy(l => l.Code)
+            .ThenBy(l => l.Id)
+            .ToListAsync(ct);
+
+        var warehouseIds = warehouses.Select(w => w.Id).ToHashSet();
+
+        var balances = warehouseIds.Count == 0
+            ? []
+            : await _db.StockBalances
+                .AsNoTracking()
+                .Where(b => b.OrganizationId == DemoOrganization.Id && warehouseIds.Contains(b.LocationId))
+                .ToListAsync(ct);
+
+        var lotIds = balances.Select(b => b.LotId).Distinct().ToHashSet();
+        var lots = lotIds.Count == 0
+            ? new Dictionary<Guid, Lot>()
+            : await _db.Lots
+                .AsNoTracking()
+                .Where(l => l.OrganizationId == DemoOrganization.Id && lotIds.Contains(l.Id))
+                .ToDictionaryAsync(l => l.Id, ct);
+
+        var products = await _db.Products
+            .AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Id, ct);
+
+        var allPoints = new List<GeoPoint>();
+        foreach (var w in warehouses)
+        {
+            if (w.Position != null)
+            {
+                allPoints.Add(new GeoPoint((decimal)w.Position.Y, (decimal)w.Position.X));
+            }
+        }
+        foreach (var d in demands)
+        {
+            allPoints.Add(d.DestinationPosition);
+        }
+
+        var distanceMatrix = await _distanceProvider.MatrixAsync(allPoints, ct);
+
+        // Saldo neto utilizable por (bodega, lote) de lotes no bloqueados y no vencidos
+        var availableStockByWarehouseLot = balances
+            .Where(b => lots.TryGetValue(b.LotId, out var lot) && !lot.IsBlocked && (lot.ExpiresOn == null || lot.ExpiresOn > today))
+            .GroupBy(b => (b.LocationId, b.LotId))
+            .ToDictionary(
+                g => g.Key,
+                g => Math.Max(0m, g.Sum(b => b.QuantityOnHand) - g.Sum(b => b.QuantityReserved)));
+
+        // Presupuesto abastecible por (bodega, producto): descuenta stock de seguridad UNA SOLA VEZ por bodega y producto
+        var assignableRemainingByWarehouseProduct = availableStockByWarehouseLot
+            .Where(kv => kv.Value > 0m && lots.ContainsKey(kv.Key.LotId))
+            .GroupBy(kv => (WarehouseId: kv.Key.LocationId, ProductId: lots[kv.Key.LotId].ProductId))
+            .ToDictionary(
+                g => g.Key,
+                g => ComputeAvailableQuantity(g.Sum(x => x.Value), _options.WarehouseSafetyStockPct));
+
+        var sourcedLinesOptionA = new List<DemandLineSourcingDto>(demands.Count);
+        bool splitOccurred = false;
+
+        foreach (var demand in demands)
+        {
+            products.TryGetValue(demand.ProductId, out var prod);
+            decimal requested = demand.RequestedQuantity;
+
+            var rankedWarehouses = warehouses
+                .Where(w => w.Position != null)
+                .Select(w =>
+                {
+                    var wPos = new GeoPoint((decimal)w.Position!.Y, (decimal)w.Position.X);
+                    var legKey = (wPos.Round(), demand.DestinationPosition.Round());
+                    decimal km = distanceMatrix.TryGetValue(legKey, out var leg)
+                        ? leg.Km
+                        : DistanceProvider.HaversineDistanceKm(wPos, demand.DestinationPosition);
+                    return new { Warehouse = w, Position = wPos, DistanceKm = Math.Round(km, 3) };
+                })
+                .OrderBy(x => x.DistanceKm)
+                .ThenBy(x => x.Warehouse.Code, StringComparer.Ordinal)
+                .ThenBy(x => x.Warehouse.Id)
+                .ToList();
+
+            var allocationsA = new List<WarehouseAllocationDto>();
+            decimal remainingNeeded = requested;
+
+            foreach (var rw in rankedWarehouses)
+            {
+                if (remainingNeeded <= 0m) break;
+
+                var whProdKey = (rw.Warehouse.Id, demand.ProductId);
+                if (!assignableRemainingByWarehouseProduct.TryGetValue(whProdKey, out var whAssignable) || whAssignable <= 0m)
+                {
+                    continue;
+                }
+
+                var whLots = lots.Values
+                    .Where(l => l.ProductId == demand.ProductId && !l.IsBlocked && (l.ExpiresOn == null || l.ExpiresOn > today))
+                    .OrderBy(l => l.ExpiresOn ?? DateOnly.MaxValue)
+                    .ThenBy(l => l.Code, StringComparer.Ordinal)
+                    .ThenBy(l => l.Id)
+                    .ToList();
+
+                var lotAllocations = new List<LotAllocationDto>();
+                decimal allocatedFromThisWh = 0m;
+
+                foreach (var lot in whLots)
+                {
+                    if (remainingNeeded <= 0m || whAssignable <= 0m) break;
+
+                    var key = (rw.Warehouse.Id, lot.Id);
+                    if (!availableStockByWarehouseLot.TryGetValue(key, out var lotAvail) || lotAvail <= 0m)
+                    {
+                        continue;
+                    }
+
+                    decimal take = Math.Min(remainingNeeded, Math.Min(lotAvail, whAssignable));
+                    if (take <= 0m) continue;
+
+                    lotAllocations.Add(new LotAllocationDto(lot.Id, lot.Code, lot.ExpiresOn, take));
+                    availableStockByWarehouseLot[key] = lotAvail - take;
+                    whAssignable -= take;
+                    assignableRemainingByWarehouseProduct[whProdKey] = whAssignable;
+                    remainingNeeded -= take;
+                    allocatedFromThisWh += take;
+                }
+
+                if (allocatedFromThisWh > 0m)
+                {
+                    allocationsA.Add(new WarehouseAllocationDto(
+                        rw.Warehouse.Id,
+                        rw.Warehouse.Code,
+                        rw.Warehouse.Name,
+                        rw.DistanceKm,
+                        rw.Position,
+                        allocatedFromThisWh,
+                        lotAllocations
+                    ));
+                }
+            }
+
+            if (allocationsA.Count > 1)
+            {
+                splitOccurred = true;
+            }
+
+            decimal totalAlloc = allocationsA.Sum(a => a.Quantity);
+            decimal shortage = Math.Max(0m, requested - totalAlloc);
+            bool fullySourced = totalAlloc >= requested;
+
+            sourcedLinesOptionA.Add(new DemandLineSourcingDto(
+                demand.OrderId,
+                demand.OrderNumber,
+                demand.SourceKind,
+                demand.DestinationId,
+                demand.IsDestinationWarehouse,
+                demand.DestinationCode,
+                demand.DestinationName,
+                demand.DestinationPosition,
+                demand.ProductId,
+                prod?.Sku ?? "SKU",
+                prod?.Name ?? "Producto",
+                prod?.BaseUnit ?? "U",
+                requested,
+                totalAlloc,
+                totalAlloc,
+                shortage,
+                fullySourced,
+                demand.RiskLevel,
+                demand.CoverageDays,
+                allocationsA
+            ));
+        }
+
         var involvedWarehousesA = sourcedLinesOptionA
             .SelectMany(l => l.Allocations.Select(a => a.WarehouseId))
             .Distinct()
             .ToList();
 
-        var optionA = new SourcingPlanOption(
+        bool allFullySourced = sourcedLinesOptionA.All(l => l.FullySourced);
+
+        var optionA = new DemandSourcingOptionDto(
             "A",
             "Viaje Multi-Recogida Consolidado",
             splitOccurred
                 ? "El vehículo pasará recogiendo el producto por las bodegas con stock antes de proceder a la entrega."
                 : "Recogida directa en la bodega más cercana con stock completo.",
             IsRecommended: true,
+            allFullySourced,
             sourcedLinesOptionA,
             involvedWarehousesA
         );
 
-        // Opción B: Entregas Escalonadas / Parciales (si hubo división de bodegas)
-        var optionsList = new List<SourcingPlanOption> { optionA };
+        var optionsList = new List<DemandSourcingOptionDto> { optionA };
 
         if (splitOccurred)
         {
-            // En Opción B, se planifica para entregar primero lo disponible en la bodega más cercana
-            var optionB = new SourcingPlanOption(
+            var optionB = new DemandSourcingOptionDto(
                 "B",
                 "Dos Entregas Escalonadas (Mañana y Tarde)",
                 "Entrega inmediata del stock de la bodega más cercana en el primer turno, y despacho posterior del remanente desde la segunda bodega.",
                 IsRecommended: false,
-                sourcedLinesOptionA, // Mismas asignaciones pero divididas en fases operativas
+                allFullySourced,
+                sourcedLinesOptionA,
                 involvedWarehousesA
             );
             optionsList.Add(optionB);
         }
 
-        return optionsList;
+        return new DemandSourcingResult(
+            today,
+            sourceKind,
+            _options.WarehouseSafetyStockPct,
+            allFullySourced,
+            sourcedLinesOptionA,
+            optionsList
+        );
     }
 }

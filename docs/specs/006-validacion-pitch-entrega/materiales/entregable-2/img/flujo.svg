@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="560" viewBox="0 0 1600 560" font-family="DejaVu Sans">
+  <defs>
+    <marker id="a" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#94A3B8"/></marker>
+    <marker id="o" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#EA601F"/></marker>
+  </defs>
+  <rect width="1600" height="560" fill="#ffffff"/>
+  <!-- franjas de etapa -->
+  <rect x="20" y="20" width="560" height="44" rx="8" fill="#E0F7FB"/><text x="300" y="50" text-anchor="middle" font-size="22" font-weight="bold" fill="#007C92">1 · ANTICIPAR</text>
+  <rect x="600" y="20" width="560" height="44" rx="8" fill="#F1F8D9"/><text x="880" y="50" text-anchor="middle" font-size="22" font-weight="bold" fill="#5E7300">2 · DECIDIR</text>
+  <rect x="1180" y="20" width="400" height="44" rx="8" fill="#FDEBE2"/><text x="1380" y="50" text-anchor="middle" font-size="22" font-weight="bold" fill="#B4430F">3 · DEMOSTRAR</text>
+  <!-- nodos -->
+  <g font-size="19" text-anchor="middle" fill="#2D3748">
+    <!-- 1 datos -->
+    <circle cx="110" cy="190" r="70" fill="#00A7C4"/>
+    <g fill="#fff"><ellipse cx="110" cy="165" rx="30" ry="10"/><rect x="80" y="165" width="60" height="45"/><ellipse cx="110" cy="210" rx="30" ry="10"/></g>
+    <ellipse cx="110" cy="182" rx="30" ry="10" fill="none" stroke="#00A7C4" stroke-width="3"/><ellipse cx="110" cy="198" rx="30" ry="10" fill="none" stroke="#00A7C4" stroke-width="3"/>
+    <text x="110" y="295" font-weight="bold">Datos</text><text x="110" y="320">stock y consumo</text>
+    <!-- 2 riesgo -->
+    <circle cx="300" cy="190" r="70" fill="#00A7C4"/>
+    <polygon points="300,148 342,222 258,222" fill="#fff"/><rect x="296" y="168" width="8" height="30" fill="#00A7C4"/><circle cx="300" cy="210" r="5" fill="#00A7C4"/>
+    <text x="300" y="295" font-weight="bold">Riesgo</text><text x="300" y="320">días de cobertura</text>
+    <!-- 3 bodega -->
+    <circle cx="490" cy="190" r="70" fill="#00A7C4"/>
+    <polygon points="450,180 490,152 530,180" fill="#fff"/><rect x="455" y="180" width="70" height="44" fill="#fff"/><rect x="478" y="196" width="24" height="28" fill="#00A7C4"/>
+    <text x="490" y="295" font-weight="bold">Stock por bodega</text><text x="490" y="320">origen sugerido</text>
+    <!-- 4 vehiculo -->
+    <circle cx="690" cy="190" r="70" fill="#9EC200"/>
+    <rect x="645" y="168" width="58" height="38" rx="4" fill="#fff"/><path d="M703,178 h22 l14,16 v12 h-36 z" fill="#fff"/><circle cx="662" cy="212" r="9" fill="#2D3748"/><circle cx="722" cy="212" r="9" fill="#2D3748"/>
+    <text x="690" y="295" font-weight="bold">Vehículo</text><text x="690" y="320">capacidad y costo</text>
+    <!-- 5 ruta -->
+    <circle cx="880" cy="190" r="70" fill="#9EC200"/>
+    <path d="M845,215 C870,140 890,240 915,165" stroke="#fff" stroke-width="7" fill="none"/><circle cx="845" cy="215" r="9" fill="#fff"/><circle cx="915" cy="165" r="11" fill="#EA601F"/>
+    <text x="880" y="295" font-weight="bold">Ruta priorizada</text><text x="880" y="320">críticos primero</text>
+    <!-- 6 aprobacion -->
+    <circle cx="1070" cy="190" r="70" fill="#9EC200"/>
+    <circle cx="1070" cy="170" r="17" fill="#fff"/><path d="M1038,222 a32,26 0 0 1 64,0 z" fill="#fff"/><circle cx="1098" cy="214" r="15" fill="#2D3748"/><path d="M1090,214 l6,6 l10,-12" stroke="#fff" stroke-width="4" fill="none"/>
+    <text x="1070" y="295" font-weight="bold">Aprobación</text><text x="1070" y="320">humana</text>
+    <!-- 7 QR -->
+    <circle cx="1270" cy="190" r="70" fill="#EA601F"/>
+    <g fill="#fff"><rect x="1240" y="160" width="24" height="24"/><rect x="1276" y="160" width="24" height="24"/><rect x="1240" y="196" width="24" height="24"/><rect x="1278" y="198" width="8" height="8"/><rect x="1292" y="208" width="8" height="12"/><rect x="1278" y="212" width="8" height="8"/></g>
+    <g fill="#EA601F"><rect x="1247" y="167" width="10" height="10"/><rect x="1283" y="167" width="10" height="10"/><rect x="1247" y="203" width="10" height="10"/></g>
+    <text x="1270" y="295" font-weight="bold">Despacho con QR</text><text x="1270" y="320">custodia por caja</text>
+    <!-- 8 recepcion -->
+    <circle cx="1470" cy="190" r="70" fill="#EA601F"/>
+    <rect x="1446" y="148" width="48" height="84" rx="8" fill="#fff"/><path d="M1456,192 l10,10 l18,-22" stroke="#EA601F" stroke-width="6" fill="none"/>
+    <text x="1470" y="295" font-weight="bold">Recepción</text><text x="1470" y="320">con o sin señal</text>
+  </g>
+  <!-- flechas -->
+  <g stroke="#94A3B8" stroke-width="4" marker-end="url(#a)">
+    <line x1="184" y1="190" x2="224" y2="190"/><line x1="374" y1="190" x2="414" y2="190"/><line x1="564" y1="190" x2="614" y2="190"/>
+    <line x1="764" y1="190" x2="804" y2="190"/><line x1="954" y1="190" x2="994" y2="190"/><line x1="1144" y1="190" x2="1194" y2="190"/><line x1="1344" y1="190" x2="1394" y2="190"/>
+  </g>
+  <!-- retroalimentacion -->
+  <path d="M1470,340 C1470,420 1400,450 1300,450 L210,450 C140,450 110,420 110,345" stroke="#94A3B8" stroke-width="3" stroke-dasharray="10 8" fill="none" marker-end="url(#a)"/>
+  <text x="470" y="440" text-anchor="middle" font-size="18" fill="#64748B">lo recibido actualiza el stock y el consumo</text>
+  <!-- incidente -->
+  <rect x="770" y="470" width="220" height="56" rx="28" fill="#fff" stroke="#EA601F" stroke-width="3"/>
+  <text x="880" y="505" text-anchor="middle" font-size="19" font-weight="bold" fill="#B4430F">Cierre vial / retraso</text>
+  <path d="M880,470 L880,345" stroke="#EA601F" stroke-width="3" marker-end="url(#o)"/>
+  <text x="895" y="395" font-size="16" fill="#B4430F">replanifica</text>
+  <!-- agente -->
+  <rect x="380" y="90" width="840" height="0" />
+  <text x="880" y="105" text-anchor="middle" font-size="16" fill="#64748B">Agente (n8n + DeepSeek) elige qué consultar y explica · el motor determinista calcula</text>
+</svg>

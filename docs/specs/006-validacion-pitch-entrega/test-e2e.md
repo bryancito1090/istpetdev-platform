@@ -20,6 +20,7 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 | E2E-05 | Auditoría de cada cifra y cita | CE-06 | sí |
 | E2E-06 | Racha de diez y dos sin wifi | CE-04/05 | sí |
 | E2E-07 | Congelamiento y paquete | CE-07/08 | sí |
+| E2E-08 | Cadena E2E: pedido → stock bodega → vehículo → ruta con hora límite → costo → n8n | Issue #207 | sí |
 
 ### E2E-01 — Kit utilizable
 
@@ -80,6 +81,67 @@ Estos E2E son ensayos documentales y cronometrados ante personas, no pruebas aut
 **Resultado:** una sola versión entregable con siete componentes y vínculos de evidencia, copia local legible y hora de congelamiento. Si el formato no fue confirmado, CE-07 permanece pendiente hasta recibir instrucción oficial. **Evidencia:** manifiesto, hashes, registro de entrega y tag.
 
 **Estado al 14-oct-2026 16:00 (fase final):** sin ejecutar. [Manifiesto](manifiesto-paquete.md) abierto; editable y PDF provisionales con SHA-256; no hay tag `pre-evento`, video, congelamiento ni entrega. O-06 está pendiente, así que no hay canal para entregar.
+
+### E2E-08 — Flujo de punta a punta: propuesta única por prioridad, bodega, vehículo, hora límite y explicación verificable (Issue #207)
+
+Lista de verificación técnica y operativa para la integración de punta a punta: **pedido → stock por bodega → vehículo → ruta priorizada con hora límite → costo explicado → n8n explica sin inventar cifras**. Se ejecuta contra `develop` una vez que los PRs de #193 y #194 estén fusionados.
+
+#### 1. Prerrequisitos de integración en `develop`
+- [ ] PR de #193 fusionado en `develop` (parámetro opcional `CriticalDeadlineLocal` en motor y controlador).
+- [ ] PR de #194 fusionado en `develop` (endpoints de consulta de stock por bodega y disponibilidad de vehículos).
+- [ ] Entorno local o de pruebas levantado con backend .NET y base de datos con fixtures `demo-region`.
+
+#### 2. Pasos de la lista de verificación (Checklist)
+
+##### Fase A: Pedido y Prioridad
+- [ ] **A.1 Creación/Recepción del pedido:** El pedido (`DeliveryOrder`) contiene punto de destino, SKU, cantidad requerida y nivel de prioridad (`Critical`, `High`, `Normal`).
+- [ ] **A.2 Ventana de servicio:** Si el pedido es crítico (ej. hospital o quirófano), cuenta con criticidad alta o ventana horaria matutina exigible.
+
+##### Fase B: Stock por Bodega (FEFO y Seguridad)
+- [ ] **B.1 Consulta de stock:** El endpoint `/api/v1/warehouses/stock` (o similar de #194) retorna el inventario real desagregado por bodega física y lote.
+- [ ] **B.2 Asignación y frescura:** La asignación respeta política FEFO (vencimiento próximo primero) y reserva el stock de seguridad configurado.
+- [ ] **B.3 Manejo de faltante:** Si una bodega no cuenta con inventario suficiente, se propone bodega alternativa o se marca faltante explícito; el sistema **nunca** inventa stock disponible.
+
+##### Fase C: Selección de Vehículo Adecuado
+- [ ] **C.1 Filtrado de flota:** Se consultan los vehículos activos en la bodega origen (`GET /api/v1/vehicles`).
+- [ ] **C.2 Validación de capacidades:** Se verifica que el peso total (kg) y volumen (m³) de la carga asignada no superen la capacidad máxima del vehículo (`MaxWeightKg`, `MaxVolumeM3`).
+- [ ] **C.3 Costo base y jornada:** Se asocian las tarifas de costo por km y costo por hora configuradas para el vehículo, así como el límite máximo de jornada laboral (ej. 8 horas).
+
+##### Fase D: Ruta Priorizada con Hora Límite (#193)
+- [ ] **D.1 Invocación con parámetro:** Se solicita la planificación (`POST /api/v1/route-plans`) enviando el campo opcional `CriticalDeadlineLocal` (ej. `"11:00"`).
+- [ ] **D.2 Cumplimiento en críticos:** Las paradas con riesgo Crítico o criticidad de punto alta quedan programadas con hora estimada de llegada (`EstimatedArrivalLocal`) anterior o igual a la hora límite especificada.
+- [ ] **D.3 Conservación en no críticos:** Las paradas normales o de riesgo bajo/medio conservan sus ventanas horarias habituales sin compresión innecesaria.
+- [ ] **D.4 Imposibilidad física:** Si un punto crítico no puede alcanzarse antes de la hora límite sin violar jornada o capacidad, queda clasificado como **no atendido** con motivo explícito `time_window`, sin que el algoritmo corrompa las restricciones.
+- [ ] **D.5 Comportamiento base:** Si se omite `CriticalDeadlineLocal`, el motor produce exactamente el plan estándar ordenado por costo y factibilidad.
+
+##### Fase E: Costo Explicado y Hechos Estructurados (`facts`)
+- [ ] **E.1 Métricas físicas y monetarias:** El plan generado expone kilómetros totales, tiempo en tránsito, tiempo de servicio y costo total en USD.
+- [ ] **E.2 Costo de priorizar:** Se calculan y contrastan las métricas del plan con hora límite frente al plan sin hora límite (diferencial de kilómetros, sobrecosto y paradas atendidas).
+- [ ] **E.3 Hechos deterministas:** La respuesta del motor incluye el bloque `facts` estructurado con los valores calculados que alimentan las explicaciones.
+
+##### Fase F: n8n y Asistente con IA sin Cifras Inventadas (#195/#197)
+- [ ] **F.1 Consulta de herramientas:** El workflow de n8n / agente IA consume los endpoints autorizados de la API pasando la cabecera `X-Agent-Run-Id`.
+- [ ] **F.2 Explicación grounded:** El texto generado por el LLM describe la decisión utilizando **únicamente** los datos y números presentes en `facts` (cobertura, días, horas, kilómetros y costos).
+- [ ] **F.3 Validación anti-alucinación:** Cualquier cifra, porcentaje de ahorro o costo no respaldado en `facts` provoca el descarte del texto y la activación inmediata de la plantilla determinista.
+- [ ] **F.4 Límite de latencia y fallback:** Si n8n o la IA tardan más de 10 segundos o responden con error HTTP, la API devuelve en fallback la propuesta determinista con explicación por plantilla.
+
+#### 3. Matriz de Asignación ante Fallos o Incidencias
+
+Si durante la ejecución de esta lista algún paso no se cumple, se abre un issue nuevo con etiqueta de semáforo (🔴 crítico, 🟡 medio, 🟢 bajo) y se asigna inmediatamente al responsable técnico correspondiente:
+
+| Componente afectado | Archivos / Rutas clave | Responsable GitHub |
+|---|---|---|
+| Motor de rutas, hora límite y controladores | `Planning/RoutePlanner.cs`, `Planning/RouteFeasibility.cs`, `RoutePlansController.cs` | `@AnthonyPilatasig` |
+| Endpoints de stock, consultas de flota y n8n | `Controllers/WarehousesController.cs`, `automation/n8n/*`, servicios de stock | `@bryancito1090` |
+| Interfaz web (Rutas, paneles de stock) y PWA móvil | `src/frontend/src/app/pages/rutas/*`, PWA de campo | `@AlexanderMartinez0410` |
+| Infraestructura, Docker, base de datos y despliegue | `infra/*`, migraciones, configuración de entorno | `@JorgeDoicela` |
+| Coordinación general, matriz de afirmaciones y pitch | `docs/specs/006-*`, `docs/boveda/07 Demo/*` | `@JosephBano` |
+
+#### 4. Registro de Ejecución
+- **Fecha y hora:** 2026-10-16, 15:10–15:30 (Guayaquil). Verificación estática y de pruebas; sin recorrido vivo panel → n8n → API.
+- **Commit evaluado:** `origin/develop` `42bd1b0` (con #193 y #194 fusionados).
+- **Resultado:** parcial. Verificados A.1–A.2, B.1–B.3, C.1, D.1–D.5 (pruebas del motor), E.1, E.3 y F.2–F.4 (pruebas existentes); parciales C.2, C.3 y E.2; pendiente F.1 (#195). Rutas reales: `GET /api/v1/logistics/stock` y `GET /api/v1/logistics/vehicles/available`. Detalle y criterios de #207 en la [evidencia de verificación](../003-agente-logistico/evidencia/2026-10-16-207-verificacion-integracion.md).
+- **Issue de seguimiento:** #207 (sigue abierto; el recorrido vivo queda para la validación del sábado 11:30).
 
 ## Estado de los criterios al 14-oct-2026 16:00
 
