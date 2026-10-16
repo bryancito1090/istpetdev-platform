@@ -18,6 +18,9 @@ export const mobileOidcConfig: PassedInitialConfig = {
     useRefreshTokenLock: true,
     disableRefreshTokenOfflineAccessScopeWarning: true,
     logLevel: LogLevel.Warn,
+    customParamsAuthRequest: {
+      lang: 'es'
+    },
     authWellknownEndpoints: {
       issuer: environment.oidc.authority,
       tokenEndpoint: `${environment.oidc.cognitoDomain}/oauth2/token`,

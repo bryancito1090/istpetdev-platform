@@ -16,6 +16,9 @@ export const webOidcConfig: PassedInitialConfig = {
     ignoreNonceAfterRefresh: true,
     disableRefreshTokenOfflineAccessScopeWarning: true,
     logLevel: LogLevel.Warn,
+    customParamsAuthRequest: {
+      lang: 'es'
+    },
     authWellknownEndpoints: {
       issuer: environment.oidc.authority,
       tokenEndpoint: `${environment.oidc.cognitoDomain}/oauth2/token`,
