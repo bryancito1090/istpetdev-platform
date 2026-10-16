@@ -405,3 +405,52 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 **Verificación:**
 - Backend: 519 de 520. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 78 de 78; lint y `build:web` sin errores.
+
+### T14 — Carga parcial según capacidad y remanente pendiente (#199, 16-oct)
+
+**Síntoma:** si la carga sugerida o pedida superaba el peso o el volumen del vehículo, la propuesta automática dejaba la parada entera en `unserved: capacity` y el asistente por pedidos confirmaba con cualquier vehículo, sin revisar capacidad, y marcaba todos los pedidos como `Planned`.
+
+**Causa** (por lectura del código; las pruebas nuevas cubren cada caso después de la corrección):
+1. `RoutePlanner` creaba la carga con toda la cantidad asignada; si no cabía, no planificaba nada de esa parada.
+2. `ReplenishmentAllocator` guardaba una asignación por punto: el segundo SKU de un mismo punto sobrescribía al primero, así que una parada nunca llevaba varios productos.
+3. `POST /route-plans/confirm` tomaba el primer vehículo activo si faltaba `vehicleId`, no recalculaba cargas y marcaba `Planned` todos los pedidos. Al publicar, `OrderStopLoads` llevaba todo lo pendiente del pedido.
+
+**Contrato** (FR-24 nuevo y FR-09 precisado en `spec.md`; cuerpos en `plan.md`): por línea, `requiredQuantity` (sugerida o pedida), `quantity`/`plannedQuantity` (factible; es lo que se publica y reserva) y `pendingQuantity`. Una atención parcial es un no atendido `capacity` con `lines` y `plannedQuantity > 0`, más los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`).
+
+**Política de reparto (determinista):**
+- **Entre puntos (motor):** el orden de obligatorios de FR-08: nivel, holgura de cobertura, criticidad y código. El primero se llena antes que el siguiente.
+- **Dentro de una parada:** nivel de riesgo del SKU y luego SKU (ordinal). Una línea que no cabe completa se recorta a unidades base enteras.
+- **Entre vehículos:** si la parada no cabe completa, el remanente va al vehículo que lleva más unidades, luego al de menor costo adicional y luego al de menor código; un punto no se repite en la misma ruta.
+- **Asistente por pedidos (`confirm`):** criticidad del punto, fecha requerida, número de pedido y SKU.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `plan.md` | Spec | FR-24 nuevo, FR-09 precisado, contrato de `POST /route-plans` y `confirm` | Contrato antes de implementar | — | Hecho |
+| `PlanModels.cs` | Aplicación | `StopLoad.RequiredQuantity`/`PendingQuantity`, `PendingLine`, `Unserved.Lines` | Exponer requerida, planificada y pendiente | Todos | Hecho |
+| `ReplenishmentAllocator.cs` | Aplicación | Una línea por punto y producto (`Lines`) | El segundo SKU sobrescribía al primero | Varios productos | Hecho |
+| `RoutePlanner.cs` | Aplicación | Parada con todas sus líneas; `FitLoads` y `SplitByCapacity`; pendientes y hechos por línea | Planificar lo factible y conservar el remanente | 150 u de 1 kg con vehículo de 100 kg | Hecho |
+| `OrderStopLoads.PlanForVehicleAsync` | Aplicación | Recalcula cargas desde pedidos, limita por capacidad, valida pedidos y paradas | No confiar en el panel | Confirm manipulado | Hecho |
+| `RoutePlansController` (`CreatePlan`, `confirm`, `GetById`) | API | Rutas con carga y capacidad; `confirm` exige `vehicleId`, guarda cargas por parada, suma `PlannedQuantity` y solo marca `Planned` sin remanente; detalle con `loadQuantities` | #199 y validación de `confirm` (relacionado con #201) | Confirm sin vehículo / sin capacidad | Hecho |
+| `SourcingService.cs` | Aplicación | Ofrece solo `Requested − Planned` | Segunda planificación del remanente | Segundo confirm | Hecho |
+| `api.service.ts`, `rutas.page.ts` | Web | Carga parcial en la parada, en los avisos de generar y confirmar; vehículo descartado por peso/volumen seleccionable como «CARGA PARCIAL» | Mostrar requeridas, planificadas y pendientes | Panel | Hecho |
+| `agente-logistico-v1.md`, `workflows/*.json` | n8n | Regla 8: explicar la carga parcial con las cifras de la API | El contrato de respuesta cambió | Vigía | Hecho |
+| `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `PartialLoadTests.cs`, `api.service.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| 150 u de 1 kg, un vehículo de 100 kg, stock suficiente (motor) | Carga ≤ 100 kg; 100 planificadas, 150 requeridas, 50 pendientes; no atendido `capacity` con la línea | Pasa |
+| Igual con dos vehículos de 100 kg | 100 + 50 en dos rutas, nada pendiente | Pasa |
+| Dos puntos de 150 u, un vehículo de 100 kg, criticidad alta frente a media | El de criticidad alta recibe 100 aunque su código sea mayor; el otro queda pendiente completo | Pasa |
+| Dos productos (uno pesado, otro voluminoso), 200 kg y 5 m³ | Peso y volumen respetados (150 + 48), 102 pendientes; mismo resultado en dos corridas | Pasa |
+| `confirm` de un pedido de 150 u con vehículo de 100 kg | 201 con `partial`, 100/50; pedido sigue `Pending`; la publicación crea y reserva 100 | Pasa |
+| Segundo `confirm` del mismo pedido | Planifica 50, pedido `Planned`; un tercero responde 422 | Pasa |
+| `confirm` sin `vehicleId` o con vehículo desconocido | 400 / 422, no crea plan | Pasa |
+| `confirm` con pedido sin parada de entrega o sin ninguna unidad que quepa | 422, pedido sin cambios | Pasa |
+
+**Pendiente:**
+- El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado. Es comportamiento previo, no lo introduce este cambio; queda para decidir.
+- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente: son opcionales y se insertan completas o no se insertan.
+- Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido. Hoy tampoco existe ese flujo para el estado `Planned`.
+- `POST /route-plans/suggest` sigue calculando la carga con lo pedido (ahora el remanente) y `VehicleMatcher` marca los vehículos que no alcanzan; la validación de capacidad en `suggest` corresponde a #201.
