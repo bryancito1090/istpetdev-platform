@@ -580,3 +580,9 @@ La rama `feature/115-receptor-recepcion-real` integra captura parcial del Recept
 Fuente: revisión del primer entregable del issue #162 (rama `fix/162-estados-bulto-custodia`, commits `fb4d877`, `ed3a925`, `45d73e5`) con correcciones bloqueantes del coordinador. Se alinean [[Contratos API y eventos]], [[Movil offline y sincronizacion]], [[Usuarios y flujos]] y [[Hechos canonicos]] con: recibo final único por entrega y cobertura exacta (parcial terminal, `ALREADY_RECEIVED` antes de versión), idempotencia por cuenta+operationId con validación de recurso en replay legado, despacho que cubre todos los bultos y lo planificado con ledger por línea-lote, y `advance` como simulación que respeta las guardas y atribuye las transiciones a la cuenta de demo. Verificación local en PostgreSQL efímero; sin ensayo físico, sin despliegue y sin mutar base compartida.
 
 Verificación documental: **87 notas Markdown**, **932 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 15-oct-2026 — Dataset y cifras del simulador de 90 días (issue #165)
+
+Fuente: resolución del issue #165 (rama `feature/165-dataset-simulador-90-dias`). Se agrega [[Cifras del simulador 90 dias]] (07 Demo) con los resultados canónicos medidos en 12 corridas comparativas (3 políticas × 3 semillas base y 1 adversa) sobre el fixture nacional sintético `national-v1` (80 puntos, 6 regiones, 90 días). Se actualizan [[Guion del pitch]] y [[Dataset y escenarios]] enlazando las cifras oficiales del simulador. Se habilita aislamiento de base de datos para simulación en backend y Docker Compose, y se verifica la importación limpia del dataset reproducible desde `/datos`.
+
+Verificación documental: **88 notas Markdown**, **941 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
