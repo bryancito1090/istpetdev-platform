@@ -45,13 +45,14 @@ Validar esta tabla contra el modelo actual y registrar con precisión cuándo ca
 - [x] Delegación aceptada por OpenCode.
 - [x] Contrato y documentación actualizados (bóveda, task 004 y este plan).
 - [x] Backend y PWA implementados (commits `2f4953f` y `0c7c431`).
-- [x] Pruebas locales y verificación de repositorio completadas; revisión del coordinador pendiente.
+- [x] Correcciones bloqueantes de revisión aplicadas: recibo final único antes de versión, recurso del replay legado, matriz completa, despacho completo con ledger por línea-lote, consumidores y PWA monotónica (commits `fb4d877`, `ed3a925`, `45d73e5`).
+- [x] Pruebas locales y verificación de repositorio completadas (505/505 backend; shared 24, web 75, mobile 87); revisión del coordinador pendiente.
 - [ ] PR sin conflictos y checks aprobados.
 - [ ] Merge a develop e issue cerrado.
 
 ## Resultado de la implementación — 15 de octubre de 2026
 
-La cadena `Sealed → Dispatched → InTransit → Delivered → Received/Partial` quedó implementada con `pickup`/`deliver` del conductor, recepción blindada del Receptor, outbox durable para los comandos y traza pública con hitos reales. La evidencia de comandos, resultados y límites está en [evidencia-issue-162.md](evidencia-issue-162.md); la bóveda quedó sincronizada en `Contratos API y eventos`, `Movil offline y sincronizacion`, `Usuarios y flujos` y `Hechos canonicos`.
+La cadena `Sealed → Dispatched → InTransit → Delivered → Received/Partial` quedó implementada con `pickup`/`deliver` del conductor, recepción blindada del Receptor, outbox durable para los comandos y traza pública con hitos reales. Tras la revisión del primer entregable se endureció a **un solo recibo final por entrega** (parcial terminal, cobertura exacta, `ALREADY_RECEIVED` antes de versión), despacho que cubre todos los bultos y lo planificado con ledger por línea-lote, idempotencia por operación con validación de recurso en replay legado y matriz completa de transiciones inválidas. La evidencia de comandos, resultados y límites está en [evidencia-issue-162.md](evidencia-issue-162.md); la bóveda quedó sincronizada en `Contratos API y eventos`, `Movil offline y sincronizacion`, `Usuarios y flujos`, `Hechos canonicos` y `Fuente y control documental`.
 
 Sin migración de estados (los campos string bastan); la única migración, `CustodyChainStates`, corrige el índice único de `CustodyEvent` para operaciones con varios bultos. No se abrió PR ni se cerró el issue: quedan a cargo del coordinador.
 

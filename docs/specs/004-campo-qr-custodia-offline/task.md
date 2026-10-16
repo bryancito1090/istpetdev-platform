@@ -242,17 +242,20 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet test tests/IstpetDev.Tests -c Rel
 
 **Problema comprobado.** El receptor podía recibir un bulto que el conductor nunca recogió ni entregó (`CreateReceiptCoreAsync` no validaba el estado de la entrega y la ruta del Receptor pasaba `requireAssignedDriver: false`), y el conductor no tenía estados intermedios de custodia (`Draft → Dispatched → Delivered`).
 
-**Implementación:**
+**Implementación (revisión de la segunda ronda de revisión, 15-oct):**
 
-- Máquina de estados `Sealed → Dispatched → InTransit → Delivered → Received/Partial` en `src/Domain/Common/CustodyStates.cs`, con comandos `pickup`/`deliver` del conductor asignado y recepción final del Receptor (spec 014).
-- Guardas y códigos estables: `NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`, `HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`, `RECEIPT_REQUIRES_RECEIVER`; validación de **todos** los bultos y de la asignación (la ausencia no concede permiso).
-- Idempotencia por `(cuenta, acción, operationId)` con replay tras avanzar el estado; bloqueo de organización + transacción para concurrencia real; `Version` como red de seguridad.
-- PWA con outbox `commandKind` para recoger/entregar, estados de espera por rol y mensajes honestos; `/receipt/:deliveryId` solo para Conductor.
+- Máquina de estados `Sealed → Dispatched → InTransit → Delivered → Received/Partial` en `src/Domain/Common/CustodyStates.cs`, con comandos `pickup`/`deliver` del conductor asignado y recepción final del Receptor (spec 014). `Received` y `Partial` son terminales: un recibo previo, incluso con estado legado `Delivered`, responde 409 `ALREADY_RECEIVED` antes de validar la versión.
+- Recibo **único por entrega completa**: cobertura exacta de todas las líneas despachadas (sin omisiones, duplicados ni lotes ajenos; `aceptada + rechazada = DispatchedQuantity`), 422 `RECEIPT_COVERAGE_MISMATCH`/`QUANTITY_EXCEEDED` sin efectos y saldo de vehículo suficiente (409 `INSUFFICIENT_VEHICLE_STOCK`). `GET /receiver/handling-units/{unitId}` muestra todos los bultos y líneas.
+- Preparación y despacho atómicos con el mismo lock; el despacho exige todos los bultos y cobertura exacta de lo planificado (409 `INCOMPLETE_HANDLING_UNITS`), ledger y saldos agrupados por línea-lote con caché en memoria (evita el UNIQUE de saldo duplicado).
+- Guardas y códigos estables: `NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`, `HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`, `RECEIPT_REQUIRES_RECEIVER`, `INCOMPLETE_HANDLING_UNITS`, `INSUFFICIENT_VEHICLE_STOCK`, `RECEIPT_COVERAGE_MISMATCH`, `INVALID_OPERATION_ID`; validación de **todos** los bultos y de la asignación (la ausencia no concede permiso).
+- Idempotencia por `(cuenta, operationId)` sin `ActionCode`: UUID reutilizada en otra acción, entrega o cuerpo responde 409 `IDEMPOTENCY_CONFLICT` (sin 23505/500); `Guid.Empty` → 422; el replay de un hash legado valida el `deliveryId` de la respuesta. Bloqueo de organización + transacción para concurrencia real.
+- PWA con outbox `commandKind` para recoger/entregar, estado monotónico (snapshot + comandos confirmados + bultos) y mensajes honestos; `/receipt/:deliveryId` solo para Conductor; el receptor ve el alcance de entrega completa.
+- Consumidores alineados: `RiskCalculator` cuenta `Delivered` pendiente y excluye recibidas; `RoutePublisher`/`Replanner` bloquean `InTransit`/`Delivered`; la web atribuye la recepción al Receptor (`registeredByName`).
 - Migración `20261015234714_CustodyChainStates`: índice de `CustodyEvent` no único (una operación por bulto).
 
-**Pruebas:** `CustodyChainHttpTests` (6 pruebas), `DemoAdvanceTests` (1), ajustes en recepción, novedades, capturas rechazadas, reimportación y migraciones; suite completa 462/462. `npm run check`, `npm run test:frontend`, `npm run audit:check`, `check_vault.py` y `branch-policy.sh` en verde.
+**Pruebas:** `CustodyChainHttpTests` (11 pruebas), `CustodyGuardsHttpTests` (4 pruebas + matriz generada de 30 transiciones inválidas con prepare/dispatch incluidos), `DemoAdvanceTests` (1), `RiskPendingDeliveriesTests` y regresiones de replan/revert; suite completa 486/486 en Release. `npm run check`, `npm run test:frontend`, `npm run audit:check`, `check_vault.py` y `check-additive-migrations.py` en verde.
 
-**Límite conocido.** Falta el ensayo físico (teléfono, modo avión, QR del jurado) y la validación con cuentas reales; el recorrido del planificador depende de #160/PR #159 (abierto), verificado aquí con asignación explícita por API. Sin PR, merge ni cierre de issue: a cargo del coordinador.
+**Límite conocido.** Falta el ensayo físico (teléfono, modo avión, QR del jurado) y la validación con cuentas reales; el recorrido del planificador depende de #160/PR #159 (abierto), verificado aquí con asignación explícita por API. El replay legado solo puede validar recurso, no el cuerpo histórico completo (no se guardó). Sin PR, merge ni cierre de issue: a cargo del coordinador.
 
 **Registro de cambios de T13:**
 

@@ -56,7 +56,7 @@ Los roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14, am
 
 ## Estados
 
-Entrega: borrador → despachada (Bodega) → en tránsito (el Conductor recoge) → entregada (el Conductor entrega en el punto) → recibida parcial/completa (el Receptor registra el único recibo final) → conciliada. Puede cancelarse antes de despacho; después se registra devolución u otra acción explícita. Bulto: sellado → despachado → en tránsito → entregado → recibido/parcial. Detalle y códigos en `03 Arquitectura/Contratos API y eventos.md` (issue #162).
+Entrega: borrador → despachada (Bodega) → en tránsito (el Conductor recoge) → entregada (el Conductor entrega en el punto) → recibida parcial/completa (el Receptor registra el único recibo final, que cubre toda la entrega) → conciliada. Parcial y completa son terminales: no se recibe dos veces y lo rechazado queda bajo custodia del conductor hasta su devolución explícita a bodega. Puede cancelarse antes de despacho; después se registra devolución u otra acción explícita. Bulto: sellado → despachado → en tránsito → entregado → recibido/parcial. Detalle y códigos en `03 Arquitectura/Contratos API y eventos.md` (issue #162).
 
 En el dispositivo: pendiente → enviando → aceptada, con alternativas error recuperable o conflicto. «Guardado en el teléfono» no equivale a «aceptado por el servidor».
 
