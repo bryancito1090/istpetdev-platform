@@ -771,3 +771,17 @@ expuesto no aplican a este recorrido. Las pruebas de autorización y scans
 vigentes se reutilizan en lo que no cambió; el runtime ESC-19 sigue pendiente
 hasta la prueba real. No se promueve a main ni se modifica la instancia
 productiva al ejecutar esta validación.
+## Issue #194 — consultas de abastecimiento — 16-oct-2026
+
+- [x] Revisar código, issue y contratos; preparar el
+  [plan de implementación y entrega](plan-194-consultas-abastecimiento.md).
+- [x] Implementar los tres endpoints de lectura en un controlador nuevo (`LogisticsQueriesController`),
+  reutilizando `SourcingService` y `VehicleMatcher`, sin editar `RoutePlansController` (#201).
+- [x] Verificar RBAC humano/M2M, stock de seguridad, fecha operativa y ausencia
+  de efectos logísticos con integración sobre demo-region/PostGIS descartable (`LogisticsQueriesTests` 8/8, suite backend 528/528, `npm run check`, `npm run audit:check`).
+- [x] Actualizar Contratos API y eventos, Fuente y control documental y registrar
+  [evidencia real de pruebas y prelaunch](evidencia/2026-10-16-194-consultas-abastecimiento.md).
+- [ ] Publicar PR a develop, resolver conflictos, verificar CI/revisión e integrar
+  solo si cumple los criterios y las protecciones del repositorio.
+
+Estado de esta entrada: código, pruebas de integración (`8/8` en `LogisticsQueriesTests` y `528/528` en suite completa), `npm run check`, `npm run audit:check`, `check_vault.py` (`102` notas, `1092` enlaces, `0` errores) y documentación cerrados localmente en `feature/194-consultas-abastecimiento-agente`; pendiente publicación de PR a `develop`, verificación de CI remoto, revisión/aprobación e integración. No incluye despliegue ni #195/#196.

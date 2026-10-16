@@ -1,0 +1,49 @@
+# Evidencia de implementación y validación local — Issue #194
+
+- **Fecha:** 2026-10-16
+- **Issue:** [#194 — Consultas para el agente de stock por bodega, origen sugerido y vehículos disponibles](https://github.com/bryancito1090/istpetdev-platform/issues/194)
+- **Rama:** `feature/194-consultas-abastecimiento-agente`
+- **Base de partida:** `origin/develop` (`1dcfb51`)
+- **Plan de referencia:** `docs/specs/003-agente-logistico/plan-194-consultas-abastecimiento.md`
+
+## 1. Registro de revisión `istpetdev-prelaunch`
+
+| Dimensión | Estado | Detalle |
+|---|---|---|
+| **Alcance del ensayo** | Local aislado | `WebApplicationFactory<Program>` (`ApiFactory`) sobre contenedor descartable PostgreSQL 16 + PostGIS (`postgis/postgis:16-3.4`) con fixture `demo-region` (DemoCore, 36 tablas núcleo). Sin conexiones a Amazon RDS, Cognito real, OSRM público ni n8n/LLM. |
+| **Evidencia vigente reutilizada** | Reutilizada | Suite existente de autenticación M2M (`AutomationAuthTests`), trazabilidad (`AgentTraceabilityTests`) y ruteo por pedidos (`OrderBasedRoutingTests`) ejecutada y aprobada en la corrida completa (`528/528`). |
+| **RBAC y scopes M2M** | Verificado (PASS) | `[Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]` en `LogisticsQueriesController`. Probados `Gerencia` (`200`), `Planificador` (`200`), `Automatizacion` M2M con `istpetdev-api/automation` y `token_use=access` (`200`), anónimo (`401`), roles restantes (`Bodega`, `Conductor`, `Receptor`, `Auditor` → `403`), M2M sin scope / cliente no permitido / `id_token` / cuenta inactiva o rol distinto (`403`). |
+| **Solo lectura logística y trazabilidad** | Verificado (PASS) | Consultas con `AsNoTracking()` y `IRiskCalculator.CalculateAsync(persistSnapshots: false)`. Comprobada invariancia exacta de conteos, IDs y valores de `DeliveryOrder`, `DeliveryOrderLine`, `RoutePlan`, `RouteStop`, `RouteStockReservation`, `InventoryBalance`, `StockMovement`, `Delivery` y `RiskSnapshot` antes y después de consultar y repetir. `X-Agent-Run-Id` añade trazas en `AgentRun.ToolCallsJson` solo para `Automatizacion`. |
+| **Aislamiento de cambios** | Verificado (PASS) | `src/Api/Controllers/RoutePlansController.cs` permanece intacto (reservado a #201). Sin archivos de configuración sensibles ni secretos en el árbol de Git. |
+| **No aplica en este alcance** | N/A | TLS VerifyFull contra RDS, CORS/CSP/HSTS de frontal público, rate limiting de endpoint público QR y despliegue en EC2/ECS no aplican a esta validación local en contenedor descartable. |
+| **Pendientes fuera de #194** | Pendiente en #195/#196 | Cableado de herramientas HTTP en workflows de n8n (`#195`) y prueba E2E con n8n/DeepSeek real (`#196`). |
+
+## 2. Cobertura de la matriz de aceptación (`LogisticsQueriesTests`)
+
+| Prueba de integración | Casos verificados | Resultado |
+|---|---|---|
+| `GetStock_AppliesFormulaSafetyOnceFefoAndFilters` | Fórmula `netUsable = sum(max(0, onHand - reserved))`, `safetyStockPct = 10%` aplicado **una sola vez por bodega y producto**, orden FEFO (`ExpiresOn` ascendente, `null` al final), exclusión de lotes bloqueados y vencidos hoy (`ExpiresOn <= operationalDate`), inclusión de bodega activa vacía (`BOD-SUR`) con totales `0` y filtro por `warehouseId` | PASS |
+| `PostSourcing_ByOrderIds_SharesSafetyStockBudget_HandlesShortages_AndPreservesSuggest` | Sourcing de 1 y varios pedidos a través de múltiples bodegas (`BOD-SUR` más cercana a `HOS-S01`, `BOD-CEN` más cercana a `HOS-N01`), presupuesto compartido por `(bodega, producto)` cuando dos pedidos compiten por el mismo lote sin sobreasignar, faltante parcial (`shortageQuantity > 0`, `fullySourced: false`) con `200 OK`, y no regresión de `POST /api/v1/route-plans/suggest` | PASS |
+| `PostSourcing_ByServicePointIds_UsesInMemoryRisks_PreservesMultipleProducts_WithoutCreatingOrders` | Cálculo en memoria (`persistSnapshots: false`), preservación de múltiples productos en riesgo para un mismo punto (`HOS-N01`), orden de urgencia (`Critico` antes que `Alto`), filtro opcional `productId`, punto sin riesgo devuelve `demands: []`, y cero `DeliveryOrder` o `RiskSnapshot` creados | PASS |
+| `GetAvailableVehicles_UsesOrganizationTimezone_FiltersPublishedOnly_AndAppliesFallbackCost` | Ventana local `[00:00, 24:00)` en `America/Guayaquil` (`[05:00Z, 05:00Z + 1d)`), exclusión de vehículos con `RoutePlan` `Published` en ese día local, borde `04:59:59Z` (día previo en Quito) no bloquea, `Proposed`/`Cancelled`/`Superseded` no bloquean, inactivos excluidos, `CostPerKm` fallback (`0.85 USD/km`), `MaxVolume` nullable y `EstimatedTotalCost: null` | PASS |
+| `Validation_RejectsInvalidInputs_MissingEntities_AndCrossOrganizationIds` | `400` en UUID/fecha/JSON mal formados; `422` en `productId` faltante o vacío, ambos/ninguno de `orderIds` y `servicePointIds`, listas vacías, `Guid.Empty`, `productId` con `orderIds`, y `> 100` IDs únicos; deduplicación de IDs repetidos (`200`); `404` en IDs inexistentes, de otra organización o ubicación que no es bodega activa | PASS |
+| `AccessControl_EnforcesPlanningAndM2MAutomation acrossAllThreeEndpoints` | Verificación de los 3 endpoints para `Gerencia` (`200`), `Planificador` (`200`), M2M válido (`200`), anónimo (`401`), `Bodega`/`Conductor`/`Receptor`/`Auditor` (`403`), M2M sin scope (`403`), `client_id` no permitido (`403`), `token_use=id` (`403`) y cuenta M2M degradada a rol no autorizado (`403`) | PASS |
+| `ReadOnlyAndTraceability_NeverMutatesLogisticsState_AndTracesOnlyForAutomation` | Firma completa del estado logístico idéntica antes y después de invocar y repetir las 3 consultas; `X-Agent-Run-Id` registra los 3 llamados en `AgentRun.ToolCallsJson` con actor `Automatizacion` y es ignorado con actor humano (`Planificador`) | PASS |
+| `VehiclesAvailable_RespectsFixedClockMode_AndVehicleMatcherHandlesEmptyStops` | Fecha por defecto tomada de `IOperationalClock` en modo `Fixed` (`2026-04-15`) y `MatchVehiclesAsync` con lista de paradas vacía devuelve distancia y costo `0` sin excepción | PASS |
+
+## 3. Comandos de validación ejecutados
+
+1. `dotnet test tests/IstpetDev.Tests --filter 'FullyQualifiedName~LogisticsQueriesTests'`
+   - Resultado: `Passed! - Failed: 0, Passed: 8, Skipped: 0, Total: 8, Duration: 14 s`
+2. `dotnet build IstpetDev.sln -c Release`
+   - Resultado: `Build succeeded. 0 Warning(s), 0 Error(s)`
+3. `dotnet test tests/IstpetDev.Tests -c Release --no-build`
+   - Resultado: `Passed! - Failed: 0, Passed: 528, Skipped: 0, Total: 528, Duration: 3 m 59 s`
+4. `npm run check`
+   - Resultado: `PASS` (`eslint`, `check-no-mock-login`, `dotnet build`, `shared-core`, `web`, `mobile`, `check-campo-build`)
+5. `npm run audit:check`
+   - Resultado: `PASS` (`Auditoría superada con éxito. Hallazgos cubiertos por excepciones aprobadas vigentes (7 avisos autorizados).`)
+6. `python3 docs/boveda/.github/scripts/check_vault.py`
+   - Resultado: `Resumen: 102 notas Markdown, 1092 enlaces internos, 0 errores, 4 avisos.`
+7. `git diff --check`
+   - Resultado: limpio (sin salida, código `0`).

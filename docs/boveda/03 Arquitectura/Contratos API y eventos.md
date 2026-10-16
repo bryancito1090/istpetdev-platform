@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [arquitectura, contratos]
 ---
 
@@ -52,6 +52,9 @@ tags: [arquitectura, contratos]
 | GET /api/v1/simulations/{id}/metrics         | Resultados y denominadores              |
 | POST /api/v1/automation/risk-runs            | Solicitar cálculo programado            |
 | POST /api/v1/automation/risk-explanations    | Adjuntar explicación validada           |
+| GET /api/v1/logistics/stock                  | Stock disponible por bodega y lote (#194) |
+| POST /api/v1/logistics/sourcing              | Origen sugerido sin crear pedidos ni reservas (#194) |
+| GET /api/v1/logistics/vehicles/available     | Vehículos activos sin ruta publicada en la fecha (#194) |
 
 ## Recepción offline: ejemplo de contrato
 
@@ -182,3 +185,163 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; con cualquier `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
+
+## Consultas de abastecimiento para planificación y agente (#194 — implementado y verificado localmente, 16 de octubre de 2026)
+
+El issue #194 expone tres consultas de solo lectura logística bajo `/api/v1/logistics` (`LogisticsQueriesController`), reutilizando `SourcingService` y `VehicleMatcher` sin tocar `RoutePlansController` (reservado a #201).
+
+- **Autorización común:** `[Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]` (`Gerencia`, `Planificador` o `Automatizacion` mediante JWT M2M con scope `istpetdev-api/automation`). Cualquier otro rol recibe `403 Forbidden`; sin token o con cliente/scope/cuenta inválida recibe `401`/`403`.
+- **Naturaleza de solo lectura logística y límite de frescura:** ninguna de las tres rutas crea pedidos (`DeliveryOrder`), planes (`RoutePlan`), reservas (`RouteStockReservation`), entregas (`Delivery`) ni snapshots de riesgo (`RiskSnapshot`). La cabecera `X-Agent-Run-Id` solo añade trazas de herramienta en `AgentRun.ToolCallsJson` cuando el actor es `Automatizacion`. Los datos reflejan una lectura puntual sin reserva: una publicación o despacho posterior puede consumir stock o asignar un vehículo después de consultar.
+
+| Método y ruta | Entrada | Respuesta 200 |
+|---|---|---|
+| `GET /api/v1/logistics/stock` | `productId` obligatorio (`Guid`); `warehouseId` opcional (`Guid`) | `{ operationalDate, safetyStockPct, productId, sku, productName, baseUnit, warehouses: [...] }` |
+| `POST /api/v1/logistics/sourcing` | Cuerpo JSON con exactamente uno de `orderIds` o `servicePointIds` (1–100 UUIDs únicos tras deduplicar); `productId` opcional solo con `servicePointIds` | `{ operationalDate, sourceKind, safetyStockPct, demands: [...], options: [...] }` |
+| `GET /api/v1/logistics/vehicles/available` | `date` opcional (`yyyy-MM-dd`); por defecto fecha del reloj operativo (`IOperationalClock`) | `{ operationalDate, date, timeZone, dayStartUtc, dayEndUtc, vehicles: [...] }` |
+
+### Reglas de cálculo, unidades y validación (#194)
+
+1. **Stock por bodega (`GET /api/v1/logistics/stock`):**
+   - Solo se consideran abastecibles los lotes no bloqueados (`!IsBlocked`) y no vencidos (`ExpiresOn == null || ExpiresOn > operationalDate`).
+   - Por cada bodega activa y producto (cantidades en `baseUnit` del producto): `netUsable = sum(max(0, onHand - reserved))` sobre sus lotes utilizables; `safetyStock = round(netUsable * WarehouseSafetyStockPct / 100, 3)`; `availableQuantity = max(0, netUsable - safetyStock)`.
+   - El stock de seguridad se aplica **una sola vez por bodega y producto** (nunca por lote ni por pedido). Las bodegas activas sin saldo aparecen con cantidades en `0` y lista de lotes vacía. Lotes ordenados por FEFO (`ExpiresOn` ascendente, `null` al final) y desempate por `lotCode` y `lotId`.
+2. **Origen sugerido (`POST /api/v1/logistics/sourcing`):**
+   - Usa `POST` únicamente para recibir listas de UUIDs en el cuerpo JSON; no persiste entidades logísticas.
+   - Modo `orderIds`: valida que todos los pedidos existan en la organización y reutiliza `SourcingService` conservando `orderId`, `orderNumber`, destino y producto.
+   - Modo `servicePointIds`: calcula riesgos en memoria con `IRiskCalculator.CalculateAsync(persistSnapshots: false)`, filtra los puntos solicitados (y `productId` si se indicó) con nivel `Critico`, `Alto` o `Vigilar` y `SuggestedQuantity > 0`, manteniendo múltiples productos por punto y orden de urgencia (`Critico` → `Alto` → `Vigilar`, menor `DaysCover`, mayor `SuggestedQuantity`, código de punto y SKU) sin crear pedidos de emergencia. En las líneas devueltas, `orderId` es `null`.
+   - En ambos modos, el presupuesto asignable por `(bodega, producto)` descuenta el stock de seguridad una sola vez y se comparte entre todas las demandas de la consulta, evitando sobreasignar un lote o bodega cuando varias demandas compiten. Distancias en kilómetros (`distanceKm`) y duraciones en minutos (`durationMin`) provienen de `IDistanceProvider` con clave redondeada a 6 decimales. Si el stock no alcanza, devuelve `200 OK` con asignación parcial, `shortageQuantity > 0` y `fullySourced: false`.
+3. **Vehículos disponibles (`GET /api/v1/logistics/vehicles/available`):**
+   - Resuelve la fecha consultada (`date` o `IOperationalClock.TodayAsync`) en la zona horaria operativa de la organización (`America/Guayaquil`, respaldo UTC-5) y traduce el intervalo local `[00:00:00, día siguiente 00:00:00)` a `[dayStartUtc, dayEndUtc)`.
+   - Excluye vehículos inactivos y aquellos con al menos un `RoutePlan` en estado `Published` cuyo `PlannedStartUtc` caiga en `[dayStartUtc, dayEndUtc)`. Planes en `Proposed`, `Cancelled` o `Superseded` no bloquean disponibilidad.
+   - Devuelve `vehicleId`, `code`, `maxWeight` (`kg`), `maxVolume` (`m³`, nullable), `depotLocationId`, `depotCode`, `depotName`, `costPerKm` efectivo (`Vehicle.CostPerKm ?? DefaultCostPerKm`), `costUnit: "USD/km"` y `estimatedTotalCost: null` (sin ruta no existe cotización de viaje).
+4. **Errores Problem Details (`code` estable en extensiones):**
+   - `400 Bad Request` (`INVALID_QUERY_PARAMETER`, `INVALID_REQUEST_BODY`): formato de UUID o fecha `yyyy-MM-dd` inválido, o cuerpo JSON mal formado.
+   - `422 Unprocessable Entity` (`VALIDATION_ERROR`): falta `productId` o es `Guid.Empty`; en `/sourcing`, enviar ambos `orderIds` y `servicePointIds` o ninguno, listas vacías, `Guid.Empty`, `productId` combinado con `orderIds`, o más de 100 IDs únicos tras deduplicar.
+   - `404 Not Found` (`PRODUCT_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`, `ORDER_NOT_FOUND`, `SERVICE_POINT_NOT_FOUND`): algún ID solicitado no existe en la organización o la ubicación indicada no es una bodega activa.
+
+### Ejemplos de contrato (#194)
+
+```json
+// GET /api/v1/logistics/stock?productId=01963b7e-0000-7000-8000-000000000201
+{
+  "operationalDate": "2026-04-01",
+  "safetyStockPct": 10.0,
+  "productId": "01963b7e-0000-7000-8000-000000000201",
+  "sku": "CLOR-01",
+  "productName": "Hipoclorito de sodio 5%",
+  "baseUnit": "L",
+  "warehouses": [
+    {
+      "warehouseId": "01963b7e-0000-7000-8000-000000000101",
+      "warehouseCode": "BOD-CEN",
+      "warehouseName": "Bodega Central Quito",
+      "onHandTotal": 120.000,
+      "reservedTotal": 20.000,
+      "usableBeforeSafetyTotal": 100.000,
+      "safetyStockQuantity": 10.000,
+      "availableQuantity": 90.000,
+      "lots": [
+        {
+          "lotId": "01963b7e-0000-7000-8000-000000000301",
+          "lotCode": "LOT-CLOR-2026A",
+          "expiresOn": "2026-06-15",
+          "onHandQuantity": 120.000,
+          "reservedQuantity": 20.000,
+          "netQuantity": 100.000
+        }
+      ]
+    }
+  ]
+}
+```
+
+```json
+// POST /api/v1/logistics/sourcing
+// Request: { "servicePointIds": ["01963b7e-0000-7000-8000-000000000401"] }
+{
+  "operationalDate": "2026-04-01",
+  "sourceKind": "servicePoints",
+  "safetyStockPct": 10.0,
+  "demands": [
+    {
+      "demandIndex": 0,
+      "orderId": null,
+      "orderNumber": null,
+      "servicePointId": "01963b7e-0000-7000-8000-000000000401",
+      "servicePointCode": "HOS-N01",
+      "servicePointName": "Hospital del Norte",
+      "productId": "01963b7e-0000-7000-8000-000000000202",
+      "sku": "DES-01",
+      "productName": "Desinfectante hospitalario",
+      "baseUnit": "L",
+      "requestedQuantity": 18.000,
+      "allocatedQuantity": 18.000,
+      "shortageQuantity": 0.000,
+      "fullySourced": true,
+      "riskLevel": "Alto",
+      "daysCover": 2.40,
+      "suggestedWarehouseId": "01963b7e-0000-7000-8000-000000000101",
+      "suggestedWarehouseCode": "BOD-CEN",
+      "allocations": [
+        {
+          "warehouseId": "01963b7e-0000-7000-8000-000000000101",
+          "warehouseCode": "BOD-CEN",
+          "warehouseName": "Bodega Central Quito",
+          "lotId": "01963b7e-0000-7000-8000-000000000305",
+          "lotCode": "LOT-DES-01",
+          "expiresOn": "2026-05-20",
+          "quantity": 18.000,
+          "distanceKm": 6.42,
+          "durationMin": 12.8
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "warehouseId": "01963b7e-0000-7000-8000-000000000101",
+      "warehouseCode": "BOD-CEN",
+      "warehouseName": "Bodega Central Quito",
+      "lines": [
+        {
+          "orderId": null,
+          "servicePointId": "01963b7e-0000-7000-8000-000000000401",
+          "productId": "01963b7e-0000-7000-8000-000000000202",
+          "sku": "DES-01",
+          "lotId": "01963b7e-0000-7000-8000-000000000305",
+          "lotCode": "LOT-DES-01",
+          "quantity": 18.000,
+          "distanceKm": 6.42,
+          "durationMin": 12.8
+        }
+      ],
+      "totalDistanceKm": 6.42
+    }
+  ]
+}
+```
+
+```json
+// GET /api/v1/logistics/vehicles/available?date=2026-04-01
+{
+  "operationalDate": "2026-04-01",
+  "date": "2026-04-01",
+  "timeZone": "America/Guayaquil",
+  "dayStartUtc": "2026-04-01T05:00:00Z",
+  "dayEndUtc": "2026-04-02T05:00:00Z",
+  "vehicles": [
+    {
+      "vehicleId": "01963b7e-0000-7000-8000-000000000501",
+      "code": "VEH-01",
+      "maxWeight": 1200.000,
+      "maxVolume": 8.000,
+      "depotLocationId": "01963b7e-0000-7000-8000-000000000101",
+      "depotCode": "BOD-CEN",
+      "depotName": "Bodega Central Quito",
+      "costPerKm": 0.85,
+      "costUnit": "USD/km",
+      "estimatedTotalCost": null
+    }
+  ]
+}
+```
