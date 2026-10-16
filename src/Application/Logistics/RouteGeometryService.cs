@@ -76,6 +76,11 @@ public sealed class RouteGeometryService(
     RouteGeometryCache cache,
     ILogger<RouteGeometryService> logger) : IRouteGeometryService
 {
+    // El OSRM público es un servidor de demostración: con 6 consultas a la vez (la web pide todas las rutas juntas)
+    // 1 a 3 superaban los 8 s medidos el 16-oct y se dibujaban rectas. Se limita a 2 consultas simultáneas por proceso.
+    private static readonly SemaphoreSlim OsrmGate = new(2, 2);
+    private const int OsrmAttempts = 2;
+
     public async Task<RouteGeometryResponse?> GetAsync(Guid routePlanId, CancellationToken ct = default)
     {
         var plan = await db.RoutePlans.AsNoTracking()
@@ -121,8 +126,8 @@ public sealed class RouteGeometryService(
             ? new RouteGeometryResponse(plan.Id, vehicleCode, "osrm", road.Km, road.Coordinates, depot, stopWaypoints)
             : new RouteGeometryResponse(plan.Id, vehicleCode, "approximate", null, waypoints, depot, stopWaypoints);
 
-        // Un fallo de OSRM se reintenta pronto; un trazado bueno se conserva.
-        cache.Set(key, result, result.Source == "osrm" ? TimeSpan.FromHours(12) : TimeSpan.FromMinutes(1));
+        // Solo se guarda el trazado por calles: las rectas no se fijan, así la web puede volver a pedirlo.
+        if (result.Source == "osrm") cache.Set(key, result, TimeSpan.FromHours(12));
         return result;
     }
 
@@ -135,6 +140,32 @@ public sealed class RouteGeometryService(
             string.Create(CultureInfo.InvariantCulture, $"{w[1]:0.######},{w[0]:0.######}")));
         var url = $"{baseUrl.TrimEnd('/')}/route/v1/driving/{path}?overview=full&geometries=geojson";
         if (cache.TryGetPath(url, out var cachedPath)) return cachedPath;
+
+        await OsrmGate.WaitAsync(ct);
+        try
+        {
+            for (var attempt = 1; attempt <= OsrmAttempts; attempt++)
+            {
+                var (roadPath, retry) = await FetchRoadPathAsync(url, ct);
+                if (roadPath is not null)
+                {
+                    cache.SetPath(url, roadPath, TimeSpan.FromHours(12));
+                    return roadPath;
+                }
+                if (!retry || attempt == OsrmAttempts) break;
+                await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
+            }
+            return null;
+        }
+        finally
+        {
+            OsrmGate.Release();
+        }
+    }
+
+    // Retry = true solo para fallos pasajeros del servidor (tiempo agotado, red, 429 o 5xx).
+    private async Task<(RoadPath? Path, bool Retry)> FetchRoadPathAsync(string url, CancellationToken ct)
+    {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -145,23 +176,23 @@ public sealed class RouteGeometryService(
             using var response = await http.SendAsync(request, cts.Token);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("OSRM route respondió {Status}; se dibujan rectas aproximadas.", (int)response.StatusCode);
-                return null;
+                var status = (int)response.StatusCode;
+                logger.LogWarning("OSRM route respondió {Status}; se dibujan rectas aproximadas.", status);
+                return (null, status == 429 || status >= 500);
             }
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cts.Token));
-            if (doc.RootElement.GetProperty("code").GetString() != "Ok") return null;
+            if (doc.RootElement.GetProperty("code").GetString() != "Ok") return (null, false);
             var route = doc.RootElement.GetProperty("routes")[0];
             var coordinates = route.GetProperty("geometry").GetProperty("coordinates").EnumerateArray()
                 .Select(c => new[] { c[1].GetDouble(), c[0].GetDouble() }).ToList();
-            if (coordinates.Count < 2) return null;
-            var roadPath = new RoadPath(Math.Round(route.GetProperty("distance").GetDouble() / 1000d, 3), coordinates);
-            cache.SetPath(url, roadPath, TimeSpan.FromHours(12));
-            return roadPath;
+            if (coordinates.Count < 2) return (null, false);
+            return (new RoadPath(Math.Round(route.GetProperty("distance").GetDouble() / 1000d, 3), coordinates), false);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
         {
             logger.LogWarning("OSRM route no disponible ({Error}); se dibujan rectas aproximadas.", ex.GetType().Name);
-            return null;
+            var transient = ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested);
+            return (null, transient);
         }
     }
 }

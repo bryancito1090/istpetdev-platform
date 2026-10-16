@@ -99,6 +99,57 @@ describe('RutasPage: mapa de todas las rutas', () => {
   });
 });
 
+describe('RutasPage: reintento del trazado por calles', () => {
+  it('vuelve a pedir solo las rutas en rectas y deja de pedir cuando OSRM responde', () => {
+    vi.useFakeTimers();
+    try {
+      const plans = [plan('p1', 'VEH-01'), plan('p2', 'VEH-02')];
+      let p2Source: 'osrm' | 'approximate' = 'approximate';
+      const getRoutePlanGeometry = vi.fn((id: string) => of(geometry(id, id === 'p1' ? 'VEH-01' : 'VEH-02', id === 'p1' ? 'osrm' : p2Source)));
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [
+          provideRouter([]),
+          { provide: AuthSession, useValue: { canWrite: () => true } },
+          {
+            provide: ApiService,
+            useValue: {
+              getRoutePlans: vi.fn(() => of(plans)),
+              getRoutePlanById: vi.fn((id: string) => of({ ...plans.find(p => p.id === id), stops: [] })),
+              getRoutePlanGeometry,
+              getDrivers: vi.fn(() => of([])),
+              getServicePoints: vi.fn(() => of([])),
+              getDeliveryOrders: vi.fn(() => of([])),
+              getWarehouses: vi.fn(() => of([])),
+              getEntityData: vi.fn(() => of([])),
+              getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+            },
+          },
+        ],
+      });
+      const fixture = TestBed.createComponent(RutasPage);
+      fixture.detectChanges();
+      const page = fixture.componentInstance;
+      expect(getRoutePlanGeometry).toHaveBeenCalledTimes(2);
+
+      // Primer reintento: solo p2, que sigue en rectas.
+      vi.advanceTimersByTime(RutasPage.GEOMETRY_RETRY_DELAYS_MS[0]);
+      expect(getRoutePlanGeometry).toHaveBeenCalledTimes(3);
+      expect(getRoutePlanGeometry).toHaveBeenLastCalledWith('p2');
+
+      // OSRM ya responde: p2 pasa a calles y no se programan más reintentos.
+      p2Source = 'osrm';
+      vi.advanceTimersByTime(RutasPage.GEOMETRY_RETRY_DELAYS_MS[1]);
+      expect(getRoutePlanGeometry).toHaveBeenCalledTimes(4);
+      expect(page.mapPolylines().every(l => !l.dashArray)).toBe(true);
+      vi.advanceTimersByTime(60000);
+      expect(getRoutePlanGeometry).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('RutasPage: publicar con conductor', () => {
   it('no publica sin conductor y, al elegirlo, envía la asignación del vehículo', () => {
     const publishRoutePlan = vi.fn(() => of({}));
