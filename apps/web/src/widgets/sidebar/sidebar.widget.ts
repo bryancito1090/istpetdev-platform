@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
+import { getMobileAppUrl } from '@shared/config';
 
 interface NavItem {
   path: string;
@@ -47,10 +48,10 @@ interface NavItem {
 
           <a
             routerLink="/inicio"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
             [routerLinkActiveOptions]="{ exact: true }"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
             </svg>
             <span>Inicio</span>
@@ -58,9 +59,9 @@ interface NavItem {
 
           <a
             routerLink="/datos"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
             </svg>
             <span>Datos</span>
@@ -68,10 +69,10 @@ interface NavItem {
 
           <a
             routerLink="/alertas"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center justify-between px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
             <div class="flex items-center gap-2.5">
-              <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
               <span>Alertas</span>
@@ -85,9 +86,9 @@ interface NavItem {
 
           <a
             routerLink="/rutas"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.69C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
             </svg>
             <span>Rutas</span>
@@ -95,9 +96,9 @@ interface NavItem {
 
           <a
             routerLink="/novedades"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.09 1.976 1.053 1.976 2.188V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.25c0-1.135.845-2.098 1.976-2.188.374-.03.748-.057 1.124-.08" />
             </svg>
             <span>Novedades</span>
@@ -105,9 +106,9 @@ interface NavItem {
 
           <a
             routerLink="/bodegas"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.635l-1.314 3.942a1.5 1.5 0 01-1.423 1.025H12" />
             </svg>
             <span>Bodegas</span>
@@ -116,9 +117,9 @@ interface NavItem {
           @if (session.role() === 'Gerencia') {
             <a
               routerLink="/users"
-              routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-              class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-              <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+              class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+              <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
               </svg>
               <span>Usuarios</span>
@@ -127,9 +128,9 @@ interface NavItem {
 
           <a
             routerLink="/simulation"
-            routerLinkActive="bg-white text-[#1A2C44] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] border border-[#E3E8EE]"
-            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal">
-            <svg class="w-4 h-4 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            routerLinkActive="text-[#635BFF] font-medium bg-[#635BFF]/[0.07] [&_svg]:text-[#635BFF]"
+            class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[14px] leading-[20px] text-[#4F5B66] hover:text-[#1A2C44] hover:bg-slate-100/60 transition-colors font-normal group">
+            <svg class="w-4 h-4 text-[#697386] group-hover:text-[#1A2C44] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.25 2.25L15 7.5" />
             </svg>
             <span>Simulador 90d</span>
@@ -152,8 +153,9 @@ interface NavItem {
           </a>
 
           <a
-            href="http://localhost:8100"
+            [href]="mobileAppUrl"
             target="_blank"
+            rel="noopener noreferrer"
             class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 transition-colors">
             <div class="flex items-center gap-2.5">
               <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -196,6 +198,7 @@ interface NavItem {
 export class SidebarWidget implements OnInit {
   readonly session = inject(AuthSession);
   private readonly apiService = inject(ApiService);
+  readonly mobileAppUrl = getMobileAppUrl();
 
   readonly hasAlerts = signal(false);
   readonly alertCount = signal(0);

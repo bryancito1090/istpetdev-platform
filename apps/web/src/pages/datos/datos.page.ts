@@ -45,42 +45,55 @@ export function isMappingProfile(text: string): boolean {
   standalone: true,
   imports: [CommonModule, FormsModule, MapViewComponent],
   template: `
-    <div class="max-w-5xl mx-auto px-4 py-8">
-      <!-- Encabezado Principal -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-800">
-              Gestión de Datos Logísticos
-            </span>
-            <span class="text-xs text-slate-400">Expo Clean Ecuador 2026</span>
-          </div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight mt-1">
-            Carga y Consulta de Datos del Sistema
-          </h1>
-          <p class="text-sm text-slate-500 mt-1 max-w-2xl">
-            Gestiona la información logística mediante carga CSV masiva o formularios individuales con georreferenciación en mapa interactivo.
-          </p>
-        </div>
+    <div class="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <!-- Encabezado Principal Estilo Stripe -->
+      <div class="pb-1 border-b border-[#F1F3F5]">
+        <h1 class="text-2xl sm:text-3xl font-bold text-[#1A2C44] tracking-tight font-sans">
+          Catálogos y Datos Maestros
+        </h1>
+        <p class="text-xs sm:text-[13px] text-[#3C4F69] mt-1 max-w-2xl leading-relaxed">
+          Gestiona los centros de salud, almacenes de origen, productos de higiene, vehículos de transporte y lotes del sistema.
+        </p>
       </div>
 
-      <!-- Cuadrícula de Entidades (Tarjetas Interactivas) -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+      <!-- Banner Informativo Descartable Estilo Stripe Captura 1 -->
+      @if (showTipBanner()) {
+        <div class="bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg px-4 py-2.5 flex items-center justify-between text-xs text-[#4F566B] shadow-2xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <svg class="w-4 h-4 text-[#8792A2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.002 6.002 0 00-4-5.659V5.25a2 2 0 014 0v1.841a6.002 6.002 0 004 5.659V18m-4 0h.01M9 21h6" />
+            </svg>
+            <span class="truncate">
+              Carga tus archivos CSV o XLSX directamente en cada catálogo para actualizar inventarios hospitalarios y capacidades de transporte.
+            </span>
+          </div>
+          <button 
+            type="button" 
+            (click)="showTipBanner.set(false)"
+            class="text-[#8792A2] hover:text-[#1A2C44] p-1 rounded transition-colors ml-2 cursor-pointer shrink-0"
+            title="Cerrar aviso">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      }
+
+      <!-- Cuadrícula de Entidades (Tarjetas Estilo Stripe) -->
+      <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] space-y-4">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">
-              Entidades del Sistema (Orden de Carga Requerido)
+            <h2 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44]">
+              Catálogos Base del Sistema
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Haz clic en cualquier tarjeta para ver registros, agregar mediante formulario con mapa o subir CSV
+            <p class="text-[13px] text-[#3C4F69] mt-0.5">
+              Haz clic en cualquier categoría para consultar registros, agregar mediante formulario o subir archivos.
             </p>
           </div>
-          <span class="text-xs font-mono text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-            5 Entidades Principales
+          <span class="text-[11px] font-medium text-[#3C4F69] bg-[#F8FAFC] px-2.5 py-1 rounded-full border border-[#E3E8EE]">
+            5 Catálogos Principales
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
           @for (item of visibleEntityCards(); track item.key) {
             <div 
               (click)="openDrawer(item)"
@@ -88,42 +101,43 @@ export function isMappingProfile(text: string): boolean {
               tabindex="0"
               (keydown.enter)="openDrawer(item)"
               (keydown.space)="openDrawer(item)"
-              class="group relative p-4 bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-primary-500 rounded-xl cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md flex flex-col justify-between text-left">
+              class="group bg-white border border-[#E3E8EE] rounded-lg p-4 hover:border-slate-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all cursor-pointer flex flex-col justify-between text-left">
               
               <div>
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <div class="flex items-center gap-2.5">
-                    <span class="w-8 h-8 rounded-lg bg-primary-50 border border-primary-200/60 text-primary-700 font-mono text-xs font-bold flex items-center justify-center shrink-0 group-hover:bg-primary-600 group-hover:text-white transition-colors">
+                    <span class="w-7 h-7 rounded-md bg-[#F8FAFC] border border-[#E3E8EE] text-[#1A2C44] font-semibold text-xs flex items-center justify-center shrink-0 group-hover:bg-[#635BFF] group-hover:text-white transition-colors">
                       {{ item.orderNumber }}
                     </span>
                     <div>
-                      <h3 class="font-bold text-slate-900 text-sm group-hover:text-primary-700 transition-colors">
+                      <h3 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44] group-hover:text-[#635BFF] transition-colors">
                         {{ item.name }}
                       </h3>
-                      <span class="font-mono text-[11px] text-slate-400">
+                      <span class="font-mono text-[11px] text-[#8792A2]">
                         {{ item.fileName }}
                       </span>
                     </div>
                   </div>
                   
-                  <span class="text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="text-[#635BFF] opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                   </span>
                 </div>
 
-                <p class="text-slate-600 text-xs leading-relaxed line-clamp-2">
+                <p class="text-[13px] leading-[18px] text-[#3C4F69] line-clamp-2 mt-1">
                   {{ item.desc }}
                 </p>
               </div>
 
-              <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                <span class="text-slate-400 font-mono truncate max-w-[190px]" title="Campos: {{ item.fields }}">
+              <div class="mt-3 pt-2.5 border-t border-[#F1F3F5] flex items-center justify-between text-[11px]">
+                <span class="text-[#8792A2] font-mono truncate max-w-[190px]" title="Campos: {{ item.fields }}">
                   {{ item.fields }}
                 </span>
-                <span class="text-primary-600 font-medium group-hover:underline flex items-center gap-1">
-                  Gestionar
+                <span class="text-[13px] font-medium text-[#635BFF] group-hover:underline flex items-center gap-1">
+                  <span>Gestionar</span>
+                  <span>&rarr;</span>
                 </span>
               </div>
             </div>
@@ -133,147 +147,147 @@ export function isMappingProfile(text: string): boolean {
 
       @if (session.canWrite()) {
         <!-- Sección de Carga Masiva (Multi-archivo simultáneo) -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
-          <div class="border-b border-slate-100 pb-3">
-            <h2 class="text-base font-bold text-slate-800">
+        <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] space-y-4">
+          <div class="border-b border-[#F1F3F5] pb-3">
+            <h2 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44]">
               Carga Masiva de Múltiples Archivos
             </h2>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Si dispones de varios archivos CSV o XLSX preparados, puedes cargarlos todos juntos. Las dependencias se resolverán automáticamente.
+            <p class="text-[13px] text-[#3C4F69] mt-0.5">
+              Si dispones de varios archivos CSV o XLSX preparados, puedes cargarlos todos juntos. Las dependencias entre catálogos se resolverán automáticamente.
             </p>
           </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-2">
-            Seleccionar archivo(s) CSV o XLSX
-          </label>
-          <input 
-            type="file" 
-            multiple
-            (change)="onFilesSelected($event)"
-            accept=".csv,.xlsx,.json"
-            class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer border border-slate-200 rounded-lg p-2 bg-slate-50/50" />
-          <p class="text-[11px] text-slate-400 mt-1.5">
-            Formatos admitidos: .csv, .xlsx. El nombre del archivo o sus encabezados detectarán la entidad correspondiente. Si el dataset trae un perfil de mapeo (.json), inclúyalo en la selección.
-          </p>
-        </div>
-
-        @if (selectedFiles().length > 0) {
-          <div class="space-y-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
-            <h3 class="text-xs font-semibold text-slate-700 flex items-center gap-2">
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-              <span>Archivos listos para procesar ({{ selectedFiles().length }}):</span>
-            </h3>
-            <ul class="text-xs space-y-1.5 divide-y divide-slate-200/50">
-              @for (file of selectedFiles(); track file.name) {
-                <li class="pt-1.5 flex justify-between items-center text-slate-700">
-                  <span class="font-medium truncate max-w-sm">{{ file.name }}</span>
-                  <span class="font-mono text-[11px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
-                    {{ (file.size / 1024).toFixed(1) }} KB
-                  </span>
-                </li>
-              }
-            </ul>
-
-            <div class="flex flex-wrap items-center gap-3 pt-2">
-              <button 
-                type="button"
-                (click)="processImport(true)"
-                [disabled]="loading()"
-                class="px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition-colors disabled:opacity-50 shadow-2xs">
-                {{ loading() ? 'Validando...' : '1. Validar sin guardar (Simulación)' }}
-              </button>
-
-              <button 
-                type="button"
-                (click)="processImport(false)"
-                [disabled]="loading()"
-                class="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-xs font-semibold transition-colors disabled:opacity-50 shadow-2xs">
-                {{ loading() ? 'Procesando...' : '2. Guardar en Base de Datos' }}
-              </button>
-            </div>
+          <div>
+            <label class="block text-xs font-semibold text-[#30313D] mb-1.5">
+              Seleccionar archivo(s) CSV o XLSX
+            </label>
+            <input 
+              type="file" 
+              multiple
+              (change)="onFilesSelected($event)"
+              accept=".csv,.xlsx,.json"
+              class="block w-full text-xs text-[#3C4F69] file:mr-4 file:py-2 file:px-3.5 file:rounded-md file:border file:border-[#E3E8EE] file:text-xs file:font-medium file:bg-white file:text-[#30313D] hover:file:bg-slate-50 cursor-pointer border border-[#E3E8EE] rounded-md p-2 bg-[#F8FAFC]" />
+            <p class="text-[11px] text-[#8792A2] mt-1.5">
+              Formatos admitidos: .csv, .xlsx. El sistema detecta automáticamente la entidad por encabezados. Si incluyes un perfil de mapeo (.json), se aplicará de inmediato.
+            </p>
           </div>
-        }
 
-        @if (importNotice()) {
-          <div class="border border-slate-200 bg-slate-50 text-slate-700 rounded-xl p-3 text-xs" role="status">{{ importNotice() }}</div>
-        }
-        @if (importError()) {
-          <div class="border border-rose-200 bg-rose-50 text-rose-800 rounded-xl p-4 text-xs" role="alert">
-            <p class="font-semibold">No se pudo procesar la carga</p>
-            <p class="mt-1">{{ importError() }}</p>
-          </div>
-        }
-        <!-- Resultado de la importación masiva -->
-        @if (report()) {
-          <div 
-            class="border rounded-xl p-5 space-y-4 transition-all"
-            [ngClass]="report()!.errorCount > 0 ? 'bg-amber-50/60 border-amber-200' : 'bg-emerald-50/60 border-emerald-200'">
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm font-bold flex items-center gap-2" [ngClass]="report()!.errorCount > 0 ? 'text-amber-900' : 'text-emerald-900'">
-                @if (report()!.errorCount > 0) {
-                  <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                  </svg>
-                } @else {
-                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                  </svg>
-                }
-                <span>Resultado: {{ report()!.dryRun ? 'Validación Completada (Simulación, no guardado)' : (report()!.applied ? 'Guardado Exitosamente en BD' : 'Errores encontrados') }}</span>
+          @if (selectedFiles().length > 0) {
+            <div class="space-y-3 bg-[#F8FAFC] p-4 rounded-md border border-[#E3E8EE]">
+              <h3 class="text-xs font-semibold text-[#30313D] flex items-center gap-2">
+                <svg class="w-4 h-4 text-[#8792A2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Archivos listos para procesar ({{ selectedFiles().length }}):</span>
               </h3>
-              <span class="text-xs font-mono px-2.5 py-1 rounded bg-white border border-slate-200 shadow-2xs">
-                Errores: {{ report()!.errorCount }} | Avisos: {{ report()!.warningCount }}
-              </span>
+              <ul class="text-xs space-y-1.5 divide-y divide-[#E3E8EE]/60">
+                @for (file of selectedFiles(); track file.name) {
+                  <li class="pt-1.5 flex justify-between items-center text-[#30313D]">
+                    <span class="font-medium truncate max-w-sm">{{ file.name }}</span>
+                    <span class="font-mono text-[11px] text-[#8792A2] bg-white px-2 py-0.5 rounded border border-[#E3E8EE]">
+                      {{ (file.size / 1024).toFixed(1) }} KB
+                    </span>
+                  </li>
+                }
+              </ul>
+
+              <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button 
+                  type="button"
+                  (click)="processImport(true)"
+                  [disabled]="loading()"
+                  class="px-3.5 py-1.5 rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-slate-50 text-[13px] font-medium transition-colors disabled:opacity-50 shadow-2xs cursor-pointer">
+                  {{ loading() ? 'Validando...' : '1. Validar sin guardar (Simulación)' }}
+                </button>
+
+                <button 
+                  type="button"
+                  (click)="processImport(false)"
+                  [disabled]="loading()"
+                  class="px-3.5 py-1.5 rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white text-[13px] font-medium transition-colors disabled:opacity-50 shadow-xs cursor-pointer">
+                  {{ loading() ? 'Procesando...' : '2. Guardar en Base de Datos' }}
+                </button>
+              </div>
             </div>
+          }
 
-            @if (report()!.entities.length > 0) {
-              <div class="bg-white rounded-lg border border-slate-200/80 overflow-hidden shadow-2xs">
-                <table class="w-full text-left text-xs">
-                  <thead class="bg-slate-50 text-slate-600 text-[11px] uppercase border-b border-slate-200 font-bold">
-                    <tr>
-                      <th class="p-2.5">Entidad</th>
-                      <th class="p-2.5">Filas Leídas</th>
-                      <th class="p-2.5">Creados</th>
-                      <th class="p-2.5">Actualizados</th>
-                      <th class="p-2.5">Omitidos</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (ent of report()!.entities; track ent.entity) {
-                      <tr class="hover:bg-slate-50/50">
-                        <td class="p-2.5 font-bold text-slate-800">{{ ent.entity }}</td>
-                        <td class="p-2.5 font-mono text-slate-600">{{ ent.rowsRead }}</td>
-                        <td class="p-2.5 font-mono text-emerald-600 font-semibold">+{{ ent.created }}</td>
-                        <td class="p-2.5 font-mono text-blue-600">{{ ent.updated }}</td>
-                        <td class="p-2.5 font-mono text-slate-400">{{ ent.skipped }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-
-            @if (report()!.issues.length > 0) {
-              <div class="space-y-1.5 text-xs">
-                <h4 class="font-bold text-slate-800">Detalles e incidencias reportadas:</h4>
-                <ul class="space-y-1.5 max-h-48 overflow-y-auto">
-                  @for (issue of report()!.issues; track $index) {
-                    <li class="p-2.5 rounded bg-white border border-slate-200 text-slate-700 shadow-2xs">
-                      <span class="font-bold text-slate-900">[{{ issue.entity }} Fila {{ issue.row }}]:</span>
-                      {{ issue.message }}
-                    </li>
+          @if (importNotice()) {
+            <div class="border border-[#E3E8EE] bg-[#F8FAFC] text-[#30313D] rounded-md p-3 text-xs" role="status">{{ importNotice() }}</div>
+          }
+          @if (importError()) {
+            <div class="border border-rose-200 bg-rose-50 text-rose-800 rounded-md p-3.5 text-xs" role="alert">
+              <p class="font-semibold">No se pudo procesar la carga</p>
+              <p class="mt-1">{{ importError() }}</p>
+            </div>
+          }
+          <!-- Resultado de la importación masiva -->
+          @if (report()) {
+            <div 
+              class="border rounded-md p-5 space-y-4 transition-all"
+              [ngClass]="report()!.errorCount > 0 ? 'bg-amber-50/50 border-amber-200' : 'bg-emerald-50/40 border-emerald-200'">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold flex items-center gap-2" [ngClass]="report()!.errorCount > 0 ? 'text-amber-900' : 'text-emerald-900'">
+                  @if (report()!.errorCount > 0) {
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                  } @else {
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
                   }
-                </ul>
+                  <span>Resultado: {{ report()!.dryRun ? 'Validación Completada (Simulación, no guardado)' : (report()!.applied ? 'Guardado Exitosamente en BD' : 'Errores encontrados') }}</span>
+                </h3>
+                <span class="text-xs px-2.5 py-1 rounded bg-white border border-[#E3E8EE] shadow-2xs font-medium">
+                  Errores: {{ report()!.errorCount }} | Avisos: {{ report()!.warningCount }}
+                </span>
               </div>
-            }
-          </div>
-        }
+
+              @if (report()!.entities.length > 0) {
+                <div class="bg-white rounded-md border border-[#E3E8EE] overflow-hidden shadow-2xs">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-[#F8FAFC] text-[#697386] text-[11px] uppercase border-b border-[#E3E8EE] font-semibold">
+                      <tr>
+                        <th class="p-2.5">Entidad</th>
+                        <th class="p-2.5">Filas Leídas</th>
+                        <th class="p-2.5">Creados</th>
+                        <th class="p-2.5">Actualizados</th>
+                        <th class="p-2.5">Omitidos</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#F1F3F5]">
+                      @for (ent of report()!.entities; track ent.entity) {
+                        <tr class="hover:bg-slate-50/60 transition-colors">
+                          <td class="p-2.5 font-semibold text-[#1A2C44]">{{ ent.entity }}</td>
+                          <td class="p-2.5 text-[#30313D]">{{ ent.rowsRead }}</td>
+                          <td class="p-2.5 text-emerald-600 font-semibold">+{{ ent.created }}</td>
+                          <td class="p-2.5 text-blue-600">{{ ent.updated }}</td>
+                          <td class="p-2.5 text-[#8792A2]">{{ ent.skipped }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              @if (report()!.issues.length > 0) {
+                <div class="space-y-1.5 text-xs">
+                  <h4 class="font-semibold text-[#30313D]">Detalles e incidencias reportadas:</h4>
+                  <ul class="space-y-1.5 max-h-48 overflow-y-auto">
+                    @for (issue of report()!.issues; track $index) {
+                      <li class="p-2.5 rounded bg-white border border-[#E3E8EE] text-[#30313D] shadow-2xs">
+                        <span class="font-semibold text-[#1A2C44]">[{{ issue.entity }} Fila {{ issue.row }}]:</span>
+                        {{ issue.message }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
         </div>
       } @else {
-        <p role="alert" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          No tienes permiso para importar datos.
+        <p role="alert" class="rounded-md border border-[#E3E8EE] bg-[#F8FAFC] p-4 text-xs text-[#3C4F69]">
+          No tienes permiso para importar datos. Solo lectura disponible.
         </p>
       }
 
@@ -281,35 +295,37 @@ export function isMappingProfile(text: string): boolean {
       <!-- DRAWER LATERAL DE ENTIDAD                                     -->
       <!-- ============================================================= -->
       @if (selectedEntity()) {
-        <!-- Fondo oscuro semitransparente -->
-        <div 
-          class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300"
-          (click)="closeDrawer()">
-        </div>
+        <!-- Contenedor Raíz de Nivel Ventana (Aislado de Stacking Context y Márgenes) -->
+        <div class="fixed inset-0 z-[100] overflow-hidden !m-0" role="dialog" aria-modal="true">
+          <!-- Fondo oscuro semitransparente -->
+          <div 
+            class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300"
+            (click)="closeDrawer()">
+          </div>
 
-        <!-- Panel Lateral Deslizable -->
-        <aside 
-          class="fixed inset-y-0 right-0 z-50 w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300 ease-out animate-in slide-in-from-right"
-          role="dialog"
-          aria-modal="true"
-          (click)="$event.stopPropagation()">
+          <!-- Posicionador del Panel Lateral a la Derecha -->
+          <div class="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 pointer-events-none">
+            <!-- Panel Lateral Deslizable -->
+            <aside 
+              class="pointer-events-auto w-screen max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-white shadow-2xl border-l border-[#E3E8EE] flex flex-col h-full transition-all duration-300 ease-out"
+              (click)="$event.stopPropagation()">
           
           <!-- Encabezado del Drawer -->
-          <div class="px-6 py-4.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between shrink-0 mt-6">
+          <div class="px-6 py-4 border-b border-[#E3E8EE] bg-white flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-primary-600 text-white font-mono text-sm font-bold flex items-center justify-center shadow-xs">
+              <span class="w-8 h-8 rounded-md bg-[#635BFF]/10 text-[#635BFF] font-semibold text-xs flex items-center justify-center border border-[#635BFF]/20">
                 {{ selectedEntity()!.orderNumber }}
               </span>
               <div>
                 <div class="flex items-center gap-2">
-                  <h2 class="text-base font-bold text-slate-900">
+                  <h2 class="text-[17px] font-semibold tracking-tight text-[#1A2C44]">
                     {{ selectedEntity()!.name }}
                   </h2>
-                  <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                  <span class="text-[11px] font-mono bg-[#F8FAFC] text-[#697386] px-2 py-0.5 rounded border border-[#E3E8EE]">
                     {{ selectedEntity()!.fileName }}
                   </span>
                 </div>
-                <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                <p class="text-[13px] text-[#697386] mt-0.5 line-clamp-1 leading-normal">
                   {{ selectedEntity()!.desc }}
                 </p>
               </div>
@@ -318,25 +334,29 @@ export function isMappingProfile(text: string): boolean {
             <button 
               type="button"
               (click)="closeDrawer()"
-              class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 rounded-lg transition-colors"
+              class="w-8 h-8 rounded-md text-[#697386] hover:text-[#1A2C44] hover:bg-[#F8FAFC] border border-transparent hover:border-[#E3E8EE] flex items-center justify-center transition-colors cursor-pointer"
               title="Cerrar panel (Esc)">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
 
-          <!-- Navegación por Pestañas del Drawer -->
-          <div class="flex border-b border-slate-200 bg-slate-50/50 px-4 sm:px-6 gap-1.5 sm:gap-2 text-xs font-semibold overflow-x-auto no-scrollbar shrink-0 mt-4">
+          <!-- Navegación por Pestañas del Drawer Estilo Stripe -->
+          <div class="flex border-b border-[#E3E8EE] bg-white px-6 gap-6 text-[13px] font-medium overflow-x-auto no-scrollbar shrink-0">
             <button
               type="button"
               (click)="switchTab('data')"
               [ngClass]="activeTab() === 'data' 
-                ? 'border-primary-600 text-primary-700 bg-white border-b-2 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent'"
-              class="py-3 px-3 transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                ? 'border-[#635BFF] text-[#635BFF] border-b-2 font-semibold pb-3 -mb-px' 
+                : 'text-[#697386] hover:text-[#1A2C44] border-b-2 border-transparent pb-3'"
+              class="pt-3.5 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer">
               <span>Datos Actuales</span>
-              <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 border border-slate-200">
+              <span 
+                class="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors"
+                [ngClass]="activeTab() === 'data' 
+                  ? 'bg-[#635BFF]/10 text-[#635BFF]' 
+                  : 'bg-[#F1F3F5] text-[#697386]'">
                 {{ entityData().length }}
               </span>
             </button>
@@ -345,20 +365,19 @@ export function isMappingProfile(text: string): boolean {
               type="button"
               (click)="switchTab('form')"
               [ngClass]="activeTab() === 'form' 
-                ? 'border-primary-600 text-primary-700 bg-white border-b-2 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent'"
-              class="py-3 px-3 transition-colors flex items-center gap-1.5 whitespace-nowrap">
-              <span class="font-bold">+</span>
-              <span>Nuevo Registro</span>
+                ? 'border-[#635BFF] text-[#635BFF] border-b-2 font-semibold pb-3 -mb-px' 
+                : 'text-[#697386] hover:text-[#1A2C44] border-b-2 border-transparent pb-3'"
+              class="pt-3.5 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+              <span>+ Nuevo Registro</span>
             </button>
 
             <button
               type="button"
               (click)="switchTab('upload')"
               [ngClass]="activeTab() === 'upload' 
-                ? 'border-primary-600 text-primary-700 bg-white border-b-2 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent'"
-              class="py-3 px-3 transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                ? 'border-[#635BFF] text-[#635BFF] border-b-2 font-semibold pb-3 -mb-px' 
+                : 'text-[#697386] hover:text-[#1A2C44] border-b-2 border-transparent pb-3'"
+              class="pt-3.5 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
               <span>Subir Archivo CSV</span>
             </button>
 
@@ -366,9 +385,9 @@ export function isMappingProfile(text: string): boolean {
               type="button"
               (click)="switchTab('format')"
               [ngClass]="activeTab() === 'format' 
-                ? 'border-primary-600 text-primary-700 bg-white border-b-2 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent'"
-              class="py-3 px-3 transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                ? 'border-[#635BFF] text-[#635BFF] border-b-2 font-semibold pb-3 -mb-px' 
+                : 'text-[#697386] hover:text-[#1A2C44] border-b-2 border-transparent pb-3'"
+              class="pt-3.5 transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
               <span>Formato y Plantilla</span>
             </button>
           </div>
@@ -383,21 +402,21 @@ export function isMappingProfile(text: string): boolean {
               <div class="space-y-4">
                 <!-- Banner Contextual si se seleccionó una bodega específica para inventario -->
                 @if (selectedEntity()!.key === 'stock' && selectedWarehouseContext()) {
-                  <div class="p-3.5 bg-gradient-to-r from-primary-50 via-sky-50 to-indigo-50 border border-primary-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div class="p-3.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                     <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-lg bg-primary-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <div class="w-9 h-9 rounded-md bg-[#635BFF]/10 text-[#635BFF] flex items-center justify-center shrink-0 border border-[#635BFF]/20">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
                       </div>
                       <div>
                         <div class="flex items-center gap-2">
-                          <span class="text-xs font-bold text-slate-900">Bodega Seleccionada: {{ selectedWarehouseContext()!.name }}</span>
-                          <span class="font-mono text-[11px] font-bold bg-primary-100 text-primary-800 px-2 py-0.5 rounded border border-primary-200">
+                          <span class="text-xs font-semibold text-[#1A2C44]">Bodega Seleccionada: {{ selectedWarehouseContext()!.name }}</span>
+                          <span class="font-mono text-[11px] font-semibold bg-white text-[#1A2C44] px-2 py-0.5 rounded border border-[#E3E8EE]">
                             {{ selectedWarehouseContext()!.code }}
                           </span>
                         </div>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
+                        <p class="text-[12px] text-[#697386] mt-0.5">
                           Mostrando el inventario de esta bodega. Puedes cargar nuevo stock manual o importar CSV directo.
                         </p>
                       </div>
@@ -407,7 +426,7 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="switchTab('form')"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 hover:bg-primary-700 text-white shadow-2xs flex items-center gap-1.5 transition-colors">
+                        class="h-8 px-3 text-xs font-medium rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer">
                         <span class="font-bold">+</span>
                         <span>Ingresar Stock</span>
                       </button>
@@ -415,8 +434,8 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="switchTab('upload')"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 shadow-2xs flex items-center gap-1.5 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="h-8 px-3 text-xs font-medium rounded-md bg-white hover:bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-[#697386]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                         </svg>
                         <span>Importar CSV</span>
@@ -425,7 +444,7 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="clearWarehouseContext()"
-                        class="px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition-colors"
+                        class="h-8 px-2.5 text-xs font-medium text-[#697386] hover:text-[#1A2C44] hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                         title="Ver todas las ubicaciones">
                         ✕ Quitar filtro
                       </button>
@@ -435,21 +454,21 @@ export function isMappingProfile(text: string): boolean {
 
                 <!-- Banner Contextual si se seleccionó un punto de entrega específico para consumos -->
                 @if (selectedEntity()!.key === 'consumptions' && selectedServicePointContext()) {
-                  <div class="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div class="p-3.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                     <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <div class="w-9 h-9 rounded-md bg-[#635BFF]/10 text-[#635BFF] flex items-center justify-center shrink-0 border border-[#635BFF]/20">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
                       </div>
                       <div>
                         <div class="flex items-center gap-2">
-                          <span class="text-xs font-bold text-slate-900">Punto de Entrega: {{ selectedServicePointContext()!.name }}</span>
-                          <span class="font-mono text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                          <span class="text-xs font-semibold text-[#1A2C44]">Punto de Entrega: {{ selectedServicePointContext()!.name }}</span>
+                          <span class="font-mono text-[11px] font-semibold bg-white text-[#1A2C44] px-2 py-0.5 rounded border border-[#E3E8EE]">
                             {{ selectedServicePointContext()!.code }}
                           </span>
                         </div>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
+                        <p class="text-[12px] text-[#697386] mt-0.5">
                           Mostrando consumos históricos registrados para este establecimiento de salud.
                         </p>
                       </div>
@@ -459,7 +478,7 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="switchTab('form')"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 transition-colors">
+                        class="h-8 px-3 text-xs font-medium rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer">
                         <span class="font-bold">+</span>
                         <span>Registrar Consumo</span>
                       </button>
@@ -467,8 +486,8 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="switchTab('upload')"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 shadow-2xs flex items-center gap-1.5 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="h-8 px-3 text-xs font-medium rounded-md bg-white hover:bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-[#697386]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                         </svg>
                         <span>Importar CSV Consumo</span>
@@ -477,7 +496,7 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button" 
                         (click)="clearServicePointContext()"
-                        class="px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition-colors"
+                        class="h-8 px-2.5 text-xs font-medium text-[#697386] hover:text-[#1A2C44] hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                         title="Ver todos los puntos">
                         ✕ Quitar filtro
                       </button>
@@ -485,11 +504,11 @@ export function isMappingProfile(text: string): boolean {
                   </div>
                 }
 
-                <!-- Barra de herramientas: Búsqueda y Acciones -->
+                <!-- Barra de herramientas: Búsqueda y Acciones Estilo Stripe -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div class="relative flex-1">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8792A2]">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                       </svg>
                     </span>
@@ -498,7 +517,7 @@ export function isMappingProfile(text: string): boolean {
                       [ngModel]="dataFilter()"
                       (ngModelChange)="dataFilter.set($event)"
                       placeholder="Buscar por código, nombre o cualquier campo..."
-                      class="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-slate-50/50" />
+                      class="w-full h-9 pl-9 pr-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44] placeholder-[#8792A2] transition-colors" />
                   </div>
 
                   <div class="flex items-center gap-2">
@@ -506,8 +525,8 @@ export function isMappingProfile(text: string): boolean {
                       type="button"
                       (click)="loadEntityData(selectedEntity()!.key)"
                       [disabled]="loadingData()"
-                      class="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 transition-colors disabled:opacity-50">
-                      <svg class="w-3.5 h-3.5" [class.animate-spin]="loadingData()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      class="h-9 px-3.5 text-[13px] font-medium rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-[#F8FAFC] flex items-center gap-2 transition-colors disabled:opacity-50 shadow-2xs cursor-pointer">
+                      <svg class="w-3.5 h-3.5 text-[#697386]" [class.animate-spin]="loadingData()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                       </svg>
                       <span>{{ loadingData() ? 'Cargando...' : 'Refrescar' }}</span>
@@ -516,8 +535,8 @@ export function isMappingProfile(text: string): boolean {
                     <button 
                       type="button"
                       (click)="switchTab('form')"
-                      class="px-3 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 transition-colors shadow-2xs">
-                      <span class="font-bold">+</span>
+                      class="h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] flex items-center gap-2 transition-colors shadow-2xs cursor-pointer">
+                      <span class="font-bold text-sm leading-none">+</span>
                       <span>Agregar Manual</span>
                     </button>
                   </div>
@@ -526,46 +545,54 @@ export function isMappingProfile(text: string): boolean {
                 <!-- Estado de carga -->
                 @if (loadingData()) {
                   <div class="py-16 text-center space-y-3">
-                    <div class="inline-block w-7 h-7 border-3 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-xs text-slate-500">Consultando registros en base de datos...</p>
+                    <div class="inline-block w-6 h-6 border-2 border-[#635BFF] border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs text-[#697386]">Consultando registros en base de datos...</p>
                   </div>
                 } @else if (filteredEntityData().length === 0) {
-                  <!-- Estado vacío -->
-                  <div class="py-12 px-4 text-center border-2 border-dashed border-slate-200 rounded-xl space-y-3 bg-slate-50/40">
-                    <svg class="w-10 h-10 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                    </svg>
-                    <h3 class="text-sm font-bold text-slate-800">
-                      {{ dataFilter() ? 'No se encontraron coincidencias' : 'No hay datos cargados para esta entidad' }}
-                    </h3>
-                    <p class="text-xs text-slate-500 max-w-sm mx-auto">
-                      {{ dataFilter() ? 'Prueba con otros términos de búsqueda.' : 'Puedes agregar registros directamente con el formulario o importar un archivo CSV.' }}
-                    </p>
+                  <!-- Estado vacío refinado Estilo Stripe -->
+                  <div class="py-14 px-6 text-center border border-[#E3E8EE] rounded-lg bg-white space-y-4 shadow-2xs">
+                    <div class="w-12 h-12 rounded-full bg-[#F1F3F5] text-[#697386] flex items-center justify-center mx-auto">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                      </svg>
+                    </div>
+                    <div class="space-y-1">
+                      <h3 class="text-[15px] font-semibold text-[#1A2C44] tracking-tight">
+                        {{ dataFilter() ? 'No se encontraron coincidencias' : 'No hay datos cargados para este catálogo' }}
+                      </h3>
+                      <p class="text-[13px] text-[#697386] max-w-sm mx-auto leading-relaxed">
+                        {{ dataFilter() ? 'Prueba con otros términos de búsqueda para encontrar los registros deseados.' : 'Puedes agregar registros directamente con el formulario o importar un archivo CSV.' }}
+                      </p>
+                    </div>
                     @if (!dataFilter()) {
-                      <div class="flex items-center justify-center gap-2 pt-1">
+                      <div class="flex items-center justify-center gap-3 pt-2">
                         <button 
                           type="button"
                           (click)="switchTab('form')"
-                          class="px-4 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-2xs">
-                          + Agregar mediante Formulario
+                          class="h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer">
+                          <span class="font-bold text-sm leading-none">+</span>
+                          <span>Agregar mediante Formulario</span>
                         </button>
                         <button 
                           type="button"
                           (click)="switchTab('upload')"
-                          class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs">
-                          Subir archivo CSV
+                          class="h-9 px-4 text-[13px] font-medium rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer">
+                          <svg class="w-4 h-4 text-[#697386]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                          </svg>
+                          <span>Subir archivo CSV</span>
                         </button>
                       </div>
                     }
                   </div>
                 } @else {
-                  <!-- Tabla de datos registrados -->
-                  <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+                  <!-- Tabla de datos registrados Estilo Stripe -->
+                  <div class="border border-[#E3E8EE] rounded-lg overflow-hidden shadow-2xs bg-white">
                     <div class="overflow-x-auto max-h-[460px]">
                       <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 text-slate-700 text-[11px] uppercase border-b border-slate-200 sticky top-0 z-10 font-bold">
+                        <thead class="bg-[#F8FAFC] text-[#697386] text-[11px] uppercase border-b border-[#E3E8EE] sticky top-0 z-10 font-semibold tracking-wider">
                           <tr>
-                            <th class="p-3 w-12 text-center text-slate-400">#</th>
+                            <th class="p-3 w-12 text-center text-[#8792A2]">#</th>
                             @for (col of selectedEntity()!.tableCols; track col.key) {
                               <th class="p-3 whitespace-nowrap">{{ col.label }}</th>
                             }
@@ -577,40 +604,40 @@ export function isMappingProfile(text: string): boolean {
                             }
                           </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-[#F1F3F5]">
                           @for (row of filteredEntityData(); track $index) {
                             <tr 
                               (click)="onTableRowClick(row)"
                               [class.cursor-pointer]="selectedEntity()!.key === 'warehouses' || selectedEntity()!.key === 'service_points'"
-                              class="hover:bg-primary-50/40 transition-colors group">
-                              <td class="p-3 text-center text-slate-400 font-mono text-[11px]">
+                              class="hover:bg-slate-50/70 transition-colors group">
+                              <td class="p-3 text-center text-[#8792A2] font-mono text-[11px]">
                                 {{ $index + 1 }}
                               </td>
                               @for (col of selectedEntity()!.tableCols; track col.key) {
                                 <td class="p-3 whitespace-nowrap">
                                   @if (col.badge) {
                                     <span 
-                                      class="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                      class="px-2 py-0.5 rounded text-[11px] font-medium border"
                                       [ngClass]="getBadgeClass(col.key, row[col.key])">
                                       {{ formatValue(row[col.key]) }}
                                     </span>
                                   } @else if (col.key === 'code' || col.key === 'sku' || col.key === 'lot_code' || col.key === 'location_code' || col.key === 'point_code') {
-                                    <span class="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    <span class="font-mono font-medium text-[#1A2C44] bg-[#F8FAFC] px-1.5 py-0.5 rounded border border-[#E3E8EE]">
                                       {{ formatValue(row[col.key]) }}
                                     </span>
                                   } @else {
-                                    <span class="text-slate-700">
+                                    <span class="text-[#30313D]">
                                       {{ formatValue(row[col.key]) }}
                                     </span>
                                   }
                                 </td>
                               }
-                              @if (selectedEntity()!.key === 'warehouses') {
+                               @if (selectedEntity()!.key === 'warehouses') {
                                 <td class="p-3 whitespace-nowrap text-right">
                                   <button
                                     type="button"
                                     (click)="manageWarehouseStock(row); $event.stopPropagation()"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs transition-colors shadow-2xs group-hover:shadow-md">
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white font-medium text-[12px] transition-colors shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                     </svg>
@@ -623,11 +650,11 @@ export function isMappingProfile(text: string): boolean {
                                   <button
                                     type="button"
                                     (click)="manageServicePointConsumption(row); $event.stopPropagation()"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow-2xs group-hover:shadow-md">
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white font-medium text-[12px] transition-colors shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                     </svg>
-                                    <span>Ver / Cargar Consumo</span>
+                                    <span>Ver Consumo</span>
                                   </button>
                                 </td>
                               }
@@ -637,9 +664,9 @@ export function isMappingProfile(text: string): boolean {
                       </table>
                     </div>
 
-                    <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+                    <div class="px-4 py-2.5 bg-[#F8FAFC] border-t border-[#E3E8EE] flex items-center justify-between text-[11px] text-[#697386]">
                       <span>Mostrando {{ filteredEntityData().length }} de {{ entityData().length }} registro(s)</span>
-                      <span class="font-mono text-slate-400">{{ selectedEntity()!.key }}</span>
+                      <span class="font-mono text-[#8792A2]">{{ selectedEntity()!.key }}</span>
                     </div>
                   </div>
                 }
@@ -652,17 +679,17 @@ export function isMappingProfile(text: string): boolean {
             @if (activeTab() === 'form') {
               <form (ngSubmit)="submitForm()" class="space-y-6">
                 <div>
-                  <h3 class="text-sm font-bold text-slate-900">
+                  <h3 class="text-[15px] font-semibold text-[#1A2C44]">
                     Registrar nuevo registro en {{ selectedEntity()!.name }}
                   </h3>
-                  <p class="text-xs text-slate-500 mt-0.5">
+                  <p class="text-[13px] text-[#3C4F69] mt-0.5">
                     Completa los campos del formulario. Los cambios se guardarán directamente en la base de datos.
                   </p>
                 </div>
 
                 <!-- Mensaje de éxito o error -->
                 @if (formSuccess()) {
-                  <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+                  <div class="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] text-emerald-800 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                       <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -672,15 +699,15 @@ export function isMappingProfile(text: string): boolean {
                     <button 
                       type="button" 
                       (click)="switchTab('data')"
-                      class="text-xs font-bold underline hover:text-emerald-950">
+                      class="text-[12px] font-medium text-emerald-800 underline hover:text-emerald-950">
                       Ver en tabla →
                     </button>
                   </div>
                 }
 
                 @if (formError()) {
-                  <div class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-[13px] text-rose-800 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span>{{ formError() }}</span>
@@ -693,35 +720,35 @@ export function isMappingProfile(text: string): boolean {
                     <!-- Omitir lat y lon de los campos normales si hay mapa integrado -->
                     @if (!selectedEntity()!.hasLocationMap || (col.name !== 'lat' && col.name !== 'lon')) {
                       <div class="space-y-1" [class.sm:col-span-2]="col.name === 'name' || col.name === 'sku' || col.name === 'lot_code'">
-                        <label class="block text-xs font-semibold text-slate-700">
+                        <label class="block text-[12px] font-medium text-[#30313D]">
                           {{ getFieldLabel(col.name) }}
                           @if (col.required) {
-                            <span class="text-red-500 font-bold">*</span>
+                            <span class="text-rose-500 font-semibold">*</span>
                           }
                         </label>
 
                         <!-- UBICACIÓN PARA STOCK: Si hay bodega fija seleccionada -->
                         @if (selectedEntity()!.key === 'stock' && col.name === 'location_code' && selectedWarehouseContext()) {
-                          <div class="p-2.5 rounded-lg bg-primary-50/70 border border-primary-200 flex items-center justify-between">
+                          <div class="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] flex items-center justify-between">
                             <div class="flex items-center gap-2">
                               <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                              <span class="text-xs font-bold font-mono text-slate-900">{{ selectedWarehouseContext()!.code }}</span>
-                              <span class="text-xs text-slate-600">({{ selectedWarehouseContext()!.name }})</span>
+                              <span class="text-[13px] font-semibold font-mono text-[#1A2C44]">{{ selectedWarehouseContext()!.code }}</span>
+                              <span class="text-[13px] text-[#3C4F69]">({{ selectedWarehouseContext()!.name }})</span>
                             </div>
-                            <span class="text-[10px] font-semibold text-primary-700 bg-white px-2 py-0.5 rounded border border-primary-200">
-                              Bodega activa
+                            <span class="text-[11px] font-medium text-[#30313D] bg-white px-2 py-0.5 rounded border border-[#E3E8EE]">
+                              Almacén activo
                             </span>
                           </div>
                         } @else if (selectedEntity()!.key === 'consumptions' && col.name === 'point_code' && selectedServicePointContext()) {
                           <!-- PUNTO DE ENTREGA PARA CONSUMO: Si hay punto fijo seleccionado -->
-                          <div class="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                          <div class="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] flex items-center justify-between">
                             <div class="flex items-center gap-2">
                               <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                              <span class="text-xs font-bold font-mono text-slate-900">{{ selectedServicePointContext()!.code }}</span>
-                              <span class="text-xs text-slate-600">({{ selectedServicePointContext()!.name }})</span>
+                              <span class="text-[13px] font-semibold font-mono text-[#1A2C44]">{{ selectedServicePointContext()!.code }}</span>
+                              <span class="text-[13px] text-[#3C4F69]">({{ selectedServicePointContext()!.name }})</span>
                             </div>
-                            <span class="text-[10px] font-semibold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
-                              Punto de entrega activo
+                            <span class="text-[11px] font-medium text-[#30313D] bg-white px-2 py-0.5 rounded border border-[#E3E8EE]">
+                              Destino activo
                             </span>
                           </div>
                         } @else if ((selectedEntity()!.key === 'stock' || selectedEntity()!.key === 'consumptions' || selectedEntity()!.key === 'lots') && col.name === 'sku' && productsCatalog().length > 0) {
@@ -731,20 +758,20 @@ export function isMappingProfile(text: string): boolean {
                               [ngModel]="formValues()[col.name]"
                               (ngModelChange)="onSkuSelected($event)"
                               [name]="col.name"
-                              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
-                              <option value="">-- Selecciona el Producto / Insumo --</option>
+                              class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]">
+                              <option value="">-- Selecciona el Producto o Insumo --</option>
                               @for (p of productsCatalog(); track p.sku) {
                                 <option [value]="p.sku">{{ p.sku }} — {{ p.name }} ({{ p.base_unit }})</option>
                               }
                             </select>
 
                             @if (selectedEntity()!.key === 'lots' && formValues()['product_name']) {
-                              <div class="p-2.5 rounded-lg bg-indigo-50/80 border border-indigo-200 flex items-center justify-between text-xs">
+                              <div class="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] flex items-center justify-between text-[12px]">
                                 <div class="flex items-center gap-2">
-                                  <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-                                  <span class="font-bold text-slate-800">{{ formValues()['product_name'] }}</span>
+                                  <span class="w-2 h-2 rounded-full bg-[#635BFF]"></span>
+                                  <span class="font-medium text-[#1A2C44]">{{ formValues()['product_name'] }}</span>
                                 </div>
-                                <span class="font-mono text-[11px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded border border-indigo-200">
+                                <span class="font-mono text-[11px] font-medium text-[#3C4F69] bg-white px-2 py-0.5 rounded border border-[#E3E8EE]">
                                   {{ formValues()['base_unit'] || 'UNIDAD' }}
                                 </span>
                               </div>
@@ -758,7 +785,7 @@ export function isMappingProfile(text: string): boolean {
                                 <select 
                                   [ngModel]="lotSelectionMode()"
                                   (ngModelChange)="lotSelectionMode.set($event)"
-                                  class="text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+                                  class="text-[12px] px-2.5 py-1 rounded-md border border-[#E3E8EE] bg-[#F8FAFC] text-[#30313D]">
                                   <option value="existing">Elegir Lote Existente ({{ availableLotsForSelectedSku().length }})</option>
                                   <option value="new">+ Escribir Lote Nuevo</option>
                                 </select>
@@ -769,7 +796,7 @@ export function isMappingProfile(text: string): boolean {
                                   [ngModel]="formValues()['lot_code']"
                                   (ngModelChange)="updateFormField('lot_code', $event)"
                                   name="lot_code"
-                                  class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white font-mono">
+                                  class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white font-mono text-[#1A2C44]">
                                   <option value="">-- Seleccionar Lote Existente --</option>
                                   @for (lot of availableLotsForSelectedSku(); track lot.lot_code) {
                                     <option [value]="lot.lot_code">
@@ -787,8 +814,8 @@ export function isMappingProfile(text: string): boolean {
                                 (ngModelChange)="updateFormField('lot_code', $event)"
                                 name="lot_code"
                                 placeholder="Ej: L-DES-2610"
-                                class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white font-mono" />
-                              <p class="text-[10px] text-slate-500">
+                                class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white font-mono text-[#1A2C44]" />
+                              <p class="text-[11px] text-[#697386]">
                                 Si el lote es nuevo, se registrará automáticamente en la base de datos con este código.
                               </p>
                             }
@@ -798,7 +825,7 @@ export function isMappingProfile(text: string): boolean {
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]">
                             <option value="alta">Alta</option>
                             <option value="media">Media</option>
                             <option value="normal">Normal</option>
@@ -808,7 +835,7 @@ export function isMappingProfile(text: string): boolean {
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]">
                             <option value="hospital">Hospital</option>
                             <option value="clinica">Clínica</option>
                             <option value="oficina">Oficina Corporativa</option>
@@ -820,16 +847,16 @@ export function isMappingProfile(text: string): boolean {
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]">
                             <option value="warehouse">Bodega (warehouse)</option>
-                            <option value="service_point">Punto de Servicio (service_point)</option>
+                            <option value="service_point">Punto de Entrega (service_point)</option>
                           </select>
                         } @else if (col.name === 'period_days') {
                           <select 
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]">
                             <option [value]="1">Diario (1 día)</option>
                             <option [value]="7">Semanal (7 días)</option>
                             <option [value]="15">Quincenal (15 días)</option>
@@ -841,14 +868,14 @@ export function isMappingProfile(text: string): boolean {
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white" />
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]" />
                         } @else if (col.type.includes('Hora')) {
                           <input 
                             type="time"
                             [ngModel]="formValues()[col.name]"
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white" />
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44]" />
                         } @else {
                           <input 
                             [type]="col.type === 'Decimal' || col.type === 'Entero' ? 'number' : 'text'"
@@ -857,19 +884,19 @@ export function isMappingProfile(text: string): boolean {
                             (ngModelChange)="updateFormField(col.name, $event)"
                             [name]="col.name"
                             [placeholder]="'Ej: ' + col.example"
-                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white" />
+                            class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white text-[#1A2C44] placeholder-[#8792A2]" />
                           @if (selectedEntity()!.key === 'stock' && col.name === 'quantity') {
-                            <p class="text-[10px] text-primary-700 bg-primary-50 p-1.5 rounded border border-primary-200 mt-1">
-                              💡 Saldo disponible físico. El sistema guardará esta cantidad y generará la auditoría en el Kardex.
+                            <p class="text-[11px] text-[#3C4F69] bg-[#F8FAFC] p-2 rounded-md border border-[#E3E8EE] mt-1">
+                              Saldo disponible físico. El sistema guardará esta cantidad y generará la auditoría en el Kardex.
                             </p>
                           } @else if (selectedEntity()!.key === 'consumptions' && col.name === 'quantity') {
-                            <p class="text-[10px] text-emerald-700 bg-emerald-50 p-1.5 rounded border border-emerald-200 mt-1">
-                              💡 Total de unidades consumidas por el centro de salud en este período.
+                            <p class="text-[11px] text-[#3C4F69] bg-[#F8FAFC] p-2 rounded-md border border-[#E3E8EE] mt-1">
+                              Total de unidades consumidas por el centro de salud en este período.
                             </p>
                           }
                         }
 
-                        <p class="text-[10px] text-slate-400">
+                        <p class="text-[11px] text-[#697386]">
                           {{ col.desc }}
                         </p>
                       </div>
@@ -879,17 +906,17 @@ export function isMappingProfile(text: string): boolean {
 
                 <!-- SECCIÓN ESPECIAL: GEORREFERENCIACIÓN CON MAPA INTERACTIVO -->
                 @if (selectedEntity()!.hasLocationMap) {
-                  <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60 space-y-3">
+                  <div class="border border-[#E3E8EE] rounded-lg p-4 bg-[#F8FAFC] space-y-3">
                     <div class="flex items-center justify-between">
                       <div>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                          <svg class="w-3.5 h-3.5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h4 class="text-[13px] font-semibold text-[#1A2C44] uppercase tracking-wider flex items-center gap-1.5">
+                          <svg class="w-3.5 h-3.5 text-[#635BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                           </svg>
-                          <span>Georreferenciación en el Mapa</span>
+                          <span>Ubicación en el Mapa</span>
                         </h4>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
+                        <p class="text-[12px] text-[#3C4F69] mt-0.5">
                           Haz clic en cualquier punto del mapa para colocar el marcador y asignar automáticamente las coordenadas.
                         </p>
                       </div>
@@ -898,19 +925,19 @@ export function isMappingProfile(text: string): boolean {
                         <button 
                           type="button" 
                           (click)="centerMap([-0.1807, -78.4678], 12)" 
-                          class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 font-medium">
+                          class="px-2 py-1 bg-white hover:bg-[#F8FAFC] border border-[#E3E8EE] rounded-md text-[#30313D] font-medium transition-colors">
                           Quito
                         </button>
                         <button 
                           type="button" 
                           (click)="centerMap([-2.1894, -79.8891], 12)" 
-                          class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 font-medium">
+                          class="px-2 py-1 bg-white hover:bg-[#F8FAFC] border border-[#E3E8EE] rounded-md text-[#30313D] font-medium transition-colors">
                           Guayaquil
                         </button>
                         <button 
                           type="button" 
                           (click)="centerMap([-1.8312, -78.1834], 7)" 
-                          class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 font-medium">
+                          class="px-2 py-1 bg-white hover:bg-[#F8FAFC] border border-[#E3E8EE] rounded-md text-[#30313D] font-medium transition-colors">
                           Ecuador
                         </button>
                       </div>
@@ -919,8 +946,8 @@ export function isMappingProfile(text: string): boolean {
                     <!-- Inputs de Coordenadas Manuales o Autocompletadas -->
                     <div class="grid grid-cols-2 gap-3 pt-1">
                       <div>
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">
-                          Latitud (WGS84) <span class="text-red-500 font-bold">*</span>
+                        <label class="block text-[11px] font-medium text-[#30313D] mb-1">
+                          Latitud (WGS84) <span class="text-rose-500 font-bold">*</span>
                         </label>
                         <input 
                           type="number"
@@ -929,12 +956,12 @@ export function isMappingProfile(text: string): boolean {
                           (ngModelChange)="updateCoordinates('lat', $event)"
                           name="lat"
                           placeholder="Ej: -0.2295"
-                          class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white font-mono" />
+                          class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white font-mono text-[#1A2C44]" />
                       </div>
 
                       <div>
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">
-                          Longitud (WGS84) <span class="text-red-500 font-bold">*</span>
+                        <label class="block text-[11px] font-medium text-[#30313D] mb-1">
+                          Longitud (WGS84) <span class="text-rose-500 font-bold">*</span>
                         </label>
                         <input 
                           type="number"
@@ -943,12 +970,12 @@ export function isMappingProfile(text: string): boolean {
                           (ngModelChange)="updateCoordinates('lon', $event)"
                           name="lon"
                           placeholder="Ej: -78.5243"
-                          class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white font-mono" />
+                          class="w-full h-9 px-3 text-[13px] border border-[#E3E8EE] rounded-md focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] bg-white font-mono text-[#1A2C44]" />
                       </div>
                     </div>
 
                     <!-- Componente MapView interactivo -->
-                    <div class="h-64 rounded-xl overflow-hidden border border-slate-200 shadow-2xs relative">
+                    <div class="h-64 rounded-lg overflow-hidden border border-[#E3E8EE] shadow-2xs relative">
                       <ui-map-view
                         #formMapView
                         [center]="mapCenter()"
@@ -959,7 +986,7 @@ export function isMappingProfile(text: string): boolean {
                       </ui-map-view>
                       
                       @if (mapMarkers().length > 0) {
-                        <div class="absolute top-2 right-2 z-[400] bg-white/95 backdrop-blur px-2.5 py-1 rounded-md border border-slate-200 shadow-xs text-[11px] font-mono text-slate-700">
+                        <div class="absolute top-2 right-2 z-[400] bg-white/95 backdrop-blur px-2.5 py-1 rounded-md border border-[#E3E8EE] shadow-xs text-[11px] font-mono text-[#30313D]">
                           Pin: {{ formValues()['lat'] }}, {{ formValues()['lon'] }}
                         </div>
                       }
@@ -967,25 +994,25 @@ export function isMappingProfile(text: string): boolean {
                   </div>
                 }
 
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-[#E3E8EE]">
                   <button 
                     type="button"
                     (click)="resetForm()"
-                    class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors">
+                    class="h-9 px-4 text-[13px] font-medium rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer">
                     Limpiar formulario
                   </button>
 
                   <button 
                     type="submit"
                     [disabled]="formLoading()"
-                    class="px-5 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-2xs flex items-center gap-1.5 disabled:opacity-50">
+                    class="h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs flex items-center gap-2 disabled:opacity-50 cursor-pointer">
                     @if (formLoading()) {
                       <svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                       </svg>
                       <span>Guardando en BD...</span>
                     } @else {
-                      <span>Guardar Registro en BD</span>
+                      <span>Guardar Registro</span>
                     }
                   </button>
                 </div>
@@ -999,60 +1026,62 @@ export function isMappingProfile(text: string): boolean {
               <div class="space-y-6">
                 <!-- Banner para importación directa a bodega activa -->
                 @if (selectedEntity()!.key === 'stock' && selectedWarehouseContext()) {
-                  <div class="p-4 rounded-xl bg-primary-50/70 border border-primary-200 text-xs text-primary-950 space-y-2">
+                  <div class="p-4 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] text-[13px] text-[#1A2C44] space-y-2">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <span class="font-bold">Importación directa a: {{ selectedWarehouseContext()!.name }}</span>
-                        <span class="font-mono text-[10px] font-bold bg-primary-200 text-primary-900 px-1.5 py-0.5 rounded">{{ selectedWarehouseContext()!.code }}</span>
+                        <span class="font-semibold">Importación directa a: {{ selectedWarehouseContext()!.name }}</span>
+                        <span class="font-mono text-[11px] font-medium bg-white text-[#30313D] border border-[#E3E8EE] px-1.5 py-0.5 rounded">{{ selectedWarehouseContext()!.code }}</span>
                       </div>
                       <button 
                         type="button"
                         (click)="downloadTemplateForWarehouse(selectedWarehouseContext()!)"
-                        class="text-xs font-semibold text-primary-700 bg-white hover:bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-300 transition-colors shadow-2xs">
-                        📥 Descargar Plantilla {{ selectedWarehouseContext()!.code }}
+                        class="text-[12px] font-medium text-[#30313D] bg-white hover:bg-[#F8FAFC] px-2.5 py-1 rounded-md border border-[#E3E8EE] transition-colors shadow-2xs">
+                        Descargar Plantilla {{ selectedWarehouseContext()!.code }}
                       </button>
                     </div>
-                    <p class="text-[11px] text-slate-600">
-                      Puedes subir un CSV estándar o simplificado (con columnas <code>sku,lot_code,quantity</code>). Los registros se asociarán automáticamente a esta bodega.
+                    <p class="text-[12px] text-[#3C4F69]">
+                      Puedes subir un CSV estándar o simplificado (con columnas <code class="font-mono bg-white px-1 py-0.5 rounded border border-[#E3E8EE]">sku,lot_code,quantity</code>). Los registros se asociarán automáticamente a este almacén.
                     </p>
                   </div>
                 }
 
                 <!-- Banner para importación directa a punto de entrega activo -->
                 @if (selectedEntity()!.key === 'consumptions' && selectedServicePointContext()) {
-                  <div class="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-950 space-y-2">
+                  <div class="p-4 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] text-[13px] text-[#1A2C44] space-y-2">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <span class="font-bold">Importación directa a: {{ selectedServicePointContext()!.name }}</span>
-                        <span class="font-mono text-[10px] font-bold bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded">{{ selectedServicePointContext()!.code }}</span>
+                        <span class="font-semibold">Importación directa a: {{ selectedServicePointContext()!.name }}</span>
+                        <span class="font-mono text-[11px] font-medium bg-white text-[#30313D] border border-[#E3E8EE] px-1.5 py-0.5 rounded">{{ selectedServicePointContext()!.code }}</span>
                       </div>
                       <button 
                         type="button"
                         (click)="downloadTemplateForServicePoint(selectedServicePointContext()!)"
-                        class="text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-300 transition-colors shadow-2xs">
-                        📥 Descargar Plantilla {{ selectedServicePointContext()!.code }}
+                        class="text-[12px] font-medium text-[#30313D] bg-white hover:bg-[#F8FAFC] px-2.5 py-1 rounded-md border border-[#E3E8EE] transition-colors shadow-2xs">
+                        Descargar Plantilla {{ selectedServicePointContext()!.code }}
                       </button>
                     </div>
-                    <p class="text-[11px] text-slate-600">
-                      Puedes subir un CSV estándar o simplificado (con columnas <code>sku,date,quantity,period_days</code>). Los registros se asignarán automáticamente a este punto de entrega.
+                    <p class="text-[12px] text-[#3C4F69]">
+                      Puedes subir un CSV estándar o simplificado (con columnas <code class="font-mono bg-white px-1 py-0.5 rounded border border-[#E3E8EE]">sku,date,quantity,period_days</code>). Los registros se asignarán automáticamente a este centro de salud.
                     </p>
                   </div>
                 }
 
                 <!-- Área de selección de archivo -->
-                <div class="border-2 border-dashed border-slate-200 hover:border-primary-400 rounded-xl p-6 text-center bg-slate-50/40 hover:bg-white transition-all space-y-3">
-                  <svg class="w-10 h-10 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                  </svg>
+                <div class="border-2 border-dashed border-[#E3E8EE] hover:border-[#635BFF] rounded-lg p-8 text-center bg-[#F8FAFC]/50 hover:bg-white transition-all space-y-4">
+                  <div class="w-12 h-12 rounded-full bg-[#F1F3F5] text-[#697386] flex items-center justify-center mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                  </div>
 
-                  <div>
-                    <h4 class="text-sm font-bold text-slate-800">
+                  <div class="space-y-1">
+                    <h4 class="text-[14px] font-semibold text-[#1A2C44]">
                       Cargar archivo para {{ selectedEntity()!.name }}
                     </h4>
-                    <p class="text-xs text-slate-500 mt-1">
-                      Formatos soportados: <span class="font-mono font-semibold text-slate-700">.csv</span> o <span class="font-mono font-semibold text-slate-700">.xlsx</span>
+                    <p class="text-[12px] text-[#697386]">
+                      Formatos soportados: <span class="font-mono font-medium text-[#1A2C44]">.csv</span> o <span class="font-mono font-medium text-[#1A2C44]">.xlsx</span>
                     </p>
                   </div>
 
@@ -1065,7 +1094,7 @@ export function isMappingProfile(text: string): boolean {
                       class="hidden" />
                     <label 
                       for="drawerFileInput"
-                      class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold cursor-pointer transition-colors shadow-2xs">
+                      class="inline-flex items-center gap-2 px-4 h-9 rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white text-[13px] font-medium cursor-pointer transition-colors shadow-2xs">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                       </svg>
@@ -1073,24 +1102,24 @@ export function isMappingProfile(text: string): boolean {
                     </label>
                   </div>
 
-                  <p class="text-[11px] text-slate-400">
-                    Archivo sugerido: <code class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{{ selectedEntity()!.fileName }}</code>
+                  <p class="text-[11px] text-[#697386]">
+                    Archivo sugerido: <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E3E8EE] text-[#30313D]">{{ selectedEntity()!.fileName }}</code>
                   </p>
                 </div>
 
                 <!-- Archivo seleccionado -->
                 @if (drawerSelectedFile()) {
-                  <div class="p-4 bg-white border border-slate-200 rounded-xl space-y-3 shadow-2xs">
+                  <div class="p-4 bg-white border border-[#E3E8EE] rounded-lg space-y-3 shadow-2xs">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-3">
-                        <div class="p-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-600">
+                        <div class="w-9 h-9 rounded-md bg-[#F1F3F5] text-[#697386] flex items-center justify-center">
                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                           </svg>
                         </div>
                         <div>
-                          <div class="text-xs font-bold text-slate-900">{{ drawerSelectedFile()!.name }}</div>
-                          <div class="text-[11px] font-mono text-slate-400">
+                          <div class="text-[13px] font-semibold text-[#1A2C44]">{{ drawerSelectedFile()!.name }}</div>
+                          <div class="text-[11px] font-mono text-[#8792A2]">
                             {{ (drawerSelectedFile()!.size / 1024).toFixed(1) }} KB | {{ drawerSelectedFile()!.type || 'CSV' }}
                           </div>
                         </div>
@@ -1099,17 +1128,17 @@ export function isMappingProfile(text: string): boolean {
                       <button 
                         type="button"
                         (click)="drawerSelectedFile.set(null); drawerReport.set(null)"
-                        class="text-xs text-red-600 hover:text-red-800 font-semibold">
+                        class="text-[12px] text-rose-600 hover:text-rose-800 font-medium cursor-pointer">
                         Quitar
                       </button>
                     </div>
 
-                    <div class="flex items-center gap-3 pt-2 border-t border-slate-100">
+                    <div class="flex items-center gap-3 pt-2 border-t border-[#E3E8EE]">
                       <button 
                         type="button"
                         (click)="processDrawerImport(true)"
                         [disabled]="drawerLoading()"
-                        class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors disabled:opacity-50">
+                        class="h-9 px-4 rounded-md bg-white border border-[#E3E8EE] hover:bg-[#F8FAFC] text-[#30313D] text-[13px] font-medium transition-colors disabled:opacity-50 shadow-2xs cursor-pointer">
                         {{ drawerLoading() ? 'Validando...' : '1. Simulación (Validar sin guardar)' }}
                       </button>
 
@@ -1117,7 +1146,7 @@ export function isMappingProfile(text: string): boolean {
                         type="button"
                         (click)="processDrawerImport(false)"
                         [disabled]="drawerLoading()"
-                        class="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition-colors disabled:opacity-50 shadow-2xs">
+                        class="h-9 px-4 rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white text-[13px] font-medium transition-colors disabled:opacity-50 shadow-2xs cursor-pointer">
                         {{ drawerLoading() ? 'Procesando...' : '2. Guardar en Base de Datos' }}
                       </button>
                     </div>
@@ -1127,11 +1156,11 @@ export function isMappingProfile(text: string): boolean {
                 <!-- Reporte de la importación individual -->
                 @if (drawerReport()) {
                   <div 
-                    class="border rounded-xl p-5 space-y-4"
+                    class="border rounded-lg p-5 space-y-4"
                     [ngClass]="drawerReport()!.errorCount > 0 ? 'bg-amber-50/60 border-amber-200' : 'bg-emerald-50/60 border-emerald-200'">
                     
                     <div class="flex items-center justify-between">
-                      <h4 class="text-xs font-bold flex items-center gap-2" [ngClass]="drawerReport()!.errorCount > 0 ? 'text-amber-900' : 'text-emerald-900'">
+                      <h4 class="text-[13px] font-semibold flex items-center gap-2" [ngClass]="drawerReport()!.errorCount > 0 ? 'text-amber-900' : 'text-emerald-900'">
                         @if (drawerReport()!.errorCount > 0) {
                           <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -1145,14 +1174,14 @@ export function isMappingProfile(text: string): boolean {
                       </h4>
                       
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-white border border-slate-200 shadow-2xs">
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-white border border-[#E3E8EE] shadow-2xs text-[#30313D]">
                           Errores: {{ drawerReport()!.errorCount }} | Avisos: {{ drawerReport()!.warningCount }}
                         </span>
                         @if (drawerReport()!.applied) {
                           <button 
                             type="button"
                             (click)="switchTab('data')"
-                            class="text-xs font-bold text-emerald-800 underline hover:text-emerald-950">
+                            class="text-[12px] font-medium text-emerald-800 underline hover:text-emerald-950">
                             Ver datos actualizados →
                           </button>
                         }
@@ -1160,9 +1189,9 @@ export function isMappingProfile(text: string): boolean {
                     </div>
 
                     @if (drawerReport()!.entities.length > 0) {
-                      <div class="bg-white rounded-lg border border-slate-200/80 overflow-hidden">
+                      <div class="bg-white rounded-lg border border-[#E3E8EE] overflow-hidden shadow-2xs">
                         <table class="w-full text-left text-xs">
-                          <thead class="bg-slate-50 text-slate-600 text-[11px] uppercase border-b border-slate-200 font-bold">
+                          <thead class="bg-[#F8FAFC] text-[#697386] text-[11px] uppercase border-b border-[#E3E8EE] font-semibold">
                             <tr>
                               <th class="p-2.5">Entidad</th>
                               <th class="p-2.5">Filas</th>
@@ -1171,14 +1200,14 @@ export function isMappingProfile(text: string): boolean {
                               <th class="p-2.5">Omitidos</th>
                             </tr>
                           </thead>
-                          <tbody class="divide-y divide-slate-100">
+                          <tbody class="divide-y divide-[#F1F3F5]">
                             @for (ent of drawerReport()!.entities; track ent.entity) {
-                              <tr>
-                                <td class="p-2.5 font-bold text-slate-800">{{ ent.entity }}</td>
-                                <td class="p-2.5 font-mono">{{ ent.rowsRead }}</td>
+                              <tr class="hover:bg-[#F8FAFC]/50">
+                                <td class="p-2.5 font-medium text-[#1A2C44]">{{ ent.entity }}</td>
+                                <td class="p-2.5 font-mono text-[#30313D]">{{ ent.rowsRead }}</td>
                                 <td class="p-2.5 font-mono text-emerald-600 font-semibold">+{{ ent.created }}</td>
-                                <td class="p-2.5 font-mono text-blue-600">{{ ent.updated }}</td>
-                                <td class="p-2.5 font-mono text-slate-400">{{ ent.skipped }}</td>
+                                <td class="p-2.5 font-mono text-[#635BFF]">{{ ent.updated }}</td>
+                                <td class="p-2.5 font-mono text-[#8792A2]">{{ ent.skipped }}</td>
                               </tr>
                             }
                           </tbody>
@@ -1188,11 +1217,11 @@ export function isMappingProfile(text: string): boolean {
 
                     @if (drawerReport()!.issues.length > 0) {
                       <div class="space-y-1.5 text-xs">
-                        <h5 class="font-bold text-slate-800">Detalles de incidencias:</h5>
+                        <h5 class="font-semibold text-[#1A2C44]">Detalles de incidencias:</h5>
                         <ul class="space-y-1 max-h-36 overflow-y-auto">
                           @for (issue of drawerReport()!.issues; track $index) {
-                            <li class="p-2 rounded bg-white border border-slate-200 text-slate-700">
-                              <span class="font-bold text-slate-900">[{{ issue.entity }} Fila {{ issue.row }}]:</span>
+                            <li class="p-2 rounded-md bg-white border border-[#E3E8EE] text-[#30313D]">
+                              <span class="font-semibold text-[#1A2C44]">[{{ issue.entity }} Fila {{ issue.row }}]:</span>
                               {{ issue.message }}
                             </li>
                           }
@@ -1210,12 +1239,12 @@ export function isMappingProfile(text: string): boolean {
             @if (activeTab() === 'format') {
               <div class="space-y-6">
                 <!-- Botones de Acción de Plantilla -->
-                <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-primary-50/60 border border-primary-200/60 rounded-xl">
+                <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg">
                   <div>
-                    <h4 class="text-xs font-bold text-primary-900">
+                    <h4 class="text-[13px] font-semibold text-[#1A2C44]">
                       Plantilla Oficial: {{ selectedEntity()!.fileName }}
                     </h4>
-                    <p class="text-[11px] text-primary-700 mt-0.5">
+                    <p class="text-[12px] text-[#3C4F69] mt-0.5">
                       Descarga el archivo o copia los datos de ejemplo para editar en Excel o cualquier hoja de cálculo.
                     </p>
                   </div>
@@ -1224,14 +1253,14 @@ export function isMappingProfile(text: string): boolean {
                     <button 
                       type="button"
                       (click)="copyTemplate(selectedEntity()!)"
-                      class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs flex items-center gap-1.5">
+                      class="h-9 px-3.5 text-[13px] font-medium rounded-md bg-white border border-[#E3E8EE] text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer">
                       @if (copySuccess()) {
                         <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         <span class="text-emerald-700">Copiado</span>
                       } @else {
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 text-[#8792A2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                         </svg>
                         <span>Copiar Ejemplo</span>
@@ -1241,7 +1270,7 @@ export function isMappingProfile(text: string): boolean {
                     <button 
                       type="button"
                       (click)="downloadTemplate(selectedEntity()!)"
-                      class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-2xs flex items-center gap-1.5">
+                      class="h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                       </svg>
@@ -1252,13 +1281,13 @@ export function isMappingProfile(text: string): boolean {
 
                 <!-- Tabla de Especificación de Columnas -->
                 <div class="space-y-2">
-                  <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  <h4 class="text-[13px] font-semibold text-[#1A2C44] uppercase tracking-wider">
                     Estructura y Columnas Requeridas
                   </h4>
                   
-                  <div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div class="border border-[#E3E8EE] rounded-lg overflow-hidden bg-white shadow-2xs">
                     <table class="w-full text-left text-xs">
-                      <thead class="bg-slate-50 text-slate-600 text-[11px] uppercase border-b border-slate-200 font-bold">
+                      <thead class="bg-[#F8FAFC] text-[#697386] text-[11px] uppercase border-b border-[#E3E8EE] font-semibold">
                         <tr>
                           <th class="p-3">Columna</th>
                           <th class="p-3">Requerido</th>
@@ -1267,30 +1296,30 @@ export function isMappingProfile(text: string): boolean {
                           <th class="p-3">Ejemplo</th>
                         </tr>
                       </thead>
-                      <tbody class="divide-y divide-slate-100">
+                      <tbody class="divide-y divide-[#F1F3F5]">
                         @for (col of selectedEntity()!.columns; track col.name) {
-                          <tr class="hover:bg-slate-50/50">
-                            <td class="p-3 font-mono font-bold text-primary-700">
+                          <tr class="hover:bg-[#F8FAFC]/50">
+                            <td class="p-3 font-mono font-medium text-[#1A2C44]">
                               {{ col.name }}
                             </td>
                             <td class="p-3">
                               @if (col.required) {
-                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
                                   Obligatorio
                                 </span>
                               } @else {
-                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]">
                                   Opcional
                                 </span>
                               }
                             </td>
-                            <td class="p-3 text-slate-600 font-mono text-[11px]">
+                            <td class="p-3 text-[#697386] font-mono text-[11px]">
                               {{ col.type }}
                             </td>
-                            <td class="p-3 text-slate-700">
+                            <td class="p-3 text-[#30313D]">
                               {{ col.desc }}
                             </td>
-                            <td class="p-3 font-mono text-[11px] text-slate-500">
+                            <td class="p-3 font-mono text-[11px] text-[#8792A2]">
                               {{ col.example }}
                             </td>
                           </tr>
@@ -1303,34 +1332,38 @@ export function isMappingProfile(text: string): boolean {
                 <!-- Previsualización del CSV -->
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    <h4 class="text-[13px] font-semibold text-[#1A2C44] uppercase tracking-wider">
                       Vista Previa del Archivo CSV
                     </h4>
-                    <span class="text-[11px] text-slate-400">Delimitador: coma (,)</span>
+                    <span class="text-[11px] text-[#8792A2]">Delimitador: coma (,)</span>
                   </div>
 
-                  <pre class="p-4 bg-slate-900 text-slate-100 text-xs font-mono rounded-xl overflow-x-auto leading-relaxed border border-slate-800">{{ selectedEntity()!.csvTemplate }}</pre>
+                  <pre class="p-4 bg-[#1A2C44] text-[#E3E8EE] text-[12px] font-mono rounded-lg overflow-x-auto leading-relaxed border border-[#E3E8EE]/20">{{ selectedEntity()!.csvTemplate }}</pre>
                 </div>
               </div>
             }
           </div>
 
           <!-- Pie del Drawer -->
-          <div class="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-            <span class="text-[11px] text-slate-400">
-              Presiona <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px] text-slate-600 font-mono">Esc</kbd> para cerrar
+          <div class="px-6 py-3.5 border-t border-[#E3E8EE] bg-white flex items-center justify-between shrink-0">
+            <span class="text-[12px] text-[#697386] flex items-center gap-2">
+              <span>Presiona</span>
+              <kbd class="px-1.5 py-0.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded text-[11px] text-[#4F566B] font-mono shadow-2xs">Esc</kbd>
+              <span>para cerrar</span>
             </span>
 
             <button 
               type="button"
               (click)="closeDrawer()"
-              class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs">
+              class="h-9 px-4 text-[13px] font-medium rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer">
               Cerrar
             </button>
           </div>
         </aside>
-      }
+      </div>
     </div>
+  }
+</div>
   `
 })
 export class DatosPage {
@@ -1339,6 +1372,7 @@ export class DatosPage {
   private readonly apiService = inject(ApiService);
   readonly session = inject(AuthSession);
 
+  readonly showTipBanner = signal(true);
   readonly selectedFiles = signal<File[]>([]);
   readonly loading = signal(false);
   readonly report = signal<ImportReportDto | null>(null);
