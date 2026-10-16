@@ -49,6 +49,7 @@ describe('RutasPage: mapa de todas las rutas', () => {
             getRoutePlans: vi.fn(() => of(plans)),
             getRoutePlanById: vi.fn((id: string) => of({ ...plans.find(p => p.id === id), stops: [] })),
             getRoutePlanGeometry: vi.fn((id: string) => of(geometries[id])),
+            getDrivers: vi.fn(() => of([{ accountId: 'drv-1', displayName: 'Conductor 1' }])),
             getServicePoints: vi.fn(() => of([])),
             getDeliveryOrders: vi.fn(() => of([])),
             getWarehouses: vi.fn(() => of([])),
@@ -95,5 +96,45 @@ describe('RutasPage: mapa de todas las rutas', () => {
     expect(legend[0].km).toBe(21.5);
     expect(page.routeLegendHasApproximate()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Las líneas punteadas son aproximadas');
+  });
+});
+
+describe('RutasPage: publicar con conductor', () => {
+  it('no publica sin conductor y, al elegirlo, envía la asignación del vehículo', () => {
+    const publishRoutePlan = vi.fn(() => of({}));
+    const proposed = plan('p1', 'VEH-01');
+    TestBed.configureTestingModule({
+      imports: [RutasPage],
+      providers: [
+        provideRouter([]),
+        { provide: AuthSession, useValue: { canWrite: () => true } },
+        {
+          provide: ApiService,
+          useValue: {
+            getRoutePlans: vi.fn(() => of([proposed])),
+            getRoutePlanById: vi.fn(() => of({ ...proposed, stops: [] })),
+            getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([{ accountId: 'drv-1', displayName: 'Conductor 1' }])),
+            publishRoutePlan,
+            getServicePoints: vi.fn(() => of([])),
+            getDeliveryOrders: vi.fn(() => of([])),
+            getWarehouses: vi.fn(() => of([])),
+            getEntityData: vi.fn(() => of([])),
+            getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(RutasPage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.publishPlan('p1');
+    expect(publishRoutePlan).not.toHaveBeenCalled();
+    expect(page.feedbackMessage()?.text).toContain('Elige el conductor');
+
+    page.selectedDriverId.set('drv-1');
+    page.publishPlan('p1');
+    expect(publishRoutePlan).toHaveBeenCalledWith('p1', { vehicleCode: 'VEH-01', driverAccountId: 'drv-1' });
   });
 });

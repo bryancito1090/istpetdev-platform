@@ -30,6 +30,7 @@ describe('RutasPage (FR-21)', () => {
             getRoutePlans: vi.fn(() => of([plan])),
             getRoutePlanById: vi.fn(() => of({ ...plan, stops: [] })),
             getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([{ accountId: 'drv-1', displayName: 'Conductor 1' }])),
             getServicePoints: vi.fn(() => of([])),
             getDeliveryOrders: vi.fn(() => of([])),
             getWarehouses: vi.fn(() => of([])),
@@ -57,6 +58,8 @@ describe('RutasPage (FR-21)', () => {
       servicePointName: 'Centro de Salud Norte',
       driverId: 'drv-1',
       driverName: 'Carlos Chofer',
+      // #162: el campo legado sigue viajando, pero la bandeja atribuye la recepción al Receptor.
+      registeredByName: 'Laura Receptor',
       receivedAtUtc: '2026-10-15T10:00:00Z',
       reason: 'Versión desactualizada o colisión de negocio (ESC-23)',
       status: 'RequiresReview',
@@ -84,6 +87,7 @@ describe('RutasPage (FR-21)', () => {
             getRoutePlans: vi.fn(() => of([])),
             getRoutePlanById: vi.fn(() => of(null)),
             getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([{ accountId: 'drv-1', displayName: 'Conductor 1' }])),
             getServicePoints: vi.fn(() => of([{ id: 'sp-1', code: 'CS-NORTE', name: 'Centro de Salud Norte' }])),
             getDeliveryOrders: vi.fn(() => of([])),
             getWarehouses: vi.fn(() => of([])),
@@ -106,5 +110,57 @@ describe('RutasPage (FR-21)', () => {
     expect(text).toContain('Paracetamol 500mg');
     expect(text).toContain('Requiere Revisión');
     expect(text).toContain('DEL-001');
+    // #162: la recepción la registra el Receptor; el campo legado no se presenta como «Conductor».
+    expect(text).toContain('Registrado por:');
+    expect(text).toContain('Laura Receptor');
+    expect(text).not.toContain('Conductor:');
+  });
+
+  it('usa el nombre legado con la etiqueta Registrado por si el servidor no envía registeredByName', () => {
+    const legacyCapture = {
+      receiptId: 'rcpt-legacy',
+      deliveryId: 'del-legacy',
+      deliveryCode: 'DEL-LEG',
+      servicePointId: 'sp-1',
+      servicePointCode: 'CS-NORTE',
+      servicePointName: 'Centro de Salud Norte',
+      driverId: 'drv-legacy',
+      driverName: 'Receptor Legado',
+      receivedAtUtc: '2026-10-15T10:00:00Z',
+      reason: 'Daño',
+      status: 'Partial',
+      lines: [],
+    };
+
+    TestBed.configureTestingModule({
+      imports: [RutasPage],
+      providers: [
+        provideRouter([]),
+        { provide: AuthSession, useValue: { canWrite: () => true } },
+        {
+          provide: ApiService,
+          useValue: {
+            getRoutePlans: vi.fn(() => of([])),
+            getRoutePlanById: vi.fn(() => of(null)),
+            getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([])),
+            getServicePoints: vi.fn(() => of([{ id: 'sp-1', code: 'CS-NORTE', name: 'Centro de Salud Norte' }])),
+            getDeliveryOrders: vi.fn(() => of([])),
+            getWarehouses: vi.fn(() => of([])),
+            getEntityData: vi.fn(() => of([])),
+            getRejectedCaptures: vi.fn(() => of({ items: [legacyCapture], count: 1 })),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(RutasPage);
+    fixture.detectChanges();
+    fixture.componentInstance.activeTab.set('rechazos');
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Registrado por:');
+    expect(text).toContain('Receptor Legado');
+    expect(text).not.toContain('Conductor:');
   });
 });

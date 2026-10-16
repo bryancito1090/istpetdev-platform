@@ -308,4 +308,37 @@ public sealed class ReplanningTests(PostgisContainer postgres) : IClassFixture<P
         var repeatedRevert = await replanner.RevertPlanAsync(revertRequest);
         Assert.Equal(revertedPlan.Id, repeatedRevert.Id);
     }
+
+    // #162: una entrega Delivered todavía está pendiente del recibo del receptor; no se puede revertir.
+    [Fact]
+    public async Task Revert_is_blocked_when_a_delivery_is_delivered_and_pending_receipt()
+    {
+        var connection = postgres.NewDatabase();
+        await using var db = TestDb.Context(connection);
+
+        var warehouse = new DomainLocation { Code = "B-REV", Name = "Bodega", Kind = LocationKinds.Warehouse, IsActive = true };
+        var sp = new ServicePoint { Code = "SP-REV", Name = "Punto", Criticality = "normal", IsActive = true };
+        var vehicle = new Vehicle { Code = "V-REV", DepotLocationId = warehouse.Id, MaxWeight = 1000, IsActive = true };
+        var previous = new RoutePlan { Code = "R-REV", Revision = 1, VehicleId = vehicle.Id, Status = "Published", ProposedBy = "test", PlannedStartUtc = DateTime.UtcNow, AlgorithmVersion = "test" };
+        var previousStop = new RouteStop { RoutePlanId = previous.Id, ServicePointId = sp.Id, SequenceNumber = 1, Status = "Pending" };
+        var current = new RoutePlan { Code = "R-REV", Revision = 2, VehicleId = vehicle.Id, Status = "Published", ProposedBy = "test", SupersedesRoutePlanId = previous.Id, PlannedStartUtc = DateTime.UtcNow, AlgorithmVersion = "test" };
+        var currentStop = new RouteStop { RoutePlanId = current.Id, ServicePointId = sp.Id, SequenceNumber = 1, Status = "Pending" };
+        var delivery = new Delivery { Code = "D-REV", RouteStopId = currentStop.Id, OriginLocationId = warehouse.Id, ServicePointId = sp.Id, Status = DeliveryStates.Delivered, DispatchedAtUtc = DateTime.UtcNow };
+        db.AddRange(warehouse, sp, vehicle, previous, previousStop, current, currentStop, delivery);
+        await db.SaveChangesAsync();
+
+        var options = DefaultOptions();
+        var clock = new OperationalClock(db, options);
+        var distProvider = new DistanceProvider(db, new HttpClient(), options, NullLogger<DistanceProvider>.Instance);
+        var riskCalc = new RiskCalculator(db, clock, options);
+        var routePlanner = new RoutePlanner(db, clock, riskCalc, new ReplenishmentAllocator(), distProvider, options);
+        var routePublisher = new RoutePublisher(db, clock, options);
+        var replanner = new Replanner(db, clock, new IncidentEvaluator(db), routePlanner, new AutonomyPolicy(options), new AutonomyState(options),
+            routePublisher, new ExplanationTemplates(), options);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => replanner.RevertPlanAsync(new RevertPlanRequest(current.Id)));
+        Assert.Contains("409", error.Message);
+        Assert.Equal(DeliveryStates.Delivered, (await db.Deliveries.SingleAsync(d => d.Id == delivery.Id)).Status);
+        Assert.Equal("Published", (await db.RoutePlans.SingleAsync(p => p.Id == current.Id)).Status);
+    }
 }

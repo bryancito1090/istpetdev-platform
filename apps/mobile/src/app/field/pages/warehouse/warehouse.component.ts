@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -111,6 +111,12 @@ import { FIELD_API } from '../../field-api.interface';
                 <span class="text-slate-400">•</span>
                 <span class="font-mono text-[11px]">Versión {{ detail.version }}</span>
               </div>
+              <!-- #160: a qué vehículo y conductor va esta entrega -->
+              <div class="text-xs text-slate-700 mt-1" data-delivery-assignment>
+                Vehículo <strong>{{ detail.vehicleCode || '—' }}</strong> ·
+                Conductor <strong [class.text-rose-700]="!detail.driverName">{{ detail.driverName || 'sin asignar' }}</strong>
+                @if (detail.originWarehouseName) { · Sale de <strong>{{ detail.originWarehouseName }}</strong> }
+              </div>
             </ion-card-header>
 
             <ion-card-content class="p-4 space-y-4">
@@ -218,6 +224,10 @@ import { FIELD_API } from '../../field-api.interface';
                   class="px-3 py-1.5 bg-white text-teal-900 rounded-lg text-xs font-bold shadow hover:bg-teal-50 transition flex items-center gap-1">
                   🖨️ Imprimir
                 </button>
+              </div>
+              <!-- El token #t= solo llega al crear el bulto: no se puede reimprimir después -->
+              <div class="print-hide px-3 py-2 bg-amber-100 text-amber-900 text-xs font-bold border-b border-amber-300">
+                ⚠️ Imprime ahora: este QR no se puede volver a mostrar
               </div>
 
               <ion-card-content class="p-4 space-y-3">
@@ -349,10 +359,13 @@ import { FIELD_API } from '../../field-api.interface';
         box-shadow: none !important;
         border: 2px solid #000 !important;
       }
+      .print-hide {
+        display: none !important;
+      }
     }
   `]
 })
-export class WarehouseComponent implements OnInit {
+export class WarehouseComponent implements OnInit, OnDestroy {
   private readonly fieldApi = inject(FIELD_API);
 
   readonly draftDeliveries = signal<DeliveryListItem[]>([]);
@@ -360,6 +373,9 @@ export class WarehouseComponent implements OnInit {
   readonly selectedDelivery = signal<DeliveryDetailResponse | null>(null);
   readonly loadingDetail = signal<boolean>(false);
   readonly createdHandlingUnit = signal<{ hu: HandlingUnitResponse; qrDataUrl: string } | null>(null);
+
+  // Restauración pendiente del título tras imprimir (#161); conserva el título original
+  private afterPrintListener: (() => void) | null = null;
   readonly preparing = signal<boolean>(false);
   readonly dispatching = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
@@ -507,7 +523,36 @@ export class WarehouseComponent implements OnInit {
   }
 
   printLabel(): void {
+    // El navegador usa document.title como nombre del PDF: uno único por bulto (#161)
+    const code = this.createdHandlingUnit()?.hu.code || 'bulto';
+
+    // Sin temporizador: en Chrome Android print() no bloquea y el título volvería
+    // antes de «Guardar como PDF». Solo se restaura en afterprint o al destruir.
+    if (!this.afterPrintListener) {
+      const original = document.title;
+      this.afterPrintListener = () => this.restorePrintTitle(original);
+      window.addEventListener('afterprint', this.afterPrintListener, { once: true });
+    }
+    document.title = `etiqueta-${code}-${this.printStamp(new Date())}`;
+
     window.print();
+  }
+
+  ngOnDestroy(): void {
+    this.afterPrintListener?.();
+  }
+
+  private restorePrintTitle(original: string): void {
+    if (!this.afterPrintListener) return;
+    window.removeEventListener('afterprint', this.afterPrintListener);
+    this.afterPrintListener = null;
+    document.title = original;
+  }
+
+  /** yyyyMMddHHmm en hora local. */
+  private printStamp(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}`;
   }
 
   formatDate(dateStr: string): string {

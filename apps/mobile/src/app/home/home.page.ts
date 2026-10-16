@@ -19,7 +19,7 @@ import {
   IonInput,
   AlertController
 } from '@ionic/angular/standalone';
-import { RECEIPT_REJECTION_REASONS } from '@istpetdev/shared-core';
+import { RECEIPT_REJECTION_REASONS, MobileAssignmentDelivery } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field/field-api.interface';
@@ -80,6 +80,14 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
       }
 
+      <!-- 015: la app se abrió sin señal; la cola se envía sola al renovar la sesión -->
+      @if (authService.offline()) {
+        <div role="status" class="mb-3 p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 shadow-sm">
+          <span class="font-bold">Sin conexión: tus capturas se guardan en el teléfono.</span>
+          Se enviarán solas cuando vuelva la señal.
+        </div>
+      }
+
       <!-- Tarjeta de Perfil Activo -->
       <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white">
         <ion-card-header class="pb-2">
@@ -115,6 +123,10 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
             }
             @if (receiverActiveBox(); as box) {
               <h2 class="font-bold">{{ box.code }} · {{ box.destinationName }}</h2>
+              <p class="text-xs text-slate-600">
+                Recepción por <strong>entrega completa</strong>: {{ box.boxes.length }} bulto(s)
+                ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma todas las líneas enviadas.
+              </p>
               @for (line of receiverLines; track line.deliveryLineId) {
                 <div class="space-y-3 rounded border p-3">
                   <h3 class="font-bold">{{ line.productName }}</h3>
@@ -147,11 +159,27 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
               </label>
               @if (receiverPhoto(); as photo) { <p>Foto adjunta: {{ photo.name }}</p> }
               <ion-button expand="block" color="success" (click)="confirmReceiverAction()"
-                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Dispatched'">
-                Guardar recepción
+                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
+                Guardar recepción de la entrega completa
               </ion-button>
             }
-            @if (receiverConfirmedMessage()) { <p role="status">{{ receiverConfirmedMessage() }}</p> }
+            @if (receiverConfirmedMessage()) {
+              <div class="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs space-y-2" role="status">
+                <div class="flex items-center gap-1.5 font-bold">
+                  <span class="text-emerald-700 font-bold text-sm">✓</span>
+                  <span>Recepción guardada</span>
+                </div>
+                <p class="leading-relaxed">{{ receiverConfirmedMessage() }}</p>
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                  <ion-button size="small" color="primary" class="flex-1 font-bold" (click)="resetReceiverScreen()">
+                    Registrar otro bulto / Limpiar
+                  </ion-button>
+                  <ion-button size="small" fill="outline" color="primary" class="flex-1 font-bold" (click)="openSyncQueue()">
+                    Ver cola de sincronización
+                  </ion-button>
+                </div>
+              </div>
+            }
           </ion-card-content>
         </ion-card>
       }
@@ -240,6 +268,11 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
                   <span>Vehículo: {{ route.vehicleCode }}</span>
                 </div>
+                @if (route.originWarehouseName) {
+                  <div class="text-xs text-slate-600 px-1" data-origin-warehouse>
+                    Sale de: <strong>{{ route.originWarehouseName }}</strong>
+                  </div>
+                }
 
                 @for (del of route.deliveries; track del.deliveryId) {
                   <ion-card class="m-0 border shadow-sm" [class.border-amber-300]="del.kind === 'Pickup'">
@@ -270,15 +303,16 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                             {{ del.kind === 'Pickup' ? 'Carga / Retiro' : 'Entrega' }} {{ del.deliveryId }}
                           </span>
                           <span class="text-[11px] text-slate-500">
-                            Bultos HU: {{ del.handlingUnits.length }} • Estado: {{ del.status }}
+                            Bultos HU: {{ del.handlingUnits.length }} • {{ driverStageLabel(del) }}
                           </span>
                         </div>
 
                         <ion-button
                           size="small"
-                          [color]="del.kind === 'Pickup' ? 'warning' : 'primary'"
+                          [color]="driverActionColor(del)"
+                          [disabled]="!driverActionable(del)"
                           (click)="goToDelivery(del.deliveryId)">
-                          {{ del.kind === 'Pickup' ? 'Cargar →' : 'Recibir →' }}
+                          {{ driverActionLabel(del) }}
                         </ion-button>
                       </div>
                     </ion-card-content>
@@ -420,8 +454,9 @@ export class HomePage implements OnInit {
       this.receiverActiveBox.set(unit);
       this.receiverLines = unit.lines.map(line => ({ ...line, quantityAccepted: line.quantity,
         rejectionReason: '', remainingQuantity: null, nextRequestedQuantity: null }));
-      if (unit.status !== 'Dispatched') {
-        this.receiverError.set('Este bulto ya fue recibido');
+      const stateMessage = this.receiverStateMessage(unit.status);
+      if (stateMessage) {
+        this.receiverError.set(stateMessage);
       }
     } catch (err: unknown) {
       this.receiverActiveBox.set(null);
@@ -457,7 +492,7 @@ export class HomePage implements OnInit {
   async confirmReceiverAction(): Promise<void> {
     const box = this.receiverActiveBox();
     const qr = this.receiverQr();
-    if (!box || !qr || box.status !== 'Dispatched' || this.receiverLoading() || this.receiverSaved()) return;
+    if (!box || !qr || box.status !== 'Delivered' || this.receiverLoading() || this.receiverSaved()) return;
     this.receiverError.set(null);
     if (!this.receiverLines.length || this.receiverLines.some(l =>
       !Number.isFinite(l.quantityAccepted) || l.quantityAccepted < 0 || l.quantityAccepted > l.quantity ||
@@ -496,6 +531,88 @@ export class HomePage implements OnInit {
       this.receiverError.set(error instanceof Error ? error.message : 'No se pudo guardar la recepción.');
     } finally {
       this.receiverLoading.set(false);
+    }
+  }
+
+  resetReceiverScreen(): void {
+    this.qrInputText = '';
+    this.receiverActiveBox.set(null);
+    this.receiverQr.set(null);
+    this.receiverLines = [];
+    this.receiverPhoto.set(null);
+    this.receiverError.set(null);
+    this.receiverSaved.set(false);
+    this.receiverConfirmedMessage.set(null);
+    this.receiverCached.set(false);
+  }
+
+  private receiverStateMessage(status: string): string | null {
+    switch (status) {
+      case 'Delivered':
+        return null;
+      case 'Received':
+      case 'Partial':
+        return 'Este bulto ya fue recibido.';
+      case 'Sealed':
+      case 'Prepared':
+        return 'El bulto aún está en bodega. El Conductor aún no entrega este bulto.';
+      default:
+        return 'El Conductor aún no entrega este bulto.';
+    }
+  }
+
+  // #162: el conductor solo recoge/entrega; el estado es monotónico (snapshot + comandos confirmados + bultos).
+  private driverStage(del: MobileAssignmentDelivery): string {
+    const status = this.outboxService.effectiveDeliveryStatus(
+      del.deliveryId,
+      del.status,
+      del.handlingUnits.map((hu) => hu.status),
+    );
+    if (status === 'Dispatched') {
+      const unitsReady = del.handlingUnits.length > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
+      return unitsReady ? 'Dispatched' : 'WaitingWarehouse';
+    }
+    return status;
+  }
+
+  driverStageLabel(del: MobileAssignmentDelivery): string {
+    switch (this.driverStage(del)) {
+      case 'WaitingWarehouse': return 'Esperando a Bodega';
+      case 'Draft': return 'En preparación';
+      case 'Dispatched': return 'Listo para recoger';
+      case 'InTransit': return 'En ruta';
+      case 'Delivered': return 'Entregado';
+      case 'Received': return 'Recibido';
+      case 'Partial': return 'Recibido parcialmente';
+      default: return del.status;
+    }
+  }
+
+  driverActionable(del: MobileAssignmentDelivery): boolean {
+    const stage = this.driverStage(del);
+    return stage === 'Dispatched' || stage === 'InTransit';
+  }
+
+  driverActionLabel(del: MobileAssignmentDelivery): string {
+    switch (this.driverStage(del)) {
+      case 'WaitingWarehouse': return 'Esperando a Bodega';
+      case 'Dispatched': return 'Recoger →';
+      case 'InTransit': return 'Entregar →';
+      case 'Delivered': return 'Esperando receptor';
+      case 'Received':
+      case 'Partial': return 'Recibido';
+      default: return 'Abrir →';
+    }
+  }
+
+  driverActionColor(del: MobileAssignmentDelivery): string {
+    switch (this.driverStage(del)) {
+      case 'Dispatched': return 'warning';
+      case 'InTransit': return 'primary';
+      case 'Delivered':
+      case 'Received':
+      case 'Partial': return 'success';
+      default: return 'medium';
     }
   }
 

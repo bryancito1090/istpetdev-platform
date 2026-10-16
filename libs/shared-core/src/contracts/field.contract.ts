@@ -8,9 +8,20 @@
 // Enums y Estados de Dominio
 // ==========================================
 
-export type HandlingUnitStatus = 'Prepared' | 'Dispatched' | 'Received' | 'Partial';
+// #162: el bulto nace Sealed (preparado por Bodega) y avanza Dispatched → InTransit → Delivered
+// → Received/Partial. 'Prepared' se conserva como alias legado anterior a #162.
+export type HandlingUnitStatus = 'Sealed' | 'Prepared' | 'Dispatched' | 'InTransit' | 'Delivered' | 'Received' | 'Partial';
 
-export type DeliveryFieldStatus = 'Draft' | 'Planned' | 'Prepared' | 'Dispatched' | 'Delivered' | 'Partial';
+export type DeliveryFieldStatus =
+  | 'Draft'
+  | 'Planned'
+  | 'Prepared'
+  | 'Dispatched'
+  | 'InTransit'
+  | 'Delivered'
+  | 'Received'
+  | 'Partial'
+  | 'Cancelled';
 
 export type EvidenceStatus = 'Pending' | 'Uploaded' | 'Confirmed' | 'Failed';
 
@@ -24,7 +35,8 @@ export type PwaSyncState =
   | 'RequiresReview'
   | 'SessionRequired'
   | 'EvidencePending'
-  | 'Complete';
+  | 'Complete'
+  | 'Failed';
 
 export type FieldErrorCode =
   | 'IDEMPOTENCY_CONFLICT'
@@ -34,7 +46,18 @@ export type FieldErrorCode =
   | 'UNAUTHORIZED_ASSIGNMENT'
   | 'UNIT_NOT_FOUND'
   | 'STORAGE_QUOTA_EXCEEDED'
-  | 'TOKEN_REVOKED_OR_EXPIRED';
+  | 'TOKEN_REVOKED_OR_EXPIRED'
+  | 'NOT_DISPATCHED'
+  | 'NOT_DELIVERED'
+  | 'ALREADY_RECEIVED'
+  | 'INVALID_STATE_TRANSITION'
+  | 'HANDLING_UNIT_STATE_CONFLICT'
+  | 'NO_HANDLING_UNITS'
+  | 'RECEIPT_REQUIRES_RECEIVER'
+  | 'INCOMPLETE_HANDLING_UNITS'
+  | 'INSUFFICIENT_VEHICLE_STOCK'
+  | 'RECEIPT_COVERAGE_MISMATCH'
+  | 'INVALID_OPERATION_ID';
 
 // Problem Details estandarizado (RFC 7807)
 export interface FieldProblemDetails {
@@ -97,6 +120,23 @@ export interface DispatchResponse {
 }
 
 // ==========================================
+// #162: Custodia del Conductor (recogida y entrega física)
+// ==========================================
+
+export interface CustodyTransitionRequest {
+  operationId: string; // UUID v7 coincidente con Idempotency-Key
+  occurredAtDevice?: string;
+}
+
+export interface CustodyTransitionResponse {
+  deliveryId: string;
+  status: DeliveryFieldStatus;
+  handlingUnitIds: string[];
+  changedAtUtc: string;
+  custodyEventId: string;
+}
+
+// ==========================================
 // T8: Asignaciones del Conductor (Snapshot Móvil)
 // ==========================================
 
@@ -123,6 +163,8 @@ export interface MobileAssignmentRoute {
   totalDistanceKm?: number;
   estimatedDurationMinutes?: number;
   deliveries: MobileAssignmentDelivery[];
+  /** #160: bodega desde la que sale la ruta. */
+  originWarehouseName?: string | null;
 }
 
 export interface MobileAssignmentResponse {
@@ -180,6 +222,12 @@ export interface DeliveryDetailResponse {
   routePlanId: string;
   lines: DeliveryDetailLineDto[];
   handlingUnits: DeliveryDetailHandlingUnitDto[];
+  /** #160: vehículo y conductor al que va la entrega, y bodega de salida. */
+  vehicleCode?: string | null;
+  driverName?: string | null;
+  originWarehouseName?: string | null;
+  /** #163: cantidad de evidencias confirmadas en almacenamiento (S3). */
+  confirmedEvidenceCount?: number;
 }
 
 // ==========================================
@@ -324,8 +372,12 @@ export interface RejectedCaptureDto {
   servicePointId: string;
   servicePointCode: string;
   servicePointName: string;
+  /** @deprecated campo legado: desde #162 la recepción la registra el Receptor, no el Conductor. */
   driverId: string;
+  /** @deprecated usar registeredByName; se conserva por compatibilidad del contrato. */
   driverName: string;
+  /** #162: nombre de quien registró la recepción (el Receptor). */
+  registeredByName?: string;
   receivedAtUtc: string;
   reason: string;
   status: string;

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { openDB, IDBPDatabase } from 'idb';
 import {
   CreateReceiptRequest,
+  CustodyTransitionResponse,
   ReceiptResponse,
   MobileAssignmentResponse,
   PwaSyncState,
@@ -11,19 +12,23 @@ import {
 } from '@istpetdev/shared-core';
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { generateUuidV7 } from '../uuid';
+import { effectiveDeliveryStatus } from '../custody-state';
+
+export type OutboxCommandKind = 'Receipt' | 'Pickup' | 'Deliver';
 
 export interface OutboxItem {
   operationId: string; // UUID v7
   ownerAccountId: string; // FR-09: cuenta que capturó; otra cuenta no la ve ni la sincroniza
   receiverContext?: { unitId: string; traceToken: string };
+  commandKind?: OutboxCommandKind; // #162; ausente = Receipt (compatibilidad)
   deliveryId: string;
   expectedDeliveryVersion: number;
   recipientName: string;
   notes?: string;
   capturedAtUtc: string;
   status: PwaSyncState;
-  receiptPayload: CreateReceiptRequest;
-  
+  receiptPayload?: CreateReceiptRequest;
+
   // Evidencias binarias
   evidencePhotoBlob?: Blob;
   photoSha256?: string;
@@ -32,15 +37,32 @@ export interface OutboxItem {
 
   // Respuestas del servidor
   receiptResponse?: ReceiptResponse;
+  custodyResponse?: CustodyTransitionResponse;
   photoEvidenceId?: string;
   signatureEvidenceId?: string;
-  
+
   // Error si hubo rechazo/conflicto de negocio o transitorio
   errorCode?: string;
   errorMessage?: string;
   problemType?: string;
   retryCount?: number;
   lastAttemptUtc?: string;
+}
+
+export interface SyncErrorItem {
+  operationId: string;
+  code?: string;
+  message: string;
+}
+
+export interface SyncSummary {
+  attempted: number;
+  synced: number;
+  failed: number;
+  blockedBySimulation?: boolean;
+  blockedByOffline?: boolean;
+  blockedBySessionHeld?: boolean;
+  errors: SyncErrorItem[];
 }
 
 export interface ClassifiedError {
@@ -135,11 +157,25 @@ export class FieldOutboxService {
   readonly activeAssignment = signal<MobileAssignmentResponse | null>(null);
   readonly isSyncing = signal<boolean>(false);
   readonly isSimulatingOffline = signal<boolean>(false);
+  /** 015: la sesión se abrió sin señal; se guarda en el teléfono y no se envía hasta renovar la sesión. */
+  readonly syncHeld = signal<boolean>(false);
   readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
   private readonly owner = signal<string | null>(null);
   private readonly legacyPendingCount = signal<number>(0);
+  readonly legacyCount = this.legacyPendingCount.asReadonly();
   readonly pendingCount = computed(
     () => this.outboxItems().filter((item) => item.status !== 'Complete').length + this.legacyPendingCount()
+  );
+  readonly sendableCount = computed(() => {
+    return this.outboxItems().filter((i) =>
+      i.status === 'SavedOnDevice' ||
+      i.status === 'EvidencePending' ||
+      i.status === 'Sending' ||
+      i.status === 'Failed'
+    ).length;
+  });
+  readonly reviewCount = computed(() =>
+    this.outboxItems().filter((i) => i.status === 'RequiresReview' || i.status === 'Conflict').length
   );
 
   constructor() {
@@ -159,7 +195,22 @@ export class FieldOutboxService {
     if (accountId) await this.loadCachedAssignment();
   }
 
+  /** La fija MobileAuthService: true mientras la sesión no se pueda renovar (015, FR-04). */
+  setSyncHeld(held: boolean): void {
+    this.syncHeld.set(held);
+  }
+
+  /** Sin esto el navegador puede borrar IndexedDB cuando falta espacio (015, FR-07). */
+  private async requestPersistentStorage(): Promise<void> {
+    try {
+      await navigator.storage?.persist?.();
+    } catch {
+      // Sin soporte: la cola sigue en IndexedDB con el riesgo normal de desalojo.
+    }
+  }
+
   private async init(): Promise<void> {
+    void this.requestPersistentStorage();
     await this.refreshOutboxItems();
     await this.loadCachedAssignment();
   }
@@ -391,9 +442,58 @@ export class FieldOutboxService {
     await this.refreshOutboxItems();
 
     // Si no estamos simulando offline ni desconectados, intentamos sincronizar en background
-    if (!this.isSimulatingOffline() && navigator.onLine) {
+    if (this.canSend()) {
       this.syncItem(operationId).catch(() => {
         // En caso de fallo transitorio, queda en SavedOnDevice
+      });
+    }
+
+    return outboxItem;
+  }
+
+  /**
+   * #162: guarda localmente un comando de custodia del conductor (recoger/entregar) antes de
+   * intentar enviarlo. El ítem se sincroniza con la misma cola, idempotencia y estados que las capturas.
+   */
+  async saveCustodyCommand(params: { deliveryId: string; command: 'Pickup' | 'Deliver'; label: string }): Promise<OutboxItem> {
+    const ownerAccountId = this.owner();
+    if (!ownerAccountId) {
+      throw new Error('Inicia sesión para registrar la custodia.');
+    }
+
+    await this.refreshOutboxItems();
+    const pending = this.outboxItems().find((i) =>
+      i.deliveryId === params.deliveryId && (i.commandKind ?? 'Receipt') === params.command && i.status !== 'Complete');
+    if (pending) {
+      throw new Error('Ya hay un comando de custodia pendiente para esta entrega.');
+    }
+
+    const sessionRevision = this.sessionRevision;
+    const operationId = generateUuidV7();
+    const capturedAtUtc = new Date().toISOString();
+
+    const outboxItem: OutboxItem = {
+      operationId,
+      ownerAccountId,
+      commandKind: params.command,
+      deliveryId: params.deliveryId,
+      expectedDeliveryVersion: 0,
+      recipientName: params.label,
+      capturedAtUtc,
+      status: 'SavedOnDevice'
+    };
+
+    this.assertSession(ownerAccountId, sessionRevision);
+    const db = await this.getDb();
+    const tx = db.transaction('outbox_items', 'readwrite');
+    await tx.objectStore('outbox_items').put(outboxItem);
+    await tx.done;
+
+    await this.refreshOutboxItems();
+
+    if (!this.isSimulatingOffline() && navigator.onLine) {
+      this.syncItem(operationId).catch(() => {
+        // Si falla por red queda en SavedOnDevice; el usuario ve el estado real en la cola.
       });
     }
 
@@ -429,7 +529,7 @@ export class FieldOutboxService {
     const assertSession = () => this.assertSession(item.ownerAccountId, sessionRevision);
     assertSession();
 
-    if (this.isSimulatingOffline() || !navigator.onLine) {
+    if (!this.canSend()) {
       item.status = 'SavedOnDevice';
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
@@ -437,12 +537,23 @@ export class FieldOutboxService {
     }
 
     try {
-      // Paso 1: Enviar recepción
+      // Paso 1: Enviar recepción o comando de custodia (#162)
       item.status = 'Sending';
       item.errorCode = undefined;
       item.errorMessage = undefined;
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
+
+      const commandKind = item.commandKind ?? 'Receipt';
+      if (commandKind === 'Pickup' || commandKind === 'Deliver') {
+        const custodyResponse = await this.sendCustodyCommand(item, commandKind);
+        assertSession();
+        item.custodyResponse = custodyResponse;
+        item.status = 'Complete';
+        await db.put('outbox_items', item);
+        await this.refreshOutboxItems();
+        return item;
+      }
 
       const receiptResponse = item.receiptResponse ?? await this.sendReceiptRequestWithRetry(item, assertSession);
       assertSession();
@@ -514,30 +625,147 @@ export class FieldOutboxService {
   }
 
   /**
-   * Sincroniza todos los ítems pendientes en cola secuencialmente.
+   * Sincroniza todos los ítems pendientes en cola secuencialmente con diagnóstico completo.
    */
-  async syncAllPending(): Promise<void> {
-    if (this.isSyncing() || this.isSimulatingOffline() || !navigator.onLine) {
-      return;
+  async syncAllPending(): Promise<SyncSummary> {
+    if (this.isSyncing()) {
+      return { attempted: 0, synced: 0, failed: 0, errors: [] };
+    }
+
+    if (this.isSimulatingOffline()) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedBySimulation: true,
+        errors: [{ operationId: '', code: 'OFFLINE_SIMULATION_ACTIVE', message: 'Desactiva el modo «Sin señal (prueba)» para sincronizar.' }]
+      };
+    }
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedByOffline: true,
+        errors: [{ operationId: '', code: 'NO_NETWORK_CONNECTION', message: 'Sin conexión a Internet.' }]
+      };
+    }
+
+    if (this.syncHeld()) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedBySessionHeld: true,
+        errors: [{ operationId: '', code: 'SESSION_HELD', message: 'Sesión iniciada sin señal; renueva sesión para sincronizar.' }]
+      };
     }
 
     this.isSyncing.set(true);
+    const summary: SyncSummary = {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+      errors: []
+    };
+
     try {
       const items = this.outboxItems().filter(
-        (i) => i.status === 'SavedOnDevice' || i.status === 'EvidencePending' || i.status === 'Sending'
+        (i) =>
+          i.status === 'SavedOnDevice' ||
+          i.status === 'EvidencePending' ||
+          i.status === 'Sending' ||
+          i.status === 'Failed'
       );
+
+      summary.attempted = items.length;
 
       for (const it of items) {
         try {
-          await this.syncItem(it.operationId);
-        } catch {
-          // Si uno falla, continúa con los demás si es posible
+          const res = await this.syncItem(it.operationId);
+          if (res.status === 'Complete') {
+            summary.synced++;
+          } else {
+            summary.failed++;
+            if (res.errorMessage || res.errorCode) {
+              summary.errors.push({
+                operationId: it.operationId,
+                code: res.errorCode,
+                message: res.errorMessage || 'Error en sincronización.'
+              });
+            }
+          }
+        } catch (err: any) {
+          summary.failed++;
+          const classified = classifySyncError(err);
+          summary.errors.push({
+            operationId: it.operationId,
+            code: classified.code,
+            message: classified.message
+          });
         }
       }
     } finally {
       this.isSyncing.set(false);
       await this.refreshOutboxItems();
     }
+
+    return summary;
+  }
+
+  canSend(): boolean {
+    return !this.syncHeld() && !this.isSimulatingOffline() && (typeof navigator === 'undefined' || navigator.onLine);
+  }
+
+  /**
+   * Reclama los ítems legados sin cuenta asociándolos a la cuenta actualmente activa.
+   */
+  async claimLegacyItems(): Promise<number> {
+    const owner = this.owner();
+    if (!owner) throw new Error('Inicia sesión para reclamar capturas anteriores.');
+    const db = await this.getDb();
+    const allItems: OutboxItem[] = await db.getAll('outbox_items');
+    const legacy = allItems.filter((i) => !i.ownerAccountId && i.status !== 'Complete');
+    for (const item of legacy) {
+      item.ownerAccountId = owner;
+      item.status = 'SavedOnDevice';
+      await db.put('outbox_items', item);
+    }
+    await this.refreshOutboxItems();
+    return legacy.length;
+  }
+
+  /**
+   * Descarta definitivamente los ítems legados sin cuenta.
+   */
+  async discardLegacyItems(): Promise<number> {
+    const db = await this.getDb();
+    const allItems: OutboxItem[] = await db.getAll('outbox_items');
+    const legacy = allItems.filter((i) => !i.ownerAccountId && i.status !== 'Complete');
+    for (const item of legacy) {
+      await db.delete('outbox_items', item.operationId);
+    }
+    await this.refreshOutboxItems();
+    return legacy.length;
+  }
+
+  /**
+   * Reintenta manualmente un ítem en cola.
+   */
+  async retryItem(operationId: string): Promise<OutboxItem> {
+    const db = await this.getDb();
+    const item = await db.get('outbox_items', operationId);
+    if (!item) throw new Error(`Ítem ${operationId} no encontrado en outbox.`);
+    if (item.ownerAccountId !== this.owner()) throw new Error('La captura pertenece a otra cuenta.');
+
+    item.status = 'SavedOnDevice';
+    item.errorCode = undefined;
+    item.errorMessage = undefined;
+    item.problemType = undefined;
+    await db.put('outbox_items', item);
+    await this.refreshOutboxItems();
+    return this.syncItem(operationId);
   }
 
   private async sendReceiptRequestWithRetry(item: OutboxItem, assertSession: () => void, maxRetries = 3): Promise<ReceiptResponse> {
@@ -570,9 +798,27 @@ export class FieldOutboxService {
 
   private sendReceiptRequest(item: OutboxItem): Promise<ReceiptResponse> {
     return new Promise((resolve, reject) => {
+      const payload = item.receiptPayload;
+      if (!payload) {
+        reject(new Error('La captura no tiene datos de recepción.'));
+        return;
+      }
       const request = item.receiverContext
-        ? this.fieldApi.receiveAsReceiver(item.receiverContext.unitId, item.receiverContext.traceToken, item.receiptPayload, item.operationId)
-        : this.fieldApi.createReceipt(item.deliveryId, item.receiptPayload, item.operationId);
+        ? this.fieldApi.receiveAsReceiver(item.receiverContext.unitId, item.receiverContext.traceToken, payload, item.operationId)
+        : this.fieldApi.createReceipt(item.deliveryId, payload, item.operationId);
+      request.subscribe({
+        next: (res) => resolve(res),
+        error: (err) => reject(err)
+      });
+    });
+  }
+
+  private sendCustodyCommand(item: OutboxItem, command: 'Pickup' | 'Deliver'): Promise<CustodyTransitionResponse> {
+    return new Promise((resolve, reject) => {
+      const payload = { operationId: item.operationId, occurredAtDevice: item.capturedAtUtc };
+      const request = command === 'Pickup'
+        ? this.fieldApi.pickup(item.deliveryId, payload, item.operationId)
+        : this.fieldApi.deliver(item.deliveryId, payload, item.operationId);
       request.subscribe({
         next: (res) => resolve(res),
         error: (err) => reject(err)
@@ -670,7 +916,9 @@ export class FieldOutboxService {
     }
 
     if (item.ownerAccountId !== this.owner()) throw new Error('La captura pertenece a otra cuenta.');
-    if (newVersion !== undefined) {
+    if (newVersion !== undefined && item.receiptPayload) {
+      // #162: los comandos de custodia no tienen receiptPayload; solo las capturas de recepción
+      // adaptan su versión esperada.
       item.expectedDeliveryVersion = newVersion;
       item.receiptPayload.expectedDeliveryVersion = newVersion;
     }
@@ -693,6 +941,48 @@ export class FieldOutboxService {
    */
   async resolveConflictWithNewVersion(operationId: string, newVersion: number): Promise<OutboxItem> {
     return this.resolveRequiresReview(operationId, newVersion);
+  }
+
+  /**
+   * #162: último estado de custodia confirmado por el servidor para una entrega, si existe.
+   * Evita mostrar el snapshot viejo como si el servidor ya hubiera aceptado el comando local.
+   */
+  latestCustodyStatus(deliveryId: string): string | null {
+    const accepted = this.outboxItems()
+      .filter((i) => i.deliveryId === deliveryId && i.custodyResponse)
+      .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
+      .pop();
+    return accepted?.custodyResponse?.status ?? null;
+  }
+
+  /**
+   * #162: estado monotónico de la entrega que combina snapshot, comandos confirmados y el estado
+   * de los bultos; un snapshot Received/Partial nuevo no retrocede por un Deliver viejo en IndexedDB.
+   */
+  effectiveDeliveryStatus(deliveryId: string, snapshotStatus: string, handlingUnitStatuses: string[]): string {
+    return effectiveDeliveryStatus({
+      deliveryStatus: snapshotStatus,
+      handlingUnits: handlingUnitStatuses.map((status) => ({ status })),
+      acceptedCustodyStatus: this.latestCustodyStatus(deliveryId),
+    });
+  }
+
+  /**
+   * Etiqueta humana del estado de la cola, compartida por la página de custodia y la cola (#162).
+   */
+  statusLabel(status: PwaSyncState): string {
+    switch (status) {
+      case 'SavedOnDevice': return 'Guardado en Teléfono';
+      case 'Sending': return 'Enviando...';
+      case 'AcceptedByServer': return 'Aceptado por Servidor';
+      case 'EvidencePending': return 'Subiendo Evidencias...';
+      case 'Complete': return 'Confirmado por el servidor';
+      case 'Conflict': return 'Conflicto 409';
+      case 'SessionRequired': return 'Sesión requerida';
+      case 'RequiresReview': return 'Requiere Revisión';
+      case 'Failed': return 'Error de Envío';
+      default: return status;
+    }
   }
 
   /**

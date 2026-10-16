@@ -574,3 +574,43 @@ Verificación documental: **87 notas Markdown**, **928 enlaces internos resuelto
 ## 15-oct-2026 — Issue #115: recepción PWA y evidencia privada
 
 La rama `feature/115-receptor-recepcion-real` integra captura parcial del Receptor con su endpoint, catálogo V1 compatible con #117, stock en percha/pedido, foto obligatoria en la captura con rechazo y outbox por cuenta. Sustituye la autorización ficticia S3 por PUT privado prefirmado y verifica el objeto antes de confirmar evidencia. Reutiliza la tabla Evidence; sin migración. Configuración de bucket y prueba física en dos teléfonos pendientes de ejecución en el entorno de destino; no afirmar ESC-04/06/15 físicamente validados. Guion y alcance de las pruebas automatizadas: `docs/validation/issue-115-receptor.md`.
+
+## 15-oct-2026 — Custodia por turnos del issue #162 (revisión de un solo recibo)
+
+Fuente: revisión del primer entregable del issue #162 (rama `fix/162-estados-bulto-custodia`, commits `fb4d877`, `ed3a925`, `45d73e5`) con correcciones bloqueantes del coordinador. Se alinean [[Contratos API y eventos]], [[Movil offline y sincronizacion]], [[Usuarios y flujos]] y [[Hechos canonicos]] con: recibo final único por entrega y cobertura exacta (parcial terminal, `ALREADY_RECEIVED` antes de versión), idempotencia por cuenta+operationId con validación de recurso en replay legado, despacho que cubre todos los bultos y lo planificado con ledger por línea-lote, y `advance` como simulación que respeta las guardas y atribuye las transiciones a la cuenta de demo. Verificación local en PostgreSQL efímero; sin ensayo físico, sin despliegue y sin mutar base compartida.
+
+Verificación documental: **87 notas Markdown**, **932 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 15-oct-2026 — Dataset y cifras del simulador de 90 días (issue #165)
+
+Fuente: resolución del issue #165 (rama `feature/165-dataset-simulador-90-dias`). Se agrega [[Cifras del simulador 90 dias]] (07 Demo) con los resultados canónicos medidos en 12 corridas comparativas (3 políticas × 3 semillas base y 1 adversa) sobre el fixture nacional sintético `national-v1` (80 puntos, 6 regiones, 90 días). Se actualizan [[Guion del pitch]] y [[Dataset y escenarios]] enlazando las cifras oficiales del simulador. Se habilita aislamiento de base de datos para simulación en backend y Docker Compose, y se verifica la importación limpia del dataset reproducible desde `/datos`.
+
+Verificación documental: **88 notas Markdown**, **941 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Promoción develop → main (rutas al conductor, campo sin señal, custodia y simulador)
+
+Fuente: PR fusionados en `develop` que faltan en `main`: #158 (spec 015), #159 (cierra #160), #168 (#162), #169 (#165), #170 y #173 (#161), #171 (#163) y #172 (#164). Las entradas de #162 y #165 ya están registradas arriba; aquí se registra el resto.
+
+- **#159 / #160 — Publicación al conductor:**
+  - La publicación exige un Conductor activo (`GET /api/v1/drivers`) y crea las entregas con las cargas de los pedidos del plan.
+  - Cada entrega sale de la bodega de recogida o de la bodega del vehículo.
+  - `PUT /api/v1/route-plans/{id}/driver` reasigna el conductor de las entregas pendientes.
+  - La web y la PWA muestran bodega, vehículo y conductor. Se muestra el código del vehículo porque `Vehicle` no tiene campo de placa.
+  - Detalle: spec 002, T13 y T13b. Se agregan las dos rutas a [[Contratos API y eventos]].
+- **#158 — Arranque de la PWA sin señal:** con una sesión OIDC local, la PWA entra en modo sin conexión y retiene el outbox hasta renovar la sesión. No cambia la vigencia de los tokens. Detalle: `docs/specs/015-arranque-offline-pwa/`. Pendiente la prueba en un teléfono real (E2E-01/02).
+- **#161 — Etiqueta QR:** el PDF se llama `etiqueta-<código>-<fecha>`, y el título vuelve solo con `afterprint` o al destruir el componente (#173 quita el temporizador del #170). Pendiente la prueba a mano en Chrome Android.
+- **#163 — Sincronización:** el outbox informa por qué no envía y permite reintentar a mano. Las evidencias confirmadas se ven en campo y en novedades. `docker-compose.prod.yml` pasa las credenciales AWS y `EVIDENCE_S3_BUCKET` al backend. Detalle: `plan-issue-163.md`.
+- **#164 — Detalle de la planificación** por ruta, producto y conductor en la web, con pruebas `RoutePlanDetailTests`.
+
+**Migración:** `20261015234714_CustodyChainStates` (#162) quita la unicidad del índice `CustodyEvent(OrganizationId, OperationId)`. No borra datos.
+
+**Infraestructura:**
+- `docker-compose.prod.yml` agrega `ConnectionStrings__Simulation`, con la base `SIMULATION_DB_NAME` (por defecto `istpetdev_simulation`) (#165), y las variables AWS de evidencias (#163).
+- La rama `hotfix/39-db-password-rollback` (#93) solo está en `main`; la fusión la conserva sin conflictos.
+
+**Verificación local sobre `develop` (`97a0f11`):**
+- Backend: 517 de 518. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
+- Web: 76/76. Móvil: 117/117.
+- No se probaron los roles con cuentas reales ni la pantalla de login de Cognito.
+
+Verificación documental: **88 notas Markdown**, **942 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.

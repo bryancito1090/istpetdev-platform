@@ -20,6 +20,19 @@ public static class FieldErrorCodes
     public const string UnauthorizedAssignment = "UNAUTHORIZED_ASSIGNMENT";
     public const string UnitNotFound = "UNIT_NOT_FOUND";
     public const string TokenRevokedOrExpired = "TOKEN_REVOKED_OR_EXPIRED";
+
+    // #162: transiciones de custodia fuera de orden.
+    public const string NotDispatched = "NOT_DISPATCHED";
+    public const string NotDelivered = "NOT_DELIVERED";
+    public const string AlreadyReceived = "ALREADY_RECEIVED";
+    public const string InvalidStateTransition = "INVALID_STATE_TRANSITION";
+    public const string HandlingUnitStateConflict = "HANDLING_UNIT_STATE_CONFLICT";
+    public const string NoHandlingUnits = "NO_HANDLING_UNITS";
+    public const string ReceiptRequiresReceiver = "RECEIPT_REQUIRES_RECEIVER";
+    public const string IncompleteHandlingUnits = "INCOMPLETE_HANDLING_UNITS";
+    public const string InsufficientVehicleStock = "INSUFFICIENT_VEHICLE_STOCK";
+    public const string ReceiptCoverageMismatch = "RECEIPT_COVERAGE_MISMATCH";
+    public const string InvalidOperationId = "INVALID_OPERATION_ID";
 }
 
 // ==========================================
@@ -66,6 +79,21 @@ public sealed record DispatchResponse(
     string Status,
     IReadOnlyList<Guid> DispatchedHandlingUnits,
     DateTime DispatchedAtUtc,
+    Guid CustodyEventId);
+
+// ==========================================
+// #162: Custodia del conductor (recogida y entrega física)
+// ==========================================
+
+public sealed record CustodyTransitionRequest(
+    Guid OperationId,
+    DateTime? OccurredAtDevice = null);
+
+public sealed record CustodyTransitionResponse(
+    Guid DeliveryId,
+    string Status,
+    IReadOnlyList<Guid> HandlingUnitIds,
+    DateTime ChangedAtUtc,
     Guid CustodyEventId);
 
 // ==========================================
@@ -159,7 +187,8 @@ public sealed record MobileAssignmentRoute(
     string? DriverMessage,
     string VehicleCode,
     int StopsCount,
-    IReadOnlyList<MobileAssignmentDelivery> Deliveries);
+    IReadOnlyList<MobileAssignmentDelivery> Deliveries,
+    string? OriginWarehouseName = null);
 
 public sealed record MobileAssignmentResponse(
     DateTime ServerTimeUtc,
@@ -210,7 +239,13 @@ public sealed record DeliveryDetailResponse(
     string PointName,
     Guid RoutePlanId,
     IReadOnlyList<DeliveryDetailLineDto> Lines,
-    IReadOnlyList<DeliveryDetailHandlingUnitDto> HandlingUnits);
+    IReadOnlyList<DeliveryDetailHandlingUnitDto> HandlingUnits,
+    // #160: la Bodega ve a qué vehículo y conductor va la entrega y desde qué bodega sale.
+    string? VehicleCode = null,
+    string? DriverName = null,
+    string? OriginWarehouseName = null,
+    // #163: cantidad de evidencias fotográficas/firma confirmadas en S3.
+    int ConfirmedEvidenceCount = 0);
 
 // ==========================================
 // FR-16: Demo Advance
@@ -265,11 +300,15 @@ public sealed record HandlingUnitTraceResponse(
     IReadOnlyList<HandlingUnitTraceEvent> Events);
 
 // 014: lo que ve el Receptor al escanear el QR del bulto.
+// #162: el recibo es por ENTREGA completa; la respuesta muestra todos los bultos y todas las
+// líneas despachadas para que el receptor conozca el alcance antes de confirmar.
+public sealed record ReceiverUnitBoxDto(Guid HandlingUnitId, string Code, string Status);
+
 public sealed record ReceiverUnitLineDto(Guid DeliveryLineId, Guid LotId, string LotCode, string Sku, string ProductName, decimal Quantity, string Unit);
 
 public sealed record ReceiverUnitResponse(
     Guid HandlingUnitId, string Code, string Status, Guid DeliveryId, long DeliveryVersion,
-    string DestinationName, IReadOnlyList<ReceiverUnitLineDto> Lines);
+    string DestinationName, IReadOnlyList<ReceiverUnitBoxDto> Boxes, IReadOnlyList<ReceiverUnitLineDto> Lines);
 
 
 // ==========================================

@@ -24,11 +24,19 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
     {
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var driver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
+        var receiver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Receiver);
         var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
         var op = BaseEntity.NewId();
-        await field.CreateReceiptAsync(d.DeliveryId, new CreateReceiptRequest(op, 0, DateTime.UtcNow,
-            [new ReceiptLineRequest(d.DeliveryLineId, d.LotId, accepted, rejected, "L", reason, remaining, next)]), driver.Id, op.ToString());
+        await field.CreateReceiverReceiptAsync(d.UnitId!.Value, d.UnitToken!, new CreateReceiptRequest(op, 0, DateTime.UtcNow,
+            [new ReceiptLineRequest(d.DeliveryLineId, d.LotId, accepted, rejected, "L", reason, remaining, next)]), receiver.Id, op.ToString());
+    }
+
+    private static async Task<FieldSeed.Dispatched> SeedDeliveredAsync(ApiFactory api, string suffix)
+    {
+        var token = $"token-{suffix}-{Guid.NewGuid():N}";
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m, suffix, withHandlingUnit: true, unitToken: token);
+        await FieldSeed.DeliverUnitAsync(api, d);
+        return d;
     }
 
     private static async Task<JsonElement> GetJsonAsync(System.Net.Http.HttpClient client, string path)
@@ -42,10 +50,10 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
     public async Task Lists_only_receipts_with_rejections_or_shelf_adjustments_and_filters_by_point()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
-        var rejected = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "EXC-R");
-        var adjusted = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "EXC-A");
-        var clean = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "EXC-C");
-        await ReceiveAsync(api, rejected, 8m, 4m, reason: "Daño en el empaque");
+        var rejected = await SeedDeliveredAsync(api, "EXC-R");
+        var adjusted = await SeedDeliveredAsync(api, "EXC-A");
+        var clean = await SeedDeliveredAsync(api, "EXC-C");
+        await ReceiveAsync(api, rejected, 8m, 4m, reason: "Daño");
         await ReceiveAsync(api, adjusted, 12m, 0m, remaining: 3m); // saldo previo 0 → ajuste +3
         await ReceiveAsync(api, clean, 12m, 0m);
 
@@ -58,7 +66,7 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
         Assert.True(withRejection.GetProperty("hasRejections").GetBoolean());
         var rejectedLine = withRejection.GetProperty("lines")[0];
         Assert.Equal(4m, rejectedLine.GetProperty("quantityRejected").GetDecimal());
-        Assert.Equal("Daño en el empaque", rejectedLine.GetProperty("rejectionReason").GetString());
+        Assert.Equal("Daño", rejectedLine.GetProperty("rejectionReason").GetString());
 
         var withAdjustment = items.Single(i => i.GetProperty("deliveryId").GetGuid() == adjusted.DeliveryId);
         Assert.True(withAdjustment.GetProperty("hasAdjustments").GetBoolean());
@@ -87,7 +95,7 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
     public async Task Field_request_orders_are_filtered_and_cancellation_respects_status_and_version()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
-        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "EXC-O");
+        var d = await SeedDeliveredAsync(api, "EXC-O");
         await ReceiveAsync(api, d, 12m, 0m, next: 20m); // crea un pedido FieldRequest
 
         Guid planned;

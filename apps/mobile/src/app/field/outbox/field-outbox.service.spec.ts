@@ -21,6 +21,8 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     receiveAsReceiver: ReturnType<typeof vi.fn>;
     getReceiverUnit: ReturnType<typeof vi.fn>;
     getAssignments: ReturnType<typeof vi.fn>;
+    pickup: ReturnType<typeof vi.fn>;
+    deliver: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -32,7 +34,9 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
       confirmEvidence: vi.fn(),
       getAssignments: vi.fn(),
       receiveAsReceiver: vi.fn(() => of({ receiptId: 'receiver-receipt' })),
-      getReceiverUnit: vi.fn()
+      getReceiverUnit: vi.fn(),
+      pickup: vi.fn(() => of({ deliveryId: 'd-1', status: 'InTransit', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-1' })),
+      deliver: vi.fn(() => of({ deliveryId: 'd-2', status: 'Delivered', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-2' }))
     };
     TestBed.configureTestingModule({
       providers: [{ provide: FIELD_API, useValue: api }]
@@ -61,6 +65,33 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     await outbox.setOwner('cuenta-a');
     expect(outbox.pendingCount()).toBe(2);
     expect(outbox.outboxItems().every((item) => item.ownerAccountId === 'cuenta-a')).toBe(true);
+  });
+
+  it('015: con la sincronización en espera guarda en el teléfono y no envía hasta liberarla', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    await outbox.setOwner('cuenta-a');
+    outbox.setSyncHeld(true);
+
+    const item = await outbox.saveReceiptAtomic(receipt('d-1'));
+    await outbox.syncAllPending();
+    expect(api.createReceipt).not.toHaveBeenCalled();
+    expect(outbox.outboxItems()[0].status).toBe('SavedOnDevice');
+
+    outbox.setSyncHeld(false);
+    await outbox.syncAllPending();
+    expect(api.createReceipt).toHaveBeenCalledTimes(1);
+    expect((await outbox.syncItem(item.operationId)).status).toBe('Complete');
+  });
+
+  it('015: pide almacenamiento persistente para que el navegador no borre la cola', async () => {
+    const persist = vi.fn(async () => true);
+    Object.defineProperty(navigator, 'storage', { value: { persist }, configurable: true });
+    try {
+      TestBed.inject(FieldOutboxService);
+      await vi.waitFor(() => expect(persist).toHaveBeenCalled());
+    } finally {
+      delete (navigator as { storage?: unknown }).storage;
+    }
   });
 
   it('no captura sin cuenta y no sincroniza una captura ajena', async () => {
@@ -325,4 +356,170 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
   });
 
+  // #162: los comandos de custodia usan la misma cola durable y solo se muestran confirmados si el servidor responde.
+  it('el comando de recogida se guarda pendiente y solo queda confirmado tras la respuesta del servidor', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-a');
+    const item = await outbox.saveCustodyCommand({ deliveryId: 'd-1', command: 'Pickup', label: 'Recogida' });
+    expect(item.status).toBe('SavedOnDevice');
+    expect(item.commandKind).toBe('Pickup');
+    expect(outbox.pendingCount()).toBe(1);
+    expect(api.pickup).not.toHaveBeenCalled();
+
+    outbox.isSimulatingOffline.set(false);
+    await outbox.syncItem(item.operationId);
+
+    const synced = outbox.outboxItems().find((i) => i.operationId === item.operationId)!;
+    expect(synced.status).toBe('Complete');
+    expect(synced.custodyResponse?.status).toBe('InTransit');
+    expect(api.pickup).toHaveBeenCalledWith('d-1', expect.objectContaining({ operationId: item.operationId }), item.operationId);
+    expect(outbox.pendingCount()).toBe(0);
+    expect(outbox.latestCustodyStatus('d-1')).toBe('InTransit');
+  });
+
+  it('un 409 del servidor deja el comando de custodia en revisión sin perderlo', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-a');
+    const item = await outbox.saveCustodyCommand({ deliveryId: 'd-2', command: 'Deliver', label: 'Entrega' });
+    api.deliver.mockReturnValue(throwError(() => ({ status: 409, error: { code: 'INVALID_STATE_TRANSITION', detail: 'Transición inválida' } })));
+    outbox.isSimulatingOffline.set(false);
+
+    await expect(outbox.syncItem(item.operationId)).rejects.toBeTruthy();
+
+    const stored = outbox.outboxItems().find((i) => i.operationId === item.operationId)!;
+    expect(stored.status).toBe('RequiresReview');
+    expect(stored.errorCode).toBe('INVALID_STATE_TRANSITION');
+    expect(stored.custodyResponse).toBeUndefined();
+  });
+
+  // #163: diagnóstico visible de sincronización, reintentos y capturas legadas
+  it('#163: syncAllPending informa bloqueo estructurado si simula offline o no hay red', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    await outbox.setOwner('driver-x');
+    outbox.isSimulatingOffline.set(true);
+
+    const simResult = await outbox.syncAllPending();
+    expect(simResult.blockedBySimulation).toBe(true);
+    expect(simResult.errors[0].code).toBe('OFFLINE_SIMULATION_ACTIVE');
+    expect(simResult.attempted).toBe(0);
+
+    outbox.isSimulatingOffline.set(false);
+    const originalOnline = navigator.onLine;
+    try {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      const offlineResult = await outbox.syncAllPending();
+      expect(offlineResult.blockedByOffline).toBe(true);
+      expect(offlineResult.errors[0].code).toBe('NO_NETWORK_CONNECTION');
+    } finally {
+      Object.defineProperty(navigator, 'onLine', { value: originalOnline, configurable: true });
+    }
+  });
+
+  it('#163: syncAllPending reporta diagnóstico detallado con códigos de error y conteos', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-y');
+    const item1 = await outbox.saveCustodyCommand({ deliveryId: 'd-1', command: 'Pickup', label: 'Recogida 1' });
+    const item2 = await outbox.saveCustodyCommand({ deliveryId: 'd-2', command: 'Deliver', label: 'Entrega 2' });
+
+    outbox.isSimulatingOffline.set(false);
+    api.pickup.mockReturnValue(of({ deliveryId: 'd-1', status: 'InTransit', custodyEventId: 'ce-1' }));
+    api.deliver.mockReturnValue(throwError(() => ({
+      status: 503,
+      error: { code: 'EVIDENCE_STORAGE_UNAVAILABLE', detail: 'S3 no disponible' }
+    })));
+
+    const summary = await outbox.syncAllPending();
+    expect(summary.attempted).toBe(2);
+    expect(summary.synced).toBe(1);
+    expect(summary.failed).toBe(1);
+    expect(summary.errors.length).toBe(1);
+    expect(summary.errors[0].code).toBe('EVIDENCE_STORAGE_UNAVAILABLE');
+    expect(summary.errors[0].operationId).toBe(item2.operationId);
+  });
+
+  it('#163: retryItem limpia el error previo y reintenta la sincronización', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-z');
+    const item = await outbox.saveCustodyCommand({ deliveryId: 'd-1', command: 'Pickup', label: 'Recogida' });
+
+    outbox.isSimulatingOffline.set(false);
+    api.pickup.mockReturnValueOnce(throwError(() => ({ status: 500, message: 'Server error' })));
+    await expect(outbox.syncItem(item.operationId)).rejects.toBeDefined();
+
+    const failedItem = outbox.outboxItems().find((i) => i.operationId === item.operationId)!;
+    expect(failedItem.status).toBe('SavedOnDevice');
+    expect(failedItem.errorCode).toBeDefined();
+
+    api.pickup.mockReturnValueOnce(of({ deliveryId: 'd-1', status: 'InTransit', custodyEventId: 'ce-1' }));
+    const retried = await outbox.retryItem(item.operationId);
+    expect(retried.status).toBe('Complete');
+    expect(retried.errorCode).toBeUndefined();
+  });
+
+  it('#163: reclamo y descarte de capturas legadas sin cuenta', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    const db = await (outbox as any).getDb();
+
+    // Insertar un ítem legado sin ownerAccountId
+    await db.put('outbox_items', {
+      operationId: 'legacy-op-1',
+      ownerAccountId: '',
+      deliveryId: 'd-leg',
+      expectedDeliveryVersion: 1,
+      recipientName: 'Legado',
+      capturedAtUtc: new Date().toISOString(),
+      status: 'SavedOnDevice'
+    });
+
+    await outbox.setOwner('active-user');
+    expect(outbox.legacyCount()).toBe(1);
+
+    const claimed = await outbox.claimLegacyItems();
+    expect(claimed).toBe(1);
+    expect(outbox.legacyCount()).toBe(0);
+    expect(outbox.outboxItems().some((i) => i.operationId === 'legacy-op-1')).toBe(true);
+
+    // Insertar otro ítem legado y descartarlo
+    await db.put('outbox_items', {
+      operationId: 'legacy-op-2',
+      ownerAccountId: '',
+      deliveryId: 'd-leg-2',
+      expectedDeliveryVersion: 1,
+      recipientName: 'Legado 2',
+      capturedAtUtc: new Date().toISOString(),
+      status: 'SavedOnDevice'
+    });
+    await outbox.refreshOutboxItems();
+    expect(outbox.legacyCount()).toBe(1);
+
+    const discarded = await outbox.discardLegacyItems();
+    expect(discarded).toBe(1);
+    expect(outbox.legacyCount()).toBe(0);
+  });
+
+  it('#163: sendableCount y reviewCount discriminan correctamente los estados', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('counter-user');
+
+    await outbox.saveCustodyCommand({ deliveryId: 'd-1', command: 'Pickup', label: 'Item 1' });
+    await outbox.saveCustodyCommand({ deliveryId: 'd-2', command: 'Deliver', label: 'Item 2' });
+
+    expect(outbox.sendableCount()).toBe(2);
+    expect(outbox.reviewCount()).toBe(0);
+
+    const items = outbox.outboxItems();
+    const db = await (outbox as any).getDb();
+    items[0].status = 'RequiresReview';
+    await db.put('outbox_items', items[0]);
+    await outbox.refreshOutboxItems();
+
+    expect(outbox.sendableCount()).toBe(1);
+    expect(outbox.reviewCount()).toBe(1);
+  });
 });
+

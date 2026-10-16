@@ -447,12 +447,12 @@ public sealed class Replanner(
             return existingRestored;
         }
 
-        // 1. Validar que ninguna entrega pendiente esté despachada
+        // 1. Validar que ninguna entrega pendiente esté despachada (incluye la entregada sin recibir)
         var currentDeliveries = await db.Deliveries
             .Where(d => db.RouteStops.Any(s => s.RoutePlanId == currentPlan.Id && s.Id == d.RouteStopId))
             .ToListAsync(ct);
 
-        if (currentDeliveries.Any(d => d.Status == nameof(Domain.Enums.DeliveryStatus.Dispatched) || d.Status == nameof(Domain.Enums.DeliveryStatus.InTransit)))
+        if (currentDeliveries.Any(d => d.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit or DeliveryStates.Delivered))
         {
             throw new InvalidOperationException("409: Conflicto. No se puede revertir: existen entregas ya despachadas o en tránsito.");
         }

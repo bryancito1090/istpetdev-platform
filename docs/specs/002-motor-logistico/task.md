@@ -19,6 +19,7 @@
 | T10 | Recorrido E2E, rendimiento y registro en bóveda | T9 | — | completada |
 | T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
 | T12 | Rutas por calles (mapa y distancias del motor con OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo; demo-region sin cambios) |
+| T13 | Las rutas publicadas llegan al conductor (asignación, entregas del asistente y bodega de origen) | T5 | — | completada (15-oct; 6 pruebas nuevas) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -278,3 +279,66 @@ Además, los pares pendientes se buscan en un `HashSet` y se registra cuántos t
 - Prueba nueva: 120 puntos → peticiones de 100 coordenadas como máximo, con `User-Agent`, y todos los pares por carretera.
 
 **Configuración:** `Logistics:Osrm:BaseUrl` = `https://router.project-osrm.org` y `TimeoutSeconds` = 10 en `appsettings`. En producción, `OSRM_BASE_URL` y `OSRM_TIMEOUT_SECONDS` se pueden sobrescribir.
+
+### T13 — Las rutas publicadas llegan al conductor (15-oct)
+
+**Responsable:** Anthony Pilatasig. **Código:** [RoutePublisher](../../../src/Application/Logistics/RoutePublisher.cs), [DriversController](../../../src/Api/Controllers/DriversController.cs), `Publish` en [RoutePlansController](../../../src/Api/Controllers/RoutePlansController.cs) y [página Rutas](../../../apps/web/src/pages/rutas/rutas.page.ts). **Pruebas:** [PublishToDriverTests](../../../tests/IstpetDev.Tests/Integration/Logistics/PublishToDriverTests.cs) y `rutas-map.spec.ts`.
+
+**Diagnóstico (código y base de desarrollo compartida, solo lectura):** el conductor ve únicamente las entregas con su cuenta en `Delivery.AssignedAccountId` (`FieldService.GetMobileAssignmentsAsync`).
+1. **Nadie asignaba el conductor.** No hay relación vehículo–conductor en el esquema: la asignación existe solo al publicar (`PublishRequest.DriverAssignments`). La web publicaba con `{}`, así que las entregas quedaban sin asignar.
+2. **Las rutas del asistente (pedidos y emergencia) se publicaban vacías.** `RoutePublisher` crea una entrega por parada solo si `InputJson` trae `loads`, y `confirm` no las guarda. El plan quedaba `Published` con 0 entregas.
+   - En la base de desarrollo: **3 planes `Published` (los 3 del asistente) y 0 filas en `Delivery`**; 2 Conductores activos sin entregas.
+3. **El stock se reservaba siempre en la primera bodega** encontrada, no en la del vehículo ni en la de recogida.
+
+La base de producción no se consultó: requiere el túnel SSM. Corre el mismo código, por lo que se espera el mismo comportamiento, pero no está verificado.
+
+**Corrección:**
+- **Asignar conductor:** `GET /api/v1/drivers` (Gerencia y Planificador) lista los Conductores activos, sin correos. La web exige elegir conductor antes de «Publicar a Conductor» y envía `driverAssignments`. La API valida que la cuenta sea un Conductor activo (422 si no).
+- **Cargas desde los pedidos:** cada parada de entrega sin cargas toma las líneas pendientes de los pedidos de su punto (`orderIds` del plan).
+- **Origen correcto:** cada entrega sale de la última recogida en bodega previa en la ruta o, si no hay, de la bodega del vehículo; el stock se reserva ahí.
+- **Sin publicaciones vacías:** si no hay nada que entregar, responde 409 con el motivo y el plan queda `Proposed`. Los errores de stock también son 409 con motivo; antes eran 500.
+- **Reparación:** un plan ya `Published` sin entregas se puede volver a publicar. Así se recuperan los 3 planes de la base de desarrollo.
+
+**Pendiente:** no existe relación fija vehículo–conductor, así que el conductor se elige en cada publicación. Las publicaciones automáticas del agente no asignan conductor, y las revisiones conservan el de la ruta anterior.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Estado |
+|---|---|---|---|---|
+| `RoutePublisher.cs` | Backend | Conductor validado, cargas desde pedidos, bodega por parada, sin publicaciones vacías, reparación | Defectos 1, 2 y 3 | Hecho |
+| `DriversController.cs` | Backend | `GET /api/v1/drivers` | El Planificador necesita elegir conductor sin acceso a `/accounts` | Hecho |
+| `RoutePlansController.cs` (`Publish`) | Backend | 404, 409 y 422 con motivo | Antes, error 500 | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Frontend | Selector de conductor obligatorio y mensaje del servidor | La web publicaba sin conductor | Hecho |
+| `PublishToDriverTests.cs` | Pruebas | 6 escenarios, incluido el conductor que ve su ruta en `/mobile/assignments` | Regresión | 6/6 |
+
+Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también falla sin estos cambios porque necesita un n8n real en local. Web 75/75 y `build:web` sin errores.
+
+#### T13b — Bodega, vehículo y conductor visibles en web y PWA (#160, 15-oct)
+
+**Problema:** al publicar ya se elige conductor (T13), pero:
+- Nadie veía después a quién se asignó la ruta.
+- Las rutas publicadas antes sin conductor no tenían forma de corregirse, porque publicar es idempotente.
+- La Bodega no sabía a qué vehículo iba cada entrega.
+
+**Corrección:**
+- **Reasignar conductor:** `PUT /api/v1/route-plans/{id}/driver` (Gerencia y Planificador) cambia el conductor de las entregas **pendientes** de una ruta publicada. Las entregadas, parciales, recibidas y canceladas no se tocan.
+  - 404 si el plan no existe.
+  - 409 si no está publicado o no tiene entregas pendientes.
+  - 422 si la cuenta no es un Conductor activo.
+  - Los roles de campo reciben 403.
+- **Detalle del plan:** devuelve `originWarehouseName`, `driverName`, `deliveriesCount` y `unassignedDeliveries`. La web muestra Bodega, Vehículo y Conductor, avisa de las entregas sin conductor y permite cambiar el conductor.
+- **PWA, Bodega:** el detalle de la entrega muestra vehículo, conductor y bodega de salida.
+- **PWA, Conductor:** su ruta muestra «Sale de: {bodega}». Si el vehículo es desconocido ya no se inventa «VEH-01»; se deja vacío.
+
+**Límite del esquema:** `Vehicle` no tiene campo de placa, así que se muestra el código del vehículo.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `RoutePublisher.AssignDriverAsync` | Backend | Reasignar las entregas pendientes | Publicar no reasigna | Rutas antiguas sin conductor | Hecho |
+| `RoutePlansController` | Backend | `PUT …/driver` y campos de asignación en el detalle | La web no mostraba la asignación | Planificador revisa la ruta | Hecho |
+| `FieldService`, `FieldContracts` | Backend | Vehículo, conductor y bodega en el detalle y en la ruta móvil | Bodega y Conductor sin contexto | Despacho en bodega | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Fila de asignación y «Cambiar conductor» | Visibilidad y corrección | Planificador | Hecho |
+| `warehouse.component.ts`, `home.page.ts`, `field.contract.ts` | PWA | Vehículo, conductor y «Sale de» | Visibilidad en campo | Bodega y Conductor | Hecho |
+| `PublishToDriverTests.cs` | Pruebas | Asignación vista por Bodega y Conductor, reasignación, 403/404/409/422 | Regresión | Todos | 9/9 |
+
+**Verificación:**
+- Backend: 512 de 514. Fallan `N8nErrorWorkflowTests`, que necesita un n8n real en local, y `AgentJourneyTests(partial_watch)`, que es intermitente. Los dos fallaban ya antes de #160.
+- Web: 76 de 76; `build:web` y `check:mobile` sin errores.

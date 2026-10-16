@@ -80,6 +80,13 @@ export interface RoutePlanSummaryDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   stopsCount: number;
+  driverName?: string;
+  driverAccountId?: string | null;
+}
+
+export interface DriverOptionDto {
+  accountId: string;
+  displayName: string;
 }
 
 export interface RouteGeometryWaypointDto {
@@ -101,6 +108,58 @@ export interface RouteGeometryDto {
   stops: RouteGeometryWaypointDto[];
 }
 
+export interface RouteStopLineDto {
+  deliveryId?: string | null;
+  deliveryCode?: string | null;
+  deliveryStatus?: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  lotId?: string | null;
+  lotCode?: string;
+  lotExpiresOn?: string | null;
+  plannedQuantity: number;
+  dispatchedQuantity?: number;
+  acceptedQuantity?: number;
+  rejectedQuantity?: number;
+  baseUnit: string;
+  handlingUnitId?: string | null;
+  handlingUnitCode?: string;
+  handlingUnitStatus?: string;
+}
+
+export interface RouteStopHandlingUnitDto {
+  id: string;
+  code: string;
+  status: string;
+  locationId?: string;
+  sealedAtUtc?: string | null;
+}
+
+export interface RouteProductSummaryDto {
+  sku: string;
+  productName: string;
+  totalPlannedQuantity: number;
+  baseUnit: string;
+  stopsCount: number;
+  lots: Array<{ lotCode: string; quantity: number }>;
+  deliveryStatuses: string[];
+}
+
+export interface RouteDriverAssignmentDto {
+  id: string;
+  routePlanId: string;
+  code: string;
+  revision: number;
+  status: string;
+  vehicleCode: string;
+  plannedStartUtc: string;
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+  stopsCount: number;
+  isCurrent: boolean;
+}
+
 export interface RoutePlanDetailDto {
   id: string;
   code: string;
@@ -113,19 +172,35 @@ export interface RoutePlanDetailDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
+  originWarehouseCode?: string;
+  originWarehouseName?: string;
+  driverAccountId?: string | null;
+  driverName?: string;
+  deliveriesCount?: number;
+  unassignedDeliveries?: number;
   stops: Array<{
+    sequenceNumber?: number;
     sequence: number;
     servicePointId: string;
     servicePointCode: string;
     servicePointName: string;
     etaUtc: string;
+    plannedArrivalUtc?: string;
     plannedDepartureUtc?: string;
+    actualArrivalUtc?: string | null;
     serviceMinutes?: number;
     windowStart?: string;
     windowEnd?: string;
     status: string;
-    ordersCount: number;
+    ordersCount?: number;
+    deliveryId?: string | null;
+    deliveryCode?: string;
+    deliveryStatus?: string;
+    handlingUnits?: RouteStopHandlingUnitDto[];
+    lines?: RouteStopLineDto[];
   }>;
+  productsSummary?: RouteProductSummaryDto[];
+  driverRoutes?: RouteDriverAssignmentDto[];
 }
 
 export interface CreateManualRoutePlanRequest {
@@ -450,6 +525,11 @@ export class ApiService {
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
           totalDurationMinutes: res.totalDurationMinutes ?? res.totalMinutes ?? res.minutes ?? 0,
           polyline: res.polyline || '',
+          originWarehouseName: res.originWarehouseName || '',
+          driverAccountId: res.driverAccountId ?? null,
+          driverName: res.driverName || '',
+          deliveriesCount: res.deliveriesCount ?? 0,
+          unassignedDeliveries: res.unassignedDeliveries ?? 0,
           stops: (res.stops || []).map((s: any) => ({
             sequence: s.sequence ?? s.sequenceNumber,
             servicePointId: s.servicePointId,
@@ -579,8 +659,20 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/api/v1/warehouses/rebalancing/suggestions/${encodeURIComponent(id)}/dismiss`, { reason });
   }
 
-  publishRoutePlan(id: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, {});
+  /** Conductores activos que el Planificador puede asignar al publicar. */
+  getDrivers(): Observable<DriverOptionDto[]> {
+    return this.http.get<DriverOptionDto[]>(`${this.baseUrl}/api/v1/drivers`).pipe(catchError(() => of([])));
+  }
+
+  /** #160: cambia el conductor de una ruta ya publicada (entregas pendientes). */
+  assignRouteDriver(id: string, accountId: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/driver`, { accountId });
+  }
+
+  /** Sin conductor, las entregas se crean sin asignar y ningún conductor las ve en la PWA. */
+  publishRoutePlan(id: string, assignment?: { vehicleCode: string; driverAccountId: string }): Observable<any> {
+    const body = assignment ? { driverAssignments: { [assignment.vehicleCode]: assignment.driverAccountId } } : {};
+    return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, body);
   }
 
   completeStop(routePlanId: string, sequence: number): Observable<any> {

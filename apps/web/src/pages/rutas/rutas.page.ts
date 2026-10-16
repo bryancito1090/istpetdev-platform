@@ -7,13 +7,17 @@ import {
   ApiService,
   RoutePlanSummaryDto,
   RoutePlanDetailDto,
+  RouteStopLineDto,
+  RouteProductSummaryDto,
+  RouteDriverAssignmentDto,
   DeliveryOrderDto,
   RouteSuggestionOptionDto,
   RouteCandidateStop,
   ServicePoint,
   AgentRunViewDto,
   RejectedCaptureDto,
-  RouteGeometryDto
+  RouteGeometryDto,
+  DriverOptionDto
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
@@ -283,13 +287,27 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                   @if (selectedDetail()!.status !== 'Published') {
                     @if (session.canWrite()) {
+                      <label class="text-xs text-slate-600 flex items-center gap-2">
+                        Conductor
+                        <select class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs" aria-label="Conductor de la ruta"
+                          [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
+                          <option value="">Elegir conductor…</option>
+                          @for (driver of drivers(); track driver.accountId) {
+                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
+                          }
+                        </select>
+                      </label>
                       <button
                         type="button"
                         (click)="publishPlan(selectedDetail()!.id)"
-                        [disabled]="actionLoading()"
+                        [disabled]="actionLoading() || !selectedDriverId()"
+                        [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
                         class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
                         {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
                       </button>
+                      @if (drivers().length === 0) {
+                        <span class="text-[11px] text-amber-700">No hay conductores activos: Gerencia debe crear una cuenta de Conductor.</span>
+                      }
                     } @else {
                       <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
                         Pendiente de publicación
@@ -299,6 +317,36 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
                       Ruta Publicada al Conductor
                     </span>
+                  }
+                </div>
+
+                <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600" data-route-assignment>
+                  <span><span class="text-slate-400">Bodega:</span> <strong>{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
+                  <span><span class="text-slate-400">Vehículo:</span> <strong>{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
+                  @if (selectedDetail()!.status === 'Published') {
+                    <span>
+                      <span class="text-slate-400">Conductor:</span>
+                      <strong [class.text-rose-700]="!selectedDetail()!.driverName">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
+                    </span>
+                    @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
+                      <span class="text-rose-700">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
+                    }
+                    @if (session.canWrite()) {
+                      <span class="flex items-center gap-2">
+                        <select class="border border-slate-300 rounded-lg px-2 py-1 text-xs" aria-label="Reasignar conductor"
+                          [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
+                          <option value="">Cambiar conductor…</option>
+                          @for (driver of drivers(); track driver.accountId) {
+                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
+                          }
+                        </select>
+                        <button type="button" class="text-xs font-semibold text-slate-700 underline disabled:opacity-50"
+                          [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
+                          Asignar
+                        </button>
+                      </span>
+                    }
                   }
                 </div>
 
@@ -331,63 +379,455 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 }
 
-                <!-- Itinerario de Paradas (Pickups & Deliveries) -->
-                <div>
-                  <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-xs font-bold text-slate-700 uppercase">
-                      Itinerario Detallado y Tiempos de Paradas
-                    </h4>
-                    <span class="text-[11px] text-slate-500 font-mono">
-                      {{ selectedDetail()!.stops.length }} paradas programadas
+                <!-- Pestañas de Detalle de la Planificación (#164) -->
+                <div class="border-b border-slate-200 flex flex-wrap gap-2 pt-2">
+                  <button
+                    type="button"
+                    (click)="detailTab.set('paradas')"
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'paradas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>📍 Itinerario y Paradas</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                      {{ selectedDetail()!.stops.length }}
                     </span>
-                  </div>
-                  <div class="border border-slate-200 rounded-lg overflow-x-auto">
-                    <table class="w-full text-left text-xs min-w-[550px]">
-                      <thead class="bg-slate-50 text-[11px] text-slate-500 uppercase border-b border-slate-200">
-                        <tr>
-                          <th class="p-2.5">#</th>
-                          <th class="p-2.5">Tipo</th>
-                          <th class="p-2.5">Punto / Hospital</th>
-                          <th class="p-2.5">Ventana Atención</th>
-                          <th class="p-2.5">Llegada ETA</th>
-                          <th class="p-2.5">Tiempo Atención</th>
-                          <th class="p-2.5 text-right">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-slate-100">
-                        @for (stop of selectedDetail()!.stops; track stop.sequence) {
-                          <tr>
-                            <td class="p-2.5 font-bold font-mono">{{ stop.sequence }}</td>
-                            <td class="p-2.5 font-bold">
-                              <span class="px-2 py-0.5 rounded text-[10px]"
-                                [ngClass]="stop.sequence === 1 ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'">
-                                {{ stop.sequence === 1 ? 'RECOGIDA' : 'ENTREGA' }}
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="detailTab.set('productos')"
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'productos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>📦 Por Producto (SKUs)</span>
+                    @if (aggregatedProducts().length > 0) {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 font-bold font-mono">
+                        {{ aggregatedProducts().length }}
+                      </span>
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="detailTab.set('conductor')"
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'conductor' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>🚚 Por Conductor</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
+                      [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-amber-50 text-amber-700'">
+                      {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente' }}
+                    </span>
+                  </button>
+                </div>
+
+                <!-- CONTENIDO PESTAÑA 1: ITINERARIO Y PARADAS -->
+                @if (detailTab() === 'paradas') {
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                          Paradas, Productos, Lotes y Bultos
+                        </h4>
+                        <span class="text-[11px] text-slate-500 font-mono">
+                          {{ selectedDetail()!.stops.length }} paradas programadas · {{ totalPlannedUnits() | number:'1.0-2' }} unidades totales
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          (click)="expandAllStops()"
+                          class="text-[11px] font-semibold text-primary-600 hover:text-primary-800 underline">
+                          Expandir todo
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          (click)="collapseAllStops()"
+                          class="text-[11px] font-semibold text-slate-500 hover:text-slate-700 underline">
+                          Colapsar todo
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="space-y-3">
+                      @for (stop of selectedDetail()!.stops; track stop.sequence) {
+                        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs transition-all">
+                          <!-- Cabecera de la parada (clic para colapsar/expandir) -->
+                          <div
+                            (click)="toggleStopExpansion(stop.sequence)"
+                            class="p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 select-none border-b border-slate-200">
+                            <div class="flex items-center gap-2.5">
+                              <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold font-mono"
+                                [ngClass]="stop.sequence === 1 ? 'bg-amber-200 text-amber-900' : 'bg-primary-100 text-primary-800'">
+                                {{ stop.sequence }}
                               </span>
-                            </td>
-                            <td class="p-2.5 font-semibold text-slate-800">
-                              {{ stop.servicePointName || stop.servicePointCode }}
-                            </td>
-                            <td class="p-2.5 font-mono text-slate-500 text-[11px]">
-                              {{ stop.windowStart || '08:00' }} - {{ stop.windowEnd || '17:00' }}
-                            </td>
-                            <td class="p-2.5 font-mono font-bold text-primary-700">
-                              {{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : '08:30' }}
-                            </td>
-                            <td class="p-2.5 font-mono text-slate-600">
-                              {{ stop.serviceMinutes || 15 }} min
-                            </td>
-                            <td class="p-2.5 text-right font-mono text-[11px]">
+                              <div>
+                                <div class="flex items-center gap-2">
+                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                    [ngClass]="stop.sequence === 1 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-blue-100 text-blue-800 border border-blue-200'">
+                                    {{ stop.sequence === 1 ? 'RECOGIDA' : 'ENTREGA' }}
+                                  </span>
+                                  <span class="font-bold text-xs text-slate-900">
+                                    {{ stop.servicePointName || stop.servicePointCode }}
+                                  </span>
+                                  <span class="text-[10px] font-mono text-slate-400">({{ stop.servicePointCode }})</span>
+                                </div>
+                                <div class="flex flex-wrap gap-x-3 text-[11px] text-slate-500 font-mono mt-0.5">
+                                  <span><strong>Ventana:</strong> {{ stop.windowStart || '08:00' }} - {{ stop.windowEnd || '17:00' }}</span>
+                                  <span><strong>Llegada ETA:</strong> <strong class="text-primary-700">{{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : '08:30' }}</strong></span>
+                                  <span><strong>Atención:</strong> {{ stop.serviceMinutes || 15 }} min</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 self-end sm:self-center">
+                              @if (stop.lines && stop.lines.length > 0) {
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
+                                  {{ stop.lines.length }} {{ stop.lines.length === 1 ? 'producto' : 'productos' }}
+                                </span>
+                              }
+                              @if (stop.deliveryStatus) {
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  [ngClass]="stop.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : (stop.deliveryStatus === 'Proposed' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700')">
+                                  Entrega: {{ stop.deliveryStatus }}
+                                </span>
+                              }
                               <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
                                 [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                                {{ stop.status }}
+                                Parada: {{ stop.status }}
                               </span>
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
+                              <span class="text-xs text-slate-400 font-mono">
+                                {{ expandedStopSeqs().has(stop.sequence) ? '▲' : '▼' }}
+                              </span>
+                            </div>
+                          </div>
+
+                          <!-- Contenido expandido: Detalle de productos, lotes y bultos de la parada -->
+                          @if (expandedStopSeqs().has(stop.sequence)) {
+                            <div class="p-3 bg-white space-y-3">
+                              <!-- Metadatos de la entrega y bultos -->
+                              @if (stop.deliveryCode || (stop.handlingUnits && stop.handlingUnits.length > 0)) {
+                                <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 text-[11px]">
+                                  <div class="flex items-center gap-2">
+                                    <span class="text-slate-500 font-mono">Entrega:</span>
+                                    <strong class="font-mono text-slate-800">{{ stop.deliveryCode || 'DEL-...' }}</strong>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200">
+                                      {{ stop.deliveryStatus || 'Planificada' }}
+                                    </span>
+                                  </div>
+
+                                  @if (stop.handlingUnits && stop.handlingUnits.length > 0) {
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                      <span class="text-slate-500 font-mono">Bultos:</span>
+                                      @for (hu of stop.handlingUnits; track hu.id) {
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-300 font-mono text-[10px]">
+                                          <span>📦 {{ hu.code }}</span>
+                                          <span class="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-bold uppercase">{{ hu.status }}</span>
+                                        </span>
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                              }
+
+                              <!-- Tabla de productos y lotes de la parada -->
+                              @if (stop.lines && stop.lines.length > 0) {
+                                <div class="overflow-x-auto">
+                                  <table class="w-full text-left text-xs min-w-[500px]">
+                                    <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
+                                      <tr>
+                                        <th class="p-2">SKU</th>
+                                        <th class="p-2">Producto</th>
+                                        <th class="p-2">Lote Asignado</th>
+                                        <th class="p-2 text-right">Cantidad Planificada</th>
+                                        <th class="p-2">Bulto / HU</th>
+                                        <th class="p-2 text-right">Estado</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                      @for (line of stop.lines; track line.productId + (line.lotId || '') + line.sku) {
+                                        <tr class="hover:bg-slate-50/50">
+                                          <td class="p-2 font-mono font-bold text-slate-900">{{ line.sku }}</td>
+                                          <td class="p-2 text-slate-800 font-medium">{{ line.productName }}</td>
+                                          <td class="p-2">
+                                            @if (line.lotCode) {
+                                              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-mono text-[10px]">
+                                                <span>🏷️ {{ line.lotCode }}</span>
+                                                @if (line.lotExpiresOn) {
+                                                  <span class="text-[9px] text-amber-600">({{ line.lotExpiresOn }})</span>
+                                                }
+                                              </span>
+                                            } @else {
+                                              <span class="text-slate-400 font-mono text-[11px]">— Asignación al publicar —</span>
+                                            }
+                                          </td>
+                                          <td class="p-2 text-right font-mono font-bold text-slate-900">
+                                            {{ line.plannedQuantity | number:'1.0-2' }} <span class="text-slate-500 font-normal text-[10px]">{{ line.baseUnit }}</span>
+                                          </td>
+                                          <td class="p-2">
+                                            @if (line.handlingUnitCode) {
+                                              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
+                                                {{ line.handlingUnitCode }}
+                                              </span>
+                                            } @else if (stop.handlingUnits && stop.handlingUnits.length > 0) {
+                                              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
+                                                {{ stop.handlingUnits[0].code }}
+                                              </span>
+                                            } @else {
+                                              <span class="text-slate-400 font-mono text-[10px]">Sin consolidar</span>
+                                            }
+                                          </td>
+                                          <td class="p-2 text-right">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                              [ngClass]="line.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
+                                              {{ line.deliveryStatus || stop.deliveryStatus || 'Planificada' }}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      }
+                                    </tbody>
+                                  </table>
+                                </div>
+                              } @else {
+                                <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
+                                  @if (stop.sequence === 1) {
+                                    <span>Bodega de origen (recogida central). No descarga productos en este punto.</span>
+                                  } @else {
+                                    <span>Sin productos registrados para esta parada.</span>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
-                </div>
+                }
+
+                <!-- CONTENIDO PESTAÑA 2: VISTA AGREGADA POR PRODUCTO (SUMA POR SKU) -->
+                @if (detailTab() === 'productos') {
+                  <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                          Resumen Agregado de Carga por Producto (SKU)
+                        </h4>
+                        <p class="text-[11px] text-slate-500">
+                          Total consolidado de insumos que salen del almacén en este vehículo y ruta.
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-3 text-xs font-mono">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">
+                          <strong>{{ aggregatedProducts().length }}</strong> SKUs distintos
+                        </span>
+                        <span class="px-2 py-1 rounded bg-primary-50 text-primary-800 border border-primary-200">
+                          <strong>{{ totalPlannedUnits() | number:'1.0-2' }}</strong> unidades totales
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (aggregatedProducts().length > 0) {
+                      <div class="border border-slate-200 rounded-lg overflow-x-auto bg-white">
+                        <table class="w-full text-left text-xs min-w-[600px]">
+                          <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
+                            <tr>
+                              <th class="p-3">SKU</th>
+                              <th class="p-3">Nombre del Producto</th>
+                              <th class="p-3 text-right">Cantidad Total</th>
+                              <th class="p-3">Unidad</th>
+                              <th class="p-3">Lotes Involucrados</th>
+                              <th class="p-3 text-center">Paradas</th>
+                              <th class="p-3 text-right">Estados</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100">
+                            @for (item of aggregatedProducts(); track item.sku) {
+                              <tr class="hover:bg-slate-50/50">
+                                <td class="p-3 font-mono font-bold text-slate-900">{{ item.sku }}</td>
+                                <td class="p-3 font-medium text-slate-800">{{ item.productName }}</td>
+                                <td class="p-3 text-right font-mono font-bold text-primary-700 text-sm">
+                                  {{ item.totalPlannedQuantity | number:'1.0-2' }}
+                                </td>
+                                <td class="p-3 font-mono text-slate-600">{{ item.baseUnit }}</td>
+                                <td class="p-3">
+                                  @if (item.lots && item.lots.length > 0) {
+                                    <div class="flex flex-wrap gap-1">
+                                      @for (l of item.lots; track l.lotCode) {
+                                        <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-mono text-[10px]">
+                                          {{ l.lotCode }}: <strong>{{ l.quantity | number:'1.0-1' }}</strong>
+                                        </span>
+                                      }
+                                    </div>
+                                  } @else {
+                                    <span class="text-slate-400 font-mono text-[10px]">Asignación automática</span>
+                                  }
+                                </td>
+                                <td class="p-3 text-center font-mono">
+                                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                    {{ item.stopsCount }} {{ item.stopsCount === 1 ? 'parada' : 'paradas' }}
+                                  </span>
+                                </td>
+                                <td class="p-3 text-right">
+                                  @for (st of item.deliveryStatuses; track st) {
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                      [ngClass]="st === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
+                                      {{ st }}
+                                    </span>
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    } @else {
+                      <div class="p-8 text-center text-xs text-slate-500 bg-white border border-slate-200 rounded-lg">
+                        No hay productos planificados en esta ruta aún.
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- CONTENIDO PESTAÑA 3: VISTA POR CONDUCTOR -->
+                @if (detailTab() === 'conductor') {
+                  <div class="space-y-4">
+                    <!-- Ficha del conductor de esta ruta -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                          <div class="w-10 h-10 rounded-full bg-primary-100 text-primary-800 flex items-center justify-center font-bold text-sm">
+                            🚚
+                          </div>
+                          <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Conductor Asignado a Esta Ruta</span>
+                            <h4 class="font-bold text-slate-900 text-sm">
+                              {{ selectedDetail()!.driverName || 'Sin conductor asignado' }}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                            [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
+                            {{ selectedDetail()!.driverName ? 'Conductor Asignado' : 'Pendiente de Asignación' }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/60 text-xs">
+                        <div>
+                          <span class="text-slate-400 block text-[10px]">Vehículo</span>
+                          <strong class="font-mono text-slate-800">{{ selectedDetail()!.vehicleCode || '—' }}</strong>
+                        </div>
+                        <div>
+                          <span class="text-slate-400 block text-[10px]">Bodega Origen</span>
+                          <strong class="text-slate-800">{{ selectedDetail()!.originWarehouseName || 'Central' }}</strong>
+                        </div>
+                        <div>
+                          <span class="text-slate-400 block text-[10px]">Entregas Totales</span>
+                          <strong class="font-mono text-slate-800">{{ selectedDetail()!.deliveriesCount || selectedDetail()!.stops.length }}</strong>
+                        </div>
+                        <div>
+                          <span class="text-slate-400 block text-[10px]">Entregas sin Conductor</span>
+                          <strong [class.text-rose-700]="(selectedDetail()!.unassignedDeliveries ?? 0) > 0" class="font-mono">
+                            {{ selectedDetail()!.unassignedDeliveries ?? 0 }}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Rutas que lleva este conductor -->
+                    <div class="space-y-2">
+                      <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        Rutas a Cargo de Este Conductor ({{ driverAssignedRoutes().length }})
+                      </h4>
+
+                      @if (driverAssignedRoutes().length > 0) {
+                        <div class="border border-slate-200 rounded-lg overflow-x-auto bg-white">
+                          <table class="w-full text-left text-xs min-w-[550px]">
+                            <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
+                              <tr>
+                                <th class="p-2.5">Código de Ruta</th>
+                                <th class="p-2.5">Vehículo</th>
+                                <th class="p-2.5">Salida Programada</th>
+                                <th class="p-2.5 text-right">Distancia</th>
+                                <th class="p-2.5 text-right">Duración</th>
+                                <th class="p-2.5 text-center">Paradas</th>
+                                <th class="p-2.5 text-right">Estado</th>
+                              </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                              @for (r of driverAssignedRoutes(); track r.id) {
+                                <tr class="hover:bg-slate-50 cursor-pointer"
+                                  [class.bg-primary-50]="r.isCurrent"
+                                  (click)="selectPlan(r.id)">
+                                  <td class="p-2.5 font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                                    <span>{{ r.code }}</span>
+                                    @if (r.isCurrent) {
+                                      <span class="px-1.5 py-0.2 rounded text-[9px] bg-primary-600 text-white font-semibold">Actual</span>
+                                    }
+                                  </td>
+                                  <td class="p-2.5 font-mono text-slate-700">{{ r.vehicleCode }}</td>
+                                  <td class="p-2.5 text-slate-600 font-mono text-[11px]">{{ r.plannedStartUtc | date:'short' }}</td>
+                                  <td class="p-2.5 text-right font-mono">{{ r.totalDistanceKm | number:'1.0-1' }} km</td>
+                                  <td class="p-2.5 text-right font-mono">{{ r.totalDurationMinutes | number:'1.0-0' }} min</td>
+                                  <td class="p-2.5 text-center font-mono">{{ r.stopsCount }}</td>
+                                  <td class="p-2.5 text-right">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                      [ngClass]="r.status === 'Published' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
+                                      {{ r.status }}
+                                    </span>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      } @else {
+                        <div class="p-4 bg-white border border-slate-200 rounded-lg text-xs text-slate-500 text-center">
+                          @if (!selectedDetail()!.driverName) {
+                            <span>Asigna un conductor a la ruta para consultar su itinerario y otras rutas asignadas.</span>
+                          } @else {
+                            <span>No se registran otras rutas asignadas a este conductor en la jornada.</span>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Cuadro global de conductores de la flota -->
+                    <div class="space-y-2 pt-2">
+                      <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        Distribución de Rutas por Conductor en la Flota
+                      </h4>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        @for (dw of allDriversWorkload(); track dw.driverName) {
+                          <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                              <strong class="text-xs text-slate-900">{{ dw.driverName }}</strong>
+                              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
+                                {{ dw.routesCount }} {{ dw.routesCount === 1 ? 'ruta' : 'rutas' }}
+                              </span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                              <span>{{ dw.totalStops }} paradas</span>
+                              <span>{{ dw.totalKm | number:'1.0-1' }} km</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                              @for (r of dw.routes; track r.id) {
+                                <button
+                                  type="button"
+                                  (click)="selectPlan(r.id)"
+                                  class="text-[10px] font-mono px-1.5 py-0.5 rounded hover:underline"
+                                  [ngClass]="r.id === selectedDetail()!.id ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700'">
+                                  {{ r.code }}
+                                </button>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -483,7 +923,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </div>
                       <p class="text-xs text-slate-500 mt-0.5 font-mono">
                         Entrega: <strong class="text-slate-800">{{ capture.deliveryCode }}</strong> · 
-                        Conductor: <strong class="text-slate-800">{{ capture.driverName }}</strong> · 
+                        Registrado por: <strong class="text-slate-800">{{ capture.registeredByName || capture.driverName }}</strong> ·
                         Fecha: {{ capture.receivedAtUtc | date:'medium' }}
                       </p>
                     </div>
@@ -897,8 +1337,114 @@ export class RutasPage implements OnInit {
   readonly mapMarkers = signal<MapMarker[]>([]);
   readonly mapPolylines = signal<MapPolyline[]>([]);
   readonly routeLegend = signal<RouteLegendItem[]>([]);
+  readonly drivers = signal<DriverOptionDto[]>([]);
+  readonly selectedDriverId = signal('');
+  readonly reassignDriverId = signal('');
   readonly routeLegendHasApproximate = computed(() => this.routeLegend().some(i => i.source === 'approximate'));
   private readonly geometries = new Map<string, RouteGeometryDto>();
+
+  // #164: Detalle de planificación por parada, producto y conductor
+  readonly detailTab = signal<'paradas' | 'productos' | 'conductor'>('paradas');
+  readonly expandedStopSeqs = signal<Set<number>>(new Set());
+
+  toggleStopExpansion(seq: number): void {
+    const current = new Set(this.expandedStopSeqs());
+    if (current.has(seq)) current.delete(seq);
+    else current.add(seq);
+    this.expandedStopSeqs.set(current);
+  }
+
+  expandAllStops(): void {
+    const seqs = this.selectedDetail()?.stops.map(s => s.sequence) ?? [];
+    this.expandedStopSeqs.set(new Set(seqs));
+  }
+
+  collapseAllStops(): void {
+    this.expandedStopSeqs.set(new Set());
+  }
+
+  readonly aggregatedProducts = computed(() => {
+    const detail = this.selectedDetail();
+    if (!detail) return [];
+    if (detail.productsSummary && detail.productsSummary.length > 0) {
+      return detail.productsSummary;
+    }
+    const map = new Map<string, RouteProductSummaryDto>();
+    for (const stop of detail.stops) {
+      for (const line of stop.lines ?? []) {
+        if (!line.sku) continue;
+        const existing = map.get(line.sku);
+        if (!existing) {
+          map.set(line.sku, {
+            sku: line.sku,
+            productName: line.productName || line.sku,
+            totalPlannedQuantity: Number(line.plannedQuantity) || 0,
+            baseUnit: line.baseUnit || 'U',
+            stopsCount: 1,
+            lots: line.lotCode ? [{ lotCode: line.lotCode, quantity: Number(line.plannedQuantity) || 0 }] : [],
+            deliveryStatuses: line.deliveryStatus ? [line.deliveryStatus] : []
+          });
+        } else {
+          existing.totalPlannedQuantity += Number(line.plannedQuantity) || 0;
+          if (line.lotCode) {
+            const lot = existing.lots.find(l => l.lotCode === line.lotCode);
+            if (lot) lot.quantity += Number(line.plannedQuantity) || 0;
+            else existing.lots.push({ lotCode: line.lotCode, quantity: Number(line.plannedQuantity) || 0 });
+          }
+          if (line.deliveryStatus && !existing.deliveryStatuses.includes(line.deliveryStatus)) {
+            existing.deliveryStatuses.push(line.deliveryStatus);
+          }
+        }
+      }
+    }
+    for (const item of map.values()) {
+      item.stopsCount = detail.stops.filter(s => (s.lines ?? []).some(l => l.sku === item.sku)).length;
+    }
+    return [...map.values()].sort((a, b) => a.sku.localeCompare(b.sku));
+  });
+
+  readonly totalPlannedUnits = computed(() => {
+    return this.aggregatedProducts().reduce((sum, p) => sum + p.totalPlannedQuantity, 0);
+  });
+
+  readonly driverAssignedRoutes = computed(() => {
+    const detail = this.selectedDetail();
+    if (!detail) return [];
+    if (detail.driverRoutes && detail.driverRoutes.length > 0) {
+      return detail.driverRoutes;
+    }
+    if (!detail.driverName) return [];
+    return this.routePlans()
+      .filter(p => p.driverName && p.driverName.includes(detail.driverName!))
+      .map(p => ({
+        id: p.id,
+        routePlanId: p.id,
+        code: p.code,
+        revision: p.revision,
+        status: p.status,
+        vehicleCode: p.vehicleCode || '—',
+        plannedStartUtc: p.plannedStartUtc,
+        totalDistanceKm: p.totalDistanceKm,
+        totalDurationMinutes: p.totalDurationMinutes,
+        stopsCount: p.stopsCount,
+        isCurrent: p.id === detail.id
+      }));
+  });
+
+  readonly allDriversWorkload = computed(() => {
+    const plans = this.routePlans();
+    const map = new Map<string, { driverName: string; routesCount: number; totalKm: number; totalStops: number; routes: RoutePlanSummaryDto[] }>();
+    for (const p of plans) {
+      const name = p.driverName || 'Sin conductor asignado';
+      const existing = map.get(name) ?? { driverName: name, routesCount: 0, totalKm: 0, totalStops: 0, routes: [] };
+      existing.routesCount++;
+      existing.totalKm += p.totalDistanceKm || 0;
+      existing.totalStops += p.stopsCount || 0;
+      existing.routes.push(p);
+      map.set(name, existing);
+    }
+    return [...map.values()].sort((a, b) => a.driverName.localeCompare(b.driverName));
+  });
 
   // Estado del Asistente de Rutas por Pedidos
   readonly isWizardOpen = signal(false);
@@ -942,6 +1488,7 @@ export class RutasPage implements OnInit {
   );
 
   ngOnInit(): void {
+    if (this.session.canWrite()) this.apiService.getDrivers().subscribe(list => this.drivers.set(list));
     this.loadPlans();
     this.loadPendingOrders();
     this.loadCatalogData();
@@ -993,6 +1540,10 @@ export class RutasPage implements OnInit {
     this.apiService.getRoutePlanById(id).subscribe({
       next: (detail) => {
         this.selectedDetail.set(detail);
+        if (detail?.stops) {
+          const seqs = detail.stops.map(s => s.sequence);
+          this.expandedStopSeqs.set(new Set(seqs));
+        }
         if (this.geometries.size > 0) this.renderAllRoutes();
         else this.buildMap(detail);
       },
@@ -1064,10 +1615,35 @@ export class RutasPage implements OnInit {
     });
   }
 
+  /** #160: reasignar el conductor de una ruta publicada (por ejemplo, las publicadas antes sin conductor). */
+  reassignDriver(id: string): void {
+    const accountId = this.reassignDriverId();
+    if (!this.session.canWrite() || !accountId) return;
+    this.actionLoading.set(true);
+    this.apiService.assignRouteDriver(id, accountId).subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        this.reassignDriverId.set('');
+        this.feedbackMessage.set({ type: 'success', text: `Conductor asignado a ${res?.updatedDeliveries ?? 0} entregas.` });
+        this.selectPlan(id);
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({ type: 'error', text: err?.error?.detail || 'No se pudo asignar el conductor.' });
+      }
+    });
+  }
+
   publishPlan(id: string): void {
     if (!this.session.canWrite()) return;
+    const vehicleCode = this.selectedDetail()?.vehicleCode;
+    const driverAccountId = this.selectedDriverId();
+    if (!vehicleCode || !driverAccountId) {
+      this.feedbackMessage.set({ type: 'error', text: 'Elige el conductor antes de publicar: sin conductor, la ruta no aparece en su teléfono.' });
+      return;
+    }
     this.actionLoading.set(true);
-    this.apiService.publishRoutePlan(id).subscribe({
+    this.apiService.publishRoutePlan(id, { vehicleCode, driverAccountId }).subscribe({
       next: () => {
         this.actionLoading.set(false);
         this.feedbackMessage.set({
@@ -1081,7 +1657,7 @@ export class RutasPage implements OnInit {
         this.actionLoading.set(false);
         this.feedbackMessage.set({
           type: 'error',
-          text: err?.error?.message || 'Error al publicar la ruta.'
+          text: err?.error?.detail || err?.error?.message || 'Error al publicar la ruta.'
         });
       }
     });

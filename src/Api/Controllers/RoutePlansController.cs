@@ -72,23 +72,58 @@ public sealed class RoutePlansController(
             .Select(g => new { RoutePlanId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.RoutePlanId, g => g.Count, ct);
 
-        var responseItems = items.Select(p => new
+        // Drivers asignados por ruta (#164)
+        var planStopIds = await db.RouteStops.AsNoTracking()
+            .Where(s => planIds.Contains(s.RoutePlanId))
+            .Select(s => new { s.Id, s.RoutePlanId })
+            .ToListAsync(ct);
+        var stopToPlan = planStopIds.ToDictionary(s => s.Id, s => s.RoutePlanId);
+        var allStopIds = planStopIds.Select(s => s.Id).ToList();
+
+        var deliveriesWithDriver = await db.Deliveries.AsNoTracking()
+            .Where(d => d.RouteStopId.HasValue && allStopIds.Contains(d.RouteStopId.Value) && d.AssignedAccountId.HasValue && d.OrganizationId == DemoOrganization.Id)
+            .Select(d => new { StopId = d.RouteStopId!.Value, DriverId = d.AssignedAccountId!.Value })
+            .ToListAsync(ct);
+
+        var allDriverIds = deliveriesWithDriver.Select(d => d.DriverId).Distinct().ToList();
+        var allDrivers = await db.Accounts.AsNoTracking()
+            .Where(a => allDriverIds.Contains(a.Id) && a.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(a => a.Id, a => a.DisplayName, ct);
+
+        var driversByPlan = deliveriesWithDriver
+            .GroupBy(d => stopToPlan[d.StopId])
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => new { Id = x.DriverId, Name = allDrivers.GetValueOrDefault(x.DriverId, "") })
+                      .Where(x => !string.IsNullOrEmpty(x.Name))
+                      .GroupBy(x => x.Id)
+                      .Select(grp => grp.First())
+                      .ToList()
+            );
+
+        var responseItems = items.Select(p =>
         {
-            routePlanId = p.Id,
-            id = p.Id,
-            code = p.Code,
-            revision = p.Revision,
-            status = p.Status,
-            vehicleId = p.VehicleId,
-            vehicleCode = vehicles.GetValueOrDefault(p.VehicleId, ""),
-            km = p.TotalKm ?? 0m,
-            totalDistanceKm = p.TotalKm ?? 0m,
-            minutes = p.TotalMinutes ?? 0m,
-            totalDurationMinutes = p.TotalMinutes ?? 0m,
-            cost = p.TotalCost ?? 0m,
-            plannedStartUtc = p.PlannedStartUtc,
-            stopsCount = stopsCountDict.GetValueOrDefault(p.Id, 0),
-            hasApproximations = false
+            var planDrivers = driversByPlan.GetValueOrDefault(p.Id, new());
+            return new
+            {
+                routePlanId = p.Id,
+                id = p.Id,
+                code = p.Code,
+                revision = p.Revision,
+                status = p.Status,
+                vehicleId = p.VehicleId,
+                vehicleCode = vehicles.GetValueOrDefault(p.VehicleId, ""),
+                driverAccountId = planDrivers.Count == 1 ? planDrivers[0].Id : (Guid?)null,
+                driverName = string.Join(", ", planDrivers.Select(d => d.Name)),
+                km = p.TotalKm ?? 0m,
+                totalDistanceKm = p.TotalKm ?? 0m,
+                minutes = p.TotalMinutes ?? 0m,
+                totalDurationMinutes = p.TotalMinutes ?? 0m,
+                cost = p.TotalCost ?? 0m,
+                plannedStartUtc = p.PlannedStartUtc,
+                stopsCount = stopsCountDict.GetValueOrDefault(p.Id, 0),
+                hasApproximations = false
+            };
         });
 
         return Ok(new
@@ -121,11 +156,36 @@ public sealed class RoutePlansController(
 
         var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
 
-        var servicePointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
-        var servicePoints = await db.ServicePoints
-            .Where(sp => sp.OrganizationId == DemoOrganization.Id && servicePointIds.Contains(sp.Id))
-            .ToDictionaryAsync(sp => sp.Id, ct);
+        // #160 & #164: bodega, vehículo, conductor y entregas asociadas a la ruta.
+        var stopIdsOfPlan = stops.Select(s => s.Id).ToList();
+        var planDeliveries = await db.Deliveries.AsNoTracking()
+            .Where(d => d.RouteStopId.HasValue && stopIdsOfPlan.Contains(d.RouteStopId.Value) && d.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+        var originId = planDeliveries.Select(d => (Guid?)d.OriginLocationId).FirstOrDefault() ?? vehicle?.DepotLocationId;
+        var origin = originId is { } oid ? await db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == oid, ct) : null;
+        var driverIds = planDeliveries.Where(d => d.AssignedAccountId.HasValue).Select(d => d.AssignedAccountId!.Value).Distinct().ToList();
+        var drivers = await db.Accounts.AsNoTracking().Where(a => driverIds.Contains(a.Id) && a.OrganizationId == DemoOrganization.Id).Select(a => new { a.Id, a.DisplayName }).ToListAsync(ct);
 
+        var deliveryIds = planDeliveries.Select(d => d.Id).ToList();
+        var planDeliveryLines = await db.DeliveryLines.AsNoTracking()
+            .Where(dl => deliveryIds.Contains(dl.DeliveryId) && dl.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var planHandlingUnits = await db.HandlingUnits.AsNoTracking()
+            .Where(hu => hu.DeliveryId.HasValue && deliveryIds.Contains(hu.DeliveryId.Value) && hu.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+        var husByDelivery = planHandlingUnits.GroupBy(hu => hu.DeliveryId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+        var huById = planHandlingUnits.ToDictionary(hu => hu.Id, hu => hu);
+
+        var lotIds = planDeliveryLines.Select(dl => dl.LotId).Distinct().ToList();
+        var lots = await db.Lots.AsNoTracking()
+            .Where(l => lotIds.Contains(l.Id) && l.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(l => l.Id, ct);
+
+        var allProductIds = new HashSet<Guid>(lots.Values.Select(l => l.ProductId));
+
+        // Cargas planificadas de InputJson por si la ruta no tiene entregas creadas aún (propuesta)
+        var plannedLoadsBySeq = new Dictionary<int, List<(Guid ProductId, string Sku, decimal Quantity, string BaseUnit)>>();
         string? polyline = null;
         List<double[]>? coordinates = null;
         try
@@ -133,15 +193,239 @@ public sealed class RoutePlansController(
             if (!string.IsNullOrWhiteSpace(plan.InputJson))
             {
                 using var doc = JsonDocument.Parse(plan.InputJson);
-                if (doc.RootElement.TryGetProperty("polyline", out var polyElem))
+                var root = doc.RootElement;
+                if (root.TryGetProperty("polyline", out var polyElem))
                     polyline = polyElem.GetString();
-                if (doc.RootElement.TryGetProperty("coordinates", out var coordsElem) && coordsElem.ValueKind == JsonValueKind.Array)
+                if (root.TryGetProperty("coordinates", out var coordsElem) && coordsElem.ValueKind == JsonValueKind.Array)
                 {
                     coordinates = JsonSerializer.Deserialize<List<double[]>>(coordsElem.GetRawText());
+                }
+                if (root.TryGetProperty("stops", out var sProp) && sProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var sElem in sProp.EnumerateArray())
+                    {
+                        if (sElem.TryGetProperty("sequence", out var seqElem))
+                        {
+                            int seq = seqElem.GetInt32();
+                            var loadsList = new List<(Guid, string, decimal, string)>();
+                            if (sElem.TryGetProperty("loads", out var loadsElem) && loadsElem.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var lElem in loadsElem.EnumerateArray())
+                                {
+                                    var pId = lElem.TryGetProperty("productId", out var p1) ? p1.GetGuid() : (lElem.TryGetProperty("ProductId", out var p2) ? p2.GetGuid() : Guid.Empty);
+                                    var sku = lElem.TryGetProperty("sku", out var s1) ? s1.GetString() : (lElem.TryGetProperty("Sku", out var s2) ? s2.GetString() : "");
+                                    var qty = lElem.TryGetProperty("quantity", out var q1) ? q1.GetDecimal() : (lElem.TryGetProperty("Quantity", out var q2) ? q2.GetDecimal() : 0m);
+                                    var unit = lElem.TryGetProperty("baseUnit", out var b1) ? b1.GetString() : (lElem.TryGetProperty("BaseUnit", out var b2) ? b2.GetString() : "U");
+                                    if (pId != Guid.Empty) allProductIds.Add(pId);
+                                    loadsList.Add((pId, sku ?? "", qty, unit ?? "U"));
+                                }
+                            }
+                            plannedLoadsBySeq[seq] = loadsList;
+                        }
+                    }
                 }
             }
         }
         catch { }
+
+        var products = await db.Products.AsNoTracking()
+            .Where(p => allProductIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(p => p.Id, ct);
+
+        var servicePointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
+        var servicePoints = await db.ServicePoints
+            .Where(sp => sp.OrganizationId == DemoOrganization.Id && servicePointIds.Contains(sp.Id))
+            .ToDictionaryAsync(sp => sp.Id, ct);
+
+        // Mapeo detallado de paradas con productos, lotes, bultos y entregas (#164)
+        var stopDetailList = stops.Select(s =>
+        {
+            servicePoints.TryGetValue(s.ServicePointId, out var sp);
+            var stopDeliveries = planDeliveries.Where(d => d.RouteStopId == s.Id).ToList();
+            var primaryDelivery = stopDeliveries.FirstOrDefault();
+            var stopHus = stopDeliveries.SelectMany(d => husByDelivery.GetValueOrDefault(d.Id, new List<HandlingUnit>())).GroupBy(hu => hu.Id).Select(g => g.First()).ToList();
+
+            var stopLines = new List<object>();
+            if (stopDeliveries.Count > 0)
+            {
+                foreach (var d in stopDeliveries)
+                {
+                    var dLines = planDeliveryLines.Where(dl => dl.DeliveryId == d.Id).ToList();
+                    var dHus = husByDelivery.GetValueOrDefault(d.Id, new List<HandlingUnit>());
+                    foreach (var dl in dLines)
+                    {
+                        lots.TryGetValue(dl.LotId, out var lot);
+                        Product? prod = null;
+                        if (lot != null) products.TryGetValue(lot.ProductId, out prod);
+                        var hu = dl.HandlingUnitId.HasValue ? huById.GetValueOrDefault(dl.HandlingUnitId.Value) : dHus.FirstOrDefault();
+
+                        stopLines.Add(new
+                        {
+                            deliveryId = (Guid?)d.Id,
+                            deliveryCode = d.Code,
+                            deliveryStatus = d.Status,
+                            productId = lot?.ProductId ?? Guid.Empty,
+                            sku = prod?.Sku ?? "",
+                            productName = prod?.Name ?? prod?.Sku ?? "Producto",
+                            lotId = (Guid?)dl.LotId,
+                            lotCode = lot?.Code ?? "",
+                            lotExpiresOn = lot?.ExpiresOn?.ToString("yyyy-MM-dd"),
+                            plannedQuantity = dl.PlannedQuantity,
+                            dispatchedQuantity = dl.DispatchedQuantity,
+                            acceptedQuantity = dl.AcceptedQuantity,
+                            rejectedQuantity = dl.RejectedQuantity,
+                            baseUnit = prod?.BaseUnit ?? "U",
+                            handlingUnitId = hu?.Id,
+                            handlingUnitCode = hu?.Code ?? "",
+                            handlingUnitStatus = hu?.Status ?? ""
+                        });
+                    }
+                }
+            }
+            else if (plannedLoadsBySeq.TryGetValue(s.SequenceNumber, out var loads))
+            {
+                foreach (var load in loads)
+                {
+                    products.TryGetValue(load.ProductId, out var prod);
+                    stopLines.Add(new
+                    {
+                        deliveryId = (Guid?)null,
+                        deliveryCode = (string?)null,
+                        deliveryStatus = "Proposed",
+                        productId = load.ProductId,
+                        sku = !string.IsNullOrWhiteSpace(load.Sku) ? load.Sku : prod?.Sku ?? "",
+                        productName = prod?.Name ?? load.Sku,
+                        lotId = (Guid?)null,
+                        lotCode = "",
+                        lotExpiresOn = (string?)null,
+                        plannedQuantity = load.Quantity,
+                        dispatchedQuantity = 0m,
+                        acceptedQuantity = 0m,
+                        rejectedQuantity = 0m,
+                        baseUnit = !string.IsNullOrWhiteSpace(load.BaseUnit) ? load.BaseUnit : prod?.BaseUnit ?? "U",
+                        handlingUnitId = (Guid?)null,
+                        handlingUnitCode = "",
+                        handlingUnitStatus = ""
+                    });
+                }
+            }
+
+            return new
+            {
+                sequenceNumber = s.SequenceNumber,
+                sequence = s.SequenceNumber,
+                servicePointId = s.ServicePointId,
+                servicePointCode = sp?.Code ?? "",
+                servicePointName = sp?.Name ?? sp?.Code ?? "",
+                status = s.Status,
+                plannedArrivalUtc = s.PlannedArrivalUtc,
+                plannedDepartureUtc = s.PlannedDepartureUtc,
+                etaUtc = s.PlannedArrivalUtc,
+                actualArrivalUtc = s.ActualArrivalUtc,
+                serviceMinutes = sp?.ServiceMinutes ?? 15,
+                windowStart = sp?.WindowStartLocal.HasValue == true ? sp.WindowStartLocal.Value.ToString("HH:mm") : "08:00",
+                windowEnd = sp?.WindowEndLocal.HasValue == true ? sp.WindowEndLocal.Value.ToString("HH:mm") : "17:00",
+                lat = sp?.Position != null ? (double?)sp.Position.Y : null,
+                lon = sp?.Position != null ? (double?)sp.Position.X : null,
+                deliveryId = primaryDelivery?.Id,
+                deliveryCode = primaryDelivery?.Code ?? "",
+                deliveryStatus = primaryDelivery?.Status ?? (plan.Status == "Proposed" ? "Proposed" : s.Status),
+                handlingUnits = stopHus.Select(hu => new
+                {
+                    id = hu.Id,
+                    code = hu.Code,
+                    status = hu.Status,
+                    locationId = hu.LocationId,
+                    sealedAtUtc = hu.SealedAtUtc
+                }),
+                lines = stopLines
+            };
+        }).ToList();
+
+        // Resumen agregado por producto de la ruta (#164)
+        var allLines = stopDetailList.SelectMany(s => s.lines.Cast<dynamic>()).ToList();
+        var productsSummary = allLines
+            .GroupBy(l => (string)l.sku)
+            .Where(g => !string.IsNullOrEmpty(g.Key))
+            .Select(g =>
+            {
+                var first = g.First();
+                var lotsGrouped = g
+                    .Where(x => !string.IsNullOrEmpty((string)x.lotCode))
+                    .GroupBy(x => (string)x.lotCode)
+                    .Select(lg => new { lotCode = lg.Key, quantity = lg.Sum(x => (decimal)x.plannedQuantity) })
+                    .ToList();
+
+                var stopsCount = stopDetailList.Count(s => s.lines.Cast<dynamic>().Any(l => (string)l.sku == g.Key));
+                var statuses = g.Select(x => (string)x.deliveryStatus).Where(st => !string.IsNullOrEmpty(st)).Distinct().ToList();
+
+                return new
+                {
+                    sku = g.Key,
+                    productName = (string)first.productName,
+                    totalPlannedQuantity = g.Sum(x => (decimal)x.plannedQuantity),
+                    baseUnit = (string)first.baseUnit,
+                    stopsCount,
+                    lots = lotsGrouped,
+                    deliveryStatuses = statuses
+                };
+            })
+            .OrderBy(p => p.sku)
+            .ToList();
+
+        // Resumen de rutas que lleva el conductor (#164)
+        var driverRoutesList = new List<object>();
+        if (drivers.Count > 0)
+        {
+            var assignedDriverId = drivers[0].Id;
+            var driverDeliveries = await db.Deliveries.AsNoTracking()
+                .Where(d => d.AssignedAccountId == assignedDriverId && d.RouteStopId.HasValue && d.OrganizationId == DemoOrganization.Id)
+                .Select(d => d.RouteStopId!.Value)
+                .ToListAsync(ct);
+
+            var driverPlanIds = await db.RouteStops.AsNoTracking()
+                .Where(s => driverDeliveries.Contains(s.Id) && s.OrganizationId == DemoOrganization.Id)
+                .Select(s => s.RoutePlanId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            var driverPlans = await db.RoutePlans.AsNoTracking()
+                .Where(p => driverPlanIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
+                .OrderByDescending(p => p.PlannedStartUtc)
+                .ToListAsync(ct);
+
+            var driverVehicleIds = driverPlans.Select(p => p.VehicleId).Distinct().ToList();
+            var driverVehicles = await db.Vehicles.AsNoTracking()
+                .Where(v => driverVehicleIds.Contains(v.Id) && v.OrganizationId == DemoOrganization.Id)
+                .ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+
+            var driverStops = await db.RouteStops.AsNoTracking()
+                .Where(s => driverPlanIds.Contains(s.RoutePlanId) && s.OrganizationId == DemoOrganization.Id)
+                .Select(s => new { s.Id, s.RoutePlanId })
+                .ToListAsync(ct);
+
+            var driverStopsCounts = driverStops
+                .GroupBy(s => s.RoutePlanId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var dp in driverPlans)
+            {
+                driverRoutesList.Add(new
+                {
+                    id = dp.Id,
+                    routePlanId = dp.Id,
+                    code = dp.Code,
+                    revision = dp.Revision,
+                    status = dp.Status,
+                    vehicleCode = driverVehicles.GetValueOrDefault(dp.VehicleId, ""),
+                    plannedStartUtc = dp.PlannedStartUtc,
+                    totalDistanceKm = dp.TotalKm ?? 0m,
+                    totalDurationMinutes = dp.TotalMinutes ?? 0m,
+                    stopsCount = driverStopsCounts.GetValueOrDefault(dp.Id, 0),
+                    isCurrent = dp.Id == plan.Id
+                });
+            }
+        }
 
         return Ok(new
         {
@@ -152,6 +436,12 @@ public sealed class RoutePlansController(
             status = plan.Status,
             vehicleId = plan.VehicleId,
             vehicleCode = vehicle?.Code ?? "",
+            originWarehouseCode = origin?.Code ?? "",
+            originWarehouseName = origin?.Name ?? "",
+            driverAccountId = drivers.Count == 1 ? drivers[0].Id : (Guid?)null,
+            driverName = string.Join(", ", drivers.Select(d => d.DisplayName)),
+            deliveriesCount = planDeliveries.Count,
+            unassignedDeliveries = planDeliveries.Count(d => d.AssignedAccountId == null),
             totalKm = plan.TotalKm,
             totalDistanceKm = plan.TotalKm ?? 0m,
             totalMinutes = plan.TotalMinutes,
@@ -161,28 +451,9 @@ public sealed class RoutePlansController(
             plannedEndUtc = plan.PlannedEndUtc ?? plan.PlannedStartUtc.AddMinutes((double)(plan.TotalMinutes ?? 0m)),
             polyline = polyline ?? "",
             coordinates = coordinates,
-            stops = stops.Select(s =>
-            {
-                servicePoints.TryGetValue(s.ServicePointId, out var sp);
-                return new
-                {
-                    sequenceNumber = s.SequenceNumber,
-                    sequence = s.SequenceNumber,
-                    servicePointId = s.ServicePointId,
-                    servicePointCode = sp?.Code ?? "",
-                    servicePointName = sp?.Name ?? sp?.Code ?? "",
-                    status = s.Status,
-                    plannedArrivalUtc = s.PlannedArrivalUtc,
-                    plannedDepartureUtc = s.PlannedDepartureUtc,
-                    etaUtc = s.PlannedArrivalUtc,
-                    actualArrivalUtc = s.ActualArrivalUtc,
-                    serviceMinutes = sp?.ServiceMinutes ?? 15,
-                    windowStart = sp?.WindowStartLocal.HasValue == true ? sp.WindowStartLocal.Value.ToString("HH:mm") : "08:00",
-                    windowEnd = sp?.WindowEndLocal.HasValue == true ? sp.WindowEndLocal.Value.ToString("HH:mm") : "17:00",
-                    lat = sp?.Position != null ? (double?)sp.Position.Y : null,
-                    lon = sp?.Position != null ? (double?)sp.Position.X : null
-                };
-            })
+            stops = stopDetailList,
+            productsSummary,
+            driverRoutes = driverRoutesList
         });
     }
 
@@ -329,8 +600,41 @@ public sealed class RoutePlansController(
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
-        var res = await publisher.PublishAsync(request, ct);
-        return Ok(res);
+        try
+        {
+            var res = await publisher.PublishAsync(request, ct);
+            return Ok(res);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "invalid_driver", detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "publish_conflict", detail: ex.Message);
+        }
+    }
+
+    // #160: reasignar el conductor de una ruta ya publicada (entregas pendientes).
+    [HttpPut("{id:guid}/driver")]
+    [Authorize(Roles = Roles.Planning)]
+    public async Task<IActionResult> AssignDriver([FromRoute] Guid id, [FromBody] AssignDriverRequest req, CancellationToken ct = default)
+    {
+        try
+        {
+            var updated = await publisher.AssignDriverAsync(id, req.AccountId, ct);
+            return Ok(new { routePlanId = id, driverAccountId = req.AccountId, updatedDeliveries = updated });
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "invalid_driver", detail: ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "assign_conflict", detail: ex.Message);
+        }
     }
 
     [HttpPost("{id:guid}/stops/{sequence:int}/complete")]
@@ -834,6 +1138,8 @@ public sealed record EvaluateRouteRequest(
     Guid? VehicleId,
     DateTime? PlannedStartUtc
 );
+
+public sealed record AssignDriverRequest(Guid AccountId);
 
 public sealed record ConfirmRoutePlanRequest(
     string? Code,
