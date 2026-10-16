@@ -280,16 +280,23 @@ Respuestas en camelCase; errores con Problem Details. Las cifras de los ejemplos
     {
       "routePlanId": "…", "code": "R-2026-10-12-VEH-01", "revision": 1, "status": "Proposed",
       "vehicleCode": "VEH-01", "km": 41.2, "minutes": 214, "cost": 52.6, "hasApproximations": false,
-      "stops": [ { "sequence": 1, "pointCode": "HOS-N01", "arrival": "2026-10-12T12:35:00Z", "isConsolidation": false, "loads": [ { "sku": "DES-01", "quantity": 60, "baseUnit": "L" } ] } ],
+      "stops": [ { "sequence": 1, "pointCode": "HOS-N01", "arrival": "2026-10-12T12:35:00Z", "isConsolidation": false, "loads": [ { "sku": "DES-01", "quantity": 60, "requiredQuantity": 60, "pendingQuantity": 0, "baseUnit": "L" } ] } ],
       "legs": [ { "from": [-0.2850, -78.5400], "to": [-0.1180, -78.4880], "km": 21.3, "minutes": 38, "source": "Road", "polyline": "…" } ]
     }
   ],
-  "unserved": [],
+  "unserved": [
+    { "pointCode": "HOS-S02", "reason": "capacity", "facts": [ … ],
+      "lines": [ { "sku": "DES-01", "baseUnit": "L", "requiredQuantity": 150, "plannedQuantity": 100, "pendingQuantity": 50 } ] }
+  ],
   "decision": { "agentDecisionId": "…", "outcome": "Escalated", "reasons": ["initial_plan_requires_approval"] },
   "facts": [ … ],
   "explanation": "…"
 }
 ```
+
+Atención parcial (FR-24, #199): `quantity` de cada carga es lo planificado y lo que se publica y reserva; `requiredQuantity` es lo sugerido o pedido y `pendingQuantity` el remanente. Cada ruta de la respuesta trae también `vehicleCode`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y sus `stops` con `loads`. Un no atendido con `reason: "capacity"` y `plannedQuantity > 0` es una entrega parcial; el remanente queda pendiente para otra planificación.
+
+**`POST /api/v1/route-plans/confirm`** (asistente por pedidos; validación de #201 con los ajustes de #199) — exige `vehicleId`: responde 409 si falta, no existe o está inactivo. Recalcula la carga desde los pedidos y rechaza con 409 si no cabe en peso, volumen o jornada. La cantidad de cada línea sale de `lines[]` (`deliveryOrderId`, `productId`, `plannedQuantity`) o de `stops[].loads`; si no viene, es todo lo pendiente (`RequestedQuantity − PlannedQuantity − DeliveredQuantity`). Una cantidad mayor que lo pendiente, o pedidos sin nada pendiente en las paradas, responden 409. Responde `201` con `lines` (`orderId`, `orderNumber`, `pointCode`, `sku`, `baseUnit`, `requiredQuantity`, `plannedQuantity`, `pendingQuantity`), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`. Lo planificado se suma a `DeliveryOrderLine.PlannedQuantity`; el pedido con remanente sigue `Pending` y `suggest` le ofrece solo lo que falta.
 
 **`POST /api/v1/route-plans/{id}/publish`** — cuerpo `{ "assignments": { "VEH-01": "<sub del conductor>" } }` (opcional) → `200` con las entregas creadas; repetir devuelve las mismas.
 

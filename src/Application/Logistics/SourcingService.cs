@@ -374,6 +374,10 @@ public sealed class SourcingService : ISourcingService
 
             foreach (var line in ordLines)
             {
+                // #199: solo el remanente sin planificar; lo ya confirmado en otra ruta no se vuelve a ofrecer.
+                decimal requested = Math.Max(0m, line.RequestedQuantity - line.PlannedQuantity);
+                if (requested <= 0m) continue;
+
                 demandInputs.Add(new SourcingDemandInput(
                     ord.Id,
                     ord.OrderNumber,
@@ -384,7 +388,7 @@ public sealed class SourcingService : ISourcingService
                     dest.Name,
                     dest.Pos,
                     line.ProductId,
-                    line.RequestedQuantity
+                    requested
                 ));
             }
         }

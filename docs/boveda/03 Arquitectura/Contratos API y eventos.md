@@ -194,6 +194,19 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Ventanas:** `windowStart`, `windowEnd` y `serviceMinutes` de cada entrega salen de `WindowStartLocal`, `WindowEndLocal` y `ServiceMinutes` del punto de servicio. Si el punto no los tiene, o el destino es una bodega, se usan 08:00–17:00 y 15 min, los valores fijos anteriores.
 - **Fuera de alcance:** validar capacidad por prioridad en `/suggest` y `/confirm` es el issue #201.
 
+## Carga parcial según capacidad (#199 — 16 de octubre de 2026)
+
+Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factible y conserva el remanente pendiente. Detalle en el FR-24 del spec 002 (`docs/specs/002-motor-logistico/spec.md`) y en su `plan.md`.
+
+- **`POST /api/v1/route-plans`** (lo consume n8n con `propose_routes`): cada ruta trae `vehicleCode`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `stops[].loads[]` con `quantity` (planificada; es lo que se publica y reserva), `requiredQuantity` y `pendingQuantity`. Cada no atendido trae `lines[]` con `requiredQuantity`, `plannedQuantity` y `pendingQuantity`. Una entrega parcial es `reason: "capacity"` con `plannedQuantity > 0`. Los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`) permiten explicarla sin inventar cifras.
+- **`POST /api/v1/route-plans/confirm`:** mantiene la validación de #201: vehículo obligatorio y 409 si la ruta no cabe; la parcial se pide con `lines`. Con #199:
+  - La cantidad de cada línea no puede superar lo pendiente (`RequestedQuantity − PlannedQuantity − DeliveredQuantity`); si lo supera, 409.
+  - Lo planificado se suma a `PlannedQuantity`.
+  - Un pedido sin nada pendiente no genera otra ruta: 409.
+  - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
+- **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
+- **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).
+
 ## Consultas de abastecimiento para planificación y agente (#194 — implementado y verificado localmente, 16 de octubre de 2026)
 
 El issue #194 expone tres consultas de solo lectura logística bajo `/api/v1/logistics` (`LogisticsQueriesController`), reutilizando `SourcingService` y `VehicleMatcher` sin tocar `RoutePlansController` (reservado a #201).
