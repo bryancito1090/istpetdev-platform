@@ -12,12 +12,15 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/agente-logistico-v1.md"
+DATASET_PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/revision-dataset-v1.md"
 TEMPLATES_DIR = REPO_ROOT / "automation/n8n/templates"
 WORKFLOWS_DIR = REPO_ROOT / "automation/n8n/workflows"
 PROMPT_VERSION = "v1"
 N8N_VERSION = "2.39.5"
 AGENT_WORKFLOWS = ("vigia", "incidente")
-REQUIRED_WORKFLOWS = (*AGENT_WORKFLOWS, "error-agente")
+DATASET_WORKFLOWS = ("revision-dataset",)
+PROMPTED_WORKFLOWS = (*AGENT_WORKFLOWS, *DATASET_WORKFLOWS)
+REQUIRED_WORKFLOWS = (*PROMPTED_WORKFLOWS, "error-agente")
 ERROR_WORKFLOW_ID_MARKER = "{{ERROR_WORKFLOW_ID}}"
 SECRET_KEYS = {
     "apikey",
@@ -147,12 +150,18 @@ def build_workflows(
     templates_dir: Path = TEMPLATES_DIR,
     output_dir: Path = WORKFLOWS_DIR,
     check_only: bool = False,
+    dataset_prompt_file: Path = DATASET_PROMPT_FILE,
 ) -> int:
-    if not prompt_file.is_file():
-        raise FileNotFoundError(f"No existe el prompt: {prompt_file}")
-    prompt = prompt_file.read_text(encoding="utf-8").strip()
-    if not prompt:
-        raise ValueError(f"El prompt está vacío: {prompt_file}")
+    prompts = {name: prompt_file for name in AGENT_WORKFLOWS}
+    prompts.update({name: dataset_prompt_file for name in DATASET_WORKFLOWS})
+    prompt_texts: dict[Path, str] = {}
+    for prompt_path in dict.fromkeys(prompts.values()):
+        if not prompt_path.is_file():
+            raise FileNotFoundError(f"No existe el prompt: {prompt_path}")
+        prompt = prompt_path.read_text(encoding="utf-8").strip()
+        if not prompt:
+            raise ValueError(f"El prompt está vacío: {prompt_path}")
+        prompt_texts[prompt_path] = prompt
 
     missing = [name for name in REQUIRED_WORKFLOWS if not (templates_dir / f"{name}.template.json").is_file()]
     if missing:
@@ -165,10 +174,10 @@ def build_workflows(
     for name in REQUIRED_WORKFLOWS:
         template_path = templates_dir / f"{name}.template.json"
         workflow = _load_json(template_path)
-        if name in AGENT_WORKFLOWS:
-            if workflow.get("settings", {}).get("errorWorkflow") != ERROR_WORKFLOW_ID_MARKER:
+        if name in PROMPTED_WORKFLOWS:
+            if name in AGENT_WORKFLOWS and workflow.get("settings", {}).get("errorWorkflow") != ERROR_WORKFLOW_ID_MARKER:
                 raise ValueError(f"{name}: settings.errorWorkflow debe usar el marcador configurado en el servidor")
-            workflow = inject_prompt_into_workflow(workflow, prompt, name)
+            workflow = inject_prompt_into_workflow(workflow, prompt_texts[prompts[name]], name)
         else:
             nodes = workflow.get("nodes")
             if not isinstance(nodes, list) or not nodes or nodes[0].get("type") != "n8n-nodes-base.errorTrigger":

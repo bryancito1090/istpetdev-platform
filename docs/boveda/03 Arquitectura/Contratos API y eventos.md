@@ -340,3 +340,30 @@ Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya
 - **Resultado:** la parada crítica llega antes de la hora límite o queda en `unserved` con motivo `time_window`; no hay motivo nuevo.
 - **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
 - **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.
+
+## Revisión de viabilidad de datasets (#209 — 16 de octubre de 2026)
+
+Amplía el reporte del importador del spec 001 sin cambiar su validación estricta
+(ADR-22: la API calcula y decide; n8n coordina y explica).
+
+- **`POST /api/v1/imports`** devuelve en el reporte `status`
+  (`Applied`/`DryRun`/`Rejected`) y `feasibility`, calculada en el plan en
+  memoria del dry-run sin persistir datos operativos. La sección contiene
+  `verdict` (`Viable`/`ViableWithLimitations`/`Inviable`) y las listas
+  `unroutablePoints` (código, nombre y fila de puntos sin GPS),
+  `warehousesWithoutFleet`, `productsWithoutCapacity` (motivo
+  `weight`/`volume`/`both`) y `stockShortages` (demanda del dataset vs. stock
+  físico neto usable de bodegas, sin lotes bloqueados ni vencidos).
+- **Veredicto determinista:** `Inviable` si hay déficit de stock, si hay demanda
+  y no existe vehículo activo con `maxWeight > 0`, o si todos los puntos
+  involucrados carecen de coordenadas; `ViableWithLimitations` si hay hallazgos
+  sin déficit; `Viable` sin hallazgos.
+- **Autorización M2M acotada:** `Roles.Automatizacion` puede ejecutar
+  `POST /api/v1/imports` **solo** con `dryRun=true&allowPartial=false`; aplicar
+  o descartar filas sigue siendo exclusivo de `Roles.Planning` (403 en caso
+  contrario). Los GET de `data/{entity}` siguen siendo humanos.
+- **n8n:** el workflow `revision-dataset` (webhook `istpetdev/dataset/review`)
+  ejecuta el dry-run con su credencial M2M, arma el dictamen con las secciones
+  de viabilidad, balance, puntos sin GPS, stock vs demanda y acciones separadas
+  en seguras/humanas, y usa plantilla determinista si el LLM falla o inventa
+  cifras. Nunca envía `allowPartial=true`.
