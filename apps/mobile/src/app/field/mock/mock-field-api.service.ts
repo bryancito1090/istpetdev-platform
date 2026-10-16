@@ -522,18 +522,22 @@ export class MockFieldApiService implements IFieldApi {
         }
 
         // Proyección pública limitada (sin actores, cantidades privadas ni firmas)
+        const reached = (min: string): boolean => {
+          const order = ['Sealed', 'Prepared', 'Dispatched', 'InTransit', 'Delivered', 'Received', 'Partial'];
+          return order.indexOf(hu.status) >= order.indexOf(min);
+        };
         const trace: PublicTraceUnitDto = {
           unitId: hu.handlingUnitId,
           code: hu.code,
           status: hu.status,
           productUnits: hu.lines.map((l) => ({ sku: l.sku, unit: l.unit })),
           events: [
-            { stage: 'Preparado en Bodega Central', timestamp: hu.createdAtUtc },
-            ...(hu.status === 'Dispatched' || hu.status === 'Received' || hu.status === 'Partial'
-              ? [{ stage: 'Despachado en Vehículo Logístico', timestamp: new Date().toISOString() }]
-              : []),
-            ...(hu.status === 'Received'
-              ? [{ stage: 'Entregado en Punto de Destino', timestamp: new Date().toISOString() }]
+            { stage: 'Preparada', timestamp: hu.createdAtUtc },
+            ...(reached('Dispatched') ? [{ stage: 'Despachada', timestamp: new Date().toISOString() }] : []),
+            ...(reached('InTransit') ? [{ stage: 'En ruta', timestamp: new Date().toISOString() }] : []),
+            ...(reached('Delivered') ? [{ stage: 'Entregada', timestamp: new Date().toISOString() }] : []),
+            ...(hu.status === 'Received' || hu.status === 'Partial'
+              ? [{ stage: hu.status === 'Partial' ? 'Recibida Parcial' : 'Recibida', timestamp: new Date().toISOString() }]
               : [])
           ]
         };
@@ -641,8 +645,17 @@ export class MockFieldApiService implements IFieldApi {
           if (route.routePlanId === routePlanId) {
             const pendingDeliveries = route.deliveries.slice(0, req.stops);
             for (const d of pendingDeliveries) {
+              // Sin bultos preparados el avance real responde NO_HANDLING_UNITS; el mock no inventa un recibo.
+              if (d.handlingUnits.length === 0) continue;
+              // #162: el avance de demo recorre los mismos estados reales de custodia.
+              d.handlingUnits.forEach((hu) => (hu.status = 'Dispatched'));
+              d.status = 'Dispatched';
+              d.handlingUnits.forEach((hu) => (hu.status = 'InTransit'));
+              d.status = 'InTransit';
+              d.handlingUnits.forEach((hu) => (hu.status = 'Delivered'));
               d.status = 'Delivered';
               d.handlingUnits.forEach((hu) => (hu.status = 'Received'));
+              d.status = 'Received';
               const rcptId = `rcpt-adv-${generateUuidV7().slice(0, 8)}`;
               completed.push({
                 sequence: d.sequence,
