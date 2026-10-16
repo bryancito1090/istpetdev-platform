@@ -2,6 +2,7 @@
 """Exercise the exported tool guard with hostile model arguments."""
 
 import json
+import re
 import subprocess
 import unittest
 from pathlib import Path
@@ -23,6 +24,45 @@ const output = vm.runInNewContext('(function () {' + code + '\\n})()', {
 });
 process.stdout.write(JSON.stringify(output.json));
 """
+PRODUCT_ID = "11111111-1111-4111-8111-111111111111"
+WAREHOUSE_ID = "22222222-2222-4222-8222-222222222222"
+POINT_ID = "33333333-3333-4333-8333-333333333333"
+ORDER_ID = "44444444-4444-4444-8444-444444444444"
+ROUTE_PLAN_ID = "55555555-5555-4555-8555-555555555555"
+VALID_ARGS = {
+    "get_risks": {},
+    "propose_routes": {},
+    "get_route_plan": {"routePlanId": ROUTE_PLAN_ID},
+    "get_incident_impact": {},
+    "replan": {"routePlanId": ROUTE_PLAN_ID},
+    "find_stock": {"productId": PRODUCT_ID},
+    "plan_sourcing": {"servicePointIds": [POINT_ID]},
+    "vehicle_availability": {},
+}
+CONTEXT_FIELDS = ("apiBaseUrl", "runId", "incidentId", "deadlineUtc")
+
+
+def load_workflow(name):
+    return json.loads((ROOT / "automation/n8n/workflows" / name).read_text())
+
+
+def tools_of(workflow):
+    return {node["name"]: node for node in workflow["nodes"] if node["type"].endswith(".toolWorkflow")}
+
+
+def run_guard(tool, item):
+    output = subprocess.check_output(
+        ["node", "-e", RUNNER],
+        text=True,
+        input=json.dumps({"expression": tool["parameters"]["workflowJson"], "item": item}),
+    )
+    return json.loads(output)
+
+
+def subworkflow_of(tool):
+    expression = tool["parameters"]["workflowJson"]
+    inner = expression[len("={{ ") : -len(".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}")]
+    return json.loads(json.loads(inner))
 
 
 class WorkflowContextTests(unittest.TestCase):
@@ -48,33 +88,147 @@ process.stdout.write(JSON.stringify(output.json));
             self.assertIsNone(result["agentError"])
             self.assertEqual("x" * 161, result["decisions"][0]["driverMessage"])
 
-    def test_model_cannot_change_origin_run_incident_or_deadline(self):
+    def test_each_agent_exposes_exactly_eight_connected_tools(self):
         for name in ("vigia.json", "incidente.json"):
-            path = ROOT / "automation/n8n/workflows" / name
-            workflow = json.loads(path.read_text())
-            tools = [n for n in workflow["nodes"] if n["type"].endswith(".toolWorkflow")]
-            self.assertEqual(5, len(tools))
-            for tool in tools:
+            workflow = load_workflow(name)
+            tools = tools_of(workflow)
+            self.assertEqual(
+                {"get_risks", "propose_routes", "get_route_plan", "get_incident_impact", "replan",
+                 "find_stock", "plan_sourcing", "vehicle_availability"},
+                set(tools),
+            )
+            for tool in tools.values():
                 self.assertEqual(2.2, tool["typeVersion"])
-                params = tool["parameters"]
-                self.assertIn("$('Verify Signature')", params["workflowJson"])
-                schema = json.loads(params["inputSchema"])
+                schema = json.loads(tool["parameters"]["inputSchema"])
                 self.assertFalse(schema["additionalProperties"])
-                self.assertLessEqual(set(schema["properties"]), {"routePlanId"})
-                hostile = {"apiBaseUrl": "https://attacker.invalid", "runId": "forged-run",
-                           "incidentId": "forged-incident", "deadlineUtc": "2099-01-01T00:00:00Z"}
+                self.assertIn("$('Verify Signature')", tool["parameters"]["workflowJson"])
+                connection = workflow["connections"][tool["name"]]["ai_tool"][0][0]
+                self.assertEqual("AI Agent", connection["node"])
+
+    def test_model_cannot_change_origin_run_incident_or_deadline(self):
+        hostile = {"apiBaseUrl": "https://attacker.invalid", "runId": "forged-run",
+                   "incidentId": "forged-incident", "deadlineUtc": "2099-01-01T00:00:00Z"}
+        for name in ("vigia.json", "incidente.json"):
+            tools = tools_of(load_workflow(name))
+            for tool_name, tool in tools.items():
                 for deadline, can_call in (("2026-10-14T20:00:10Z", True), ("2026-10-14T19:59:59Z", False)):
                     context = {"runId": "signed-run", "incidentId": "signed-incident",
                                "kind": "Incident", "deadlineUtc": deadline}
-                    item = {**hostile, "context": context, "query": {**hostile, "context": hostile}}
-                    output = subprocess.check_output(["node", "-e", RUNNER], text=True,
-                                                     input=json.dumps({"expression": params["workflowJson"], "item": item}))
-                    guarded = json.loads(output)
-                    self.assertEqual("http://trusted-api/api/v1", guarded["apiBaseUrl"])
-                    self.assertEqual("signed-run", guarded["runId"])
-                    self.assertEqual("signed-incident", guarded["incidentId"])
-                    self.assertEqual(deadline, guarded["deadlineUtc"])
-                    self.assertEqual(can_call, guarded["canCall"])
+                    item = {**hostile, **VALID_ARGS[tool_name], "context": context,
+                            "query": {**hostile, **VALID_ARGS[tool_name], "context": hostile}}
+                    guarded = run_guard(tool, item)
+                    self.assertEqual("http://trusted-api/api/v1", guarded["apiBaseUrl"], tool_name)
+                    self.assertEqual("signed-run", guarded["runId"], tool_name)
+                    self.assertEqual("signed-incident", guarded["incidentId"], tool_name)
+                    self.assertEqual(deadline, guarded["deadlineUtc"], tool_name)
+                    if tool_name in {"find_stock", "plan_sourcing", "vehicle_availability"}:
+                        # Los tools nuevos devuelven solo campos de allowlist; los preexistentes
+                        # conservan su salida con copias anidadas que ningún nodo HTTP autorizado lee.
+                        self.assertNotIn("attacker.invalid", json.dumps(guarded), tool_name)
+                    self.assertEqual(can_call, guarded["canCall"], tool_name)
+
+    def test_deadline_is_required_to_call(self):
+        for name in ("vigia.json", "incidente.json"):
+            tools = tools_of(load_workflow(name))
+            for tool_name, tool in tools.items():
+                for deadline, can_call in (("2026-10-14T20:00:10Z", True), ("2026-10-14T19:59:59Z", False)):
+                    context = {"runId": "signed-run", "incidentId": "signed-incident",
+                               "kind": "Incident", "deadlineUtc": deadline}
+                    item = {**VALID_ARGS[tool_name], "context": context, "query": {**VALID_ARGS[tool_name]}}
+                    guarded = run_guard(tool, item)
+                    self.assertEqual(can_call, guarded["canCall"], tool_name)
+
+    def test_find_stock_arguments_are_strict_allowlists(self):
+        context = {"runId": "signed-run", "incidentId": "signed-incident",
+                   "kind": "Watch", "deadlineUtc": "2026-10-14T20:00:10Z"}
+        tool = tools_of(load_workflow("vigia.json"))["find_stock"]
+        cases = [
+            ({}, False),
+            ({"productId": "not-a-uuid"}, False),
+            ({"productId": PRODUCT_ID, "warehouseId": "not-a-uuid"}, False),
+            ({"productId": PRODUCT_ID, "warehouseId": WAREHOUSE_ID}, True),
+            ({"productId": PRODUCT_ID, "attackerField": "x"}, True),
+        ]
+        for args, expected in cases:
+            guarded = run_guard(tool, {**args, "context": context, "query": args})
+            self.assertEqual(expected, guarded["canCall"], args)
+            self.assertNotIn("attackerField", guarded)
+        guarded = run_guard(tool, {"productId": PRODUCT_ID, "warehouseId": WAREHOUSE_ID,
+                                   "context": context, "query": {"productId": PRODUCT_ID, "warehouseId": WAREHOUSE_ID}})
+        self.assertEqual(PRODUCT_ID, guarded["productId"])
+        self.assertEqual(WAREHOUSE_ID, guarded["warehouseId"])
+
+    def test_plan_sourcing_requires_exactly_one_deduplicated_list(self):
+        context = {"runId": "signed-run", "incidentId": "signed-incident",
+                   "kind": "Watch", "deadlineUtc": "2026-10-14T20:00:10Z"}
+        tool = tools_of(load_workflow("vigia.json"))["plan_sourcing"]
+        cases = [
+            ({}, False),
+            ({"orderIds": []}, False),
+            ({"orderIds": [ORDER_ID], "servicePointIds": [POINT_ID]}, False),
+            ({"orderIds": ["not-a-uuid"]}, False),
+            ({"orderIds": [ORDER_ID]}, True),
+            ({"servicePointIds": [POINT_ID], "productId": PRODUCT_ID}, True),
+            ({"servicePointIds": [POINT_ID], "productId": "not-a-uuid"}, False),
+            ({"orderIds": [ORDER_ID], "productId": PRODUCT_ID}, False),
+            ({"orderIds": [f"{index:08x}-1111-4111-8111-111111111111" for index in range(101)]}, False),
+        ]
+        for args, expected in cases:
+            guarded = run_guard(tool, {**args, "context": context, "query": args})
+            self.assertEqual(expected, guarded["canCall"], args)
+            if expected is False:
+                self.assertEqual("invalid_arguments", guarded["skipReason"])
+        guarded = run_guard(tool, {"orderIds": [ORDER_ID, ORDER_ID], "context": context,
+                                   "query": {"orderIds": [ORDER_ID, ORDER_ID]}})
+        self.assertEqual([ORDER_ID], guarded["orderIds"])
+        self.assertTrue(guarded["canCall"])
+
+    def test_vehicle_availability_ignores_model_arguments(self):
+        context = {"runId": "signed-run", "incidentId": "signed-incident",
+                   "kind": "Watch", "deadlineUtc": "2026-10-14T20:00:10Z"}
+        tool = tools_of(load_workflow("vigia.json"))["vehicle_availability"]
+        hostile = {"date": "2099-12-31", "apiBaseUrl": "https://attacker.invalid",
+                   "runId": "forged-run", "deadlineUtc": "2099-01-01T00:00:00Z"}
+        guarded = run_guard(tool, {**hostile, "context": context, "query": hostile})
+        self.assertTrue(guarded["canCall"])
+        self.assertEqual("signed-run", guarded["runId"])
+        self.assertEqual(context["deadlineUtc"], guarded["deadlineUtc"])
+        self.assertNotIn("date", guarded)
+        self.assertNotIn("attacker.invalid", json.dumps(guarded))
+
+    def test_new_tool_http_calls_use_env_base_and_validated_fields_only(self):
+        expected = {
+            "find_stock": ("/logistics/stock", ["$json.productId", "$json.warehouseId"]),
+            "plan_sourcing": ("/logistics/sourcing", ["$json.orderIds", "$json.servicePointIds", "$json.productId"]),
+            "vehicle_availability": ("/logistics/vehicles/available", []),
+        }
+        for name in ("vigia.json", "incidente.json"):
+            tools = tools_of(load_workflow(name))
+            for tool_name, (path, fields) in expected.items():
+                sub = subworkflow_of(tools[tool_name])
+                http = next(node for node in sub["nodes"] if node["type"] == "n8n-nodes-base.httpRequest")
+                url = http["parameters"]["url"]
+                self.assertIn("$env.ISTPETDEV_API_BASE_URL", url, tool_name)
+                self.assertIn(path, url, tool_name)
+                self.assertNotIn("input.", url, tool_name)
+                self.assertNotIn("$json.query", url, tool_name)
+                for field in fields:
+                    self.assertIn(field, url + json.dumps(http["parameters"].get("jsonBody", "")), tool_name)
+                header = http["parameters"]["headerParameters"]["parameters"][0]
+                self.assertEqual("X-Agent-Run-Id", header["name"])
+                self.assertEqual("={{ $json.runId }}", header["value"])
+                timeout = http["parameters"]["options"]["timeout"]
+                self.assertIn("deadlineUtc", timeout)
+                self.assertTrue(str(timeout).startswith("={{ Math.max"))
+
+    def test_existing_tool_http_timeouts_respect_remaining_deadline(self):
+        for name in ("vigia.json", "incidente.json"):
+            tools = tools_of(load_workflow(name))
+            for tool_name, tool in tools.items():
+                sub = subworkflow_of(tool)
+                http = next(node for node in sub["nodes"] if node["type"] == "n8n-nodes-base.httpRequest")
+                self.assertIn("deadlineUtc", http["parameters"]["options"]["timeout"], tool_name)
+                self.assertNotEqual(15000, http["parameters"]["options"]["timeout"], tool_name)
 
 
 if __name__ == "__main__":

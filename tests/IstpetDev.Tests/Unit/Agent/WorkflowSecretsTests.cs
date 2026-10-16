@@ -49,6 +49,18 @@ public sealed class WorkflowSecretsTests
                 Assert.Contains("/execution", register.GetProperty("parameters").GetProperty("url").GetString());
                 Assert.Equal("Register Execution", workflow.GetProperty("connections").GetProperty("Valid Signature?").GetProperty("main")[0][0].GetProperty("node").GetString());
                 Assert.Equal("Respond Accepted", workflow.GetProperty("connections").GetProperty("Register Execution").GetProperty("main")[0][0].GetProperty("node").GetString());
+                Assert.Empty(workflow.GetProperty("pinData").EnumerateObject());
+
+                var tools = workflow.GetProperty("nodes").EnumerateArray()
+                    .Where(node => node.GetProperty("type").GetString()!.EndsWith(".toolWorkflow"))
+                    .ToArray();
+                Assert.Equal(8, tools.Length);
+                foreach (var tool in tools)
+                {
+                    Assert.Equal("AI Agent", workflow.GetProperty("connections")
+                        .GetProperty(tool.GetProperty("name").GetString()!)
+                        .GetProperty("ai_tool")[0][0].GetProperty("node").GetString());
+                }
             }
 
             var errorWorkflow = documents["error-agente.json"].RootElement;
@@ -66,6 +78,43 @@ public sealed class WorkflowSecretsTests
         {
             foreach (var document in documents.Values) document.Dispose();
         }
+    }
+
+    [Fact]
+    public void Templates_and_embedded_tool_subworkflows_have_no_secret_fields()
+    {
+        var directory = Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../../automation/n8n/templates"));
+        Assert.Equal(
+            ["error-agente.template.json", "incidente.template.json", "vigia.template.json"],
+            Directory.GetFiles(directory, "*.json").Select(file => Path.GetFileName(file)!).Order().ToArray());
+
+        var violations = new List<string>();
+        foreach (var file in Directory.GetFiles(directory, "*.json"))
+        {
+            using var template = JsonDocument.Parse(File.ReadAllText(file));
+            Inspect(template.RootElement, Path.GetFileName(file), violations);
+            foreach (var node in template.RootElement.GetProperty("nodes").EnumerateArray())
+            {
+                if (!node.GetProperty("type").GetString()!.EndsWith(".toolWorkflow")) continue;
+                var expression = node.GetProperty("parameters").GetProperty("workflowJson").GetString()!;
+                const string prefix = "={{ ";
+                var end = expression.IndexOf("\".replace('__SIGNED_CONTEXT__'", StringComparison.Ordinal);
+                Assert.True(end > prefix.Length, $"{file}: expresión workflowJson inesperada");
+                using var literal = JsonDocument.Parse(expression[prefix.Length..(end + 1)]);
+                var embedded = literal.RootElement.GetString()!;
+                using var subworkflow = JsonDocument.Parse(embedded);
+                Inspect(subworkflow.RootElement, $"{Path.GetFileName(file)}::{node.GetProperty("name").GetString()}", violations);
+                var m2m = subworkflow.RootElement.GetProperty("nodes").EnumerateArray()
+                    .Where(child => child.TryGetProperty("credentials", out _))
+                    .SelectMany(child => child.GetProperty("credentials").EnumerateObject())
+                    .Select(property => property.Value.GetProperty("id").GetString()!)
+                    .Distinct()
+                    .ToArray();
+                Assert.Equal(["8e186867-4916-54b1-b968-c1c273f79a11"], m2m);
+            }
+        }
+
+        Assert.Empty(violations);
     }
 
     private static void Inspect(JsonElement value, string path, List<string> violations)

@@ -88,8 +88,8 @@ class BuildWorkflowsTests(unittest.TestCase):
             agent = next(n for n in workflow["nodes"] if "agent" in n["type"])
             self.assertEqual("Prompt de prueba", agent["parameters"]["options"]["systemMessage"])
             result = next(n for n in workflow["nodes"] if n["name"] == "Send Result")
-            self.assertEqual("v1", result["parameters"]["body"]["promptVersion"])
-            self.assertEqual("v1", workflow["meta"]["promptVersion"])
+            self.assertEqual("v2", result["parameters"]["body"]["promptVersion"])
+            self.assertEqual("v2", workflow["meta"]["promptVersion"])
             self.assertEqual(builder.ERROR_WORKFLOW_ID_MARKER, workflow["settings"]["errorWorkflow"])
         self.assertEqual(0, builder.build_workflows(*args, check_only=True))
 

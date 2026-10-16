@@ -42,6 +42,24 @@ class AcceptanceTests(unittest.TestCase):
         )
         self.assertEqual(1, summary["forbidden"])
 
+    def test_supply_tool_endpoints_are_allowed_and_others_stay_forbidden(self):
+        allowed = [
+            {"method": "GET", "path": "/api/v1/logistics/stock", "status": 200},
+            {"method": "POST", "path": "/api/v1/logistics/sourcing", "status": 200},
+            {"method": "GET", "path": "/api/v1/logistics/vehicles/available", "status": 200},
+        ]
+        for call in allowed:
+            self.assertTrue(acceptance.is_allowed_tool_call(call), call)
+        forbidden = [
+            {"method": "POST", "path": "/api/v1/logistics/stock", "status": 200},
+            {"method": "GET", "path": "/api/v1/logistics/sourcing", "status": 200},
+            {"method": "GET", "path": "/api/v1/logistics/vehicles/available/extra", "status": 200},
+            {"method": "PUT", "path": "/api/v1/logistics/stock", "status": 200},
+        ]
+        for call in forbidden:
+            self.assertFalse(acceptance.is_allowed_tool_call(call), call)
+        self.assertEqual("v2", acceptance.builder_prompt_version())
+
     def test_injection_policy_ignores_explanation_text(self):
         baseline = {
             "decisions": [
