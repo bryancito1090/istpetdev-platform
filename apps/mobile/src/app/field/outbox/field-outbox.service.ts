@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { openDB, IDBPDatabase } from 'idb';
 import {
   CreateReceiptRequest,
+  CustodyTransitionResponse,
   ReceiptResponse,
   MobileAssignmentResponse,
   PwaSyncState,
@@ -12,18 +13,21 @@ import {
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { generateUuidV7 } from '../uuid';
 
+export type OutboxCommandKind = 'Receipt' | 'Pickup' | 'Deliver';
+
 export interface OutboxItem {
   operationId: string; // UUID v7
   ownerAccountId: string; // FR-09: cuenta que capturó; otra cuenta no la ve ni la sincroniza
   receiverContext?: { unitId: string; traceToken: string };
+  commandKind?: OutboxCommandKind; // #162; ausente = Receipt (compatibilidad)
   deliveryId: string;
   expectedDeliveryVersion: number;
   recipientName: string;
   notes?: string;
   capturedAtUtc: string;
   status: PwaSyncState;
-  receiptPayload: CreateReceiptRequest;
-  
+  receiptPayload?: CreateReceiptRequest;
+
   // Evidencias binarias
   evidencePhotoBlob?: Blob;
   photoSha256?: string;
@@ -32,9 +36,10 @@ export interface OutboxItem {
 
   // Respuestas del servidor
   receiptResponse?: ReceiptResponse;
+  custodyResponse?: CustodyTransitionResponse;
   photoEvidenceId?: string;
   signatureEvidenceId?: string;
-  
+
   // Error si hubo rechazo/conflicto de negocio o transitorio
   errorCode?: string;
   errorMessage?: string;
@@ -401,6 +406,55 @@ export class FieldOutboxService {
   }
 
   /**
+   * #162: guarda localmente un comando de custodia del conductor (recoger/entregar) antes de
+   * intentar enviarlo. El ítem se sincroniza con la misma cola, idempotencia y estados que las capturas.
+   */
+  async saveCustodyCommand(params: { deliveryId: string; command: 'Pickup' | 'Deliver'; label: string }): Promise<OutboxItem> {
+    const ownerAccountId = this.owner();
+    if (!ownerAccountId) {
+      throw new Error('Inicia sesión para registrar la custodia.');
+    }
+
+    await this.refreshOutboxItems();
+    const pending = this.outboxItems().find((i) =>
+      i.deliveryId === params.deliveryId && (i.commandKind ?? 'Receipt') === params.command && i.status !== 'Complete');
+    if (pending) {
+      throw new Error('Ya hay un comando de custodia pendiente para esta entrega.');
+    }
+
+    const sessionRevision = this.sessionRevision;
+    const operationId = generateUuidV7();
+    const capturedAtUtc = new Date().toISOString();
+
+    const outboxItem: OutboxItem = {
+      operationId,
+      ownerAccountId,
+      commandKind: params.command,
+      deliveryId: params.deliveryId,
+      expectedDeliveryVersion: 0,
+      recipientName: params.label,
+      capturedAtUtc,
+      status: 'SavedOnDevice'
+    };
+
+    this.assertSession(ownerAccountId, sessionRevision);
+    const db = await this.getDb();
+    const tx = db.transaction('outbox_items', 'readwrite');
+    await tx.objectStore('outbox_items').put(outboxItem);
+    await tx.done;
+
+    await this.refreshOutboxItems();
+
+    if (!this.isSimulatingOffline() && navigator.onLine) {
+      this.syncItem(operationId).catch(() => {
+        // Si falla por red queda en SavedOnDevice; el usuario ve el estado real en la cola.
+      });
+    }
+
+    return outboxItem;
+  }
+
+  /**
    * Ejecuta la sincronización completa de un ítem de la cola outbox contra el API.
    * Flujo:
    * 1. createReceipt -> 2. uploadEvidence foto -> confirmEvidence -> 3. uploadEvidence firma -> confirmEvidence -> Complete.
@@ -437,12 +491,23 @@ export class FieldOutboxService {
     }
 
     try {
-      // Paso 1: Enviar recepción
+      // Paso 1: Enviar recepción o comando de custodia (#162)
       item.status = 'Sending';
       item.errorCode = undefined;
       item.errorMessage = undefined;
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
+
+      const commandKind = item.commandKind ?? 'Receipt';
+      if (commandKind === 'Pickup' || commandKind === 'Deliver') {
+        const custodyResponse = await this.sendCustodyCommand(item, commandKind);
+        assertSession();
+        item.custodyResponse = custodyResponse;
+        item.status = 'Complete';
+        await db.put('outbox_items', item);
+        await this.refreshOutboxItems();
+        return item;
+      }
 
       const receiptResponse = item.receiptResponse ?? await this.sendReceiptRequestWithRetry(item, assertSession);
       assertSession();
@@ -570,9 +635,27 @@ export class FieldOutboxService {
 
   private sendReceiptRequest(item: OutboxItem): Promise<ReceiptResponse> {
     return new Promise((resolve, reject) => {
+      const payload = item.receiptPayload;
+      if (!payload) {
+        reject(new Error('La captura no tiene datos de recepción.'));
+        return;
+      }
       const request = item.receiverContext
-        ? this.fieldApi.receiveAsReceiver(item.receiverContext.unitId, item.receiverContext.traceToken, item.receiptPayload, item.operationId)
-        : this.fieldApi.createReceipt(item.deliveryId, item.receiptPayload, item.operationId);
+        ? this.fieldApi.receiveAsReceiver(item.receiverContext.unitId, item.receiverContext.traceToken, payload, item.operationId)
+        : this.fieldApi.createReceipt(item.deliveryId, payload, item.operationId);
+      request.subscribe({
+        next: (res) => resolve(res),
+        error: (err) => reject(err)
+      });
+    });
+  }
+
+  private sendCustodyCommand(item: OutboxItem, command: 'Pickup' | 'Deliver'): Promise<CustodyTransitionResponse> {
+    return new Promise((resolve, reject) => {
+      const payload = { operationId: item.operationId, occurredAtDevice: item.capturedAtUtc };
+      const request = command === 'Pickup'
+        ? this.fieldApi.pickup(item.deliveryId, payload, item.operationId)
+        : this.fieldApi.deliver(item.deliveryId, payload, item.operationId);
       request.subscribe({
         next: (res) => resolve(res),
         error: (err) => reject(err)
@@ -693,6 +776,35 @@ export class FieldOutboxService {
    */
   async resolveConflictWithNewVersion(operationId: string, newVersion: number): Promise<OutboxItem> {
     return this.resolveRequiresReview(operationId, newVersion);
+  }
+
+  /**
+   * #162: último estado de custodia confirmado por el servidor para una entrega, si existe.
+   * Evita mostrar el snapshot viejo como si el servidor ya hubiera aceptado el comando local.
+   */
+  latestCustodyStatus(deliveryId: string): string | null {
+    const accepted = this.outboxItems()
+      .filter((i) => i.deliveryId === deliveryId && i.custodyResponse)
+      .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
+      .pop();
+    return accepted?.custodyResponse?.status ?? null;
+  }
+
+  /**
+   * Etiqueta humana del estado de la cola, compartida por la página de custodia y la cola (#162).
+   */
+  statusLabel(status: PwaSyncState): string {
+    switch (status) {
+      case 'SavedOnDevice': return 'Guardado en Teléfono';
+      case 'Sending': return 'Enviando...';
+      case 'AcceptedByServer': return 'Aceptado por Servidor';
+      case 'EvidencePending': return 'Subiendo Evidencias...';
+      case 'Complete': return 'Confirmado por el servidor';
+      case 'Conflict': return 'Conflicto 409';
+      case 'SessionRequired': return 'Sesión requerida';
+      case 'RequiresReview': return 'Requiere Revisión';
+      default: return status;
+    }
   }
 
   /**

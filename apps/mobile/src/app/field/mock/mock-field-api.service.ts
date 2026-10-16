@@ -6,6 +6,8 @@ import {
   HandlingUnitResponse,
   DispatchRequest,
   DispatchResponse,
+  CustodyTransitionRequest,
+  CustodyTransitionResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
   DeliveryDetailResponse,
@@ -111,7 +113,7 @@ export class MockFieldApiService implements IFieldApi {
           handlingUnitId: huId,
           code,
           deliveryId,
-          status: 'Prepared',
+          status: 'Sealed',
           labelUrl: `https://istpetdev.local/campo/label/${huId}`,
           token,
           lines: req.lines.map((l) => ({
@@ -137,10 +139,8 @@ export class MockFieldApiService implements IFieldApi {
           const d = route.deliveries.find((x) => x.deliveryId === deliveryId);
           if (d) {
             d.handlingUnits.push(newUnit);
-            d.status = 'Prepared';
           }
         }
-        delivery.status = 'Prepared';
         delivery.packagesCount = (delivery.packagesCount || 0) + 1;
 
         await this.store.saveState(state);
@@ -175,7 +175,24 @@ export class MockFieldApiService implements IFieldApi {
           throw this.createProblemDetails('NOT_FOUND', 404, `Entrega ${deliveryId} no encontrada.`);
         }
 
+        // #162: solo una entrega Draft con bultos sellados puede despacharse.
+        if (delivery.status !== 'Draft') {
+          throw this.createProblemDetails('INVALID_STATE_TRANSITION', 409,
+            `Solo una entrega Draft puede despacharse; la entrega está en ${delivery.status}.`);
+        }
+        if (!req.handlingUnitIds.length) {
+          throw this.createProblemDetails('NO_HANDLING_UNITS', 409,
+            'El despacho debe incluir al menos un bulto preparado por Bodega.');
+        }
+
         // 2. Marcar unidades despachadas
+        for (const huId of req.handlingUnitIds) {
+          const hu = state.handlingUnits[huId];
+          if (!hu || (hu.status !== 'Sealed' && hu.status !== 'Prepared')) {
+            throw this.createProblemDetails('HANDLING_UNIT_STATE_CONFLICT', 409,
+              'Una o más cajas no están preparadas para despacho.');
+          }
+        }
         for (const huId of req.handlingUnitIds) {
           const hu = state.handlingUnits[huId];
           if (hu) {
@@ -213,6 +230,97 @@ export class MockFieldApiService implements IFieldApi {
           recordedAtUtc: new Date().toISOString()
         };
 
+        await this.store.saveState(state);
+        return response;
+      })()
+    ).pipe(delay(this.latencyMs));
+  }
+
+  // #162: custodia del conductor en el mock: guardas de estado e idempotencia como el backend.
+  pickup(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse> {
+    return this.advanceCustody(deliveryId, req, idempotencyKey, 'PICKUP', 'Dispatched', 'InTransit');
+  }
+
+  deliver(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse> {
+    return this.advanceCustody(deliveryId, req, idempotencyKey, 'DELIVER', 'InTransit', 'Delivered');
+  }
+
+  private advanceCustody(
+    deliveryId: string,
+    req: CustodyTransitionRequest,
+    idempotencyKey: string,
+    action: 'PICKUP' | 'DELIVER',
+    fromStatus: 'Dispatched' | 'InTransit',
+    toStatus: 'InTransit' | 'Delivered'
+  ): Observable<CustodyTransitionResponse> {
+    return from(
+      (async () => {
+        this.checkFailureHooks();
+        const state = await this.store.getState();
+
+        const existingRecord = state.idempotencyRecords[idempotencyKey];
+        if (existingRecord) {
+          if (existingRecord.action === action && existingRecord.operationId === req.operationId) {
+            return existingRecord.responseBody as CustodyTransitionResponse;
+          }
+          throw this.createProblemDetails('IDEMPOTENCY_CONFLICT', 409,
+            'Conflicto de idempotencia: el operationId ya fue utilizado con datos distintos.');
+        }
+
+        const delivery = state.deliveries.find((d) => d.deliveryId === deliveryId);
+        if (!delivery) {
+          throw this.createProblemDetails('NOT_FOUND', 404, `Entrega ${deliveryId} no encontrada.`);
+        }
+        if (delivery.status !== fromStatus) {
+          const code = delivery.status === 'Draft' ? 'NOT_DISPATCHED'
+            : delivery.status === 'Received' || delivery.status === 'Partial' ? 'ALREADY_RECEIVED'
+            : 'INVALID_STATE_TRANSITION';
+          throw this.createProblemDetails(code, 409,
+            `Transición inválida: ${action === 'PICKUP' ? 'solo una entrega despachada puede recogerse' : 'solo una entrega en ruta puede marcarse como entregada'} (estado actual ${delivery.status}).`);
+        }
+        const unitIds = Object.values(state.handlingUnits)
+          .filter((hu) => hu.deliveryId === deliveryId)
+          .map((hu) => hu.handlingUnitId);
+        if (unitIds.length === 0) {
+          throw this.createProblemDetails('NO_HANDLING_UNITS', 409,
+            'La entrega no tiene bultos preparados por Bodega.');
+        }
+        for (const huId of unitIds) {
+          if (state.handlingUnits[huId].status !== fromStatus) {
+            throw this.createProblemDetails('HANDLING_UNIT_STATE_CONFLICT', 409,
+              'Uno o más bultos no están en el estado esperado.');
+          }
+        }
+
+        for (const huId of unitIds) {
+          state.handlingUnits[huId].status = toStatus;
+        }
+        delivery.status = toStatus;
+        for (const route of state.assignment.routes) {
+          const d = route.deliveries.find((x) => x.deliveryId === deliveryId);
+          if (d) {
+            d.status = toStatus;
+            d.handlingUnits.forEach((hu) => {
+              if (state.handlingUnits[hu.handlingUnitId]) hu.status = toStatus;
+            });
+          }
+        }
+
+        const response: CustodyTransitionResponse = {
+          deliveryId,
+          status: toStatus,
+          handlingUnitIds: unitIds,
+          changedAtUtc: new Date().toISOString(),
+          custodyEventId: `custody-${generateUuidV7().slice(0, 8)}`
+        };
+        state.idempotencyRecords[idempotencyKey] = {
+          action,
+          operationId: req.operationId,
+          requestFingerprint: `${action}:${deliveryId}`,
+          responseStatusCode: 200,
+          responseBody: response,
+          recordedAtUtc: new Date().toISOString()
+        };
         await this.store.saveState(state);
         return response;
       })()
@@ -262,6 +370,21 @@ export class MockFieldApiService implements IFieldApi {
           totalRejected += line.quantityRejected;
         }
 
+        // #162: el conductor ya no confirma stock en destino; solo el receptor con el bulto entregado.
+        const delivery = state.deliveries.find((d) => d.deliveryId === deliveryId);
+        if (!delivery) {
+          throw this.createProblemDetails('NOT_FOUND', 404, `Entrega ${deliveryId} no encontrada.`);
+        }
+        if (delivery.status === 'Draft') {
+          throw this.createProblemDetails('NOT_DISPATCHED', 409, 'La entrega aún no fue despachada por Bodega.');
+        }
+        if (delivery.status === 'Dispatched' || delivery.status === 'InTransit') {
+          throw this.createProblemDetails('NOT_DELIVERED', 409, 'El Conductor aún no entrega este bulto en el punto.');
+        }
+        if (delivery.status === 'Received') {
+          throw this.createProblemDetails('ALREADY_RECEIVED', 409, 'La entrega ya tiene un recibo final.');
+        }
+
         // Límite de prueba: 12 Litros máximo para la entrega del hospital
         if (totalAccepted + totalRejected > 12) {
           throw this.createProblemDetails(
@@ -272,12 +395,9 @@ export class MockFieldApiService implements IFieldApi {
         }
 
         // 4. Actualización del estado
-        const deliveryStatus = totalRejected > 0 ? 'Partial' : 'Delivered';
-        const delivery = state.deliveries.find((d) => d.deliveryId === deliveryId);
-        if (delivery) {
-          delivery.status = deliveryStatus;
-          delivery.evidenceStatus = 'Pending';
-        }
+        const deliveryStatus = totalRejected > 0 ? 'Partial' : 'Received';
+        delivery.status = deliveryStatus;
+        delivery.evidenceStatus = 'Pending';
 
         for (const route of state.assignment.routes) {
           const d = route.deliveries.find((x) => x.deliveryId === deliveryId);

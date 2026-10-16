@@ -115,7 +115,7 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
 describe('Receptor: recepción parcial y evidencia #115', () => {
   let page: HomePage;
   let outbox: { saveReceiptAtomic: ReturnType<typeof vi.fn>; loadReceiverUnit: ReturnType<typeof vi.fn>; pendingCount: ReturnType<typeof signal<number>> };
-  const unit = { handlingUnitId: 'hu', code: 'BULTO', status: 'Dispatched', deliveryId: 'delivery', deliveryVersion: 3,
+  const unit = { handlingUnitId: 'hu', code: 'BULTO', status: 'Delivered', deliveryId: 'delivery', deliveryVersion: 3,
     destinationName: 'Hospital', lines: [{ deliveryLineId: 'line', lotId: 'lot', lotCode: 'L-01', sku: 'SKU', productName: 'Insumo', quantity: 10, unit: 'L' }] };
   beforeEach(async () => {
     outbox = { pendingCount: signal(0), saveReceiptAtomic: vi.fn(async () => ({})),
@@ -170,5 +170,22 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
     page.onReceiverPhoto({ target: { files: [new File(['pdf'], 'evidence.pdf', { type: 'application/pdf' })] } } as unknown as Event);
     expect(page.receiverPhoto()).toBeNull();
     expect(page.receiverError()).toContain('imagen');
+  });
+
+  // #162: el receptor no recibe un bulto que el conductor aún no entregó.
+  it('bulto despachado pero no entregado muestra espera y no guarda', async () => {
+    outbox.loadReceiverUnit = vi.fn(async () => ({ unit: { ...unit, status: 'Dispatched' }, cached: true }));
+    await page.loadReceiverUnit('hu', 'qr');
+    expect(page.receiverError()).toContain('El Conductor aún no entrega este bulto');
+    await page.confirmReceiverAction();
+    expect(outbox.saveReceiptAtomic).not.toHaveBeenCalled();
+  });
+
+  it('bulto ya recibido informa y no permite un segundo recibo', async () => {
+    outbox.loadReceiverUnit = vi.fn(async () => ({ unit: { ...unit, status: 'Received' }, cached: true }));
+    await page.loadReceiverUnit('hu', 'qr');
+    expect(page.receiverError()).toContain('ya fue recibido');
+    await page.confirmReceiverAction();
+    expect(outbox.saveReceiptAtomic).not.toHaveBeenCalled();
   });
 });

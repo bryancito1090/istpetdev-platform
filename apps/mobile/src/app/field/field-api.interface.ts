@@ -5,6 +5,8 @@ import {
   HandlingUnitResponse,
   DispatchRequest,
   DispatchResponse,
+  CustodyTransitionRequest,
+  CustodyTransitionResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
   DeliveryDetailResponse,
@@ -35,6 +37,9 @@ export interface IFieldApi {
 
   // Conductor (Mobile / Captura y Sincronización)
   getAssignments(): Observable<MobileAssignmentResponse>;
+  // #162: custodia del conductor. Recoger (Dispatched → InTransit) y entregar (InTransit → Delivered).
+  pickup(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse>;
+  deliver(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse>;
   createReceipt(deliveryId: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse>;
   uploadEvidence(receiptId: string, req: EvidenceUploadRequest, fileBlob?: Blob): Observable<EvidenceUploadResponse>;
   confirmEvidence(evidenceId: string, req: EvidenceConfirmRequest): Observable<EvidenceConfirmResponse>;
