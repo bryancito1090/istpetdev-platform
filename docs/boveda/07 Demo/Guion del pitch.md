@@ -7,24 +7,211 @@ tags: [demo, validacion, istpetdev]
 
 # Guion del pitch
 
-**Turno anunciado oralmente el 16-oct:** cinco minutos por equipo, según la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla aportada por Bryan]]. **Meta interna:** 4:40 para el guion maestro; reservar 20 s no es una instrucción de la organización. Falta confirmar si demo, preguntas y transiciones caben en los cinco minutos (O-04 en [[Consultas para la organizacion]]). Los cortes de 3/7 minutos quedan como variantes internas, no turnos anunciados. No se ha ejecutado un ensayo nuevo con esta actualización.
+**Turno anunciado oralmente el 16-oct:** cinco minutos por equipo, según la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla aportada por Bryan]]. **Meta interna:** 4:40 (280 s) para el guion maestro; reservar 20 s no es una instrucción de la organización, sino un margen operativo interno de seguridad. Falta confirmar si demo, preguntas y transiciones caben en los cinco minutos (O-04 en [[Consultas para la organizacion]]). Los cortes de 3/7 minutos quedan como variantes internas, no turnos anunciados.
 
-> [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
-> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y el desglose pendiente de O-04. El anuncio del 16-oct permite seleccionar el corte maestro de cinco minutos, sin acreditar esas verificaciones.
+> [!important] Versión maestra T3 (16-oct-2026, issue #200)
+> Actualización oficial del guion maestro al turno de 5 minutos (meta 4:40 / 280 s) estructurado según el **Anexo 5.7** (p. 25 del manual oficial) e integrando la solución completa del [[Entregable Solucion y propuesta de valor]]: datos stock/consumo → riesgo → stock por bodega → vehículo → ruta priorizada → aprobación humana → despacho QR → recepción con/sin señal → impacto 90 días.
+> 
+> **Reglas de veracidad y restricciones técnicas:**
+> 1. Cada frase y cifra se deriva estrictamente de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md).
+> 2. **CRÍTICO:** La «prioridad de entrega con hora límite para clientes críticos» (issues #193 y #196) se presenta **exclusivamente como en construcción**, ya que aún no está fusionada en `develop`. No debe anunciarse como operativa en vivo.
+> 3. Las capacidades sin ensayo conectado o evidencia en hardware real (como recepción offline sin red en teléfono) llevan explícitamente la etiqueta `[PENDIENTE: evidencia]`.
+> 4. Se distribuye la presentación entre los **cinco papeles visibles**: Narración, Web, Móvil, Técnica y Negocio.
 
-> [!info] Preparación de T3–T5 (14-oct-2026, fase 3 del issue #46)
-> Papeles, relevos, sustituciones, frases vigentes sin ensayo conectado y contingencias: [escena y contingencias](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md). Pasadas y respuestas se anotan en el [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md). Hoy ninguna parte de la demo tiene ensayo conectado: se dice la «Frase vigente» de esa nota, no la de la tabla de abajo. Los nombres de los papeles siguen sin confirmar.
+Protagonista: una empresa de servicios de limpieza hospitalaria y comercial; objeto conductor: una caja de desinfectante destinada a un hospital norte. El caso de la demo en vivo es sintético (`demo-region`, 15 puntos, 1 bodega, 2 vehículos) hasta contar con validación empresarial en terreno.
 
-> [!warning] Lectura del kit previo (14-oct-2026)
-> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. Al 14-oct O-04 no tenía respuesta. El 16-oct se anuncia un turno de cinco minutos: se usa ese corte con objetivo interno 4:40; los demás quedan como variantes. El recorrido de 180 s se conserva como antecedente.
+**Estructura oficial del pitch (Anexo 5.7):**
+1. Problema (30 s) → 2. Solución (35 s) → 3. Prototipo / demo (145 s) → 4. Impacto (25 s) → 5. Viabilidad (15 s) → 6. Modelo de negocio (17 s) → 7. Próximo paso (13 s). Total: 280 s (4:40).
 
-Protagonista: una empresa de limpieza; objeto conductor: una caja destinada a un hospital. El caso es sintético hasta contar con validación empresarial.
+---
 
-**Estructura oficial (Anexo 5.7, p. 25):** Problema → Solución → Prototipo / demo → Impacto → Viabilidad → Modelo de negocio → Próximo paso. El recorrido de abajo cubre las siete partes; viabilidad, modelo de negocio y próximo paso comparten el cierre de 20 segundos y deben nombrarse los tres.
+## 1. Guion maestro de 5 min (meta 4:40 / 280 s) — Versión T3
 
-**Audiencia:** composición actual por confirmar (O-13). El reparto de siete personas del manual es antecedente, frente al anuncio de paneles por reto del 16-oct. Cada tecnología mencionada debe ir unida a lo que cambia para la operación.
+### Tabla de escena por bloques, tiempos y papeles
 
-## Recorrido de 180 segundos
+| Bloque (Anexo 5.7) | Tiempo (s) | Papel | Acción visible / Dispositivo | Etiqueta | Lo que se dice (guion palabra por palabra) | Matriz / Evidencia |
+|---|---|---|---|---|---|---|
+| **1. Problema** | 0:00–0:30 (30 s) | **Narración** | Diapositiva 1: Caso sintético, cláusula [[SERCOP limpieza hospitalaria y sanciones|SERCOP]] e ícono de caja → hospital. Clicker. | PROPUESTO + fuente documental | «En contratos públicos de limpieza hospitalaria, el proveedor está obligado a mantener los químicos de desinfección y los insumos fungibles con frecuencias de reposición definidas por el hospital. Nuestra hipótesis es que hoy la reposición empieza cuando el hospital ya avisó la falta; los pedidos imprevistos rompen la planificación de rutas. Les mostramos un caso sintético: una caja de desinfectante que va a un hospital.» | A-01 (usable doc.), A-02 (propuesta), A-03 (retirada: caso sintético) |
+| **2. Solución** | 0:30–1:05 (35 s) | **Narración → Web** | Diapositiva 2: Cadena completa del [[Entregable Solucion y propuesta de valor]]: stock → riesgo → bodega → vehículo → ruta → aprobación → despacho QR → recepción. | PROPUESTO | *(Narración 0:30–0:48)* «Frente a esa operación reactiva, IstpetDev integra la cadena completa: toma datos de stock y consumo, evalúa riesgo de rotura, busca disponibilidad por bodega, asigna vehículo, calcula la ruta priorizada y acompaña la entrega con custodia QR. El cálculo es determinista y verificable; la IA asiste y explica, pero no aprueba nada.»<br/>*(Web 0:48–1:05)* «El planificador ve por qué cada punto está en riesgo, desde qué bodega se abastece y qué vehículo lo atenderá, antes de que el hospital sufra un desabastecimiento. Mostramos cómo funciona en vivo en nuestro escenario `demo-region`.» | A-06 (usable), A-10 sust. (propuesta), A-11 sust. (retirada / propuesta) |
+| **3. Prototipo / demo** | 1:05–3:30 (145 s) | **Web, Técnica, Móvil** | Pantallas de la plataforma web, terminal técnica y caja física con móvil. | VIVO PREVISTO / PROPUESTO | *(Desglosado en 5 momentos continuos de la cadena logística)* | Ver desglose abajo (3a–3e) |
+| *3a. Datos y Riesgo* | 1:05–1:35 (30 s) | **Web** | Pantalla Web: Lista de alertas de riesgo en `demo-region` y panel de desglose explicativo. | VIVO PREVISTO | «En nuestro escenario sintético hay una bodega, 15 puntos y dos vehículos. El hospital norte tiene cinco días de cobertura de desinfectante: riesgo alto. No es una caja negra: el sistema desglosa los datos que explican la alerta: stock disponible, consumo diario y lead time de entrega.» *(Relevo: «Con el riesgo identificado, el sistema analiza bodega, vehículo y ruta»)* | A-03 sust., A-04 (usable), A-05 (usable), A-06 (usable) |
+| *3b. Bodega, Vehículo y Ruta* | 1:35–2:05 (30 s) | **Web** | Pantalla Web: Selector de bodega base, asignación de vehículo y visualización de rutas con paradas. | VIVO PREVISTO | «El sistema busca disponibilidad en bodega respetando stock de seguridad y vencimiento, y asigna el vehículo según capacidad de peso y volumen. Propone una ruta respetando capacidad, horarios de atención y jornada.<br/>*Nota de transparencia técnica:* La prioridad de entrega con hora límite para clientes críticos (issues #193 y #196) está **en construcción** y no se muestra en vivo; hoy las paradas se ordenan por criticidad y holgura en el motor determinista.» *(Relevo: «[Técnica], simulemos un imprevisto en la vía»)* | A-07 (usable), Entregable 2 (pasos 3, 4, 5). Issues #193 y #196 en construcción |
+| *3c. Agente e Imprevisto vial* | 2:05–2:30 (25 s) | **Técnica** | Disparo de incidente vial (`POST /api/v1/demo/incidents`) y panel de ruta actualizada / umbrales. | VIVO PREVISTO | «Cerramos una vía principal. Ante el incidente, el sistema conserva las paradas ya realizadas y genera una nueva versión de ruta para las pendientes. Si el cambio supera los límites de costo o retraso, no se auto-ejecuta: el asistente con IA explica el impacto y deja la decisión esperando aprobación de una persona. Si el servicio de IA no estuviese disponible, el motor logístico continúa operando por reglas.» *(Relevo: «La ruta está aprobada. [Móvil], ¿cómo sale la caja?»)* | A-09 (usable), A-10 sust. (propuesta), A-12 sust. (propuesta) |
+| *3d. Despacho y Custodia QR* | 2:30–2:55 (25 s) | **Móvil** | Muestra de caja física con rótulo QR impreso y flujo de despacho en móvil. | PROPUESTO / FÍSICO | «Así se prepara la caja en bodega: queda ligada a su lote, cantidades y entrega mediante su código QR único. Así registramos la custodia física antes del despacho. `[PENDIENTE: evidencia de ensayo conectado E2E-04 en vivo: hoy mostramos la etiqueta física y el flujo como diseño funcional probado a nivel de componentes]`.» *(Relevo: «El conductor llega a entregar al hospital»)* | A-13 sust. (propuesta: diseño probado, falta E2E-04 conectado) |
+| *3e. Recepción y Trazabilidad* | 2:55–3:30 (35 s) | **Móvil → Web** | *(Móvil)* PWA de campo; *(Web)* Consulta pública de trazabilidad `/public-trace/{unitId}`. | PROPUESTO (Móvil) / VIVO PREVISTO (API) | *(Móvil 2:55–3:15)* «El conductor registra la recepción en la app con firma y foto. Cada recepción lleva una clave única de operación para evitar duplicados. La captura sin señal y sincronización offline en la PWA está diseñada e implementada, pero está `[PENDIENTE: evidencia de ensayo en teléfono real sin red]`.»<br/>*(Web 3:15–3:30)* «Cualquier auditor puede consultar el QR: la API pública devuelve producto, estado e hitos de custodia sin exponer datos privados ni cantidades sensibles. Un token alterado recibe 404 en nuestras pruebas de API.» *(Relevo Web: «¿Y si esto se repite durante 90 días?»)* | A-14 (propuesta: clave única), A-15 retirada (registro en app; offline [PENDIENTE: evidencia]), A-16 sust. (usable API pública) |
+| **4. Impacto** | 3:30–3:55 (25 s) | **Web → Narración** | Diapositiva 4 / Pantalla: Resultados canónicos del simulador de 90 días ([[Cifras del simulador 90 dias]]). | SIMULADO (12 corridas verificables) | «Diseñamos la comparación antes de ver resultados: 90 días sintéticos de demanda idéntica sobre 80 puntos nacionales, tres semillas base y un escenario adverso aparte con 20% más demanda y un vehículo menos. Comparamos contra reposición reactiva y calendario fijo semanal. Contamos los quiebres evitados y también los nuevos, sin disfrazarlos tras una resta neta. Según las [[Cifras del simulador 90 dias]] verificables, IstpetDev reduce un 9,8% los kilómetros frente al calendario fijo manteniendo la reposición preventiva.» *(Relevo: «¿Es viable llevar esto a la práctica? [Técnica]»)* | A-19 (propuesta/usable según archivo verificable), A-20 (usable como método), A-21 (mediana 7.037,5 km vs 7.800 km) |
+| **5. Viabilidad** | 3:55–4:10 (15 s) | **Técnica** | Diapositiva 5: Viabilidad técnica, perfil de importación y benchmark local. | VIVO PREVISTO (pruebas locales) | «Usa datos que una empresa ya tiene: incorporar otro formato de archivo se resuelve escribiendo un perfil de mapeo, sin programar. En pruebas locales, el cálculo de rutas para 80 puntos toma menos de cinco segundos. Y declaramos un límite honesto: usamos heurísticas factibles con ventanas horarias y capacidad; no prometemos la ruta óptima.» *(Relevo: «¿Cómo se sostiene como negocio? [Negocio]»)* | A-22 (usable), A-23 sust., A-24 (usable con límite), A-33 (heurística, nunca ruta óptima) |
+| **6. Modelo de negocio** | 4:10–4:27 (17 s) | **Negocio** | Diapositiva 6: Estructura de clientes y flujo de ingresos por suscripción / servicio. | PROPUESTO | «Nuestro cliente por validar es la empresa de servicios de limpieza que atiende contratos multisede con clientes como hospitales y oficinas. Proponemos cobrar una tarifa de implementación e integración inicial más una suscripción periódica por bodega y puntos atendidos. El precio final y los costos operativos mensuales están `[PENDIENTE: evidencia de costos reales y disposición de pago en piloto]`, por lo que no anunciamos cifras fijas.» *(Relevo: «Para validar esto, tenemos un plan concreto»)* | A-26 sust. (retirada USD 37), A-30 sust. (retirado precio fijo), A-31 sust. (propuesta) |
+| **7. Próximo paso** | 4:27–4:40 (13 s) | **Negocio → Narración** | Diapositiva 7: Hoja de ruta del piloto de 4 semanas y llamada a la acción. | PROPUESTO | *(Negocio 4:27–4:35)* «Proponemos un piloto de cuatro semanas con una bodega base y un grupo de puntos acordados, para medir en terreno la reducción de faltantes y afinar costos.»<br/>*(Narración 4:35–4:40)* «Buscamos empresas del sector dispuestas a medir esta mejora operativa con nosotros. Muchas gracias.» | A-32 (propuesta: piloto de 4 semanas, nunca cliente comprometido) |
+
+*Margen de reserva:* 4:40 a 5:00 (20 segundos reservados para contingencias de escena, aplausos o inicio de preguntas del jurado).
+
+---
+
+### Texto continuo para ensayo cronometrado (Lectura de 280 s)
+
+> **Voz de Narración (0:00–0:30):**  
+> «En contratos públicos de limpieza hospitalaria, el proveedor está obligado a mantener los químicos de desinfección y los insumos fungibles con frecuencias de reposición definidas por el hospital. Nuestra hipótesis es que hoy la reposición empieza cuando el hospital ya avisó la falta; los pedidos imprevistos rompen la planificación de rutas. Les mostramos un caso sintético: una caja de desinfectante que va a un hospital.»
+> 
+> **Voz de Narración (0:30–0:48):**  
+> «Frente a esa operación reactiva, IstpetDev integra la cadena completa: toma datos de stock y consumo, evalúa riesgo de rotura, busca disponibilidad por bodega, asigna vehículo, calcula la ruta priorizada y acompaña la entrega con custodia QR. El cálculo es determinista y verificable; la IA asiste y explica, pero no aprueba nada.»
+> 
+> **Voz de Web (0:48–1:05):**  
+> «El planificador ve por qué cada punto está en riesgo, desde qué bodega se abastece y qué vehículo lo atenderá, antes de que el hospital sufra un desabastecimiento. Mostramos cómo funciona en vivo en nuestro escenario `demo-region`.»
+> 
+> **Voz de Web (1:05–1:35):**  
+> «En nuestro escenario sintético hay una bodega, 15 puntos y dos vehículos. El hospital norte tiene cinco días de cobertura de desinfectante: riesgo alto. No es una caja negra: el sistema desglosa los datos que explican la alerta: stock disponible, consumo diario y lead time de entrega. Con el riesgo identificado, el sistema analiza bodega, vehículo y ruta.»
+> 
+> **Voz de Web (1:35–2:05):**  
+> «El sistema busca disponibilidad en bodega respetando stock de seguridad y vencimiento, y asigna el vehículo según capacidad de peso y volumen. Propone una ruta respetando capacidad, horarios de atención y jornada. *Nota de transparencia:* La prioridad de entrega con hora límite para clientes críticos (issues #193 y #196) está en construcción y no se muestra en vivo; hoy las paradas se ordenan por criticidad y holgura en el motor determinista. [Técnica], simulemos un imprevisto en la vía.»
+> 
+> **Voz de Técnica (2:05–2:30):**  
+> «Cerramos una vía principal. Ante el incidente, el sistema conserva las paradas ya realizadas y genera una nueva versión de ruta para las pendientes. Si el cambio supera los límites de costo o retraso, no se auto-ejecuta: el asistente con IA explica el impacto y deja la decisión esperando aprobación de una persona. Si el servicio de IA no estuviese disponible, el motor logístico continúa operando por reglas. La ruta está aprobada. [Móvil], ¿cómo sale la caja?»
+> 
+> **Voz de Móvil (2:30–2:55):**  
+> «Así se prepara la caja en bodega: queda ligada a su lote, cantidades y entrega mediante su código QR único. Así registramos la custodia física antes del despacho. `[PENDIENTE: evidencia de ensayo conectado E2E-04 en vivo: hoy mostramos la etiqueta física y el flujo como diseño funcional probado a nivel de componentes]`. El conductor llega a entregar al hospital.»
+> 
+> **Voz de Móvil (2:55–3:15):**  
+> «El conductor registra la recepción en la app con firma y foto. Cada recepción lleva una clave única de operación para evitar duplicados. La captura sin señal y sincronización offline en la PWA está diseñada e implementada, pero está `[PENDIENTE: evidencia de ensayo en teléfono real sin red]`.»
+> 
+> **Voz de Web (3:15–3:30):**  
+> «Cualquier auditor puede consultar el QR: la API pública devuelve producto, estado e hitos de custodia sin exponer datos privados ni cantidades sensibles. Un token alterado recibe 404 en nuestras pruebas de API. ¿Y si esto se repite durante 90 días?»
+> 
+> **Voz de Web y Narración (3:30–3:55):**  
+> «Diseñamos la comparación antes de ver resultados: 90 días sintéticos de demanda idéntica sobre 80 puntos nacionales, tres semillas base y un escenario adverso aparte con 20% más demanda y un vehículo menos. Comparamos contra reposición reactiva y calendario fijo semanal. Contamos los quiebres evitados y también los nuevos, sin disfrazarlos tras una resta neta. Según las [[Cifras del simulador 90 dias]] verificables, IstpetDev reduce un 9,8% los kilómetros frente al calendario fijo manteniendo la reposición preventiva. ¿Es viable llevar esto a la práctica? [Técnica].»
+> 
+> **Voz de Técnica (3:55–4:10):**  
+> «Usa datos que una empresa ya tiene: incorporar otro formato de archivo se resuelve escribiendo un perfil de mapeo, sin programar. En pruebas locales, el cálculo de rutas para 80 puntos toma menos de cinco segundos. Y declaramos un límite honesto: usamos heurísticas factibles con ventanas horarias y capacidad; no prometemos la ruta óptima. ¿Cómo se sostiene como negocio? [Negocio].»
+> 
+> **Voz de Negocio (4:10–4:27):**  
+> «Nuestro cliente por validar es la empresa de servicios de limpieza que atiende contratos multisede con clientes como hospitales y oficinas. Proponemos cobrar una tarifa de implementación e integración inicial más una suscripción periódica por bodega y puntos atendidos. El precio final y los costos operativos mensuales están `[PENDIENTE: evidencia de costos reales y disposición de pago en piloto]`, por lo que no anunciamos cifras fijas. Para validar esto, tenemos un plan concreto.»
+> 
+> **Voz de Negocio y Narración (4:27–4:40):**  
+> *(Negocio)* «Proponemos un piloto de cuatro semanas con una bodega base y un grupo de puntos acordados, para medir en terreno la reducción de faltantes y afinar costos.»  
+> *(Narración)* «Buscamos empresas del sector dispuestas a medir esta mejora operativa con nosotros. Muchas gracias.»
+
+---
+
+## 2. Puntos de atención crítica y contrastes con la matriz de afirmaciones
+
+1. **Hora límite para críticos (#193 y #196):**
+   - La funcionalidad de hora límite para paradas críticas y comparación de costos entre plan base y priorizado fue desarrollada en las ramas `feat/196-...` y `fix/201-...` (ver [[Integracion ramas 196 y 201]]), pero al momento de este guion **no está fusionada en develop**.
+   - **Regla estricta:** En el pitch se menciona **únicamente como en construcción**. Bajo ninguna circunstancia debe afirmarse que ya funciona en vivo.
+2. **Recepción offline y sincronización sin red (A-15):**
+   - Aunque la PWA tiene persistencia local y sincronización implementadas (specs 004 y 015), en `develop` no existe un registro de ensayo en teléfono físico sin conexión (modo avión) contra el entorno desplegado.
+   - **Regla estricta:** Se anuncia que el conductor registra la entrega en la app; la recepción sin señal se presenta como arquitectura diseñada, marcada como `[PENDIENTE: evidencia de ensayo en teléfono real sin red]`.
+3. **Escaneo del jurado (A-16):**
+   - La consulta pública está demostrada por API (`PublicTraceHttpTests` en EJ-07); sin embargo, no se dispone de conectividad externa ni HTTPS validado en el recinto de la feria (O-08).
+   - **Regla estricta:** No se invita al jurado a escanear en vivo; se explica la prueba de API y se muestra en pantalla controlada o diapositiva.
+4. **Resultados del simulador (A-19, A-20, A-21):**
+   - Las cifras del 9,8% de reducción de kilómetros frente a calendario fijo semanal (`fixed7-v1`) y el comportamiento en escenario adverso provienen del fixture canónico `national-v1` documentado en [[Cifras del simulador 90 dias]]. Se citan siempre como simulación sintética de 90 días, nunca como ahorro comercial observado.
+
+---
+
+## 3. Variantes de tiempo internas (3 min y 7 min)
+
+Estas variantes son respaldos internos para imprevistos en la agenda o preguntas extendidas. El turno oficial anunciado es de 5 minutos.
+
+### Corte de 3 min (meta 160 s)
+
+Mismo orden de 7 bloques y mismos 5 papeles visibles; una acción por sistema.
+
+| Bloque (Anexo 5.7) | Tiempo (s) | Papel visible | Lo que se conserva | Matriz |
+|---|---|---|---|---|
+| 1. Problema | 0:00–0:18 (18 s) | Narración | Obligación contractual hospitalaria e hipótesis de reposición reactiva. Caso sintético. | A-01 + A-02 |
+| 2. Solución | 0:18–0:38 (20 s) | Narración → Web | Cadena integrada: calcula riesgo, propone ruta y custodia QR. La IA explica; humano aprueba. | A-06, A-10 sust., A-11 sust. |
+| 3. Demo | 0:38–1:52 (74 s) | Web, Técnica, Móvil | Web: riesgo 5 días (A-04) y ruta (A-07). Técnica: incidente y aprobación (A-09, A-10 sust.). Móvil: caja con QR y registro en app (A-13 sust., A-14). *Hora límite en construcción.* | A-04, A-07, A-09, A-10 sust., A-13 sust., A-14 |
+| 4. Impacto | 1:52–2:10 (18 s) | Web → Narración | 90 días sintéticos: IstpetDev reduce 9,8% de km frente a calendario fijo; quiebres evitados y nuevos. | A-19, A-20, A-21 |
+| 5. Viabilidad | 2:10–2:22 (12 s) | Técnica | Carga por perfil sin programar; 80 puntos en <5 s local. Heurística factible, no ruta óptima. | A-22, A-24, A-33 |
+| 6. Modelo de negocio | 2:22–2:32 (10 s) | Negocio | Empresa de limpieza cliente por validar. Implementación + suscripción; precio en piloto. | A-31 sust., A-30 sust. |
+| 7. Próximo paso | 2:32–2:40 (8 s) | Negocio → Narración | Piloto de cuatro semanas con una bodega y puntos acordados. | A-32 |
+
+### Corte de 7 min (meta 400 s)
+
+Mismo hilo conductor; amplía detalles técnicos, supuestos y límites de la cadena de valor sin inventar nuevas historias.
+
+| Bloque (Anexo 5.7) | Tiempo (s) | Papel visible | Qué se añade al maestro de 5 min |
+|---|---|---|---|
+| 1. Problema | 0:00–0:45 (45 s) | Narración | Contexto de contratos de limpieza hospitalaria y hallazgos preliminares de la feria ([[Hallazgos de la charla para el Reto 1]]). `[CITA DE LA FERIA]` solo con consentimiento expreso (A-29). |
+| 2. Solución | 0:45–1:35 (50 s) | Narración → Web | Detalle de los 10 pasos del [[Entregable Solucion y propuesta de valor]]: desde importación hasta trazabilidad. Qué decide la regla determinista y qué asiste el agente. |
+| 3. Demo | 1:35–5:00 (205 s) | Web, Técnica, Móvil | Distribución de riesgos 1 crítico y 4 altos (A-05); asignación FEFO por bodega y capacidad de vehículo; detalle del recálculo ante incidente; token de trazabilidad pública con verificación 404. Estado en construcción de #193/#196. |
+| 4. Impacto | 5:00–5:35 (35 s) | Web → Narración | Justificación metodológica de los dos baselines (reactivo vs fijo) y desglose de las 12 corridas canónicas ([[Cifras del simulador 90 dias]]). |
+| 5. Viabilidad | 5:35–6:00 (25 s) | Técnica | Detalle del importador desacoplado, integración con n8n/DeepSeek como fallback determinista (A-12 sust.), benchmark en máquina local. |
+| 6. Modelo de negocio | 6:00–6:22 (22 s) | Negocio | Análisis de los costos de operación a medir en el piloto ([[Modelo de negocio y piloto]]). |
+| 7. Próximo paso | 6:22–6:40 (18 s) | Negocio → Narración | Cronograma de 4 semanas del piloto (semana 1 datos/baseline, semana 2 bodega piloto, semanas 3–4 ruta asistida). |
+
+---
+
+## 4. Estructura de las siete diapositivas (Anexo 5.7)
+
+Las diapositivas acompañan el turno de 5 min. Si el proyector falla, el equipo expone el mismo guion con soporte físico o verbal (ver [[Checklist y contingencias]]).
+
+| # | Bloque | Título en diapositiva | Contenido visual y textual | Rótulo visible obligatorio |
+|---|---|---|---|---|
+| 1 | Problema | Reponer antes de la llamada | Cláusula contractual [[SERCOP limpieza hospitalaria y sanciones|SERCOP]] de insumos y desinfectantes; hipótesis de reposición reactiva; ícono de caja hacia hospital. | `Caso sintético` |
+| 2 | Solución | Cadena logística completa y explicable | Flujo de 7 pasos del [[Entregable Solucion y propuesta de valor]]: Stock/Consumo → Riesgo → Bodega → Vehículo → Ruta → Aprobación humana → Custodia QR. «La IA explica; una persona aprueba». | `Esquema de solución` |
+| 3 | Prototipo / demo | De la bodega al hospital norte | Panel web de riesgos (`demo-region`), mapa de ruta y paradas, replanificación por incidente vial, caja con QR de custodia y consulta de trazabilidad. | `Demo en vivo` / `Captura de respaldo` |
+| 4 | Impacto | 90 días simulados: Comparación controlada | Resumen canónico de [[Cifras del simulador 90 dias]]: 12 corridas verificables (3 semillas + adverso), comparación vs reposición reactiva y fija semanal. -9,8% km frente a fijo. Quiebres evitados y nuevos por separado. | `Simulación — 12 corridas verificables` |
+| 5 | Viabilidad | Factibilidad técnica y límites transparentes | Carga de formatos con perfil de mapeo; benchmark local de 80 puntos en <5 s; aclaración explícita: heurística logística factible, no ruta óptima global. | `Pruebas locales y arquitectura` |
+| 6 | Modelo de negocio | Cliente objetivo y propuesta de valor | Cliente por validar: empresas de servicios de limpieza multisede; modelo de implementación más suscripción por bodega/puntos activos; costos y precio por validar en piloto. | `Hipótesis de negocio` |
+| 7 | Próximo paso | Piloto en terreno de cuatro semanas | Plan de piloto en 4 semanas (datos, bodega piloto, operación asistida, medición); búsqueda de empresa aliada. | `Propuesta de validación` |
+
+---
+
+## 5. Banco de 24 preguntas difíciles (Respuestas de hasta 30 s)
+
+Ensayar cada respuesta con cronómetro (≤30 s). Cada afirmación técnica responde únicamente a lo probado en código o registrado en la matriz.
+
+| # | Pregunta previsible | Respuesta ensayada (≤ 30 segundos) | Matriz / Límite |
+|---:|---|---|---|
+| 1 | ¿La IA predice el consumo? | No; el motor calcula el riesgo mediante una regla determinista basada en saldo actual, consumo promedio conocido y lead time. El asistente con IA (n8n + DeepSeek) organiza y explica la alerta con las cifras del motor, pero no inventa números. | A-06, A-11 sust. |
+| 2 | ¿La IA aprueba o replanifica rutas sola? | No. Las decisiones se rigen por políticas deterministas. Si un incidente supera los límites fijados de retraso o sobrecosto, el sistema exige aprobación de una persona. El LLM no tiene permisos de aprobación en la arquitectura. | A-10 sust., A-11 sust. |
+| 3 | ¿Qué ocurre si DeepSeek o el agente fallan? | El motor logístico y las explicaciones por plantilla fija son el respaldo base del sistema. Si el servicio de IA no responde, la propuesta de ruta y las alertas se generan normalmente desde el backend determinista. | A-12 sust. |
+| 4 | ¿La ruta calculada es la óptima matemáticamente? | Es una heurística factible que respeta capacidades de peso/volumen, ventanas horarias de atención y jornada laboral; no demostramos matemáticamente un óptimo global. | A-07, A-33 |
+| 5 | ¿Qué datos mínimos requiere la plataforma? | Catálogo de productos, puntos de servicio, bodegas con stock inicial, consumos históricos y flota de vehículos con sus capacidades. Los datos faltantes se reportan como supuestos. | Spec 001 |
+| 6 | ¿Qué pasa si el cliente entrega un Excel con otro formato? | La plataforma cuenta con un importador configurable mediante perfiles de mapeo JSON/YAML. Permite vincular columnas y tipos de datos sin reprogramar la aplicación. | A-22, A-23 sust. |
+| 7 | ¿Cómo conoce el inventario en los puntos de servicio? | A través de los saldos iniciales y los registros de entrega y consumo reportados. La plataforma muestra la frescura temporal del dato y no asume inventario en tiempo real sin lectura. | A-06 |
+| 8 | ¿Qué ocurre cuando no hay señal en el punto de entrega? | La aplicación móvil está construida como PWA con almacenamiento local para permitir el registro offline. Al recuperar conectividad, sincroniza la operación. *(Nota interna: capacidad en PWA; prueba en teléfono real en recinto: `[PENDIENTE: evidencia]`)*. | A-15 |
+| 9 | ¿Cómo evitan que una entrega se duplique al sincronizar? | Cada operación en campo genera un identificador único idempotente (`operationId`), transacción de base de datos y validación de cantidades entregadas. | A-14 sust. |
+| 10 | ¿Cualquier persona puede ver datos sensibles escaneando el QR? | No. La consulta pública del QR devuelve únicamente estado general del bulto e hitos de custodia mediante un token de acceso temporal, sin mostrar precios, cantidades confidenciales ni firmas privadas. | A-16 sust. |
+| 11 | ¿La plataforma funciona a escala nacional con 80 puntos en vivo? | En la demo en vivo operamos `demo-region` con 15 puntos, una bodega y dos vehículos para asegurar estabilidad. La escala nacional de 80 puntos y múltiples bodegas está probada y evaluada en el simulador de 90 días. | A-03 sust., A-24, A-25 |
+| 12 | ¿Qué demuestra exactamente la simulación de 90 días? | Compara el comportamiento de tres políticas logísticas bajo una misma demanda sintética idéntica durante 90 días; no es un ahorro medido históricamente en una empresa en producción. | A-19 sust. |
+| 13 | ¿Por qué eligieron esas políticas de comparación? | Representan las prácticas habituales del sector: reposición reactiva tras la llamada de emergencia y reposición fija por calendario semanal. Ambas fueron fijadas con reglas claras antes de comparar. | [[Cifras del simulador 90 dias]] |
+| 14 | ¿Por qué muestran quiebres evitados y nuevos por separado? | Porque una política preventiva puede evitar roturas críticas pero generar desajustes menores en otros puntos. Mostramos ambas cifras transparentemente sin esconder pérdidas tras un promedio neto. | A-20 |
+| 15 | ¿Por qué evalúan tres semillas y un escenario adverso? | Las tres semillas muestran que el resultado no depende de una coincidencia estadística; el escenario adverso prueba la resiliencia del sistema ante un 20% más de demanda y menor capacidad de flota. | [[Cifras del simulador 90 dias]] |
+| 16 | ¿Cuánto ahorra una empresa de limpieza en dinero real? | Está `[PENDIENTE: evidencia de ahorro observado en piloto real]`. En el simulador nacional canónico observamos un 9,8% de reducción de kilómetros frente a un calendario fijo semanal. | A-21, A-26 sust. |
+| 17 | ¿Cuál es el costo y precio comercial de la plataforma? | Cobraríamos una tarifa de implementación más una suscripción mensual por bodega y puntos. El precio exacto está `[PENDIENTE: evidencia de costos en piloto y disposición de pago]`. | A-30 sust., A-31 sust. |
+| 18 | ¿El sistema evita multas contractuales en hospitales? | El análisis documental del SERCOP demuestra que los contratos contemplan sanciones por incumplimiento de reposición; nuestra plataforma busca reducir ese riesgo operativo, pero no cuantificamos multas legales evitadas. | A-01, A-33 |
+| 19 | ¿Qué validación real tienen con el sector? | Contrastamos el problema y los supuestos con las ponencias y expositores de la feria ([[Hallazgos de la charla para el Reto 1]]); las métricas económicas concretas serán validadas durante el piloto. | A-29 sust. |
+| 20 | ¿Qué es trabajo previo y qué se desarrolló durante la hackathon? | La arquitectura base y lineamientos vienen de la preparación del equipo identificada con etiquetas; la integración de la cadena completa de 10 pasos, el simulador canónico y las pruebas se consolidaron durante el evento. | Matriz / Historial git |
+| 21 | ¿A quién atienden primero si no alcanza el camión? | El motor prioriza mediante un orden determinista y transparente: primero evalúa el nivel de riesgo (Crítico antes que Alto), luego la menor holgura de tiempo (cobertura menos lead time), después la criticidad del punto de servicio, y finalmente el código. Si no alcanza la capacidad, los puntos menos urgentes quedan formalmente clasificados como no atendidos con su motivo explícito (`ReplenishmentAllocator` y `RoutePlanner`). | AMP-01, Spec 002 |
+| 22 | ¿Qué pasa ante un cierre vial? | Se ejecuta una replanificación determinista que conserva las paradas ya realizadas y genera una nueva versión de ruta. El motor dispone de modos configurables: `Strict`, `LateService` si admite demoras, o `PrioritizeCritical`, que descarta paradas de consolidación para proteger las entregas críticas. Si el plan resultante supera los límites de costo o jornada, no se auto-ejecuta y escala a aprobación humana. | AMP-03, Spec 002 |
+| 23 | ¿Por qué no Dijkstra? | Dijkstra halla el camino mínimo entre nodos aislados en un grafo estático. En nuestro sistema, el servicio OSRM ya calcula distancias y tiempos mínimos sobre la red vial real de OpenStreetMap, respetando sentidos de giro y velocidades reales. Sobre esa matriz real, el algoritmo del motor resuelve el problema complejo de ruteo vehicular con ventanas horarias, jornadas y capacidades físicas. | AMP-10, OSRM |
+| 24 | ¿Qué pasa si nos dan otro Excel? | El sistema dispone de un importador canónico con perfiles de mapeo declarativos. Permite homologar archivos con distintas columnas, orden o unidades hacia el esquema interno sin modificar una sola línea de código fuente. Su funcionamiento está probado y validado con datasets externos, permitiendo incorporar nuevos datos estructurados con reglas de validación previas. | Spec 001, ADR-22 |
+
+---
+
+## 6. Frases retiradas y su sustitución obligatoria
+
+Para proteger la integridad y honestidad de la presentación, las siguientes expresiones quedan estrictamente prohibidas y sustituidas según la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md):
+
+| Expresión prohibida / retirada | Código | Motivo | Sustitución obligatoria en escena |
+|---|---|---|---|
+| «80 puntos del país en vivo» | A-03, A-25 | El vivo usa `demo-region` (15 puntos, 1 bodega, 2 vehículos); 80 puntos es simulación. | «En nuestro escenario sintético: una bodega, 15 puntos y dos vehículos». |
+| «La IA detecta / aprueba / replanifica sola» | A-11, A-33 | El cálculo es determinista. El LLM asiste y redacta; una persona aprueba cambios sensibles. | «El cálculo es una regla determinista verificable; la IA asiste y explica, no aprueba nada». |
+| «El conductor recibe sin señal en vivo» | A-15 | No hay ensayo registrado en teléfono real sin red en el entorno de la feria. | «El conductor registra la recepción en la app. La operación offline está [PENDIENTE: evidencia de ensayo en teléfono]». |
+| «Escaneen el QR con sus teléfonos» (al jurado) | A-16 | Conectividad y HTTPS externo no verificados en el recinto (O-08). | Mostrar la consulta en pantalla o diapositiva; explicar que la API pública devuelve estado sin datos privados. |
+| «Ahorro económico demostrado de X%» | A-21, A-26 | No hay piloto previo con contabilidad real; el ahorro es de kilómetros en simulación canónica. | «En simulación sintética de 90 días, reduce un 9,8% los km frente al calendario fijo». |
+| «Cuesta USD 37 al mes operarlo» | A-26 | La cotización preliminar no incluía base de datos gestionada ni costos reales de red. | «El costo de operación se medirá y calibrará en el piloto». |
+| «Cualquier precio de suscripción en dólares» | A-30 | Hipótesis sin validación comercial de disposición de pago. | «El precio se definirá tras conocer los costos reales y la disposición de pago en el piloto». |
+| «Ruta óptima» / «Multas evitadas» / «Ahorro real» | A-33 | Afirmaciones absolutas no demostradas matemáticamente ni con contratos reales. | «Heurística factible respetando ventanas y capacidad»; «prevenir faltantes antes del quiebre». |
+| «La prioridad con hora límite ya funciona en vivo» | Issues #193, #196 | No está fusionada en `develop`. | «La prioridad de entrega con hora límite para críticos está en construcción». |
+
+---
+
+## 7. Antecedentes históricos
+
+### Recorrido de 180 segundos (Borrador inicial T1)
 
 | Tiempo | Lo que contamos | Lo que mostramos |
 |---|---|---|
@@ -35,172 +222,18 @@ Protagonista: una empresa de limpieza; objeto conductor: una caja destinada a un
 | 02:05–02:40 | «Comparamos ambas políticas bajo la misma demanda durante 90 días simulados» | KPIs, denominadores y manifiesto del run |
 | 02:40–03:00 | «Cuesta [costo verificado] operarlo, lo paga [cliente] y el siguiente paso es un piloto acotado con una empresa» | Viabilidad, modelo de negocio y próximo paso (piloto) |
 
-Total: 180 segundos. Ensayar tiempos reales: si QR/firma tarda más, recortar interacción, no fingir el resultado.
-
-## Texto base
+### Texto base inicial
 
 «Una empresa de limpieza atiende 80 puntos del país. En nuestro escenario, un hospital tiene cinco días de cobertura. Hoy una operación reactiva espera a la llamada; nuestra plataforma identifica el riesgo, explica stock y consumo, y propone abastecimiento dentro del tiempo necesario.
 
 Aquí vemos la ruta, su capacidad y sus horarios. Si se bloquea una vía, conserva lo ya entregado y propone el cambio para las paradas pendientes.
 
-Esta caja se escanea en bodega y queda asociada a su lote y cantidades. El conductor puede capturar la recepción sin señal. Al conectarse, la operación se registra una sola vez y la evidencia completa la trazabilidad.
+Esta caja se escanea en bodega y queda asociada a su lote y cantidades. El conductor puede capturar la recepción en la app. Al conectarse, la operación se registra una sola vez y la evidencia completa la trazabilidad.
 
 Comparamos 90 días de demanda sintética idéntica para ambas políticas. Los resultados de esta ejecución son los que aparecen en pantalla y pueden exportarse.
 
 Buscamos validar el sistema con un piloto de cuatro semanas, empezando por una bodega y un grupo de puntos.»
 
-Personalizar con resultados medidos y tiempo confirmado. Decir «cinco días» solo si S-02 y el run lo sostienen.
+---
 
-## Campos que deben sustituirse antes del pitch
-
-| Campo | Origen |
-|---|---|
-| Km/costo total y por entrega | Resultado validado del run |
-| Diferencia de costo y % | Fórmula con baseline y denominador; solo si existe run enlazado |
-| Quiebres evitados/nuevos | Comparación de claves punto–SKU–día |
-| Puntualidad | Obligaciones comunes vencidas |
-| Trazabilidad completa | Líneas entregadas con evidencia requerida |
-| Anomalías/mermas | Alertas etiquetadas y casos conciliados por separado |
-| Costos del sistema | Configuración/precios verificados |
-| Validación de usuario | Entrevista/mentoría efectivamente documentada |
-
-No usar porcentajes de ejemplo como resultados. Si una métrica está pendiente, cerrar la medición o retirarla del texto.
-
-## Preguntas previsibles
-
-- ¿La predicción viene de la IA? El cálculo numérico es verificable; el LLM explica y contextualiza.
-- ¿La ruta es óptima? Es una heurística factible comparada con una política documentada; no prueba óptimo global.
-- ¿Qué ocurre sin señal? Se captura localmente y se valida al sincronizar; conflictos quedan visibles.
-- ¿Cómo evitan duplicados? operationId, transacción y control de cantidades/duplicados de negocio.
-- ¿El ahorro es real? Declarar si corresponde a simulación, entrevista o piloto; no mezclar niveles.
-- ¿Qué hace escalable el sistema? Servicios sin estado, límites/pools y diseño de tiempo real; mostrar solo pruebas efectivamente realizadas.
-- ¿Cómo tratan privacidad y auditoría? QR limitado, evidencia privada y historial append-only con garantías declaradas.
-
-## Interacción física
-
-El jurado puede consultar el QR en su teléfono si acepta y hay conectividad. La prueba de firma puede hacerse con una persona del equipo y datos ficticios. Preparar consulta ya abierta y un dispositivo de respaldo; no consumir el pitch configurando un teléfono.
-
-Ver [[Checklist y contingencias]], [[Plus para ganar]] y [[Plan de validacion]].
-
-## Complemento propuesto — spec 006, 12-oct-2026
-
-**Deciders PENDIENTE.** Este complemento sustituye para el próximo pitch el recorrido fijo de 180 s y su texto base. Actualización del 16-oct: turno oral de cinco minutos, desglose de O-04 pendiente. **⚠️ Contradicción detectada** — Hecho nuevo: el vivo usa `demo-region` (unos 15 puntos y dos vehículos) y la escala de unos 80 puntos solo aparece en simulación. · Hecho establecido: el texto base arriba abre con «80 puntos del país» sin distinguir ambas escenas. · Impacto: sugeriría una demo nacional en vivo. · Opciones: aclarar el alcance; conservar ambigüedad. · Propuesta: aclararlo en narración y etiqueta de pantalla. El caso del hospital es sintético. La cobertura de cinco días solo se dice si la ejecución de 002 CE-01 lo respalda.
-
-El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → impacto → viabilidad → modelo de negocio → próximo paso**. La versión maestra dura **hasta 4:40** y reserva 20 s del turno nominal de 5 min. Los cortes de 3/7 duran como máximo 2:40/6:40; el turno de 5 min fue anunciado el 16-oct. Los objetivos de 2:40/4:40/6:40 son reparto interno; los cortes de 3/7 no son turnos anunciados y el desglose de O-04 sigue pendiente. Cinco papeles visibles: narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre].
-
-| Bloque | 3 min (objetivo 2:40) | 5 min (objetivo 4:40) | 7 min (objetivo 6:40) | Idea que se dice |
-|---|---|---|---|---|
-| Problema | 0:00–0:18 | 0:00–0:30 | 0:00–0:45 | «Una falta de insumo obliga a reaccionar tarde»; `[CITA DE LA FERIA]` solo con consentimiento. |
-| Solución | 0:18–0:38 | 0:30–1:05 | 0:45–1:35 | Riesgo explicado, propuesta de ruta y aprobación humana. |
-| Prototipo/demo | 0:38–1:52 | 1:05–3:30 | 1:35–5:00 | Riesgo → ruta → incidente → caja/recepción → QR al final. Solo pasos cuyos CE tengan ejecución. |
-| Impacto | 1:52–2:10 | 3:30–3:55 | 5:00–5:35 | `[RESULTADO DEL SIMULADOR]`: rango de tres seeds base y escenario adverso **separado**; quiebres evitados y nuevos frente a reactiva/fija. «90 días sintéticos; no ahorro observado». |
-| Viabilidad | 2:10–2:22 | 3:55–4:10 | 5:35–6:00 | Recursos y límite concreto comprobados; fuente de costos pendiente si no existe. |
-| Modelo de negocio | 2:22–2:32 | 4:10–4:27 | 6:00–6:22 | Comprador hipotético, ingreso por implementación y suscripción; `[PRECIO]` fuera del discurso hasta validar. |
-| Próximo paso | 2:32–2:40 | 4:27–4:40 | 6:22–6:40 | Proponer piloto de cuatro semanas con una bodega y puntos acordados; pedir contraparte para definir baseline y umbrales. |
-
-**Hitos de la demo maestra:** 1:05 riesgo/causa (web), 1:35 ruta/aprobación (web), 2:05 incidente y límite de autonomía (técnica), 2:30 caja/despacho y móvil, 3:10 invitar al jurado a escanear, 3:30 salir a impacto. Si el QR público falla, se usa el teléfono del equipo solo si está probado; de otro modo se muestra captura etiquetada y se avanza. Cada contingencia concreta está en [[Checklist y contingencias]]. En 3 min se omiten interacciones secundarias, no bloques; en 7 min se amplía contexto y límites, no se introduce otra historia.
-
-**Plantilla de voz, aún sin resultados:** «En nuestro escenario sintético una empresa de limpieza necesita anticipar faltantes en un hospital. [CITA DE LA FERIA]. El sistema [capacidad sustentada por CE y ejecución] y propone una decisión que una persona puede aprobar. Aquí seguimos la caja [solo si 004 pasó]. En 90 días sintéticos, la comparación frente a reposición reactiva y calendario fijo dio [RESULTADO DEL SIMULADOR, run enlazado]; mostramos también dónde aparecieron quiebres nuevos. Para operar esto se requieren [recurso comprobado] y un piloto con datos reales. Nuestro cliente por validar es una empresa de limpieza; proponemos implementación y suscripción, con [PRECIO] por definir tras conocer costos y disposición de pago. El siguiente paso es un piloto de cuatro semanas». Los tres huecos permanecen fuera del PDF final si no se llenan con evidencia; nunca se pronuncian como valores.
-
-### Banco de 24 preguntas difíciles (respuestas ensayadas de hasta 30 s)
-
-| # | Pregunta | Respuesta ensayada (≤ 30 s, sin cifras inventadas) |
-|---:|---|---|
-| 1 | ¿La IA predice el consumo? | No; la regla usa consumo histórico conocido y media móvil de demanda. El agente o asistente con IA no inventa números ni aprueba operaciones; su función en preparación es contextualizar y estructurar explicaciones comprensibles basadas en los hechos ya calculados por el motor. |
-| 2 | ¿La IA aprueba rutas sola? | No; la IA no tiene permisos para aprobar rutas. El motor determinista aplica decisiones automáticas solo si se mantienen estrictamente dentro de umbrales operativos configurados. Cualquier desvío significativo, sobrecosto o retraso que supere los límites se escala de forma obligatoria para la decisión de una persona. |
-| 3 | ¿Qué ocurre si DeepSeek cae? | El cálculo no depende de la IA. Si DeepSeek o n8n no están disponibles, el motor logístico determinista en backend continúa planificando rutas y evaluando restricciones con total normalidad. Como respaldo de explicación, el sistema activa plantillas deterministas estructuradas con los datos del cálculo. |
-| 4 | ¿Es la ruta óptima? | No prometemos un óptimo matemático global. El motor resuelve el problema de ruteo con ventanas de tiempo y capacidad mediante una heurística constructiva factible mejorada con 2-opt. Su objetivo es entregar un plan operativo viable y eficiente en pocos segundos, respetando restricciones físicas reales. |
-| 5 | ¿Qué datos requiere? | Requiere cinco fuentes de datos: puntos de servicio con coordenadas y ventanas horarias, catálogo de productos con peso y volumen, saldos de inventario inicial, historial o proyección de demanda, y vehículos con capacidad y jornada. Si falta algún dato no crítico, el importador lo declara como supuesto. |
-| 6 | ¿Qué pasa si nos dan otro Excel? | El importador canónico desacopla el archivo del modelo interno mediante perfiles declarativos. Adaptar un formato nuevo consiste en mapear nombres de columnas y unidades sin modificar código. No prometemos plazos menores a una hora sin medirlo con archivos ajenos, pero el mecanismo está estructurado y probado. |
-| 7 | ¿Cómo conoce el stock? | Por saldos iniciales importados y movimientos de despacho y recepción registrados. La plataforma calcula la cobertura dividiendo el stock entre el consumo proyectado y muestra en pantalla la fecha y hora de frescura de cada dato. No asumimos sincronización en tiempo real sin una integración activa. |
-| 8 | ¿Qué pasa si no hay señal? | La PWA de campo está diseñada para operar sin conexión: almacena la recepción en IndexedDB local. Cuando el dispositivo recupera señal de red, sincroniza las capturas pendientes con el backend. En el pitch lo presentamos con prudencia técnica según lo verificado en pruebas de integración. |
-| 9 | ¿Se duplica una recepción? | No se duplica. La operación de recepción utiliza una clave idempotente única por entrega y control estricto de bultos y cantidades recibidas. Si el conductor reintenta el envío o la red retransmite la petición, el backend detecta la clave existente y no crea registros duplicados. |
-| 10 | ¿Puede cualquiera escanear la caja? | El código QR público dirige a una vista web protegida con token limitado y revocable. Solo muestra hitos generales de trazabilidad y estado logístico del paquete; no expone firmas, montos, nombres privados ni inventarios de bodega. Un token alterado o inválido recibe respuesta 404 por la API. |
-| 11 | ¿Funciona con 80 puntos o a escala nacional? | En vivo mostramos el escenario regional con 15 puntos sintéticos, una bodega y dos vehículos. La escala de 80 puntos se ha evaluado en simulación y pruebas locales de rendimiento donde el motor planifica en menos de cinco segundos. El despliegue nacional requerirá pruebas de carga dedicadas. |
-| 12 | ¿Qué prueba la simulación? | Compara de forma controlada dos políticas operativas bajo 90 días de demanda sintética común: reposición preventiva contra baselines de reposición reactiva y calendario fijo. Evalúa el comportamiento del algoritmo ante variaciones de consumo, pero no constituye una medición de ahorro financiero observado en una empresa. |
-| 13 | ¿Por qué esos baselines? | Representan las prácticas estándar de la industria: la reposición reactiva espera el reclamo por falta de stock y el calendario fijo visita puntos en días preestablecidos sin mirar consumo. Fijamos estas reglas antes de evaluar resultados para asegurar una comparación metodológicamente neutral y auditable. |
-| 14 | ¿Qué significan quiebres evitados y nuevos? | Un quiebre evitado ocurre cuando el motor abastece a tiempo un punto que en el baseline se quedaba sin stock. Un quiebre nuevo ocurre si por capacidad o desvío se desatiende un punto que el baseline sí cubría. Mostramos ambas métricas por separado, sin esconder perjuicios bajo restas netas. |
-| 15 | ¿Por qué tres seeds y una adversa? | Usamos tres semillas aleatorias para verificar que los resultados no dependan de una combinación afortunada de demanda. Añadimos una semilla adversa con picos abruptos y dispersión para estresar el motor y mostrar con honestidad cómo responde el sistema bajo condiciones difíciles, sin seleccionar solo el mejor caso. |
-| 16 | ¿Cuánto ahorra una empresa real? | No prometemos cifras de ahorro en porcentaje ni dinero porque no tenemos mediciones operativas en una empresa real. Los resultados mostrados provienen de simulaciones sintéticas comparadas. El ahorro real dependerá de la flota, dispersión y costos del cliente, lo cual mediremos formalmente en el piloto de cuatro semanas. |
-| 17 | ¿Cuánto cuesta y cuál es el precio? | No fijamos un precio de suscripción arbitrario. El modelo contempla una tarifa de implementación técnica y una suscripción mensual según volumen de puntos y operaciones activas. El importe exacto se definirá tras medir los costos reales de infraestructura y la disposición de pago durante el piloto de cuatro semanas. |
-| 18 | ¿Evita multas hospitalarias? | No afirmamos que evite multas. Las fichas técnicas del SERCOP demuestran que los contratos públicos de limpieza imponen sanciones severas por desabastecimiento de desinfectantes. Nuestra plataforma ayuda a reducir el riesgo de faltantes al anticipar la reposición, pero no podemos certificar la eliminación legal de penalizaciones contractuales. |
-| 19 | ¿Qué validaron con el sector? | Contrastamos con expositores de la feria y personas del sector la problemática operativa: confirmaron que reponer tras la queja genera urgencias costosas y riesgo en contratos públicos. Mantenemos estas conclusiones como hipótesis en validación cualitativa hasta documentar entrevistas formales con consentimiento en el informe final. |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | La estructura base del proyecto y dependencias iniciales estaban identificadas con la etiqueta pre-evento según las reglas de transparencia. Durante la hackathon se desarrollaron e integraron la lógica del motor logístico, los algoritmos de replanificación, los modelos de riesgo, la PWA de campo y las suites de pruebas automatizadas. |
-| 21 | ¿A quién atienden primero si no alcanza el camión? | El motor prioriza mediante un orden determinista y transparente: primero evalúa el nivel de riesgo (Crítico antes que Alto), luego la menor holgura de tiempo (cobertura menos lead time), después la criticidad del punto de servicio, y finalmente el código. Si no alcanza la capacidad, los puntos menos urgentes quedan formalmente clasificados como no atendidos con su motivo explícito (`ReplenishmentAllocator` y `RoutePlanner`). |
-| 22 | ¿Qué pasa ante un cierre vial? | Se ejecuta una replanificación determinista que conserva las paradas ya realizadas y genera una nueva versión de ruta. El motor dispone de modos configurables: `Strict`, `LateService` si admite demoras, o `PrioritizeCritical`, que descarta paradas de consolidación para proteger las entregas críticas. Si el plan resultante supera los límites de costo o jornada, no se auto-ejecuta y escala a aprobación humana. |
-| 23 | ¿Por qué no Dijkstra? | Dijkstra halla el camino mínimo entre nodos aislados en un grafo estático. En nuestro sistema, el servicio OSRM ya calcula distancias y tiempos mínimos sobre la red vial real de OpenStreetMap, respetando sentidos de giro y velocidades reales. Sobre esa matriz real, el algoritmo del motor resuelve el problema complejo de ruteo vehicular con ventanas horarias, jornadas y capacidades físicas. |
-| 24 | ¿Qué pasa si nos dan otro Excel? | El sistema dispone de un importador canónico con perfiles de mapeo declarativos. Permite homologar archivos con distintas columnas, orden o unidades hacia el esquema interno sin modificar una sola línea de código fuente. Su funcionamiento está probado y validado con datasets externos, permitiendo incorporar nuevos datos estructurados con reglas de validación previas. |
-
-El banco cubre las «Preguntas previsibles» de arriba (escalabilidad en la 11, privacidad del QR en la 10, prioridad de camión en la 21, cierre vial en la 22, OSRM frente a Dijkstra en la 23, importador canónico en la 6 y 24); la parte de auditoría append-only sigue solo en esa lista. La pregunta 11 sustituyó el 14-oct a «¿Por qué el jurado escanea y no solo mira pantalla?», cuya condición pasó a la 10; queda sujeto a la revisión humana del kit.
-
-La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no tenemos una medición/precio validado» y se explica el paso de piloto. Ensayar cada respuesta con cronómetro, ≤30 s; no convertir un borrador en hecho técnico hasta enlazar CE y ejecución.
-
-## Versión de trabajo T2 — 14-oct-2026 (fase 2 del issue #46)
-
-**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). Actualización del 16-oct: se anuncia turno de 5 min y se selecciona el maestro; **160/280/400 s siguen siendo metas internas, no cronometrajes ni duración del turno**. Falta el desglose de preguntas de O-04. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
-
-**Etiquetas de escena.** `VIVO PREVISTO`: capacidad probada en pruebas automatizadas (EJ-07/08); la escena en pantalla no se ha ensayado y no se anuncia como «en vivo» hasta pasar E2E-04 del 006; si falla, se dice la sustitución. `GRABADO`: video del 15-oct, aún no existe; si se usa, se dice «esto es una grabación». `SIMULADO`: 005, datos sintéticos. `PROPUESTO`: diseño o plan, no demostrado.
-
-**Papeles visibles:** narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre]. Cada uno habla al menos una vez en los tres cortes.
-
-### Guion maestro de 5 min (meta 280 s)
-
-| Bloque (Anexo 5.7) | Reparto | Papel | Etiqueta | Lo que se dice | Matriz |
-|---|---|---|---|---|---|
-| 1. Problema | 0–30 | Narración | PROPUESTO + fuente | «En contratos públicos de limpieza hospitalaria, el proveedor está obligado a mantener los químicos de desinfección y los insumos con frecuencias de reposición definidas por el hospital. Nuestra hipótesis es que hoy la reposición empieza cuando el hospital ya avisó la falta. Les mostramos un caso sintético: una caja de desinfectante que va a un hospital.» | A-01, A-02 |
-| 2. Solución | 30–65 | Narración → web | PROPUESTO | «Nuestra plataforma calcula qué punto se va a quedar sin producto y por qué, propone la ruta y deja a una persona la decisión cuando un cambio supera los límites. El cálculo es una regla verificable; la IA no aprueba nada.» | A-06, A-10 (sustitución), A-11 (sustitución) |
-| 3. Demo — riesgo | 65–95 | Web | VIVO PREVISTO | «En nuestro escenario sintético hay una bodega, 15 puntos y dos vehículos. El hospital norte tiene cinco días de cobertura de desinfectante: riesgo alto. Aquí están los datos que lo explican: stock, consumo y días.» | A-03 (sustitución), A-04, A-06 |
-| 3. Demo — ruta | 95–125 | Web | VIVO PREVISTO | «Propone una ruta para cada vehículo respetando capacidad, horarios de atención y jornada.» | A-07 |
-| 3. Demo — incidente | 125–150 | Técnica | VIVO PREVISTO | «Cerramos una vía. Las paradas ya hechas se conservan y se crea una nueva versión de la ruta. Si el cambio supera los límites de costo o retraso, no se ejecuta: espera la aprobación de una persona.» | A-09, A-10 (sustitución) |
-| 3. Demo — caja | 150–190 | Móvil | PROPUESTO (VIVO solo si E2E-04 pasa) | «Así se prepara la caja: queda ligada a su lote y a la entrega. El conductor registra la recepción en la app.» Si E2E-04 no pasa: mostrar la etiqueta como diseño propuesto y no simular despacho. | A-13, A-15 (sustitución) |
-| 3. Demo — trazabilidad | 190–210 | Móvil → web | VIVO PREVISTO (API) | «La consulta pública devuelve producto, estado e hitos sin datos privados; un token alterado recibe 404 en la prueba de API.» Mostrar una pantalla solo después de comprobarla conectada. Sin invitar al jurado a escanear. | A-16 (sustitución) |
-| 4. Impacto | 210–235 | Web → narración | SIMULADO | «Diseñamos la comparación antes de ver resultados: 90 días sintéticos, tres semillas y un escenario adverso aparte, contra reposición reactiva y calendario fijo. Contamos los quiebres evitados y también los nuevos. El resultado está respaldado por su archivo verificable (ver [[Cifras del simulador 90 dias]]): IstpetDev reduce un 9,8% los kilómetros frente al calendario fijo manteniendo la reposición preventiva.» | A-19, A-20, A-21 |
-| 5. Viabilidad | 235–250 | Técnica | VIVO PREVISTO (pruebas) | «Usa datos que una empresa ya tiene; un archivo con otro formato se carga escribiendo solo un perfil. En prueba local, la ruta de 80 puntos se calcula en menos de cinco segundos. No prometemos la ruta óptima.» | A-22, A-24, A-33 |
-| 6. Modelo de negocio | 250–267 | Negocio | PROPUESTO | «Nuestro cliente por validar es la empresa de limpieza. Cobraríamos implementación y una suscripción; el precio lo definiremos con costos reales del piloto.» `[PRECIO]` no se pronuncia. | A-26, A-30, A-31 |
-| 7. Próximo paso | 267–280 | Negocio → narración (cierre) | PROPUESTO | «Proponemos un piloto de cuatro semanas con una bodega y un grupo de puntos acordados. Buscamos una empresa que quiera medirlo con nosotros.» | A-32 |
-
-### Corte de 3 min (meta 160 s)
-
-Mismo orden y mismos cinco papeles; una acción por sistema.
-
-| Bloque | Reparto | Papel | Qué se conserva |
-|---|---|---|---|
-| 1. Problema | 0–18 | Narración | A-01 + hipótesis A-02 en una frase |
-| 2. Solución | 18–38 | Narración → web | Calcula, propone, una persona aprueba; la IA no aprueba |
-| 3. Demo | 38–112 | Web (riesgo + ruta), técnica (incidente, una frase), móvil (caja o vista pública, solo una) | A-04, A-07, A-09/A-10 sustitución, A-13 o A-16 sustitución |
-| 4. Impacto | 112–130 | Web | A-19 sustitución, sin cifras |
-| 5. Viabilidad | 130–142 | Técnica | A-22 o A-24, una frase, + «no prometemos la ruta óptima» |
-| 6. Modelo de negocio | 142–152 | Negocio | A-31 sustitución, sin precio |
-| 7. Próximo paso | 152–160 | Negocio → narración | A-32 |
-
-### Corte de 7 min (meta 400 s)
-
-Mismo relato; se amplían supuestos y límites, no se añade otra historia.
-
-| Bloque | Reparto | Papel | Qué se añade al maestro |
-|---|---|---|---|
-| 1. Problema | 0–45 | Narración | `[CITA DE LA FERIA]` **solo** si CE-02 del 006 y el permiso de cita existen; si no, «es una hipótesis que estamos validando con expositores de la feria» (A-29) |
-| 2. Solución | 45–95 | Narración → web | Qué decide la regla y qué decide una persona |
-| 3. Demo | 95–300 | Web, técnica, móvil | Distribución de riesgos 1/4/3/1/6 (A-05); los límites de autonomía (A-10 sustitución); vista pública con token alterado (A-16 sustitución) |
-| 4. Impacto | 300–335 | Web → narración | Por qué dos baselines y por qué quiebres nuevos (A-19, A-20); sin cifras |
-| 5. Viabilidad | 335–360 | Técnica | Un límite real: heurística, no óptimo; agente con IA en preparación (A-11 sustitución) |
-| 6. Modelo de negocio | 360–382 | Negocio | Costos por medir en el piloto (A-26 sustitución) |
-| 7. Próximo paso | 382–400 | Negocio → narración | Semanas 1–4 de la ficha de piloto (plan del 006) |
-
-### Frases que salen del texto anterior
-
-Del recorrido de 180 s, del texto base y del complemento del 12-oct se retiran: «80 puntos del país» (A-03), «la IA detecta/propone» (A-11), «el conductor puede capturar la recepción sin señal» y «sincroniza una sola vez» (A-15), la invitación al jurado a escanear (A-16), «una decisión se ejecuta sola y otra espera aprobación» (A-10, pasa a sustitución), «los resultados de esta ejecución son los que aparecen en pantalla» (A-21), «Cuesta [costo verificado]» (A-26) y «lo paga [cliente]» (A-31). Esas secciones quedan como antecedente.
-
-### Estructura de las siete diapositivas (sin archivo)
-
-Al 14-oct no había respuesta de O-06 y esta sección solo definía la estructura; después se generaron archivos provisionales según el manifiesto del 006. El 16-oct se anuncia Drive para el capitán, pero URL, acceso efectivo y formatos siguen pendientes. Esta actualización no genera materiales finales ni acredita su entrega.
-
-| # | Bloque | Título de trabajo | Contenido | Rótulo visible |
-|---|---|---|---|---|
-| 1 | Problema | Reponer antes de la llamada | Frase SERCOP con fuente; hipótesis del equipo; ícono de caja → hospital | «Caso sintético» |
-| 2 | Solución | Calcula, propone, una persona decide | Tres pasos: riesgo explicado → ruta → aprobación humana; «la IA no aprueba» | — |
-| 3 | Demo | Una caja hacia el hospital norte | Pantalla de la demo; si falla, captura con su rótulo; orden riesgo → ruta → incidente → caja | «Demo» o «Captura» / «Grabación» según lo que se muestre |
-| 4 | Impacto | Cómo mediremos el impacto | Diseño de la comparación (90 días, tres semillas + adverso, dos baselines, evitados y nuevos); cifras verificables documentadas en [[Cifras del simulador 90 dias]] | «Simulación — 12 corridas verificables» |
-| 5 | Viabilidad | Qué ya funciona y qué no | Dos capacidades usables con su límite (A-22, A-24); un límite honesto | «Prueba local» |
-| 6 | Modelo de negocio | Quién paga y por qué | Cliente por validar, implementación + suscripción; sin precio | «Hipótesis» |
-| 7 | Próximo paso | Piloto de cuatro semanas | Semanas 1–4 y lo que pedimos | «Propuesta» |
+Notas relacionadas: [[Entregable Solucion y propuesta de valor]], [[Cifras del simulador 90 dias]], [[Checklist y contingencias]], [[Plus para ganar]], [[Plan de validacion]], [[Historia y propuesta de valor]], [[Modelo de negocio y piloto]].
