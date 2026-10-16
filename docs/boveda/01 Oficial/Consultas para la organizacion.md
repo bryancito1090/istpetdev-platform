@@ -1,7 +1,7 @@
 ---
 tipo: preguntas
 estado: pendiente
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [oficial, hackathon]
 ---
 
@@ -60,3 +60,7 @@ Revisión documental del kit T1 del spec 006, hecha por IA sobre el repositorio 
 **Nueva revisión el 14-oct (fase 2 del issue #46):** sin cambios. No hay respuesta con fuente en esta nota, en [[Registro de mentorias]], en el issue #46 ni en el PR #71. La duración oficial y el archivo final de diapositivas siguen pendientes.
 
 §7.2 (p. 7) incluye entre los materiales de preparación unas «Indicaciones para pitch y demostración» que no están en el repositorio. Pedir ese documento a la organización puede responder O-04 y O-06; registrarlo con fecha y fuente en esta nota antes de usarlo.
+
+## Avisos orales del 16 de octubre — O-04 y O-06 aún abiertos
+
+Joseph registró en [[2026-10-16-1102-jb-agenda-entregas-y-pitch]] que oyó una dinámica de pitch simultáneo, cinco jurados, cubículos por reto y posibles cargas de idea en Drive hoy a las 13:00 y a las 18:00. La [página del hackatón](https://expocleanecuador.com.ec/es/hackaton/) sigue describiendo el cálculo con siete jurados; el manual también fija siete y entrega final mañana 17-oct a las 16:00–16:15. No hay aún enlace, formato, duración por equipo ni aviso escrito en esta bóveda. Por tanto, O-04 y O-06 siguen **pendientes de confirmación**. Pedir instrucciones de logística y guardar acuse antes de cambiar el paquete o el guion.

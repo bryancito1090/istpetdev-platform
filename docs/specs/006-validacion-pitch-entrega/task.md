@@ -11,6 +11,20 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 | T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente: [registro](registro-ensayos.md) preparado el 14-oct; racha 0/10, ninguna ronda de respuestas |
 | T6 | Paquete oficial y congelamiento | T3–T5 | 17-oct 15:45 | pendiente: [manifiesto](manifiesto-paquete.md) abierto y editable/PDF **provisionales** el 14-oct; sin congelar ni entregar |
 
+## Avisos orales del 16-oct — comprobaciones antes de cambiar el 006
+
+Fuente: [apunte de Joseph sobre agenda y pitch](../../boveda/NotasEvento/2026-10-16-1102-jb-agenda-entregas-y-pitch.md). Es una transcripción de lo oído durante el evento, sin enlace al Drive ni instrucción escrita. No cierra O-04 (duración del pitch) ni O-06 (canal y formato de entrega).
+
+| Tema oído | Impacto operativo provisional | Confirmación necesaria |
+|---|---|---|
+| Drive para subir la idea hoy 16-oct a las 13:00 y otra carpeta o entrega a las 18:00 | Preparar una versión breve de la idea sin sustituir el paquete final previsto para el 17-oct. Evitar perder el posible primer plazo. | Enlace, acceso, contenido, formato, responsable y si la entrega de las 18:00 es distinta. Guardar aviso o acuse. |
+| Bloque de diseño oído como 14:00–15:00 | Revisar la agenda del equipo; el manual sitúa diseño entre 14:00 y 16:00. | Horario vigente y si el bloque de 14:00–15:00 es una subactividad. |
+| Cinco jurados, cuatro equipos simultáneos y un cubículo por reto | Ensayar una escena autosuficiente en espacio reducido solo si se confirma; revisar proyección, audio, conectividad y relevo. No cambiar todavía la descripción de siete jurados del manual. | Número y reparto real de jurados, cubículo del Reto 1, turno, duración de pitch/demo/preguntas y sentido de la frase sobre ingreso 20 minutos antes. |
+
+- [ ] Conseguir confirmación de O-04/O-06 y registrar quién informó, cuándo y con qué soporte; adaptar los cortes 3/5/7 y el manifiesto solo después de conocer tiempo y canal.
+- [ ] Si hay pitch simultáneo, ensayar una pasada en el cubículo o en un espacio equivalente con el equipo y dispositivos reales; registrar la prueba en [Ensayos](registro-ensayos.md).
+- [ ] Mantener la entrega final del 17-oct 16:00–16:15 como referencia documental hasta que la organización publique un cambio. El Drive de hoy se trata como hito adicional, aún por confirmar.
+
 ## T1 — Kit previo sin horas del equipo
 
 - [x] Imprimir o descargar hoja de entrevista de [Registro de mentorias](../../boveda/06%20Equipo/Registro%20de%20mentorias.md); comprobar casillas independientes de notas y cita.
