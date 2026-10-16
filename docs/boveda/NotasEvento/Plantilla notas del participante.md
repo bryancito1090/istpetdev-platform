@@ -66,6 +66,8 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 
 ## 3. Cronograma del evento y momentos de control
 
+**Aclaración del 16-oct:** la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla del evento]] anuncia cinco minutos por equipo, cuatro cubículos por reto y Drive accesible para el correo del capitán. Los horarios de abajo proceden del manual; los cortes mencionados para hoy 18:00 y sábado 20:00 necesitan aclaración en O-06 ([[Consultas para la organizacion]]). El segundo horario aparece solo en una pregunta y no se confirmó. Turno, cubículo, preguntas y composición del jurado PENDIENTES.
+
 ### Día 1 — Viernes 16 de octubre de 2026
 - **08:00 – 09:00:** Acreditación de participantes y armado de mesa técnica.
 - **09:00 – 09:30:** Sesión de apertura y directrices del evento.
@@ -85,8 +87,8 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 - **14:00 – 15:00:** Consolidación de viabilidad, costos y métricas de impacto.
 - **15:00 – 16:00:** Ensayo general del Pitch y sincronización de roles en la escena.
 - **15:45:** **Congelamiento interno:** Cierre de código y generación de versiones finales.
-- **16:00:** **Entrega formal:** Subida de entregables a plataforma oficial.
-- **16:15 – 18:15:** **Pitch y demostración en vivo** ante jurado evaluador (3 a 5 minutos).
+- **16:00 – 16:15:** Entrega de materiales según el manual; confirmar vigencia del horario y acceso a Drive en O-06.
+- **16:15 – 18:15:** Bloque de presentaciones del manual; se anuncian **5 minutos por equipo** y cuatro presentaciones simultáneas. Turno exacto y reparto de preguntas por confirmar.
 - **18:15 – 18:45:** Deliberación del jurado y anuncio de proyectos premiados.
 
 ---

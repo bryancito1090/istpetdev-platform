@@ -1,28 +1,28 @@
 ---
 tipo: demo
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [demo, validacion, istpetdev]
 ---
 
 # Guion del pitch
 
-**Meta interna:** tres minutos. Duración oficial y tiempo de preguntas pendientes de confirmar en [[Consultas para la organizacion]]. Ajustar este guion a lo que informe la organización.
+**Turno anunciado oralmente el 16-oct:** cinco minutos por equipo, según la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla aportada por Bryan]]. **Meta interna:** 4:40 para el guion maestro; reservar 20 s no es una instrucción de la organización. Falta confirmar si demo, preguntas y transiciones caben en los cinco minutos (O-04 en [[Consultas para la organizacion]]). Los cortes de 3/7 minutos quedan como variantes internas, no turnos anunciados. No se ha ejecutado un ensayo nuevo con esta actualización.
 
 > [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
-> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y la respuesta de O-04.
+> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y el desglose pendiente de O-04. El anuncio del 16-oct permite seleccionar el corte maestro de cinco minutos, sin acreditar esas verificaciones.
 
 > [!info] Preparación de T3–T5 (14-oct-2026, fase 3 del issue #46)
 > Papeles, relevos, sustituciones, frases vigentes sin ensayo conectado y contingencias: [escena y contingencias](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md). Pasadas y respuestas se anotan en el [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md). Hoy ninguna parte de la demo tiene ensayo conectado: se dice la «Frase vigente» de esa nota, no la de la tabla de abajo. Los nombres de los papeles siguen sin confirmar.
 
 > [!warning] Lectura del kit previo (14-oct-2026)
-> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
+> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. Al 14-oct O-04 no tenía respuesta. El 16-oct se anuncia un turno de cinco minutos: se usa ese corte con objetivo interno 4:40; los demás quedan como variantes. El recorrido de 180 s se conserva como antecedente.
 
 Protagonista: una empresa de limpieza; objeto conductor: una caja destinada a un hospital. El caso es sintético hasta contar con validación empresarial.
 
 **Estructura oficial (Anexo 5.7, p. 25):** Problema → Solución → Prototipo / demo → Impacto → Viabilidad → Modelo de negocio → Próximo paso. El recorrido de abajo cubre las siete partes; viabilidad, modelo de negocio y próximo paso comparten el cierre de 20 segundos y deben nombrarse los tres.
 
-**Audiencia:** cinco de los siete jurados no son perfiles técnicos (§11.3, p. 10). Cada tecnología mencionada debe ir unida a lo que cambia para la operación.
+**Audiencia:** composición actual por confirmar (O-13). El reparto de siete personas del manual es antecedente, frente al anuncio de paneles por reto del 16-oct. Cada tecnología mencionada debe ir unida a lo que cambia para la operación.
 
 ## Recorrido de 180 segundos
 
@@ -84,9 +84,9 @@ Ver [[Checklist y contingencias]], [[Plus para ganar]] y [[Plan de validacion]].
 
 ## Complemento propuesto — spec 006, 12-oct-2026
 
-**Deciders PENDIENTE.** Este complemento sustituye para el próximo pitch el recorrido fijo de 180 s y su texto base: O-04 sigue pendiente. **⚠️ Contradicción detectada** — Hecho nuevo: el vivo usa `demo-region` (unos 15 puntos y dos vehículos) y la escala de unos 80 puntos solo aparece en simulación. · Hecho establecido: el texto base arriba abre con «80 puntos del país» sin distinguir ambas escenas. · Impacto: sugeriría una demo nacional en vivo. · Opciones: aclarar el alcance; conservar ambigüedad. · Propuesta: aclararlo en narración y etiqueta de pantalla. El caso del hospital es sintético. La cobertura de cinco días solo se dice si la ejecución de 002 CE-01 lo respalda.
+**Deciders PENDIENTE.** Este complemento sustituye para el próximo pitch el recorrido fijo de 180 s y su texto base. Actualización del 16-oct: turno oral de cinco minutos, desglose de O-04 pendiente. **⚠️ Contradicción detectada** — Hecho nuevo: el vivo usa `demo-region` (unos 15 puntos y dos vehículos) y la escala de unos 80 puntos solo aparece en simulación. · Hecho establecido: el texto base arriba abre con «80 puntos del país» sin distinguir ambas escenas. · Impacto: sugeriría una demo nacional en vivo. · Opciones: aclarar el alcance; conservar ambigüedad. · Propuesta: aclararlo en narración y etiqueta de pantalla. El caso del hospital es sintético. La cobertura de cinco días solo se dice si la ejecución de 002 CE-01 lo respalda.
 
-El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → impacto → viabilidad → modelo de negocio → próximo paso**. La versión maestra dura **hasta 4:40** y reserva 20 s del turno nominal de 5 min. Los cortes de 3/7 duran como máximo 2:40/6:40; si O-04 indica otra duración, se sustituye el objetivo por tiempo oficial menos 20 s. Ninguno es tiempo oficial confirmado. Cinco papeles visibles: narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre].
+El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → impacto → viabilidad → modelo de negocio → próximo paso**. La versión maestra dura **hasta 4:40** y reserva 20 s del turno nominal de 5 min. Los cortes de 3/7 duran como máximo 2:40/6:40; el turno de 5 min fue anunciado el 16-oct. Los objetivos de 2:40/4:40/6:40 son reparto interno; los cortes de 3/7 no son turnos anunciados y el desglose de O-04 sigue pendiente. Cinco papeles visibles: narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre].
 
 | Bloque | 3 min (objetivo 2:40) | 5 min (objetivo 4:40) | 7 min (objetivo 6:40) | Idea que se dice |
 |---|---|---|---|---|
@@ -133,7 +133,7 @@ La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no ten
 
 ## Versión de trabajo T2 — 14-oct-2026 (fase 2 del issue #46)
 
-**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). O-04 sigue pendiente: **160/280/400 s son metas internas, no tiempo oficial**. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
+**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). Actualización del 16-oct: se anuncia turno de 5 min y se selecciona el maestro; **160/280/400 s siguen siendo metas internas, no cronometrajes ni duración del turno**. Falta el desglose de preguntas de O-04. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
 
 **Etiquetas de escena.** `VIVO PREVISTO`: capacidad probada en pruebas automatizadas (EJ-07/08); la escena en pantalla no se ha ensayado y no se anuncia como «en vivo» hasta pasar E2E-04 del 006; si falla, se dice la sustitución. `GRABADO`: video del 15-oct, aún no existe; si se usa, se dice «esto es una grabación». `SIMULADO`: 005, datos sintéticos. `PROPUESTO`: diseño o plan, no demostrado.
 
@@ -189,7 +189,7 @@ Del recorrido de 180 s, del texto base y del complemento del 12-oct se retiran: 
 
 ### Estructura de las siete diapositivas (sin archivo)
 
-O-06 sigue sin respuesta: no se crea editable ni PDF. Esta es la estructura para cuando se confirme el formato.
+Al 14-oct no había respuesta de O-06 y esta sección solo definía la estructura; después se generaron archivos provisionales según el manifiesto del 006. El 16-oct se anuncia Drive para el capitán, pero URL, acceso efectivo y formatos siguen pendientes. Esta actualización no genera materiales finales ni acredita su entrega.
 
 | # | Bloque | Título de trabajo | Contenido | Rótulo visible |
 |---|---|---|---|---|

@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [hackathon, istpetdev]
 ---
 
@@ -14,8 +14,28 @@ tags: [hackathon, istpetdev]
 | Fecha | Sesión | Pregunta/tema | Respuesta/evidencia | Cambio realizado |
 |---|---|---|---|---|
 | 8 oct. 2026 | Capacitación prevista | [[Consultas para la organizacion]] | Pendiente | Pendiente |
-| 16 oct. 2026 | Mentoría prevista | Problema, restricciones y prototipo | Pendiente | Pendiente |
-| 17 oct. 2026 | Mentoría final prevista | Validación, viabilidad y pitch | Pendiente | Pendiente |
+| 16 oct. 2026 | Mentoría técnica asignada (16:15–17:00) | Abastecimiento Inteligente y Trazabilidad: de la Estrategia a la Operación ([[2026-10-16-1126-bb-agenda-general-y-mentorias|Mauro Zurita]]) | Asignación confirmada en matriz de mentorías Reto 1 | Preparación de preguntas de supply chain y trazabilidad |
+| 17 oct. 2026 | Validación integral y revisión final (11:30–13:15) | Validación técnica, prototipos, viabilidad y recomendaciones | Todos los mentores según agenda oficial | Pendiente de ejecución |
+
+## Asignación oficial de mentorías técnicas — Reto 1 (16-oct-2026)
+
+Fuente: [[2026-10-16-1126-bb-agenda-general-y-mentorias|matriz oficial de mentorías técnicas]].
+
+| Área / enfoque | Equipos convocados | Mentor/a | Día y hora |
+|---|---|---|---|
+| Inteligencia Artificial y Visión por Computador | CRONLEADS, Innovaders y PlantonIA | Michelle Viscaino | Viernes 16-oct, 14:30–15:00 |
+| Inteligencia Artificial y Visión por Computador | Growthlab | Michelle Viscaino | Viernes 16-oct, 15:00–15:30 |
+| Instrumentación e Internet de las Cosas | PumaUTI | Maria Fernanda Trujillo | Viernes 16-oct, 14:30–15:00 |
+| **Abastecimiento Inteligente y Trazabilidad: de la Estrategia a la Operación** | **IstpetDev**, OptiMinds y MADIEC CLEANTOK, Nodex, Propio, DUNT, Nexus Team, OptiClean, CRONLEADS, Innovaders y PlantonIA, Growthlab, PumaUTI | **Mauro Zurita** | **Viernes 16-oct, 16:15–17:00** |
+
+**Enfoque compartido de la sesión con Mauro Zurita:**
+Fortalecer las propuestas de los equipos del Reto 1 mediante la aplicación de criterios prácticos de gestión de la cadena de suministro, planificación del abastecimiento, control de inventarios y trazabilidad de insumos, orientándolos a desarrollar soluciones tecnológicamente viables, operativamente eficientes y escalables para responder a las necesidades reales de la industria de la limpieza.
+
+**Preparación del equipo para la sesión con Mauro Zurita (16:15–17:00):**
+1. Contrastar el modelo de reposición por stock de seguridad y consumo diario frente a prácticas habituales de la industria.
+2. Validar el mecanismo de trazabilidad con QR offline y custodia de entrega en puntos de servicio.
+3. Consultar sobre factores de distorsión habituales en la cadena de distribución de químicos de limpieza (presentaciones, consolidación, tiempos de entrega de proveedores).
+4. Prioridad de entrega: qué va primero cuando no alcanza el camión y si los hospitales tienen hora límite de recepción. Preguntas en [[Ampliacion de alcance - ideas del evento]].
 
 Copiar [[Plantilla mentoria]] para cada interacción real. Registrar cargo/organización si fue compartido y resulta pertinente, evitando datos personales innecesarios.
 
@@ -36,7 +56,7 @@ Estas preguntas y las de [[Modelo de negocio y piloto]] quedan de reserva para m
 
 ## Complemento propuesto — guion de feria del spec 006, 12-oct-2026
 
-**Uso:** dos integrantes entrevistan expositores el 16-oct en las pausas 11:00–11:30 y 13:00–14:00; regresan con prototipo el 17-oct de 11:00–12:30. Como cautela del equipo, no abordan JIMCORPSERVI/FEDELIMP ni LACIF. La conversación dura unos cinco minutos; se ofrece terminar antes. Un expositor no es automáticamente mentor ni jurado, y una opinión no es una regla oficial.
+**Uso:** dos integrantes entrevistan expositores el 16-oct en las pausas 11:00–11:30 y 13:00–14:00; regresan con prototipo el 17-oct de 11:30–13:15 (Validación integral de la agenda oficial). Como cautela del equipo, no abordan JIMCORPSERVI/FEDELIMP ni LACIF. La conversación dura unos cinco minutos; se ofrece terminar antes. Un expositor no es automáticamente mentor ni jurado, y una opinión no es una regla oficial.
 
 **Apertura (30 s):** «Estamos preparando una propuesta para anticipar faltantes de insumos en empresas de limpieza. ¿Podemos tomar notas anónimas de una conversación breve? Puede omitir preguntas o parar. Si alguna frase sirve para el pitch, le pediremos permiso aparte». Si no consiente, agradecer y no registrar respuesta.
 

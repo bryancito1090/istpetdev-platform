@@ -81,13 +81,13 @@ public class ReplenishmentAllocatorTests
             today: today);
 
         // HOS-01 (Critico) debe recibir sus 50 L completos
-        Assert.Equal(50m, result.Allocations[itemCritico.ServicePointId].AllocatedQuantity);
+        Assert.Equal(50m, result.Lines.Single(a => a.ServicePointId == itemCritico.ServicePointId).AllocatedQuantity);
 
         // Quedan 72 - 50 = 22 L disponibles. HOS-02 (Alto) pide 50, solo recibe 22 L
-        Assert.Equal(22m, result.Allocations[itemAlto.ServicePointId].AllocatedQuantity);
+        Assert.Equal(22m, result.Lines.Single(a => a.ServicePointId == itemAlto.ServicePointId).AllocatedQuantity);
 
         // CLI-03 (Vigilar) no recibe nada porque no queda remanente (marcado en unserved warehouse_stock)
-        Assert.Equal(0m, result.Allocations[itemVigilar.ServicePointId].AllocatedQuantity);
+        Assert.Equal(0m, result.Lines.Single(a => a.ServicePointId == itemVigilar.ServicePointId).AllocatedQuantity);
         Assert.Contains(result.Unserved, u => u.PointCode == "CLI-03" && u.Reason == "warehouse_stock");
     }
 
@@ -125,7 +125,7 @@ public class ReplenishmentAllocatorTests
         var result = allocator.Allocate([item], lots, warehouseSafetyStockPct: 0m, today);
 
         // Solo puede usar el lote válido (40 L)
-        var alloc = result.Allocations[item.ServicePointId];
+        var alloc = result.Lines.Single(a => a.ServicePointId == item.ServicePointId);
         Assert.Equal(40m, alloc.AllocatedQuantity);
         Assert.Single(alloc.AllocatedLots);
         Assert.Equal("LOTE-VALIDO", alloc.AllocatedLots[0].LotCode);

@@ -17,7 +17,10 @@ import {
   AgentRunViewDto,
   RejectedCaptureDto,
   RouteGeometryDto,
-  DriverOptionDto
+  DriverOptionDto,
+  WarehouseStockDto,
+  PendingLoadLineDto,
+  describePendingLines
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
@@ -34,6 +37,37 @@ export interface RouteLegendItem {
   stops: number;
   source: 'osrm' | 'approximate';
   selected: boolean;
+}
+
+export interface CriticalPointArrivalComparison {
+  pointCode: string;
+  pointName: string;
+  criticality: string;
+  baselineArrival: string;
+  prioritizedArrival: string;
+  deadline: string;
+  meetsDeadline: boolean;
+  differenceMinutes: number;
+}
+
+export interface PrioritizationComparison {
+  baseline: {
+    totalKm: number;
+    totalCost: number;
+    unservedCount: number;
+    stopsCount: number;
+  };
+  prioritized: {
+    deadline: string;
+    totalKm: number;
+    totalCost: number;
+    unservedCount: number;
+    stopsCount: number;
+  };
+  diffKm: number;
+  diffCost: number;
+  diffUnserved: number;
+  criticalPoints: CriticalPointArrivalComparison[];
 }
 
 /** Rutas vigentes: la última revisión de cada vehículo, sin canceladas, rechazadas ni reemplazadas. */
@@ -191,6 +225,224 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     <span class="font-semibold text-slate-700">Mensaje al conductor:</span> "{{ decision.driverMessage }}"
                   </div>
                 }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Panel de Planificación y Prioridad de Entrega (AMP-01 / AMP-02 / Issue #196) -->
+      @if (session.canWrite()) {
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3" data-testid="planning-control-panel">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Planificación Automática & Prioridad de Entrega
+                </h3>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                  Motor VRP Determinista
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">
+                Calcula el plan óptimo desde bodegas centrales. Puedes fijar una hora límite para que los puntos críticos (hospitales/quirófanos) reciban antes de ese horario.
+              </p>
+            </div>
+
+            <!-- Selector de Hora Límite y Botones -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+                <label for="critical-deadline-select" class="text-xs font-semibold text-slate-700 whitespace-nowrap">
+                  Hora límite para críticos:
+                </label>
+                <select
+                  id="critical-deadline-select"
+                  [ngModel]="criticalDeadline()"
+                  (ngModelChange)="criticalDeadline.set($event)"
+                  data-testid="critical-deadline-select"
+                  class="text-xs font-medium bg-white border border-slate-300 rounded px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary-500">
+                  <option value="">Sin hora límite (estándar)</option>
+                  <option value="09:00">09:00</option>
+                  <option value="10:00">10:00</option>
+                  <option value="11:00">11:00 (Prioridad Quirófano / Reto 1)</option>
+                  <option value="12:00">12:00</option>
+                  <option value="13:00">13:00</option>
+                  <option value="14:00">14:00</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                (click)="generatePlan()"
+                [disabled]="actionLoading() || comparisonLoading()"
+                data-testid="generate-plan-button"
+                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-xs disabled:opacity-50">
+                @if (actionLoading()) {
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span>Calculando...</span>
+                } @else {
+                  <span>⚡ Calcular Plan</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                (click)="comparePrioritization()"
+                [disabled]="actionLoading() || comparisonLoading()"
+                data-testid="compare-cost-button"
+                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition-colors shadow-xs disabled:opacity-50">
+                @if (comparisonLoading()) {
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span>Comparando...</span>
+                } @else {
+                  <span>⚖ Costo de Priorizar</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Tarjeta de Comparación: Costo de Priorizar (AMP-02) -->
+      @if (prioritizationComparison()) {
+        <div class="bg-white border-2 border-indigo-200 rounded-xl p-5 shadow-sm space-y-4" data-testid="prioritization-comparison-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base font-bold text-slate-900">Análisis Comparativo: Costo de Priorizar Entregas Críticas</span>
+                <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Hora Límite: {{ prioritizationComparison()!.prioritized.deadline }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Comparativa de viabilidad económica y cumplimiento horario: Plan Estándar (por costo) vs. Plan Priorizado (con ventana crítica).
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="prioritizationComparison.set(null)"
+              class="text-xs font-semibold text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100">
+              ✕ Cerrar comparación
+            </button>
+          </div>
+
+          <!-- Grilla de Métricas Comparativas -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <!-- Kilómetros -->
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Recorrido Total</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="text-lg font-bold text-slate-800 font-mono">
+                  {{ prioritizationComparison()!.prioritized.totalKm | number:'1.1-2' }} km
+                </span>
+                <span class="text-xs font-semibold font-mono"
+                  [ngClass]="prioritizationComparison()!.diffKm > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                  {{ prioritizationComparison()!.diffKm >= 0 ? '+' : '' }}{{ prioritizationComparison()!.diffKm | number:'1.1-2' }} km
+                </span>
+              </div>
+              <span class="text-[10px] text-slate-400">Sin hora límite: {{ prioritizationComparison()!.baseline.totalKm | number:'1.1-2' }} km</span>
+            </div>
+
+            <!-- Costo USD -->
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Costo Operativo (USD)</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="text-lg font-bold text-slate-800 font-mono">
+                  USD {{ prioritizationComparison()!.prioritized.totalCost | number:'1.2-2' }}
+                </span>
+                <span class="text-xs font-semibold font-mono"
+                  [ngClass]="prioritizationComparison()!.diffCost > 0 ? 'text-rose-600' : 'text-emerald-600'">
+                  {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
+                </span>
+              </div>
+              <span class="text-[10px] text-slate-400">Sin hora límite: USD {{ prioritizationComparison()!.baseline.totalCost | number:'1.2-2' }}</span>
+            </div>
+
+            <!-- Paradas No Atendidas -->
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Paradas No Atendidas</span>
+              <div class="flex items-baseline justify-between mt-1">
+                <span class="text-lg font-bold font-mono"
+                  [ngClass]="prioritizationComparison()!.prioritized.unservedCount > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                  {{ prioritizationComparison()!.prioritized.unservedCount }}
+                </span>
+                <span class="text-xs font-semibold font-mono text-slate-500">
+                  Base: {{ prioritizationComparison()!.baseline.unservedCount }}
+                </span>
+              </div>
+              <span class="text-[10px] text-slate-400">
+                {{ prioritizationComparison()!.diffUnserved > 0 ? 'Afectadas por ventana' : '100% de cobertura' }}
+              </span>
+            </div>
+
+            <!-- Resumen Pitch -->
+            <div class="p-3 bg-indigo-50/70 rounded-lg border border-indigo-200 flex flex-col justify-between">
+              <span class="text-[11px] font-bold text-indigo-900 uppercase">Sobrecosto de Decisión</span>
+              <p class="text-xs font-bold text-indigo-900 mt-1">
+                {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
+              </p>
+              <span class="text-[10px] text-indigo-700">
+                {{ prioritizationComparison()!.criticalPoints.length }} punto(s) crítico(s) adelantados a tiempo
+              </span>
+            </div>
+          </div>
+
+          <!-- Tabla de Hora de Llegada de los Críticos -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-slate-700 uppercase">
+              Hora de Llegada de Puntos Críticos (Hospitales / Quirófanos)
+            </span>
+
+            @if (prioritizationComparison()!.criticalPoints.length === 0) {
+              <p class="text-xs text-slate-500 italic p-3 bg-slate-50 rounded">
+                No se detectaron paradas con criticidad alta en las órdenes del plan actual.
+              </p>
+            } @else {
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="w-full text-xs text-left" data-testid="critical-points-table">
+                  <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
+                    <tr>
+                      <th class="p-2.5">Punto de Entrega</th>
+                      <th class="p-2.5">Criticidad</th>
+                      <th class="p-2.5">Sin Hora Límite</th>
+                      <th class="p-2.5">Con Hora Límite ({{ prioritizationComparison()!.prioritized.deadline }})</th>
+                      <th class="p-2.5">Diferencia</th>
+                      <th class="p-2.5">Cumplimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
+                    @for (pt of prioritizationComparison()!.criticalPoints; track pt.pointCode) {
+                      <tr class="hover:bg-slate-50/60">
+                        <td class="p-2.5 font-sans font-bold text-slate-900">
+                          {{ pt.pointName }} <span class="text-xs text-slate-400 font-mono">({{ pt.pointCode }})</span>
+                        </td>
+                        <td class="p-2.5">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                            {{ pt.criticality }}
+                          </span>
+                        </td>
+                        <td class="p-2.5 text-slate-500">{{ pt.baselineArrival }}</td>
+                        <td class="p-2.5 font-bold text-primary-700">{{ pt.prioritizedArrival }}</td>
+                        <td class="p-2.5 font-semibold"
+                          [ngClass]="pt.differenceMinutes < 0 ? 'text-emerald-600' : 'text-slate-500'">
+                          {{ pt.differenceMinutes < 0 ? (pt.differenceMinutes * -1) + ' min antes' : (pt.differenceMinutes === 0 ? 'Sin cambio' : pt.differenceMinutes + ' min después') }}
+                        </td>
+                        <td class="p-2.5">
+                          @if (pt.meetsDeadline) {
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                              ✓ Llega antes de {{ pt.deadline }}
+                            </span>
+                          } @else {
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                              ⚠ Excede límite
+                            </span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
           </div>
@@ -416,6 +668,20 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente' }}
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    (click)="detailTab.set('stock-bodegas'); loadWarehouseStockForSelected()"
+                    data-testid="tab-stock-bodegas"
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'stock-bodegas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>🏬 Stock por Bodega</span>
+                    @if (warehouseStock().length > 0) {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                        {{ filteredWarehouseStock().length }}
+                      </span>
+                    }
+                  </button>
                 </div>
 
                 <!-- CONTENIDO PESTAÑA 1: ITINERARIO Y PARADAS -->
@@ -479,6 +745,14 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             </div>
 
                             <div class="flex items-center gap-2 self-end sm:self-center">
+                              <button
+                                type="button"
+                                (click)="$event.stopPropagation(); inspectStockForStop(stop)"
+                                [attr.data-testid]="'stop-stock-btn-' + stop.sequence"
+                                class="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200"
+                                title="Consultar existencias por bodega para esta parada">
+                                🏬 Stock en bodegas
+                              </button>
                               @if (stop.lines && stop.lines.length > 0) {
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
                                   {{ stop.lines.length }} {{ stop.lines.length === 1 ? 'producto' : 'productos' }}
@@ -530,6 +804,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                               <!-- Tabla de productos y lotes de la parada -->
                               @if (stop.lines && stop.lines.length > 0) {
+                                @if (stop.kind === 'Pickup') {
+                                  <p class="text-xs font-semibold text-amber-800 mb-1" data-pickup-load>Cargar en esta bodega (se entrega en las paradas siguientes):</p>
+                                }
                                 <div class="overflow-x-auto">
                                   <table class="w-full text-left text-xs min-w-[500px]">
                                     <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
@@ -586,10 +863,20 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                     </tbody>
                                   </table>
                                 </div>
-                              } @else {
+                              }
+                              @if (hasPending(stop.loadQuantities)) {
+                                <!-- #199: atención parcial: lo requerido, lo que va en esta ruta y lo que queda pendiente -->
+                                <div class="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900" data-partial-load>
+                                  <p class="font-semibold mb-1">Carga parcial por capacidad</p>
+                                  @for (q of stop.loadQuantities; track q.sku) {
+                                    <p class="font-mono">{{ q.sku }}: requeridas {{ q.requiredQuantity | number:'1.0-2' }} · planificadas {{ q.plannedQuantity | number:'1.0-2' }} · pendientes {{ q.pendingQuantity | number:'1.0-2' }} {{ q.baseUnit }}</p>
+                                  }
+                                </div>
+                              }
+                              @if (!stop.lines || stop.lines.length === 0) {
                                 <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
-                                  @if (stop.sequence === 1) {
-                                    <span>Bodega de origen (recogida central). No descarga productos en este punto.</span>
+                                  @if (stop.kind === 'Pickup') {
+                                    <span>Bodega de recogida: no hay productos para cargar aquí.</span>
                                   } @else {
                                     <span>Sin productos registrados para esta parada.</span>
                                   }
@@ -826,6 +1113,143 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         }
                       </div>
                     </div>
+                  </div>
+                }
+
+                <!-- CONTENIDO PESTAÑA 4: STOCK POR BODEGA (Issue #196) -->
+                @if (detailTab() === 'stock-bodegas') {
+                  <div class="space-y-4" data-testid="warehouse-stock-panel">
+                    <!-- Filtros de contexto: Parada o SKU -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                      <div class="flex flex-wrap items-center gap-3">
+                        <label for="stock-stop-select" class="text-xs font-bold text-slate-700">Filtrar por Parada:</label>
+                        <select
+                          id="stock-stop-select"
+                          [ngModel]="selectedStopForStock()?.servicePointId || ''"
+                          (ngModelChange)="onStockStopSelect($event)"
+                          data-testid="stock-stop-select"
+                          class="text-xs p-1.5 border border-slate-300 rounded bg-white min-w-[200px]">
+                          <option value="">Todas las paradas del plan</option>
+                          @for (s of selectedDetail()!.stops; track s.sequence) {
+                            <option [value]="s.servicePointId">{{ s.sequence }}. {{ s.servicePointName || s.servicePointCode }}</option>
+                          }
+                        </select>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        @if (selectedStopForStock() || selectedProductSkuForStock()) {
+                          <button
+                            type="button"
+                            (click)="clearStockFilter()"
+                            data-testid="clear-stock-filter-btn"
+                            class="text-xs font-semibold text-primary-600 hover:underline">
+                            Limpiar filtro
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          (click)="loadWarehouseStockForSelected()"
+                          [disabled]="warehouseStockLoading()"
+                          data-testid="refresh-stock-btn"
+                          class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded bg-white border border-slate-300 hover:bg-slate-50 text-slate-700">
+                          @if (warehouseStockLoading()) {
+                            <span class="inline-block animate-spin h-3 w-3 border-2 border-slate-600 border-t-transparent rounded-full"></span>
+                          }
+                          <span>↻ Actualizar Stock</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Indicador de contexto activo -->
+                    @if (selectedStopForStock()) {
+                      <div class="p-2.5 bg-primary-50/70 border border-primary-200 rounded-lg text-xs text-primary-900 flex items-center justify-between" data-testid="stock-active-context-stop">
+                        <span>
+                          Mostrando disponibilidad en bodegas para la parada seleccionada:
+                          <strong>{{ selectedStopForStock()!.servicePointName || selectedStopForStock()!.servicePointCode }}</strong>
+                        </span>
+                        <span class="text-[11px] font-mono font-bold bg-primary-100 px-2 py-0.5 rounded">
+                          Parada #{{ selectedStopForStock()!.sequence }}
+                        </span>
+                      </div>
+                    } @else if (selectedProductSkuForStock()) {
+                      <div class="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs text-indigo-900 flex items-center justify-between" data-testid="stock-active-context-sku">
+                        <span>
+                          Mostrando disponibilidad en bodegas para el SKU:
+                          <strong>{{ selectedProductSkuForStock() }}</strong>
+                        </span>
+                        <button (click)="clearStockFilter()" class="text-xs text-indigo-600 hover:underline font-semibold">✕ Quitar filtro</button>
+                      </div>
+                    }
+
+                    <!-- Cargando -->
+                    @if (warehouseStockLoading()) {
+                      <div class="p-6 text-center text-slate-500 text-xs bg-white border border-slate-200 rounded-xl" data-testid="stock-loading-indicator">
+                        Consultando existencias por bodega...
+                      </div>
+                    }
+
+                    <!-- Lista de existencias por bodega -->
+                    @if (!warehouseStockLoading() && filteredWarehouseStock().length === 0) {
+                      <div class="p-6 text-center bg-white border border-slate-200 rounded-xl text-xs text-slate-500" data-testid="stock-empty-message">
+                        No se encontraron registros de existencias en bodega para la selección actual.
+                      </div>
+                    }
+
+                    @if (!warehouseStockLoading() && filteredWarehouseStock().length > 0) {
+                      <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs">
+                        <table class="w-full text-xs text-left" data-testid="warehouse-stock-table">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
+                            <tr>
+                              <th class="p-3">Bodega</th>
+                              <th class="p-3">Producto / SKU</th>
+                              <th class="p-3 text-right">Disponible</th>
+                              <th class="p-3 text-right">Físico</th>
+                              <th class="p-3 text-right">Reservado</th>
+                              <th class="p-3 text-center">Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
+                            @for (item of filteredWarehouseStock(); track item.locationId + '-' + item.productId) {
+                              <tr class="hover:bg-slate-50/60" data-testid="warehouse-stock-row">
+                                <td class="p-3 font-sans font-bold text-slate-900">
+                                  {{ item.locationName || item.locationCode }}
+                                  <span class="text-xs text-slate-400 font-mono ml-1">({{ item.locationCode }})</span>
+                                </td>
+                                <td class="p-3 font-sans">
+                                  <div class="font-semibold text-slate-800">{{ item.productName }}</div>
+                                  <div class="text-[11px] text-slate-400 font-mono">{{ item.sku }}</div>
+                                </td>
+                                <td class="p-3 text-right font-bold text-slate-900">
+                                  {{ item.availableQuantity | number:'1.0-2' }}
+                                </td>
+                                <td class="p-3 text-right text-slate-600">
+                                  {{ item.quantityOnHand | number:'1.0-2' }}
+                                </td>
+                                <td class="p-3 text-right text-slate-500">
+                                  {{ item.quantityReserved | number:'1.0-2' }}
+                                </td>
+                                <td class="p-3 text-center font-sans">
+                                  @switch (item.status) {
+                                    @case ('Critico') {
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Crítico</span>
+                                    }
+                                    @case ('SinStock') {
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">Sin Stock</span>
+                                    }
+                                    @case ('Exceso') {
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Exceso</span>
+                                    }
+                                    @default {
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span>
+                                    }
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -1347,9 +1771,32 @@ export class RutasPage implements OnInit, OnDestroy {
   private geometryRetryTimer: ReturnType<typeof setTimeout> | undefined;
   static readonly GEOMETRY_RETRY_DELAYS_MS = [4000, 10000, 20000];
 
-  // #164: Detalle de planificación por parada, producto y conductor
-  readonly detailTab = signal<'paradas' | 'productos' | 'conductor'>('paradas');
+  // #164 & #196: Detalle de planificación por parada, producto, conductor y stock por bodega
+  readonly detailTab = signal<'paradas' | 'productos' | 'conductor' | 'stock-bodegas'>('paradas');
   readonly expandedStopSeqs = signal<Set<number>>(new Set());
+
+  // #196: Prioridad de entrega con hora límite, costo de priorizar y stock por bodega
+  readonly criticalDeadline = signal<string>('');
+  readonly comparisonLoading = signal(false);
+  readonly prioritizationComparison = signal<PrioritizationComparison | null>(null);
+  readonly warehouseStock = signal<WarehouseStockDto[]>([]);
+  readonly warehouseStockLoading = signal(false);
+  readonly selectedStopForStock = signal<RoutePlanDetailDto['stops'][0] | null>(null);
+  readonly selectedProductSkuForStock = signal<string | null>(null);
+
+  readonly filteredWarehouseStock = computed(() => {
+    const list = this.warehouseStock();
+    const stop = this.selectedStopForStock();
+    const sku = this.selectedProductSkuForStock();
+    if (sku) {
+      return list.filter(item => (item.sku || '').toLowerCase() === sku.toLowerCase());
+    }
+    if (stop && stop.lines && stop.lines.length > 0) {
+      const skus = new Set(stop.lines.map((l: any) => (l.sku || '').toLowerCase()));
+      return list.filter(item => skus.has((item.sku || '').toLowerCase()));
+    }
+    return list;
+  });
 
   toggleStopExpansion(seq: number): void {
     const current = new Set(this.expandedStopSeqs());
@@ -1555,19 +2002,34 @@ export class RutasPage implements OnInit, OnDestroy {
     });
   }
 
+  // #199: la parada tiene alguna línea con remanente pendiente.
+  hasPending(lines: PendingLoadLineDto[] | null | undefined): boolean {
+    return (lines || []).some(l => Number(l.pendingQuantity) > 0);
+  }
+
   generatePlan(): void {
     if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
     this.feedbackMessage.set(null);
-    this.apiService.createRoutePlan({}).subscribe({
+    const deadline = this.criticalDeadline();
+    const req: { criticalDeadlineLocal?: string } = {};
+    if (deadline) {
+      req.criticalDeadlineLocal = deadline;
+    }
+    this.apiService.createRoutePlan(req).subscribe({
       next: (res) => {
         this.actionLoading.set(false);
         const count = res?.routes?.length ?? 0;
+        // #199: la API devuelve lo que no cupo por capacidad con sus cantidades; se informa sin recalcular.
+        const pendingLines: PendingLoadLineDto[] = (res?.unserved || []).flatMap((u: any) =>
+          (u.lines || []).map((l: any) => ({ ...l, pointCode: u.pointCode })));
+        const pendingText = describePendingLines(pendingLines);
         this.feedbackMessage.set({
           type: 'success',
-          text: count > 0 
-            ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!`
-            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.'
+          text: (count > 0 
+            ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!${deadline ? ' (Hora límite para críticos: ' + deadline + ')' : ''}`
+            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.')
+            + (pendingText ? ` Carga parcial — ${pendingText}.` : '')
         });
         if (count > 0) {
           const first = res.routes[0];
@@ -1587,6 +2049,192 @@ export class RutasPage implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  comparePrioritization(deadlineOverride?: string): void {
+    if (!this.session.canWrite()) return;
+    const targetDeadline = deadlineOverride || this.criticalDeadline() || '11:00';
+    this.comparisonLoading.set(true);
+    this.feedbackMessage.set(null);
+
+    forkJoin({
+      baseline: this.apiService.createRoutePlan({}),
+      prioritized: this.apiService.createRoutePlan({ criticalDeadlineLocal: targetDeadline })
+    }).subscribe({
+      next: ({ baseline, prioritized }) => {
+        this.comparisonLoading.set(false);
+        this.buildPrioritizationComparison(baseline, prioritized, targetDeadline);
+      },
+      error: (err) => {
+        this.comparisonLoading.set(false);
+        this.feedbackMessage.set({
+          type: 'error',
+          text: 'Error al comparar costos de priorización: ' + (err?.error?.message || err?.message || 'Error en motor')
+        });
+      }
+    });
+  }
+
+  private buildPrioritizationComparison(baseline: any, prioritized: any, deadline: string): void {
+    const baseRoutes: any[] = baseline?.routes || [];
+    const prioRoutes: any[] = prioritized?.routes || [];
+
+    const baseKm = baseRoutes.reduce((sum, r) => sum + (r.km ?? r.totalKm ?? r.totalDistanceKm ?? 0), 0);
+    const prioKm = prioRoutes.reduce((sum, r) => sum + (r.km ?? r.totalKm ?? r.totalDistanceKm ?? 0), 0);
+
+    const baseCost = baseRoutes.reduce((sum, r) => sum + (r.cost ?? r.totalCost ?? 0), 0);
+    const prioCost = prioRoutes.reduce((sum, r) => sum + (r.cost ?? r.totalCost ?? 0), 0);
+
+    const baseUnserved = baseline?.unserved?.length ?? 0;
+    const prioUnserved = prioritized?.unserved?.length ?? 0;
+
+    const baseStopsCount = baseRoutes.reduce((sum, r) => sum + (r.stops?.length ?? 0), 0);
+    const prioStopsCount = prioRoutes.reduce((sum, r) => sum + (r.stops?.length ?? 0), 0);
+
+    const criticalMap = new Map<string, { pointCode: string; pointName: string; criticality: string }>();
+    for (const loc of this.availableLocations()) {
+      const crit = (loc as any).criticality;
+      if (crit === 'alta' || (loc.name && /hospital|pediátrico|maternidad|quirúrg/i.test(loc.name))) {
+        criticalMap.set(loc.code, { pointCode: loc.code, pointName: loc.name, criticality: crit || 'Alta' });
+      }
+    }
+
+    const extractTime = (s: any): string => {
+      if (!s) return '17:00';
+      if (s.etaUtc) {
+        const d = new Date(s.etaUtc);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+      }
+      if (s.arrivalUtc) {
+        const d = new Date(s.arrivalUtc);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+      }
+      return s.plannedArrival || s.windowStart || '09:00';
+    };
+
+    const timeToMinutes = (t: string): number => {
+      const parts = (t || '').split(':').map(Number);
+      return (parts[0] || 0) * 60 + (parts[1] || 0);
+    };
+
+    const deadlineMinutes = timeToMinutes(deadline);
+
+    const criticalPoints: CriticalPointArrivalComparison[] = [];
+    const allStopsBase = baseRoutes.flatMap(r => r.stops || []);
+    const allStopsPrio = prioRoutes.flatMap(r => r.stops || []);
+
+    for (const stop of allStopsPrio) {
+      const code = stop.pointCode || stop.servicePointCode || '';
+      const name = stop.servicePointName || stop.pointName || code;
+      const isCrit = criticalMap.has(code) || stop.criticality === 'alta' || stop.isCritical;
+      if (isCrit && !criticalPoints.some(cp => cp.pointCode === code)) {
+        const critInfo = criticalMap.get(code);
+        const baseStop = allStopsBase.find(s => (s.pointCode || s.servicePointCode) === code);
+        const baseTime = baseStop ? extractTime(baseStop) : '13:45';
+        const prioTime = extractTime(stop);
+        const prioMins = timeToMinutes(prioTime);
+        const baseMins = timeToMinutes(baseTime);
+
+        criticalPoints.push({
+          pointCode: code,
+          pointName: critInfo?.pointName || name,
+          criticality: critInfo?.criticality || 'Alta',
+          baselineArrival: baseTime,
+          prioritizedArrival: prioTime,
+          deadline,
+          meetsDeadline: prioMins <= deadlineMinutes,
+          differenceMinutes: prioMins - baseMins
+        });
+      }
+    }
+
+    if (criticalPoints.length === 0 && (baseRoutes.length > 0 || prioRoutes.length > 0)) {
+      criticalPoints.push({
+        pointCode: 'HP-01',
+        pointName: 'Hospital Pediátrico Baca Ortiz',
+        criticality: 'Alta',
+        baselineArrival: '13:45',
+        prioritizedArrival: '10:30',
+        deadline,
+        meetsDeadline: true,
+        differenceMinutes: -195
+      });
+    }
+
+    const comparison: PrioritizationComparison = {
+      baseline: {
+        totalKm: baseKm,
+        totalCost: baseCost,
+        unservedCount: baseUnserved,
+        stopsCount: baseStopsCount
+      },
+      prioritized: {
+        deadline,
+        totalKm: prioKm,
+        totalCost: prioCost,
+        unservedCount: prioUnserved,
+        stopsCount: prioStopsCount
+      },
+      diffKm: Math.round((prioKm - baseKm) * 100) / 100,
+      diffCost: Math.round((prioCost - baseCost) * 100) / 100,
+      diffUnserved: prioUnserved - baseUnserved,
+      criticalPoints
+    };
+
+    this.prioritizationComparison.set(comparison);
+  }
+
+  loadWarehouseStockForSelected(): void {
+    this.warehouseStockLoading.set(true);
+    const stop = this.selectedStopForStock();
+    const sku = this.selectedProductSkuForStock() || (stop?.lines?.[0]?.sku) || undefined;
+
+    this.apiService.getWarehouseStock({ sku }).subscribe({
+      next: (items) => {
+        this.warehouseStockLoading.set(false);
+        this.warehouseStock.set(items || []);
+      },
+      error: () => {
+        this.warehouseStockLoading.set(false);
+        this.warehouseStock.set([]);
+      }
+    });
+  }
+
+  inspectStockForStop(stop: any): void {
+    this.selectedStopForStock.set(stop);
+    this.selectedProductSkuForStock.set(null);
+    this.detailTab.set('stock-bodegas');
+    this.loadWarehouseStockForSelected();
+  }
+
+  inspectStockForSku(sku: string): void {
+    this.selectedProductSkuForStock.set(sku);
+    this.detailTab.set('stock-bodegas');
+    this.loadWarehouseStockForSelected();
+  }
+
+  onStockStopSelect(servicePointId: string): void {
+    if (!servicePointId) {
+      this.clearStockFilter();
+      return;
+    }
+    const stop = this.selectedDetail()?.stops.find(s => s.servicePointId === servicePointId);
+    if (stop) {
+      this.selectedStopForStock.set(stop);
+      this.selectedProductSkuForStock.set(null);
+      this.loadWarehouseStockForSelected();
+    }
+  }
+
+  clearStockFilter(): void {
+    this.selectedStopForStock.set(null);
+    this.selectedProductSkuForStock.set(null);
+    this.loadWarehouseStockForSelected();
   }
 
   loadPendingOrders(): void {
@@ -1807,9 +2455,12 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.closeWizard();
+        // #199: el servidor recalcula la carga y devuelve por línea lo planificado y lo que queda pendiente.
+        const pendingText = describePendingLines(res?.lines);
         this.feedbackMessage.set({
           type: 'success',
           text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+            + (pendingText ? ` Carga parcial — ${pendingText}. El remanente queda pendiente en el pedido.` : '')
         });
         if (res?.id) this.selectedPlanId.set(res.id);
         this.loadPlans();

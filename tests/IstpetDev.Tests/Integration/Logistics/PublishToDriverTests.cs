@@ -296,4 +296,42 @@ public class PublishToDriverTests(PostgisContainer postgres) : IClassFixture<Pos
         using var driver = api.ClientFor(TestTokens.Driver);
         Assert.Equal(HttpStatusCode.Forbidden, (await driver.PutAsJsonAsync($"/api/v1/route-plans/{planId}/driver", new { accountId = s.DriverId })).StatusCode);
     }
+
+    // 16-oct: el detalle mostraba «Sin productos registrados» en las rutas del asistente (guardan pedidos, no cargas)
+    // y la recogida en bodega no decía qué cargar.
+    [Fact]
+    public async Task Plan_detail_shows_order_products_per_stop_and_what_to_load_at_the_warehouse()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        var orderId = await OrderAsync(api, s, 5m);
+        var planId = await ConfirmAsync(planner, s, s.WarehouseId, [orderId]);
+
+        static async Task AssertDetailAsync(HttpClient planner, Guid planId, bool published)
+        {
+            using var json = JsonDocument.Parse(await (await planner.GetAsync($"/api/v1/route-plans/{planId}")).Content.ReadAsStringAsync());
+            var stops = json.RootElement.GetProperty("stops").EnumerateArray().ToList();
+            var pickup = stops.Single(st => st.GetProperty("kind").GetString() == "Pickup");
+            var delivery = stops.Single(st => st.GetProperty("kind").GetString() == "Delivery");
+
+            var delivered = delivery.GetProperty("lines").EnumerateArray().ToList();
+            Assert.NotEmpty(delivered);
+            Assert.Equal(5m, delivered.Sum(l => l.GetProperty("plannedQuantity").GetDecimal()));
+            Assert.Equal(published, delivered.All(l => l.GetProperty("lotCode").GetString() != ""));
+
+            var load = pickup.GetProperty("lines").EnumerateArray().ToList();
+            Assert.Equal(5m, load.Sum(l => l.GetProperty("plannedQuantity").GetDecimal()));
+            Assert.All(load, l => Assert.Equal("Cargar", l.GetProperty("deliveryStatus").GetString()));
+            Assert.False(string.IsNullOrEmpty(pickup.GetProperty("servicePointName").GetString()));
+
+            // Lo cargado en bodega no se cuenta dos veces en el resumen por producto.
+            var summary = json.RootElement.GetProperty("productsSummary").EnumerateArray().ToList();
+            Assert.Equal(5m, summary.Sum(p => p.GetProperty("totalPlannedQuantity").GetDecimal()));
+        }
+
+        await AssertDetailAsync(planner, planId, published: false);
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, planId, await VehicleCodeAsync(api, s.VehicleId), s.DriverId)).StatusCode);
+        await AssertDetailAsync(planner, planId, published: true);
+    }
 }

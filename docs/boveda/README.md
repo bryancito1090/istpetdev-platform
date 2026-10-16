@@ -24,6 +24,8 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 |---|---|
 | Trabajo del equipo: integración y pruebas desde el 13-oct | [Seguimiento de implementación y pruebas](06%20Equipo/Seguimiento%20de%20implementacion%20y%20pruebas.md) |
 | Apuntes durante el evento | [Notas del evento](NotasEvento/Notas%20del%20evento.md) |
+| Charla del 16-oct: preguntas, respuestas y utilidad para nuestro reto | [Hallazgos de la charla para el Reto 1](02%20Producto/Hallazgos%20de%20la%20charla%20para%20el%20Reto%201.md) |
+| Texto completo recibido de la charla | [Transcripción de la fuente](99%20Fuentes/Charla%20del%20sector%20limpieza%20-%20transcripcion%20recibida.md) |
 | Tablero editable de responsables, resultados y faltantes | [Registro de seguimiento y hallazgos](06%20Equipo/Registro%20de%20seguimiento%20y%20hallazgos.md) |
 | Continuidad después del pase técnico | [Piloto y specs 007–012](06%20Equipo/Continuidad%20del%20piloto%20y%20specs%20007%20a%20012.md) |
 | Esquema completo y estado personal | [Esquema de base de datos](04%20Datos%20y%20algoritmos/Esquema%20completo%20de%20base%20de%20datos.md) |

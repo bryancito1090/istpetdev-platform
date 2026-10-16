@@ -185,6 +185,67 @@ public sealed class RoutePlannerTests
         Assert.Equal(feasible, result.IsFeasible);
     }
 
+    [Theory]
+    // Crítico: el fin de ventana se recorta a la hora límite
+    [InlineData("08:00", "17:00", true, "11:00", "11:00")]
+    // Crítico con ventana que ya termina antes: se conserva la del punto
+    [InlineData("08:00", "10:00", true, "11:00", "10:00")]
+    // Crítico cuya ventana empieza después de la hora límite: se respeta la del punto
+    [InlineData("12:00", "16:00", true, "11:00", "16:00")]
+    // No crítico: conserva su ventana
+    [InlineData("08:00", "17:00", false, "11:00", "17:00")]
+    // Sin hora límite: comportamiento actual
+    [InlineData("08:00", "17:00", true, null, "17:00")]
+    public void Critical_deadline_caps_only_critical_window_end(
+        string start, string end, bool critical, string? deadline, string expected)
+    {
+        var result = RoutePlanner.ApplyCriticalDeadline(
+            TimeOnly.Parse(start), TimeOnly.Parse(end), critical, RoutePlanner.ParseCriticalDeadline(deadline));
+        Assert.Equal(TimeOnly.Parse(expected), result);
+    }
+
+    [Fact]
+    public void Critical_deadline_parses_hh_mm_and_rejects_invalid_values()
+    {
+        Assert.Null(RoutePlanner.ParseCriticalDeadline(null));
+        Assert.Null(RoutePlanner.ParseCriticalDeadline(" "));
+        Assert.Equal(new TimeOnly(11, 0), RoutePlanner.ParseCriticalDeadline("11:00"));
+        var error = Assert.Throws<ArgumentException>(() => RoutePlanner.ParseCriticalDeadline("once"));
+        Assert.Equal(nameof(PlanRequest.CriticalDeadlineLocal), error.ParamName);
+    }
+
+    [Fact]
+    public void Critical_stop_after_deadline_is_rejected_with_time_window()
+    {
+        var vehicle = new Vehicle { Id = Guid.NewGuid(), Code = "VEH-01", MaxWeight = 1000m };
+        var p1 = new GeoPoint(-0.2000m, -78.5000m);
+        var matrix = new Dictionary<(GeoPoint, GeoPoint), Leg>
+        {
+            [(_depot, p1)] = new(_depot, p1, 10m, 15m, DistanceSource.Road, null), // Llega 08:15 local
+            [(p1, _depot)] = new(p1, _depot, 10m, 15m, DistanceSource.Road, null)
+        };
+        var deadline = RoutePlanner.ParseCriticalDeadline("08:10");
+        var start = new TimeOnly(8, 0);
+        var end = new TimeOnly(17, 0);
+
+        // Crítico: ventana 08:00-08:10 por la hora límite -> llega 08:15 -> time_window
+        var critical = CreateStop("P1", p1, windowStart: start,
+            windowEnd: RoutePlanner.ApplyCriticalDeadline(start, end, true, deadline));
+        var evalCritical = RouteFeasibility.EvaluateRoute(
+            vehicle, _depot, new[] { critical }, _workdayStartUtc, _workdayHours,
+            _costPerHour, _costPerKm, matrix);
+        Assert.False(evalCritical.IsFeasible);
+        Assert.Equal("time_window", evalCritical.FailureReason);
+
+        // No crítico: conserva 08:00-17:00 -> factible
+        var normal = CreateStop("P1", p1, windowStart: start,
+            windowEnd: RoutePlanner.ApplyCriticalDeadline(start, end, false, deadline));
+        var evalNormal = RouteFeasibility.EvaluateRoute(
+            vehicle, _depot, new[] { normal }, _workdayStartUtc, _workdayHours,
+            _costPerHour, _costPerKm, matrix);
+        Assert.True(evalNormal.IsFeasible);
+    }
+
     private static StopCandidate CreateStop(
         string code,
         GeoPoint pos,

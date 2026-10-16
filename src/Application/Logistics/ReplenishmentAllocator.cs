@@ -28,8 +28,10 @@ public sealed record UnservedAllocation(
     string Reason,
     IReadOnlyList<Fact> Facts);
 
+// #199: una línea por punto y producto. Antes era un diccionario por punto y el segundo SKU de un mismo punto
+// sobrescribía al primero, así que la carga de varios productos nunca llegaba al planificador.
 public sealed record AllocationResult(
-    IReadOnlyDictionary<Guid, PointAllocation> Allocations,
+    IReadOnlyList<PointAllocation> Lines,
     IReadOnlyList<UnservedAllocation> Unserved);
 
 // FR-02: Asignador de reposición desde bodega central con política FEFO y stock de seguridad.
@@ -41,7 +43,7 @@ public sealed class ReplenishmentAllocator
         decimal warehouseSafetyStockPct,
         DateOnly today)
     {
-        var allocations = new Dictionary<Guid, PointAllocation>();
+        var allocations = new List<PointAllocation>();
         var unserved = new List<UnservedAllocation>();
 
         // Agrupar por producto
@@ -49,7 +51,7 @@ public sealed class ReplenishmentAllocator
             .Where(i => i.SuggestedQuantity > 0 && i.Level is RiskLevel.Critico or RiskLevel.Alto or RiskLevel.Vigilar)
             .GroupBy(i => i.ProductId);
 
-        foreach (var group in itemsByProduct)
+        foreach (var group in itemsByProduct.OrderBy(g => g.First().Sku, StringComparer.Ordinal))
         {
             var productId = group.Key;
 
@@ -90,14 +92,14 @@ public sealed class ReplenishmentAllocator
                 var lotAllocations = AllocateFromLots(usableLots, toAssign);
                 assignableStockRemaining -= toAssign;
 
-                allocations[item.ServicePointId] = new PointAllocation(
+                allocations.Add(new PointAllocation(
                     item.ServicePointId,
                     item.PointCode,
                     item.ProductId,
                     item.Sku,
                     needed,
                     toAssign,
-                    lotAllocations);
+                    lotAllocations));
 
                 if (toAssign == 0 && needed > 0)
                 {
@@ -118,14 +120,14 @@ public sealed class ReplenishmentAllocator
                 var lotAllocations = AllocateFromLots(usableLots, toAssign);
                 assignableStockRemaining -= toAssign;
 
-                allocations[item.ServicePointId] = new PointAllocation(
+                allocations.Add(new PointAllocation(
                     item.ServicePointId,
                     item.PointCode,
                     item.ProductId,
                     item.Sku,
                     needed,
                     toAssign,
-                    lotAllocations);
+                    lotAllocations));
 
                 if (toAssign == 0 && needed > 0)
                 {
