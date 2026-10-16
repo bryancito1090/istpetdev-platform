@@ -1,0 +1,13 @@
+sku,name,base_unit,weight_per_unit,volume_per_unit,unit_value,units_per_package,presentacion,peso_bulto_kg
+PRD-0001,"Hipoclorito de sodio 5% (galón 3,785 L)",galon,4.2,0.0065,3.8,4,caja de 4 galones,16.8
+PRD-0002,Desinfectante amonio cuaternario (galón),galon,4.0,0.0065,7.5,4,caja de 4 galones,16.0
+PRD-0003,Detergente industrial en polvo (saco 30 kg),saco,30.3,0.045,42.0,1,saco de 30 kg,30.3
+PRD-0004,Jabón líquido antibacterial (galón),galon,4.0,0.0065,6.2,4,caja de 4 galones,16.0
+PRD-0005,Alcohol gel 70% (frasco 1 L),frasco,0.95,0.0013,3.4,12,caja de 12 frascos,11.4
+PRD-0006,Papel higiénico jumbo (paquete 4 rollos),paquete,2.8,0.03,9.6,3,fardo de 3 paquetes,8.4
+PRD-0007,Toalla de manos interfoliada (caja 20 paquetes),caja,6.0,0.04,18.5,1,caja,6.0
+PRD-0008,Fundas rojas para desechos infecciosos (paquete 100),paquete,2.0,0.004,8.9,10,bulto de 10 paquetes,20.0
+PRD-0009,Fundas negras para desechos comunes (paquete 100),paquete,2.5,0.005,6.4,10,bulto de 10 paquetes,25.0
+PRD-0010,Guantes de nitrilo (caja 100),caja,0.6,0.0015,7.2,10,bulto de 10 cajas,6.0
+PRD-0011,Desengrasante industrial (caneca 20 L),caneca,21.5,0.024,38.0,1,caneca de 20 L,21.5
+PRD-0012,Mopa de repuesto (unidad),unidad,0.35,0.003,4.1,12,bulto de 12,4.2
