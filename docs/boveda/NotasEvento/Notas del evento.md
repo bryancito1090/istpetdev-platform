@@ -7,7 +7,7 @@ tags: [hackathon, equipo, evento, notas]
 
 # Notas del evento
 
-Esta es la nota índice de `NotasEvento/` dentro de la bóveda Obsidian. Cada intervención, observación o bloque de dictado se guarda en **un archivo nuevo** para que varias personas puedan registrar información a la vez. Usa [[Plantilla nota del evento]] para crear esos archivos. [[Plantilla notas del participante]] y las fichas personales existentes, como [[NotasBryan]], sirven para la preparación; no siguen el nombre por fecha y hora reservado para apuntes de campo.
+Esta es la nota índice de `NotasEvento/` dentro de la bóveda Obsidian. Cada intervención, observación o bloque de dictado se guarda en **un archivo nuevo** para que varias personas puedan registrar información a la vez. Usa [[Plantilla nota del evento]] para crear esos archivos. [[Plantilla notas del participante]] sirve para la preparación y no sigue el nombre por fecha y hora reservado para apuntes de campo.
 
 ## Nombre de cada archivo
 

@@ -11,6 +11,8 @@ tags: [hackathon, equipo]
 
 ## Nuestra misión
 
+Para consultar la charla como material de trabajo, usar [[Hallazgos de la charla para el Reto 1]]; enlaza el texto completo y concentra las respuestas de inventario, entregas consolidadas, peso/volumen y pedidos imprevistos. El número de días de anticipación y la regla empresarial para priorizar ante un cierre vial siguen sin respuesta concreta.
+
 Construir una plataforma que ayude a una empresa de limpieza a **reabastecer antes de que falten insumos, reducir el costo de transporte y demostrar cada transferencia desde bodega hasta recepción**.
 
 **Inscripción declarada por el equipo:** Reto 1. **Área oficial:** Gestión Inteligente de Procesos. **Equipo:** IstpetDev, cinco integrantes con amplia experiencia full stack, móvil, datos y logística; trabajo flexible por entregables, sin asignación fija de especialidades. **Estado actual:** documentación y diseño inicial; no se ha implementado el sistema en esta bóveda.

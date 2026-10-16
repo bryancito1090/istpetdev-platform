@@ -115,7 +115,7 @@ Se requiere un modelo híbrido de operación («Human-in-the-Loop»): la platafo
   - [[n8n e IA]]
   - [[Usuarios y flujos]]
   - [[Decisiones de arquitectura]]
-  - [[NotasBryan]]
+  - [[Hallazgos de la charla para el Reto 1]]
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-16
 tags: [datos, algoritmo, validacion]
 ---
 
@@ -14,6 +14,8 @@ Detectar **cuándo debe decidirse una reposición**, con valores verificables, a
 La IA explicativa no es el pronóstico. Si se agrega un modelo predictivo después, compararlo contra esta base con datos fuera del período de entrenamiento.
 
 ## Entradas
+
+**Contraste sectorial — 16-oct:** [[Hallazgos de la charla para el Reto 1]] documenta entradas en cajas, salidas fraccionadas y promociones, además de consumo por área sin rendimiento cuantificado. Confirmar la unidad física/base por producto y qué representa el consumo antes de usar esos ejemplos como datos. La pregunta sobre cuántos días antes necesitan prever un agotamiento no obtuvo un número; la charla no calibra el lead time ni los cinco días del escenario.
 
 Punto/SKU, stock utilizable, reservas, consumos por día, entregas confirmadas pendientes, lead time, ventana de recepción, stock de seguridad, criticidad y frescura del registro.
 

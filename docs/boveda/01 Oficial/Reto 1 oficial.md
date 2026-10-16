@@ -1,7 +1,7 @@
 ---
 tipo: fuente-resumida
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-16
 tags: [oficial, hackathon]
 ---
 
@@ -52,6 +52,8 @@ Una herramienta o prototipo demostrable que visualice trazabilidad y mejore la p
 | Mermas | Señalar anomalías y conciliar cantidades | Caso investigado y resultado |
 
 ## Límites
+
+**Contexto sectorial del 16-oct, separado del requisito oficial:** [[Hallazgos de la charla para el Reto 1]] recoge las respuestas sobre programación semanal/quincenal, fraccionamiento y promociones, pedidos imprevistos y reparto de varios clientes por camión. Se conserva la [[Charla del sector limpieza - transcripcion recibida|transcripción completa]] como fuente; el lead time requerido y la política empresarial ante incidentes siguen sin concretarse. Esta información orienta validación y producto, sin reescribir el texto del manual de arriba.
 
 - Chat, DeepSeek, Terraform, autoscaling y UUID v7 son elecciones del equipo.
 - El manual no exige AWS, IA, blockchain, app nativa ni una tecnología específica.
