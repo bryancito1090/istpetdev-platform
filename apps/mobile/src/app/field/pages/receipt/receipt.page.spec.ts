@@ -16,6 +16,8 @@ describe('ReceiptPage custodia por turnos (#162)', () => {
     saveCustodyCommand: ReturnType<typeof vi.fn>;
     effectiveDeliveryStatus: (deliveryId: string, snapshotStatus: string, unitStatuses: string[]) => string;
     statusLabel: (status: string) => string;
+    downloadRouteAssignment: ReturnType<typeof vi.fn>;
+    isSimulatingOffline: ReturnType<typeof vi.fn>;
   };
 
   const delivery = (status: DeliveryFieldStatus, unitStatus: HandlingUnitStatus, unitCount = 1): MobileAssignmentDelivery => ({
@@ -60,15 +62,26 @@ describe('ReceiptPage custodia por turnos (#162)', () => {
       activeAssignment: signal(null),
       outboxItems: signal([]),
       saveCustodyCommand: vi.fn(async () => ({})),
+      downloadRouteAssignment: vi.fn(async () => ({})),
+      isSimulatingOffline: vi.fn(() => false),
       effectiveDeliveryStatus: (deliveryId, snapshotStatus, unitStatuses) => {
         const accepted = outbox.outboxItems()
           .filter((i) => i.deliveryId === deliveryId && i.custodyResponse)
           .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
           .pop()?.custodyResponse?.status ?? null;
+        const pending = outbox.outboxItems()
+          .filter((i) => i.deliveryId === deliveryId && i.commandKind && i.status !== 'Complete' && i.status !== 'RequiresReview')
+          .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
+          .pop();
+        let pendingStatus: string | null = null;
+        if (pending?.commandKind === 'Pickup') pendingStatus = 'InTransit';
+        else if (pending?.commandKind === 'Deliver') pendingStatus = 'Delivered';
+        else if (pending?.commandKind === 'Dispatch') pendingStatus = 'Dispatched';
         return effectiveDeliveryStatus({
           deliveryStatus: snapshotStatus,
           handlingUnits: unitStatuses.map((status) => ({ status })),
           acceptedCustodyStatus: accepted,
+          pendingCustodyStatus: pendingStatus,
         });
       },
       statusLabel: (status) => status,
@@ -147,5 +160,57 @@ describe('ReceiptPage custodia por turnos (#162)', () => {
     const { fixture } = render(delivery('InTransit', 'InTransit'));
     expect(fixture.nativeElement.textContent).toContain('Guardado en este teléfono');
     expect(fixture.nativeElement.textContent).toContain('aún no confirmado por el servidor');
+  });
+
+  it('#230: retiro sin señal avanza a ToDeliver y permite marcar Entregado en el punto', async () => {
+    const pickupItem: OutboxItem = {
+      operationId: 'op-pickup-offline',
+      ownerAccountId: 'driver-1',
+      commandKind: 'Pickup',
+      deliveryId: 'd-1',
+      expectedDeliveryVersion: 0,
+      recipientName: 'Recogida',
+      capturedAtUtc: new Date().toISOString(),
+      status: 'SavedOnDevice'
+    };
+    outbox.outboxItems.set([pickupItem]);
+
+    const { fixture, page } = render(delivery('Dispatched', 'Dispatched'));
+
+    // Debe avanzar a ToDeliver porque el conductor ya registró el retiro en este teléfono
+    expect(page.stage()).toBe('ToDeliver');
+    expect(fixture.nativeElement.textContent).toContain('Marcar Entregado en el Punto');
+
+    await page.deliver();
+
+    expect(outbox.saveCustodyCommand).toHaveBeenCalledWith(expect.objectContaining({
+      command: 'Deliver',
+      deliveryId: 'd-1'
+    }));
+  });
+
+  it('#230: refreshData descarga la ruta y actualiza los datos de la entrega', async () => {
+    const { page } = render(delivery('Draft', 'Prepared', 0));
+    outbox.downloadRouteAssignment.mockImplementation(async () => {
+      outbox.activeAssignment.set({
+        serverTimeUtc: new Date().toISOString(),
+        driverAccountId: 'driver-1',
+        routes: [{
+          routePlanId: 'r-1',
+          revision: 2,
+          downloadedAtUtc: new Date().toISOString(),
+          vehicleCode: 'V-1',
+          stopsCount: 1,
+          deliveries: [delivery('Dispatched', 'Dispatched', 1)]
+        }]
+      });
+      return {};
+    });
+
+    page.refreshData();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(outbox.downloadRouteAssignment).toHaveBeenCalled();
+    expect(page.delivery()?.status).toBe('Dispatched');
   });
 });

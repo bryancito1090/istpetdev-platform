@@ -156,8 +156,28 @@ public sealed class VehicleMatcher : IVehicleMatcher
             if (currentVolume > maxVolumeOnTrip) maxVolumeOnTrip = currentVolume;
         }
 
+        // Precalcular distancia y duración entre paradas del recorrido
+        decimal interStopsKm = 0m;
+        decimal interStopsDrivingMinutes = 0m;
+        decimal totalServiceMinutes = 0m;
+
+        for (int i = 0; i < stops.Count; i++)
+        {
+            totalServiceMinutes += stops[i].ServiceMinutes;
+            if (i > 0)
+            {
+                var prev = stops[i - 1].Position;
+                var curr = stops[i].Position;
+                var legKm = DistanceProvider.HaversineDistanceKm(prev, curr) * _options.ApproxDetourFactor;
+                var legMin = Math.Round((legKm / _options.ApproxSpeedKmh) * 60m, 1);
+                interStopsKm += legKm;
+                interStopsDrivingMinutes += legMin;
+            }
+        }
+
         var results = new List<VehicleMatchResult>();
         var firstStop = stops.FirstOrDefault();
+        var lastStop = stops.Count > 0 ? stops[^1] : null;
 
         foreach (var v in snapshot.ActiveVehicles)
         {
@@ -178,27 +198,52 @@ public sealed class VehicleMatcher : IVehicleMatcher
                 discardReason = $"excede_volumen (Requiere {maxVolumeOnTrip:F1} m³, capacidad {v.MaxVolume.Value:F1} m³)";
             }
 
-            // Conflicto de disponibilidad
+            // Conflicto de disponibilidad (otra ruta publicada en el mismo día)
             if (isMatch && snapshot.BusyVehicleIds.Contains(v.Id))
             {
                 isMatch = false;
                 discardReason = "ocupado_en_otra_ruta (Tiene ruta publicada en la misma fecha)";
             }
 
-            // Distancia del depósito base al primer punto (solo si hay paradas)
+            // Distancia del depósito base a la primera recogida y regreso al depósito desde la última parada
             decimal distToPickup = 0m;
+            decimal timeToPickup = 0m;
+            decimal distReturn = 0m;
+            decimal timeReturn = 0m;
+
             if (firstStop is not null &&
                 snapshot.DepotLocations.TryGetValue(v.DepotLocationId, out var depotLoc) &&
                 depotLoc.Position != null)
             {
                 var depotPos = new GeoPoint((decimal)depotLoc.Position.Y, (decimal)depotLoc.Position.X);
-                distToPickup = DistanceProvider.HaversineDistanceKm(depotPos, firstStop.Position);
+                distToPickup = DistanceProvider.HaversineDistanceKm(depotPos, firstStop.Position) * _options.ApproxDetourFactor;
+                timeToPickup = Math.Round((distToPickup / _options.ApproxSpeedKmh) * 60m, 1);
+
+                if (lastStop is not null)
+                {
+                    distReturn = DistanceProvider.HaversineDistanceKm(lastStop.Position, depotPos) * _options.ApproxDetourFactor;
+                    timeReturn = Math.Round((distReturn / _options.ApproxSpeedKmh) * 60m, 1);
+                }
+            }
+
+            decimal totalTripKm = Math.Round(distToPickup + interStopsKm + distReturn, 2);
+            decimal totalTripMinutes = Math.Round(timeToPickup + interStopsDrivingMinutes + totalServiceMinutes + timeReturn, 1);
+
+            // Validar jornada laboral máxima si el vehículo fuese asignado
+            if (isMatch && _options.WorkdayHours > 0 && totalTripMinutes > _options.WorkdayHours * 60m)
+            {
+                isMatch = false;
+                discardReason = $"jornada_excedida (Duración {totalTripMinutes:F0} min excede jornada {_options.WorkdayHours * 60:F0} min)";
             }
 
             decimal weightUtil = v.MaxWeight > 0 ? Math.Round((maxWeightOnTrip / v.MaxWeight) * 100m, 1) : 0m;
             decimal volUtil = v.MaxVolume.HasValue && v.MaxVolume.Value > 0 ? Math.Round((maxVolumeOnTrip / v.MaxVolume.Value) * 100m, 1) : 0m;
             decimal costPerKm = v.CostPerKm ?? _options.DefaultCostPerKm;
-            decimal estCost = firstStop is not null ? Math.Round(distToPickup * costPerKm, 2) : 0m;
+
+            // Costo completo unificado del viaje
+            decimal fullEstimatedCost = firstStop is not null
+                ? LogisticsCostCalculator.CalculateCost(totalTripKm, totalTripMinutes, costPerKm, _options.CostPerHour, tollsCost: 0m)
+                : 0m;
 
             results.Add(new VehicleMatchResult(
                 v,
@@ -206,15 +251,16 @@ public sealed class VehicleMatcher : IVehicleMatcher
                 discardReason,
                 weightUtil,
                 volUtil,
-                estCost,
+                fullEstimatedCost,
                 Math.Round(distToPickup, 1)
             ));
         }
 
-        // Ordenar: Primero los factibles (ordenados por costo estimado y proximidad), luego los descartados
+        // Ordenar: Primero los factibles (ordenados por costo total completo, luego menor tamaño adecuado), luego los descartados
         return results
             .OrderByDescending(r => r.IsMatch ? 1 : 0)
             .ThenBy(r => r.EstimatedTotalCost)
+            .ThenBy(r => r.Vehicle.MaxWeight) // Si el costo es igual, priorizar vehículo de menor capacidad adecuada (normal antes que pesado)
             .ThenBy(r => r.DistanceToFirstPickupKm)
             .ThenBy(r => r.Vehicle.Code, StringComparer.Ordinal)
             .ThenBy(r => r.Vehicle.Id)

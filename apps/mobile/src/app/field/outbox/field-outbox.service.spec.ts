@@ -23,6 +23,7 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     getAssignments: ReturnType<typeof vi.fn>;
     pickup: ReturnType<typeof vi.fn>;
     deliver: ReturnType<typeof vi.fn>;
+    dispatch: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -36,7 +37,8 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
       receiveAsReceiver: vi.fn(() => of({ receiptId: 'receiver-receipt' })),
       getReceiverUnit: vi.fn(),
       pickup: vi.fn(() => of({ deliveryId: 'd-1', status: 'InTransit', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-1' })),
-      deliver: vi.fn(() => of({ deliveryId: 'd-2', status: 'Delivered', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-2' }))
+      deliver: vi.fn(() => of({ deliveryId: 'd-2', status: 'Delivered', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-2' })),
+      dispatch: vi.fn(() => of({ deliveryId: 'd-draft-1', status: 'Dispatched', handlingUnitIds: ['hu-1'], changedAtUtc: new Date().toISOString() }))
     };
     TestBed.configureTestingModule({
       providers: [{ provide: FIELD_API, useValue: api }]
@@ -520,6 +522,77 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
 
     expect(outbox.sendableCount()).toBe(1);
     expect(outbox.reviewCount()).toBe(1);
+  });
+
+  // #230: Despacho offline de bodega y sincronización ordenada de retiro y entrega
+  it('#230: saveDispatchCommand guarda en cola con status SavedOnDevice y sincroniza llamando a api.dispatch', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('bodega-1');
+
+    const item = await outbox.saveDispatchCommand({
+      deliveryId: 'd-draft-10',
+      handlingUnitIds: ['hu-10a', 'hu-10b'],
+      label: 'Despacho #d-draft-10'
+    });
+
+    expect(item.status).toBe('SavedOnDevice');
+    expect(item.commandKind).toBe('Dispatch');
+    expect(item.dispatchPayload?.handlingUnitIds).toEqual(['hu-10a', 'hu-10b']);
+    expect(outbox.pendingCount()).toBe(1);
+    expect(api.dispatch).not.toHaveBeenCalled();
+
+    outbox.isSimulatingOffline.set(false);
+    const synced = await outbox.syncItem(item.operationId);
+
+    expect(synced.status).toBe('Complete');
+    expect(api.dispatch).toHaveBeenCalledWith('d-draft-10', expect.objectContaining({ handlingUnitIds: ['hu-10a', 'hu-10b'] }), item.operationId);
+    expect(outbox.pendingCount()).toBe(0);
+  });
+
+  it('#230: syncAllPending ejecuta en orden FIFO ascendente por capturedAtUtc', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-fifo');
+
+    const executionOrder: string[] = [];
+    api.pickup.mockImplementation(() => {
+      executionOrder.push('pickup');
+      return of({ deliveryId: 'd-fifo', status: 'InTransit', custodyEventId: 'ce-p' });
+    });
+    api.deliver.mockImplementation(() => {
+      executionOrder.push('deliver');
+      return of({ deliveryId: 'd-fifo', status: 'Delivered', custodyEventId: 'ce-d' });
+    });
+
+    // Guardar Pickup primero
+    const item1 = await outbox.saveCustodyCommand({ deliveryId: 'd-fifo', command: 'Pickup', label: 'Retiro' });
+    await new Promise((r) => setTimeout(r, 10));
+    // Guardar Deliver después
+    const item2 = await outbox.saveCustodyCommand({ deliveryId: 'd-fifo', command: 'Deliver', label: 'Entrega' });
+
+    // Verificar que outboxItems() los muestra ordenados descendente por UI (más reciente primero)
+    expect(outbox.outboxItems()[0].operationId).toBe(item2.operationId);
+
+    outbox.isSimulatingOffline.set(false);
+    await outbox.syncAllPending();
+
+    // Pero en ejecución FIFO deben ejecutarse: pickup primero, deliver después
+    expect(executionOrder).toEqual(['pickup', 'deliver']);
+  });
+
+  it('#230: latestPendingCustodyStatus devuelve InTransit para Pickup pendiente y Delivered para Deliver pendiente', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-pending-status');
+
+    expect(outbox.latestPendingCustodyStatus('d-stat-1')).toBeNull();
+
+    await outbox.saveCustodyCommand({ deliveryId: 'd-stat-1', command: 'Pickup', label: 'Retiro' });
+    expect(outbox.latestPendingCustodyStatus('d-stat-1')).toBe('InTransit');
+
+    await outbox.saveCustodyCommand({ deliveryId: 'd-stat-1', command: 'Deliver', label: 'Entrega' });
+    expect(outbox.latestPendingCustodyStatus('d-stat-1')).toBe('Delivered');
   });
 });
 

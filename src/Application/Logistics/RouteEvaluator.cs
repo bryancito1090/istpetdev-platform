@@ -210,7 +210,7 @@ public sealed class RouteEvaluator : IRouteEvaluator
         }
 
         decimal costPerKm = vehicle?.CostPerKm ?? _options.DefaultCostPerKm;
-        decimal totalCost = Math.Round(totalKm * costPerKm + (totalMinutes / 60m) * _options.CostPerHour, 2);
+        decimal totalCost = LogisticsCostCalculator.CalculateCost(totalKm, totalMinutes, costPerKm, _options.CostPerHour, tollsCost: 0m);
 
         bool isValid = errors.Count == 0;
 

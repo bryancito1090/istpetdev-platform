@@ -80,7 +80,15 @@ public sealed class AgentJourneyTests(PostgisContainer postgres) : IClassFixture
         Assert.Equal(AgentRunStatus.Fallback, view.Status);
         Assert.Equal(reason, view.FallbackReason);
         Assert.Equal(2, view.Decisions.Count);
-        Assert.All(view.Decisions, d => { Assert.Equal(ExplanationSource.Template, d.Source); Assert.NotEmpty(d.DriverMessage); });
+        Assert.All(view.Decisions, d =>
+        {
+            Assert.Equal(ExplanationSource.Template, d.Source);
+            Assert.NotEmpty(d.DriverMessage);
+            // El fallback acredita la misma evidencia determinista que el camino LLM.
+            Assert.False(string.IsNullOrWhiteSpace(d.VehicleCode));
+            Assert.False(string.IsNullOrWhiteSpace(d.OriginWarehouseCode));
+            Assert.NotEmpty(d.OrderedStops!);
+        });
         Assert.InRange(view.LatencyMs, 0, 11000);
         var payload = new AgentResult([new(view.Decisions[0].AgentDecisionId, "Texo tardío", "Mensaje tardío")], null, "fake-model", "v1", "late", null);
         Assert.Equal(HttpStatusCode.Conflict, (await automation.PostAsJsonAsync($"/api/v1/agent/runs/{view.RunId}/result", payload)).StatusCode);
@@ -121,6 +129,13 @@ public sealed class AgentJourneyTests(PostgisContainer postgres) : IClassFixture
         Assert.Equal(fallback is null ? AgentRunStatus.Completed : AgentRunStatus.Fallback, view.Status);
         Assert.Equal(fallback, view.FallbackReason);
         Assert.NotEmpty(view.Decisions);
+        Assert.All(view.Decisions, d =>
+        {
+            Assert.NotEmpty(d.DriverMessage);
+            Assert.False(string.IsNullOrWhiteSpace(d.VehicleCode));
+            Assert.False(string.IsNullOrWhiteSpace(d.OriginWarehouseCode));
+            Assert.NotEmpty(d.OrderedStops!);
+        });
         await using var db = TestDb.Context(connection);
         Assert.Equal(view.Decisions.Count, await db.RoutePlans.CountAsync(p => p.SupersedesRoutePlanId != null));
         Assert.All(view.Decisions, d => Assert.NotEmpty(d.DriverMessage));

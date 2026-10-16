@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Incidents;
@@ -181,6 +182,7 @@ public sealed class AgentRunService(
         }
 
         await db.SaveChangesAsync(ct);
+        await SnapshotDecisionEvidenceAsync(runId, ct);
         await transaction.CommitAsync(ct);
 
         return ResultOutcome.Accepted;
@@ -300,6 +302,7 @@ public sealed class AgentRunService(
         if (rows == 0) return false;
         db.ChangeTracker.Clear();
         await ExecuteFallbackLogicAsync(run, reason, ParseTrigger(run.TriggerJson)?.IncidentId, ct);
+        await SnapshotDecisionEvidenceAsync(run.Id, ct);
         completedAt = DateTime.UtcNow;
         latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
         await db.Database.ExecuteSqlInterpolatedAsync(
@@ -423,45 +426,93 @@ public sealed class AgentRunService(
 
         var toolTraces = JsonSerializer.Deserialize<List<ToolCallTrace>>(run.ToolCallsJson, JsonOpts) ?? [];
 
+        // La evidencia se deriva por servidor del plan correlacionado (bodega base del
+        // vehículo y secuencia real de paradas), nunca de texto libre del LLM.
+        var proposals = decisions.ToDictionary(d => d.Id, d => ParseProposal(d.ProposalJson));
+        var planIds = proposals.Values
+            .Where(p => p.Evidence is null && p.ProposedRoutePlanId.HasValue)
+            .Select(p => p.ProposedRoutePlanId!.Value)
+            .Distinct()
+            .ToList();
+        var plans = planIds.Count == 0
+            ? new Dictionary<Guid, RoutePlan>()
+            : await db.RoutePlans.AsNoTracking().Where(p => planIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+
+        var vehicleIds = plans.Values.Select(p => p.VehicleId)
+            .Concat(proposals.Values.Where(p => p.Evidence is null && p.VehicleId.HasValue).Select(p => p.VehicleId!.Value))
+            .Distinct()
+            .ToList();
+        var vehicles = vehicleIds.Count == 0
+            ? new Dictionary<Guid, Vehicle>()
+            : await db.Vehicles.AsNoTracking().Where(v => vehicleIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
+
+        var depotIds = vehicles.Values.Select(v => v.DepotLocationId).Where(id => id != Guid.Empty).Distinct().ToList();
+        var depots = depotIds.Count == 0
+            ? new Dictionary<Guid, Location>()
+            : await db.Locations.AsNoTracking().Where(l => depotIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
+
+        var storedStops = planIds.Count == 0
+            ? new List<RouteStop>()
+            : await db.RouteStops.AsNoTracking().Where(s => planIds.Contains(s.RoutePlanId)).ToListAsync(ct);
+        var pointIds = storedStops.Select(s => s.ServicePointId).Distinct().ToList();
+        var pointCodes = pointIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await db.ServicePoints.AsNoTracking().Where(sp => pointIds.Contains(sp.Id)).ToDictionaryAsync(sp => sp.Id, sp => sp.Code, ct);
+
         var decisionViews = new List<AgentDecisionView>();
-        var vehicles = await db.Vehicles.AsNoTracking().ToDictionaryAsync(v => v.Id, v => v.Code, ct);
-
-        foreach (var d in decisions)
+        foreach (var decision in decisions)
         {
-            var vehicleCode = "";
-            var facts = ExtractFacts(d.ProposalJson);
+            var proposal = proposals[decision.Id];
+            var vehicleCode = proposal.VehicleCode ?? string.Empty;
+            var vehicleId = proposal.VehicleId;
 
-            // Try to extract vehicle from proposed plan if present
-            try
+            if (proposal.ProposedRoutePlanId.HasValue && plans.TryGetValue(proposal.ProposedRoutePlanId.Value, out var plan))
             {
-                using var doc = JsonDocument.Parse(d.ProposalJson);
-                if (doc.RootElement.TryGetProperty("vehicleCode", out var vehicleProp)) vehicleCode = vehicleProp.GetString() ?? "";
-                if (doc.RootElement.TryGetProperty("proposedRoutePlanId", out var planIdProp))
-                {
-                    var planId = planIdProp.GetGuid();
-                    var plan = await db.RoutePlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct);
-                    if (plan != null && vehicles.TryGetValue(plan.VehicleId, out var vCode))
-                    {
-                        vehicleCode = vCode;
-                    }
-                }
+                vehicleId ??= plan.VehicleId;
+                if (vehicles.TryGetValue(plan.VehicleId, out var planVehicle)) vehicleCode = planVehicle.Code;
             }
-            catch
+            else if (vehicleId.HasValue && vehicles.TryGetValue(vehicleId.Value, out var directVehicle))
             {
-                // ignore parsing failure
+                vehicleCode = directVehicle.Code;
             }
 
-            Enum.TryParse<ExplanationSource>(d.ExplanationSource, true, out var source);
+            string? originCode = null;
+            string? originName = null;
+            if (vehicleId.HasValue && vehicles.TryGetValue(vehicleId.Value, out var vehicle)
+                && vehicle.DepotLocationId != Guid.Empty && depots.TryGetValue(vehicle.DepotLocationId, out var depot))
+            {
+                originCode = depot.Code;
+                originName = depot.Name;
+            }
+
+            IReadOnlyList<DecisionStopView>? orderedStops = null;
+            if (proposal.ProposedRoutePlanId.HasValue)
+            {
+                orderedStops = storedStops
+                    .Where(s => s.RoutePlanId == proposal.ProposedRoutePlanId.Value)
+                    .OrderBy(s => s.SequenceNumber)
+                    .Select(s => new DecisionStopView(s.SequenceNumber, pointCodes.TryGetValue(s.ServicePointId, out var code) ? code : string.Empty))
+                    .ToList();
+            }
+            else if (proposal.RouteStops is { Count: > 0 })
+            {
+                orderedStops = proposal.RouteStops;
+            }
+
+            Enum.TryParse<ExplanationSource>(decision.ExplanationSource, true, out var source);
 
             decisionViews.Add(new AgentDecisionView(
-                d.Id,
-                vehicleCode,
-                d.Status,
-                d.Rationale,
-                d.DriverMessage,
+                decision.Id,
+                proposal.Evidence?.VehicleCode ?? vehicleCode,
+                decision.Status,
+                decision.Rationale,
+                decision.DriverMessage,
                 source,
-                d.ExplanationMismatch,
-                facts));
+                decision.ExplanationMismatch,
+                ExtractFacts(decision.ProposalJson),
+                proposal.Evidence is null ? originCode : proposal.Evidence.OriginWarehouseCode,
+                proposal.Evidence is null ? originName : proposal.Evidence.OriginWarehouseName,
+                proposal.Evidence is null ? orderedStops : proposal.Evidence.OrderedStops));
         }
 
         Enum.TryParse<AgentRunKind>(run.Kind, true, out var kind);
@@ -478,6 +529,86 @@ public sealed class AgentRunService(
             run.FallbackReason,
             toolTraces,
             decisionViews);
+    }
+
+    private async Task SnapshotDecisionEvidenceAsync(Guid runId, CancellationToken ct)
+    {
+        var view = await BuildViewAsync(runId, ct);
+        var decisions = await db.AgentDecisions.Where(d => d.CorrelationId == runId).ToListAsync(ct);
+        foreach (var decision in decisions)
+        {
+            var proposal = JsonNode.Parse(decision.ProposalJson)!.AsObject();
+            if (proposal.ContainsKey("evidence")) continue;
+            var item = view.Decisions.Single(d => d.AgentDecisionId == decision.Id);
+            proposal["evidence"] = JsonSerializer.SerializeToNode(new DecisionEvidence(
+                item.VehicleCode, item.OriginWarehouseCode, item.OriginWarehouseName, item.OrderedStops), JsonOpts);
+            decision.ProposalJson = proposal.ToJsonString(JsonOpts);
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
+    private sealed record DecisionEvidence(string VehicleCode, string? OriginWarehouseCode,
+        string? OriginWarehouseName, IReadOnlyList<DecisionStopView>? OrderedStops);
+
+    private sealed record ProposalView(
+        Guid? ProposedRoutePlanId,
+        Guid? VehicleId,
+        string? VehicleCode,
+        IReadOnlyList<DecisionStopView>? RouteStops,
+        DecisionEvidence? Evidence = null);
+
+    private static ProposalView ParseProposal(string proposalJson)
+    {
+        if (string.IsNullOrWhiteSpace(proposalJson)) return new ProposalView(null, null, null, null);
+        try
+        {
+            using var doc = JsonDocument.Parse(proposalJson);
+            var root = doc.RootElement;
+            Guid? planId = root.TryGetProperty("proposedRoutePlanId", out var planProp) && planProp.TryGetGuid(out var parsedPlanId)
+                ? parsedPlanId
+                : null;
+
+            Guid? vehicleId = null;
+            string? vehicleCode = null;
+            if (root.TryGetProperty("vehicleCode", out var codeProp) && codeProp.ValueKind == JsonValueKind.String)
+            {
+                vehicleCode = codeProp.GetString();
+            }
+
+            IReadOnlyList<DecisionStopView>? stops = null;
+            if (root.TryGetProperty("route", out var route) && route.ValueKind == JsonValueKind.Object)
+            {
+                if (route.TryGetProperty("vehicleId", out var vehicleProp) && vehicleProp.TryGetGuid(out var parsedVehicleId))
+                {
+                    vehicleId = parsedVehicleId;
+                }
+                if (vehicleCode is null && route.TryGetProperty("vehicleCode", out var routeCode) && routeCode.ValueKind == JsonValueKind.String)
+                {
+                    vehicleCode = routeCode.GetString();
+                }
+                if (route.TryGetProperty("stops", out var stopsProp) && stopsProp.ValueKind == JsonValueKind.Array)
+                {
+                    var list = new List<DecisionStopView>();
+                    foreach (var stop in stopsProp.EnumerateArray())
+                    {
+                        var sequence = stop.TryGetProperty("sequence", out var sequenceProp) && sequenceProp.TryGetInt32(out var parsedSequence)
+                            ? parsedSequence
+                            : list.Count + 1;
+                        var pointCode = stop.TryGetProperty("pointCode", out var pointProp) ? pointProp.GetString() ?? string.Empty : string.Empty;
+                        list.Add(new DecisionStopView(sequence, pointCode));
+                    }
+                    stops = list.Count > 0 ? list : null;
+                }
+            }
+
+            var evidence = root.TryGetProperty("evidence", out var evidenceProp)
+                ? evidenceProp.Deserialize<DecisionEvidence>(JsonOpts) : null;
+            return new ProposalView(planId, vehicleId, vehicleCode, stops, evidence);
+        }
+        catch (JsonException)
+        {
+            return new ProposalView(null, null, null, null);
+        }
     }
 
     private static IReadOnlyList<Fact> ExtractFacts(string proposalJson)

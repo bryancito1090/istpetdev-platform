@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { WarehouseComponent } from './warehouse.component';
 import { FIELD_API } from '../../field-api.interface';
+import { FieldOutboxService } from '../../outbox/field-outbox.service';
 import {
   DeliveryListItem,
   DeliveryDetailResponse,
@@ -15,6 +16,9 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
     getDelivery: ReturnType<typeof vi.fn>;
     createHandlingUnit: ReturnType<typeof vi.fn>;
     dispatch: ReturnType<typeof vi.fn>;
+  };
+  let outboxMock: {
+    saveDispatchCommand: ReturnType<typeof vi.fn>;
   };
 
   const sampleDraftDeliveries: DeliveryListItem[] = [
@@ -68,11 +72,15 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
       createHandlingUnit: vi.fn().mockReturnValue(of(sampleHuResponse)),
       dispatch: vi.fn().mockReturnValue(of({ deliveryId: 'del-draft-001', status: 'Dispatched' }))
     };
+    outboxMock = {
+      saveDispatchCommand: vi.fn().mockResolvedValue({ operationId: 'disp-op-1' })
+    };
 
     TestBed.configureTestingModule({
       imports: [WarehouseComponent],
       providers: [
-        { provide: FIELD_API, useValue: fieldApiMock }
+        { provide: FIELD_API, useValue: fieldApiMock },
+        { provide: FieldOutboxService, useValue: outboxMock }
       ]
     });
   });
@@ -261,5 +269,69 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
     fixture.detectChanges();
 
     expect(component.errorMessage()).toContain('ya despachada');
+  });
+
+  describe('Modo sin conexión (#230)', () => {
+    const originalOnline = navigator.onLine;
+
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'onLine', { value: originalOnline, configurable: true });
+    });
+
+    it('carga entregas desde caché y muestra banner "Modo sin conexión" cuando no hay señal', () => {
+      localStorage.setItem('istpetdev_warehouse_draft_deliveries_cache', JSON.stringify(sampleDraftDeliveries));
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      fixture.detectChanges();
+
+      expect(fieldApiMock.getDeliveries).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.draftDeliveries().length).toBe(1);
+      expect(fixture.componentInstance.draftDeliveries()[0].deliveryId).toBe('del-draft-001');
+      expect(fixture.componentInstance.isOffline()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('Modo sin conexión');
+    });
+
+    it('createHandlingUnit sin señal explica claramente que requiere conexión oficial', () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.createHandlingUnit(sampleDeliveryDetail);
+
+      expect(fieldApiMock.createHandlingUnit).not.toHaveBeenCalled();
+      expect(component.errorMessage()).toContain('requiere conexión con el servidor');
+    });
+
+    it('dispatchToVehicle sin señal encola el despacho en el outbox y muestra aviso exitoso', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const detailWithHu: DeliveryDetailResponse = {
+        ...sampleDeliveryDetail,
+        handlingUnits: [{ handlingUnitId: 'hu-001', code: 'BULTO-001', status: 'Prepared' }]
+      };
+      component.selectedDelivery.set(detailWithHu);
+
+      component.dispatchToVehicle(detailWithHu);
+
+      expect(fieldApiMock.dispatch).not.toHaveBeenCalled();
+      expect(outboxMock.saveDispatchCommand).toHaveBeenCalledWith(expect.objectContaining({
+        deliveryId: 'del-draft-001',
+        handlingUnitIds: ['hu-001']
+      }));
+
+      await new Promise((r) => setTimeout(r, 10));
+      expect(component.successMessage()).toContain('Despacho guardado en este dispositivo');
+    });
   });
 });

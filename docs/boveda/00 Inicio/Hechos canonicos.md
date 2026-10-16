@@ -218,3 +218,9 @@ Para modificar esta nota: cambiar primero la nota fuente o el ADR y después est
 | Compatibilidad legada | Entregas `Delivered` con recibo previo responden `ALREADY_RECEIVED`; bulto `Prepared` es alias de `Sealed` | Issue #162; migración `CustodyChainStates` | ✅ |
 | Modo demo | `advance` es una simulación de recorrido que respeta las guardas de estado y atribuye las transiciones a la cuenta de demo que la invoca, no al conductor real | Issue #162 (revisión 15-oct); `FieldService.AdvanceDemoAsync` | ✅ |
 | Índice de custodia | `CustodyEvent(OrganizationId, OperationId)` deja de ser único: una operación con varios bultos emite un evento por bulto | Migración `20261015234714_CustodyChainStates` | ✅ aplicación local en PostgreSQL efímero de pruebas |
+
+## Fuente adicional recibida el 16-oct — logística integral
+
+Bryan aportó la [[Charla de logistica integral - transcripcion recibida]] y la identificó como la charla más valiosa que tuvieron para el Reto 1. [[Logistica integral para el Reto 1 - hallazgos y evidencia]] organiza sus recomendaciones y preguntas finales, separadas de la charla previa del sector. ✅ Texto y valoración de Bryan registrados; ⚠️ expositor, organización y momento de exposición PENDIENTES.
+
+Las cifras de empaque, ventana 07:00–09:30, 90% de flota diésel, dos unidades eléctricas y 300 km de autonomía son ejemplos o declaraciones de participantes sin verificación independiente. La referencia al decreto 444 tampoco fue verificada; no constituye una regla normativa del sistema. No cambian los parámetros canónicos, requisitos oficiales, ADR ni estado de implementación. Casos y consultas pendientes en la nota enlazada.

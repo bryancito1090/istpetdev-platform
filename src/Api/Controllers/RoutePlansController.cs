@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application.Common.Interfaces;
@@ -25,6 +26,7 @@ public sealed class RoutePlansController(
     IRouteEvaluator routeEvaluator,
     IEmergencyPlanner emergencyPlanner) : ControllerBase
 {
+    private static readonly ConcurrentDictionary<string, object> ProposalCache = new();
     // FR-23: Lectura para el panel 005 (no crea propuestas)
     [HttpGet]
     [Authorize(Roles = Roles.Any)]
@@ -811,6 +813,12 @@ public sealed class RoutePlansController(
             return BadRequest(new { message = "Debe proporcionar al menos un pedido para sugerir rutas." });
         }
 
+        // Idempotencia: si ya se procesó el requestId en esta sesión, retornar la propuesta vigente
+        if (!string.IsNullOrWhiteSpace(req.RequestId) && ProposalCache.TryGetValue(req.RequestId, out var cachedProposal))
+        {
+            return Ok(cachedProposal);
+        }
+
         var orders = await db.DeliveryOrders
             .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, ct);
@@ -827,7 +835,7 @@ public sealed class RoutePlansController(
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
 
-        // #197: prioridad y fecha de cada pedido, y ventana de cada punto destino.
+        // #197 / #207: prioridad y fecha de cada pedido, y ventana de cada punto destino
         var destinationPointIds = orders.Values
             .Where(o => o.DestinationServicePointId.HasValue)
             .Select(o => o.DestinationServicePointId!.Value)
@@ -837,170 +845,290 @@ public sealed class RoutePlansController(
             .Where(sp => sp.OrganizationId == DemoOrganization.Id && destinationPointIds.Contains(sp.Id))
             .ToDictionaryAsync(sp => sp.Id, ct);
 
-        var optionsResult = new List<object>();
-
-        foreach (var opt in sourcingOptions)
+        if (sourcingOptions == null || sourcingOptions.Count == 0)
         {
-            // Construir secuencia de paradas preliminar (primero Pickups en bodegas, luego Deliveries)
-            var candidates = new List<RouteStopCandidate>();
-            int seq = 1;
-
-            // Agrupar recogidas por bodega
-            var pickupsByWarehouse = opt.Lines
-                .SelectMany(l => l.Allocations.Select(a => new { Line = l, Allocation = a }))
-                .GroupBy(x => x.Allocation.WarehouseId);
-
-            foreach (var whGroup in pickupsByWarehouse)
+            var blockedId = Guid.NewGuid();
+            var blockedResult = new
             {
-                var wh = warehouses.GetValueOrDefault(whGroup.Key);
-                var whPos = wh?.Position != null ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X) : new GeoPoint(-0.2295m, -78.5243m);
-
-                decimal totalWeight = 0m;
-                decimal totalVol = 0m;
-                var pickupLoads = new List<StopLoadDto>();
-
-                var prodsInWh = whGroup.GroupBy(x => x.Line.ProductId);
-                foreach (var pGroup in prodsInWh)
-                {
-                    decimal pQty = pGroup.Sum(x => x.Allocation.Quantity);
-                    if (products.TryGetValue(pGroup.Key, out var prod))
-                    {
-                        totalWeight += pQty * prod.WeightPerBaseUnit;
-                        totalVol += pQty * prod.VolumePerBaseUnit;
-                        pickupLoads.Add(new StopLoadDto(prod.Id, prod.Sku, pQty, prod.BaseUnit));
-                    }
-                }
-
-                candidates.Add(new RouteStopCandidate(
-                    seq++,
-                    RouteStopKind.Pickup,
-                    null,
-                    whGroup.Key,
-                    wh?.Code ?? "WH",
-                    wh?.Name ?? "Bodega",
-                    whPos,
-                    totalWeight,
-                    totalVol,
-                    new TimeOnly(7, 0),
-                    new TimeOnly(19, 0),
-                    20,
-                    pickupLoads
-                ));
-            }
-
-            // Entregas por destino (#197: con la prioridad y fecha del pedido, y la ventana del punto)
-            var deliveryDrafts = new List<DeliveryStopDraft>();
-            var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId);
-            foreach (var destGroup in deliveriesByDest)
-            {
-                var firstLine = destGroup.First();
-                decimal totalWeight = 0m;
-                decimal totalVol = 0m;
-                var deliveryLoads = new List<StopLoadDto>();
-
-                foreach (var line in destGroup)
-                {
-                    if (products.TryGetValue(line.ProductId, out var prod))
-                    {
-                        totalWeight += line.TotalAllocated * prod.WeightPerBaseUnit;
-                        totalVol += line.TotalAllocated * prod.VolumePerBaseUnit;
-                        if (line.TotalAllocated > 0)
-                        {
-                            deliveryLoads.Add(new StopLoadDto(prod.Id, prod.Sku, line.TotalAllocated, prod.BaseUnit));
-                        }
-                    }
-                }
-
-                // Ventana y servicio del punto; una bodega destino o un punto sin datos conserva 08:00–17:00 y 15 min.
-                var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
-                var groupOrders = destGroup
-                    .Select(l => orders.GetValueOrDefault(l.OrderId))
-                    .Where(o => o is not null)
-                    .ToList();
-
-                deliveryDrafts.Add(new DeliveryStopDraft(
-                    new RouteStopCandidate(
-                        0,
-                        RouteStopKind.Delivery,
-                        !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                        firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                        firstLine.DestinationCode,
-                        firstLine.DestinationName,
-                        firstLine.DestinationPosition,
-                        -totalWeight,
-                        -totalVol,
-                        point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart,
-                        point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd,
-                        point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes,
-                        deliveryLoads
-                    ),
-                    DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority)),
-                    groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
-                ));
-            }
-
-            // Critical antes que High, Normal y Low; luego fecha requerida y vecino más cercano desde la última recogida.
-            var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
-            foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
-            {
-                candidates.Add(draft.Stop with { Sequence = seq++ });
-            }
-
-            // Evaluar secuencia con RouteEvaluator
-            var eval = await routeEvaluator.EvaluateSequenceAsync(candidates, null, plannedStartUtc, ct);
-
-            // Emparejar vehículos con VehicleMatcher
-            var vehicleMatches = await vehicleMatcher.MatchVehiclesAsync(candidates, plannedStartUtc, ct);
-
-            var sourcingLinesResult = opt.Lines.Select(l => new
-            {
-                orderId = l.OrderId,
-                orderNumber = l.OrderNumber,
-                destinationId = l.DestinationId,
-                isDestinationWarehouse = l.IsDestinationWarehouse,
-                destinationCode = l.DestinationCode,
-                destinationName = l.DestinationName,
-                destinationPosition = l.DestinationPosition,
-                productId = l.ProductId,
-                sku = l.Sku,
-                productName = l.ProductName,
-                requestedQuantity = l.RequestedQuantity,
-                plannedQuantity = l.TotalAllocated,
-                pendingQuantity = Math.Max(0m, l.RequestedQuantity - l.TotalAllocated),
-                allocations = l.Allocations,
-                totalAllocated = l.TotalAllocated,
-                fullySourced = l.FullySourced
-            });
-
-            optionsResult.Add(new
-            {
-                optionId = opt.OptionId,
-                title = opt.Title,
-                description = opt.Description,
-                isRecommended = opt.IsRecommended,
-                evaluation = eval,
-                stops = candidates,
-                sourcingLines = sourcingLinesResult,
-                vehicleMatches = vehicleMatches.Select(m => new
-                {
-                    vehicleId = m.Vehicle.Id,
-                    vehicleCode = m.Vehicle.Code,
-                    maxWeight = m.Vehicle.MaxWeight,
-                    maxVolume = m.Vehicle.MaxVolume,
-                    isMatch = m.IsMatch,
-                    discardReason = m.DiscardReason,
-                    weightUtilizationPct = m.WeightUtilizationPct,
-                    volumeUtilizationPct = m.VolumeUtilizationPct,
-                    estimatedCost = m.EstimatedTotalCost,
-                    distanceToFirstPickupKm = m.DistanceToFirstPickupKm
-                })
-            });
+                proposalId = blockedId,
+                revision = 1,
+                status = "Blocked",
+                requestId = req.RequestId,
+                message = "No se encontraron fuentes de abastecimiento disponibles para los pedidos solicitados.",
+                options = Array.Empty<object>()
+            };
+            return Ok(blockedResult);
         }
 
-        return Ok(new
+        // Seleccionar la propuesta canónica de abastecimiento (salida única, sin menú A/B)
+        var opt = sourcingOptions.FirstOrDefault(o => o.IsRecommended) ?? sourcingOptions.First();
+
+        var candidates = new List<RouteStopCandidate>();
+        int seq = 1;
+
+        // Agrupar recogidas por bodega
+        var pickupsByWarehouse = opt.Lines
+            .SelectMany(l => l.Allocations.Select(a => new { Line = l, Allocation = a }))
+            .GroupBy(x => x.Allocation.WarehouseId);
+
+        foreach (var whGroup in pickupsByWarehouse)
         {
-            options = optionsResult
-        });
+            var wh = warehouses.GetValueOrDefault(whGroup.Key);
+            var whPos = wh?.Position != null ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X) : new GeoPoint(-0.2295m, -78.5243m);
+
+            decimal totalWeight = 0m;
+            decimal totalVol = 0m;
+            var pickupLoads = new List<StopLoadDto>();
+
+            var prodsInWh = whGroup.GroupBy(x => x.Line.ProductId);
+            foreach (var pGroup in prodsInWh)
+            {
+                decimal pQty = pGroup.Sum(x => x.Allocation.Quantity);
+                if (products.TryGetValue(pGroup.Key, out var prod))
+                {
+                    totalWeight += pQty * prod.WeightPerBaseUnit;
+                    totalVol += pQty * prod.VolumePerBaseUnit;
+                    pickupLoads.Add(new StopLoadDto(prod.Id, prod.Sku, pQty, prod.BaseUnit));
+                }
+            }
+
+            candidates.Add(new RouteStopCandidate(
+                seq++,
+                RouteStopKind.Pickup,
+                null,
+                whGroup.Key,
+                wh?.Code ?? "WH",
+                wh?.Name ?? "Bodega",
+                whPos,
+                totalWeight,
+                totalVol,
+                new TimeOnly(7, 0),
+                new TimeOnly(19, 0),
+                20,
+                pickupLoads
+            ));
+        }
+
+        // Entregas por destino (#197 / #207: con la prioridad y fecha del pedido, y ventana del punto)
+        var deliveryDrafts = new List<DeliveryStopDraft>();
+        var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId);
+        foreach (var destGroup in deliveriesByDest)
+        {
+            var firstLine = destGroup.First();
+            decimal totalWeight = 0m;
+            decimal totalVol = 0m;
+            var deliveryLoads = new List<StopLoadDto>();
+
+            foreach (var line in destGroup)
+            {
+                if (products.TryGetValue(line.ProductId, out var prod))
+                {
+                    totalWeight += line.TotalAllocated * prod.WeightPerBaseUnit;
+                    totalVol += line.TotalAllocated * prod.VolumePerBaseUnit;
+                    if (line.TotalAllocated > 0)
+                    {
+                        deliveryLoads.Add(new StopLoadDto(prod.Id, prod.Sku, line.TotalAllocated, prod.BaseUnit));
+                    }
+                }
+            }
+
+            var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
+            var groupOrders = destGroup
+                .Select(l => orders.GetValueOrDefault(l.OrderId))
+                .Where(o => o is not null)
+                .ToList();
+
+            var winStart = point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart;
+            var winEnd = point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd;
+
+            // Integración #193: si se especifica hora límite para críticos, acotar ventana
+            var urgency = DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority));
+            if (!string.IsNullOrWhiteSpace(req.CriticalDeadlineLocal) &&
+                urgency == "Critical" &&
+                TimeOnly.TryParse(req.CriticalDeadlineLocal, out var deadline))
+            {
+                if (deadline < winEnd) winEnd = deadline;
+            }
+
+            deliveryDrafts.Add(new DeliveryStopDraft(
+                new RouteStopCandidate(
+                    0,
+                    RouteStopKind.Delivery,
+                    !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                    firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                    firstLine.DestinationCode,
+                    firstLine.DestinationName,
+                    firstLine.DestinationPosition,
+                    -totalWeight,
+                    -totalVol,
+                    winStart,
+                    winEnd,
+                    point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes,
+                    deliveryLoads
+                ),
+                urgency,
+                groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
+            ));
+        }
+
+        // Orden estricto por prioridad: Critical antes que High, Normal y Low
+        var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
+        foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
+        {
+            candidates.Add(draft.Stop with { Sequence = seq++ });
+        }
+
+        // Emparejar vehículos con evaluación completa de costo de viaje
+        var vehicleMatches = await vehicleMatcher.MatchVehiclesAsync(candidates, plannedStartUtc, ct);
+        var bestVehicleMatch = vehicleMatches.FirstOrDefault(m => m.IsMatch);
+
+        // Evaluar secuencia con el vehículo óptimo seleccionado
+        var eval = await routeEvaluator.EvaluateSequenceAsync(candidates, bestVehicleMatch?.Vehicle, plannedStartUtc, ct);
+
+        var sourcingLinesResult = opt.Lines.Select(l => new
+        {
+            orderId = l.OrderId,
+            orderNumber = l.OrderNumber,
+            destinationId = l.DestinationId,
+            isDestinationWarehouse = l.IsDestinationWarehouse,
+            destinationCode = l.DestinationCode,
+            destinationName = l.DestinationName,
+            destinationPosition = l.DestinationPosition,
+            productId = l.ProductId,
+            sku = l.Sku,
+            productName = l.ProductName,
+            requestedQuantity = l.RequestedQuantity,
+            plannedQuantity = l.TotalAllocated,
+            pendingQuantity = Math.Max(0m, l.RequestedQuantity - l.TotalAllocated),
+            allocations = l.Allocations,
+            totalAllocated = l.TotalAllocated,
+            fullySourced = l.FullySourced
+        }).ToList();
+
+        var pendingDemands = sourcingLinesResult
+            .Where(l => l.pendingQuantity > 0)
+            .Select(l => new
+            {
+                orderId = l.orderId,
+                orderNumber = l.orderNumber,
+                sku = l.sku,
+                pendingQuantity = l.pendingQuantity,
+                reason = bestVehicleMatch == null ? "sin_capacidad_de_flota" : "capacidad_parcial"
+            }).ToList();
+
+        string status;
+        if (bestVehicleMatch == null)
+        {
+            bool needsData = vehicleMatches.Any(m => m.DiscardReason != null && (m.DiscardReason.Contains("datos_faltantes") || m.DiscardReason.Contains("dimensiones_incompatibles")));
+            status = needsData ? "NeedsData" : "Blocked";
+        }
+        else if (!eval.IsValid)
+        {
+            status = "Blocked";
+        }
+        else if (pendingDemands.Count > 0)
+        {
+            status = "Partial";
+        }
+        else
+        {
+            status = "Feasible";
+        }
+
+        decimal vehicleCostKm = bestVehicleMatch?.Vehicle.CostPerKm ?? 0.45m;
+        var costBreakdown = LogisticsCostCalculator.ComputeBreakdown(
+            eval.TotalDistanceKm,
+            eval.TotalDurationMinutes,
+            vehicleCostKm,
+            6.0m,
+            tollsCost: 0m
+        );
+
+        var uncertainty = CostUncertaintyService.GetUncalibratedResult();
+        var proposalId = Guid.NewGuid();
+
+        var selectedVehicleObj = bestVehicleMatch != null ? new
+        {
+            id = bestVehicleMatch.Vehicle.Id,
+            code = bestVehicleMatch.Vehicle.Code,
+            vehicleId = bestVehicleMatch.Vehicle.Id,
+            vehicleCode = bestVehicleMatch.Vehicle.Code,
+            maxWeight = bestVehicleMatch.Vehicle.MaxWeight,
+            maxVolume = bestVehicleMatch.Vehicle.MaxVolume,
+            isMatch = bestVehicleMatch.IsMatch,
+            discardReason = bestVehicleMatch.DiscardReason,
+            weightUtilizationPct = bestVehicleMatch.WeightUtilizationPct,
+            volumeUtilizationPct = bestVehicleMatch.VolumeUtilizationPct,
+            costPerKm = vehicleCostKm,
+            estimatedCost = bestVehicleMatch.EstimatedTotalCost,
+            estimatedTotalCost = bestVehicleMatch.EstimatedTotalCost,
+            distanceToFirstPickupKm = bestVehicleMatch.DistanceToFirstPickupKm
+        } : null;
+
+        var singleOption = new
+        {
+            optionId = "1",
+            proposalId,
+            revision = 1,
+            status,
+            requestId = req.RequestId,
+            title = opt.Title,
+            description = opt.Description,
+            isRecommended = true,
+            totalCost = eval.TotalCost,
+            estimatedTotalCost = eval.TotalCost,
+            totalDistanceKm = eval.TotalDistanceKm,
+            totalDurationMinutes = eval.TotalDurationMinutes,
+            selectedVehicle = selectedVehicleObj,
+            chosenVehicle = selectedVehicleObj,
+            evaluation = eval,
+            costBreakdown,
+            uncertainty,
+            costUncertainty = uncertainty,
+            stops = candidates,
+            sourcingLines = sourcingLinesResult,
+            pendingDemands,
+            vehicleMatches = vehicleMatches.Select(m => new
+            {
+                vehicleId = m.Vehicle.Id,
+                vehicleCode = m.Vehicle.Code,
+                maxWeight = m.Vehicle.MaxWeight,
+                maxVolume = m.Vehicle.MaxVolume,
+                isMatch = m.IsMatch,
+                discardReason = m.DiscardReason,
+                weightUtilizationPct = m.WeightUtilizationPct,
+                volumeUtilizationPct = m.VolumeUtilizationPct,
+                estimatedCost = m.EstimatedTotalCost,
+                distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+            })
+        };
+
+        var responsePayload = new
+        {
+            proposalId,
+            revision = 1,
+            status,
+            requestId = req.RequestId,
+            proposal = singleOption,
+            selectedVehicle = selectedVehicleObj,
+            chosenVehicle = selectedVehicleObj,
+            evaluation = eval,
+            costBreakdown,
+            uncertainty,
+            costUncertainty = uncertainty,
+            stops = candidates,
+            sourcingLines = sourcingLinesResult,
+            pendingDemands,
+            vehicleMatches = singleOption.vehicleMatches,
+            options = new object[] { singleOption } // Exactamente una sola propuesta (cero alternativas A/B)
+        };
+
+        if (!string.IsNullOrWhiteSpace(req.RequestId))
+        {
+            ProposalCache.TryAdd(req.RequestId, responsePayload);
+        }
+
+        return Ok(responsePayload);
     }
 
     [HttpPost("evaluate")]
@@ -1046,6 +1174,32 @@ public sealed class RoutePlansController(
             return Conflict(new { message = $"El vehículo con ID '{req.VehicleId.Value}' no existe o no se encuentra activo." });
         }
 
+        // Idempotencia: si ya se confirmó esta propuesta, retornar el plan existente sin duplicar reservas
+        if (req.ProposalId.HasValue)
+        {
+            var propIdStr = req.ProposalId.Value.ToString();
+            var candidates = await db.RoutePlans
+                .Where(p => p.OrganizationId == DemoOrganization.Id && (p.Code == req.Code || p.VehicleId == vehicle.Id))
+                .OrderByDescending(p => p.Revision)
+                .ToListAsync(ct);
+
+            var existingByProposal = candidates.FirstOrDefault(p => p.InputJson != null && p.InputJson.Contains(propIdStr));
+            if (existingByProposal != null)
+            {
+                return Ok(new
+                {
+                    id = existingByProposal.Id,
+                    routePlanId = existingByProposal.Id,
+                    code = existingByProposal.Code,
+                    revision = existingByProposal.Revision,
+                    status = existingByProposal.Status,
+                    vehicleCode = vehicle.Code,
+                    proposalId = req.ProposalId.Value,
+                    message = "Propuesta ya confirmada previamente."
+                });
+            }
+        }
+
         var today = await clock.TodayAsync(ct);
         var now = DateTime.UtcNow;
         var startUtc = req.PlannedStartUtc ?? now;
@@ -1070,6 +1224,28 @@ public sealed class RoutePlansController(
             products = await db.Products
                 .Where(p => p.OrganizationId == DemoOrganization.Id && prodIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, ct);
+        }
+
+        // Validar invariante de orden de prioridad: no permitir que un pedido de menor urgencia anteceda a uno crítico
+        int maxPriorityRankSeen = -1;
+        foreach (var s in req.Stops.Where(st => st.Kind == RouteStopKind.Delivery))
+        {
+            var destOrders = orders.Where(o =>
+                (s.ServicePointId.HasValue && o.DestinationServicePointId == s.ServicePointId) ||
+                (s.LocationId.HasValue && o.DestinationLocationId == s.LocationId)).ToList();
+            if (destOrders.Count > 0)
+            {
+                var urgency = DeliveryStopSequencer.MostUrgent(destOrders.Select(o => o.Priority));
+                var rank = DeliveryStopSequencer.PriorityRank(urgency);
+                if (maxPriorityRankSeen != -1 && rank < maxPriorityRankSeen)
+                {
+                    return Conflict(new
+                    {
+                        message = "Infracción de orden de prioridad: no se permite entregar pedidos de menor prioridad antes que pedidos críticos o de mayor urgencia."
+                    });
+                }
+                if (rank > maxPriorityRankSeen) maxPriorityRankSeen = rank;
+            }
         }
 
         // Recalcular en el servidor peso y volumen a partir de las paradas o pedidos
@@ -1224,6 +1400,8 @@ public sealed class RoutePlansController(
             InputJson = JsonSerializer.Serialize(new
             {
                 orderBased = true,
+                proposalId = req.ProposalId,
+                proposalRevision = req.Revision ?? 1,
                 orderIds = req.OrderIds,
                 polyline = req.Polyline,
                 coordinates = eval.Coordinates.Count > 0 ? eval.Coordinates : req.Coordinates,
@@ -1317,6 +1495,7 @@ public sealed class RoutePlansController(
         {
             id = plan.Id,
             routePlanId = plan.Id,
+            proposalId = req.ProposalId,
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
@@ -1497,7 +1676,9 @@ public sealed record ReplanRequestInput(Guid IncidentId);
 
 public sealed record SuggestRoutesRequest(
     IReadOnlyList<Guid> OrderIds,
-    DateOnly? PlannedDate
+    DateOnly? PlannedDate = null,
+    string? RequestId = null,
+    string? CriticalDeadlineLocal = null
 );
 
 public sealed record EvaluateRouteRequest(
@@ -1519,7 +1700,9 @@ public sealed record ConfirmRoutePlanRequest(
     IReadOnlyList<RouteStopCandidate> Stops,
     string? Polyline,
     IReadOnlyList<double[]>? Coordinates,
-    IReadOnlyList<ConfirmLineDto>? Lines = null
+    IReadOnlyList<ConfirmLineDto>? Lines = null,
+    Guid? ProposalId = null,
+    int? Revision = null
 );
 
 public sealed record ConfirmLineDto(
