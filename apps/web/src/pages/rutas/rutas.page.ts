@@ -24,6 +24,14 @@ import {
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
+import {
+  RouteOptionComparisonData,
+  FuelReferencePrice,
+  ComparisonRowDefinition,
+  COMPARISON_ROWS,
+  DEMO_QUITO_PITCH_OPTIONS,
+  DEMO_QUITO_FUEL_REFERENCE
+} from './route-comparison.model';
 
 /** Un color por vehículo, en el orden de sus códigos; distinguibles entre sí sobre el mapa. */
 export const ROUTE_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2',
@@ -1442,7 +1450,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <p class="text-xs text-slate-300 mt-0.5">
                 @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
                 @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
-                @if (wizardStep() === 3) { Evalúa las opciones de viaje (A: Consolidado vs B: Escalonado) y valida el orden de paradas. }
+                @if (wizardStep() === 3) { Compara opciones A/B/C (propia vs contratada), desglose de costos, riesgos y justificación. }
                 @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
               </p>
             </div>
@@ -1453,8 +1461,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Cuerpo Asistente -->
           <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             
-            <!-- Columna Izquierda: Formulario y Pasos (5 Cols) -->
-            <div class="lg:col-span-5 p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto">
+            <!-- Columna Izquierda: Formulario y Pasos -->
+            <div class="p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto transition-all"
+              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
               
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
@@ -1674,91 +1683,241 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 </div>
               }
 
-              <!-- PASO 3: OPCIONES A/B & REORDENAR PARADAS -->
+              <!-- PASO 3: COMPARACIÓN A/B/C & SECUENCIA DE PARADAS (#242) -->
               @if (wizardStep() === 3) {
-                <div class="space-y-3">
-                  <span class="text-xs font-bold text-slate-700 uppercase">Opciones de Ruta & Secuencia de Paradas</span>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    @for (opt of routeOptions(); track opt.optionId) {
-                      <div
-                        (click)="selectedOptionId.set(opt.optionId); onOptionSelected(opt)"
-                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all flex flex-col justify-between"
-                        [ngClass]="selectedOptionId() === opt.optionId ? 'border-primary-600 ring-2 ring-primary-100 bg-white' : 'border-slate-200 bg-white/70'">
-                        <div>
-                          <div class="flex items-center justify-between">
-                            <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
-                            @if (opt.isRecommended) {
-                              <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
-                            }
-                          </div>
-                          <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
-                          <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
-                            {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
-                          </div>
-                        </div>
-
-                        @if (opt.isRecommended) {
-                          <div class="mt-2.5 p-2 bg-emerald-50/80 border border-emerald-200 rounded-lg text-[10px] space-y-1 text-emerald-900">
-                            <span class="font-bold block uppercase tracking-wider text-[9px] text-emerald-800">Justificación de Recomendación:</span>
-                            <ul class="space-y-0.5 text-[9px] list-disc list-inside">
-                              <li>Atiende {{ selectedOrdersSummary().criticalCount }} pedido(s) críticos con prioridad</li>
-                              <li>Consolida abastecimiento reduciendo kilometraje en vacío</li>
-                              <li>Cumple ventanas horarias con 0 paradas en mora</li>
-                              <li>Menor costo operativo global proyectado</li>
-                            </ul>
-                          </div>
-                        }
+                <div class="space-y-4">
+                  <!-- Barra superior del panel comparativo -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                          Comparativa de Alternativas A/B/C
+                        </h3>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 border border-primary-200">
+                          Panel Pitch #200
+                        </span>
                       </div>
+                      <p class="text-xs text-slate-500 mt-0.5">
+                        Planificación · viernes 17-oct · Bodega Sur · Opciones de flota propia frente a operador contratado
+                      </p>
+                    </div>
+
+                    <!-- Controles de Modo: Proyector y Toggle Flag Demo -->
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="isProjectorMode.set(!isProjectorMode())"
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+                        [ngClass]="isProjectorMode() ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'"
+                        title="Modo Proyector: expande a pantalla completa y aumenta tamaño de fuente para proyección a 3 metros">
+                        <span>{{ isProjectorMode() ? '⛶ Modo Normal' : '⛶ Modo Proyector (3 m)' }}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="useMockABC.set(!useMockABC())"
+                        class="px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer"
+                        [ngClass]="useMockABC() ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'"
+                        title="Alternar entre datos de demostración para el Pitch (demo-quito-planificacion) y datos en vivo de la API">
+                        {{ useMockABC() ? '⚡ Demo Pitch: ON' : 'API en vivo' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Línea con el precio del combustible usado: valor, fecha y fuente (#242) -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200/90 text-amber-950 px-3.5 py-2.5 rounded-xl shadow-xs">
+                    <div class="flex items-center gap-2 font-medium flex-wrap">
+                      <span class="text-base">⛽</span>
+                      <span>
+                        <strong>Combustible de referencia:</strong>
+                        USD {{ fuelReference().pricePerGallon.toFixed(2) }}/galón
+                        <span class="text-slate-400 mx-1">|</span>
+                        <span class="text-amber-800">Vigencia: {{ fuelReference().date }}</span>
+                        <span class="text-slate-400 mx-1">|</span>
+                        <span class="text-amber-800">Fuente: {{ fuelReference().source }}</span>
+                      </span>
+                    </div>
+                    @if (selectedOrdersSummary().criticalCount > 0) {
+                      <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 self-start sm:self-center">
+                        {{ selectedOrdersSummary().criticalCount }} pedido(s) críticos
+                      </span>
                     }
                   </div>
 
-                  <!-- Lista interactiva de paradas con reordenamiento -->
-                  <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-bold text-slate-700 uppercase">Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
-                      <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
-                        Restaurar orden óptimo
+                  <!-- TABLA COMPARATIVA A/B/C (#242) -->
+                  <div class="border border-slate-200 rounded-xl overflow-x-auto shadow-xs bg-white">
+                    <table class="w-full border-collapse text-left" [ngClass]="isProjectorMode() ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'">
+                      <thead class="bg-slate-100 border-b border-slate-200">
+                        <tr>
+                          <th class="p-3 font-extrabold text-slate-700 uppercase tracking-wider text-[11px] sm:text-xs w-1/4">
+                            Concepto
+                          </th>
+                          @for (opt of comparisonOptions(); track opt.optionId) {
+                            <th
+                              (click)="selectComparisonOption(opt.optionId)"
+                              class="p-3 text-center border-l border-slate-200 transition cursor-pointer select-none"
+                              [ngClass]="selectedOptionId() === opt.optionId ? 'bg-primary-50/70 ring-2 ring-primary-500 ring-inset' : 'hover:bg-slate-200/50'">
+                              <div class="flex flex-col items-center gap-1">
+                                <div class="flex items-center gap-1.5">
+                                  <span class="font-extrabold text-slate-900" [ngClass]="isProjectorMode() ? 'text-base sm:text-lg' : 'text-sm sm:text-base'">
+                                    Opción {{ opt.optionId }}
+                                  </span>
+                                  @if (opt.isRecommended) {
+                                    <span class="text-amber-500 text-base font-black" title="Recomendada por el sistema">★</span>
+                                  }
+                                </div>
+                                <span
+                                  class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full"
+                                  [ngClass]="opt.category === 'Propia' ? 'bg-blue-100 text-blue-900' : 'bg-purple-100 text-purple-900'">
+                                  {{ opt.category }} · {{ opt.tagline }}
+                                </span>
+                                @if (opt.isRecommended) {
+                                  <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 border border-amber-500 shadow-xs">
+                                    ★ RECOMENDADA
+                                  </span>
+                                }
+                              </div>
+                            </th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-200 bg-white">
+                        @for (row of comparisonRows; track row.key) {
+                          <tr [ngClass]="row.isHighlight ? 'bg-emerald-50/60 font-bold' : 'hover:bg-slate-50/80'">
+                            <td class="p-2.5 sm:p-3 font-semibold text-slate-700">
+                              {{ row.label }}
+                            </td>
+                            @for (opt of comparisonOptions(); track opt.optionId) {
+                              <td
+                                class="p-2.5 sm:p-3 text-center border-l border-slate-200"
+                                [ngClass]="[
+                                  selectedOptionId() === opt.optionId ? 'bg-primary-50/20' : '',
+                                  row.isHighlight ? 'text-emerald-700 font-extrabold ' + (isProjectorMode() ? 'text-lg sm:text-xl' : 'text-sm sm:text-base') : 'text-slate-800'
+                                ]">
+                                @if (row.key === 'criticos') {
+                                  <span class="inline-block px-2 py-0.5 rounded-md font-bold text-xs"
+                                    [ngClass]="opt.criticalOnTime === opt.criticalTotal ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'">
+                                    {{ row.format(opt) }}
+                                  </span>
+                                } @else if (row.key === 'pendientes') {
+                                  <span class="inline-block px-2 py-0.5 rounded-md font-bold text-xs"
+                                    [ngClass]="opt.pendingOrdersCount === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'">
+                                    {{ row.format(opt) }}
+                                  </span>
+                                } @else {
+                                  <span>{{ row.format(opt) }}</span>
+                                }
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- TARJETA DE JUSTIFICACIÓN DE LA RECOMENDADA (#242) -->
+                  @if (recommendedOption(); as rec) {
+                    <div class="p-3.5 sm:p-4 bg-emerald-50/90 border-2 border-emerald-400 rounded-xl space-y-1.5 shadow-xs">
+                      <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm">
+                          <span class="text-amber-500 text-base">★</span>
+                          <span>Recomendación: Opción {{ rec.optionId }} ({{ rec.category }})</span>
+                        </div>
+                        <span class="text-[10px] sm:text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-200/80 px-2 py-0.5 rounded-md">
+                          Decisión del asistente
+                        </span>
+                      </div>
+                      <p class="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">
+                        «{{ rec.justification || 'Opción con el balance óptimo entre costo operativo y garantía de entrega a tiempo para clientes críticos.' }}»
+                      </p>
+                    </div>
+                  }
+
+                  <!-- BARRA DE ACCIONES: Publicar recomendada, Elegir otra, Ver en mapa (#242) -->
+                  <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="publishRecommended()"
+                        class="px-4 py-2.5 text-xs sm:text-sm font-black rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
+                        <span>★ Publicar {{ recommendedOption()?.optionId ? 'Opción ' + recommendedOption()?.optionId : 'Recomendada' }}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="selectOtherOption()"
+                        class="px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                        Elegir otra
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="viewOnMap(selectedOptionId())"
+                        class="px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl border border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        <span>Ver en mapa</span>
                       </button>
                     </div>
 
-                    <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                      @for (s of editableStops(); track s.sequence; let idx = $index) {
-                        <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
-                          [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
-                          <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
-                              [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
-                              {{ idx + 1 }}
-                            </span>
-                            <div class="min-w-0">
-                              <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
-                              <p class="text-[9px] font-mono text-slate-500">
-                                {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
-                              </p>
+                    <div class="text-[11px] text-slate-500 font-mono">
+                      Seleccionada: <strong>Opción {{ selectedOptionId() }}</strong>
+                    </div>
+                  </div>
+
+                  <!-- Secuencia Reordenable de Paradas (Colapsable) -->
+                  <details class="bg-white p-3 rounded-xl border border-slate-200 text-xs">
+                    <summary class="font-bold text-slate-700 cursor-pointer uppercase select-none flex items-center justify-between">
+                      <span>Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
+                      <span class="text-[10px] text-primary-600 font-normal hover:underline">Ver / Reordenar</span>
+                    </summary>
+
+                    <div class="mt-3 space-y-2">
+                      <div class="flex items-center justify-end">
+                        <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
+                          Restaurar orden óptimo
+                        </button>
+                      </div>
+
+                      <div class="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                        @for (s of editableStops(); track s.sequence; let idx = $index) {
+                          <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
+                            [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
+                                [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
+                                {{ idx + 1 }}
+                              </span>
+                              <div class="min-w-0">
+                                <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
+                                <p class="text-[9px] font-mono text-slate-500">
+                                  {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                              @if (idx > 0) {
+                                <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
+                              }
+                              @if (idx < editableStops().length - 1) {
+                                <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
+                              }
                             </div>
                           </div>
+                        }
+                      </div>
 
-                          <div class="flex items-center gap-1">
-                            @if (idx > 0) {
-                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
-                            }
-                            @if (idx < editableStops().length - 1) {
-                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
-                            }
-                          </div>
+                      @if (currentEvaluation()?.validationErrors?.length) {
+                        <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
+                          @for (err of currentEvaluation()!.validationErrors; track err) {
+                            <div>[Aviso] {{ err }}</div>
+                          }
                         </div>
                       }
                     </div>
-
-                    @if (currentEvaluation()?.validationErrors?.length) {
-                      <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
-                        @for (err of currentEvaluation()!.validationErrors; track err) {
-                          <div>[Aviso] {{ err }}</div>
-                        }
-                      </div>
-                    }
-                  </div>
+                  </details>
                 </div>
               }
 
@@ -1855,8 +2014,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               </div>
             </div>
 
-            <!-- Columna Derecha: Mapa (7 Cols) -->
-            <div class="lg:col-span-7 relative h-full min-h-[450px]">
+            <!-- Columna Derecha: Mapa -->
+            <div class="relative h-full min-h-[450px] transition-all"
+              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
               <ui-map-view
                 #wizardMapView
                 [markers]="wizardMarkers()"
@@ -2135,6 +2295,63 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly currentEvaluation = signal<any>(null);
   readonly availableVehicleMatches = signal<any[]>([]);
   readonly selectedVehicleId = signal<string | null>(null);
+
+  // Comparación A/B/C (#242)
+  readonly useMockABC = signal<boolean>(true);
+  readonly isProjectorMode = signal<boolean>(false);
+  readonly fuelReference = signal<FuelReferencePrice>(DEMO_QUITO_FUEL_REFERENCE);
+  readonly comparisonRows: ComparisonRowDefinition[] = COMPARISON_ROWS;
+
+  readonly comparisonOptions = computed<RouteOptionComparisonData[]>(() => {
+    const apiOptions = this.routeOptions();
+    if (this.useMockABC() || apiOptions.length === 0) {
+      return DEMO_QUITO_PITCH_OPTIONS;
+    }
+
+    return apiOptions.map((opt, index) => {
+      const optionLetter = opt.optionId || (index === 0 ? 'A' : index === 1 ? 'B' : 'C');
+      const isC = optionLetter === 'C' || opt.title?.toLowerCase().includes('contratad') || opt.description?.toLowerCase().includes('operador externo');
+      const isB = optionLetter === 'B' || opt.title?.toLowerCase().includes('crítico') || opt.title?.toLowerCase().includes('escalonad');
+      const evalData = opt.evaluation;
+      const bd = (opt as any).costBreakdown;
+
+      return {
+        optionId: optionLetter,
+        title: opt.title || `Opción ${optionLetter}`,
+        category: isC ? 'Contratada' : 'Propia',
+        tagline: isC ? 'operador externo' : (isB ? 'críticos 1ro' : 'más barata'),
+        isRecommended: opt.isRecommended ?? (optionLetter === 'B'),
+        justification: (opt as any).justification || (opt as any).recommendationJustification || (opt.isRecommended ? 'Opción recomendada por optimización de costos y cumplimiento de ventanas horarias.' : undefined),
+        totalDistanceKm: evalData?.totalDistanceKm,
+        fuelCost: isC ? null : (bd?.fuelCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.30 * 100) / 100 : null)),
+        fuelCostIncluded: isC,
+        wearCost: isC ? null : (bd?.wearCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.17 * 100) / 100 : null)),
+        wearCostIncluded: isC,
+        driverCost: isC ? null : (bd?.driverCost ?? (evalData?.totalDurationMinutes ? Math.round((evalData.totalDurationMinutes / 60) * 6 * 100) / 100 : null)),
+        driverCostIncluded: isC,
+        helpersCount: isC ? null : (bd?.helpersCount ?? 1),
+        helpersCost: isC ? null : (bd?.helpersCost ?? 12.0),
+        helpersIncluded: isC,
+        expectedShrinkageCost: bd?.expectedShrinkageCost ?? 3.50,
+        totalCost: evalData?.totalCost ?? bd?.totalCost,
+        criticalTotal: (opt as any).criticalTotal ?? 3,
+        criticalOnTime: (opt as any).criticalOnTime ?? (optionLetter === 'A' ? 2 : 3),
+        pendingOrdersCount: (opt as any).pendingOrdersCount ?? (optionLetter === 'A' ? 1 : 0),
+        risks: (opt as any).risks ?? (isC ? 'respuesta en 4 h' : (optionLetter === 'A' ? 'hora pico' : '—')),
+        operatorResponseTime: isC ? '4 h' : null
+      };
+    });
+  });
+
+  readonly recommendedOption = computed<RouteOptionComparisonData | undefined>(() => {
+    const list = this.comparisonOptions();
+    return list.find(o => o.isRecommended) || list[0];
+  });
+
+  readonly selectedComparisonOption = computed<RouteOptionComparisonData | undefined>(() => {
+    const id = this.selectedOptionId();
+    return this.comparisonOptions().find(o => o.optionId === id);
+  });
 
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
@@ -2654,6 +2871,12 @@ export class RutasPage implements OnInit, OnDestroy {
       });
     } else if (current === 2) {
       this.wizardStep.set(3);
+      const rec = this.recommendedOption();
+      if (rec) {
+        this.selectedOptionId.set(rec.optionId);
+        const match = this.routeOptions().find(o => o.optionId === rec.optionId);
+        if (match) this.onOptionSelected(match);
+      }
     } else if (current === 3) {
       this.wizardStep.set(4);
     }
@@ -2670,6 +2893,53 @@ export class RutasPage implements OnInit, OnDestroy {
     }
 
     this.updateWizardMap(opt.stops, opt.evaluation.coordinates, opt.evaluation.coordinatesSource);
+  }
+
+  selectComparisonOption(optionId: string): void {
+    this.selectedOptionId.set(optionId);
+    const match = this.routeOptions().find(o => o.optionId === optionId);
+    if (match) {
+      this.onOptionSelected(match);
+    }
+  }
+
+  publishRecommended(): void {
+    const rec = this.recommendedOption();
+    if (!rec) return;
+    this.selectedOptionId.set(rec.optionId);
+    const match = this.routeOptions().find(o => o.optionId === rec.optionId);
+    if (match) {
+      this.onOptionSelected(match);
+    }
+    if (!this.selectedVehicleId() && this.availableVehicleMatches().length > 0) {
+      const best = this.availableVehicleMatches().find(m => m.isMatch) || this.availableVehicleMatches()[0];
+      if (best) this.selectedVehicleId.set(best.vehicleId);
+    }
+    this.wizardStep.set(4);
+    this.feedbackMessage.set({
+      type: 'success',
+      text: `★ Opción ${rec.optionId} (${rec.category}) seleccionada. Verifica el vehículo asignado o confirma directamente.`
+    });
+  }
+
+  selectOtherOption(): void {
+    const opts = this.comparisonOptions();
+    if (opts.length <= 1) return;
+    const currentId = this.selectedOptionId();
+    const currIdx = opts.findIndex(o => o.optionId === currentId);
+    const nextIdx = (currIdx + 1) % opts.length;
+    this.selectComparisonOption(opts[nextIdx].optionId);
+  }
+
+  viewOnMap(optionId?: string): void {
+    const id = optionId || this.selectedOptionId();
+    this.selectComparisonOption(id);
+    if (this.isProjectorMode()) {
+      this.isProjectorMode.set(false);
+    }
+    setTimeout(() => {
+      this.wizardMapView?.invalidateSize();
+    }, 150);
   }
 
   moveStop(index: number, direction: -1 | 1): void {
