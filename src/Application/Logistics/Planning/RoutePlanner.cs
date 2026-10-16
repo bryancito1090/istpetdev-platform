@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
@@ -21,6 +22,7 @@ public sealed class RoutePlanner(
     public async Task<PlanResult> PlanAsync(PlanRequest request, CancellationToken ct = default)
     {
         var today = request.Date ?? await clock.TodayAsync(ct);
+        var criticalDeadline = ParseCriticalDeadline(request.CriticalDeadlineLocal);
         var workdayStartUtc = await clock.WorkdayStartUtcAsync(ct);
 
         // 1. Calcular riesgos
@@ -126,6 +128,9 @@ public sealed class RoutePlanner(
             var stopLoad = new StopLoad(alloc.ProductId, alloc.Sku, alloc.AllocatedQuantity, product?.BaseUnit ?? "U");
             var windowStart = sp.WindowStartLocal ?? TimeOnly.Parse(_options.DefaultWindowStart);
             var windowEnd = sp.WindowEndLocal ?? TimeOnly.Parse(_options.DefaultWindowEnd);
+            // Hora límite para críticos (#193): RouteFeasibility rechaza con time_window si no se llega a tiempo.
+            bool isCritical = level == RiskLevel.Critico || sp.Criticality == "alta";
+            windowEnd = ApplyCriticalDeadline(windowStart, windowEnd, isCritical, criticalDeadline);
             var serviceMin = sp.ServiceMinutes ?? _options.DefaultServiceMinutes;
 
             candidates.Add(new StopCandidate(
@@ -524,6 +529,28 @@ public sealed class RoutePlanner(
         }
 
         return bestVehicleCode != null;
+    }
+
+    /// <summary>Convierte "HH:mm" (o "HH:mm:ss") en hora local; null o vacío = sin hora límite.</summary>
+    public static TimeOnly? ParseCriticalDeadline(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (TimeOnly.TryParseExact(value.Trim(), new[] { "HH:mm", "HH:mm:ss" },
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var deadline))
+            return deadline;
+        throw new ArgumentException("criticalDeadlineLocal debe tener formato HH:mm (p. ej. \"11:00\").",
+            nameof(PlanRequest.CriticalDeadlineLocal));
+    }
+
+    /// <summary>
+    /// Fin de ventana de una parada: para críticos es el mínimo entre la ventana del punto y la hora límite.
+    /// Si la ventana del punto empieza después de la hora límite, se respeta la del punto.
+    /// </summary>
+    public static TimeOnly ApplyCriticalDeadline(TimeOnly windowStart, TimeOnly windowEnd, bool isCritical, TimeOnly? deadline)
+    {
+        if (!isCritical || deadline is not { } limit) return windowEnd;
+        if (windowStart > limit) return windowEnd;
+        return windowEnd < limit ? windowEnd : limit;
     }
 
     private string DetermineFailureReason(

@@ -525,7 +525,16 @@ public sealed class RoutePlansController(
     public async Task<IActionResult> CreatePlan([FromBody] PlanRequest? request = null, CancellationToken ct = default)
     {
         var req = request ?? new PlanRequest(null, null, true);
-        var result = await planner.PlanAsync(req, ct);
+        PlanResult result;
+        try
+        {
+            result = await planner.PlanAsync(req, ct);
+        }
+        catch (ArgumentException ex) when (ex.ParamName == nameof(PlanRequest.CriticalDeadlineLocal))
+        {
+            // Hora límite mal formada (#193): error del cliente, no del servidor.
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "invalid_critical_deadline", detail: ex.Message);
+        }
 
         var planDate = req.Date ?? await clock.TodayAsync(ct);
         var agentRunId = await GetAgentRunIdAsync("Watch", ct);
