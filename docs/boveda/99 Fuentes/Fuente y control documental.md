@@ -629,7 +629,7 @@ Verificación documental: **90 notas Markdown**, **959 enlaces internos resuelto
 
 ## 16-oct-2026 — Registro colaborativo de notas del evento
 
-Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de la ficha personal de Bryan (eliminada después por su instrucción expresa), ficha de preparación existente. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
+Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de la entonces existente ficha personal de Bryan, eliminada posteriormente por su instrucción expresa. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
 
 Verificación documental: **92 notas Markdown**, **980 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
 
@@ -647,6 +647,12 @@ Se integraron los apuntes de Joseph publicados simultáneamente en el PR #181, c
 
 Verificación documental tras la integración: **98 notas Markdown**, **1034 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes. Los nueve enlaces Markdown nuevos a las fuentes resuelven y `git diff --check` no reporta errores.
 
+## 16-oct-2026 — Agenda general oficial y matriz de mentorías (issue #188)
+
+Fuente: documento oficial de la organización del Hackathon Expo Clean Ecuador 2026 distribuido a los equipos participantes, registrado en [[2026-10-16-1126-bb-agenda-general-y-mentorias]]. Se incorpora la Agenda General completa para las jornadas de viernes 16 y sábado 17 de octubre, y la matriz oficial de mentorías técnicas para el Reto 1 (Optimización y trazabilidad logística del abastecimiento — 14 equipos).
+
+[[Cronograma oficial]], [[Registro de mentorias]], [[Consultas para la organizacion]] y [[Hechos canonicos]] incorporan las actualizaciones: confirmación de IstpetDev en Reto 1 asignado al mentor Mauro Zurita (16:15–17:00 en supply chain y trazabilidad); resolución de la contradicción sobre cortes de entrega (checkpoint de avances el viernes 16 a las 18:30–19:00 y entrega de hitos el sábado 17 de 16:00 a 16:15 con Mónica Sevilla y William Chamorro); e identificación de conferencias magistrales programadas. No altera contratos, bases de datos ni software.
+
 
 ## 16-oct-2026 — Transcripción completa y hallazgos del Reto 1 (issue #189)
 
@@ -656,4 +662,4 @@ Fuente: revisión solicitada por Bryan al reiterar la charla y pedir eliminar su
 
 Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inventario/rutas. Por instrucción expresa de Bryan se elimina su ficha personal de NotasEvento y se retiran las referencias activas; la charla y sus fuentes permanecen. Se conservan los registros históricos de su alta y limpieza, con referencias en texto. No cambia software, contrato, baseline, umbral ni estado de implementación; no se despliega.
 
-Verificación documental: pendiente sobre esta revisión.
+Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
