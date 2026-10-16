@@ -100,7 +100,7 @@ public sealed class WorkflowSecretsTests
     {
         var directory = Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../../automation/n8n/templates"));
         Assert.Equal(
-            ["error-agente.template.json", "incidente.template.json", "vigia.template.json"],
+            ["error-agente.template.json", "incidente.template.json", "revision-dataset.template.json", "vigia.template.json"],
             Directory.GetFiles(directory, "*.json").Select(file => Path.GetFileName(file)!).Order().ToArray());
 
         var violations = new List<string>();
