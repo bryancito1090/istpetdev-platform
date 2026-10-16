@@ -59,7 +59,10 @@ elif args[0] == 'cp':
     workflows = [json.loads(path.read_text()) for path in Path(args[1]).glob('*.json')]
     error = next(w for w in workflows if w['name'] == 'IstpetDev Agent - error')
     assert error['id'] == server_id
-    assert all(w['settings']['errorWorkflow'] == server_id for w in workflows if w != error)
+    linked = [w for w in workflows if w != error and 'errorWorkflow' in w.get('settings', {})]
+    assert len(linked) == 2
+    assert all(w['settings']['errorWorkflow'] == server_id for w in linked)
+    assert 'errorWorkflow' not in next(w for w in workflows if w['name'].startswith('IstpetDev Dataset'))['settings']
     Path(os.environ['IMPORT_CHECK_FILE']).write_text(json.dumps({'linked': len(workflows)}))
 elif 'publish:workflow' in args:
     with Path(os.environ['PUBLISHED_ID_FILE']).open('a') as output:
@@ -95,7 +98,7 @@ elif 'import:workflow' in args and os.environ['FAIL_IMPORT'] == '1':
                              "PUBLISHED_ID_FILE": str(published), "FAIL_IMPORT": "1" if fail_import else "0"},
                     )
                     self.assertEqual(42 if fail_import else 0, result.returncode, result.stderr)
-                    self.assertEqual({"linked": 3}, json.loads(check.read_text()))
+                    self.assertEqual({"linked": 4}, json.loads(check.read_text()))
                     self.assertEqual(not bool(existing_id), generated.exists())
                     if fail_import:
                         self.assertIn("forced workflow import failure", result.stderr)
