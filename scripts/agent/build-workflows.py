@@ -11,10 +11,10 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/agente-logistico-v1.md"
+PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/agente-logistico-v2.md"
 TEMPLATES_DIR = REPO_ROOT / "automation/n8n/templates"
 WORKFLOWS_DIR = REPO_ROOT / "automation/n8n/workflows"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 N8N_VERSION = "2.39.5"
 AGENT_WORKFLOWS = ("vigia", "incidente")
 REQUIRED_WORKFLOWS = (*AGENT_WORKFLOWS, "error-agente")

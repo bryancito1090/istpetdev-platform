@@ -24,6 +24,9 @@ ALLOWED_TOOL_ENDPOINTS = (
     ("GET", re.compile(r"^/api/v1/route-plans/[^/]+$")),
     ("GET", re.compile(r"^/api/v1/incidents/[^/]+$")),
     ("POST", re.compile(r"^/api/v1/route-plans/[^/]+/replan$")),
+    ("GET", re.compile(r"^/api/v1/logistics/stock$")),
+    ("POST", re.compile(r"^/api/v1/logistics/sourcing$")),
+    ("GET", re.compile(r"^/api/v1/logistics/vehicles/available$")),
 )
 
 
@@ -280,7 +283,7 @@ def write_report(args, runs, injection_checks, metrics, failures):
 
 
 def builder_prompt_version():
-    return "v1"
+    return "v2"
 
 
 def main():
