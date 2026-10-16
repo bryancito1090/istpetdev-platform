@@ -522,7 +522,7 @@ public sealed class LogisticsQueriesTests(PostgisContainer postgres) : IClassFix
         Assert.Equal(HttpStatusCode.OK, suggestResp.StatusCode);
         var suggestJson = await suggestResp.Content.ReadFromJsonAsync<JsonElement>();
         var suggestOpts = suggestJson.GetProperty("options").EnumerateArray().ToList();
-        Assert.Equal(2, suggestOpts.Count);
+        Assert.Single(suggestOpts);
         var suggestLines = suggestOpts[0].GetProperty("sourcingLines").EnumerateArray().ToList();
         Assert.Equal(80m, suggestLines[0].GetProperty("totalAllocated").GetDecimal());
         Assert.Equal(55m, suggestLines[1].GetProperty("totalAllocated").GetDecimal());

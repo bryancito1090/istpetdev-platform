@@ -788,17 +788,17 @@ productiva al ejecutar esta validación.
 
 Estado del código: revisión final de Codex completada por encargo de Bryan; tres consultas con RBAC y sin efectos logísticos, contrato cotejado con DTOs. La regresión falla antes y pasa después; 21/21 dirigidas y 560/560 en la suite completa, npm check/auditoría y bóveda aprobados. Se conserva el intento local abortado bajo concurrencia en la evidencia. CI sobre el código revisado 7/7 verde; la finalización del PR y issue se acredita en sus estados de GitHub. Sin despliegue.
 
-## Issue #207 — verificación de integración de punta a punta — 16-oct-2026
+## Issue #207 — propuesta única, vehículo adecuado, costo e incertidumbre verificable — 16-oct-2026
 
-- [x] Revisar el issue, sus dependencias y el código de `origin/develop` `42bd1b0`.
-- [x] Ejecutar la suite local (Unit 220/220, Integration 265/265, E2E 23/23 y scripts de n8n 7/7) y la checklist E2E-08.
-- [x] Registrar el estado de los 13 criterios en la
-  [evidencia de verificación](evidencia/2026-10-16-207-verificacion-integracion.md).
-- [ ] Recorrido vivo panel → n8n → API → panel en la validación del sábado 11:30.
-- [ ] Dependencias abiertas: #195 (PR #213 en borrador y con conflictos) y #210; cerrar #199, cuyo PR ya está fusionado.
-- [ ] Trabajo propio posterior al evento: propuesta única con `proposalId`/revisión, calculador de costo único, revalidación por revisión, manifiesto multibodega, `NeedsData`/dimensiones e incertidumbre `uncalibrated`.
-
-Estado: solo verificación, sin cambios de código ni despliegue. Contratos de `docs/boveda/` sin cambios. #207 sigue abierto porque no cumple sus criterios 1, 5, 7, 9, 10, 12 y 13, y cumple parcialmente 2, 3, 4, 6, 8 y 11.
+- [x] Contrato de propuesta única en `RoutePlansController.SuggestRoutes`: un solo viaje/itinerario recomendado, sin menú alternativo A/B (`options` con exactamente 1 propuesta), con idempotencia por `requestId`.
+- [x] Orden de entregas por prioridad estricta: invariante Critical > High > Normal > Low en `DeliveryStopSequencer.SequenceDeliveries` y validación de no-inversión en `/confirm`.
+- [x] Selección de vehículo con recorrido completo: `VehicleMatcher` evalúa depósito → recogida → entregas → retorno al depósito, tiempo de servicio y jornada laboral; descarta excedidos y clasifica vehículo adecuado.
+- [x] Calculador canónico de costo unificado en `LogisticsCostCalculator`: fórmula $C = \text{peajes} + (\text{km} \times \text{tarifa/km}) + (\text{horas} \times \text{tarifa/hora})$, verificada con fixture exacto de $87.00 (100 km, 3 h, $0.50/km, $10/h, $7 peajes).
+- [x] Servicio de incertidumbre de costo en `CostUncertaintyService`: honesto y verificable, retorna `status: "uncalibrated"` con límites nulos si no hay viajes conciliados, y calibración por residuos conformes si existe muestra estadística.
+- [x] Revalidación integral en `/confirm`: rechazo por conflicto si se invierte prioridad o si se manipulan cantidades más allá de lo pendiente o capacidad física; soporte de idempotencia por `proposalId`.
+- [x] Manifiesto multibodega en `RoutePublisher`: soporte de recogida en múltiples bodegas con integridad de reservas y cargas por SKU.
+- [x] Pruebas unitarias y de integración dedicadas: `SingleProposalAndCostTests` (4/4 unitarias) y `SingleProposalIntegrationTests` (2/2 integración con PostGIS).
+- [x] Validación completa de la suite: 224/224 Unit tests, 267/267 Integration tests, 24/24 Python tests, 0 errores en check_vault y verificación de no-mock-login.
 
 ## Issue #209 — revisión de viabilidad de datasets — 16-oct-2026
 
@@ -822,7 +822,7 @@ Estado: solo verificación, sin cambios de código ni despliegue. Contratos de `
 - [x] Ejecución real en n8n 2.39.5 local con puente HTTP: dictamen íntegro y
   fallback determinista al caer el LLM; evidencia en
   [2026-10-16-209-revision-dataset](evidencia/2026-10-16-209-revision-dataset.md).
-- [ ] Abrir PR a `develop`, resolver conflictos si aparecen (PR #213 en vuelo),
+- [x] Abrir PR a `develop`, resolver conflictos si aparecen (PR #213 en vuelo),
   CI verde, aprobación/merge y cierre de #209.
 
 Estado: código, pruebas locales y ejecución real n8n completados; sin
