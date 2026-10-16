@@ -156,6 +156,16 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
   },
   deliveries: [
     {
+      deliveryId: 'pk-wh-norte-01',
+      routePlanId: 'rp-quito-sur-001',
+      pointCode: 'BOD-NORTE',
+      pointName: 'Bodega Distribución Norte (Quito)',
+      dueAtUtc: new Date(Date.now() + 1 * 3600 * 1000).toISOString(),
+      status: 'Dispatched',
+      evidenceStatus: 'Pending',
+      packagesCount: 1
+    },
+    {
       deliveryId: 'del-hosp-001',
       routePlanId: 'rp-quito-sur-001',
       pointCode: 'PTO-HOSP-01',
@@ -187,6 +197,24 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
     }
   ],
   handlingUnits: {
+    'hu-pickup-001': {
+      handlingUnitId: 'hu-pickup-001',
+      code: 'REC-BOD-01',
+      deliveryId: 'pk-wh-norte-01',
+      status: 'Dispatched',
+      labelUrl: 'https://istpetdev.local/campo/label/hu-pickup-001',
+      token: 'tok-sec-demo-pk-01',
+      lines: [
+        {
+          deliveryLineId: 'dl-pk-1',
+          lotId: 'LOT-PINOK-01',
+          sku: 'PINOKLIN-DESINF-5L',
+          quantity: 20,
+          unit: 'Galón'
+        }
+      ],
+      createdAtUtc: new Date().toISOString()
+    },
     'hu-caja-001': {
       handlingUnitId: 'hu-caja-001',
       code: 'CAJA-MED-001',
@@ -208,6 +236,12 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
   },
   idempotencyRecords: {},
   tokens: {
+    'tok-sec-demo-pk-01': {
+      unitId: 'hu-pickup-001',
+      token: 'tok-sec-demo-pk-01',
+      isRevoked: false,
+      expiresAtUtc: new Date(Date.now() + 7 * 86400 * 1000).toISOString()
+    },
     'tok-sec-demo-hosp-001': {
       unitId: 'hu-caja-001',
       token: 'tok-sec-demo-hosp-001',

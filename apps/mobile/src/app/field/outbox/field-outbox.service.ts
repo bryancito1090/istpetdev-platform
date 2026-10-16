@@ -3,6 +3,7 @@ import { openDB, IDBPDatabase } from 'idb';
 import {
   CreateReceiptRequest,
   CustodyTransitionResponse,
+  DispatchResponse,
   ReceiptResponse,
   MobileAssignmentResponse,
   PwaSyncState,
@@ -14,7 +15,7 @@ import { FIELD_API, IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { generateUuidV7 } from '../uuid';
 import { effectiveDeliveryStatus } from '../custody-state';
 
-export type OutboxCommandKind = 'Receipt' | 'Pickup' | 'Deliver';
+export type OutboxCommandKind = 'Receipt' | 'Pickup' | 'Deliver' | 'Dispatch';
 
 export interface OutboxItem {
   operationId: string; // UUID v7
@@ -28,6 +29,7 @@ export interface OutboxItem {
   capturedAtUtc: string;
   status: PwaSyncState;
   receiptPayload?: CreateReceiptRequest;
+  dispatchPayload?: { handlingUnitIds: string[] };
 
   // Evidencias binarias
   evidencePhotoBlob?: Blob;
@@ -38,6 +40,7 @@ export interface OutboxItem {
   // Respuestas del servidor
   receiptResponse?: ReceiptResponse;
   custodyResponse?: CustodyTransitionResponse;
+  dispatchResponse?: DispatchResponse;
   photoEvidenceId?: string;
   signatureEvidenceId?: string;
 
@@ -253,7 +256,10 @@ export class FieldOutboxService {
       ? allItems.filter((item: OutboxItem) => item.ownerAccountId === owner)
       : [];
     // Ordenar de más reciente a más antiguo por capturedAtUtc
-    items.sort((a, b) => new Date(b.capturedAtUtc).getTime() - new Date(a.capturedAtUtc).getTime());
+    items.sort((a, b) => {
+      const diff = new Date(b.capturedAtUtc).getTime() - new Date(a.capturedAtUtc).getTime();
+      return diff !== 0 ? diff : b.operationId.localeCompare(a.operationId);
+    });
     this.outboxItems.set(items);
   }
 
@@ -501,6 +507,82 @@ export class FieldOutboxService {
   }
 
   /**
+   * #230: guarda localmente un comando de despacho de bodega antes de enviarlo.
+   * Permite que la bodega despache al vehículo sin conexión y se envíe automáticamente al reconectar.
+   */
+  async saveDispatchCommand(params: { deliveryId: string; handlingUnitIds: string[]; label: string }): Promise<OutboxItem> {
+    const ownerAccountId = this.owner();
+    if (!ownerAccountId) {
+      throw new Error('Inicia sesión para registrar el despacho.');
+    }
+
+    await this.refreshOutboxItems();
+    const pending = this.outboxItems().find((i) =>
+      i.deliveryId === params.deliveryId && i.commandKind === 'Dispatch' && i.status !== 'Complete');
+    if (pending) {
+      throw new Error('Ya hay un despacho pendiente para esta entrega.');
+    }
+
+    const sessionRevision = this.sessionRevision;
+    const operationId = generateUuidV7();
+    const capturedAtUtc = new Date().toISOString();
+
+    const outboxItem: OutboxItem = {
+      operationId,
+      ownerAccountId,
+      commandKind: 'Dispatch',
+      deliveryId: params.deliveryId,
+      expectedDeliveryVersion: 0,
+      recipientName: params.label,
+      dispatchPayload: { handlingUnitIds: params.handlingUnitIds },
+      capturedAtUtc,
+      status: 'SavedOnDevice'
+    };
+
+    this.assertSession(ownerAccountId, sessionRevision);
+    const db = await this.getDb();
+    const tx = db.transaction('outbox_items', 'readwrite');
+    await tx.objectStore('outbox_items').put(outboxItem);
+    await tx.done;
+
+    await this.refreshOutboxItems();
+
+    if (!this.isSimulatingOffline() && navigator.onLine) {
+      this.syncItem(operationId).catch(() => {
+        // Si falla por red queda en SavedOnDevice
+      });
+    }
+
+    return outboxItem;
+  }
+
+  /**
+   * Actualiza el estado y unidades de una entrega en la asignación en memoria y caché local.
+   */
+  updateAssignmentDeliveryStatus(deliveryId: string, status: string, huStatus?: string): void {
+    const current = this.activeAssignment();
+    if (!current || !current.routes) return;
+    let modified = false;
+    for (const route of current.routes) {
+      for (const del of route.deliveries) {
+        if (del.deliveryId === deliveryId) {
+          del.status = status as any;
+          if (huStatus && del.handlingUnits) {
+            del.handlingUnits.forEach((hu) => {
+              hu.status = huStatus as any;
+            });
+          }
+          modified = true;
+        }
+      }
+    }
+    if (modified) {
+      this.activeAssignment.set({ ...current });
+      void this.cacheAssignment(current);
+    }
+  }
+
+  /**
    * Ejecuta la sincronización completa de un ítem de la cola outbox contra el API.
    * Flujo:
    * 1. createReceipt -> 2. uploadEvidence foto -> confirmEvidence -> 3. uploadEvidence firma -> confirmEvidence -> Complete.
@@ -537,7 +619,7 @@ export class FieldOutboxService {
     }
 
     try {
-      // Paso 1: Enviar recepción o comando de custodia (#162)
+      // Paso 1: Enviar recepción, comando de custodia (#162) o despacho (#230)
       item.status = 'Sending';
       item.errorCode = undefined;
       item.errorMessage = undefined;
@@ -545,6 +627,23 @@ export class FieldOutboxService {
       await this.refreshOutboxItems();
 
       const commandKind = item.commandKind ?? 'Receipt';
+      if (commandKind === 'Dispatch') {
+        const huIds = item.dispatchPayload?.handlingUnitIds ?? [];
+        const dispatchResponse = await new Promise<DispatchResponse>((resolve, reject) => {
+          this.fieldApi.dispatch(item.deliveryId, { operationId: item.operationId, handlingUnitIds: huIds }, item.operationId).subscribe({
+            next: (res) => resolve(res),
+            error: (err) => reject(err)
+          });
+        });
+        assertSession();
+        item.dispatchResponse = dispatchResponse;
+        item.status = 'Complete';
+        await db.put('outbox_items', item);
+        await this.refreshOutboxItems();
+        this.updateAssignmentDeliveryStatus(item.deliveryId, 'Dispatched', 'Dispatched');
+        return item;
+      }
+
       if (commandKind === 'Pickup' || commandKind === 'Deliver') {
         const custodyResponse = await this.sendCustodyCommand(item, commandKind);
         assertSession();
@@ -552,6 +651,8 @@ export class FieldOutboxService {
         item.status = 'Complete';
         await db.put('outbox_items', item);
         await this.refreshOutboxItems();
+        const targetStatus = commandKind === 'Pickup' ? 'InTransit' : 'Delivered';
+        this.updateAssignmentDeliveryStatus(item.deliveryId, targetStatus, targetStatus);
         return item;
       }
 
@@ -671,13 +772,18 @@ export class FieldOutboxService {
     };
 
     try {
-      const items = this.outboxItems().filter(
-        (i) =>
-          i.status === 'SavedOnDevice' ||
-          i.status === 'EvidencePending' ||
-          i.status === 'Sending' ||
-          i.status === 'Failed'
-      );
+      const items = this.outboxItems()
+        .filter(
+          (i) =>
+            i.status === 'SavedOnDevice' ||
+            i.status === 'EvidencePending' ||
+            i.status === 'Sending' ||
+            i.status === 'Failed'
+        )
+        .sort((a, b) => {
+          const diff = new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime();
+          return diff !== 0 ? diff : a.operationId.localeCompare(b.operationId);
+        });
 
       summary.attempted = items.length;
 
@@ -956,14 +1062,32 @@ export class FieldOutboxService {
   }
 
   /**
-   * #162: estado monotónico de la entrega que combina snapshot, comandos confirmados y el estado
-   * de los bultos; un snapshot Received/Partial nuevo no retrocede por un Deliver viejo en IndexedDB.
+   * #230: estado derivado de comandos de custodia locales guardados en el outbox aún no confirmados por el servidor.
+   * Permite que el Conductor avance en su flujo de custodia (Pickup -> Deliver) incluso sin señal.
+   */
+  latestPendingCustodyStatus(deliveryId: string): string | null {
+    const pending = this.outboxItems()
+      .filter((i) => i.deliveryId === deliveryId && i.commandKind && i.status !== 'Complete' && i.status !== 'RequiresReview' && i.status !== 'SessionRequired')
+      .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
+      .pop();
+    if (!pending) return null;
+    if (pending.commandKind === 'Pickup') return 'InTransit';
+    if (pending.commandKind === 'Deliver') return 'Delivered';
+    if (pending.commandKind === 'Dispatch') return 'Dispatched';
+    return null;
+  }
+
+  /**
+   * #162/#230: estado monotónico de la entrega que combina snapshot, comandos confirmados, comandos
+   * locales pendientes en outbox y el estado de los bultos; un snapshot Received/Partial nuevo no retrocede
+   * por un Deliver viejo en IndexedDB.
    */
   effectiveDeliveryStatus(deliveryId: string, snapshotStatus: string, handlingUnitStatuses: string[]): string {
     return effectiveDeliveryStatus({
       deliveryStatus: snapshotStatus,
       handlingUnits: handlingUnitStatuses.map((status) => ({ status })),
       acceptedCustodyStatus: this.latestCustodyStatus(deliveryId),
+      pendingCustodyStatus: this.latestPendingCustodyStatus(deliveryId),
     });
   }
 

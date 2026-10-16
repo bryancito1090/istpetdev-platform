@@ -45,4 +45,24 @@ describe('effectiveDeliveryStatus (#162)', () => {
 
     expect(status).toBe('Dispatched');
   });
+
+  it('#230: comando pendiente de Pickup avanza el estado a InTransit incluso sin respuesta del servidor', () => {
+    const status = effectiveDeliveryStatus({
+      deliveryStatus: 'Dispatched',
+      handlingUnits: [{ status: 'Dispatched' }],
+      pendingCustodyStatus: 'InTransit'
+    });
+
+    expect(status).toBe('InTransit');
+  });
+
+  it('#230: comando pendiente de Deliver avanza el estado a Delivered incluso sin respuesta del servidor', () => {
+    const status = effectiveDeliveryStatus({
+      deliveryStatus: 'InTransit',
+      handlingUnits: [{ status: 'InTransit' }],
+      pendingCustodyStatus: 'Delivered'
+    });
+
+    expect(status).toBe('Delivered');
+  });
 });
