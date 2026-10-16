@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -365,7 +365,7 @@ import { FIELD_API } from '../../field-api.interface';
     }
   `]
 })
-export class WarehouseComponent implements OnInit {
+export class WarehouseComponent implements OnInit, OnDestroy {
   private readonly fieldApi = inject(FIELD_API);
 
   readonly draftDeliveries = signal<DeliveryListItem[]>([]);
@@ -373,6 +373,9 @@ export class WarehouseComponent implements OnInit {
   readonly selectedDelivery = signal<DeliveryDetailResponse | null>(null);
   readonly loadingDetail = signal<boolean>(false);
   readonly createdHandlingUnit = signal<{ hu: HandlingUnitResponse; qrDataUrl: string } | null>(null);
+
+  // Restauración pendiente del título tras imprimir (#161); conserva el título original
+  private afterPrintListener: (() => void) | null = null;
   readonly preparing = signal<boolean>(false);
   readonly dispatching = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
@@ -522,20 +525,28 @@ export class WarehouseComponent implements OnInit {
   printLabel(): void {
     // El navegador usa document.title como nombre del PDF: uno único por bulto (#161)
     const code = this.createdHandlingUnit()?.hu.code || 'bulto';
-    const previous = document.title;
+
+    // Sin temporizador: en Chrome Android print() no bloquea y el título volvería
+    // antes de «Guardar como PDF». Solo se restaura en afterprint o al destruir.
+    if (!this.afterPrintListener) {
+      const original = document.title;
+      this.afterPrintListener = () => this.restorePrintTitle(original);
+      window.addEventListener('afterprint', this.afterPrintListener, { once: true });
+    }
     document.title = `etiqueta-${code}-${this.printStamp(new Date())}`;
 
-    let restored = false;
-    const restore = () => {
-      if (restored) return;
-      restored = true;
-      document.title = previous;
-    };
-    window.addEventListener('afterprint', restore, { once: true });
-    // Respaldo para Chrome Android, que a veces no dispara afterprint a tiempo
-    setTimeout(restore, 1000);
-
     window.print();
+  }
+
+  ngOnDestroy(): void {
+    this.afterPrintListener?.();
+  }
+
+  private restorePrintTitle(original: string): void {
+    if (!this.afterPrintListener) return;
+    window.removeEventListener('afterprint', this.afterPrintListener);
+    this.afterPrintListener = null;
+    document.title = original;
   }
 
   /** yyyyMMddHHmm en hora local. */

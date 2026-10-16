@@ -198,24 +198,38 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
       expect(document.title).toBe(originalTitle);
     });
 
-    it('restaura el título con el temporizador de respaldo si afterprint no llega', () => {
+    it('sin afterprint el título no se restaura por tiempo (Chrome Android)', () => {
       vi.useFakeTimers();
       createWithHu('BULTO-001').printLabel();
 
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(5000);
+
+      expect(document.title).toMatch(/^etiqueta-BULTO-001-\d{12}$/);
+    });
+
+    it('al destruir el componente restaura el título original', () => {
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      fixture.componentInstance.printLabel();
+      expect(document.title).not.toBe(originalTitle);
+
+      fixture.destroy();
 
       expect(document.title).toBe(originalTitle);
     });
 
-    it('no pisa un título posterior si el respaldo corre después de afterprint', () => {
-      vi.useFakeTimers();
-      createWithHu('BULTO-001').printLabel();
+    it('dos impresiones sin afterprint y luego afterprint dejan el título original', () => {
+      const component = createWithHu('BULTO-001');
+      component.printLabel();
+      component.createdHandlingUnit.set({
+        hu: { ...sampleHuResponse, code: 'BULTO-002' },
+        qrDataUrl: 'data:image/png;base64,AAA'
+      });
+      component.printLabel();
+
       window.dispatchEvent(new Event('afterprint'));
-      document.title = 'Otro título';
 
-      vi.advanceTimersByTime(1000);
-
-      expect(document.title).toBe('Otro título');
+      expect(titleDuringPrint[1]).toMatch(/^etiqueta-BULTO-002-\d{12}$/);
+      expect(document.title).toBe(originalTitle);
     });
 
     it('dos bultos distintos producen títulos distintos', () => {
