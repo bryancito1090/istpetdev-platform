@@ -859,3 +859,15 @@ de #194 sigue pendiente y es requisito para el merge.
 - La repetición completa mostró errores del parser estructurado n8n aun con consultas correctas. Se elimina el parser adjunto (limitación documentada por n8n) y se valida forma, tipos, UUIDs y duplicados en Prepare Result; la API mantiene autorización/correlación/cifras/mensajes. 34/34 pruebas Python, incluida regresión de salidas inválidas. Matriz real de esta corrección en ejecución.
 
 - La matriz sin parser confirmó que desaparecieron errores de formato; persistieron timeouts del proveedor. Optimización final: carga inicial de riesgos/impacto por el workflow tras HMAC/registro, con OAuth/contexto firmado y traza. El LLM conserva la elección de stock/origen/vehículos/propuestas y las ocho herramientas. 35/35 Python, incluida seguridad de carga inicial; nueva matriz en ejecución.
+
+## Issue #207 — verificación de integración de punta a punta — 16-oct-2026
+
+- [x] Revisar el issue, sus dependencias y el código de `origin/develop` `42bd1b0`.
+- [x] Ejecutar la suite local (Unit 220/220, Integration 265/265, E2E 23/23 y scripts de n8n 7/7) y la checklist E2E-08.
+- [x] Registrar el estado de los 13 criterios en la
+  [evidencia de verificación](evidencia/2026-10-16-207-verificacion-integracion.md).
+- [ ] Recorrido vivo panel → n8n → API → panel en la validación del sábado 11:30.
+- [ ] Dependencias abiertas: #195 (PR #213 en borrador y con conflictos) y #210; cerrar #199, cuyo PR ya está fusionado.
+- [ ] Trabajo propio posterior al evento: propuesta única con `proposalId`/revisión, calculador de costo único, revalidación por revisión, manifiesto multibodega, `NeedsData`/dimensiones e incertidumbre `uncalibrated`.
+
+Estado: solo verificación, sin cambios de código ni despliegue. Contratos de `docs/boveda/` sin cambios. #207 sigue abierto porque no cumple sus criterios 1, 5, 7, 9, 10, 12 y 13, y cumple parcialmente 2, 3, 4, 6, 8 y 11.

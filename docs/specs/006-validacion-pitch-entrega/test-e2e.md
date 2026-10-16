@@ -138,10 +138,10 @@ Si durante la ejecución de esta lista algún paso no se cumple, se abre un issu
 | Coordinación general, matriz de afirmaciones y pitch | `docs/specs/006-*`, `docs/boveda/07 Demo/*` | `@JosephBano` |
 
 #### 4. Registro de Ejecución
-- **Fecha y hora:** [Pendiente a la fusión de PRs #193 y #194]
-- **Commit evaluado:** [Registrar commit de develop]
-- **Resultado:** [Pasó / Falló con detalle de pasos A.1 a F.4]
-- **Issue de seguimiento:** #207
+- **Fecha y hora:** 2026-10-16, 15:10–15:30 (Guayaquil). Verificación estática y de pruebas; sin recorrido vivo panel → n8n → API.
+- **Commit evaluado:** `origin/develop` `42bd1b0` (con #193 y #194 fusionados).
+- **Resultado:** parcial. Verificados A.1–A.2, B.1–B.3, C.1, D.1–D.5 (pruebas del motor), E.1, E.3 y F.2–F.4 (pruebas existentes); parciales C.2, C.3 y E.2; pendiente F.1 (#195). Rutas reales: `GET /api/v1/logistics/stock` y `GET /api/v1/logistics/vehicles/available`. Detalle y criterios de #207 en la [evidencia de verificación](../003-agente-logistico/evidencia/2026-10-16-207-verificacion-integracion.md).
+- **Issue de seguimiento:** #207 (sigue abierto; el recorrido vivo queda para la validación del sábado 11:30).
 
 ## Estado de los criterios al 14-oct-2026 16:00
 
