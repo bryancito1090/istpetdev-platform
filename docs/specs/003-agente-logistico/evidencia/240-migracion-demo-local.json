@@ -1,0 +1,158 @@
+{
+  "source": "copia de la base local demo istpetdev_dev_01",
+  "sourceUntouched": true,
+  "migrationsBefore": 9,
+  "migrationsAfter": 10,
+  "tablesPreserved": 37,
+  "rowsPreserved": 387,
+  "tables": {
+    "Account": {
+      "rows": 16,
+      "sha256": "a8c36cfcb5c159b309ff329fc55d2ba23e1d557a136edd7a51d06bb9d9ae7146"
+    },
+    "AgentDecision": {
+      "rows": 4,
+      "sha256": "8347a726d8e5cb99f96b05be0e904dae1a10279f9a43d5243f559b97ed5a8849"
+    },
+    "AgentRun": {
+      "rows": 2,
+      "sha256": "de51c73733b8ff36649a79bf71ebc04b6dc34202bf472763bc5e3489429d4069"
+    },
+    "Consumption": {
+      "rows": 14,
+      "sha256": "14500d479e1b05993ccc8c050e1f9398c34aa795d3841bbf007c2735e9b00265"
+    },
+    "CustodyEvent": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "Delivery": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "DeliveryLine": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "DeliveryOrder": {
+      "rows": 5,
+      "sha256": "91bec38dcf6eaa70e0d0f444d6913cfaabca5a8babacf5c381a2961b709f7cd7"
+    },
+    "DeliveryOrderLine": {
+      "rows": 5,
+      "sha256": "6f65c6e9483521fd753ad604aaa6564a4004243b3236ce4121c1d3f4eb8702c4"
+    },
+    "Evidence": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "HandlingUnit": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "HandlingUnitLine": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "IdempotencyRecord": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "ImportBatch": {
+      "rows": 1,
+      "sha256": "ca69a997a3898a74bfdd0a41ef59c33d2815458d2bd2a0b8daa149141c210b94"
+    },
+    "Incident": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "InventoryMovement": {
+      "rows": 21,
+      "sha256": "c53d388cc3844dee7c6fefa2f1161bda90b8d9afe4953baa029ad1a0f58fb34d"
+    },
+    "Location": {
+      "rows": 18,
+      "sha256": "69eb77aeba3e80280fd75a7264c8a43efe4162ee3d65cd3f314121f38c59193e"
+    },
+    "Lot": {
+      "rows": 6,
+      "sha256": "ab793f4114e1a2ab0b337715ee7992bc3b8a15cb730264626462cd4340a85575"
+    },
+    "Organization": {
+      "rows": 1,
+      "sha256": "4b6645a5c588224b1bfce52975e60f4bce4d4d3cf796d5734b255f9fbea78fa3"
+    },
+    "Product": {
+      "rows": 3,
+      "sha256": "c2804aa46e365abca0dd9a6f55dd9ce51b66e8d4a0b3701525a9b655556a0230"
+    },
+    "QrAccessToken": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "Receipt": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "ReceiptLine": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "RiskSnapshot": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "RoadMatrixEdge": {
+      "rows": 240,
+      "sha256": "e47a2ea06d197cdbe1c3612f944761fe64a67e8145686233d3034ae169330c5d"
+    },
+    "RoutePlan": {
+      "rows": 3,
+      "sha256": "e6a59e15844c6589d4b0e779396b6d4d48e3fd458dd17bc96e0dca38174ff449"
+    },
+    "RouteStockReservation": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "RouteStop": {
+      "rows": 10,
+      "sha256": "a068b4d6afa73b1d62e8fec55f4f15c3797591b29f136b63d2d88b35fd210330"
+    },
+    "RouteStopLine": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "ServicePoint": {
+      "rows": 15,
+      "sha256": "214439ce2e996af0e701c2375f8b1aa166cc145f55262f6014c8ad3c4276aa1b"
+    },
+    "SimulationEvent": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "SimulationMetric": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "SimulationRun": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "StockBalance": {
+      "rows": 21,
+      "sha256": "fed500a84bf81a2f9e33496241ffeaa7c6978c480b4709df897d6967925eca6b"
+    },
+    "TransferSuggestion": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "Vehicle": {
+      "rows": 2,
+      "sha256": "ada720d71f69833e1c8b2b0dadf29d13e8dde355814b7af58acfd35369c0694e"
+    },
+    "WarehouseStockPolicy": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  }
+}

@@ -717,3 +717,19 @@ Verificación documental: **106 notas Markdown**, **1139 enlaces internos resuel
 Fuente: texto aportado por Bryan en la conversación, conservado íntegro en [[Charla de logistica integral - transcripcion recibida]], con una mención de tercero reservada y errores de transcripción explícitos. [[Logistica integral para el Reto 1 - hallazgos y evidencia]] organiza cadena proveedor–almacén–transporte–cliente, cuatro componentes, seis palancas, indicadores, ejemplos, riesgos, mitigaciones y las preguntas de combustible/flota, con pendientes de aclaración. Se enlazan inventario, rutas, validación, reto oficial, hallazgos previos, hechos canónicos y los índices.
 
 Cambio documental: sin cambios de software, contratos, prioridades aprobadas ni despliegue. No acredita prueba funcional, estudio empresarial, normativa urbana/combustible ni ejecución de planes de flota. La fecha es de recepción; autoría y momento de la exposición siguen pendientes. Verificación local: `python docs/boveda/.github/scripts/check_vault.py` — **108 notas Markdown, 1166 enlaces internos, 0 errores y los 4 avisos de lenguaje preexistentes**; `git diff --check`, `npm run check` y `npm run audit:check` terminan correctamente. La auditoría conserva 7 avisos cubiertos por excepciones vigentes; el build muestra avisos de la regla ESLint deprecada y Leaflet CommonJS. Estos checks comprueban documentación/compilación, no los casos operativos propuestos en la charla.
+
+## 16-oct-2026 — Costo total estimado de servir (issue #240)
+
+Fuente: issue #240 y coordinación #253, con fórmulas sintéticas de la propuesta
+#239. [[Contratos API y eventos]] y [[Rutas y sobrecostos]] describen combustible
+según carga con precio fechado, desgaste, conductor, ayudantes y merma, las
+columnas opcionales del importador y el fallback compatible. `ServiceCostCatalog`
+es una migración EF real y aditiva del repositorio, no una aplicación implícita
+sobre RDS. Las pruebas incluyen base vacía y copia de la demo local existente.
+
+[Plan y configuración](../../specs/003-agente-logistico/plan-240-costo-servicio.md),
+[evidencia y límites](../../specs/003-agente-logistico/evidencia/2026-10-16-240-costo-servicio.md).
+La captura sale del resultado calculado sobre demo-base, con parámetros de prueba
+sintéticos. No se presenta como pantalla #242 ni como dataset Quito #243.
+Sin despliegue; el estado remoto se comprueba en el PR de #240. Anthony conserva
+la integración del controlador compartido; #244/#245 rebasan después.

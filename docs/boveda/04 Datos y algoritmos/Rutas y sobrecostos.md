@@ -121,7 +121,8 @@ La cobertura con subcentros puede evaluarse junto a ADR-28 para bloqueos o acces
 
 ## Propuestas del 16-oct — planificación potenciada
 
-Diseño en [[Planificacion potenciada - propuesta del evento]]. Ninguna está implementada todavía:
+Diseño en [[Planificacion potenciada - propuesta del evento]]. El estado de #240
+se detalla al final de esta nota; los demás cambios siguen propuestos:
 
 | Issue | Cambio propuesto en el motor |
 |---|---|
@@ -132,3 +133,19 @@ Diseño en [[Planificacion potenciada - propuesta del evento]]. Ninguna está im
 | #246 | Incidentes con retraso parcial (`Congestion`, `Manifestacion`, `Accidente`) además del bloqueo total |
 
 Las fórmulas actuales de esta nota siguen vigentes hasta que cada issue entre en `develop`.
+
+## Estimación por componentes (#240 — 16-oct-2026)
+
+La evaluación de secuencias y el emparejamiento de vehículos pueden usar
+`Logistics:ServiceCost`: combustible sensible a carga, desgaste, conductor,
+ayudantes y merma esperada en USD. El precio por galón incluye fecha y fuente;
+no constituye una medición. Sin configuración o perfil se mantienen km × tarifa
+más horas × tarifa, incluidos los tiempos anteriores. No se suma la tarifa/km
+legada al combustible y desgaste nuevos. El máximo de ayudantes de todas las paradas
+viaja toda la ruta. La merma cuenta el valor recogido una vez y aumenta solo por
+encima del umbral configurado. Datos sin valor/bultos se explicitan en notas.
+
+El contrato y los límites de integración con confirmación/pantalla están en
+[[Contratos API y eventos]]. #240 autoriza una única migración aditiva de
+Product y Vehicle; la propuesta de #239 no acredita despliegue ni migración real.
+Todos los parámetros del ensayo son sintéticos; #243 calibra el fixture Quito.

@@ -13,6 +13,7 @@ import {
   LucideBarChart3,
   LucideLock
 } from '@lucide/angular';
+import { ScrollWorldComponent } from './components/scroll-world/scroll-world.component';
 
 @Component({
   selector: 'page-landing',
@@ -21,6 +22,7 @@ import {
     CommonModule,
     FormsModule,
     RouterLink,
+    ScrollWorldComponent,
     LucideQrCode,
     LucideArrowRight,
     LucideChevronRight,
@@ -31,102 +33,137 @@ import {
     LucideLock
   ],
   template: `
-    <div class="relative overflow-hidden bg-white text-slate-800 min-h-screen">
+    <div class="relative overflow-x-clip bg-white text-slate-800 min-h-screen">
       
-      <!-- Arte Fluido Curvado 3D Estilo Stripe (Ondas de Seda Suaves en Azul Eléctrico, Cyan y Menta) -->
-      <div aria-hidden="true" class="pointer-events-none absolute -top-20 right-0 w-[550px] md:w-[700px] lg:w-[850px] h-[800px] overflow-hidden select-none z-0">
-        <svg class="w-full h-full" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Arte Fluido Curvado 3D Estilo Stripe con Colores Originales (Cinta de Seda Tridimensional en Azul Expo, Cyan y Menta) -->
+      <div aria-hidden="true" class="pointer-events-none absolute -top-12 -right-16 w-[620px] md:w-[780px] lg:w-[940px] xl:w-[1080px] h-[780px] md:h-[900px] overflow-hidden select-none z-0">
+        <svg class="w-full h-full" viewBox="0 0 1000 900" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="stripeFlow1" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#0066FF" stop-opacity="0.85" />
-              <stop offset="45%" stop-color="#00C2FF" stop-opacity="0.8" />
-              <stop offset="100%" stop-color="#00E5A3" stop-opacity="0.6" />
+            <!-- Gradiente Cinta 1: Cyan Eléctrico a Menta Brillante -->
+            <linearGradient id="stripeFlowCyanMint" x1="15%" y1="0%" x2="85%" y2="100%">
+              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.95" />
+              <stop offset="45%" stop-color="#00DDA2" stop-opacity="0.92" />
+              <stop offset="80%" stop-color="#00E5A3" stop-opacity="0.90" />
+              <stop offset="100%" stop-color="#2DD4BF" stop-opacity="0.85" />
             </linearGradient>
 
-            <linearGradient id="stripeFlow2" x1="85%" y1="15%" x2="15%" y2="85%">
-              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.9" />
-              <stop offset="55%" stop-color="#0084FF" stop-opacity="0.75" />
-              <stop offset="100%" stop-color="#00E5A3" stop-opacity="0.3" />
+            <!-- Gradiente Cinta 2: Azul Eléctrico a Cyan Profundo -->
+            <linearGradient id="stripeFlowBlueCyan" x1="10%" y1="10%" x2="90%" y2="90%">
+              <stop offset="0%" stop-color="#0052D9" stop-opacity="0.92" />
+              <stop offset="40%" stop-color="#0066FF" stop-opacity="0.88" />
+              <stop offset="75%" stop-color="#0099FF" stop-opacity="0.85" />
+              <stop offset="100%" stop-color="#00C2FF" stop-opacity="0.82" />
             </linearGradient>
 
-            <radialGradient id="stripeAtmosphere" cx="65%" cy="35%" r="60%">
-              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.35" />
-              <stop offset="50%" stop-color="#0066FF" stop-opacity="0.12" />
+            <!-- Gradiente Cinta Base 3: Azul Zafiro Profundo -->
+            <linearGradient id="stripeFlowDeepBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0040B0" stop-opacity="0.95" />
+              <stop offset="50%" stop-color="#0066FF" stop-opacity="0.90" />
+              <stop offset="100%" stop-color="#0084FF" stop-opacity="0.85" />
+            </linearGradient>
+
+            <!-- Resplandor Atmosférico Difuso Ultra Suave -->
+            <radialGradient id="stripeAmbientGlow" cx="62%" cy="38%" r="55%">
+              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.25" />
+              <stop offset="40%" stop-color="#0066FF" stop-opacity="0.15" />
+              <stop offset="75%" stop-color="#00E5A3" stop-opacity="0.08" />
               <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
             </radialGradient>
 
-            <filter id="softAtmosphere" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="45" />
+            <!-- Filtro desenfoque sedoso Stripe -->
+            <filter id="stripeSilkBlur" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="24" />
             </filter>
-            
-            <filter id="silkBlur" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="22" />
+
+            <!-- Filtro resplandor amplio -->
+            <filter id="stripeGlowBlur" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="60" />
             </filter>
           </defs>
 
-          <!-- Resplandor atmosférico envolvente sin bordes duros -->
-          <circle cx="580" cy="320" r="360" fill="url(#stripeAtmosphere)" filter="url(#softAtmosphere)" />
+          <!-- 0. Resplandor difuso de fondo -->
+          <circle cx="660" cy="360" r="420" fill="url(#stripeAmbientGlow)" filter="url(#stripeGlowBlur)" />
 
-          <!-- Capa 1: Sábana fluida suave diagonal -->
+          <!-- 1. Cinta Inferior: Gran sábana Azul Zafiro -->
           <path
-            d="M520 -40 C660 90, 760 270, 680 470 C600 650, 460 730, 390 820 L840 820 L840 -40 Z"
-            fill="url(#stripeFlow1)"
-            filter="url(#silkBlur)"
-            opacity="0.7"
+            d="M380 -80 C480 60, 620 220, 680 440 C740 660, 780 780, 840 980 L1080 980 L1080 -80 Z"
+            fill="url(#stripeFlowDeepBlue)"
+            filter="url(#stripeSilkBlur)"
+            opacity="0.78"
           />
 
-          <!-- Capa 2: Cinta interior curvada con reflejo satinado tipo seda -->
+          <!-- 2. Cinta Central: Pliegue Azul a Cyan con torsión 3D -->
           <path
-            d="M580 -60 C690 80, 740 250, 640 430 C550 590, 490 680, 430 790 C480 760, 560 670, 640 520 C740 350, 760 160, 670 -60 Z"
-            fill="url(#stripeFlow2)"
-            filter="url(#silkBlur)"
-            opacity="0.8"
+            d="M440 -60 C540 80, 660 250, 715 450 C765 630, 815 740, 885 920 C825 890, 755 780, 705 620 C645 430, 565 220, 485 -60 Z"
+            fill="url(#stripeFlowBlueCyan)"
+            filter="url(#stripeSilkBlur)"
+            opacity="0.84"
           />
 
-          <!-- Capa 3: Trazo brillante blanco translúcido para dar volumen y profundidad -->
+          <!-- 3. Cinta Superior: Pliegue Cyan a Menta diagonal curvado -->
           <path
-            d="M610 -20 C710 110, 740 270, 630 440 C560 560, 510 650, 470 740 C500 720, 560 620, 640 480 C730 320, 750 140, 650 -20 Z"
+            d="M515 -40 C615 90, 725 270, 775 460 C815 610, 865 710, 935 860 C895 830, 835 720, 785 570 C725 380, 635 180, 565 -40 Z"
+            fill="url(#stripeFlowCyanMint)"
+            filter="url(#stripeSilkBlur)"
+            opacity="0.90"
+          />
+
+          <!-- 4. Reflejo de Seda Satinada Translúcida (Brillo de Luz 3D) -->
+          <path
+            d="M545 -30 C635 90, 735 250, 765 420 C795 560, 835 650, 885 780 C865 750, 815 660, 775 530 C725 370, 645 200, 575 -30 Z"
             fill="white"
             opacity="0.32"
-            filter="url(#silkBlur)"
+            filter="url(#stripeSilkBlur)"
           />
         </svg>
       </div>
 
       <!-- ===================================================================== -->
-      <!-- 1. HERO SECTION ESTILO STRIPE 1:1 (Limpio, Sin Bloques Rígidos)      -->
-      <!-- ===================================================================== -->
-      <!-- ===================================================================== -->
       <!-- 1. HERO SECTION ESTILO STRIPE 1:1 (Ajustado al Primer Viewport)       -->
       <!-- ===================================================================== -->
-      <section class="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-4 min-h-[calc(100vh-4rem)] flex flex-col justify-between border-x border-slate-100/90">
+      <section class="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 pt-8 sm:pt-12 pb-6 min-h-[calc(100vh-4rem)] flex flex-col justify-between border-x border-slate-100/90">
         
         <!-- Bloque Principal de Titular y Acciones -->
-        <div>
+        <div class="pt-2 sm:pt-4">
           <!-- Micro-eyebrow tipo Stripe -->
-          <p class="text-[13px] sm:text-[14px] text-[#425466] font-normal tracking-tight mb-5 sm:mb-6">
-            Red logística que opera con IstpetDev: <span class="text-[#0A2540] font-normal">80 Puntos de Servicio · 100% Cobertura Activa</span>
+          <p class="text-[13px] sm:text-[14px] text-[#425466] font-normal tracking-tight mb-6 sm:mb-8">
+            Red logística que opera con IstpetDev: <span class="font-mono text-[#0A2540] font-medium">80 Puntos de Servicio · 100% Cobertura Activa</span>
           </p>
 
-          <!-- Titular Estilo Stripe 1:1 (Flujo Natural, Sin Breaks Forzados) -->
-          <div class="max-w-[700px] space-y-6 sm:space-y-7">
-            <h1 class="text-[36px] sm:text-[44px] lg:text-[52px] xl:text-[56px] font-normal tracking-[-0.025em] text-[#0A2540] leading-[1.1]">Infraestructura logística <span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-blue via-[#0084FF] to-expo-cyan font-normal">para predecir y asegurar tus </span><span class="text-[#0A2540]">insumos.</span><span class="text-[#425466] font-normal"> Detecta riesgos 5 días antes, optimiza rutas en PostGIS e implementa </span><span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-cyan to-expo-mint font-normal">custodia digital </span><span class="text-[#425466] font-normal">desde bodega hasta la recepción hospitalaria.</span>
+          <!-- Titular Estilo Stripe 1:1 (Jerarquía Editorial Separada con Colores del Proyecto) -->
+          <div class="max-w-[720px]">
+            <!-- H1: Titular Principal Corto, Compacto y Contundente -->
+            <h1 class="text-[42px] sm:text-[52px] lg:text-[60px] xl:text-[64px] font-bold tracking-[-0.03em] text-[#0A2540] leading-[1.06]">
+              Infraestructura logística
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-blue via-[#0084FF] to-expo-cyan">
+                para predecir y asegurar
+              </span>
+              tus insumos.
             </h1>
 
-            <!-- Acciones Duales Estilo Stripe 1:1 (Rectangulares Suaves rounded-[6px]) -->
-            <div class="flex flex-wrap items-center gap-3.5 pt-1 sm:pt-2">
+            <!-- Párrafo Secundario (Body Copy) con Escala Editorial Stripe y Acento Original -->
+            <p class="text-[18px] sm:text-[20px] text-[#425466] font-normal leading-[1.45] mt-6 sm:mt-7 max-w-[650px]">
+              Detecta riesgos 5 días antes, optimiza rutas en PostGIS e implementa
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-cyan to-expo-mint font-medium">
+                custodia digital
+              </span>
+              en el abastecimiento nacional de insumos de limpieza y desinfección.
+            </p>
+
+            <!-- Acciones Duales Estilo Stripe 1:1 con Botones Originales -->
+            <div class="flex flex-wrap items-center gap-4 pt-7 sm:pt-8">
               <button
                 type="button"
                 (click)="session.login('/inicio')"
-                class="inline-flex items-center gap-2 rounded-[6px] bg-expo-blue hover:bg-expo-blueDark px-5 py-2.5 font-medium text-white text-[14px] shadow-xs transition-all hover:shadow hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
+                class="inline-flex items-center gap-2 rounded-[8px] bg-expo-blue hover:bg-expo-blueDark px-5 py-3 font-medium text-white text-[15px] shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
                 <span>Primeros pasos</span>
-                <span class="text-white/80 text-xs font-semibold">&gt;</span>
+                <span class="text-white/80 text-xs font-bold">&gt;</span>
               </button>
 
               <a
                 routerLink="/public-trace"
-                class="inline-flex items-center gap-2 rounded-[6px] border border-slate-200/90 bg-white hover:bg-slate-50 px-4.5 py-2.5 font-medium text-[#0A2540] text-[14px] shadow-2xs transition-all hover:border-slate-300">
-                <svg lucideQrCode [size]="15" class="text-expo-blue stroke-[2]"></svg>
+                class="inline-flex items-center gap-2.5 rounded-[8px] border border-[#E3E8EE] bg-white hover:bg-slate-50 hover:border-slate-300 px-5 py-3 font-medium text-[#0A2540] text-[15px] shadow-2xs transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
+                <svg lucideQrCode [size]="16" class="text-expo-blue stroke-[2]"></svg>
                 <span>Consultar Pasaporte QR</span>
               </a>
             </div>
@@ -134,143 +171,189 @@ import {
         </div>
 
         <!-- =================================================================== -->
-        <!-- CINTA MÓVIL CONTINUA INFINITA CON ORGANIZACIONES DE LA BÓVEDA      -->
+        <!-- CINTA DE MARCAS Y SOCIOS LOGÍSTICOS ESTILO STRIPE 1:1                -->
         <!-- =================================================================== -->
-        <div class="w-full border-t border-b border-slate-200/70 py-4 my-2 overflow-hidden relative tape-fade-mask select-none mt-auto">
-          <div class="animate-marquee-tape items-center gap-12 text-[#0A2540]/65 text-xs sm:text-[13px] font-medium tracking-wide">
+        <div class="w-full border-t border-slate-200/80 py-6 my-2 overflow-hidden relative tape-fade-mask select-none mt-auto">
+          <div class="animate-marquee-tape items-center gap-14 text-slate-500 hover:text-slate-700 text-xs sm:text-[13px] font-semibold tracking-wider">
             
-            <!-- Grupo 1: Entidades Oficiales de la Bóveda -->
-            <div class="flex items-center gap-12 shrink-0">
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <svg class="w-4 h-4 text-expo-blue stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            <!-- Grupo 1: Entidades Oficiales con Emblemas Vectoriales Corporativos -->
+            <div class="flex items-center gap-14 shrink-0">
+              <!-- Hospital Laura -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" fill-opacity="0.1" />
+                  <path d="M12 8v8M8 12h8" stroke-linecap="round" />
                 </svg>
-                <span class="font-semibold tracking-tight">HOSPITAL LAURA</span>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL LAURA</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-tighter">CLÍNICA</span>
-                <span class="font-medium text-xs text-slate-500">SAN RAFAEL</span>
+              <!-- Clinica San Rafael -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v10M7 12h10" stroke-linecap="round" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-bold text-[12px] tracking-tight text-slate-800">CLÍNICA</span>
+                  <span class="text-[10px] text-slate-500 font-semibold tracking-wider">SAN RAFAEL</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <div class="w-3.5 h-3.5 rounded-full border-2 border-expo-cyan"></div>
-                <span class="font-semibold tracking-tight">HOSPITAL DEL SUR</span>
+              <!-- Hospital del Sur -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL DEL SUR</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-mono font-bold tracking-tight text-slate-800">ALMACÉN CEQ</span>
-                <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-semibold">HUB QUITO</span>
+              <!-- Laboratorios EC -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 2v6l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M8 14h8" />
+                </svg>
+                <div class="flex items-center gap-1">
+                  <span class="font-bold text-[12px] tracking-tight text-slate-800">LABORATORIOS</span>
+                  <span class="font-mono font-bold text-[11px] text-expo-blue bg-blue-50 px-1 rounded">EC</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-900">JIMCORPSERVI</span>
-                <span class="text-[9px] uppercase font-mono px-1 bg-blue-50 text-expo-blue rounded font-semibold">SECTOR</span>
+              <!-- Sercop Hospitalario -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+                  <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-mono font-bold text-[12px] text-slate-800">SERCOP</span>
+                  <span class="text-[9px] text-slate-500 font-semibold tracking-wide">HOSPITALARIO</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-normal">FEDELIMP</span>
-                <span class="text-[10px] text-slate-400 font-medium">ECUADOR</span>
+              <!-- Distribuidora Guayas -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                </svg>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">DISTRIBUIDORA GUAYAS</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-semibold tracking-tight">LACIF</span>
-                <span class="font-mono text-[10px] text-expo-blue font-bold">LOGISTICS</span>
+              <!-- Fedelimp Ecuador -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-bold text-[12px] text-slate-800">FEDELIMP</span>
+                  <span class="text-[9px] text-slate-500 font-semibold">ECUADOR</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-800">ACESS</span>
-                <span class="text-[10px] text-emerald-600 font-medium">SALUD PÚBLICA</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-mono font-bold text-slate-700">SERCOP</span>
-                <span class="text-[9px] uppercase font-mono px-1 bg-amber-50 text-amber-700 rounded font-semibold">HOSPITALARIO</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-normal">LABORATORIOS</span>
-                <span class="font-semibold text-xs text-expo-blue uppercase tracking-widest">EC</span>
-              </div>
-
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <span class="font-semibold tracking-tight">DISTRIBUIDORA GUAYAS</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-800">RED SUR</span>
-                <span class="text-[10px] text-slate-500 font-medium">PICHINCHA</span>
+              <!-- Lacif Logistics -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="font-mono font-bold text-slate-800 text-[12px]">LACIF LOGISTICS</span>
               </div>
             </div>
 
-            <!-- Grupo 2: Duplicado para Scroll Infinito Fluido Continuo -->
-            <div class="flex items-center gap-12 shrink-0" aria-hidden="true">
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <svg class="w-4 h-4 text-expo-blue stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            <!-- Grupo 2: Duplicado para Marquee Infinito Fluido -->
+            <div class="flex items-center gap-14 shrink-0" aria-hidden="true">
+              <!-- Hospital Laura -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" fill-opacity="0.1" />
+                  <path d="M12 8v8M8 12h8" stroke-linecap="round" />
                 </svg>
-                <span class="font-semibold tracking-tight">HOSPITAL LAURA</span>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL LAURA</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-tighter">CLÍNICA</span>
-                <span class="font-medium text-xs text-slate-500">SAN RAFAEL</span>
+              <!-- Clinica San Rafael -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v10M7 12h10" stroke-linecap="round" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-bold text-[12px] tracking-tight text-slate-800">CLÍNICA</span>
+                  <span class="text-[10px] text-slate-500 font-semibold tracking-wider">SAN RAFAEL</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <div class="w-3.5 h-3.5 rounded-full border-2 border-expo-cyan"></div>
-                <span class="font-semibold tracking-tight">HOSPITAL DEL SUR</span>
+              <!-- Hospital del Sur -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL DEL SUR</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-mono font-bold tracking-tight text-slate-800">ALMACÉN CEQ</span>
-                <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-semibold">HUB QUITO</span>
+              <!-- Laboratorios EC -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 2v6l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M8 14h8" />
+                </svg>
+                <div class="flex items-center gap-1">
+                  <span class="font-bold text-[12px] tracking-tight text-slate-800">LABORATORIOS</span>
+                  <span class="font-mono font-bold text-[11px] text-expo-blue bg-blue-50 px-1 rounded">EC</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-900">JIMCORPSERVI</span>
-                <span class="text-[9px] uppercase font-mono px-1 bg-blue-50 text-expo-blue rounded font-semibold">SECTOR</span>
+              <!-- Sercop Hospitalario -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+                  <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-mono font-bold text-[12px] text-slate-800">SERCOP</span>
+                  <span class="text-[9px] text-slate-500 font-semibold tracking-wide">HOSPITALARIO</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-normal">FEDELIMP</span>
-                <span class="text-[10px] text-slate-400 font-medium">ECUADOR</span>
+              <!-- Distribuidora Guayas -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                </svg>
+                <span class="font-bold tracking-tight text-slate-800 text-[13px]">DISTRIBUIDORA GUAYAS</span>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-semibold tracking-tight">LACIF</span>
-                <span class="font-mono text-[10px] text-expo-blue font-bold">LOGISTICS</span>
+              <!-- Fedelimp Ecuador -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <div class="flex flex-col leading-none">
+                  <span class="font-bold text-[12px] text-slate-800">FEDELIMP</span>
+                  <span class="text-[9px] text-slate-500 font-semibold">ECUADOR</span>
+                </div>
               </div>
 
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-800">ACESS</span>
-                <span class="text-[10px] text-emerald-600 font-medium">SALUD PÚBLICA</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-mono font-bold text-slate-700">SERCOP</span>
-                <span class="text-[9px] uppercase font-mono px-1 bg-amber-50 text-amber-700 rounded font-semibold">HOSPITALARIO</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold text-sm tracking-normal">LABORATORIOS</span>
-                <span class="font-semibold text-xs text-expo-blue uppercase tracking-widest">EC</span>
-              </div>
-
-              <div class="flex items-center gap-2 hover:text-[#0A2540] transition-colors">
-                <span class="font-semibold tracking-tight">DISTRIBUIDORA GUAYAS</span>
-              </div>
-
-              <div class="flex items-center gap-1.5 hover:text-[#0A2540] transition-colors">
-                <span class="font-bold tracking-tight text-slate-800">RED SUR</span>
-                <span class="text-[10px] text-slate-500 font-medium">PICHINCHA</span>
+              <!-- Lacif Logistics -->
+              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
+                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="font-mono font-bold text-slate-800 text-[12px]">LACIF LOGISTICS</span>
               </div>
             </div>
-
           </div>
         </div>
 
       </section>
+
+      <!-- ===================================================================== -->
+      <!-- 1.5 SCROLL WORLD: RECORRIDO INTERACTIVO 3D SINCRONIZADO CON SCROLL    -->
+      <!-- ===================================================================== -->
+      <landing-scroll-world></landing-scroll-world>
 
       <!-- ===================================================================== -->
       <!-- 2. BENTO GRID MODULAR (Estilo Stripe Showcase de Productos)           -->
@@ -510,7 +593,7 @@ import {
               HL
             </span>
             <span class="text-sm font-bold text-slate-900">
-              Hospital Laura optimiza su abastecimiento quirúrgico con IstpetDev.
+              Hospital Laura optimiza su abastecimiento de limpieza y desinfección con IstpetDev.
             </span>
           </div>
           <a routerLink="/public-trace/HU-2026-EC-089" class="text-xs font-bold text-expo-blue hover:underline hidden sm:inline-block">

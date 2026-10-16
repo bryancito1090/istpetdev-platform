@@ -37,7 +37,8 @@ public sealed record RouteEvaluationResult(
     IReadOnlyList<string> Warnings,
     IReadOnlyList<double[]> Coordinates,
     // "osrm": recorrido por calles; "approximate": rectas entre paradas (sin servicio de rutas).
-    string CoordinatesSource = "approximate"
+    string CoordinatesSource = "approximate",
+    ServiceCostBreakdown? ServiceCostBreakdown = null
 );
 
 public interface IRouteEvaluator
@@ -54,15 +55,18 @@ public sealed class RouteEvaluator : IRouteEvaluator
     private readonly IDistanceProvider _distanceProvider;
     private readonly LogisticsOptions _options;
     private readonly IRouteGeometryService? _geometry;
+    private readonly IApplicationDbContext? _db;
 
     public RouteEvaluator(
         IDistanceProvider distanceProvider,
         IOptions<LogisticsOptions> options,
-        IRouteGeometryService? geometry = null)
+        IRouteGeometryService? geometry = null,
+        IApplicationDbContext? db = null)
     {
         _distanceProvider = distanceProvider;
         _options = options.Value;
         _geometry = geometry;
+        _db = db;
     }
 
     public async Task<RouteEvaluationResult> EvaluateSequenceAsync(
@@ -78,6 +82,10 @@ public sealed class RouteEvaluator : IRouteEvaluator
         {
             return new RouteEvaluationResult(false, 0, 0, 0, 0, 0, Array.Empty<EvaluatedStopDto>(), new[] { "La ruta no contiene paradas." }, Array.Empty<string>(), Array.Empty<double[]>());
         }
+
+        var serviceCost = await ServiceCostCalculator.LoadAsync(_options, sequence, _db, ct);
+        var routeHelperCount = serviceCost.HelperCount(sequence);
+        sequence = sequence.Select(s => s with { ServiceMinutes = serviceCost.ServiceMinutes(s, vehicle, routeHelperCount) }).ToArray();
 
         // 1. Validar precedencia: Ninguna entrega puede ocurrir antes de que se recoja en la bodega correspondiente
         // Se asegura que la primera parada sea una Recogida (Pickup)
@@ -209,8 +217,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
             errors.Add($"La duración total de la ruta ({totalMinutes:F0} min) excede la jornada máxima permitida ({_options.WorkdayHours * 60} min).");
         }
 
-        decimal costPerKm = vehicle?.CostPerKm ?? _options.DefaultCostPerKm;
-        decimal totalCost = LogisticsCostCalculator.CalculateCost(totalKm, totalMinutes, costPerKm, _options.CostPerHour, tollsCost: 0m);
+        var breakdown = serviceCost.Calculate(totalKm, totalMinutes, vehicle, maxWeight, sequence);
+        decimal totalCost = breakdown.Total;
 
         bool isValid = errors.Count == 0;
 
@@ -234,7 +242,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
             errors,
             warnings,
             coordinates,
-            coordinatesSource
+            coordinatesSource,
+            breakdown
         );
     }
 }

@@ -17,7 +17,7 @@ public sealed class MigrationSafetyTests(PostgisContainer postgres)
         var connection = await postgres.NewEmptyDatabaseAsync();
         await using (var migrate = await TestDb.CreateMigratedAsync(connection))
         {
-            Assert.Equal(9, (await migrate.Database.GetAppliedMigrationsAsync()).Count());
+            Assert.Equal(10, (await migrate.Database.GetAppliedMigrationsAsync()).Count());
             Assert.False(migrate.Database.HasPendingModelChanges());
             Assert.Equal(0, await migrate.Database.SqlQueryRaw<long>("SELECT count(*) AS \"Value\" FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND (c.relrowsecurity OR c.relforcerowsecurity)").SingleAsync());
         }
@@ -35,7 +35,12 @@ public sealed class MigrationSafetyTests(PostgisContainer postgres)
     {
         await using var db = TestDb.Context(postgres.NewSchema95Database());
         var product = new Product { Sku = "PRESERVE", Name = "Conservar", BaseUnit = "L", IsActive = true };
-        db.Add(product); await db.SaveChangesAsync();
+        // Se prueba el esquema histórico, anterior a los campos de costo de #240.
+        // DML explícito evita que el modelo actual intente insertar columnas futuras.
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "Product" ("Id", "OrganizationId", "Sku", "Name", "BaseUnit", "WeightPerBaseUnit", "VolumePerBaseUnit", "IsActive", "CreatedAtUtc", "Version")
+            VALUES ({product.Id}, {DemoOrganization.Id}, {product.Sku}, {product.Name}, {product.BaseUnit}, {0m}, {0m}, {true}, {DateTime.UtcNow}, {1L})
+            """);
         var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.MigrateAsync());
         Assert.Contains("contains records", error.MessageText);
         Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());

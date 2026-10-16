@@ -167,11 +167,13 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
             context.Products[sku] = product;
             r.Created++;
         }
-        else { r.Updated++; PreserveMissing(row, r, ("weight_per_unit", product.WeightPerBaseUnit), ("volume_per_unit", product.VolumePerBaseUnit)); }
+        else { r.Updated++; PreserveMissing(row, r, ("weight_per_unit", product.WeightPerBaseUnit), ("volume_per_unit", product.VolumePerBaseUnit), ("unit_value", product.UnitValue), ("units_per_package", product.UnitsPerPackage)); }
         product.Name = row.Text("name")!;
         product.BaseUnit = row.Text("base_unit")!.ToUpperInvariant();
         product.WeightPerBaseUnit = Supplied(row, "weight_per_unit") ? row.Decimal("weight_per_unit") ?? 0 : product.WeightPerBaseUnit;
         product.VolumePerBaseUnit = Supplied(row, "volume_per_unit") ? row.Decimal("volume_per_unit") ?? 0 : product.VolumePerBaseUnit;
+        product.UnitValue = row.Decimal("unit_value") ?? product.UnitValue;
+        product.UnitsPerPackage = row.Decimal("units_per_package") ?? product.UnitsPerPackage;
         product.IsActive = true;
         return true;
     }
@@ -193,11 +195,13 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
             context.Vehicles[code] = vehicle;
             r.Created++;
         }
-        else { r.Updated++; PreserveMissing(row, r, ("max_volume", vehicle.MaxVolume), ("cost_per_km", vehicle.CostPerKm)); }
+        else { r.Updated++; PreserveMissing(row, r, ("max_volume", vehicle.MaxVolume), ("cost_per_km", vehicle.CostPerKm), ("vehicle_type", vehicle.VehicleType), ("usage_scope", vehicle.UsageScope)); }
         vehicle.DepotLocationId = depot.Id;
         vehicle.MaxWeight = row.Decimal("max_weight")!.Value;
         vehicle.MaxVolume = row.Decimal("max_volume") ?? vehicle.MaxVolume;
         vehicle.CostPerKm = row.Decimal("cost_per_km") ?? vehicle.CostPerKm;
+        vehicle.VehicleType = row.Text("vehicle_type")?.ToLowerInvariant() ?? vehicle.VehicleType;
+        vehicle.UsageScope = row.Text("usage_scope")?.ToLowerInvariant() ?? vehicle.UsageScope;
         vehicle.IsActive = true;
         UpsertLocation(LocationKinds.Vehicle, code, $"Vehículo {code}", null, null, vehicleId: vehicle.Id);
         return true;
