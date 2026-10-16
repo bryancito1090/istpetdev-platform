@@ -51,10 +51,10 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
   template: `
     <ion-header [translucent]="true">
       <ion-toolbar color="primary">
-        <ion-title>IstpetDev Móvil</ion-title>
+        <ion-title><span class="toolbar-brand">istpet<span>dev.</span><small>CAMPO / ECUADOR</small></span></ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="openSyncQueue()">
-            Cola
+            Pendientes
             @if (pendingCount() > 0) {
               <ion-badge color="danger" class="ml-1">{{ pendingCount() }}</ion-badge>
             }
@@ -66,7 +66,13 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       </ion-toolbar>
     </ion-header>
 
-    <ion-content [fullscreen]="true" class="ion-padding bg-slate-50">
+    <ion-content class="ion-padding field-home">
+      <section class="field-hero" aria-labelledby="field-heading">
+        <span class="eyebrow">EXPO CLEAN · ECUADOR 2026</span>
+        <h1 id="field-heading">Tu operación.<br><span>Todo bajo control.</span></h1>
+        <p>{{ authService.currentRole() === 'Bodega' ? 'Prepara, identifica y despacha con confianza.' : authService.currentRole() === 'Receptor' ? 'Escanea, revisa y confirma tus insumos.' : 'Tu ruta clara. Cada entrega, un paso más.' }}</p>
+        <div class="hero-status"><span class="status-dot" [class.is-offline]="authService.offline()"></span>{{ authService.offline() ? 'Trabajando sin conexión' : 'Listo para trabajar' }}</div>
+      </section>
       <!-- Insignia fija: Datos Simulados (F7 / Spec 004) solo si usa mock -->
       @if (isMockApi()) {
         <div class="mb-3 flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 shadow-sm">
@@ -89,21 +95,25 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       }
 
       <!-- Tarjeta de Perfil Activo -->
-      <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white">
+      <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white identity-card">
         <ion-card-header class="pb-2">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
               {{ roleSubtitle() }}
             </span>
-            <ion-badge [color]="roleBadgeColor()">
-              {{ roleEntityBadge() }}
-            </ion-badge>
+            <span class="identity-mark" aria-hidden="true">✓</span>
           </div>
           <ion-card-title class="text-lg text-slate-900 font-bold">
             {{ authService.me()?.displayName ?? '' }}
           </ion-card-title>
         </ion-card-header>
       </ion-card>
+
+      <button type="button" class="pending-summary" (click)="openSyncQueue()">
+        <span class="summary-icon" aria-hidden="true">↗</span>
+        <span><strong>{{ pendingCount() }} operaciones pendientes</strong><small>Consulta el estado de tus registros</small></span>
+        <span class="summary-arrow" aria-hidden="true">→</span>
+      </button>
 
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
@@ -226,8 +236,9 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         <!-- Acciones del Conductor -->
         <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm">
           <ion-card-content class="p-3">
-            <div class="flex gap-2">
-              <ion-button expand="block" size="small" class="flex-1 font-bold" (click)="openScan()">
+            <p class="action-kicker">TU SIGUIENTE PASO</p>
+            <div class="driver-actions">
+              <ion-button expand="block" class="flex-1 font-bold" (click)="openScan()">
                 Escanear QR
               </ion-button>
               <ion-button
