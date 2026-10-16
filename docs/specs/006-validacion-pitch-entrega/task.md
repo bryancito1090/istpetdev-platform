@@ -6,12 +6,14 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 |---|---|---|---|---|
 | T1 | Kit previo y revisión humana | — | 15-oct | hecho: revisión de 15 min y aprobación de Joseph el 14-oct; CE-01 registrado |
 | T2 | Guion y matriz de afirmaciones | T1 | antes de slides | borrador aprobado por Joseph el 14-oct; segundo revisor pedido el 14-oct (fase 3), sin realizar; O-04/O-06 y ensayos pendientes |
-| T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 12:30 | pendiente: [hojas](hojas-feria.md) preparadas el 14-oct; sin conversaciones ni corrida oficial de 005 |
+| T3 | Evidencia sectorial y simulada | T1, 001–005 | 17-oct 13:15 | pendiente: [hojas](hojas-feria.md) preparadas el 14-oct; sin conversaciones ni corrida oficial de 005 |
 | T4 | Demostración, roles y respaldo | T2, CE ejecutados | 15-oct video; 17-oct escena | pendiente: [escena y contingencias](escena-y-contingencias.md) preparadas el 14-oct; papeles sin nombres, sin ensayo funcional ni video |
 | T5 | Diez ensayos y veinte respuestas | T2–T4 | 17-oct 15:45 | pendiente: [registro](registro-ensayos.md) preparado el 14-oct; racha 0/10, ninguna ronda de respuestas |
 | T6 | Paquete oficial y congelamiento | T3–T5 | 17-oct 15:45 | pendiente: [manifiesto](manifiesto-paquete.md) abierto y editable/PDF **provisionales** el 14-oct; sin congelar ni entregar |
 
 ## Avisos orales del 16-oct — comprobaciones antes de cambiar el 006
+
+**Actualización 16-oct, agenda oficial** (`areas-menotres.xlsx`, [Cronograma oficial](../../boveda/01%20Oficial/Cronograma%20oficial.md)): no hay entrega el viernes. El vie 18:30–19:00 es Checkpoint de avances; la única entrega es el sáb 16:00–16:15. La agenda no cita los cortes de 13:00 ni de 18:00. Pitch de 5 min (oral). Siguen pendientes canal/formato (O-06) y turno/cubículo (O-13). Entregable 2 en borrador: [Entregable Solucion y propuesta de valor](../../boveda/07%20Demo/Entregable%20Solucion%20y%20propuesta%20de%20valor.md). Tareas del evento en el issue #200.
 
 Fuente: [apunte de Joseph sobre agenda y pitch](../../boveda/NotasEvento/2026-10-16-1102-jb-agenda-entregas-y-pitch.md). Es una transcripción de lo oído durante el evento, sin enlace al Drive ni instrucción escrita. No cierra O-04 (duración del pitch) ni O-06 (canal y formato de entrega).
 
@@ -85,7 +87,7 @@ No hubo ensayos ni cronometrajes: ningún tiempo de los cortes está medido.
 ## T3 — Entrevistas, mentoría y corrida
 
 - [ ] 16-oct, 11:00–11:30 y 13:00–14:00: dos integrantes abordan expositores fuera de las organizaciones cauteladas. Usan guion de cinco minutos, registran negativas sin presión y anonimizan notas.
-- [ ] 17-oct, 11:00–12:30: volver con prototipo; pedir interpretación de alerta, ruta y estado de caja antes de explicar; registrar reacción y cambio.
+- [ ] 17-oct, 11:30–13:15 (Validación integral, agenda oficial): volver con prototipo; pedir interpretación de alerta, ruta y estado de caja antes de explicar; registrar reacción y cambio.
 - [ ] Registrar mentorías del 16 y 17 con la [plantilla](../../boveda/09%20Plantillas/Plantilla%20mentoria.md), incluyendo si el mentor podría integrar jurado.
 - [ ] Ejecutar o recibir el ZIP de 005 con FR-21 y CE-04/06/09: verificar hashes, host, commit, seeds y escenario adverso antes de escribir un rango. Si falla, retirar cifras.
 

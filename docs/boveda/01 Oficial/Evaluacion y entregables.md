@@ -60,7 +60,7 @@ Las reglas de cálculo aparecen intercaladas en Anexo 5 y referenciadas desde An
 | Entregable | Contenido mínimo (texto del manual) | Nota base del equipo | Evidencia final pendiente |
 |---|---|---|---|
 | Problema | Problema, usuario y contexto | [[Historia y propuesta de valor]], [[Usuarios y flujos]] | Ficha e entrevista |
-| Solución | Descripción y funcionamiento | [[Arquitectura del sistema]], [[Requisitos y aceptacion]] | Diagrama final |
+| Solución | Descripción y funcionamiento | [[Entregable Solucion y propuesta de valor]], [[Arquitectura del sistema]], [[Requisitos y aceptacion]] | Diagrama final |
 | Prototipo / demo | Modelo, mockup, prototipo, simulación o evidencia equivalente | [[Guion del pitch]], [[Dataset y escenarios]] | URL, versión y video |
 | Validación | Pruebas, entrevistas, datos o evidencia | [[Plan de validacion]], [[Simulador y metricas]] | Resultados y pruebas |
 | Viabilidad | Tecnología, recursos, implementación y riesgos | [[AWS y Terraform]], [[Riesgos y decisiones pendientes]] | Costos verificados y recursos |

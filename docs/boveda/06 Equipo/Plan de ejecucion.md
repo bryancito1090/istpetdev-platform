@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [hackathon, istpetdev]
 ---
 
@@ -49,13 +49,13 @@ flowchart TD
 
 ## Día 1 — 16 de octubre
 
-Revisar ficha final y datos reales del reto. Ajustar supuestos, prioridad, algoritmos y UX con mentoría. Registrar aportes del evento. Integrar cambios y repetir el recorrido central antes del checkpoint de 18:30.
+Revisar ficha final y datos reales del reto. Ajustar supuestos, prioridad, algoritmos y UX con mentoría. Registrar aportes del evento. Integrar cambios y repetir el recorrido central antes del checkpoint de 18:30. Horario detallado vigente (agenda oficial del 16-oct, issues #193–#201): «Días del evento» en [[Definiciones de producto y plan hasta el pitch]].
 
 El objetivo es llegar preparados y usar la jornada para adaptación y validación, dentro de las reglas confirmadas. No inventar que el código previo se creó durante el evento.
 
 ## Día 2 — 17 de octubre
 
-Finalizar cambios esenciales temprano. Ejecutar pruebas con usuario/mentor y capturar evidencia entre 11:00 y 12:30. Cerrar negocio y viabilidad, ensayar con tiempo confirmado y congelar materiales a las 15:45 como meta interna.
+Finalizar cambios esenciales temprano. Ejecutar pruebas con usuario/mentor y capturar evidencia en la «Validación integral» de 11:30 a 13:15 (agenda oficial; antes 11:00–12:30). Congelar el código a las 11:30. Cerrar negocio y viabilidad, ensayar con tiempo confirmado y congelar materiales a las 15:45 como meta interna.
 
 ## Qué se puede adaptar al último momento
 
