@@ -30,7 +30,9 @@ public sealed class SimulationService : ISimulationService
         SimulationComparisonRequest request,
         CancellationToken ct = default)
     {
-        var operationalConn = _configuration.GetConnectionString("DefaultConnection") ?? "";
+        var operationalConn = _configuration.GetConnectionString("Main")
+            ?? _configuration.GetConnectionString("DefaultConnection")
+            ?? "";
         var simulationConn = _configuration.GetConnectionString("Simulation") ?? operationalConn;
 
         // Validar aislamiento de bases de datos

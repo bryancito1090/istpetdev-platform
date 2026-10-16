@@ -10,10 +10,12 @@ public static class AccountSeeder
     public static async Task SeedAsync(ApplicationDbContext db, string? issuer, IEnumerable<DemoAccount> accounts, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(issuer)) return;
+        var pendingSubjects = new HashSet<string>(StringComparer.Ordinal);
         foreach (var demo in accounts)
         {
             if (!Roles.IsValid(demo.Role))
                 throw new InvalidOperationException($"Rol '{demo.Role}' no válido para la cuenta '{demo.Subject}'. Válidos: {string.Join(", ", Roles.All)}.");
+            if (!pendingSubjects.Add(demo.Subject)) continue;
             var account = await db.Accounts.FirstOrDefaultAsync(a => a.Issuer == issuer && a.Subject == demo.Subject, cancellationToken);
             if (account is not null) continue;
             if (string.IsNullOrWhiteSpace(demo.Subject) || demo.Kind is not ("human" or "technical") || (demo.Kind == "technical") != (demo.Role == Roles.Automatizacion))

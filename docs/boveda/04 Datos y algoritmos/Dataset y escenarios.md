@@ -65,4 +65,4 @@ Un comando o endpoint solo de demo restaura el dataset identificado y el recorri
 
 ## Regla de honestidad
 
-No precargar un dashboard con ahorro fijo. Los valores salen del simulador y se acompañan de etiqueta, parámetros y exportaciones. Ver [[Simulador y metricas]].
+No precargar un dashboard con ahorro fijo. Los valores salen del simulador y se acompañan de etiqueta, parámetros y exportaciones. Ver [[Simulador y metricas]] y [[Cifras del simulador 90 dias]].
