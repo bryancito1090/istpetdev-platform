@@ -1,11 +1,264 @@
 {
-  "updatedAt": "2026-10-14T15:03:39.000Z",
-  "createdAt": "2026-10-14T15:03:33.411Z",
-  "id": "14fb7192-8115-54e9-a348-f2980e20bddf",
-  "name": "IstpetDev Agent - vigia",
-  "description": null,
   "active": true,
+  "activeVersionId": "82e3307f-1e36-4f8c-822b-25e0bc236856",
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Prepare Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Initial Context Allowed?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Load Initial Context",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Initial Context Skipped",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Initial Context Skipped": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Load HMAC Key": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Verify Signature",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Load Initial Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Prepare Result": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Register Execution": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Respond Accepted",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Respond Accepted": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Initial Context Allowed?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule (disabled)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Start Scheduled Watch",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Valid Signature?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Register Execution",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Respond Unauthorized",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Verify Signature": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Valid Signature?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Load HMAC Key",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "find_stock": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "get_incident_impact": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "get_risks": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "get_route_plan": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "plan_sourcing": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "propose_routes": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "replan": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "vehicle_availability": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "AI Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2026-10-14T15:03:33.411Z",
+  "description": null,
+  "id": "14fb7192-8115-54e9-a348-f2980e20bddf",
   "isArchived": false,
+  "meta": {
+    "n8nVersion": "2.39.5",
+    "promptVersion": "{{PROMPT_VERSION}}",
+    "templateCredsSetupCompleted": false
+  },
+  "name": "IstpetDev Agent - vigia",
+  "nodeGroups": [],
   "nodes": [
     {
       "id": "b1051d95-9e7f-5221-a588-93c885489719",
@@ -347,34 +600,42 @@
       "typeVersion": 3.4
     },
     {
-      "id": "a5b6a403-1d83-4f33-bf10-17bc75fbd742",
-      "name": "Start Scheduled Watch",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        680,
-        840
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.ISTPETDEV_API_BASE_URL + '/agent/runs' }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "oAuth2Api",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\"kind\":\"Watch\"}",
-        "options": {
-          "timeout": 11000
-        }
-      },
       "credentials": {
         "oAuth2Api": {
           "id": "8e186867-4916-54b1-b968-c1c273f79a11",
           "name": "IstpetDev M2M"
         }
-      }
+      },
+      "id": "a5b6a403-1d83-4f33-bf10-17bc75fbd742",
+      "name": "Start Scheduled Watch",
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "jsonBody": "={\"kind\":\"Watch\"}",
+        "method": "POST",
+        "options": {
+          "timeout": 11000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "={{ $env.ISTPETDEV_API_BASE_URL + '/agent/runs' }}"
+      },
+      "position": [
+        680,
+        840
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5
     },
     {
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      },
+      "id": "e4e034a0-5f6f-4ca9-aeaf-113000000001",
+      "name": "Register Execution",
       "parameters": {
         "authentication": "genericCredentialType",
         "genericAuthType": "oAuth2Api",
@@ -396,22 +657,16 @@
         "specifyBody": "json",
         "url": "={{ ($('Verify Signature').first().json.payload.apiBaseUrl || $env.ISTPETDEV_API_BASE_URL || 'http://host.docker.internal:5017/api/v1') + '/agent/runs/' + encodeURIComponent($('Verify Signature').first().json.payload.runId) + '/execution' }}"
       },
-      "id": "e4e034a0-5f6f-4ca9-aeaf-113000000001",
-      "name": "Register Execution",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "position": [
         880,
         80
       ],
-      "credentials": {
-        "oAuth2Api": {
-          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
-          "name": "IstpetDev M2M"
-        }
-      }
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5
     },
     {
+      "id": "19500000-0000-4000-8000-000000000001",
+      "name": "find_stock",
       "parameters": {
         "description": "Consulta el stock utilizable de un producto en las bodegas activas; el motor indica lotes, vencimiento y cantidades disponibles. Usa el productId devuelto por riesgos o rutas; warehouseId es opcional.",
         "inputSchema": "{\"type\":\"object\",\"properties\":{\"productId\":{\"type\":\"string\",\"format\":\"uuid\",\"description\":\"ID del producto a consultar.\"},\"warehouseId\":{\"type\":\"string\",\"format\":\"uuid\",\"description\":\"ID opcional de una bodega concreta.\"}},\"required\":[\"productId\"],\"additionalProperties\":false}",
@@ -421,35 +676,35 @@
         "specifyInputSchema": true,
         "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool find_stock\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b\\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst args = Object.assign(\\u007b\\u007d, parsedQuery, input);\\\\ndelete args.query;\\\\ndelete args.context;\\\\nconst uuid = /^[0-9a-f]\\u007b8\\u007d-[0-9a-f]\\u007b4\\u007d-[1-8][0-9a-f]\\u007b3\\u007d-[89ab][0-9a-f]\\u007b3\\u007d-[0-9a-f]\\u007b12\\u007d$/i;\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst productId = String(args.productId || '').trim().toLowerCase();\\\\nconst warehouseId = args.warehouseId === undefined || args.warehouseId === null || args.warehouseId === '' ? '' : String(args.warehouseId).trim().toLowerCase();\\\\nconst validArgs = uuid.test(productId) && (warehouseId === '' || uuid.test(warehouseId));\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validArgs && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validArgs ? 'invalid_arguments' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b runId, kind, incidentId, apiBaseUrl, deadlineUtc, productId, warehouseId, validArgs, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000201\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"GET\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/logistics/stock?productId=' + encodeURIComponent($json.productId) + ($json.warehouseId ? '&warehouseId=' + encodeURIComponent($json.warehouseId) : '') \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"19500000-0000-4000-8000-000000000101\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2,
       "position": [
         1440,
         1180
       ],
-      "id": "19500000-0000-4000-8000-000000000001",
-      "name": "find_stock"
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
     },
     {
+      "id": "19500000-0000-4000-8000-000000000002",
+      "name": "plan_sourcing",
       "parameters": {
-        "description": "Calcula el origen sugerido por el motor para abastecer: bodegas, lotes, asignaciones y faltantes. Envía exactamente una lista: orderIds de pedidos reales, o servicePointIds de puntos en riesgo con productId opcional. No envía cantidades.",
+        "description": "Calcula origen, asignaciones y faltantes mediante el motor. En Watch usa {} para todos los puntos en riesgo del contexto inicial autenticado, sin repetir sus UUID. Para una selección concreta envía exactamente una lista orderIds o servicePointIds; productId opcional solo para puntos. Nunca cantidades.",
         "inputSchema": "{\"type\":\"object\",\"properties\":{\"orderIds\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"format\":\"uuid\"},\"minItems\":1,\"maxItems\":100,\"description\":\"IDs de pedidos existentes a abastecer.\"},\"servicePointIds\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"format\":\"uuid\"},\"minItems\":1,\"maxItems\":100,\"description\":\"IDs de puntos de servicio en riesgo a abastecer.\"},\"productId\":{\"type\":\"string\",\"format\":\"uuid\",\"description\":\"Producto concreto; solo válido junto con servicePointIds.\"}},\"additionalProperties\":false}",
         "name": "plan_sourcing",
         "schemaType": "manual",
         "source": "parameter",
         "specifyInputSchema": true,
-        "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool plan_sourcing\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b\\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst args = Object.assign(\\u007b\\u007d, parsedQuery, input);\\\\ndelete args.query;\\\\ndelete args.context;\\\\nconst uuid = /^[0-9a-f]\\u007b8\\u007d-[0-9a-f]\\u007b4\\u007d-[1-8][0-9a-f]\\u007b3\\u007d-[89ab][0-9a-f]\\u007b3\\u007d-[0-9a-f]\\u007b12\\u007d$/i;\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst clean = (list) => Array.from(new Set(list.map(value => String(value).trim().toLowerCase()).filter(value => value.length > 0)));\\\\nconst orderIds = Array.isArray(args.orderIds) ? clean(args.orderIds) : [];\\\\nconst servicePointIds = Array.isArray(args.servicePointIds) ? clean(args.servicePointIds) : [];\\\\nconst productId = args.productId === undefined || args.productId === null || args.productId === '' ? '' : String(args.productId).trim().toLowerCase();\\\\nconst exactlyOne = (orderIds.length > 0) !== (servicePointIds.length > 0);\\\\nconst validArgs = exactlyOne\\\\n  && orderIds.length <= 100 && servicePointIds.length <= 100\\\\n  && orderIds.every(value => uuid.test(value)) && servicePointIds.every(value => uuid.test(value))\\\\n  && (productId === '' || (uuid.test(productId) && servicePointIds.length > 0));\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validArgs && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validArgs ? 'invalid_arguments' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b runId, kind, incidentId, apiBaseUrl, deadlineUtc, orderIds, servicePointIds, productId, validArgs, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000202\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"POST\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/logistics/sourcing' \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d,\\\"sendBody\\\":true,\\\"specifyBody\\\":\\\"json\\\",\\\"jsonBody\\\":\\\"=\\u007b\\u007b JSON.stringify($json.orderIds.length > 0 ? \\u007b orderIds: $json.orderIds \\u007d : ($json.productId ? \\u007b servicePointIds: $json.servicePointIds, productId: $json.productId \\u007d : \\u007b servicePointIds: $json.servicePointIds \\u007d)) \\u007d\\u007d\\\"\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d,\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000302\\\",\\\"name\\\":\\\"Return Sourcing\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[1140,180],\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"// Selección de campos del motor; ninguna cantidad se calcula en n8n.\\\\nconst line = d => (\\u007b destinationId: d.destinationId, destinationCode: d.destinationCode,\\\\n  productId: d.productId, sku: d.sku, baseUnit: d.baseUnit, riskLevel: d.riskLevel,\\\\n  coverageDays: d.coverageDays, requestedQuantity: d.requestedQuantity,\\\\n  allocatedQuantity: d.allocatedQuantity, shortageQuantity: d.shortageQuantity,\\\\n  fullySourced: d.fullySourced, allocations: (d.allocations || []).map(a => (\\u007b\\\\n    warehouseId: a.warehouseId, warehouseCode: a.warehouseCode, quantity: a.quantity, distanceKm: a.distanceKm \\u007d)) \\u007d);\\\\nreturn \\u007b json: \\u007b operationalDate: $json.operationalDate, sourceKind: $json.sourceKind,\\\\n  safetyStockPct: $json.safetyStockPct, fullySourced: $json.fullySourced,\\\\n  demands: ($json.demands || []).map(line), options: ($json.options || []).map(o => (\\u007b\\\\n    optionId: o.optionId, title: o.title, isRecommended: o.isRecommended,\\\\n    fullySourced: o.fullySourced, involvedWarehouseIds: o.involvedWarehouseIds,\\\\n    lines: (o.lines || []).map(line) \\u007d)) \\u007d \\u007d;\\\"\\u007d\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"HTTP Request\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Return Sourcing\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"19500000-0000-4000-8000-000000000102\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}"
+        "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool plan_sourcing\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b\\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst args = Object.assign(\\u007b\\u007d, parsedQuery, input);\\\\ndelete args.query;\\\\ndelete args.context;\\\\nconst uuid = /^[0-9a-f]\\u007b8\\u007d-[0-9a-f]\\u007b4\\u007d-[1-8][0-9a-f]\\u007b3\\u007d-[89ab][0-9a-f]\\u007b3\\u007d-[0-9a-f]\\u007b12\\u007d$/i;\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst clean = (list) => Array.from(new Set(list.map(value => String(value).trim().toLowerCase()).filter(value => value.length > 0)));\\\\nconst orderIds = Array.isArray(args.orderIds) ? clean(args.orderIds) : [];\\\\n// El valor por defecto procede de la consulta autenticada, nunca del modelo.\\\\nconst useInitialRisks = args.orderIds === undefined && args.servicePointIds === undefined;\\\\nconst servicePointIds = Array.isArray(args.servicePointIds) ? clean(args.servicePointIds)\\\\n  : useInitialRisks && kind === 'Watch' && Array.isArray(context.riskServicePointIds)\\\\n    ? clean(context.riskServicePointIds) : [];\\\\nconst productId = args.productId === undefined || args.productId === null || args.productId === '' ? '' : String(args.productId).trim().toLowerCase();\\\\nconst exactlyOne = (orderIds.length > 0) !== (servicePointIds.length > 0);\\\\nconst validArgs = exactlyOne\\\\n  && orderIds.length <= 100 && servicePointIds.length <= 100\\\\n  && orderIds.every(value => uuid.test(value)) && servicePointIds.every(value => uuid.test(value))\\\\n  && (productId === '' || (uuid.test(productId) && servicePointIds.length > 0));\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validArgs && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validArgs ? 'invalid_arguments' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b runId, kind, incidentId, apiBaseUrl, deadlineUtc, orderIds, servicePointIds, productId, validArgs, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000202\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"POST\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/logistics/sourcing' \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d,\\\"sendBody\\\":true,\\\"specifyBody\\\":\\\"json\\\",\\\"jsonBody\\\":\\\"=\\u007b\\u007b JSON.stringify($json.orderIds.length > 0 ? \\u007b orderIds: $json.orderIds \\u007d : ($json.productId ? \\u007b servicePointIds: $json.servicePointIds, productId: $json.productId \\u007d : \\u007b servicePointIds: $json.servicePointIds \\u007d)) \\u007d\\u007d\\\"\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d,\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000302\\\",\\\"name\\\":\\\"Return Sourcing\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[1140,180],\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"// Selección de campos del motor; ninguna cantidad se calcula en n8n.\\\\nconst line = d => (\\u007b destinationId: d.destinationId, destinationCode: d.destinationCode,\\\\n  productId: d.productId, sku: d.sku, baseUnit: d.baseUnit, riskLevel: d.riskLevel,\\\\n  coverageDays: d.coverageDays, requestedQuantity: d.requestedQuantity,\\\\n  allocatedQuantity: d.allocatedQuantity, shortageQuantity: d.shortageQuantity,\\\\n  fullySourced: d.fullySourced, allocations: (d.allocations || []).map(a => (\\u007b\\\\n    warehouseId: a.warehouseId, warehouseCode: a.warehouseCode, quantity: a.quantity, distanceKm: a.distanceKm \\u007d)) \\u007d);\\\\nreturn \\u007b json: \\u007b operationalDate: $json.operationalDate, sourceKind: $json.sourceKind,\\\\n  safetyStockPct: $json.safetyStockPct, fullySourced: $json.fullySourced,\\\\n  demands: ($json.demands || []).map(line), options: ($json.options || []).map(o => (\\u007b\\\\n    optionId: o.optionId, title: o.title, isRecommended: o.isRecommended,\\\\n    fullySourced: o.fullySourced, involvedWarehouseIds: o.involvedWarehouseIds,\\\\n    lines: (o.lines || []).map(line) \\u007d)) \\u007d \\u007d;\\\"\\u007d\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"HTTP Request\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Return Sourcing\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"19500000-0000-4000-8000-000000000102\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify((() => { const signed = $('Verify Signature').first().json.payload; let items = []; try { items = $('Load Initial Context').first().json.items; } catch {} return { ...signed, riskServicePointIds: signed.kind === 'Watch' && Array.isArray(items) ? items.filter(r => ['Critico', 'Alto', 'Vigilar'].includes(r.level) && r.suggestedQuantity > 0).map(r => r.servicePointId) : [] }; })())).slice(1, -1)) }}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2,
       "position": [
         1440,
         1380
       ],
-      "id": "19500000-0000-4000-8000-000000000002",
-      "name": "plan_sourcing"
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
     },
     {
+      "id": "19500000-0000-4000-8000-000000000003",
+      "name": "vehicle_availability",
       "parameters": {
         "description": "Lista los vehículos activos disponibles hoy con capacidad, bodega base y costo por km. No recibe argumentos; consulta el día operativo del servidor.",
         "inputSchema": "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}",
@@ -459,65 +714,60 @@
         "specifyInputSchema": true,
         "workflowJson": "={{ \"\\u007b\\\"name\\\":\\\"Tool vehicle_availability\\\",\\\"nodes\\\":[\\u007b\\\"parameters\\\":\\u007b\\\"inputSource\\\":\\\"passthrough\\\"\\u007d,\\\"id\\\":\\\"9ee04e0b-b1ba-5d41-ac53-cb6aa1e50384\\\",\\\"name\\\":\\\"When Executed by Another Workflow\\\",\\\"type\\\":\\\"n8n-nodes-base.executeWorkflowTrigger\\\",\\\"typeVersion\\\":1.2,\\\"position\\\":[240,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"const context = __SIGNED_CONTEXT__;\\\\nconst input = $input.item.json || \\u007b\\u007d;\\\\nlet parsedQuery = \\u007b\\u007d;\\\\nif (input.query) \\u007b\\\\n  if (typeof input.query === 'object') \\u007b\\\\n    parsedQuery = input.query;\\\\n  \\u007d else if (typeof input.query === 'string') \\u007b\\\\n    try \\u007b\\\\n      parsedQuery = JSON.parse(input.query);\\\\n    \\u007d catch (e) \\u007b\\\\n      parsedQuery = \\u007b\\u007d;\\\\n    \\u007d\\\\n  \\u007d\\\\n\\u007d\\\\nconst args = Object.assign(\\u007b\\u007d, parsedQuery, input);\\\\ndelete args.query;\\\\ndelete args.context;\\\\nconst uuid = /^[0-9a-f]\\u007b8\\u007d-[0-9a-f]\\u007b4\\u007d-[1-8][0-9a-f]\\u007b3\\u007d-[89ab][0-9a-f]\\u007b3\\u007d-[0-9a-f]\\u007b12\\u007d$/i;\\\\nconst \\u007b runId, incidentId, kind, deadlineUtc \\u007d = context;\\\\nconst apiBaseUrl = $env.ISTPETDEV_API_BASE_URL;\\\\nconst remaining = Date.parse(deadlineUtc) - Date.now();\\\\nconst validArgs = true;\\\\nconst canCall = Number.isFinite(remaining) && remaining >= 2200 && validArgs && Boolean(runId) && Boolean(apiBaseUrl);\\\\nconst skipReason = !validArgs ? 'invalid_arguments' : 'deadline_too_short';\\\\nreturn \\u007b json: \\u007b runId, kind, incidentId, apiBaseUrl, deadlineUtc, validArgs, canCall, skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"522d0ca8-cce1-568c-aeaa-61d09c27aca4\\\",\\\"name\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[460,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"conditions\\\":\\u007b\\\"options\\\":\\u007b\\\"caseSensitive\\\":true,\\\"leftValue\\\":\\\"\\\",\\\"typeValidation\\\":\\\"strict\\\",\\\"version\\\":2\\u007d,\\\"conditions\\\":[\\u007b\\\"id\\\":\\\"19500000-0000-4000-8000-000000000203\\\",\\\"leftValue\\\":\\\"=\\u007b\\u007b $json.canCall \\u007d\\u007d\\\",\\\"rightValue\\\":true,\\\"operator\\\":\\u007b\\\"type\\\":\\\"boolean\\\",\\\"operation\\\":\\\"true\\\",\\\"singleValue\\\":true\\u007d\\u007d],\\\"combinator\\\":\\\"and\\\"\\u007d,\\\"options\\\":\\u007b\\u007d\\u007d,\\\"id\\\":\\\"b9199f25-ea76-528e-b096-5c348c05af3b\\\",\\\"name\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"n8n-nodes-base.if\\\",\\\"typeVersion\\\":2.2,\\\"position\\\":[680,280]\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"method\\\":\\\"GET\\\",\\\"url\\\":\\\"=\\u007b\\u007b $env.ISTPETDEV_API_BASE_URL + '/logistics/vehicles/available' \\u007d\\u007d\\\",\\\"authentication\\\":\\\"genericCredentialType\\\",\\\"genericAuthType\\\":\\\"oAuth2Api\\\",\\\"sendHeaders\\\":true,\\\"headerParameters\\\":\\u007b\\\"parameters\\\":[\\u007b\\\"name\\\":\\\"X-Agent-Run-Id\\\",\\\"value\\\":\\\"=\\u007b\\u007b $json.runId \\u007d\\u007d\\\"\\u007d]\\u007d,\\\"options\\\":\\u007b\\\"timeout\\\":\\\"=\\u007b\\u007b Math.max(1000, Math.min(15000, Date.parse($json.deadlineUtc || 0) - Date.now() - 1200)) \\u007d\\u007d\\\"\\u007d\\u007d,\\\"id\\\":\\\"32da8f55-cf5e-5758-99a8-3e443e93f7c7\\\",\\\"name\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"n8n-nodes-base.httpRequest\\\",\\\"typeVersion\\\":4.5,\\\"position\\\":[920,180],\\\"credentials\\\":\\u007b\\\"oAuth2Api\\\":\\u007b\\\"id\\\":\\\"8e186867-4916-54b1-b968-c1c273f79a11\\\",\\\"name\\\":\\\"IstpetDev M2M\\\"\\u007d\\u007d\\u007d,\\u007b\\\"parameters\\\":\\u007b\\\"mode\\\":\\\"runOnceForEachItem\\\",\\\"jsCode\\\":\\\"return \\u007b json: \\u007b skipped: true, reason: $input.item.json.skipReason \\u007d \\u007d;\\\"\\u007d,\\\"id\\\":\\\"68d00c98-acc3-52f7-961e-e222260f2003\\\",\\\"name\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"n8n-nodes-base.code\\\",\\\"typeVersion\\\":2,\\\"position\\\":[920,380]\\u007d],\\\"connections\\\":\\u007b\\\"When Executed by Another Workflow\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Check Deadline\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Check Deadline\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"Enough Time?\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d,\\\"Enough Time?\\\":\\u007b\\\"main\\\":[[\\u007b\\\"node\\\":\\\"HTTP Request\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d],[\\u007b\\\"node\\\":\\\"Return Skipped\\\",\\\"type\\\":\\\"main\\\",\\\"index\\\":0\\u007d]]\\u007d\\u007d,\\\"active\\\":false,\\\"settings\\\":\\u007b\\\"executionOrder\\\":\\\"v1\\\"\\u007d,\\\"meta\\\":\\u007b\\\"templateCredsSetupCompleted\\\":false\\u007d,\\\"pinData\\\":\\u007b\\u007d,\\\"versionId\\\":\\\"19500000-0000-4000-8000-000000000103\\\"\\u007d\".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}"
       },
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2,
       "position": [
         1440,
         1580
       ],
-      "id": "19500000-0000-4000-8000-000000000003",
-      "name": "vehicle_availability"
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
     },
     {
       "id": "19500000-0000-4000-8000-000000000401",
       "name": "Initial Context Allowed?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1040,
-        220
-      ],
       "parameters": {
         "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "19500000-0000-4000-8000-000000000402",
+              "leftValue": "={{ Date.parse($('Verify Signature').first().json.payload.deadlineUtc) - Date.now() >= 2200 }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
           "options": {
             "caseSensitive": true,
             "leftValue": "",
             "typeValidation": "strict",
             "version": 2
-          },
-          "conditions": [
-            {
-              "id": "19500000-0000-4000-8000-000000000402",
-              "leftValue": "={{ Date.parse($('Verify Signature').first().json.payload.deadlineUtc) - Date.now() >= 2200 }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
+          }
         },
         "options": {}
-      }
+      },
+      "position": [
+        1040,
+        220
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
     },
     {
+      "credentials": {
+        "oAuth2Api": {
+          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
+          "name": "IstpetDev M2M"
+        }
+      },
       "id": "19500000-0000-4000-8000-000000000403",
       "name": "Load Initial Context",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        1240,
-        140
-      ],
       "onError": "continueRegularOutput",
       "parameters": {
-        "method": "GET",
-        "url": "={{ $env.ISTPETDEV_API_BASE_URL + '/risks' }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "oAuth2Api",
-        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
@@ -526,324 +776,74 @@
             }
           ]
         },
+        "method": "GET",
         "options": {
           "timeout": "={{ Math.max(1000, Math.min(15000, Date.parse($('Verify Signature').first().json.payload.deadlineUtc) - Date.now() - 1200)) }}"
-        }
+        },
+        "sendHeaders": true,
+        "url": "={{ $env.ISTPETDEV_API_BASE_URL + '/risks' }}"
       },
-      "credentials": {
-        "oAuth2Api": {
-          "id": "8e186867-4916-54b1-b968-c1c273f79a11",
-          "name": "IstpetDev M2M"
-        }
-      }
+      "position": [
+        1240,
+        140
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5
     },
     {
       "id": "19500000-0000-4000-8000-000000000404",
       "name": "Initial Context Skipped",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "return { json: { skipped: true, reason: 'deadline_too_short' } };",
+        "mode": "runOnceForEachItem"
+      },
       "position": [
         1240,
         320
       ],
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "return { json: { skipped: true, reason: 'deadline_too_short' } };"
-      }
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     }
   ],
-  "connections": {
-    "AI Agent": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Prepare Result",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "DeepSeek Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_languageModel"
-          }
-        ]
-      ]
-    },
-    "Load HMAC Key": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Verify Signature",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Prepare Result": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Send Result",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Respond Accepted": {
-      "main": [
-        [
-          {
-            "node": "Initial Context Allowed?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Valid Signature?": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Register Execution",
-            "type": "main"
-          }
-        ],
-        [
-          {
-            "index": 0,
-            "node": "Respond Unauthorized",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Verify Signature": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Valid Signature?",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Webhook": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Load HMAC Key",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "get_incident_impact": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "get_risks": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "get_route_plan": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "propose_routes": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "replan": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "Schedule (disabled)": {
-      "main": [
-        [
-          {
-            "node": "Start Scheduled Watch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Register Execution": {
-      "main": [
-        [
-          {
-            "node": "Respond Accepted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "find_stock": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "plan_sourcing": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "vehicle_availability": {
-      "ai_tool": [
-        [
-          {
-            "index": 0,
-            "node": "AI Agent",
-            "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "Initial Context Allowed?": {
-      "main": [
-        [
-          {
-            "node": "Load Initial Context",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Initial Context Skipped",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Load Initial Context": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Initial Context Skipped": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": {},
   "settings": {
+    "errorWorkflow": "{{ERROR_WORKFLOW_ID}}",
     "executionOrder": "v1",
     "executionTimeout": 35,
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
     "saveExecutionProgress": true,
-    "saveManualExecutions": true,
-    "errorWorkflow": "{{ERROR_WORKFLOW_ID}}"
+    "saveManualExecutions": true
   },
-  "staticData": null,
-  "meta": {
-    "n8nVersion": "2.39.5",
-    "promptVersion": "{{PROMPT_VERSION}}",
-    "templateCredsSetupCompleted": false
-  },
-  "nodeGroups": [],
-  "pinData": {},
-  "versionId": "82e3307f-1e36-4f8c-822b-25e0bc236856",
-  "activeVersionId": "82e3307f-1e36-4f8c-822b-25e0bc236856",
-  "versionCounter": 1,
-  "triggerCount": 1,
-  "sourceWorkflowId": null,
-  "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-10-14T15:03:33.413Z",
       "createdAt": "2026-10-14T15:03:33.413Z",
-      "role": "workflow:owner",
-      "workflowId": "14fb7192-8115-54e9-a348-f2980e20bddf",
-      "projectId": "Q2rM1xnTQSzyB739",
       "project": {
-        "updatedAt": "2026-10-14T15:03:29.784Z",
         "createdAt": "2026-10-14T15:03:29.784Z",
+        "creatorId": "f63636a0-1148-4911-9b5e-76606e28b739",
+        "customTelemetryTags": [],
+        "description": null,
+        "icon": null,
         "id": "Q2rM1xnTQSzyB739",
         "name": "Unnamed Project",
         "type": "personal",
-        "icon": null,
-        "description": null,
-        "customTelemetryTags": [],
-        "creatorId": "f63636a0-1148-4911-9b5e-76606e28b739"
-      }
+        "updatedAt": "2026-10-14T15:03:29.784Z"
+      },
+      "projectId": "Q2rM1xnTQSzyB739",
+      "role": "workflow:owner",
+      "updatedAt": "2026-10-14T15:03:33.413Z",
+      "workflowId": "14fb7192-8115-54e9-a348-f2980e20bddf"
     }
   ],
+  "sourceWorkflowId": null,
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-10-14T15:03:39.000Z",
+  "versionCounter": 1,
+  "versionId": "82e3307f-1e36-4f8c-822b-25e0bc236856",
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "description": null,
+    "name": null
   }
 }

@@ -14,7 +14,8 @@ const fs = require('fs');
 const vm = require('vm');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const workflow = JSON.parse(vm.runInNewContext(input.expression.slice(3, -2), {
-  $: () => ({ first: () => ({ json: { payload: input.item.context } }) })
+  $: (name) => ({ first: () => ({ json: name === 'Load Initial Context'
+    ? { items: input.riskItems } : { payload: input.item.context } }) })
 }));
 const code = workflow.nodes.find(n => n.name === 'Check Deadline').parameters.jsCode;
 const output = vm.runInNewContext('(function () {' + code + '\\n})()', {
@@ -50,19 +51,19 @@ def tools_of(workflow):
     return {node["name"]: node for node in workflow["nodes"] if node["type"].endswith(".toolWorkflow")}
 
 
-def run_guard(tool, item):
+def run_guard(tool, item, risk_items=None):
     output = subprocess.check_output(
         ["node", "-e", RUNNER],
         text=True,
-        input=json.dumps({"expression": tool["parameters"]["workflowJson"], "item": item}),
+        input=json.dumps({"expression": tool["parameters"]["workflowJson"], "item": item, "riskItems": risk_items or []}),
     )
     return json.loads(output)
 
 
 def subworkflow_of(tool):
     expression = tool["parameters"]["workflowJson"]
-    inner = expression[len("={{ ") : -len(".replace('__SIGNED_CONTEXT__', JSON.stringify(JSON.stringify($('Verify Signature').first().json.payload)).slice(1, -1)) }}")]
-    return json.loads(json.loads(inner))
+    inner, _ = json.JSONDecoder().raw_decode(expression[len("={{ "):])
+    return json.loads(inner)
 
 
 class WorkflowContextTests(unittest.TestCase):
@@ -262,6 +263,29 @@ process.stdout.write(JSON.stringify(output.json));
                                    "query": {"orderIds": [ORDER_ID, ORDER_ID]}})
         self.assertEqual([ORDER_ID], guarded["orderIds"])
         self.assertTrue(guarded["canCall"])
+
+    def test_sourcing_default_uses_authenticated_risks_and_ignores_forged_lists(self):
+        context = {"runId": "signed-run", "kind": "Watch",
+                   "deadlineUtc": "2026-10-14T20:00:10Z"}
+        rows = [{"servicePointId": POINT_ID, "level": "Critico", "suggestedQuantity": 2},
+                {"servicePointId": POINT_ID, "level": "Alto", "suggestedQuantity": 3},
+                {"servicePointId": ORDER_ID, "level": "Normal", "suggestedQuantity": 4},
+                {"servicePointId": ORDER_ID, "level": "Critico", "suggestedQuantity": 0}]
+        for filename in ("vigia.json", "incidente.json"):
+            tool = tools_of(load_workflow(filename))["plan_sourcing"]
+            item = {"context": context, "query": {}, "riskServicePointIds": [ORDER_ID]}
+            guarded = run_guard(tool, item, rows)
+            self.assertTrue(guarded["canCall"])
+            self.assertEqual([POINT_ID], guarded["servicePointIds"])
+            for args in ({"servicePointIds": []}, {"orderIds": []},
+                         {"orderIds": [ORDER_ID], "servicePointIds": [POINT_ID]}):
+                self.assertFalse(run_guard(tool, {"context": context, "query": args}, rows)["canCall"])
+            explicit = run_guard(tool, {"context": context, "query": {"orderIds": [ORDER_ID]}}, rows)
+            self.assertEqual([ORDER_ID], explicit["orderIds"])
+            self.assertEqual([], explicit["servicePointIds"])
+            self.assertFalse(run_guard(tool, {"context": {**context, "kind": "Incident"}, "query": {}}, rows)["canCall"])
+            invalid = [{"servicePointId": "not-a-uuid", "level": "Critico", "suggestedQuantity": 2}]
+            self.assertFalse(run_guard(tool, item, invalid)["canCall"])
 
     def test_vehicle_availability_ignores_model_arguments(self):
         context = {"runId": "signed-run", "incidentId": "signed-incident",

@@ -860,6 +860,9 @@ de #194 sigue pendiente y es requisito para el merge.
 
 - La matriz sin parser confirmó que desaparecieron errores de formato; persistieron timeouts del proveedor. Optimización final: carga inicial de riesgos/impacto por el workflow tras HMAC/registro, con OAuth/contexto firmado y traza. El LLM conserva la elección de stock/origen/vehículos/propuestas y las ocho herramientas. 35/35 Python, incluida seguridad de carga inicial; nueva matriz en ejecución.
 
+- Conflicto con develop `1171afe` resuelto conservando los seguimientos #195 y #207; PR #213 confirmado MERGEABLE en `46ff01c`.
+- Matriz tras restaurar ACK: 168/168 herramientas, 56/60 explicaciones validadas, inyección 10/10; p95 10001 ms, todavía NO aceptada. Se evita que el modelo reemita la lista completa de UUID: `plan_sourcing({})` deriva puntos solo del contexto inicial autenticado, valida y deduplica sin calcular cantidades. 37/37 pruebas Python; matriz final en ejecución.
+
 ## Issue #207 — verificación de integración de punta a punta — 16-oct-2026
 
 - [x] Revisar el issue, sus dependencias y el código de `origin/develop` `42bd1b0`.

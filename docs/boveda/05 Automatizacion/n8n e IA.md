@@ -274,3 +274,12 @@ firmado, guard de plazo y timeout acotado; también queda en la traza. El agente
 recibe ese resultado como `initialContext` y elige las herramientas posteriores;
 get_risks/get_incident_impact siguen disponibles cuando falta ese contexto.
 Los datos de la respuesta se anidan y no pueden reemplazar identidad ni plazo.
+
+`plan_sourcing({})` en Watch usa los puntos con demanda positiva y riesgo
+Critico/Alto/Vigilar de `Load Initial Context`, consultado con OAuth y run firmado.
+El wrapper deduplica y valida UUIDs y límite de 100 antes de construir la lista
+`servicePointIds` del contrato API; no calcula demanda. El modelo puede escoger
+listas explícitas de puntos o pedidos en vez del valor por defecto. Sin contexto
+autenticado, en Incident o con listas explícitas vacías, `{}` no habilita la
+consulta. Este valor por defecto evita que el modelo vuelva a generar todos los
+UUIDs y reduce latencia sin ampliar el presupuesto de 10 segundos.
