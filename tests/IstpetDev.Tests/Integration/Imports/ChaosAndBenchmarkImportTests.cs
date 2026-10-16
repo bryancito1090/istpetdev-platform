@@ -135,13 +135,15 @@ public sealed class ChaosAndBenchmarkImportTests(PostgisContainer postgres) : IC
         var connection = postgres.NewDatabase();
         await using var api = new ApiFactory(connection);
 
-        // 1. Sembrar despacho y ejecutar recepción operativa en campo
-        var dispatched = await FieldSeed.DispatchedDeliveryAsync(api, 100m, "E28");
-        using var driverClient = api.ClientFor(TestTokens.Driver);
+        // 1. Sembrar despacho y ejecutar recepción operativa en campo por el Receptor (#162)
+        const string unitToken = "token-e28-0123456789abcdef0123456789abcdef";
+        var dispatched = await FieldSeed.DispatchedDeliveryAsync(api, 100m, "E28", withHandlingUnit: true, unitToken: unitToken);
+        await FieldSeed.DeliverUnitAsync(api, dispatched);
+        using var receiverClient = api.ClientFor(TestTokens.Receiver);
 
         var receiptReq = new CreateReceiptRequest(
             OperationId: Guid.NewGuid(),
-            ExpectedDeliveryVersion: dispatched.DeliveryVersion,
+            ExpectedDeliveryVersion: 0, // la entrega avanzó con pickup/deliver; el recibo valida el estado vigente
             OccurredAtDevice: DateTime.UtcNow,
             Lines:
             [
@@ -155,7 +157,13 @@ public sealed class ChaosAndBenchmarkImportTests(PostgisContainer postgres) : IC
                     RemainingQuantity: 10m)
             ]);
 
-        var receiptResponse = await driverClient.PostAsJsonAsync($"/api/v1/deliveries/{dispatched.DeliveryId}/receipts", receiptReq);
+        using var receiptHttp = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/receiver/handling-units/{dispatched.UnitId}/receipt")
+        {
+            Content = JsonContent.Create(receiptReq),
+        };
+        receiptHttp.Headers.Add("X-Trace-Token", unitToken);
+        receiptHttp.Headers.Add("Idempotency-Key", receiptReq.OperationId.ToString());
+        var receiptResponse = await receiverClient.SendAsync(receiptHttp);
         Assert.Equal(HttpStatusCode.OK, receiptResponse.StatusCode);
 
         // Saldo después de recepción: remaining (10) + accepted (60) = 70

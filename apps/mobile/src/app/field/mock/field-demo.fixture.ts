@@ -76,13 +76,13 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Bodega Distribución Norte (Quito)',
             address: 'Parque Industrial Carcelén, Galpón 4',
             dueAtUtc: new Date(Date.now() + 1 * 3600 * 1000).toISOString(),
-            status: 'Prepared',
+            status: 'Dispatched',
             handlingUnits: [
               {
                 handlingUnitId: 'hu-pickup-001',
                 code: 'REC-BOD-01',
                 deliveryId: 'pk-wh-norte-01',
-                status: 'Prepared',
+                status: 'Dispatched',
                 labelUrl: 'https://istpetdev.local/campo/label/hu-pickup-001',
                 token: 'tok-sec-demo-pk-01',
                 lines: [
@@ -106,13 +106,13 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Hospital General San Francisco',
             address: 'Av. Jaime Roldós Aguilera y Calle 14, Quito',
             dueAtUtc: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
-            status: 'Prepared',
+            status: 'Dispatched',
             handlingUnits: [
               {
                 handlingUnitId: 'hu-caja-001',
                 code: 'CAJA-MED-001',
                 deliveryId: 'del-hosp-001',
-                status: 'Prepared',
+                status: 'Dispatched',
                 labelUrl: 'https://istpetdev.local/campo/label/hu-caja-001',
                 token: 'tok-sec-demo-hosp-001',
                 lines: [
@@ -136,7 +136,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Clínica Metropolitana Norte',
             address: 'Av. Naciones Unidas y Amazonas, Quito',
             dueAtUtc: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-            status: 'Planned',
+            status: 'Draft',
             handlingUnits: []
           },
           {
@@ -147,7 +147,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
             pointName: 'Centro de Salud Nro 3',
             address: 'Calle Guayaquil y Espejo, Centro Histórico, Quito',
             dueAtUtc: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-            status: 'Planned',
+            status: 'Draft',
             handlingUnits: []
           }
         ]
@@ -161,7 +161,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       pointCode: 'PTO-HOSP-01',
       pointName: 'Hospital General San Francisco',
       dueAtUtc: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
-      status: 'Prepared',
+      status: 'Dispatched',
       evidenceStatus: 'Pending',
       packagesCount: 1
     },
@@ -171,7 +171,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       pointCode: 'PTO-CLIN-02',
       pointName: 'Clínica Metropolitana Norte',
       dueAtUtc: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-      status: 'Planned',
+      status: 'Draft',
       evidenceStatus: 'Pending',
       packagesCount: 0
     },
@@ -181,7 +181,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       pointCode: 'PTO-SALUD-03',
       pointName: 'Centro de Salud Nro 3',
       dueAtUtc: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-      status: 'Planned',
+      status: 'Draft',
       evidenceStatus: 'Pending',
       packagesCount: 0
     }
@@ -191,7 +191,7 @@ export const INITIAL_FIELD_DEMO_DATA: MockServerData = {
       handlingUnitId: 'hu-caja-001',
       code: 'CAJA-MED-001',
       deliveryId: 'del-hosp-001',
-      status: 'Prepared',
+      status: 'Dispatched',
       labelUrl: 'https://istpetdev.local/campo/label/hu-caja-001',
       token: 'tok-sec-demo-hosp-001',
       lines: [

@@ -21,6 +21,8 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     receiveAsReceiver: ReturnType<typeof vi.fn>;
     getReceiverUnit: ReturnType<typeof vi.fn>;
     getAssignments: ReturnType<typeof vi.fn>;
+    pickup: ReturnType<typeof vi.fn>;
+    deliver: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -32,7 +34,9 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
       confirmEvidence: vi.fn(),
       getAssignments: vi.fn(),
       receiveAsReceiver: vi.fn(() => of({ receiptId: 'receiver-receipt' })),
-      getReceiverUnit: vi.fn()
+      getReceiverUnit: vi.fn(),
+      pickup: vi.fn(() => of({ deliveryId: 'd-1', status: 'InTransit', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-1' })),
+      deliver: vi.fn(() => of({ deliveryId: 'd-2', status: 'Delivered', handlingUnitIds: [], changedAtUtc: new Date().toISOString(), custodyEventId: 'ce-2' }))
     };
     TestBed.configureTestingModule({
       providers: [{ provide: FIELD_API, useValue: api }]
@@ -61,6 +65,33 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     await outbox.setOwner('cuenta-a');
     expect(outbox.pendingCount()).toBe(2);
     expect(outbox.outboxItems().every((item) => item.ownerAccountId === 'cuenta-a')).toBe(true);
+  });
+
+  it('015: con la sincronización en espera guarda en el teléfono y no envía hasta liberarla', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    await outbox.setOwner('cuenta-a');
+    outbox.setSyncHeld(true);
+
+    const item = await outbox.saveReceiptAtomic(receipt('d-1'));
+    await outbox.syncAllPending();
+    expect(api.createReceipt).not.toHaveBeenCalled();
+    expect(outbox.outboxItems()[0].status).toBe('SavedOnDevice');
+
+    outbox.setSyncHeld(false);
+    await outbox.syncAllPending();
+    expect(api.createReceipt).toHaveBeenCalledTimes(1);
+    expect((await outbox.syncItem(item.operationId)).status).toBe('Complete');
+  });
+
+  it('015: pide almacenamiento persistente para que el navegador no borre la cola', async () => {
+    const persist = vi.fn(async () => true);
+    Object.defineProperty(navigator, 'storage', { value: { persist }, configurable: true });
+    try {
+      TestBed.inject(FieldOutboxService);
+      await vi.waitFor(() => expect(persist).toHaveBeenCalled());
+    } finally {
+      delete (navigator as { storage?: unknown }).storage;
+    }
   });
 
   it('no captura sin cuenta y no sincroniza una captura ajena', async () => {
@@ -323,6 +354,44 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     expect(outbox.outboxItems()[0].status).toBe('SessionRequired');
     await outbox.syncAllPending();
     expect(api.receiveAsReceiver).toHaveBeenCalledTimes(1);
+  });
+
+  // #162: los comandos de custodia usan la misma cola durable y solo se muestran confirmados si el servidor responde.
+  it('el comando de recogida se guarda pendiente y solo queda confirmado tras la respuesta del servidor', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-a');
+    const item = await outbox.saveCustodyCommand({ deliveryId: 'd-1', command: 'Pickup', label: 'Recogida' });
+    expect(item.status).toBe('SavedOnDevice');
+    expect(item.commandKind).toBe('Pickup');
+    expect(outbox.pendingCount()).toBe(1);
+    expect(api.pickup).not.toHaveBeenCalled();
+
+    outbox.isSimulatingOffline.set(false);
+    await outbox.syncItem(item.operationId);
+
+    const synced = outbox.outboxItems().find((i) => i.operationId === item.operationId)!;
+    expect(synced.status).toBe('Complete');
+    expect(synced.custodyResponse?.status).toBe('InTransit');
+    expect(api.pickup).toHaveBeenCalledWith('d-1', expect.objectContaining({ operationId: item.operationId }), item.operationId);
+    expect(outbox.pendingCount()).toBe(0);
+    expect(outbox.latestCustodyStatus('d-1')).toBe('InTransit');
+  });
+
+  it('un 409 del servidor deja el comando de custodia en revisión sin perderlo', async () => {
+    const outbox = TestBed.inject(FieldOutboxService);
+    outbox.isSimulatingOffline.set(true);
+    await outbox.setOwner('driver-a');
+    const item = await outbox.saveCustodyCommand({ deliveryId: 'd-2', command: 'Deliver', label: 'Entrega' });
+    api.deliver.mockReturnValue(throwError(() => ({ status: 409, error: { code: 'INVALID_STATE_TRANSITION', detail: 'Transición inválida' } })));
+    outbox.isSimulatingOffline.set(false);
+
+    await expect(outbox.syncItem(item.operationId)).rejects.toBeTruthy();
+
+    const stored = outbox.outboxItems().find((i) => i.operationId === item.operationId)!;
+    expect(stored.status).toBe('RequiresReview');
+    expect(stored.errorCode).toBe('INVALID_STATE_TRANSITION');
+    expect(stored.custodyResponse).toBeUndefined();
   });
 
 });

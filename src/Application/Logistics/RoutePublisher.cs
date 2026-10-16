@@ -319,7 +319,7 @@ public sealed class RoutePublisher(
             var target = stops.SingleOrDefault(s => s.ServicePointId == original.ServicePointId && s.Status != "Completed");
             if (target is null)
             {
-                if (delivery.Status == "Dispatched" || delivery.Status == "Delivered")
+                if (delivery.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit or DeliveryStates.Delivered)
                     throw new ReplanConflictException("No se puede retirar una entrega ya despachada.");
                 foreach (var reservation in reservations.Where(r => r.DeliveryId == delivery.Id))
                 {

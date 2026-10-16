@@ -498,7 +498,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </div>
                       <p class="text-xs text-slate-500 mt-0.5 font-mono">
                         Entrega: <strong class="text-slate-800">{{ capture.deliveryCode }}</strong> · 
-                        Conductor: <strong class="text-slate-800">{{ capture.driverName }}</strong> · 
+                        Registrado por: <strong class="text-slate-800">{{ capture.registeredByName || capture.driverName }}</strong> ·
                         Fecha: {{ capture.receivedAtUtc | date:'medium' }}
                       </p>
                     </div>
