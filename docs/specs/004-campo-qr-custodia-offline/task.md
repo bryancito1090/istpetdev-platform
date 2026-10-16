@@ -21,6 +21,7 @@
 | T11 | Recepción con stock en percha y pedido en campo sin colisiones (#111) | T4 | — | completado en backend (5 pruebas nuevas; 403/403 en la suite); sin cambios de PWA |
 | T12 | Novedades de campo en la web del Planificador (#116) | T11 | — | completado (API y web; 413/413 backend, 58/58 web); pendiente validación con cuentas reales en #118 |
 | T13 | Estados del bulto y custodia por turnos Bodega → Conductor → Receptor (#162) | T11, T12 | — | completado en backend y PWA (462/462 backend; web 74/74 y mobile 76/76); pendiente ensayo físico y validación con cuentas reales |
+| T14 | Diagnóstico outbox, evidencias S3 en producción y reseteo receptor (#163) | T13 | — | completado (516/516 backend; 209/209 frontend); verificado con npm run check y check_vault |
 
 `[P]` indica archivos separados y contratos acordados. Ejecutar desde la raíz. Filtros de pruebas son los nombres propuestos aquí; si el proyecto de pruebas de 001 usa otro nombre, mantener el caso y ajustar el comando en el mismo commit. No inventar datos del fixture en código.
 
@@ -618,3 +619,14 @@ Para avanzar de forma desacoplada y validar la experiencia de usuario, diseño i
    - La cola de subida de evidencias opera de manera independiente al registro contable de recepción, con backoff exponencial simulado y almacenamiento duradero de Blobs hasta confirmación.
 5. **Avisos de Ruta (CE-08):**
    - El acuse de lectura de revisiones de ruta se persiste por par `(routePlanId, revision)` en IndexedDB local, evitando notificaciones redundantes.
+
+### T14 — Diagnóstico outbox, evidencias S3 en producción y reseteo receptor (#163)
+
+- [x] Variables de entorno de AWS (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_REGION`, `EVIDENCE_S3_BUCKET`) agregadas al contenedor backend en `infra/compose/docker-compose.prod.yml`.
+- [x] Conteo de evidencias confirmadas expuesto en `DeliveryDetailResponse` y consultado en `FieldService.GetDeliveryDetailAsync`.
+- [x] `FieldOutboxService`: `syncAllPending()` retorna `SyncSummary` detallado; reporta bloqueo por simulación offline, desconexión o retención de sesión; no traga errores; expone `sendableCount`, `reviewCount`, `retryItem`, `claimLegacyItems` y `discardLegacyItems`.
+- [x] `SyncPage`: banner de retroalimentación ante sincronización manual o global, badges claros `✓ Foto confirmada` y `✓ Firma confirmada`, tarjetas para gestión de capturas legadas sin cuenta y visualización de errores transitorios.
+- [x] `HomePage`: reseteo de pantalla y formulario de recepción del Receptor con `resetReceiverScreen()`, con acceso directo a la cola outbox tras registrar.
+- [x] `NovedadesPage`: visualización de confirmación de evidencias en almacenamiento S3.
+- [x] Pruebas unitarias de outbox y home actualizadas (209/209 frontend pasando; 516/516 backend pasando).
+

@@ -628,7 +628,8 @@ export class MockFieldApiService implements IFieldApi {
           pointName: delivery.pointName,
           routePlanId: delivery.routePlanId,
           lines: existingLines,
-          handlingUnits
+          handlingUnits,
+          confirmedEvidenceCount: 0
         };
       })()
     ).pipe(delay(this.latencyMs));

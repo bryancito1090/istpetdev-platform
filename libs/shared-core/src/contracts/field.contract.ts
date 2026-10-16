@@ -35,7 +35,8 @@ export type PwaSyncState =
   | 'RequiresReview'
   | 'SessionRequired'
   | 'EvidencePending'
-  | 'Complete';
+  | 'Complete'
+  | 'Failed';
 
 export type FieldErrorCode =
   | 'IDEMPOTENCY_CONFLICT'
@@ -225,6 +226,8 @@ export interface DeliveryDetailResponse {
   vehicleCode?: string | null;
   driverName?: string | null;
   originWarehouseName?: string | null;
+  /** #163: cantidad de evidencias confirmadas en almacenamiento (S3). */
+  confirmedEvidenceCount?: number;
 }
 
 // ==========================================

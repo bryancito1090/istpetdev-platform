@@ -1386,6 +1386,13 @@ public sealed class FieldService : IFieldService
             ? await _db.Accounts.Where(a => a.Id == driverId).Select(a => a.DisplayName).FirstOrDefaultAsync(ct)
             : null;
 
+        var receiptIds = await _db.Receipts
+            .Where(r => r.DeliveryId == delivery.Id && r.OrganizationId == DemoOrganization.Id)
+            .Select(r => r.Id)
+            .ToListAsync(ct);
+        var confirmedEvidenceCount = receiptIds.Count == 0 ? 0 : await _db.Evidences
+            .CountAsync(e => receiptIds.Contains(e.ReceiptId) && e.Status == "Confirmed" && e.OrganizationId == DemoOrganization.Id, ct);
+
         return new DeliveryDetailResponse(
             delivery.Id,
             delivery.Status,
@@ -1396,7 +1403,8 @@ public sealed class FieldService : IFieldService
             handlingUnits,
             vehicleCode,
             driverName,
-            await OriginWarehouseNameAsync(delivery.OriginLocationId, ct));
+            await OriginWarehouseNameAsync(delivery.OriginLocationId, ct),
+            confirmedEvidenceCount);
     }
 
     private async Task<string?> OriginWarehouseNameAsync(Guid locationId, CancellationToken ct) =>
