@@ -787,3 +787,15 @@ productiva al ejecutar esta validación.
 - Integración y cierre operativo: [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) e [issue #194](https://github.com/bryancito1090/istpetdev-platform/issues/194) son las fuentes del estado remoto y SHA de merge; la cuenta autora no puede emitir aprobación formal.
 
 Estado del código: revisión final de Codex completada por encargo de Bryan; tres consultas con RBAC y sin efectos logísticos, contrato cotejado con DTOs. La regresión falla antes y pasa después; 21/21 dirigidas y 560/560 en la suite completa, npm check/auditoría y bóveda aprobados. Se conserva el intento local abortado bajo concurrencia en la evidencia. CI sobre el código revisado 7/7 verde; la finalización del PR y issue se acredita en sus estados de GitHub. Sin despliegue.
+
+## Issue #207 — verificación de integración de punta a punta — 16-oct-2026
+
+- [x] Revisar el issue, sus dependencias y el código de `origin/develop` `42bd1b0`.
+- [x] Ejecutar la suite local (Unit 220/220, Integration 265/265, E2E 23/23 y scripts de n8n 7/7) y la checklist E2E-08.
+- [x] Registrar el estado de los 13 criterios en la
+  [evidencia de verificación](evidencia/2026-10-16-207-verificacion-integracion.md).
+- [ ] Recorrido vivo panel → n8n → API → panel en la validación del sábado 11:30.
+- [ ] Dependencias abiertas: #195 (PR #213 en borrador y con conflictos) y #210; cerrar #199, cuyo PR ya está fusionado.
+- [ ] Trabajo propio posterior al evento: propuesta única con `proposalId`/revisión, calculador de costo único, revalidación por revisión, manifiesto multibodega, `NeedsData`/dimensiones e incertidumbre `uncalibrated`.
+
+Estado: solo verificación, sin cambios de código ni despliegue. Contratos de `docs/boveda/` sin cambios. #207 sigue abierto porque no cumple sus criterios 1, 5, 7, 9, 10, 12 y 13, y cumple parcialmente 2, 3, 4, 6, 8 y 11.
