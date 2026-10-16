@@ -225,6 +225,10 @@ import { FIELD_API } from '../../field-api.interface';
                   🖨️ Imprimir
                 </button>
               </div>
+              <!-- El token #t= solo llega al crear el bulto: no se puede reimprimir después -->
+              <div class="print-hide px-3 py-2 bg-amber-100 text-amber-900 text-xs font-bold border-b border-amber-300">
+                ⚠️ Imprime ahora: este QR no se puede volver a mostrar
+              </div>
 
               <ion-card-content class="p-4 space-y-3">
                 <div class="flex flex-col sm:flex-row items-center gap-4">
@@ -354,6 +358,9 @@ import { FIELD_API } from '../../field-api.interface';
         padding: 16px;
         box-shadow: none !important;
         border: 2px solid #000 !important;
+      }
+      .print-hide {
+        display: none !important;
       }
     }
   `]
@@ -513,7 +520,28 @@ export class WarehouseComponent implements OnInit {
   }
 
   printLabel(): void {
+    // El navegador usa document.title como nombre del PDF: uno único por bulto (#161)
+    const code = this.createdHandlingUnit()?.hu.code || 'bulto';
+    const previous = document.title;
+    document.title = `etiqueta-${code}-${this.printStamp(new Date())}`;
+
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      document.title = previous;
+    };
+    window.addEventListener('afterprint', restore, { once: true });
+    // Respaldo para Chrome Android, que a veces no dispara afterprint a tiempo
+    setTimeout(restore, 1000);
+
     window.print();
+  }
+
+  /** yyyyMMddHHmm en hora local. */
+  private printStamp(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}`;
   }
 
   formatDate(dateStr: string): string {
