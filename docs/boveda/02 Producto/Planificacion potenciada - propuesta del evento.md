@@ -199,16 +199,18 @@ Ideas valiosas que **no** se implementan antes del sábado y se presentan como e
 5. **Marketplace de operadores contratados**: cotizar con varios operadores y calificar su cumplimiento.
 6. **Calibrar el costo con viajes reales** y su margen de error (#204).
 
-## Propuesta de reparto para el sábado
+## Reparto aprobado — issues del 16-oct
 
-Pendiente de aprobación de Joseph antes de crear los issues. Respeta la regla de un archivo por persona.
+Joseph aprobó el reparto con carga equilibrada. Cada issue trae su lugar en la cola de su responsable y una sección «Para el pitch»; la guía para el pitch quedó como comentario en #200. La migración de base de datos está permitida y se marca con la etiqueta `🗄️ migración-db`.
 
-| Semáforo | Pieza | Archivos principales | Persona propuesta |
-|---|---|---|---|
-| 🔴 | Dataset `demo-quito-planificacion` y su documentación | `data/fixtures/`, esta nota | Joseph |
-| 🔴 | Costo total desglosado (combustible con carga, operarios, merma, precio fechado) por configuración | `LogisticsCostCalculator.cs`, `LogisticsOptions.cs`, `RouteEvaluator.cs` | Bryan (tras #230) o Anthony (si #237 se absorbe aquí) |
-| 🟡 | Opción con operador contratado y recomendación calculada con justificación | `SourcingService.cs` | La misma persona que la pieza anterior, en secuencia |
-| 🟡 | Mostrar la comparación A/B/C y la justificación en el asistente | `rutas.page.ts` | Alexander (después de #210) |
-| 🟢 | Factor de hora pico en el tiempo de ruta | `RouteFeasibility.cs`, `DeliveryStopSequencer.cs` | Anthony, solo si termina su cola |
+| Persona | Cola (en orden) |
+|---|---|
+| Bryan | #230 🔴 → #240 🔴 costo total de servir (🗄️ migración: `Product.UnitValue`, `UnitsPerPackage`, `Vehicle.VehicleType`, `UsageScope`) → #241 🟡 operador contratado y recomendación → #247 🟢 guía de retorno |
+| Anthony | #199 → #236 🟡 → #237 🟡 → #245 🟢 horas pico → #246 🟢 congestión y manifestación |
+| Alexander | #210 🟡 → #242 🟡 pantalla A/B/C → #231 🟢 → #167 🟢 → #249 🟢 hojas de capacitación e indicadores |
+| Jorge | #198 🔴 → #235 🔴 → #244 🟢 restricción horaria por tipo de vehículo → #166 🟢 |
+| Joseph | #200 🔴 → #243 🔴 dataset `demo-quito-planificacion` (absorbe #238) → #248 🟢 error del pronóstico → #204 🟢 |
+
+Dependencias: #243 publica primero los valores de configuración; #241, #244 y #237 usan el desglose de #240; #242 consume el contrato de #241; #245 y #246 comparten `RouteFeasibility.cs` y van en secuencia.
 
 Relacionado: [[Rutas y sobrecostos]], [[Inventario y prediccion]], [[Simulador y metricas]], [[Guion del pitch]], [[Plan de validacion]] y [[Ampliacion de alcance - ideas del evento]].
