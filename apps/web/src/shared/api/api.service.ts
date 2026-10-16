@@ -181,6 +181,8 @@ export interface RoutePlanDetailDto {
   stops: Array<{
     sequenceNumber?: number;
     sequence: number;
+    /** Pickup: recogida en bodega (lines = lo que se carga); Delivery: entrega. */
+    kind?: 'Pickup' | 'Delivery' | string;
     servicePointId: string;
     servicePointCode: string;
     servicePointName: string;
@@ -541,8 +543,17 @@ export class ApiService {
             windowStart: s.windowStart || '08:00',
             windowEnd: s.windowEnd || '17:00',
             status: s.status,
-            ordersCount: s.ordersCount || 0
-          }))
+            ordersCount: s.ordersCount || 0,
+            // Antes se descartaban y la página mostraba «Sin productos registrados» aunque el backend los enviara.
+            kind: s.kind,
+            deliveryId: s.deliveryId ?? null,
+            deliveryCode: s.deliveryCode || '',
+            deliveryStatus: s.deliveryStatus || '',
+            handlingUnits: s.handlingUnits || [],
+            lines: s.lines || []
+          })),
+          productsSummary: res.productsSummary || [],
+          driverRoutes: res.driverRoutes || []
         } as RoutePlanDetailDto;
       }),
       catchError(err => {

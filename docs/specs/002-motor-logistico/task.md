@@ -374,3 +374,34 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 **Verificación:**
 - Backend: 518 de 519. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 77 de 77.
+
+#### T13c — «Sin productos registrados para esta parada» en el detalle de la ruta (16-oct)
+
+**Síntoma:** en Planificación → Rutas, las paradas no mostraban qué productos se llevan, y la recogida en bodega no decía qué cargar.
+
+**Causa** (verificada con código y con la base dev, donde 3 planes publicados del asistente tienen `orderIds`, ninguna carga en `InputJson` y 0 entregas):
+1. **La web descartaba los productos.** `ApiService.getRoutePlanById` reconstruía cada parada campo por campo y perdía `lines`, `handlingUnits`, `deliveryCode` y `deliveryStatus`, además de `productsSummary` y `driverRoutes`. Aunque el backend enviara los productos, la página nunca los recibía. Las pruebas del #164 simulaban `getRoutePlanById` y por eso no lo detectaron.
+2. **Faltaban las cargas de las rutas del asistente.** Esas rutas guardan los pedidos y no las cargas, y el detalle solo leía `InputJson.stops[].loads`. Sin entregas creadas, no había nada que mostrar.
+3. **La recogida en bodega no mostraba nada.** La web daba por hecho que la parada 1 era la bodega y no descargaba nada, sin mirar el tipo de parada.
+
+**Corrección:**
+- **`OrderStopLoads` (helper nuevo):** deduce las cargas de cada parada de entrega a partir de los pedidos. Lo usan la publicación, que antes tenía su propia copia, y el detalle del plan. Así la ruta muestra antes de publicar lo mismo que se publicará.
+- **Detalle del plan:**
+  - Cada parada indica su tipo (`kind`).
+  - La recogida usa el nombre de su bodega y lista lo que se **carga** en ella: la suma de lo que se entrega hasta la siguiente recogida, con estado `Cargar`.
+  - El resumen por producto no cuenta dos veces lo cargado.
+- **Web:** la conversión conserva productos, bultos, entrega, tipo de parada, resumen y rutas del conductor. La recogida muestra «Cargar en esta bodega».
+
+**Pendiente, para decidir:** la ruta manual o de emergencia (`/route-plans/manual`) no guarda pedidos ni cargas. Sigue mostrando «Sin productos» y al publicarla responde 409 «La ruta no tiene productos para entregar». Para que lleve productos, habría que decidir de dónde salen: por ejemplo, los pedidos pendientes de cada punto.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `OrderStopLoads.cs`, `RoutePublisher.cs` | Backend | Cargas desde pedidos en un solo lugar | Detalle y publicación deben coincidir | Ruta del asistente | Hecho |
+| `RoutePlansController.GetById` | Backend | `kind`, productos desde pedidos, carga en la recogida, resumen sin duplicar | Causas 2 y 3 | Ver una ruta propuesta o publicada | Hecho |
+| `api.service.ts` | Web | No descartar líneas, bultos ni resumen | Causa 1 | Detalle de cualquier ruta | Hecho |
+| `rutas.page.ts` | Web | «Cargar en esta bodega» según el tipo de parada | Causa 3 | Recogida en bodega | Hecho |
+| `PublishToDriverTests.cs`, `api.service.spec.ts` | Pruebas | Productos por parada antes y después de publicar; conversión web | Regresión | — | Pasan |
+
+**Verificación:**
+- Backend: 519 de 520. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
+- Web: 78 de 78; lint y `build:web` sin errores.
