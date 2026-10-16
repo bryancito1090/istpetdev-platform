@@ -80,6 +80,8 @@ export interface RoutePlanSummaryDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   stopsCount: number;
+  driverName?: string;
+  driverAccountId?: string | null;
 }
 
 export interface DriverOptionDto {
@@ -106,6 +108,58 @@ export interface RouteGeometryDto {
   stops: RouteGeometryWaypointDto[];
 }
 
+export interface RouteStopLineDto {
+  deliveryId?: string | null;
+  deliveryCode?: string | null;
+  deliveryStatus?: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  lotId?: string | null;
+  lotCode?: string;
+  lotExpiresOn?: string | null;
+  plannedQuantity: number;
+  dispatchedQuantity?: number;
+  acceptedQuantity?: number;
+  rejectedQuantity?: number;
+  baseUnit: string;
+  handlingUnitId?: string | null;
+  handlingUnitCode?: string;
+  handlingUnitStatus?: string;
+}
+
+export interface RouteStopHandlingUnitDto {
+  id: string;
+  code: string;
+  status: string;
+  locationId?: string;
+  sealedAtUtc?: string | null;
+}
+
+export interface RouteProductSummaryDto {
+  sku: string;
+  productName: string;
+  totalPlannedQuantity: number;
+  baseUnit: string;
+  stopsCount: number;
+  lots: Array<{ lotCode: string; quantity: number }>;
+  deliveryStatuses: string[];
+}
+
+export interface RouteDriverAssignmentDto {
+  id: string;
+  routePlanId: string;
+  code: string;
+  revision: number;
+  status: string;
+  vehicleCode: string;
+  plannedStartUtc: string;
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+  stopsCount: number;
+  isCurrent: boolean;
+}
+
 export interface RoutePlanDetailDto {
   id: string;
   code: string;
@@ -118,25 +172,35 @@ export interface RoutePlanDetailDto {
   totalDistanceKm: number;
   totalDurationMinutes: number;
   polyline: string;
-  /** #160: bodega de salida, conductor asignado y entregas sin conductor de la ruta publicada. */
+  originWarehouseCode?: string;
   originWarehouseName?: string;
   driverAccountId?: string | null;
   driverName?: string;
   deliveriesCount?: number;
   unassignedDeliveries?: number;
   stops: Array<{
+    sequenceNumber?: number;
     sequence: number;
     servicePointId: string;
     servicePointCode: string;
     servicePointName: string;
     etaUtc: string;
+    plannedArrivalUtc?: string;
     plannedDepartureUtc?: string;
+    actualArrivalUtc?: string | null;
     serviceMinutes?: number;
     windowStart?: string;
     windowEnd?: string;
     status: string;
-    ordersCount: number;
+    ordersCount?: number;
+    deliveryId?: string | null;
+    deliveryCode?: string;
+    deliveryStatus?: string;
+    handlingUnits?: RouteStopHandlingUnitDto[];
+    lines?: RouteStopLineDto[];
   }>;
+  productsSummary?: RouteProductSummaryDto[];
+  driverRoutes?: RouteDriverAssignmentDto[];
 }
 
 export interface CreateManualRoutePlanRequest {
