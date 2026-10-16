@@ -342,3 +342,35 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 **Verificación:**
 - Backend: 512 de 514. Fallan `N8nErrorWorkflowTests`, que necesita un n8n real en local, y `AgentJourneyTests(partial_watch)`, que es intermitente. Los dos fallaban ya antes de #160.
 - Web: 76 de 76; `build:web` y `check:mobile` sin errores.
+
+#### T12c — Rectas en el mapa con el OSRM público saturado (16-oct)
+
+**Síntoma:** algunas rutas seguían saliendo como líneas rectas punteadas, en local y en producción.
+
+**Causa medida el 16-oct contra `router.project-osrm.org`, con los puntos reales de la base dev:**
+- **El servidor está saturado.** Es el servidor de demostración de OSRM. Con 6 consultas en paralelo, que es lo que hace la web al abrir Rutas, entre 1 y 3 de cada 6 superaron los 8 s de `RouteGeometryTimeoutSeconds`. El backend las cortaba y devolvía `approximate`.
+- **La web no reintentaba.** Guardaba esa respuesta en `geometries` y no volvía a pedirla, así que la ruta quedaba en rectas hasta recargar la página.
+- **El backend fijaba las rectas.** Guardaba la respuesta aproximada durante 1 minuto.
+
+**Sobre Dijkstra:** el algoritmo no era el problema. OSRM calcula el camino con Contraction Hierarchies, una variante acelerada de Dijkstra sobre la red vial de OpenStreetMap, con sentidos de vía. Las rectas aparecen solo cuando la consulta no llega a responder.
+
+**Corrección:**
+- **Backend (`RouteGeometryService`):**
+  - Como máximo 2 consultas simultáneas a OSRM por proceso.
+  - Un reintento tras 500 ms cuando el fallo es pasajero: tiempo agotado, error de red, 429 o 5xx. Un 400 no se reintenta.
+  - Solo se guarda en caché el trazado por calles; las rectas no.
+- **Web (`rutas.page.ts`):** las rutas que llegan en rectas se vuelven a pedir a los 4, 10 y 20 s. El temporizador se cancela al salir de la página.
+
+**Medición con el patrón corregido**, en 3 rondas de 6 rutas contra el OSRM real: **18 de 18 por calles**, 2 de ellas en el reintento.
+
+**Pendiente:** el servidor público no garantiza disponibilidad. La solución definitiva es un OSRM propio con el extracto de Ecuador, configurable con `OSRM_BASE_URL` y `OSRM_ROUTE_GEOMETRY_URL` sin cambiar código.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `RouteGeometryService.cs` | Backend | Máximo 2 simultáneas, 1 reintento, sin caché de rectas | OSRM público supera el timeout con carga | Abrir Rutas con varias rutas | Hecho |
+| `rutas.page.ts` | Web | Volver a pedir las rutas en rectas (4, 10 y 20 s) | La web fijaba la respuesta aproximada | Mapa de todas las rutas | Hecho |
+| `RouteGeometryTests.cs`, `rutas-map.spec.ts` | Pruebas | Reintento, sin caché de rectas, 400 sin reintento, reintento en la web | Regresión | — | Pasan |
+
+**Verificación:**
+- Backend: 518 de 519. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
+- Web: 77 de 77.
