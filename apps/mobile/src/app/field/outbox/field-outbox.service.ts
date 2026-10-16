@@ -1094,7 +1094,10 @@ export class FieldOutboxService {
   latestPendingCustodyStatus(deliveryId: string): string | null {
     const pending = this.outboxItems()
       .filter((i) => i.deliveryId === deliveryId && i.commandKind && i.status !== 'Complete' && i.status !== 'RequiresReview' && i.status !== 'SessionRequired')
-      .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
+      .sort((a, b) => {
+        const timeDiff = new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime();
+        return timeDiff !== 0 ? timeDiff : a.operationId.localeCompare(b.operationId);
+      })
       .pop();
     if (!pending) return null;
     if (pending.commandKind === 'Pickup') return 'InTransit';

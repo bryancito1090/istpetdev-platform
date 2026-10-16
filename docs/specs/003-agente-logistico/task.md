@@ -841,3 +841,20 @@ Estado: código, pruebas locales y ejecución real n8n completados; sin
 despliegue. La revisión en seco conserva la regla de oro de ADR-22: la API
 calcula los hechos y decide; n8n y el LLM solo explican y nunca completan
 coordenadas, cantidades ni códigos.
+
+## Issue #240 — costo total estimado de servir — 16-oct-2026
+
+- [x] Revisar issue, coordinación #253 y propuesta #239; #230 cerrado.
+- [x] [Plan de implementación](plan-240-costo-servicio.md), rama propia desde develop.
+- [x] Migración aditiva e importador compatible.
+- [x] Cálculo y desglose en evaluación/selección; sin editar RoutePlansController.
+- [x] 40/40 pruebas dirigidas finales; historial desde cero, fixture demo y copia real de base local (37 tablas/387 filas) sin pérdida.
+- [x] [Evidencia, prelaunch local y captura](evidencia/2026-10-16-240-costo-servicio.md): API real/PostGIS, readiness 200 y Receptor 403.
+- Revisión técnica local completada; 559/559 en la suite completa y 40/40
+  dirigidas tras los últimos ajustes. CI del HEAD final, aprobación permitida,
+  merge a develop y cierre se acreditan en el PR vinculado a
+  [#240](https://github.com/bryancito1090/istpetdev-platform/issues/240).
+
+Estado del código, pruebas locales y ensayo API: completos; no desplegado. La integración de /confirm es
+responsabilidad de Anthony y la pantalla de #242. Los estados de código, prueba,
+ejecución real y despliegue se registrarán por separado.

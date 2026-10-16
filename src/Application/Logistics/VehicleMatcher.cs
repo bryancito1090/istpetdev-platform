@@ -13,7 +13,8 @@ public sealed record VehicleMatchResult(
     decimal WeightUtilizationPct,
     decimal VolumeUtilizationPct,
     decimal EstimatedTotalCost,
-    decimal DistanceToFirstPickupKm
+    decimal DistanceToFirstPickupKm,
+    ServiceCostBreakdown? ServiceCostBreakdown = null
 );
 
 public sealed record AvailableVehicleDto(
@@ -141,6 +142,9 @@ public sealed class VehicleMatcher : IVehicleMatcher
         var targetDate = await ResolveOperationalDateAsync(plannedStartUtc, ct);
         var snapshot = await LoadAvailabilitySnapshotAsync(targetDate, ct);
 
+        var serviceCost = await ServiceCostCalculator.LoadAsync(_options, stops, _db, ct);
+        var routeHelperCount = serviceCost.HelperCount(stops);
+
         // Evaluar perfil de carga tramo a tramo (Leg-by-Leg)
         decimal maxWeightOnTrip = 0m;
         decimal maxVolumeOnTrip = 0m;
@@ -159,11 +163,9 @@ public sealed class VehicleMatcher : IVehicleMatcher
         // Precalcular distancia y duración entre paradas del recorrido
         decimal interStopsKm = 0m;
         decimal interStopsDrivingMinutes = 0m;
-        decimal totalServiceMinutes = 0m;
 
         for (int i = 0; i < stops.Count; i++)
         {
-            totalServiceMinutes += stops[i].ServiceMinutes;
             if (i > 0)
             {
                 var prev = stops[i - 1].Position;
@@ -227,7 +229,7 @@ public sealed class VehicleMatcher : IVehicleMatcher
             }
 
             decimal totalTripKm = Math.Round(distToPickup + interStopsKm + distReturn, 2);
-            decimal totalTripMinutes = Math.Round(timeToPickup + interStopsDrivingMinutes + totalServiceMinutes + timeReturn, 1);
+            decimal totalTripMinutes = Math.Round(timeToPickup + interStopsDrivingMinutes + stops.Sum(s => serviceCost.ServiceMinutes(s, v, routeHelperCount)) + timeReturn, 1);
 
             // Validar jornada laboral máxima si el vehículo fuese asignado
             if (isMatch && _options.WorkdayHours > 0 && totalTripMinutes > _options.WorkdayHours * 60m)
@@ -238,12 +240,8 @@ public sealed class VehicleMatcher : IVehicleMatcher
 
             decimal weightUtil = v.MaxWeight > 0 ? Math.Round((maxWeightOnTrip / v.MaxWeight) * 100m, 1) : 0m;
             decimal volUtil = v.MaxVolume.HasValue && v.MaxVolume.Value > 0 ? Math.Round((maxVolumeOnTrip / v.MaxVolume.Value) * 100m, 1) : 0m;
-            decimal costPerKm = v.CostPerKm ?? _options.DefaultCostPerKm;
-
-            // Costo completo unificado del viaje
-            decimal fullEstimatedCost = firstStop is not null
-                ? LogisticsCostCalculator.CalculateCost(totalTripKm, totalTripMinutes, costPerKm, _options.CostPerHour, tollsCost: 0m)
-                : 0m;
+            var breakdown = serviceCost.Calculate(totalTripKm, totalTripMinutes, v, maxWeightOnTrip, stops);
+            decimal fullEstimatedCost = firstStop is not null ? breakdown.Total : 0m;
 
             results.Add(new VehicleMatchResult(
                 v,
@@ -252,7 +250,8 @@ public sealed class VehicleMatcher : IVehicleMatcher
                 weightUtil,
                 volUtil,
                 fullEstimatedCost,
-                Math.Round(distToPickup, 1)
+                Math.Round(distToPickup, 1),
+                breakdown
             ));
         }
 

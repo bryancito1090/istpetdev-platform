@@ -1,0 +1,24 @@
+{
+  "Logistics": {
+    "ServiceCost": {
+      "FuelPricePerGallonUsd": 0.0,
+      "FuelPriceEffectiveDate": "2026-10-16",
+      "FuelPriceSource": "sintético",
+      "LoadFuelFactor": 0.3,
+      "HelperCostPerHour": 0.0,
+      "ExpectedShrinkPct": 0.5,
+      "OverloadShrinkPct": 2.0,
+      "OverloadThresholdPct": 90,
+      "VehicleProfiles": {
+        "camioneta": { "LitersPer100Km": 0.0, "WearPerKm": 0.0 },
+        "camion_liviano": { "LitersPer100Km": 0.0, "WearPerKm": 0.0 },
+        "camion_pesado": { "LitersPer100Km": 0.0, "WearPerKm": 0.0 }
+      },
+      "LaborRules": [
+        { "MaxKg": 150, "MaxPackageKg": 25, "Helpers": 0 },
+        { "MaxKg": 400, "MaxPackageKg": 25, "Helpers": 1 },
+        { "MaxKg": null, "MaxPackageKg": null, "Helpers": 2 }
+      ]
+    }
+  }
+}
