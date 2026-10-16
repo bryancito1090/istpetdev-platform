@@ -5,7 +5,7 @@ checkout aislado Orca `/home/bryan/orca/workspaces/ISTPETDEV/195-herramientas-n8
 desde `origin/develop` `1dcfb51`. Ejecutor: OpenCode, por encargo de Bryan
 (transferencia de Codex). Plan: [plan-195-herramientas-n8n.md](../plan-195-herramientas-n8n.md).
 
-Estado: **en ejecución**. Código, pruebas locales, ejecución real, CI y merge se
+Estado: **en ejecución; continuación por Codex tras detener OpenCode por petición de Bryan**. Código, pruebas locales, ejecución real, CI y merge se
 registran por separado a medida que se verifican; nada se acredita sin salida real.
 
 ## Matriz de contratos (propuesta antes de implementar)
@@ -137,3 +137,15 @@ despliegue.
    `develop` (los tres endpoints deben responder 2xx).
 4. Marcar listo el PR, CI del HEAD final, revisión/aprobación según protecciones,
    merge a `develop`, verificación de SHA de merge y cierre explícito de #195.
+
+## Revisión de Codex (16-oct, desde 20:00 UTC)
+
+- Dependencias desbloqueadas: #193 fusionado en `5cfc657`, #194 en `a602edd`; ambos incluidos por el merge local `64ec1c3`. Las menciones de bloqueo de las secciones anteriores describen el estado histórico.
+- La suite de OpenCode produjo 562/563: su nuevo ensayo manual exigía una clave privada aun al ejecutar la suite normal. Ahora se descubre como omitido explícito sin clave; con clave se ejecuta contra DeepSeek real.
+- Corregido el comparador de políticas (comparaba referencias de listas), y separado el fallo deliberado del proveedor del cálculo de aceptación del proveedor disponible. Se exige además >=90% de explicaciones validadas, herramientas no vacías y las tres consultas en Watch.
+- Primera corrida reproducida: 8/8 llamadas 2xx; Watch/Injection agotaron tiempo; Incident terminó pero solo 1/2 explicaciones fue aceptada; caída deliberada dio respaldo en 1363 ms. Este resultado NO acredita aceptación.
+- Ajuste mínimo en prompt v2: agrupa consultas independientes después de riesgos y antes de rutas, conserva ocho herramientas y ocho iteraciones, no cambia el modelo ni el plazo. `get_risks` proyecta filas con demanda positiva Critico/Alto/Vigilar, sin duplicar facts ni recalcular valores. Sin reintentos del modelo que excedan el presupuesto interactivo.
+- Evidencia histórica: los campos de vehículo/bodega/paradas se guardan al completar el run en `ProposalJson.evidence`, también con respaldo, sin migración ni aceptar evidencia del LLM. Regresión de renombración cubierta.
+- Verificación focalizada: 15/15 (AgentRunTrace, AgentJourney, WorkflowSecrets). Auditoría .NET sin paquetes vulnerables; npm audit aceptada con 7 excepciones vigentes.
+- HMAC y registro de ejecución comparados contra develop: nodos idénticos en ambos workflows.
+- Ensayo optimizado, matriz final, suite completa, CI y merge: pendientes de registrar.

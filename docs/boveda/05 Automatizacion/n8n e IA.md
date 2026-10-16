@@ -221,7 +221,13 @@ rutas las calcula el motor (ADR-22).
 
 Recorrido de Watch en el prompt: `get_risks` → `find_stock` por producto →
 `plan_sourcing` con puntos/pedidos reales → `vehicle_availability` una sola vez
-→ `propose_routes` → explicación. Incident conserva `get_incident_impact` y
+→ `propose_routes` → explicación. Después de riesgos, stock, origen y disponibilidad
+son lecturas independientes y el modelo las solicita juntas para reducir rondas
+sin calcular asignaciones. `get_risks` conserva las filas con demanda positiva
+y nivel Critico/Alto/Vigilar; omite la copia redundante de facts, sin recalcular
+valores. `plan_sourcing` conserva cantidades, faltantes, asignaciones y opciones
+sin repetir coordenadas ni lotes ya consultables en stock. El modelo no reintenta llamadas fallidas dentro del plazo interactivo.
+Incident conserva `get_incident_impact` y
 `replan` por ruta afectada, y usa las consultas nuevas solo cuando evalúa
 reposición o sustitución; no reabastece carga reservada/en tránsito.
 
@@ -234,17 +240,19 @@ Reglas de seguridad de los wrappers (las ocho herramientas):
 - Misma credencial OAuth2 M2M, cabecera `X-Agent-Run-Id` del contexto firmado y
   HMAC, ACK 202, registro de ejecución y Error Trigger sin cambios.
 - Timeout HTTP dinámico `min(15000, restante − 1200)` con mínimo 1000 ms en las
-  ocho herramientas y margen para el callback; se conserva el guard de 3200 ms
-  restantes y la omisión con motivo (`skipped`) cuando la llamada no cabe.
+  ocho herramientas y margen para el callback; el guard requiere 2200 ms
+  restantes (1000 ms mínimos de HTTP + 1200 ms de reserva) y la omisión con motivo (`skipped`) cuando la llamada no cabe.
 - `vehicle_availability` no acepta fecha: el contexto firmado no autoriza otro
   día, así que consulta el reloj operativo del servidor. La extensión opcional
-  `criticalDeadline` de #193 queda fuera mientras ese campo no exista en
-  `PlanRequest` publicado.
+  `criticalDeadlineLocal` de #193 existe en `develop`, pero queda fuera del tool
+  opcional: el contexto firmado aún no transporta una hora autorizada. El LLM no la inventa.
 
 Evidencia determinista en `GET /api/v1/agent/runs/{id}`: por decisión se
 exponen `originWarehouseCode`/`originWarehouseName` (bodega base real del
 vehículo, `Vehicle.DepotLocationId`), `vehicleCode` y `orderedStops` (secuencia
 real de paradas del plan propuesto), derivados por servidor del plan
-correlacionado; nunca de texto libre del LLM. La secuencia final de visita se
+correlacionado; nunca de texto libre del LLM. Al completar el run (LLM o respaldo),
+se guarda en `ProposalJson.evidence` una copia de los valores de esos campos; los cambios
+posteriores del catálogo no alteran el historial. La secuencia final de visita se
 distingue de la prioridad de asignación del motor. Detalle de contratos y
 evidencia en `docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.

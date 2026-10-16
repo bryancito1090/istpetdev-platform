@@ -844,3 +844,12 @@ en curso (contratos compatibles); #193 tiene PR #205 en conflicto y su extensió
 opcional queda fuera, documentada. El ensayo real con DeepSeek y los endpoints
 de #194 sigue pendiente y es requisito para el merge.
 
+
+### Continuación por Codex — issue #195 (16-oct-2026)
+
+- OpenCode detenido por petición de Bryan; Codex continúa sobre la misma rama y conserva sus cambios.
+- `develop` integrado localmente (`64ec1c3`), incluidos #193 y #194. Pendientes: ensayo real, revisión final, CI y merge/cierre.
+- Prelaunch del ensayo: PostGIS y n8n 2.39.5 descartables en loopback, API de prueba, proveedor DeepSeek real con clave del `.env` privado; sin despliegue. Se reutiliza la revisión local registrada arriba: HMAC/RBAC, sin RLS por DemoCore, sin cambios de dependencias ni migraciones.
+- Corregido el ensayo manual: opt-in por credencial (no falla la suite sin clave); comparación de políticas por contenido; proveedor caído separado de métricas de aceptación; trazas preservadas. Resultados todavía pendientes.
+
+- Ensayo optimizado intermedio: 15/15 herramientas 2xx; Incident completo con 2/2 explicaciones LLM. Watch/Injection omitían la ruta por el guard fijo de 3200 ms. Ajustado a 2200 ms (HTTP mínimo 1000 + reserva 1200), sin ampliar los 10 s totales; proyección de sourcing sin datos redundantes. Validación real final pendiente.

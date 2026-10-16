@@ -66,6 +66,24 @@ def subworkflow_of(tool):
 
 
 class WorkflowContextTests(unittest.TestCase):
+    def test_risk_projection_preserves_motor_values_without_duplicate_facts(self):
+        rows = [
+            {"servicePointId": POINT_ID, "productId": PRODUCT_ID, "level": level,
+             "suggestedQuantity": quantity, "coverageDays": 1.25, "criticality": "alta"}
+            for level, quantity in [("Critico", 2.75), ("Alto", 4), ("Vigilar", 6), ("Normal", 8), ("Critico", 0)]
+        ]
+        runner = """
+const fs = require('fs'), vm = require('vm');
+const x = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(vm.runInNewContext('(function(){' + x.code + '})()', {$json: x.data}).json));
+"""
+        for name in ("vigia.json", "incidente.json"):
+            sub = subworkflow_of(tools_of(load_workflow(name))["get_risks"])
+            code = next(n for n in sub["nodes"] if n["name"] == "Return Risks")["parameters"]["jsCode"]
+            result = json.loads(subprocess.check_output(["node", "-e", runner], text=True,
+                input=json.dumps({"code": code, "data": {"items": rows, "facts": ["duplicate"]}})))
+            self.assertEqual({"items": rows[:3]}, result)
+
     def test_oversized_driver_message_is_left_for_backend_validation(self):
         runner = """
 const vm = require('vm');
@@ -131,7 +149,8 @@ process.stdout.write(JSON.stringify(output.json));
         for name in ("vigia.json", "incidente.json"):
             tools = tools_of(load_workflow(name))
             for tool_name, tool in tools.items():
-                for deadline, can_call in (("2026-10-14T20:00:10Z", True), ("2026-10-14T19:59:59Z", False)):
+                for deadline, can_call in (("2026-10-14T20:00:10Z", True), ("2026-10-14T19:59:59Z", False),
+                                           ("2026-10-14T20:00:02.199Z", False), ("2026-10-14T20:00:02.200Z", True)):
                     context = {"runId": "signed-run", "incidentId": "signed-incident",
                                "kind": "Incident", "deadlineUtc": deadline}
                     item = {**VALID_ARGS[tool_name], "context": context, "query": {**VALID_ARGS[tool_name]}}

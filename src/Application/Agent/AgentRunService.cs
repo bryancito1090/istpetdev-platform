@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Incidents;
@@ -181,6 +182,7 @@ public sealed class AgentRunService(
         }
 
         await db.SaveChangesAsync(ct);
+        await SnapshotDecisionEvidenceAsync(runId, ct);
         await transaction.CommitAsync(ct);
 
         return ResultOutcome.Accepted;
@@ -300,6 +302,7 @@ public sealed class AgentRunService(
         if (rows == 0) return false;
         db.ChangeTracker.Clear();
         await ExecuteFallbackLogicAsync(run, reason, ParseTrigger(run.TriggerJson)?.IncidentId, ct);
+        await SnapshotDecisionEvidenceAsync(run.Id, ct);
         completedAt = DateTime.UtcNow;
         latencyMs = (int)(completedAt - run.StartedAtUtc).TotalMilliseconds;
         await db.Database.ExecuteSqlInterpolatedAsync(
@@ -427,7 +430,7 @@ public sealed class AgentRunService(
         // vehículo y secuencia real de paradas), nunca de texto libre del LLM.
         var proposals = decisions.ToDictionary(d => d.Id, d => ParseProposal(d.ProposalJson));
         var planIds = proposals.Values
-            .Where(p => p.ProposedRoutePlanId.HasValue)
+            .Where(p => p.Evidence is null && p.ProposedRoutePlanId.HasValue)
             .Select(p => p.ProposedRoutePlanId!.Value)
             .Distinct()
             .ToList();
@@ -436,7 +439,7 @@ public sealed class AgentRunService(
             : await db.RoutePlans.AsNoTracking().Where(p => planIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
 
         var vehicleIds = plans.Values.Select(p => p.VehicleId)
-            .Concat(proposals.Values.Where(p => p.VehicleId.HasValue).Select(p => p.VehicleId!.Value))
+            .Concat(proposals.Values.Where(p => p.Evidence is null && p.VehicleId.HasValue).Select(p => p.VehicleId!.Value))
             .Distinct()
             .ToList();
         var vehicles = vehicleIds.Count == 0
@@ -500,16 +503,16 @@ public sealed class AgentRunService(
 
             decisionViews.Add(new AgentDecisionView(
                 decision.Id,
-                vehicleCode,
+                proposal.Evidence?.VehicleCode ?? vehicleCode,
                 decision.Status,
                 decision.Rationale,
                 decision.DriverMessage,
                 source,
                 decision.ExplanationMismatch,
                 ExtractFacts(decision.ProposalJson),
-                originCode,
-                originName,
-                orderedStops));
+                proposal.Evidence is null ? originCode : proposal.Evidence.OriginWarehouseCode,
+                proposal.Evidence is null ? originName : proposal.Evidence.OriginWarehouseName,
+                proposal.Evidence is null ? orderedStops : proposal.Evidence.OrderedStops));
         }
 
         Enum.TryParse<AgentRunKind>(run.Kind, true, out var kind);
@@ -528,11 +531,31 @@ public sealed class AgentRunService(
             decisionViews);
     }
 
+    private async Task SnapshotDecisionEvidenceAsync(Guid runId, CancellationToken ct)
+    {
+        var view = await BuildViewAsync(runId, ct);
+        var decisions = await db.AgentDecisions.Where(d => d.CorrelationId == runId).ToListAsync(ct);
+        foreach (var decision in decisions)
+        {
+            var proposal = JsonNode.Parse(decision.ProposalJson)!.AsObject();
+            if (proposal.ContainsKey("evidence")) continue;
+            var item = view.Decisions.Single(d => d.AgentDecisionId == decision.Id);
+            proposal["evidence"] = JsonSerializer.SerializeToNode(new DecisionEvidence(
+                item.VehicleCode, item.OriginWarehouseCode, item.OriginWarehouseName, item.OrderedStops), JsonOpts);
+            decision.ProposalJson = proposal.ToJsonString(JsonOpts);
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
+    private sealed record DecisionEvidence(string VehicleCode, string? OriginWarehouseCode,
+        string? OriginWarehouseName, IReadOnlyList<DecisionStopView>? OrderedStops);
+
     private sealed record ProposalView(
         Guid? ProposedRoutePlanId,
         Guid? VehicleId,
         string? VehicleCode,
-        IReadOnlyList<DecisionStopView>? RouteStops);
+        IReadOnlyList<DecisionStopView>? RouteStops,
+        DecisionEvidence? Evidence = null);
 
     private static ProposalView ParseProposal(string proposalJson)
     {
@@ -578,7 +601,9 @@ public sealed class AgentRunService(
                 }
             }
 
-            return new ProposalView(planId, vehicleId, vehicleCode, stops);
+            var evidence = root.TryGetProperty("evidence", out var evidenceProp)
+                ? evidenceProp.Deserialize<DecisionEvidence>(JsonOpts) : null;
+            return new ProposalView(planId, vehicleId, vehicleCode, stops, evidence);
         }
         catch (JsonException)
         {
