@@ -1,7 +1,7 @@
 ---
 tipo: skill
 estado: vigente
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [istpetdev, ia, skills]
 ---
 
@@ -60,7 +60,7 @@ python docs/boveda/.github/scripts/check_vault.py
 ```
 
 
-El script falla con enlaces rotos, frontmatter incompleto, IDs fuera de su nota dueña o duplicados, rutas personales, bloques de código sin cerrar, conteos desactualizados en «Fuente y control documental» y skills no portables. Al cambiar el número de notas o enlaces, actualizar la línea «Verificación del…» de esa nota con los valores del resumen.
+El script falla con enlaces rotos, frontmatter incompleto, IDs fuera de su nota dueña o duplicados, rutas personales y bloques de código sin cerrar. El resumen calcula el número actual de notas y enlaces. Las cifras de [[Fuente y control documental]] son registros históricos: no se editan por cada nueva nota del evento. Registrar allí solo cambios documentales relevantes.
 
 ## Origen
 

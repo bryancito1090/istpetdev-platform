@@ -11,7 +11,7 @@ Esta nota concentra el contexto operativo esencial que cada integrante del equip
 
 > [!TIP]
 > **Instrucciones para los integrantes:**
-> Puedes duplicar este archivo dentro de la carpeta `NotasEvento/` con el nombre de tu archivo personal (ejemplo: `Participante - Bryan Bano.md`, respetando la regla de nombres sin tildes) y completar tus datos, dispositivos, rol de demostración y bitácora individual; o utilizar esta plantilla como base de referencia continua.
+> Esta plantilla reúne el contexto del evento y una ficha opcional de preparación. Para registrar lo que diga u observe el equipo durante las jornadas, sigue [[Notas del evento]] y copia [[Plantilla nota del evento]]: **un archivo nuevo por apunte**, con nombre `AAAA-MM-DD-HHMM-autor-tema.md`. No edites esta plantilla como bitácora compartida ni la dupliques para cada intervención.
 
 ---
 
@@ -104,16 +104,13 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 
 ---
 
-## 5. Ficha individual del participante
+## 5. Ficha individual del participante (opcional)
 
-*(Completar con los datos propios de cada integrante)*
+*Si necesitas una copia personal, conserva solo información operativa apta para el repositorio. Los datos de acreditación y contacto se comparten por el canal privado del equipo, fuera de la bóveda.*
 
-### 5.1 Datos de contacto e identificación
+### 5.1 Datos de presentación
 - **Nombre completo:**
-- **Cédula de identidad:**
 - **Usuario de GitHub:**
-- **Correo de contacto:**
-- **Teléfono móvil / WhatsApp:**
 - **Especialidad técnica principal en el evento:**
 
 ### 5.2 Equipamiento y conectividad en sede
@@ -157,3 +154,5 @@ Consultar la coreografía descrita en [[Guion del pitch]] y [[Flujos de prueba]]
 - **Observaciones del jurado o visitantes en el stand:**
 - **Preguntas frecuentes recibidas durante ensayos:**
 - **Mejoras identificadas para la fase de pitch:**
+
+Estas secciones personales sirven para prepararse. Cada mentoría, observación o indicación recibida durante el evento se registra además como archivo independiente siguiendo [[Notas del evento]], para que el equipo pueda compartirla sin sobrescribir el trabajo de otra persona.
