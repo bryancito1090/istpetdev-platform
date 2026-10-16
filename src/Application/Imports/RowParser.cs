@@ -104,7 +104,7 @@ public static class RowParser
 internal static class RowRules
 {
     private static readonly string[] NonNegative =
-        ["quantity", "max_weight", "max_volume", "weight_per_unit", "volume_per_unit", "cost_per_km", "lead_time_days"];
+        ["quantity", "max_weight", "max_volume", "weight_per_unit", "volume_per_unit", "cost_per_km", "lead_time_days", "unit_value", "units_per_package"];
 
     public static bool Check(ImportEntity entity, int row, Dictionary<string, object?> values, ImportReport report)
     {
@@ -148,6 +148,13 @@ internal static class RowRules
         { report.Error(entity, row, "window_start", "incomplete_window", "Informe ambos extremos de la ventana o deje ambos vacíos."); ok = false; }
         if (values.GetValueOrDefault("service_minutes") is int minutes && minutes < 0)
         { report.Error(entity, row, "service_minutes", "negative", "service_minutes no puede ser negativo."); ok = false; }
+        if (values.GetValueOrDefault("units_per_package") is decimal units && decimal.Round(units, 3, MidpointRounding.AwayFromZero) <= 0)
+        { report.Error(entity, row, "units_per_package", "out_of_range", "units_per_package debe ser positivo a tres decimales."); ok = false; }
+        foreach (var (field, allowed) in new[] {
+            ("vehicle_type", new[] { "camioneta", "camion_liviano", "camion_pesado" }),
+            ("usage_scope", new[] { "urbano", "extraurbano" }) })
+            if (values.GetValueOrDefault(field) is string text && !allowed.Contains(text.ToLowerInvariant()))
+            { report.Error(entity, row, field, "invalid_value", $"{field}: use {string.Join(", ", allowed)}."); ok = false; }
         return ok;
     }
 }
