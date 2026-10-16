@@ -646,3 +646,9 @@ Fuente: transcripción compartida por Bryan, registrada en [[2026-10-16-1109-bb-
 Se integraron los apuntes de Joseph publicados simultáneamente en el PR #181, conservando sus archivos y el seguimiento del spec 006. Se resolvieron los conflictos de hechos canónicos, consultas y este registro: se enlazan ambas fuentes del jurado y se preserva el posible corte de las 13:00 de Joseph junto con los anuncios de la transcripción aportada por Bryan.
 
 Verificación documental tras la integración: **98 notas Markdown**, **1034 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes. Los nueve enlaces Markdown nuevos a las fuentes resuelven y `git diff --check` no reporta errores.
+
+## 16-oct-2026 — Agenda general oficial y matriz de mentorías (issue #188)
+
+Fuente: documento oficial de la organización del Hackathon Expo Clean Ecuador 2026 distribuido a los equipos participantes, registrado en [[2026-10-16-1126-bb-agenda-general-y-mentorias]]. Se incorpora la Agenda General completa para las jornadas de viernes 16 y sábado 17 de octubre, y la matriz oficial de mentorías técnicas para el Reto 1 (Optimización y trazabilidad logística del abastecimiento — 14 equipos).
+
+[[Cronograma oficial]], [[Registro de mentorias]], [[Consultas para la organizacion]] y [[Hechos canonicos]] incorporan las actualizaciones: confirmación de IstpetDev en Reto 1 asignado al mentor Mauro Zurita (16:15–17:00 en supply chain y trazabilidad); resolución de la contradicción sobre cortes de entrega (checkpoint de avances el viernes 16 a las 18:30–19:00 y entrega de hitos el sábado 17 de 16:00 a 16:15 con Mónica Sevilla y William Chamorro); e identificación de conferencias magistrales programadas. No altera contratos, bases de datos ni software.
