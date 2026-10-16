@@ -783,6 +783,7 @@ productiva al ejecutar esta validación.
   [evidencia real de pruebas y prelaunch](evidencia/2026-10-16-194-consultas-abastecimiento.md).
 - [x] Publicar [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) a develop y resolver conflictos de los avances #197/#196/#201/#199.
 - [x] Revisión final: reproducir y corregir la sobreasignación de pedidos parcialmente planificados; unificar carga de demandas con `/suggest` y corregir el contrato documentado.
-- [ ] Integrar el último develop, comprobar CI del HEAD final, fusionar el PR y verificar cierre de #194.
+- [x] Integrar el último develop (`5cfc657`, #193), aprobar revisión técnica del alcance y verificar 560/560 pruebas locales y 7/7 checks del código `13c80b2`.
+- Integración y cierre operativo: [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) e [issue #194](https://github.com/bryancito1090/istpetdev-platform/issues/194) son las fuentes del estado remoto y SHA de merge; la cuenta autora no puede emitir aprobación formal.
 
-Estado: implementación y validación local inicial acreditadas; revisión final de Codex en curso por encargo de Bryan. La regresión nueva falló antes de corregir y pasó después (21/21 pruebas dirigidas, build Release sin errores). CI de los commits previos en verde; el merge y cierre del issue aún no están acreditados. Sin despliegue.
+Estado del código: revisión final de Codex completada por encargo de Bryan; tres consultas con RBAC y sin efectos logísticos, contrato cotejado con DTOs. La regresión falla antes y pasa después; 21/21 dirigidas y 560/560 en la suite completa, npm check/auditoría y bóveda aprobados. Se conserva el intento local abortado bajo concurrencia en la evidencia. CI sobre el código revisado 7/7 verde; la finalización del PR y issue se acredita en sus estados de GitHub. Sin despliegue.

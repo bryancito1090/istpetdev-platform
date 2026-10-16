@@ -681,8 +681,9 @@ Verificación documental: **105 notas Markdown**, **1113 enlaces internos resuel
 Revisión final de #194 por Codex: se unificó la carga de pedidos para respetar
 el remanente de #199 también en la consulta nueva y se corrigió el contrato
 contra los DTOs reales. La regresión de cantidades parciales/completas falla
-antes y pasa después de la corrección. CI y cierre remoto se registran en la
-misma evidencia del issue.
+antes y pasa después de la corrección. La revisión final pasa 560/560 pruebas
+locales, npm check/auditoría y bóveda (105 notas, 1116 enlaces, cero errores).
+CI y cierre remoto se acreditan en la evidencia y el PR #215.
 
 ## 16-oct-2026 — Hora límite para puntos críticos en el planificador (issue #193)
 

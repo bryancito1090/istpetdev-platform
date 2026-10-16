@@ -10,7 +10,7 @@ sin cambios de auth, migraciones, lockfiles, proxy o secretos. Se reutilizan las
 pruebas de RBAC/solo lectura y la auditoría ya registradas; se repetirán los
 caminos afectados. RLS/configuración administrable, QR, archivos, cifrado de datos
 personales y cabeceras de un despliegue expuesto no aplican a este cambio local.
-Verificación de regresión nueva y cierre remoto: pendientes en esta revisión.
+Regresión y validación final: resultados en la sección 5; el estado remoto definitivo se consulta en PR #215 e issue #194.
 
 - **Fecha:** 2026-10-16
 - **Issue:** [#194 — Consultas para el agente de stock por bodega, origen sugerido y vehículos disponibles](https://github.com/bryancito1090/istpetdev-platform/issues/194)
@@ -24,7 +24,7 @@ Verificación de regresión nueva y cierre remoto: pendientes en esta revisión.
 |---|---|---|
 | **Alcance del ensayo** | Local aislado | `WebApplicationFactory<Program>` (`ApiFactory`) sobre contenedor descartable PostgreSQL 16 + PostGIS (`postgis/postgis:16-3.4`) con fixture `demo-region` (DemoCore, 36 tablas núcleo). Sin conexiones a Amazon RDS, Cognito real, OSRM público ni n8n/LLM. |
 | **Evidencia vigente reutilizada** | Reutilizada | Suite existente de autenticación M2M (`AutomationAuthorizationTests`), trazabilidad (`AgentRunTraceTests`) y ruteo por pedidos (`OrderBasedRoutingValidationTests`) ejecutada y aprobada en la corrida completa (`528/528`). |
-| **RBAC y scopes M2M** | Verificado (PASS) | `[Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]` en `LogisticsQueriesController`. Probados `Gerencia` (`200`), `Planificador` (`200`), `Automatizacion` M2M con `istpetdev-api/automation` y `token_use=access` (`200`), anónimo (`401`), roles restantes (`Bodega`, `Conductor`, `Receptor`, `Auditor` → `403`), M2M sin scope / cliente no permitido / `id_token` / cuenta inactiva o rol distinto (`403`). |
+| **RBAC y scopes M2M** | Verificado (PASS) | `[Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]` en `LogisticsQueriesController`. Probados `Gerencia` (`200`), `Planificador` (`200`), `Automatizacion` M2M con `istpetdev-api/automation` y `token_use=access` (`200`), anónimo (`401`), roles restantes (`Bodega`, `Conductor`, `Receptor`, `Auditor` → `403`), M2M sin scope / cliente no permitido / cuenta inactiva o rol distinto (`403`). |
 | **Solo lectura logística y trazabilidad** | Verificado (PASS) | Consultas con `AsNoTracking()` y `IRiskCalculator.CalculateAsync(persistSnapshots: false)`. Comprobada invariancia exacta de conteos, IDs y valores de `DeliveryOrder`, `DeliveryOrderLine`, `RoutePlan`, `RouteStop`, `RouteStockReservation`, `InventoryBalance`, `StockMovement`, `Delivery` y `RiskSnapshot` antes y después de consultar y repetir. `X-Agent-Run-Id` añade trazas en `AgentRun.ToolCallsJson` solo para `Automatizacion`. |
 | **Aislamiento de cambios** | Verificado (PASS) | `src/Api/Controllers/RoutePlansController.cs` permanece intacto (reservado a #201). Sin archivos de configuración sensibles ni secretos en el árbol de Git. |
 | **No aplica en este alcance** | N/A | TLS VerifyFull contra RDS, CORS/CSP/HSTS de frontal público, rate limiting de endpoint público QR y despliegue en EC2/ECS no aplican a esta validación local en contenedor descartable. |
@@ -34,14 +34,14 @@ Verificación de regresión nueva y cierre remoto: pendientes en esta revisión.
 
 | Prueba de integración | Casos verificados | Resultado |
 |---|---|---|
-| `GetStock_AppliesFormulaSafetyOnceFefoAndFilters` | Fórmula `netUsable = sum(max(0, onHand - reserved))`, `safetyStockPct = 10%` aplicado **una sola vez por bodega y producto**, orden FEFO (`ExpiresOn` ascendente, `null` al final), exclusión de lotes bloqueados y vencidos hoy (`ExpiresOn <= operationalDate`), inclusión de bodega activa vacía (`BOD-SUR`) con totales `0` y filtro por `warehouseId` | PASS |
-| `PostSourcing_ByOrderIds_SharesSafetyStockBudget_HandlesShortages_AndPreservesSuggest` | Sourcing de 1 y varios pedidos a través de múltiples bodegas (`BOD-SUR` más cercana a `HOS-S01`, `BOD-CEN` más cercana a `HOS-N01`), presupuesto compartido por `(bodega, producto)` cuando dos pedidos compiten por el mismo lote sin sobreasignar, faltante parcial (`shortageQuantity > 0`, `fullySourced: false`) con `200 OK`, y no regresión de `POST /api/v1/route-plans/suggest` | PASS |
-| `PostSourcing_ByServicePointIds_UsesInMemoryRisks_PreservesMultipleProducts_WithoutCreatingOrders` | Cálculo en memoria (`persistSnapshots: false`), preservación de múltiples productos en riesgo para un mismo punto (`HOS-N01`), orden de urgencia (`Critico` antes que `Alto`), filtro opcional `productId`, punto sin riesgo devuelve `demands: []`, y cero `DeliveryOrder` o `RiskSnapshot` creados | PASS |
-| `GetAvailableVehicles_UsesOrganizationTimezone_FiltersPublishedOnly_AndAppliesFallbackCost` | Ventana local `[00:00, 24:00)` en `America/Guayaquil` (`[05:00Z, 05:00Z + 1d)`), exclusión de vehículos con `RoutePlan` `Published` en ese día local, borde `04:59:59Z` (día previo en Quito) no bloquea, `Proposed`/`Cancelled`/`Superseded` no bloquean, inactivos excluidos, `CostPerKm` fallback (`0.45 USD/km`), `MaxVolume` nullable y `EstimatedTotalCost: null` | PASS |
-| `Validation_RejectsInvalidInputs_MissingEntities_AndCrossOrganizationIds` | `400` en UUID/fecha/JSON mal formados; `422` en `productId` faltante o vacío, ambos/ninguno de `orderIds` y `servicePointIds`, listas vacías, `Guid.Empty`, `productId` con `orderIds`, y `> 100` IDs únicos; deduplicación de IDs repetidos (`200`); `404` en IDs inexistentes, de otra organización o ubicación que no es bodega activa | PASS |
-| `AccessControl_EnforcesPlanningAndM2MAutomation acrossAllThreeEndpoints` | Verificación de los 3 endpoints para `Gerencia` (`200`), `Planificador` (`200`), M2M válido (`200`), anónimo (`401`), `Bodega`/`Conductor`/`Receptor`/`Auditor` (`403`), M2M sin scope (`403`), `client_id` no permitido (`403`), `token_use=id` (`403`) y cuenta M2M degradada a rol no autorizado (`403`) | PASS |
-| `ReadOnlyAndTraceability_NeverMutatesLogisticsState_AndTracesOnlyForAutomation` | Firma completa del estado logístico idéntica antes y después de invocar y repetir las 3 consultas; `X-Agent-Run-Id` registra los 3 llamados en `AgentRun.ToolCallsJson` con actor `Automatizacion` y es ignorado con actor humano (`Planificador`) | PASS |
-| `VehiclesAvailable_RespectsFixedClockMode_AndVehicleMatcherHandlesEmptyStops` | Fecha por defecto tomada de `IOperationalClock` en modo `Fixed` (`2026-10-20`) y `MatchVehiclesAsync` con lista de paradas vacía devuelve distancia y costo `0` sin excepción | PASS |
+| `Stock_query_applies_safety_stock_once_orders_fefo_excludes_expired_and_blocked_and_includes_empty_warehouses` | Fórmula `netUsable = sum(max(0, onHand - reserved))`, `safetyStockPct = 10%` aplicado **una sola vez por bodega y producto**, orden FEFO (`ExpiresOn` ascendente, `null` al final), exclusión de lotes bloqueados y vencidos hoy (`ExpiresOn <= operationalDate`), inclusión de bodega activa vacía con totales `0` y filtro por `warehouseId` | PASS |
+| `Sourcing_by_orders_handles_single_and_multi_warehouse_competing_demands_shortages_and_suggest_regression` | Sourcing de 1 y varios pedidos a través de múltiples bodegas (bodega del fixture y bodega auxiliar de prueba), presupuesto compartido por `(bodega, producto)` cuando dos pedidos compiten por el mismo lote sin sobreasignar, faltante parcial (`shortageQuantity > 0`, `fullySourced: false`) con `200 OK`, y no regresión de `POST /api/v1/route-plans/suggest` | PASS |
+| `Sourcing_by_service_points_calculates_risks_without_persisting_orders_and_preserves_multiple_products_per_point` | Cálculo en memoria (`persistSnapshots: false`), preservación de múltiples productos en riesgo para un mismo punto (`HOS-N01`), orden de urgencia (`Critico` antes que `Alto`), filtro opcional `productId`, punto sin riesgo devuelve `demands: []`, y cero `DeliveryOrder` o `RiskSnapshot` creados | PASS |
+| `Vehicles_available_respects_operational_timezone_midnight_boundaries_published_status_and_fallback_tariff` | Ventana local `[00:00, 24:00)` en `America/Guayaquil` (`[05:00Z, 05:00Z + 1d)`), exclusión de vehículos con `RoutePlan` `Published` en ese día local, borde `04:59:59Z` (día previo en Quito) no bloquea, `Proposed`/`Cancelled`/`Superseded` no bloquean, inactivos excluidos, `CostPerKm` fallback (`0.45 USD/km`), `MaxVolume` nullable y `EstimatedTotalCost: null` | PASS |
+| `Validation_enforces_400_404_422_limits_and_rejects_other_organization_ids` | `400` en UUID/fecha/JSON mal formados; `422` en `productId` faltante o vacío, ambos/ninguno de `orderIds` y `servicePointIds`, listas vacías, `Guid.Empty`, `productId` con `orderIds`, y `> 100` IDs únicos; deduplicación de IDs repetidos (`200`); `404` en IDs inexistentes, de otra organización o ubicación que no es bodega activa | PASS |
+| `Access_control_allows_planning_and_valid_m2m_and_rejects_other_roles_anonymous_and_invalid_m2m` | Verificación de los 3 endpoints para `Gerencia` (`200`), `Planificador` (`200`), M2M válido (`200`), anónimo (`401`), `Bodega`/`Conductor`/`Receptor`/`Auditor` (`403`), M2M sin scope (`401`), `client_id` no permitido (`401`) y cuenta M2M degradada a rol no autorizado (`403`) | PASS |
+| `Queries_are_strictly_read_only_for_logistics_state_and_record_agent_trace_only_for_automation` | Firma completa del estado logístico idéntica antes y después de invocar y repetir las 3 consultas; `X-Agent-Run-Id` registra los 3 llamados en `AgentRun.ToolCallsJson` con actor `Automatizacion` y es ignorado con actor humano (`Planificador`) | PASS |
+| `Fixed_clock_mode_and_vehicle_matcher_empty_stops_behave_consistently` | Fecha por defecto tomada de `IOperationalClock` en modo `Fixed` (`2026-10-20`) y `MatchVehiclesAsync` con lista de paradas vacía devuelve distancia y costo `0` sin excepción | PASS |
 
 ## 3. Comandos de validación ejecutados
 
@@ -66,7 +66,7 @@ Verificación de regresión nueva y cierre remoto: pendientes en esta revisión.
 - **Corridas de CI remoto previas:**
   - `5af0eb3`: `7/7` checks en `SUCCESS` (run [`38944148815`](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38944148815)).
   - `f913cff`: `7/7` checks en `SUCCESS` (run [`38952810160`](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38952810160): `Pruebas Backend (Integración)`, `Pruebas Backend (Unit y E2E)`, `QA Backend (.NET 8)`, `QA Frontend (Angular 22)`, `Ensayo de respaldo y restauración`, `check-vault` y `Validar rama de origen`).
-- **Revisión y límite de autoaprobación en GitHub:** se verificó cada fila de la matriz de aceptación; al invocar `gh pr review 215 --approve`, GitHub responde `GraphQL: Review Can not approve your own pull request (addPullRequestReview)` por coincidir la identidad autenticada (`bryancito1090`) con el autor del PR. La protección de `develop` (`reviewDecision: ""`) no bloquea el merge por falta de aprobador externo cuando `mergeable == MERGEABLE` y todos los checks están en verde.
+- **Revisión y límite de autoaprobación en GitHub:** se verificó cada fila de la matriz de aceptación; al invocar `gh pr review 215 --approve`, GitHub responde `GraphQL: Review Can not approve your own pull request (addPullRequestReview)` por coincidir la identidad autenticada (`bryancito1090`) con el autor del PR. La consulta posterior de reglas activas de develop devuelve lista vacía y la protección clásica devuelve 404; se mantiene el requisito de revisión técnica y checks verdes antes del merge.
 - **Conflictos resueltos contra avances concurrentes en `origin/develop`:**
   1. `origin/develop` (`621fdc0`, PR #206 / issue #197): conflicto aditivo al final de `docs/boveda/03 Arquitectura/Contratos API y eventos.md`. Se conservaron íntegras ambas secciones (`#197` y `#194`).
   2. `origin/develop` (`5dc3470`, PRs #211 y #214 / issues #196 y #201): auto-merge limpio en `src/Application/Logistics/VehicleMatcher.cs` (conservando `StopLoadDto` y `Loads` de #196/#201 junto con `GetAvailableVehiclesAsync` de #194) y resolución aditiva al final de `docs/boveda/99 Fuentes/Fuente y control documental.md` (conservando las entradas de PR #192 e issue #194).
@@ -95,5 +95,29 @@ Verificación de regresión nueva y cierre remoto: pendientes en esta revisión.
   endpoint de reglas devuelve `[]`, protección clásica devuelve Branch not
   protected (404). Se verifica CI y revisión técnica sin atribuir aprobación
   formal a un comentario del autor.
-- Pendiente: integrar #193 recién incorporado a develop, regresión y CI finales,
-  merge y estado CLOSED de #194.
+- Se integró #193 desde develop; el resultado de integración final y cierre se
+  acredita en [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215)
+  e [issue #194](https://github.com/bryancito1090/istpetdev-platform/issues/194).
+
+### Revalidación del conjunto con #193
+
+Se integra `origin/develop` `5cfc657` (PR #205, hora límite), conservando ambas
+secciones en Contratos API y eventos y Fuente y control documental. El diff
+propio de #194 sigue sin modificar RoutePlansController.
+
+- `npm run check`: aprobado en esta revisión (incluidos builds API/web/móvil).
+  Se reutilizaron dependencias locales mediante un enlace temporal, retirado al
+  terminar; no se cambiaron package-lock ni dependencias.
+- `npm run audit:check`: aprobado; siete avisos cubiertos por excepciones vigentes.
+- Bóveda: 105 notas, 1116 enlaces, cero errores y cuatro avisos preexistentes.
+- Corrida completa inicial, concurrente con compilaciones: 472 aprobadas y cinco
+  fallos de tiempo/carreras en AgentJourney e importación; el host de tests abortó.
+  No se presenta como prueba aprobada ni se modifican los umbrales para ocultarla.
+- Repetición completa con MaxParallelThreads=1 por RunSettings temporal, sin
+  builds npm concurrentes: **560/560 aprobadas, 0 fallos, 0 omitidas; 6 m 55 s**.
+  TRX: `final-194-serial.trx`. No se cambió ninguna aserción ni límite de tiempo. Configuración compatible con el runner
+  según [xUnit RunSettings](https://xunit.net/docs/config-runsettings).
+- Código revisado `13c80b2`: **7/7 checks remotos aprobados** en
+  [CI 38955623389](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38955623389).
+  Se exige verificar nuevamente los checks del HEAD que GitHub fusione; el
+  resultado definitivo queda en PR #215 y en el comentario de cierre de #194.
