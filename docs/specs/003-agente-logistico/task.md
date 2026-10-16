@@ -815,3 +815,15 @@ Avance del 16-oct-2026:
   cubierto en `AgentRunTraceTests` y `AgentJourneyTests` para LLM y fallback.
 - Pendiente en esta entrada: suite completa, ensayo real local con DeepSeek,
   documentación de bóveda/contratos, PR, integración de #194/#193, CI y merge.
+
+Actualización del 16-oct (tarde): suite completa **545/545** en el árbol
+fusionado; `develop` `621fdc0` y `0c296bf` integrados conservando la carga
+parcial de #199 (regla 8 portada al prompt v2, workflows regenerados) y la
+documentación ajena. PR
+[#213](https://github.com/bryancito1090/istpetdev-platform/pull/213) abierto en
+**draft** hacia `develop` con labels `type::feature` y prioridad alta. El CI del
+PR no se ha disparado aún (eventos perdidos durante la caída de red) y se
+forzará al marcar listo tras el ensayo. Dependencias: #194 tiene PR #215 con CI
+en curso (contratos compatibles); #193 tiene PR #205 en conflicto y su extensión
+opcional queda fuera, documentada. El ensayo real con DeepSeek y los endpoints
+de #194 sigue pendiente y es requisito para el merge.

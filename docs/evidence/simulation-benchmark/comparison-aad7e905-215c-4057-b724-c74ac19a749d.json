@@ -1,0 +1,104 @@
+{
+  "comparisonId": "aad7e905-215c-4057-b724-c74ac19a749d",
+  "datasetVersion": "national-v1",
+  "completedAtUtc": "2026-10-16T18:05:29.1708949Z",
+  "elapsedSeconds": 2.8871017,
+  "policies": {
+    "reactive-v1": {
+      "km_total": {
+        "min": 4550.0,
+        "median": 4562.5,
+        "max": 4625.0,
+        "adverse": 4550.0
+      },
+      "costo_transporte": {
+        "min": 7962.500,
+        "median": 7984.375,
+        "max": 8093.750,
+        "adverse": 7962.500
+      },
+      "entregas_completadas": {
+        "min": 364,
+        "median": 365,
+        "max": 370,
+        "adverse": 364
+      },
+      "km_por_entrega": {
+        "min": 12.5,
+        "median": 12.5,
+        "max": 12.5,
+        "adverse": 12.5
+      },
+      "costo_por_entrega": {
+        "min": 21.875,
+        "median": 21.875,
+        "max": 21.875,
+        "adverse": 21.875
+      }
+    },
+    "fixed7-v1": {
+      "km_total": {
+        "min": 7800.0,
+        "median": 7800.0,
+        "max": 7800.0,
+        "adverse": 7800.0
+      },
+      "costo_transporte": {
+        "min": 13650.000,
+        "median": 13650.000,
+        "max": 13650.000,
+        "adverse": 13650.000
+      },
+      "entregas_completadas": {
+        "min": 624,
+        "median": 624,
+        "max": 624,
+        "adverse": 624
+      },
+      "km_por_entrega": {
+        "min": 12.5,
+        "median": 12.5,
+        "max": 12.5,
+        "adverse": 12.5
+      },
+      "costo_por_entrega": {
+        "min": 21.875,
+        "median": 21.875,
+        "max": 21.875,
+        "adverse": 21.875
+      }
+    },
+    "istpetdev-v1": {
+      "km_total": {
+        "min": 6987.5,
+        "median": 7037.5,
+        "max": 7062.5,
+        "adverse": 6962.5
+      },
+      "costo_transporte": {
+        "min": 12228.125,
+        "median": 12315.625,
+        "max": 12359.375,
+        "adverse": 12184.375
+      },
+      "entregas_completadas": {
+        "min": 559,
+        "median": 563,
+        "max": 565,
+        "adverse": 557
+      },
+      "km_por_entrega": {
+        "min": 12.5,
+        "median": 12.5,
+        "max": 12.5,
+        "adverse": 12.5
+      },
+      "costo_por_entrega": {
+        "min": 21.875,
+        "median": 21.875,
+        "max": 21.875,
+        "adverse": 21.875
+      }
+    }
+  }
+}
