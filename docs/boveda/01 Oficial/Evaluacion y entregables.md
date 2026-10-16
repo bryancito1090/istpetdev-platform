@@ -1,13 +1,15 @@
 ---
 tipo: fuente-resumida
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-16
 tags: [oficial, hackathon]
 ---
 
 # Evaluación y entregables
 
 **Fuente:** [[Manual oficial.pdf]], p. 8 (entregables), p. 9 (criterios), p. 10 (jurado), pp. 23–26 (Anexos 5 y 6). Las tablas del manual son imágenes; las de esta nota marcadas «transcrito de imagen» copian su texto sin cambios.
+
+**Aviso del 16-oct:** la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla del evento]] anuncia pitches de cinco minutos, cuatro cubículos por reto y menciona cinco jurados sin precisar su distribución. Contradice la organización del jurado del manual que se conserva abajo como fuente escrita. O-13 en [[Consultas para la organizacion]] pide composición, consolidación y desempate; no se deducen cambios de pesos ni de fórmula.
 
 ## Matriz oficial (transcrito de imagen, p. 9)
 
@@ -65,7 +67,7 @@ Las reglas de cálculo aparecen intercaladas en Anexo 5 y referenciadas desde An
 | Modelo de negocio | Cliente, propuesta de valor, ingresos/sostenibilidad y costos principales | [[Modelo de negocio y piloto]] | Cliente, precio y costos |
 | Pitch | Presentación ejecutiva | [[Guion del pitch]] | Presentación exportada |
 
-Confirmar plataforma, formatos, duración y número de diapositivas en [[Consultas para la organizacion]].
+**Canal y modalidad, anuncio oral del 16-oct:** carpeta de Drive accesible mediante el correo del capitán; pitch de cinco minutos. Se admite idea para implementar o prototipo para validar y no se exige prototipo físico en esa respuesta. Esto no elimina la ponderación del desarrollo práctico. URL, acceso efectivo, formatos, límites, número de diapositivas y desglose de preguntas siguen por confirmar en [[Consultas para la organizacion]] (O-04/O-06). Los horarios de entrega mencionados se contrastan en [[Cronograma oficial]]; no hay subida ni acuse registrados por esta incorporación.
 
 ## Guía de trabajo oficial (Anexo 5, pp. 23–25)
 

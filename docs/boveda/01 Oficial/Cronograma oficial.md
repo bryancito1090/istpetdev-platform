@@ -1,7 +1,7 @@
 ---
 tipo: fuente-resumida
 estado: vigente
-actualizado: 2026-10-07
+actualizado: 2026-10-16
 tags: [oficial, hackathon]
 ---
 
@@ -10,6 +10,12 @@ tags: [oficial, hackathon]
 **Fuente:** [[Manual oficial.pdf]], pp. 6–8, 14–16 y 27–28. Usaremos **America/Guayaquil (UTC−05:00)**; confirmar logística y ajustes. El manual permite modificar horarios, conservando fechas, entregables y criterios (p. 8).
 
 Las tablas del manual son imágenes: ningún asistente de IA puede leerlas en el PDF. Las tablas de esta nota están **transcritas de imagen** el 7 de octubre de 2026, con el texto del manual sin cambios. Si hay diferencia con el PDF, prevalece el PDF.
+
+## Anuncios orales y horarios por aclarar — 16-oct
+
+Fuente: [[2026-10-16-1109-bb-charla-limpieza-logistica|transcripción aportada por Bryan]]. Se anuncian pitches de **cinco minutos por equipo**, cuatro equipos simultáneos en cubículos por reto, pantalla y HDMI. El rotulado de cubículos se anuncia para el día siguiente y las barras podrían ingresar unos 20 minutos antes. Turno de IstpetDev, cubículo, transiciones y preguntas PENDIENTES (O-04/O-08/O-13).
+
+**⚠️ Contradicción detectada** — Hecho nuevo: una consulta menciona entrega hoy a las 18:00 (16-oct por contexto), con respuesta que remite a Drive y a revisar lo subido; otra pregunta menciona sábado a las 20:00 (17-oct por contexto), sin ratificación de esa hora. · Hecho establecido: el manual fija entrega final el 17-oct de 16:00 a 16:15. · Impacto: no está claro si se habla de avances, fases distintas o un horario nuevo. · Opciones: confirmar cortes separados; obtener agenda final actualizada. O-06 sigue abierto para esa aclaración. Se conservan abajo las tablas originales; la charla no confirma un desplazamiento del bloque completo de presentaciones.
 
 ## Fases (transcrito de imagen, p. 6, sección 6)
 
@@ -94,6 +100,6 @@ El Anexo 7.3 (p. 28) repite los mismos horarios con textos más cortos.
 | Fase VII | Formalización y entrega de premios | A partir del 4 de noviembre de 2026, una vez aprobado cada expediente |
 | Fase VIII | Cierre documental y vinculación / continuidad | A partir del 4 de noviembre de 2026 |
 
-**Meta interna propuesta:** congelar materiales el 17 de octubre a las 15:45. El turno exacto y el tiempo de preguntas siguen pendientes.
+**Meta interna propuesta:** congelar materiales el 17 de octubre a las 15:45, por revisar al aclarar O-06. Duración anunciada del turno: cinco minutos por equipo; turno exacto y tiempo de preguntas siguen pendientes.
 
 El calendario de construcción está en [[Plan de ejecucion]].

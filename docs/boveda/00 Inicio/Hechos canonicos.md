@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [hackathon, equipo, ia]
 ---
 
@@ -22,10 +22,12 @@ Certeza: ✅ confirmado con fuente · ⚠️ a validar (propuesta, supuesto o da
 | Jornadas | 16 y 17 de octubre de 2026 | Manual, pp. 6 y 16 | ✅ |
 | Zona horaria | America/Guayaquil (UTC−05:00) | Decisión del equipo en [[Cronograma oficial]] | ✅ |
 | Sede | Centro de Exposiciones Quito (CEQ), según listado público de la feria; el manual solo dice «espacio definido por la organización» (p. 14) | [Listado público](https://www.cantonfair.net/event/67411-ecuador-cleaning-expo-2026) | ⚠️ confirmar en O-07 |
-| Jurado | 7 personas: 3 del sector de limpieza (incluye JIMCORPSERVI/FEDELIMP), 2 expertos técnicos/tecnológicos, 1 académico, 1 de LACIF | Manual §11.3, p. 10 | ✅ |
+| Jurado | Manual: 7 personas, 3 del sector, 2 expertos técnicos, 1 académico y 1 de LACIF. La charla anuncia cubículos por reto y menciona 5 jurados sin precisar su distribución; confirmar composición y consolidación | Manual §11.3, p. 10; [Charla del 16-oct](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md); O-13 | ⚠️ contradicción abierta |
 | Pesos de evaluación | 15/15/15/15/20/10/10 (ver [[Evaluacion y entregables]]) | Manual, pp. 9 y 26 | ✅ |
 | Trabajo previo permitido | PENDIENTE (consulta O-01) | [[Consultas para la organizacion]] | ⚠️ |
-| Duración del pitch | PENDIENTE (consulta O-04); meta interna 3 min | [[Guion del pitch]] | ⚠️ |
+| Duración del pitch | 5 minutos por equipo anunciados oralmente; preguntas y transiciones PENDIENTES (O-04). Meta interna del guion: 4:40 | [Charla del 16-oct](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md); [[Guion del pitch]] | ✅ anuncio registrado; ⚠️ desglose pendiente |
+| Presentaciones simultáneas | 4 equipos en 4 cubículos, asignados por reto; pantalla y HDMI anunciados. Turno y cubículo de IstpetDev PENDIENTES | [Charla del 16-oct](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md); O-08/O-13 | ✅ anuncio registrado; ⚠️ ejecución sin comprobar |
+| Canal de entrega | Carpeta de Drive con acceso mediante el correo del capitán. URL, acceso efectivo, formatos y alcance de cada corte PENDIENTES (O-06); no hay entrega acreditada | [Charla del 16-oct](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md) | ✅ anuncio registrado; ⚠️ detalles pendientes |
 
 ## Equipo
 
@@ -183,6 +185,9 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Autoría de ADR-04 (aceptación inicial), 09, 13, 14 y 15 | Confirmar Deciders | Reunión del equipo |
 | Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21) | Equipo, con Bryan como Decider de ADR-16 |
 | Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
+| **⚠️ Contradicción detectada** — Paneles de evaluación | Hecho nuevo: la charla del 16-oct anuncia cuatro cubículos por reto y menciona cinco jurados; hecho establecido: el manual describe siete jurados comunes y promedio de siete puntajes válidos ([[Evaluacion y entregables]]). Impacto: composición, consolidación y desempate inciertos. Opciones: confirmar adenda; obtener ratificación del manual y aclarar el anuncio. No cambiar pesos ni fórmula por inferencia | Organización, O-13; [fuente oral](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md) |
+| **⚠️ Contradicción detectada** — Cortes de entrega | Hecho nuevo: se menciona hoy 18:00 y un participante pregunta por sábado 20:00, sin ratificación de esta última hora; hecho establecido: manual, 17-oct 16:00–16:15 ([[Cronograma oficial]]). Impacto: riesgo de confundir avance con entrega final. Opciones: confirmar cortes separados; pedir horario final actualizado. No reemplazar la agenda escrita hasta aclararlo | Organización, O-06; [fuente oral](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md) |
+| **⚠️ Contradicción detectada** — Tiempo del pitch | Hecho nuevo: cinco minutos por equipo anunciados el 16-oct; hecho establecido: tres minutos era meta interna y O-04 estaba pendiente. Impacto: usar el guion maestro de cinco minutos con objetivo 4:40; falta saber si incluye preguntas. Opciones: ajustar dentro de los cinco minutos al recibir el desglose; conservar 3/7 solo como variantes internas | Duración actualizada con [fuente oral](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md); desglose en O-04 |
 | Papel del LLM | Resuelto el 14-oct: el LLM elige herramientas y explica; el motor determinista calcula y aplica límites (ADR-22) | Bryan, aprobación expresa en revisión de #37 |
 | Scopes de automatización | Resuelto para spec 003: `istpetdev-api/automation` + rol `Automatizacion`, sin operaciones de aprobación/publicación | Bryan, aprobación expresa del diseño 003 |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
