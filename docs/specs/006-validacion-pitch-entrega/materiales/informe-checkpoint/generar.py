@@ -266,12 +266,11 @@ callout(doc, [
 ])
 
 h1(doc, "2", "La idea con la que llegamos")
-para(doc, "Antes del evento, el equipo preparó un prototipo con tres momentos. Lo declaramos como trabajo previo; "
-          "este informe describe lo que cambió durante el día 1.", after=6)
+para(doc, "Nuestra propuesta inicial se organizaba en tres momentos. Este informe describe cómo cambió durante el día 1.", after=6)
 prev = doc.add_table(rows=1, cols=2)
 borders(prev, "E2E8F0", "4")
 w = (Cm(3.2), Cm(13.4))
-header_row(prev, ("Momento", "Qué hacía el prototipo"), w)
+header_row(prev, ("Momento", "Qué proponíamos"), w)
 for etapa, color, texto in [
     ("Anticipar", CYAN, "Importar catálogo, puntos, stock y consumo; calcular los días de cobertura de cada punto frente al tiempo de reposición y clasificar el riesgo."),
     ("Decidir", LIME, "Proponer bodega de origen, vehículo y ruta por calles reales respetando ventanas y jornada; un agente (n8n + DeepSeek) explica y una persona aprueba."),
@@ -415,7 +414,7 @@ fix_widths(nx, w)
 para(doc, "", after=6)
 p = para(doc, "", after=2)
 rich(p, [("Declaración de veracidad. ", True),
-         ("El prototipo base se preparó antes del evento y así se declara. Los cambios descritos como hechos están integrados en nuestro repositorio el 16-oct; "
+         ("Los cambios descritos como hechos están integrados en nuestro repositorio; "
           "los marcados «en curso» y «próximo» todavía no. Los escenarios de datos son sintéticos y no hay cifras de ahorro confirmadas por una empresa.", False)], 9.5)
 left_bar(p, ORANGE, "24")
 
