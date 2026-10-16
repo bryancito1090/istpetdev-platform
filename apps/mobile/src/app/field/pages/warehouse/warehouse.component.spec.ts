@@ -362,5 +362,5 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
     component.toggleVerifyAllLines();
     expect(component.allLinesVerified()).toBe(false);
   });
-  });
 });
+

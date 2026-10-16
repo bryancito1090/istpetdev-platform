@@ -291,6 +291,5 @@ describe('ScanPage (Issue #122)', () => {
       component.goToDelivery('del-uuid-001');
       expect(routerNavigateSpy).toHaveBeenCalledWith(['/receipt', 'del-uuid-001']);
     });
-    });
   });
 });

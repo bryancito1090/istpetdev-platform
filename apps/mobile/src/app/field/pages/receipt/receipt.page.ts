@@ -211,9 +211,13 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
               <p class="text-xs text-amber-800">
                 Bodega debe empacar, sellar y despachar los bultos antes de que puedas recogerlos.
               </p>
-              <ion-button size="small" fill="outline" color="warning" class="mt-2" [disabled]="isRefreshing()" (click)="refreshData()">
+              <button
+                type="button"
+                class="mt-2 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition disabled:opacity-50"
+                [disabled]="isRefreshing()"
+                (click)="refreshData()">
                 {{ isRefreshing() ? 'Actualizando...' : '↻ Actualizar estado' }}
-              </ion-button>
+              </button>
             </div>
           }
 
