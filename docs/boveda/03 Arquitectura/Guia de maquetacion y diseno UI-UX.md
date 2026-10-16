@@ -44,222 +44,219 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, A
 
 ### 1.3 Geometría y Elevación
 
-* **Radio de Borde (`border-radius`):** `8px` (`rounded-lg` en Tailwind). Prohibido utilizar esquinas exageradas (`rounded-2xl` o `rounded-3xl`) en tarjetas de métricas o tablas.
-* **Borde:** Trazo sólido milimétrico `1px solid #E3E8EE`.
+* **Radio de Borde (`border-radius`):** 
+  * Tarjetas principales y modales: `8px` (`rounded-lg` o `rounded-xl`).
+  * Controles de formulario y botones estándar: `6px` (`rounded-md`) con altura fija de 36px (`h-9`).
+  * Chips y filtros de periodicidad: Píldoras completas (`rounded-full`) con altura de 28-32px (`h-7` a `h-8`).
+* **Borde:** Trazo sólido milimétrico `1px solid #E3E8EE` para tarjetas y divisores.
+* **Borde Punteado:** Trazo discontinuo sutil `1px dashed #D3D9E2` para bloques de sugerencia, configuración pendiente o vinculación de cuentas.
 * **Sombras:** Micro-elevación imperceptible para evitar ruido: `box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);` o `shadow-2xs`.
 
 ---
 
-## 2. Catálogo de Patrones de Pantalla
+## 2. Anatomía del Shell Global (Topbar y Sidebar)
 
-La plataforma IstpetDev se estructura bajo tres arquetipos de diseño para homogeneizar todas las vistas:
+Basado fielmente en la estructura observada en las capturas reales de la consola ejecutiva:
 
 ```mermaid
 flowchart TD
-    Shell["Shell Global: Sidebar Fijo (14px, #1A2C44) + Header con Buscador"]
+    subgraph ShellGlobal ["Shell Global (Consola Ejecutiva)"]
+        Sidebar["Sidebar Izquierdo (w-60, bg-[#FBFBFC])<br>• Selector de Entorno/Cuenta con Chevron<br>• Menú Principal (Item Activo: Texto e Icono #635BFF)<br>• Sección Operaciones<br>• Pie: Enlace Discreto"]
+        
+        Topbar["Topbar Superior Fijo (h-14, bg-white, border-b #E3E8EE)<br>• Buscador Central Ovalado (bg-[#F1F3F5], text-xs)<br>• Utilidades Derecha: Ayuda, Alertas, Configuración, Avatar"]
+    end
     
-    Shell --> P1["Patrón 1: Dashboard Asimétrico<br>(/inicio)"]
-    Shell --> P2["Patrón 2: Gestión de Saldos / Capacidad<br>(/bodegas, /simulation)"]
-    Shell --> P3["Patrón 3: Listas Maestras y Tablas Operativas<br>(/datos, /alertas, /rutas, /users)"]
+    ShellGlobal --> Vista["Área de Contenido (bg-white / bg-[#F8FAFC])"]
+```
 
-    P1 --- D1["Métrica + Gráfico (8 cols) / KPIs Verticales (4 cols)<br>Tarjetas 'Tu resumen' (4 cols)"]
-    P2 --- D2["Métricas en Lista Apilada + Acciones en Barra<br>Pestañas Subrayadas + Panel Lateral"]
-    P3 --- D3["Tabs Superiores de Filtro + Botón Primario<br>Tablas con Encabezado #F8FAFC + Empty State"]
+### 2.1 Especificación del Sidebar
+1. **Selector de Entorno / Cuenta:**
+   * Contenedor superior con padding `p-3.5 border-b border-[#E3E8EE]/70`.
+   * Avatar cuadrado con esquinas redondeadas (`w-8 h-8 rounded-lg bg-[#E3E8EE] text-[#1A2C44] font-bold`).
+   * Título superior en 12px font-medium (`Entorno operativo / IstpetDev`) y nombre de usuario en 11px color `#697386`.
+   * Chevron vertical doble o simple a la derecha.
+2. **Navegación Principal:**
+   * Enlaces con tipografía de `14px`, `font-normal`, color `#4F5B66`.
+   * **Estado Activo Real de Stripe:** Cuando una ruta está seleccionada, el texto y el icono adoptan el color morado institucional `#635BFF`, con tipografía seminegrita (`font-medium`) sobre un fondo limpio o sutil `bg-indigo-50/40`, sin marcos rectangulares pesados.
+   * **Estado Hover:** `text-[#1A2C44] bg-[#F1F3F5]/60 rounded-md transition-colors`.
+
+### 2.2 Especificación del Topbar
+1. **Buscador Rápido:**
+   * Posicionado a la izquierda o centro: `w-72 sm:w-80 h-9 bg-[#F1F3F5] rounded-lg px-3 flex items-center gap-2`.
+   * Icono de lupa tenue `#8792A2` y placeholder conciso `"Buscar..."`.
+2. **Iconos de Utilidad Derecha:**
+   * Iconos compactos de 16-18px en `#697386` con efecto hover `#1A2C44`.
+   * Indicador de estado operativo o progreso con badge circular tenue.
+   * Avatar de usuario circular de 28px con tipografía de inicial en mayúscula.
+
+---
+
+## 3. Catálogo de Arquetipos de Pantalla
+
+La plataforma IstpetDev replica con fidelidad los tres patrones de maquetación identificados en las capturas de producción:
+
+```mermaid
+flowchart TD
+    Vistas["Catálogo de Pantallas IstpetDev"]
+    
+    Vistas --> ArqA["Arquetipo A: Dashboard Temporal 'Hoy'<br>(/inicio)"]
+    Vistas --> ArqB["Arquetipo B: Saldos, Capacidad y Columnas Asimétricas<br>(/bodegas, /simulation)"]
+    Vistas --> ArqC["Arquetipo C: Listas Maestras, Tabs y Hero Editorial<br>(/datos, /alertas, /rutas)"]
+
+    ArqA --- R1["Métrica Principal + Gráfico de Jornada (8 cols)<br>Panel Vertical de KPIs (4 cols)<br>'Tu resumen' con Chips de Filtro en Píldora + Tarjetas (i)"]
+    ArqB --- R2["Título con Métrica Integrada + Fila de Botones de Acción<br>Balance Principal (70%) + Tarjeta Punteada de Sugerencias (30%)<br>Tabs Subrayadas de Actividad Reciente"]
+    ArqC --- R3["Tabs Subrayadas en Línea (-mb-px)<br>Banner Informativo Descartable (Bombilla + Enlace)<br>Hero Editorial Limpio (32px) + 3 Tarjetas Guía en Columna"]
 ```
 
 ---
 
-### Patrón 1: Dashboard y Métrica Temporal (Ejemplo: `/inicio`)
+### Arquetipo A: Dashboard Temporal Ejecutivo (Captura 3 - Ejemplo: `/inicio`)
 
-Utilizado para páginas de visión gerencial o resumen general.
+Utilizado para páginas de visión general y monitoreo del estado operativo del día en curso.
 
-#### Estructura del Layout
-1. **Encabezado:** Título de sección (`text-[28px] font-bold text-[#1A2C44]`) alineado a la izquierda junto con el badge de rol del usuario. A la derecha, botón secundario discreto de actualización o acción.
-2. **Fila Asimétrica Superior:**
-   * **Columna Izquierda (8 de 12 cols):**
-     * Selectores de métrica tipo botón con flecha `˅` (`text-[13px] font-medium text-[#4F5B66]`).
-     * Métrica principal en `text-[32px] sm:text-[36px] font-semibold text-[#1A2C44] tracking-tight`.
-     * Subtexto con corte horario y porcentaje de cobertura (`text-[13px] text-[#3C4F69]`).
-     * Gráfico de línea temporal horizontal con tramo continuo hasta la hora actual y proyección punteada hasta el fin de ciclo (`07:00` a `17:00`).
-   * **Columna Derecha (4 de 12 cols):**
-     * Panel vertical con separador izquierdo `border-l border-[#E3E8EE] pl-8`.
-     * Lista vertical de KPIs con enlace `Ver más` a la derecha en azul `#635BFF`.
-     * Valor del KPI en `text-[20px] font-semibold text-[#1A2C44]` con micro-icono `ⓘ`.
+#### Anatomía Visual
+1. **Encabezado:**
+   * Título directo: `Hoy` en `text-[26px] font-bold text-[#1A2C44]`.
+   * Botón secundario a la derecha: `Actualizar datos` (`h-9 px-3.5 text-xs font-medium border border-[#E3E8EE] rounded-md bg-white text-[#30313D] shadow-2xs hover:bg-slate-50`).
+2. **Fila Asimétrica Superior (División 8/4):**
+   * **Columna Izquierda (8 cols):**
+     * Selectores tipo chip con flecha hacia abajo: `Volumen de despachos ˅` | `Ayer ˅` (`text-xs font-medium text-[#4F5B66]`).
+     * Métrica principal destacada: `text-[32px] font-semibold text-[#1A2C44] tracking-tight`.
+     * Comparativa de período y hora de corte: `0 m³ ayer` | `19:18` (`text-xs text-[#697386]`).
+     * Línea temporal horizontal: trazado continuo morado `#635BFF` hasta la hora actual con proyección al cierre de jornada. Eje temporal con horas `07:00` y `17:00`.
+   * **Columna Derecha (4 cols):**
+     * Panel vertical separado por divisor sutil `border-l border-[#E3E8EE] pl-8`.
+     * Lista apilada de KPIs:
+       * Encabezado con título del KPI y enlace de acción azul `#635BFF` (`Ver más` / `Ver datos`).
+       * Cifra del KPI en `text-[20px] font-semibold text-[#1A2C44]` con micro-icono de información `ⓘ`.
+       * Separador horizontal fino `border-b border-[#F1F3F5] my-4`.
 3. **Sección "Tu resumen":**
-   * Encabezado con título `text-[20px] font-bold text-[#1A2C44]`.
-   * Barra de filtros de fecha y periodicidad en píldoras con borde (`rounded-full border border-[#E3E8EE] px-3 py-1.5 text-xs text-[#30313D]`).
-   * Cuadrícula de 4 tarjetas de resumen correspondientes al flujo logístico (`Cargar Datos`, `Alertas`, `Rutas`, `Bodegas`).
-
-#### Código HTML / Tailwind de Referencia (Tarjeta de Resumen)
-```html
-<div class="bg-white border border-[#E3E8EE] rounded-lg p-5 hover:border-slate-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all flex flex-col justify-between group">
-  <div>
-    <!-- Encabezado con ⓘ -->
-    <div class="flex items-center justify-between">
-      <h3 class="text-[14px] leading-[20px] font-medium text-[#30313D] truncate">
-        1. Cargar Datos Maestros
-      </h3>
-      <span class="text-[#8792A2] group-hover:text-[#3C4F69] transition-colors cursor-help text-[13px]" title="Información">&#9432;</span>
-    </div>
-
-    <!-- Métrica -->
-    <div class="mt-2.5">
-      <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight">
-        15 <span class="text-[14px] font-normal text-[#3C4F69]">puntos activos</span>
-      </div>
-      <div class="text-[13px] leading-[18px] text-[#3C4F69] mt-0.5 mb-[2px]">
-        Bodegas, hospitales, consumos e insumos base.
-      </div>
-    </div>
-  </div>
-
-  <!-- Pie con enlace de acción -->
-  <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
-    <span class="text-[11px] px-2 py-0.5 rounded-full font-medium border bg-slate-50 text-slate-700 border-slate-200">
-      Catálogo Base
-    </span>
-    <a routerLink="/datos" class="text-[13px] font-medium text-[#635BFF] hover:underline inline-flex items-center gap-1">
-      <span>Ir a Datos</span>
-      <span>&rarr;</span>
-    </a>
-  </div>
-</div>
-```
+   * Título de bloque: `Tu resumen` (`text-[22px] font-bold text-[#1A2C44] mb-3`).
+   * **Fila de Filtros en Píldora (`rounded-full`):**
+     * Botones pastilla redondeados con borde: `Intervalo de fechas: Últimos 7 días ˅` | `Diario ˅` | `⊗ Compara: Período anterior ˅`.
+     * Clases exactas: `rounded-full border border-[#E3E8EE] bg-white px-3.5 py-1 text-xs text-[#30313D] hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5`.
+     * Acciones secundarias a la derecha: `+ Añadir` y `✎ Editar`.
+   * **Cuadrícula de Tarjetas de Métricas:**
+     * Tarjetas blancas con `border border-[#E3E8EE] rounded-xl p-5 shadow-2xs hover:border-slate-300 transition-all`.
+     * Esquina superior: Nombre del indicador con icono de información `ⓘ` e icono sutil de cuadrícula.
+     * Cifra principal en `text-[24px] font-semibold text-[#1A2C44]`.
+     * Subtexto comparativo: `0 unidades período anterior` (`text-xs text-[#697386]`).
 
 ---
 
-### Patrón 2: Vista de Saldos / Capacidad y Actividad (Ejemplo: `/bodegas`)
+### Arquetipo B: Gestión de Capacidad y Recursos (Captura 2 - Ejemplo: `/bodegas`, `/simulation`)
 
-Utilizado para monitoreo de capacidades volumétricas, inventario central y rebalanceos entre almacenes.
+Utilizado para monitoreo de stock disponible, niveles de reserva y corridas analíticas.
 
-#### Estructura del Layout
-1. **Encabezado con Métrica Integrada:**
-   * Título principal: `Existencias Centrales 1.450 m³ ⓘ` (`text-[28px] font-bold text-[#1A2C44]`).
-   * Barra de herramientas superior con botones de acción alineados horizontalmente:
-     * Botones secundarios: `px-3 py-1.5 rounded-md border border-[#E3E8EE] bg-white text-[13px] font-medium text-[#30313D] shadow-2xs hover:bg-slate-50`.
-     * Botón de acción destacada (si aplica): `bg-[#635BFF] text-white`.
-2. **Contenedor de Saldos Apilados:**
-   * Caja blanca con borde `#E3E8EE` y esquinas de `8px`.
-   * Filas interiores separadas por `divide-y divide-[#F1F3F5]`:
-     * Fila 1: `Stock en Cuarentena` &bull; Valor a la derecha &bull; Tag informativo.
-     * Fila 2: `Stock Disponible para Despacho` &bull; Valor en negrita &bull; Indicador de bodega base.
-3. **Pestañas de Actividad:**
-   * Barra horizontal con pestañas de texto: `Movimientos de Entrada`, `Despachos a Ruta`, `Sugerencias de Rebalanceo`.
-   * La pestaña activa se marca con línea inferior `border-b-2 border-[#635BFF]` y texto `#1A2C44 font-semibold`.
-4. **Columna Lateral de Acciones Sugeridas:**
-   * Contenedor con borde discontinuo tenue (`border-2 border-dashed border-[#E3E8EE] rounded-lg p-5 text-center`).
-   * Botón de acción para generar la orden o rebalanceo.
-
----
-
-### Patrón 3: Listas Maestras y Tablas Operativas (Ejemplo: `/datos`, `/alertas`, `/rutas`)
-
-Utilizado para catálogos de puntos de salud, alertas de insumos hospitalarios, manifiestos de ruta y auditoría de usuarios.
-
-#### Estructura del Layout
-1. **Pestañas Superiores de Segmentación:**
-   * Fila superior de navegación por pestañas subrayadas:
-     * En `/alertas`: `Todas las Alertas` | `Quiebres Críticos (<5d)` | `Margen Preventivo (5-10d)` | `Normal`.
-     * En `/rutas`: `Todas las Rutas` | `Planificadas` | `En Tránsito` | `Entregadas` | `Con Incidencia`.
-   * Pestaña activa: `text-[#1A2C44] border-b-2 border-[#635BFF] font-medium`.
-   * Pestaña inactiva: `text-[#4F5B66] hover:text-[#1A2C44] transition-colors`.
-2. **Barra de Acciones y Filtros:**
-   * Input de búsqueda rápido con icono de lupa a la izquierda: `h-8 px-3 text-[13px] border border-[#E3E8EE] rounded-md bg-white focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF]`.
-   * Botones de exportación o filtro en grupo a la derecha.
-   * Botón primario de creación: `bg-[#635BFF] hover:bg-[#5248E0] text-white text-[13px] font-medium px-3.5 py-1.5 rounded-md shadow-xs`.
-3. **Diseño de Tablas de Datos (`stripe-table`):**
-   * Contenedor de tabla con `border border-[#E3E8EE] rounded-lg overflow-hidden bg-white`.
-   * Encabezado (`thead`): `bg-[#F8FAFC] border-b border-[#E3E8EE] text-[12px] font-medium uppercase tracking-wider text-[#697386] py-2.5 px-4`.
-   * Filas (`tbody tr`): `text-[13px] text-[#30313D] border-b border-[#F1F3F5] hover:bg-[#F8FAFC]/80 transition-colors py-3 px-4`.
-   * Columnas numéricas / códigos: `font-sans font-medium text-[#1A2C44]` alineadas a la derecha o con ancho fijo.
-4. **Estado de Vacío (Empty State Clínico):**
-   * Cuando no existen registros o el filtro devuelve cero resultados:
-     * Contenedor centrado con altura de 240px a 320px.
-     * Título conciso en `text-[18px] font-semibold text-[#1A2C44]`.
-     * Párrafo explicativo en `text-[14px] text-[#3C4F69] max-w-md mx-auto mt-1`.
-     * Botón de acción directo para resolver el estado (ej. `+ Cargar Insumos` o `Restablecer Filtros`).
+#### Anatomía Visual
+1. **Encabezado con Cifra Integrada:**
+   * Título principal: `Capacidad de Almacén 1.450 m³ ⓘ` (`text-[26px] font-bold text-[#1A2C44]`).
+   * **Barra de Acciones en Fila Horizontal:**
+     * Botones tipo chip: `⇄ Transferencia entre bodegas`, `⤓ Ingreso de insumos`, `↗ Despacho a ruta`, `💬 Registrar novedad`.
+     * Estilo de botones: `h-8 px-3 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 flex items-center gap-2 shadow-2xs`.
+     * Selector de vista a la derecha: botones compactos de vista cuadrícula y lista.
+2. **Estructura Asimétrica de 2 Columnas (70% / 30%):**
+   * **Columna Principal (Izquierda ~70%):**
+     * Tarjetas de balance limpias en blanco con borde `#E3E8EE` y esquinas redondeadas.
+     * Bloque de sugerencia o vinculación en contenedor punteado: `border border-dashed border-[#D3D9E2] rounded-xl p-5 text-center bg-white hover:bg-slate-50/50 transition-colors cursor-pointer`.
+     * Sección inferior "Actividad reciente" con pestañas subrayadas (`Despachos`, `Recepciones`).
+   * **Columna Lateral (Derecha ~30%):**
+     * Tarjeta de recomendación con borde punteado suave `border border-dashed border-[#D3D9E2] rounded-xl p-5 text-center bg-white`:
+       * Título conciso (`text-[15px] font-semibold text-[#1A2C44]`).
+       * Párrafo explicativo (`text-xs text-[#697386] mt-2 mb-4 leading-relaxed`).
+       * Botón de acción secundario compacto: `w-full h-8 border border-[#E3E8EE] rounded-md text-xs font-medium text-[#30313D] hover:bg-slate-50`.
+     * Bloque inferior de "Recursos" con accesos directos a manuales operativos o reportes.
 
 ---
 
-## 3. Componentes de UI Estandarizados
+### Arquetipo C: Listas Maestras, Filtros y Hero Editorial (Captura 1 - Ejemplo: `/datos`, `/alertas`, `/rutas`)
 
-### 3.1 Botones
+Utilizado para catálogos de centros de salud, insumos hospitalarios, monitoreo de alertas y rutas.
 
-| Tipo | Clases Tailwind | Estado Hover | Propósito |
-|---|---|---|---|
-| **Primario** | `bg-[#635BFF] text-white text-[13px] font-medium px-3.5 py-1.5 rounded-md shadow-xs` | `hover:bg-[#5248E0]` | Acción principal de la vista (Planificar, Guardar, Despachar) |
-| **Secundario** | `bg-white border border-[#E3E8EE] text-[#30313D] text-[13px] font-medium px-3.5 py-1.5 rounded-md shadow-2xs` | `hover:bg-slate-50 hover:border-slate-300` | Filtros, Cancelar, Exportar, Actualizar Estado |
-| **Enlace de Acción** | `text-[13px] font-medium text-[#635BFF] inline-flex items-center gap-1` | `hover:underline` | Enlaces dentro de tarjetas y tablas (`Ver más →`) |
-| **Píldora Filtro** | `rounded-full border border-[#E3E8EE] px-3 py-1 text-xs font-medium text-[#30313D] bg-white` | `hover:bg-slate-50` | Selectores de rango de fecha o estado |
+#### Anatomía Visual
+1. **Encabezado y Navegación por Pestañas:**
+   * Título de pantalla: `Centros de Salud e Insumos` / `Transacciones` (`text-[26px] font-bold text-[#1A2C44]`).
+   * A la derecha: botones de acción (`Exportar`, `Columnas`, `+ Cargar Insumos` o `+ Nuevo Registro`).
+   * **Pestañas Horizontales Subrayadas Sin Caja:**
+     * Fila en `-mb-px flex items-center gap-6 sm:gap-8 border-b border-[#E3E8EE]`.
+     * Pestaña Activa: `text-[#1A2C44] font-semibold border-b-2 border-[#1A2C44] pb-3 text-[14px]`.
+     * Pestaña Inactiva: `text-[#697386] hover:text-[#1A2C44] pb-3 text-[14px] transition-colors`.
+2. **Banner Informativo Descartable (Callout de Consejo):**
+   * Barra horizontal delgada: `bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg px-4 py-2.5 flex items-center justify-between text-xs text-[#4F566B] my-4`.
+   * Icono de bombilla `💡` tenue a la izquierda.
+   * Texto informativo con enlace de acción morado `#635BFF` (`hover:underline font-medium`).
+   * Botón de descarte `✕` discreto a la derecha.
+3. **Hero Editorial / Estado Principal:**
+   * Gran contenedor blanco o gris ultra-suave (`bg-white` o `bg-[#F8FAFC]` con `border border-[#E3E8EE] rounded-xl p-8 sm:p-12 text-left`):
+     * Título prominente: `text-[28px] sm:text-[32px] font-bold text-[#1A2C44] tracking-tight`.
+     * Subtítulo explicativo: `text-[15px] leading-relaxed text-[#4F566B] max-w-2xl mt-2 mb-6`.
+     * Botón primario de acción: `h-9 px-4 bg-[#635BFF] hover:bg-[#5248E0] text-white text-xs font-medium rounded-md shadow-xs transition-colors inline-flex items-center gap-2`.
+4. **Tarjetas Guía Inferiores (Fila de 3 Columnas):**
+   * Debajo del Hero principal, cuadrícula de 3 tarjetas limpias:
+     * Título descriptivo en `text-[14px] font-semibold text-[#1A2C44]`.
+     * Explicación breve en `text-xs text-[#697386] mt-1.5 leading-relaxed`.
+     * Borde suave `#E3E8EE` con hover sutil.
 
-### 3.2 Badges de Estado Operativo
+---
 
-Los badges deben tener bordes suaves y tipografía legible, sin bordes exagerados:
+## 4. Componentes de UI Estandarizados
+
+### 4.1 Botones e Interactivos
+
+| Tipo | Altura / Clases Tailwind | Propósito |
+|---|---|---|
+| **Primario** | `h-9 px-4 bg-[#635BFF] hover:bg-[#5248E0] text-white text-xs font-medium rounded-md shadow-xs transition-colors` | Acción rectora (Guardar, Despachar, Confirmar) |
+| **Secundario** | `h-9 px-3.5 bg-white border border-[#E3E8EE] hover:bg-slate-50 text-[#30313D] text-xs font-medium rounded-md shadow-2xs transition-colors` | Cancelar, Exportar, Filtros |
+| **Chip / Acción Compacta** | `h-8 px-3 bg-white border border-[#E3E8EE] hover:bg-slate-50 text-[#30313D] text-xs font-medium rounded-md shadow-2xs inline-flex items-center gap-1.5` | Barra horizontal de herramientas |
+| **Píldora Filtro** | `h-7 sm:h-8 px-3 rounded-full border border-[#E3E8EE] bg-white text-xs text-[#30313D] hover:bg-slate-50 inline-flex items-center gap-1.5` | Selectores de rango temporal y estado |
+| **Enlace de Acción** | `text-xs sm:text-[13px] font-medium text-[#635BFF] hover:underline inline-flex items-center gap-1` | Enlaces en tarjetas (`Ver más →`) |
+
+### 4.2 Badges de Estado Operativo
 
 ```html
-<!-- Estado Crítico / Quiebre -->
+<!-- Quiebre Inminente / Crítico -->
 <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200/60">
   Quiebre Inminente
 </span>
 
-<!-- Estado Advertencia / Cobertura < 5 días -->
+<!-- Alerta Preventiva -->
 <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
   Cobertura Ajustada
 </span>
 
-<!-- Estado Óptimo / Recibido / Conectado -->
+<!-- Estado Óptimo / Entregado -->
 <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
   Entregado
 </span>
-
-<!-- Estado Informativo / En Tránsito -->
-<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
-  En Tránsito
-</span>
 ```
 
-### 3.3 Formularios e Inputs
-
-* **Inputs y Selects:** `h-9 px-3 text-[13px] text-[#1A2C44] bg-white border border-[#E3E8EE] rounded-md shadow-2xs placeholder:text-[#8792A2] focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] focus:outline-none transition-all`.
-* **Labels:** `text-[13px] font-medium text-[#30313D] mb-1 block`.
-* **Mensajes de Ayuda:** `text-[12px] text-[#697386] mt-1`.
+### 4.3 Formularios e Inputs
+* **Inputs de Texto:** `h-9 px-3 text-xs text-[#1A2C44] bg-white border border-[#E3E8EE] rounded-md shadow-2xs placeholder:text-[#8792A2] focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] focus:outline-none transition-all`.
+* **Selects:** `h-9 px-3 text-xs text-[#1A2C44] bg-white border border-[#E3E8EE] rounded-md shadow-2xs focus:border-[#635BFF] focus:outline-none`.
+* **Labels:** `text-xs font-medium text-[#30313D] mb-1.5 block`.
 
 ---
 
-## 4. UX Writing: Lenguaje Claro, Humano y Accesible para Todo Público
+## 5. Glosario de Lenguaje Claro y Comprensible
 
-Una interfaz ejecutiva no solo debe verse limpia, sino ser **fácil de entender para cualquier persona** (administradores hospitalarios, gerentes de operaciones, supervisores de bodega o conductores de flota), sin exigir conocimientos de ingeniería de software o términos rebuscados.
+Para preservar la sobriedad ejecutiva, se mantiene estrictamente la prohibición de tecnicismos crudos o jerga de desarrollo:
 
-### 4.1 Principios de Redacción de la Interfaz
-
-1. **Claridad sobre Tecnicismos:** Explicar la realidad operativa de la salud y la logística, no la tecnología interna del backend.
-2. **Acciones Directas en Botones:** Usar verbos directos en infinitivo o imperativo orientados al usuario (`Cargar datos`, `Ver alertas`, `Planificar ruta`, `Descargar reporte`, `Confirmar entrega`), nunca nombres de métodos o variables (`TriggerProcess`, `SyncHandler`, `SubmitEntity`).
-3. **Mensajes de Ayuda Fácticos:** Los textos explicativos y los tooltips `ⓘ` deben responder: ¿Qué significa este número? y ¿Qué impacto tiene en la operación diaria?
-4. **Manejo Amigable de Errores:** Explicar qué ocurrió en español cotidiano y cómo resolverlo de inmediato, sin exponer trazas de excepciones (`NullReference`, `500 Server Error`, etc.).
-
-### 4.2 Glosario de Equivalencias: De Lenguaje Técnico a Lenguaje Claro
-
-| ❌ Evitar (Jerga Técnica / Oculta) | ✅ Utilizar (Lenguaje Claro y Humano) | Dónde se Aplica |
+| ❌ Término Técnico Crudo | ✅ Término Claro en la Interfaz | Contexto |
 |---|---|---|
-| Ingesta de CSV de entidades maestras | **Cargar centros de salud y bodegas** | Módulo de Datos (`/datos`) |
-| Quiebre de SKU en nodo periférico | **Centro de salud con insumos agotados o críticos** | Alertas de Stock (`/alertas`) |
-| Cobertura de inventario menor a umbral | **Quedan menos de 5 días de insumos** | Tarjetas y Tablas de Riesgo |
-| Algoritmo VRP determinista ejecutado | **Ruta óptima de entrega calculada** | Módulo de Ruteo (`/rutas`) |
-| Sourcing multialmacén optimizado | **Despacho desde la bodega más cercana** | Selección de Suministro |
-| Hash criptográfico y cadena de custodia | **Confirmación de entrega con firma y código QR** | Trazabilidad (`/public-trace`) |
-| Modo de autonomía AutoWithLimits | **Planificación automática supervisada** | Motor Logístico en `/inicio` |
-| Excepción de persistencia de base de datos | **No se pudo guardar la información. Por favor reintenta.** | Alertas del Sistema |
-| Payload vacío / Empty collection | **No hay entregas pendientes para hoy** | Estados de Vacío (*Empty States*) |
+| Ingesta de CSV masiva | **Cargar centros de salud y bodegas** | `/datos` |
+| Quiebre de stock en nodo | **Centro de salud con insumos agotados o críticos** | `/alertas` |
+| Cobertura menor a umbral | **Quedan menos de 5 días de insumos** | Tablas de Alertas |
+| Matriz VRP ejecutada | **Ruta óptima de entrega calculada** | `/rutas` |
+| Hash criptográfico y cadena de custodia | **Confirmación de entrega con firma y código QR** | `/public-trace` |
+| Payload vacío / Empty collection | **No hay entregas pendientes para hoy** | Empty States |
 
 ---
 
-## 5. Reglas de Validación para Futuras Pantallas
+## 6. Lista de Verificación de Calidad para Cada Pantalla
 
-Antes de considerar terminada una pantalla en `apps/web/src/pages/`, verificar la siguiente lista de control:
-
-1. **Lenguaje Claro y Comprensible:** Todos los textos, encabezados, botones y mensajes deben estar en español llano y profesional, sin jerga de ingeniería ni palabras difíciles.
-2. **Cero Elementos Simulados:** No incluir claves de API simuladas, números de tarjetas de crédito o campos financieros. La interfaz debe reflejar exclusivamente insumos, hospitales, bodegas, conductores y rutas.
-3. **Tipografía Unificada:** Verificar que no se utilicen fuentes monoespaciadas para valores de negocio ni se active `"zero" 1`.
-4. **Radio de Borde Controlado:** Todos los contenedores deben usar `rounded-lg` (`8px`) o `rounded-md` (`6px`).
-5. **Contraste y Colores de Texto:** Verificar que los títulos usen `#1A2C44`, los encabezados `#30313D` y los subtextos `#3C4F69`.
-6. **Alineación con el Shell:** Toda vista se despliega dentro del layout principal con sidebar izquierdo fijo y header con buscador, sin barras de scroll horizontales indeseadas.
+Antes de dar por concluida cualquier interfaz en el proyecto:
+1. **Fidelidad Visual a Stripe:** Pestañas subrayadas sin cajas toscas, botones alineados en altura matemática (`h-9` o `h-8`), tipografía de alta jerarquía (`#1A2C44`).
+2. **Dominio Estrictamente Logístico:** Insumos de salud, centros de salud, bodegas, conductores y rutas. Cero conceptos financieros simulados.
+3. **Cero Emojis:** Todos los indicadores visuales emplean iconos SVG vectoriales limpios o caracteres tipográficos estándares (`ⓘ`, `→`).
+4. **Espaciado y Limpieza:** Margen vertical generoso (`space-y-6`), sin apiñamiento ni scrollbars duplicadas.
+5. **Tipos Fuertes y Reactividad:** Cero `any` en componentes TypeScript, uso de signals de Angular y enlaces funcionales.

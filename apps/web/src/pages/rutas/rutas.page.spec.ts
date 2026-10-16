@@ -105,10 +105,10 @@ describe('RutasPage (FR-21)', () => {
 
     expect(getRejectedCapturesMock).toHaveBeenCalled();
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Bandeja de Capturas Rechazadas');
+    expect(text).toContain('Entregas con Novedad');
     expect(text).toContain('Centro de Salud Norte');
     expect(text).toContain('Paracetamol 500mg');
-    expect(text).toContain('Requiere Revisión');
+    expect(text).toContain('Requiere revisión');
     expect(text).toContain('DEL-001');
     // #162: la recepción la registra el Receptor; el campo legado no se presenta como «Conductor».
     expect(text).toContain('Registrado por:');
