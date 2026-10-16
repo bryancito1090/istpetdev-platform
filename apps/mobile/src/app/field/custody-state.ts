@@ -15,18 +15,23 @@ export type EffectiveDeliveryStatusInput = {
   deliveryStatus: string;
   handlingUnits?: Array<{ status: string }>;
   acceptedCustodyStatus?: string | null;
+  pendingCustodyStatus?: string | null;
 };
 
 /**
  * Estado autoritativo y monotónico de la entrega: combina el snapshot descargado, el último
- * comando de custodia confirmado por el servidor y el estado de los bultos. Un snapshot viejo
- * (p.ej. Delivered con un Deliver confirmado) no puede sobrescribir un estado más avanzado
- * (Received/Partial), y el legado Delivered con bultos Received/Partial se interpreta como recibido.
+ * comando de custodia confirmado por el servidor, comandos locales pendientes en outbox y el
+ * estado de los bultos. Un snapshot viejo (p.ej. Delivered con un Deliver confirmado) no puede
+ * sobrescribir un estado más avanzado (Received/Partial), y el legado Delivered con bultos
+ * Received/Partial se interpreta como recibido.
  */
 export function effectiveDeliveryStatus(input: EffectiveDeliveryStatusInput): string {
   const candidates: string[] = [input.deliveryStatus];
   if (input.acceptedCustodyStatus) {
     candidates.push(input.acceptedCustodyStatus);
+  }
+  if (input.pendingCustodyStatus) {
+    candidates.push(input.pendingCustodyStatus);
   }
 
   const units = input.handlingUnits ?? [];

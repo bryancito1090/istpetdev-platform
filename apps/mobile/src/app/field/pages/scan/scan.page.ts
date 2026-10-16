@@ -175,34 +175,61 @@ export class ScanPage {
 
     const unitId = extractUnitId(text) || text.toLowerCase();
     const code = text.toLowerCase();
-    let targetDeliveryId: string | null = null;
-
-    for (const route of assignment.routes) {
-      for (const del of route.deliveries) {
-        if (del.deliveryId.toLowerCase() === code || del.deliveryId.toLowerCase() === unitId) {
-          targetDeliveryId = del.deliveryId;
-          break;
-        }
-
-        if (
-          del.handlingUnits &&
-          del.handlingUnits.some((hu: HandlingUnitResponse) =>
-            hu.handlingUnitId.toLowerCase() === unitId ||
-            hu.handlingUnitId.toLowerCase() === code ||
-            hu.code.toLowerCase() === code
-          )
-        ) {
-          targetDeliveryId = del.deliveryId;
-          break;
-        }
-      }
-      if (targetDeliveryId) break;
-    }
+    const raw = text.toLowerCase();
+    let targetDeliveryId = this.findDeliveryForDriver(assignment, unitId, code, raw);
 
     if (targetDeliveryId) {
       this.router.navigate(['/receipt', targetDeliveryId]);
+      return;
+    }
+
+    // Si no se encuentra en el snapshot local pero hay señal, descargamos la ruta actualizada por si Bodega acaba de despachar
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.onLine &&
+      !this.outboxService.isSimulatingOffline?.() &&
+      typeof this.outboxService.downloadRouteAssignment === 'function'
+    ) {
+      this.outboxService
+        .downloadRouteAssignment()
+        .then((updated) => {
+          const found = this.findDeliveryForDriver(updated, unitId, code, raw);
+          if (found) {
+            this.router.navigate(['/receipt', found]);
+          } else {
+            this.errorMessage.set('Este bulto no pertenece a tu ruta');
+          }
+        })
+        .catch(() => {
+          this.errorMessage.set('Este bulto no pertenece a tu ruta');
+        });
     } else {
       this.errorMessage.set('Este bulto no pertenece a tu ruta');
     }
+  }
+
+  private findDeliveryForDriver(assignment: any, unitId: string, code: string, raw: string): string | null {
+    if (!assignment || !assignment.routes) return null;
+    for (const route of assignment.routes) {
+      for (const del of route.deliveries) {
+        if (del.deliveryId.toLowerCase() === code || del.deliveryId.toLowerCase() === unitId) {
+          return del.deliveryId;
+        }
+
+        if (del.handlingUnits) {
+          for (const hu of del.handlingUnits) {
+            if (
+              hu.handlingUnitId.toLowerCase() === unitId ||
+              hu.handlingUnitId.toLowerCase() === code ||
+              hu.code.toLowerCase() === code ||
+              (hu.labelUrl && (hu.labelUrl.toLowerCase() === raw || raw.includes(hu.handlingUnitId.toLowerCase()) || raw.includes(hu.code.toLowerCase())))
+            ) {
+              return del.deliveryId;
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 }

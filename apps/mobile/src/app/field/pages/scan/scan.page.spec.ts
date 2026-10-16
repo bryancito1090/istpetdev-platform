@@ -168,5 +168,75 @@ describe('ScanPage (Issue #122)', () => {
       expect(component.errorMessage()).toBe('Este bulto no pertenece a tu ruta');
       expect(routerNavigateSpy).not.toHaveBeenCalled();
     });
+
+    it('navega a /receipt/{deliveryId} si la unidad coincide por labelUrl', () => {
+      mockCurrentRole.set('Conductor');
+      mockActiveAssignment.set({
+        routes: [
+          {
+            deliveries: [
+              {
+                deliveryId: 'del-uuid-002',
+                handlingUnits: [
+                  {
+                    handlingUnitId: 'hu-uuid-custom',
+                    code: 'HU-CUSTOM',
+                    labelUrl: 'https://istpetdev.doicela.dev/public-trace/hu-uuid-custom#t=tok-cust'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
+
+      component.onQrScanned('https://istpetdev.doicela.dev/public-trace/hu-uuid-custom#t=tok-cust');
+
+      expect(routerNavigateSpy).toHaveBeenCalledWith(['/receipt', 'del-uuid-002']);
+      expect(component.errorMessage()).toBeNull();
+    });
+
+    it('descarga la ruta actualizada si no se encuentra en caché y hay conexión', async () => {
+      mockCurrentRole.set('Conductor');
+      mockActiveAssignment.set({
+        routes: [
+          {
+            deliveries: [
+              {
+                deliveryId: 'del-uuid-001',
+                handlingUnits: []
+              }
+            ]
+          }
+        ]
+      });
+
+      const updatedAssignment = {
+        routes: [
+          {
+            deliveries: [
+              {
+                deliveryId: 'del-uuid-fresh',
+                handlingUnits: [
+                  {
+                    handlingUnitId: 'hu-fresh-99',
+                    code: 'HU-99'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      (mockOutboxService as any).downloadRouteAssignment = vi.fn().mockResolvedValue(updatedAssignment);
+
+      component.onQrScanned('HU-99');
+
+      await vi.waitFor(() => {
+        expect((mockOutboxService as any).downloadRouteAssignment).toHaveBeenCalled();
+        expect(routerNavigateSpy).toHaveBeenCalledWith(['/receipt', 'del-uuid-fresh']);
+      });
+    });
   });
 });
