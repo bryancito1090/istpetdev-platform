@@ -69,3 +69,9 @@ Una alerta indica **anomalía por investigar**. Merma confirmada requiere concil
 Comparar demanda estimada y real por punto/SKU y período. Usar MAE como base; porcentajes requieren tratamiento de demanda cero. En backtesting, la predicción del día t solo conoce datos anteriores a t.
 
 Guardar snapshotId, inputCutoff, formulaVersion y parámetros. La explicación n8n/DeepSeek enlaza ese snapshot. Ver [[n8n e IA]], [[Simulador y metricas]] y [[Plan de validacion]].
+
+## Contraste adicional: logística integral — recibido el 16-oct
+
+[[Logistica integral para el Reto 1 - hallazgos y evidencia]] explica que la falta de visibilidad puede empezar antes de la recepción en bodega: horarios y especificaciones del proveedor, presentación/ergonomía, catálogo común, movimientos y conteos físicos por muestreo. Propone anticipar necesidades del cliente y del almacén central con históricos y mínimos/máximos; no aporta valores calibrados ni un algoritmo nuevo.
+
+Para contrastar la recomendación, registrar unidad base/conversiones validadas, saldo y fecha, consumo, entradas confirmadas, merma investigada y diferencia físico/digital. El ejemplo de cajas de 12/6 y dimensiones tiene unidades ambiguas: no usarlo como ficha técnica. El inventario “en tiempo real” descrito en la charla es un objetivo operativo; la captura offline debe conservar la distinción entre dato local y saldo confirmado. Estas observaciones orientan V-01/V-03/V-04/V-19, sin certificar ejecución ni modificar fórmulas o contratos.

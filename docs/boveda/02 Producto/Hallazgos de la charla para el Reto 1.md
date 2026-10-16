@@ -11,6 +11,8 @@ Documento de consulta del equipo para usar las preguntas y respuestas de la char
 
 ## Lo más útil de las preguntas finales
 
+**Otra charla complementaria:** [[Logistica integral para el Reto 1 - hallazgos y evidencia]] desarrolla proveedores, inventario confiable, ventanas de acceso, retrocesos, costos, capacitación e integración gradual. Su fuente completa se conserva por separado; no se mezclan los dos testimonios ni sus preguntas finales.
+
 1. **El abastecimiento se organiza por períodos y puntos.** Se describen fichas de abastecimiento y recorridos semanales o quincenales para que el punto tenga producto durante el período. La necesidad a investigar es anticipar cuándo esa programación deja de cubrir la demanda.
 2. **Hay tres operaciones que conviene distinguir:** prestador que abastece puntos de limpieza, comercializadora que recibe y fracciona inventario, y fabricante que produce y despacha por rutas. Sus frecuencias, actores y restricciones no son idénticos.
 3. **Los pedidos imprevistos alteran producción y transporte.** Un pedido fuera de programa puede obligar a apurar producción y cambiar una ruta costa por una necesidad en el centro. El expositor relata capacidad insuficiente para despachar todos los días o cada dos días.

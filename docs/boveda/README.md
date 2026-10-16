@@ -20,6 +20,8 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 
 ## Documentación principal
 
+**Nueva charla prioritaria para el Reto 1:** [Logística integral: hallazgos y evidencia](02%20Producto/Logistica%20integral%20para%20el%20Reto%201%20-%20hallazgos%20y%20evidencia.md). Incluye proveedores, inventario, restricciones, costos, validación, preguntas finales y pendientes. [Texto completo recibido](99%20Fuentes/Charla%20de%20logistica%20integral%20-%20transcripcion%20recibida.md), separado de la charla previa del sector.
+
 | Tema | Nota |
 |---|---|
 | Trabajo del equipo: integración y pruebas desde el 13-oct | [Seguimiento de implementación y pruebas](06%20Equipo/Seguimiento%20de%20implementacion%20y%20pruebas.md) |

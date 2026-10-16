@@ -62,3 +62,7 @@ Una herramienta o prototipo demostrable que visualice trazabilidad y mejore la p
 - La infraestructura debe sostener el flujo; su complejidad por sí sola no demuestra impacto.
 
 Ver [[Requisitos y aceptacion]] y [[Plan de validacion]].
+
+## Charla adicional de logística integral — recibida el 16-oct
+
+[[Logistica integral para el Reto 1 - hallazgos y evidencia]] organiza la intervención que Bryan considera la más valiosa: anticipación de necesidades, proveedores, rutas factibles, trazabilidad, indicadores y evidencia. La [[Charla de logistica integral - transcripcion recibida|fuente completa]] conserva también las preguntas de combustible y flota. Es contexto sectorial: no añade obligaciones oficiales ni acredita resultados de IstpetDev.
