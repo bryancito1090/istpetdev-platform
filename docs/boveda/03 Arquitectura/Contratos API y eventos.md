@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [arquitectura, contratos]
 ---
 
@@ -34,7 +34,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/consumptions                    | Registrar uso de insumo                 |
 | GET /api/v1/risks                            | Riesgos con cálculo                     |
 | POST /api/v1/replenishment-requests          | Solicitar cantidad y fecha              |
-| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono |
+| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono; `criticalDeadlineLocal` opcional (#193) |
 | GET /api/v1/jobs/{id}                        | Estado y resultado de trabajo           |
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
@@ -52,6 +52,9 @@ tags: [arquitectura, contratos]
 | GET /api/v1/simulations/{id}/metrics         | Resultados y denominadores              |
 | POST /api/v1/automation/risk-runs            | Solicitar cálculo programado            |
 | POST /api/v1/automation/risk-explanations    | Adjuntar explicación validada           |
+| GET /api/v1/logistics/stock                  | Stock disponible por bodega y lote (#194) |
+| POST /api/v1/logistics/sourcing              | Origen sugerido sin crear pedidos ni reservas (#194) |
+| GET /api/v1/logistics/vehicles/available     | Vehículos activos sin ruta publicada en la fecha (#194) |
 
 ## Recepción offline: ejemplo de contrato
 
@@ -182,3 +185,158 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; con cualquier `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
+
+## Asistente de pedidos: orden de entregas y ventanas (#197 — 16 de octubre de 2026)
+
+`POST /api/v1/route-plans/suggest` conserva la forma de su respuesta (`options[].stops`, `evaluation`, `sourcingLines`, `vehicleMatches`); solo cambia cómo se arman las paradas de entrega:
+
+- **Orden:** las recogidas en bodega siguen primero. Las entregas se ordenan por `DeliveryOrder.Priority` (`Critical` → `High` → `Normal` → `Low`; un valor desconocido cuenta como `Normal`) y luego por el día de `RequiredDateUtc`. Dentro de cada nivel se elige el destino más cercano a la parada anterior, empezando en la última recogida. Si varios pedidos van al mismo destino, manda el más urgente y la fecha más temprana. `sequence` se renumera en ese orden.
+- **Ventanas:** `windowStart`, `windowEnd` y `serviceMinutes` de cada entrega salen de `WindowStartLocal`, `WindowEndLocal` y `ServiceMinutes` del punto de servicio. Si el punto no los tiene, o el destino es una bodega, se usan 08:00–17:00 y 15 min, los valores fijos anteriores.
+- **Fuera de alcance:** validar capacidad por prioridad en `/suggest` y `/confirm` es el issue #201.
+
+## Carga parcial según capacidad (#199 — 16 de octubre de 2026)
+
+Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factible y conserva el remanente pendiente. Detalle en el FR-24 del spec 002 (`docs/specs/002-motor-logistico/spec.md`) y en su `plan.md`.
+
+- **`POST /api/v1/route-plans`** (lo consume n8n con `propose_routes`): cada ruta trae `vehicleCode`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `stops[].loads[]` con `quantity` (planificada; es lo que se publica y reserva), `requiredQuantity` y `pendingQuantity`. Cada no atendido trae `lines[]` con `requiredQuantity`, `plannedQuantity` y `pendingQuantity`. Una entrega parcial es `reason: "capacity"` con `plannedQuantity > 0`. Los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`) permiten explicarla sin inventar cifras.
+- **`POST /api/v1/route-plans/confirm`:** mantiene la validación de #201: vehículo obligatorio y 409 si la ruta no cabe; la parcial se pide con `lines`. Con #199:
+  - La cantidad de cada línea no puede superar lo pendiente (`RequestedQuantity − PlannedQuantity − DeliveredQuantity`); si lo supera, 409.
+  - Lo planificado se suma a `PlannedQuantity`.
+  - Un pedido sin nada pendiente no genera otra ruta: 409.
+  - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
+- **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
+- **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).
+
+## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
+
+Las tres consultas usan `LogisticsQueriesController`, `SourcingService` y
+`VehicleMatcher`. Acceso común: `Roles.Planning` (Gerencia/Planificador) o
+`Roles.Automatizacion`; la identidad M2M exige `istpetdev-api/automation` y cuenta
+activa con rol técnico. No existe un rol literal llamado Planning.
+
+No crean pedidos, planes, reservas, movimientos, entregas ni snapshots de riesgo.
+`X-Agent-Run-Id` registra la llamada en la traza de AgentRun solo para
+Automatizacion. La disponibilidad es puntual: consultar no garantiza ni reserva
+stock o vehículos para una publicación posterior.
+
+| Método y ruta | Entrada | Respuesta 200 |
+|---|---|---|
+| `GET /api/v1/logistics/stock` | `productId` obligatorio (UUID), `warehouseId` opcional | `WarehouseStockQueryResult` |
+| `POST /api/v1/logistics/sourcing` | exactamente una lista `orderIds` o `servicePointIds` (1–100 UUIDs únicos); `productId` opcional solo para puntos | `DemandSourcingResult` |
+| `GET /api/v1/logistics/vehicles/available` | `date` opcional ISO `yyyy-MM-dd`; por defecto reloj operativo Dataset/Fixed/Real | `AvailableVehiclesResult` |
+
+### Stock por producto y bodega
+
+`WarehouseStockQueryResult` contiene `operationalDate`, `safetyStockPct`,
+`productId`, `sku`, `productName`, `baseUnit` y `warehouses[]`.
+Cada bodega contiene `warehouseId`, `warehouseCode`, `warehouseName`,
+`quantityOnHand`, `quantityReserved`, `netUsableQuantity`, `safetyStock`,
+`availableQuantity` y `lots[]`. Cada lote contiene `lotId`, `lotCode`,
+`expiresOn` (fecha ISO o null), `quantityOnHand`, `quantityReserved` y
+`netUsableQuantity`.
+
+Se incluyen solo lotes no bloqueados cuyo vencimiento es null o posterior a
+`operationalDate`; vencer hoy ya los excluye. Las cantidades usan la unidad
+base del producto. Por bodega y producto:
+
+- `netUsableQuantity = sum(max(0, quantityOnHand - quantityReserved))` por lote.
+- `safetyStock = netUsableQuantity * WarehouseSafetyStockPct / 100`, sin redondeo
+  adicional en el cálculo.
+- `availableQuantity = max(0, netUsableQuantity - safetyStock)`.
+
+La seguridad se descuenta una vez del total; el neto de cada lote aún incluye
+esa porción protegida. Lotes en orden FEFO, null al final, desempate por código
+e ID. Las bodegas activas vacías aparecen con totales cero y `lots: []`.
+
+### Origen sugerido
+
+Ejemplos de selección (reemplazar los UUIDs por IDs de la API):
+
+```json
+{ "orderIds": ["00000000-0000-4000-8000-000000000001"] }
+```
+
+```json
+{ "servicePointIds": ["00000000-0000-4000-8000-000000000002"], "productId": "00000000-0000-4000-8000-000000000003" }
+```
+
+Son ejemplos de forma; esos IDs no identifican registros del fixture ni datos
+reales. El método POST permite listas en el cuerpo y mantiene la consulta sin
+persistencia logística.
+
+Para pedidos se ofrece solo el remanente `max(0, requested - planned)`, conforme
+a #199; las líneas completas no se vuelven a ofrecer. La consulta y
+`PlanSourcingAsync` comparten la carga de demandas y el mismo asignador.
+Para puntos se usa `IRiskCalculator.CalculateAsync(persistSnapshots: false)`,
+filtrando Critico/Alto/Vigilar con cantidad sugerida positiva. El orden es nivel
+de riesgo, menor holgura (`coverageDays - leadTimeDays`), mayor criticidad del
+punto, código del punto, SKU e IDs para desempate. No crea pedidos de emergencia.
+
+`DemandSourcingResult` contiene `operationalDate`, `sourceKind` (`Order` o `Risk`),
+`safetyStockPct`, `fullySourced`, `demands[]` y `options[]`. Sin demanda elegible
+(o pedidos completamente planificados), devuelve ambas listas vacías.
+
+Cada elemento de `demands` contiene:
+
+- `orderId`, `orderNumber` (null cuando procede de riesgo), `sourceKind`.
+- `destinationId`, `isDestinationWarehouse`, `destinationCode`, `destinationName`,
+  `destinationPosition: { lat, lon }`.
+- `productId`, `sku`, `productName`, `baseUnit`, `requestedQuantity` (remanente
+  para pedidos), `allocatedQuantity`, `totalAllocated` (igual a allocatedQuantity),
+  `shortageQuantity`, `fullySourced`, `riskLevel` y `coverageDays` (null para pedidos).
+- `allocations[]`: `warehouseId`, `warehouseCode`, `warehouseName`, `distanceKm`,
+  `warehousePosition: { lat, lon }`, `quantity` y `lots[]`.
+- Cada lote asignado: `lotId`, `lotCode`, `expiresOn` nullable y `quantity`.
+
+Cada opción contiene `optionId`, `title`, `description`, `isRecommended`,
+`fullySourced`, `lines[]` (misma estructura que demands) e `involvedWarehouseIds[]`.
+Se conserva A (consolidada), y B cuando alguna demanda se divide entre bodegas.
+La descripción de una alternativa no garantiza horario, ruta factible o vehículo.
+
+La asignación respeta FEFO y presupuesto compartido por bodega/producto, descontando
+seguridad una vez entre todas las demandas. Ordena bodegas por distancia de
+`IDistanceProvider`, con el respaldo aproximado existente si falta un tramo;
+la consulta no calcula ni devuelve `durationMin`. Si falta stock responde 200
+con asignación parcial, faltante y `fullySourced: false`.
+
+### Vehículos disponibles
+
+`AvailableVehiclesResult` contiene `operationalDate`, `date`, `timeZone`,
+`dayStartUtc`, `dayEndUtc` y `vehicles[]`.
+Cada vehículo contiene `vehicleId`, `code`, `maxWeight` (kg), `maxVolume` (m³,
+nullable), `depotLocationId`, `depotCode`, `depotName`, `costPerKm`,
+`costUnit: "USD/km"` y `estimatedTotalCost: null`.
+
+El día consultado es el intervalo local desde medianoche hasta la siguiente,
+convertido a UTC en la zona de la organización (por defecto America/Guayaquil;
+respaldo configurado UTC-5 si no se resuelve la zona). Solo se incluyen activos
+sin un RoutePlan Published que empiece en `[dayStartUtc, dayEndUtc)`.
+Proposed/Cancelled/Superseded no bloquean. La tarifa efectiva es
+`Vehicle.CostPerKm ?? DefaultCostPerKm`; sin recorrido no se cotiza costo total.
+
+### Errores y autorización
+
+- 400: UUID, fecha ISO o JSON mal formados (validación de modelo de ASP.NET),
+  o `title: invalid_date` para la fecha validada por el controlador.
+- 422 con `title` específico: `invalid_product_id`, `invalid_warehouse_id`,
+  `invalid_sourcing_selector`, `product_filter_not_allowed`, `empty_order_ids`,
+  `invalid_order_id`, `empty_service_point_ids`, `invalid_service_point_id` o
+  `limit_exceeded`. Los límites se aplican después de deduplicar los IDs.
+- 404 con `title`: `product_not_found`, `warehouse_not_found`, `order_not_found`
+  o `service_point_not_found`. No acepta silenciosamente un subconjunto de IDs.
+- 401 para anónimo/token inválido; 403 para cuenta o rol no autorizado.
+
+Los errores de negocio usan Problem Details (`status`, `title`, `detail`);
+este controlador no añade una extensión `code` ni garantiza códigos en mayúsculas.
+
+Evidencia y regresiones: [validación de #194](../../specs/003-agente-logistico/evidencia/2026-10-16-194-consultas-abastecimiento.md).
+
+## Hora límite para puntos críticos en `POST /api/v1/route-plans` (#193 — 16 de octubre de 2026)
+
+Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya decidía quién entra al camión, pero no a qué hora llega.
+
+- **Campo nuevo, opcional:** `criticalDeadlineLocal` en el cuerpo (`"HH:mm"`, p. ej. `"11:00"`, hora local). Si se omite o es `null`, el plan es el mismo de antes.
+- **A quién aplica:** a las paradas con riesgo `CRITICO` o con criticidad del punto `alta`. Su fin de ventana pasa a ser el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. Las demás paradas conservan su ventana.
+- **Resultado:** la parada crítica llega antes de la hora límite o queda en `unserved` con motivo `time_window`; no hay motivo nuevo.
+- **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
+- **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.

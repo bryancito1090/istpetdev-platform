@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
@@ -21,6 +22,7 @@ public sealed class RoutePlanner(
     public async Task<PlanResult> PlanAsync(PlanRequest request, CancellationToken ct = default)
     {
         var today = request.Date ?? await clock.TodayAsync(ct);
+        var criticalDeadline = ParseCriticalDeadline(request.CriticalDeadlineLocal);
         var workdayStartUtc = await clock.WorkdayStartUtcAsync(ct);
 
         // 1. Calcular riesgos
@@ -92,52 +94,73 @@ public sealed class RoutePlanner(
 
         bool capacityDimensionEvaluated = true;
 
-        foreach (var (servicePointId, alloc) in allocationResult.Allocations)
+        // #199: una parada por punto (obligatoria o de consolidación) con todas sus líneas.
+        // Las líneas quedan en orden de reparto: nivel de riesgo y luego SKU (ordinal).
+        var pointGroups = allocationResult.Lines
+            .Where(a => a.AllocatedQuantity > 0)
+            .Select(a => (Alloc: a, Risk: risks.FirstOrDefault(r => r.ServicePointId == a.ServicePointId && r.ProductId == a.ProductId)))
+            .GroupBy(x => (x.Alloc.ServicePointId, IsConsolidation: (x.Risk?.Level ?? RiskLevel.Normal) == RiskLevel.Vigilar))
+            .OrderBy(g => g.First().Alloc.PointCode, StringComparer.Ordinal)
+            .ThenBy(g => g.Key.IsConsolidation);
+
+        foreach (var group in pointGroups)
         {
-            if (alloc.AllocatedQuantity <= 0) continue;
-            if (!servicePoints.TryGetValue(servicePointId, out var sp)) continue;
+            var first = group.First().Alloc;
+            if (!servicePoints.TryGetValue(group.Key.ServicePointId, out var sp)) continue;
 
             if (sp.Position == null)
             {
-                unserved.Add(new Unserved(alloc.PointCode, "unreachable", Array.Empty<Fact>()));
+                unserved.Add(new Unserved(first.PointCode, "unreachable", Array.Empty<Fact>()));
                 continue;
             }
 
-            var pos = new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X).Round();
-            var riskItem = risks.FirstOrDefault(r => r.ServicePointId == servicePointId && r.ProductId == alloc.ProductId);
-            var level = riskItem?.Level ?? RiskLevel.Normal;
-            bool isConsolidation = level == RiskLevel.Vigilar;
-
+            bool isConsolidation = group.Key.IsConsolidation;
             if (!request.IncludeConsolidation && isConsolidation) continue;
 
-            // Peso y Volumen
-            decimal weight = 0m;
-            decimal volume = 0m;
-            if (products.TryGetValue(alloc.ProductId, out var product))
+            var lines = group
+                .OrderBy(x => x.Risk?.Level ?? RiskLevel.Normal)
+                .ThenBy(x => x.Alloc.Sku, StringComparer.Ordinal)
+                .ToList();
+            var loads = new List<StopLoad>();
+            foreach (var (alloc, _) in lines)
             {
-                if (product.WeightPerBaseUnit == 0 || product.VolumePerBaseUnit == 0)
+                products.TryGetValue(alloc.ProductId, out var product);
+                if (product != null && (product.WeightPerBaseUnit == 0 || product.VolumePerBaseUnit == 0))
                 {
                     capacityDimensionEvaluated = false;
                 }
-                weight = alloc.AllocatedQuantity * product.WeightPerBaseUnit;
-                volume = alloc.AllocatedQuantity * product.VolumePerBaseUnit;
+                loads.Add(new StopLoad(alloc.ProductId, alloc.Sku, alloc.AllocatedQuantity, product?.BaseUnit ?? "U")
+                {
+                    RequiredQuantity = alloc.RequestedQuantity
+                });
             }
 
-            var stopLoad = new StopLoad(alloc.ProductId, alloc.Sku, alloc.AllocatedQuantity, product?.BaseUnit ?? "U");
+            var pos = new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X).Round();
+            var riskItem = lines[0].Risk;
+            var level = riskItem?.Level ?? RiskLevel.Normal;
             var windowStart = sp.WindowStartLocal ?? TimeOnly.Parse(_options.DefaultWindowStart);
             var windowEnd = sp.WindowEndLocal ?? TimeOnly.Parse(_options.DefaultWindowEnd);
+            // Hora límite para críticos (#193): RouteFeasibility rechaza con time_window si no se llega a tiempo.
+            bool isCritical = level == RiskLevel.Critico || sp.Criticality == "alta";
+            windowEnd = ApplyCriticalDeadline(windowStart, windowEnd, isCritical, criticalDeadline);
             var serviceMin = sp.ServiceMinutes ?? _options.DefaultServiceMinutes;
 
             candidates.Add(new StopCandidate(
                 sp.Id, sp.Code, pos, windowStart, windowEnd, serviceMin,
-                weight, volume, new[] { stopLoad }, isConsolidation,
+                WeightOf(loads, products), VolumeOf(loads, products), loads, isConsolidation,
                 level, sp.Criticality, riskItem?.CoverageDays ?? 999m, riskItem?.LeadTimeDays ?? 2m));
         }
 
-        // Agregar los unserved por falta de stock en bodega
+        // Agregar los unserved por falta de stock en bodega, con la cantidad requerida de la línea
         foreach (var unservedAlloc in allocationResult.Unserved)
         {
-            unserved.Add(new Unserved(unservedAlloc.PointCode, unservedAlloc.Reason, unservedAlloc.Facts));
+            var line = allocationResult.Lines.FirstOrDefault(l => l.PointCode == unservedAlloc.PointCode && l.Sku == unservedAlloc.Sku);
+            var baseUnit = line != null && products.TryGetValue(line.ProductId, out var lineProduct) ? lineProduct.BaseUnit : "U";
+            unserved.Add(new Unserved(unservedAlloc.PointCode, unservedAlloc.Reason, unservedAlloc.Facts)
+            {
+                Lines = line == null ? [] :
+                    [new PendingLine(line.ProductId, line.Sku, baseUnit, line.RequestedQuantity, 0m, line.RequestedQuantity)]
+            });
         }
 
         if (!capacityDimensionEvaluated)
@@ -169,6 +192,9 @@ public sealed class RoutePlanner(
 
         var vehicleRoutes = vehicles.ToDictionary(v => v.Code, v => new List<StopCandidate>());
 
+        // Obligatorios que no entraron completos y su motivo (#199: las líneas se calculan al final)
+        var shortfalls = new List<(StopCandidate Candidate, string Reason)>();
+
         // Insertar obligatorios
         foreach (var candidate in mandatory)
         {
@@ -181,7 +207,12 @@ public sealed class RoutePlanner(
             {
                 // Determinar razón de fallo de inserción
                 var reason = DetermineFailureReason(vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix);
-                unserved.Add(new Unserved(candidate.PointCode, reason, Array.Empty<Fact>()));
+                // #199: si no cabe completa, se planifica lo que cabe y el remanente queda pendiente por capacidad.
+                if (SplitByCapacity(vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix, products) > 0)
+                {
+                    reason = "capacity";
+                }
+                shortfalls.Add((candidate, reason));
             }
         }
 
@@ -208,6 +239,47 @@ public sealed class RoutePlanner(
                 vehicleRoutes[bestVehicleCode] = RouteImprover.TwoOpt(
                     v, depots[v.Code], vehicleRoutes[bestVehicleCode], workdayStartUtc, _options.WorkdayHours,
                     _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+            }
+        }
+
+        // #199: cantidades por línea (punto y producto): requerida, planificada en todas las rutas y pendiente.
+        var plannedByLine = vehicleRoutes.Values.SelectMany(r => r)
+            .SelectMany(c => c.Loads.Select(l => (c.ServicePointId, l.ProductId, l.Quantity)))
+            .GroupBy(x => (x.ServicePointId, x.ProductId))
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+        decimal PendingOf(Guid pointId, StopLoad load) =>
+            Math.Max(0m, (load.RequiredQuantity ?? load.Quantity) - plannedByLine.GetValueOrDefault((pointId, load.ProductId)));
+        List<PendingLine> PendingLines(StopCandidate c) => c.Loads
+            .Select(l => new PendingLine(l.ProductId, l.Sku, l.BaseUnit, l.RequiredQuantity ?? l.Quantity,
+                plannedByLine.GetValueOrDefault((c.ServicePointId, l.ProductId)), PendingOf(c.ServicePointId, l)))
+            .Where(l => l.PendingQuantity > 0)
+            .ToList();
+
+        foreach (var (candidate, reason) in shortfalls)
+        {
+            // Repartida por completo entre varios vehículos: no queda nada pendiente.
+            var pendingLines = PendingLines(candidate);
+            if (pendingLines.Count == 0 && plannedByLine.Keys.Any(k => k.ServicePointId == candidate.ServicePointId)) continue;
+            unserved.Add(new Unserved(candidate.PointCode, reason, Array.Empty<Fact>()) { Lines = pendingLines });
+        }
+        // Obligatorios planificados completos pero con faltante de bodega: ese remanente también queda pendiente.
+        foreach (var candidate in mandatory.Where(c => shortfalls.All(s => s.Candidate != c)))
+        {
+            var pendingLines = PendingLines(candidate);
+            if (pendingLines.Count > 0)
+            {
+                unserved.Add(new Unserved(candidate.PointCode, "warehouse_stock", Array.Empty<Fact>()) { Lines = pendingLines });
+            }
+        }
+        // Hechos por línea pendiente para que la explicación (plantilla o agente) no invente cifras.
+        foreach (var u in unserved)
+        {
+            foreach (var line in u.Lines)
+            {
+                var subject = $"{u.PointCode}/{line.Sku}";
+                facts.Add(new Fact("required_quantity", subject, line.RequiredQuantity, line.BaseUnit));
+                facts.Add(new Fact("planned_quantity", subject, line.PlannedQuantity, line.BaseUnit));
+                facts.Add(new Fact("pending_quantity", subject, line.PendingQuantity, line.BaseUnit));
             }
         }
 
@@ -254,8 +326,9 @@ public sealed class RoutePlanner(
                 curTimeUtc = depUtc;
                 curPos = stop.Position;
 
+                var stopLoads = stop.Loads.Select(l => l with { PendingQuantity = PendingOf(stop.ServicePointId, l) }).ToList();
                 plannedStops.Add(new PlannedStop(
-                    i + 1, stop.PointCode, stop.ServicePointId, arrUtc, depUtc, wait, stop.Loads, stop.IsConsolidation, late));
+                    i + 1, stop.PointCode, stop.ServicePointId, arrUtc, depUtc, wait, stopLoads, stop.IsConsolidation, late));
             }
 
             routes.Add(new VehicleRoute(
@@ -416,6 +489,99 @@ public sealed class RoutePlanner(
         return new PlanResult(routes, unserved.OrderBy(u => u.PointCode, StringComparer.Ordinal).ToList(), facts);
     }
 
+    private static decimal WeightOf(IEnumerable<StopLoad> loads, IReadOnlyDictionary<Guid, Product> products) =>
+        loads.Sum(l => products.TryGetValue(l.ProductId, out var p) ? l.Quantity * p.WeightPerBaseUnit : 0m);
+
+    private static decimal VolumeOf(IEnumerable<StopLoad> loads, IReadOnlyDictionary<Guid, Product> products) =>
+        loads.Sum(l => products.TryGetValue(l.ProductId, out var p) ? l.Quantity * p.VolumePerBaseUnit : 0m);
+
+    /// <summary>
+    /// #199: toma de las cargas, en su orden, lo que cabe en el peso y el volumen libres (null = sin límite).
+    /// Una línea que no cabe completa se recorta a unidades base enteras.
+    /// </summary>
+    public static List<StopLoad> FitLoads(IEnumerable<StopLoad> loads, decimal? freeWeight, decimal? freeVolume,
+        IReadOnlyDictionary<Guid, Product> products)
+    {
+        var fitted = new List<StopLoad>();
+        foreach (var load in loads.Where(l => l.Quantity > 0))
+        {
+            products.TryGetValue(load.ProductId, out var product);
+            var unitWeight = product?.WeightPerBaseUnit ?? 0m;
+            var unitVolume = product?.VolumePerBaseUnit ?? 0m;
+            var max = load.Quantity;
+            if (freeWeight.HasValue && unitWeight > 0) max = Math.Min(max, Math.Max(0m, freeWeight.Value) / unitWeight);
+            if (freeVolume.HasValue && unitVolume > 0) max = Math.Min(max, Math.Max(0m, freeVolume.Value) / unitVolume);
+            var take = max >= load.Quantity ? load.Quantity : Math.Floor(max);
+            if (take <= 0) continue;
+            if (freeWeight.HasValue) freeWeight -= take * unitWeight;
+            if (freeVolume.HasValue) freeVolume -= take * unitVolume;
+            fitted.Add(load with { Quantity = take });
+        }
+        return fitted;
+    }
+
+    /// <summary>
+    /// #199: reparte una parada obligatoria que no cabe completa entre los vehículos con capacidad libre.
+    /// En cada vuelta gana el vehículo que lleva más unidades, luego el de menor costo adicional y luego el de
+    /// menor código; un punto no se repite en la misma ruta. Devuelve cuántas partes insertó.
+    /// </summary>
+    private int SplitByCapacity(
+        List<Vehicle> vehicles,
+        Dictionary<string, List<StopCandidate>> currentRoutes,
+        StopCandidate candidate,
+        IReadOnlyDictionary<string, GeoPoint> depots,
+        DateTime workdayStartUtc,
+        IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
+        IReadOnlyDictionary<Guid, Product> products)
+    {
+        var remaining = candidate.Loads.ToList();
+        var parts = 0;
+        while (remaining.Any(l => l.Quantity > 0))
+        {
+            (string Code, int Pos, StopCandidate Part, decimal Units, decimal Delta)? best = null;
+            foreach (var v in vehicles)
+            {
+                var route = currentRoutes[v.Code];
+                if (route.Any(s => s.ServicePointId == candidate.ServicePointId)) continue;
+
+                decimal? freeWeight = v.MaxWeight > 0 ? v.MaxWeight - route.Sum(s => s.Weight) : null;
+                decimal? freeVolume = v.MaxVolume is > 0 ? v.MaxVolume.Value - route.Sum(s => s.Volume) : null;
+                var loads = FitLoads(remaining, freeWeight, freeVolume, products);
+                if (loads.Count == 0) continue;
+
+                var part = candidate with { Loads = loads, Weight = WeightOf(loads, products), Volume = VolumeOf(loads, products) };
+                var units = loads.Sum(l => l.Quantity);
+                var currentCost = RouteFeasibility.EvaluateRoute(
+                    v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix).CumulativeCost;
+
+                for (int pos = 0; pos <= route.Count; pos++)
+                {
+                    var proposal = new List<StopCandidate>(route);
+                    proposal.Insert(pos, part);
+                    var eval = RouteFeasibility.EvaluateRoute(
+                        v, depots[v.Code], proposal, workdayStartUtc, _options.WorkdayHours,
+                        _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                    if (!eval.IsFeasible) continue;
+
+                    var delta = eval.CumulativeCost - currentCost;
+                    // Vehículos y posiciones se recorren en orden: con empate total gana el primero.
+                    if (best is null || units > best.Value.Units || (units == best.Value.Units && delta < best.Value.Delta))
+                    {
+                        best = (v.Code, pos, part, units, delta);
+                    }
+                }
+            }
+
+            if (best is null) break;
+            currentRoutes[best.Value.Code].Insert(best.Value.Pos, best.Value.Part);
+            var taken = best.Value.Part.Loads.ToDictionary(l => l.ProductId, l => l.Quantity);
+            remaining = remaining.Select(l => l with { Quantity = l.Quantity - taken.GetValueOrDefault(l.ProductId) }).ToList();
+            parts++;
+        }
+        return parts;
+    }
+
     // Posición de la bodega propia del vehículo; null si no tiene o la bodega no tiene coordenadas.
     private static GeoPoint? DepotOf(Vehicle vehicle, IReadOnlyList<Location> warehouses)
     {
@@ -524,6 +690,28 @@ public sealed class RoutePlanner(
         }
 
         return bestVehicleCode != null;
+    }
+
+    /// <summary>Convierte "HH:mm" (o "HH:mm:ss") en hora local; null o vacío = sin hora límite.</summary>
+    public static TimeOnly? ParseCriticalDeadline(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (TimeOnly.TryParseExact(value.Trim(), new[] { "HH:mm", "HH:mm:ss" },
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var deadline))
+            return deadline;
+        throw new ArgumentException("criticalDeadlineLocal debe tener formato HH:mm (p. ej. \"11:00\").",
+            nameof(PlanRequest.CriticalDeadlineLocal));
+    }
+
+    /// <summary>
+    /// Fin de ventana de una parada: para críticos es el mínimo entre la ventana del punto y la hora límite.
+    /// Si la ventana del punto empieza después de la hora límite, se respeta la del punto.
+    /// </summary>
+    public static TimeOnly ApplyCriticalDeadline(TimeOnly windowStart, TimeOnly windowEnd, bool isCritical, TimeOnly? deadline)
+    {
+        if (!isCritical || deadline is not { } limit) return windowEnd;
+        if (windowStart > limit) return windowEnd;
+        return windowEnd < limit ? windowEnd : limit;
     }
 
     private string DetermineFailureReason(

@@ -3,7 +3,7 @@ id: 006
 titulo: Validación, pitch y paquete de entrega
 estado: borrador
 creado: 2026-10-12
-actualizado: 2026-10-13
+actualizado: 2026-10-16
 responsable: todo el equipo (Bryan Doicela, Jorge Doicela, Alexander Martínez, Anthony Pilatasig, Joseph Baño); quien toma una tarea la reclama en su issue   # asignación de Joseph Baño, 13-oct
 aprobado_por: PENDIENTE
 depende_de: [001, 002, 003, 004, 005]
@@ -58,7 +58,7 @@ Presentar un relato de una caja destinada a un hospital que sea claro, cronometr
 |---|---|---|
 | ER-01 | Guion maestro de 5 min y versiones 3/7 con los siete bloques oficiales en orden, cada una a tiempo oficial −20 s | O-04, Anexo 5.7 |
 | ER-02 | Kit previo generado con IA y revisado por el equipo en unos 15 min: entrevista, esqueleto de pitch, negocio, veinte preguntas y fuente SERCOP | D2, B-45 |
-| ER-03 | Dos personas entrevistan expositores el 16 en las pausas y vuelven con prototipo el 17 de 11:00–12:30; evitan JIMCORPSERVI/FEDELIMP y LACIF como cautela del equipo | D2, B-46 |
+| ER-03 | Dos personas entrevistan expositores el 16 en las pausas y vuelven con prototipo el 17 de 11:30–13:15 (agenda oficial del 16-oct); evitan JIMCORPSERVI/FEDELIMP y LACIF como cautela del equipo | D2, B-46 |
 | ER-04 | Cada entrevista conserva consentimiento, rol/organización si se ofrece, pregunta, respuesta fiel, objeción, cambio y autorización separada para cita atribuible/anónima | Convenciones y estados, Plantilla evidencia |
 | ER-05 | Cinco integrantes aparecen con los papeles narración, web, móvil, técnica y negocio; suplencias se ensayan sin asignar nombres por suposición | Matriz oficial, Proceso y equipo |
 | ER-06 | Guion y diapositivas usan `[CITA DE LA FERIA]`, `[RESULTADO DEL SIMULADOR]`, `[PRECIO]` hasta verificar cada hueco; ningún número de resultado sin ejecución enlazada | Convenciones y estados, 005 CE-04/06/09 |

@@ -11,7 +11,7 @@ Esta nota concentra el contexto operativo esencial que cada integrante del equip
 
 > [!TIP]
 > **Instrucciones para los integrantes:**
-> Puedes duplicar este archivo dentro de la carpeta `NotasEvento/` con el nombre de tu archivo personal (ejemplo: `Participante - Bryan Bano.md`, respetando la regla de nombres sin tildes) y completar tus datos, dispositivos, rol de demostración y bitácora individual; o utilizar esta plantilla como base de referencia continua.
+> Esta plantilla reúne el contexto del evento y una ficha opcional de preparación. Para registrar lo que diga u observe el equipo durante las jornadas, sigue [[Notas del evento]] y copia [[Plantilla nota del evento]]: **un archivo nuevo por apunte**, con nombre `AAAA-MM-DD-HHMM-autor-tema.md`. No edites esta plantilla como bitácora compartida ni la dupliques para cada intervención.
 
 ---
 
@@ -66,6 +66,8 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 
 ## 3. Cronograma del evento y momentos de control
 
+**Aclaración del 16-oct:** la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla del evento]] anuncia cinco minutos por equipo, cuatro cubículos por reto y Drive accesible para el correo del capitán. Los horarios de abajo proceden del manual; los cortes mencionados para hoy 18:00 y sábado 20:00 necesitan aclaración en O-06 ([[Consultas para la organizacion]]). El segundo horario aparece solo en una pregunta y no se confirmó. Turno, cubículo, preguntas y composición del jurado PENDIENTES.
+
 ### Día 1 — Viernes 16 de octubre de 2026
 - **08:00 – 09:00:** Acreditación de participantes y armado de mesa técnica.
 - **09:00 – 09:30:** Sesión de apertura y directrices del evento.
@@ -85,8 +87,8 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 - **14:00 – 15:00:** Consolidación de viabilidad, costos y métricas de impacto.
 - **15:00 – 16:00:** Ensayo general del Pitch y sincronización de roles en la escena.
 - **15:45:** **Congelamiento interno:** Cierre de código y generación de versiones finales.
-- **16:00:** **Entrega formal:** Subida de entregables a plataforma oficial.
-- **16:15 – 18:15:** **Pitch y demostración en vivo** ante jurado evaluador (3 a 5 minutos).
+- **16:00 – 16:15:** Entrega de materiales según el manual; confirmar vigencia del horario y acceso a Drive en O-06.
+- **16:15 – 18:15:** Bloque de presentaciones del manual; se anuncian **5 minutos por equipo** y cuatro presentaciones simultáneas. Turno exacto y reparto de preguntas por confirmar.
 - **18:15 – 18:45:** Deliberación del jurado y anuncio de proyectos premiados.
 
 ---
@@ -104,16 +106,13 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 
 ---
 
-## 5. Ficha individual del participante
+## 5. Ficha individual del participante (opcional)
 
-*(Completar con los datos propios de cada integrante)*
+*Si necesitas una copia personal, conserva solo información operativa apta para el repositorio. Los datos de acreditación y contacto se comparten por el canal privado del equipo, fuera de la bóveda.*
 
-### 5.1 Datos de contacto e identificación
+### 5.1 Datos de presentación
 - **Nombre completo:**
-- **Cédula de identidad:**
 - **Usuario de GitHub:**
-- **Correo de contacto:**
-- **Teléfono móvil / WhatsApp:**
 - **Especialidad técnica principal en el evento:**
 
 ### 5.2 Equipamiento y conectividad en sede
@@ -157,3 +156,5 @@ Consultar la coreografía descrita en [[Guion del pitch]] y [[Flujos de prueba]]
 - **Observaciones del jurado o visitantes en el stand:**
 - **Preguntas frecuentes recibidas durante ensayos:**
 - **Mejoras identificadas para la fase de pitch:**
+
+Estas secciones personales sirven para prepararse. Cada mentoría, observación o indicación recibida durante el evento se registra además como archivo independiente siguiendo [[Notas del evento]], para que el equipo pueda compartirla sin sobrescribir el trabajo de otra persona.

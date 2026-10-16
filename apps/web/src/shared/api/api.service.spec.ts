@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Observable } from 'rxjs';
 import { environment } from '../config/environment';
-import { ApiService } from './api.service';
+import { ApiService, describePendingLines } from './api.service';
 
 describe('fallos de consulta visibles', () => {
   let api: ApiService;
@@ -58,5 +58,68 @@ describe('fallos de consulta visibles', () => {
     api.getServicePoints().subscribe(result => expect(result).toEqual([]));
     backend.expectOne(environment.apiUrl + '/api/v1/service-points').flush([]);
     expect(api.loadErrors()).toEqual({});
+  });
+});
+
+describe('detalle del plan', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  // 16-oct: el mapeo descartaba las líneas y la página decía «Sin productos registrados» aunque el backend las enviara.
+  it('conserva los productos de cada parada, el tipo de parada y el resumen por producto', () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), ApiService] });
+    const api = TestBed.inject(ApiService);
+    const backend = TestBed.inject(HttpTestingController);
+    const line = { productId: 'prod-1', sku: 'SKU-1', productName: 'Guantes', plannedQuantity: 5, baseUnit: 'U', deliveryStatus: 'Cargar' };
+    let detail: any;
+
+    api.getRoutePlanById('plan-1').subscribe(d => detail = d);
+    backend.expectOne(environment.apiUrl + '/api/v1/route-plans/plan-1').flush({
+      id: 'plan-1', code: 'PLAN-1', status: 'Proposed',
+      stops: [
+        { sequence: 1, kind: 'Pickup', servicePointName: 'Bodega Norte', lines: [line] },
+        { sequence: 2, kind: 'Delivery', servicePointName: 'Hospital', deliveryCode: 'DEL-1', handlingUnits: [{ id: 'hu-1', code: 'HU-1' }], lines: [{ ...line, deliveryStatus: 'Proposed' }] },
+      ],
+      productsSummary: [{ sku: 'SKU-1', totalPlannedQuantity: 5 }],
+      driverRoutes: [{ routePlanId: 'plan-1' }],
+    });
+
+    expect(detail.stops.map((s: any) => s.kind)).toEqual(['Pickup', 'Delivery']);
+    expect(detail.stops[0].lines[0].plannedQuantity).toBe(5);
+    expect(detail.stops[1].lines).toHaveLength(1);
+    expect(detail.stops[1].deliveryCode).toBe('DEL-1');
+    expect(detail.stops[1].handlingUnits[0].code).toBe('HU-1');
+    expect(detail.productsSummary[0].totalPlannedQuantity).toBe(5);
+    expect(detail.driverRoutes).toHaveLength(1);
+    backend.verify();
+  });
+});
+
+// #199: atención parcial por capacidad; la web muestra las cifras de la API sin recalcularlas.
+describe('carga parcial', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('conserva requeridas, planificadas y pendientes de cada parada', () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), ApiService] });
+    const api = TestBed.inject(ApiService);
+    const backend = TestBed.inject(HttpTestingController);
+    let detail: any;
+
+    api.getRoutePlanById('plan-2').subscribe(d => detail = d);
+    backend.expectOne(environment.apiUrl + '/api/v1/route-plans/plan-2').flush({
+      id: 'plan-2', code: 'PLAN-2', status: 'Proposed',
+      stops: [{ sequence: 1, kind: 'Delivery', lines: [],
+        loadQuantities: [{ sku: 'SKU-A', baseUnit: 'u', requiredQuantity: 150, plannedQuantity: 100, pendingQuantity: 50 }] }],
+    });
+
+    expect(detail.stops[0].loadQuantities[0]).toEqual({ sku: 'SKU-A', baseUnit: 'u', requiredQuantity: 150, plannedQuantity: 100, pendingQuantity: 50 });
+    backend.verify();
+  });
+
+  it('resume solo las líneas con remanente', () => {
+    expect(describePendingLines([
+      { sku: 'SKU-A', baseUnit: 'u', requiredQuantity: 150, plannedQuantity: 100, pendingQuantity: 50, pointCode: 'HOS-01' },
+      { sku: 'SKU-B', baseUnit: 'u', requiredQuantity: 10, plannedQuantity: 10, pendingQuantity: 0 },
+    ])).toBe('HOS-01 SKU-A: 100 de 150 u planificadas, pendientes 50');
+    expect(describePendingLines(undefined)).toBe('');
   });
 });

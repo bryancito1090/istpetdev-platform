@@ -203,6 +203,12 @@ public sealed class RouteEvaluator : IRouteEvaluator
             }
         }
 
+        // 5. Validar jornada laboral máxima permitida
+        if (_options.WorkdayHours > 0 && totalMinutes > _options.WorkdayHours * 60)
+        {
+            errors.Add($"La duración total de la ruta ({totalMinutes:F0} min) excede la jornada máxima permitida ({_options.WorkdayHours * 60} min).");
+        }
+
         decimal costPerKm = vehicle?.CostPerKm ?? _options.DefaultCostPerKm;
         decimal totalCost = Math.Round(totalKm * costPerKm + (totalMinutes / 60m) * _options.CostPerHour, 2);
 

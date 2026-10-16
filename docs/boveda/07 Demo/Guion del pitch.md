@@ -1,28 +1,28 @@
 ---
 tipo: demo
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [demo, validacion, istpetdev]
 ---
 
 # Guion del pitch
 
-**Meta interna:** tres minutos. Duración oficial y tiempo de preguntas pendientes de confirmar en [[Consultas para la organizacion]]. Ajustar este guion a lo que informe la organización.
+**Turno anunciado oralmente el 16-oct:** cinco minutos por equipo, según la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla aportada por Bryan]]. **Meta interna:** 4:40 para el guion maestro; reservar 20 s no es una instrucción de la organización. Falta confirmar si demo, preguntas y transiciones caben en los cinco minutos (O-04 en [[Consultas para la organizacion]]). Los cortes de 3/7 minutos quedan como variantes internas, no turnos anunciados. No se ha ejecutado un ensayo nuevo con esta actualización.
 
 > [!warning] Versión de trabajo T2 (14-oct-2026, fase 2 del issue #46)
-> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y la respuesta de O-04.
+> Para ensayar se usa la sección «Versión de trabajo T2», al final de esta nota: aplica la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) al complemento del 006. T1 fue aprobado por Joseph el 14-oct; T2 conserva el carácter de borrador hasta la revisión cruzada, el ensayo y el desglose pendiente de O-04. El anuncio del 16-oct permite seleccionar el corte maestro de cinco minutos, sin acreditar esas verificaciones.
 
 > [!info] Preparación de T3–T5 (14-oct-2026, fase 3 del issue #46)
 > Papeles, relevos, sustituciones, frases vigentes sin ensayo conectado y contingencias: [escena y contingencias](../../specs/006-validacion-pitch-entrega/escena-y-contingencias.md). Pasadas y respuestas se anotan en el [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md). Hoy ninguna parte de la demo tiene ensayo conectado: se dice la «Frase vigente» de esa nota, no la de la tabla de abajo. Los nombres de los papeles siguen sin confirmar.
 
 > [!warning] Lectura del kit previo (14-oct-2026)
-> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. O-04 sigue sin respuesta registrada; ninguno de los cortes es tiempo oficial. Para ensayar se usa el complemento; las secciones de arriba quedan como antecedente.
+> La sección «Complemento propuesto — spec 006, 12-oct-2026», al final de esta nota, propone sustituir el recorrido de 180 s y el texto base por cortes de 3/5/7 min (objetivos 2:40/4:40/6:40), con Deciders pendientes. Al 14-oct O-04 no tenía respuesta. El 16-oct se anuncia un turno de cinco minutos: se usa ese corte con objetivo interno 4:40; los demás quedan como variantes. El recorrido de 180 s se conserva como antecedente.
 
 Protagonista: una empresa de limpieza; objeto conductor: una caja destinada a un hospital. El caso es sintético hasta contar con validación empresarial.
 
 **Estructura oficial (Anexo 5.7, p. 25):** Problema → Solución → Prototipo / demo → Impacto → Viabilidad → Modelo de negocio → Próximo paso. El recorrido de abajo cubre las siete partes; viabilidad, modelo de negocio y próximo paso comparten el cierre de 20 segundos y deben nombrarse los tres.
 
-**Audiencia:** cinco de los siete jurados no son perfiles técnicos (§11.3, p. 10). Cada tecnología mencionada debe ir unida a lo que cambia para la operación.
+**Audiencia:** composición actual por confirmar (O-13). El reparto de siete personas del manual es antecedente, frente al anuncio de paneles por reto del 16-oct. Cada tecnología mencionada debe ir unida a lo que cambia para la operación.
 
 ## Recorrido de 180 segundos
 
@@ -84,9 +84,9 @@ Ver [[Checklist y contingencias]], [[Plus para ganar]] y [[Plan de validacion]].
 
 ## Complemento propuesto — spec 006, 12-oct-2026
 
-**Deciders PENDIENTE.** Este complemento sustituye para el próximo pitch el recorrido fijo de 180 s y su texto base: O-04 sigue pendiente. **⚠️ Contradicción detectada** — Hecho nuevo: el vivo usa `demo-region` (unos 15 puntos y dos vehículos) y la escala de unos 80 puntos solo aparece en simulación. · Hecho establecido: el texto base arriba abre con «80 puntos del país» sin distinguir ambas escenas. · Impacto: sugeriría una demo nacional en vivo. · Opciones: aclarar el alcance; conservar ambigüedad. · Propuesta: aclararlo en narración y etiqueta de pantalla. El caso del hospital es sintético. La cobertura de cinco días solo se dice si la ejecución de 002 CE-01 lo respalda.
+**Deciders PENDIENTE.** Este complemento sustituye para el próximo pitch el recorrido fijo de 180 s y su texto base. Actualización del 16-oct: turno oral de cinco minutos, desglose de O-04 pendiente. **⚠️ Contradicción detectada** — Hecho nuevo: el vivo usa `demo-region` (unos 15 puntos y dos vehículos) y la escala de unos 80 puntos solo aparece en simulación. · Hecho establecido: el texto base arriba abre con «80 puntos del país» sin distinguir ambas escenas. · Impacto: sugeriría una demo nacional en vivo. · Opciones: aclarar el alcance; conservar ambigüedad. · Propuesta: aclararlo en narración y etiqueta de pantalla. El caso del hospital es sintético. La cobertura de cinco días solo se dice si la ejecución de 002 CE-01 lo respalda.
 
-El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → impacto → viabilidad → modelo de negocio → próximo paso**. La versión maestra dura **hasta 4:40** y reserva 20 s del turno nominal de 5 min. Los cortes de 3/7 duran como máximo 2:40/6:40; si O-04 indica otra duración, se sustituye el objetivo por tiempo oficial menos 20 s. Ninguno es tiempo oficial confirmado. Cinco papeles visibles: narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre].
+El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → impacto → viabilidad → modelo de negocio → próximo paso**. La versión maestra dura **hasta 4:40** y reserva 20 s del turno nominal de 5 min. Los cortes de 3/7 duran como máximo 2:40/6:40; el turno de 5 min fue anunciado el 16-oct. Los objetivos de 2:40/4:40/6:40 son reparto interno; los cortes de 3/7 no son turnos anunciados y el desglose de O-04 sigue pendiente. Cinco papeles visibles: narración [PENDIENTE: nombre], web [PENDIENTE: nombre], móvil [PENDIENTE: nombre], técnica [PENDIENTE: nombre], negocio [PENDIENTE: nombre].
 
 | Bloque | 3 min (objetivo 2:40) | 5 min (objetivo 4:40) | 7 min (objetivo 6:40) | Idea que se dice |
 |---|---|---|---|---|
@@ -102,38 +102,42 @@ El pitch sigue exactamente el Anexo 5.7: **problema → solución → demo → i
 
 **Plantilla de voz, aún sin resultados:** «En nuestro escenario sintético una empresa de limpieza necesita anticipar faltantes en un hospital. [CITA DE LA FERIA]. El sistema [capacidad sustentada por CE y ejecución] y propone una decisión que una persona puede aprobar. Aquí seguimos la caja [solo si 004 pasó]. En 90 días sintéticos, la comparación frente a reposición reactiva y calendario fijo dio [RESULTADO DEL SIMULADOR, run enlazado]; mostramos también dónde aparecieron quiebres nuevos. Para operar esto se requieren [recurso comprobado] y un piloto con datos reales. Nuestro cliente por validar es una empresa de limpieza; proponemos implementación y suscripción, con [PRECIO] por definir tras conocer costos y disposición de pago. El siguiente paso es un piloto de cuatro semanas». Los tres huecos permanecen fuera del PDF final si no se llenan con evidencia; nunca se pronuncian como valores.
 
-### Banco de 20 preguntas difíciles (borradores para respuestas de hasta 30 s)
+### Banco de 24 preguntas difíciles (respuestas ensayadas de hasta 30 s)
 
-| # | Pregunta | Borrador breve, sujeto a lo realmente ejecutado |
+| # | Pregunta | Respuesta ensayada (≤ 30 s, sin cifras inventadas) |
 |---:|---|---|
-| 1 | ¿La IA predice el consumo? | No; la regla usa consumo conocido y media móvil. El agente puede organizar y explicar la propuesta si pasa sus pruebas. |
-| 2 | ¿La IA aprueba rutas sola? | La política determinista decide dentro de umbrales; lo demás espera aprobación humana. El LLM no tiene permiso de aprobar. |
-| 3 | ¿Qué ocurre si DeepSeek cae? | El motor determinista y la explicación por plantilla son el camino de respaldo, sujeto al E2E del agente. |
-| 4 | ¿Es la ruta óptima? | Es una heurística factible con capacidad y ventanas; no demostramos óptimo global. |
-| 5 | ¿Qué datos requiere? | Puntos, productos, saldos, consumo y flota; los faltantes se reportan como supuestos. |
-| 6 | ¿Qué pasa si nos dan otro Excel? | Hay importador con perfiles de mapeo; el tiempo de adaptación solo se afirma con el simulacro G6 aprobado. |
-| 7 | ¿Cómo conoce el stock? | Por saldos y movimientos importados/registrados; la frescura del dato se muestra, no se supone tiempo real. |
-| 8 | ¿Qué pasa si no hay señal? | La PWA conserva captura y sincroniza al volver la red si el ensayo en teléfono pasa; un conflicto se muestra. |
-| 9 | ¿Se duplica una recepción? | La operación usa clave idempotente y control de cantidades; solo afirmarlo al pasar 004 CE-03. |
-| 10 | ¿Puede cualquiera escanear la caja? | La vista pública ofrece solo estado e hitos limitados, con token revocable; no incluye firma ni cantidades. Se invita al jurado a escanear solo si HTTPS y 004 CE-07 funcionan en el lugar. |
-| 11 | ¿Funciona con 80 puntos o a escala nacional? | En vivo mostramos `demo-region` (unos 15 puntos sintéticos, una bodega y dos vehículos); la escala de unos 80 puntos solo aparece en la simulación de 005. La capacidad de escalar el servicio solo se afirma con una prueba realizada; si no existe, se dice que está pendiente. |
-| 12 | ¿Qué prueba la simulación? | Compara políticas bajo demanda sintética común; no demuestra ahorro observado en una empresa. |
-| 13 | ¿Por qué esos baselines? | Representan aviso reactivo y calendario fijo, fijados antes de mirar resultados; sus reglas y supuestos quedan exportados. |
-| 14 | ¿Qué significan quiebres evitados y nuevos? | Se muestran ambos por punto, producto y día; no escondemos perjuicios tras una resta neta. |
-| 15 | ¿Por qué tres seeds y una adversa? | Para mostrar variación base y un caso exigente aparte; no seleccionamos solo el mejor run. |
-| 16 | ¿Cuánto ahorra una empresa real? | [PENDIENTE: piloto con costos observados]. Hoy solo podríamos mostrar un rango simulado con run verificable. |
-| 17 | ¿Cuánto cuesta y cuál es el precio? | [PENDIENTE: costos medidos y disposición de pago]. Hipótesis: implementación más suscripción por operación/puntos activos. |
-| 18 | ¿Evita multas hospitalarias? | No lo afirmamos. Fichas SERCOP muestran obligaciones/sanciones específicas; no prueban multas ni ahorro de este caso. |
-| 19 | ¿Qué validaron con el sector? | Solo resumimos conversaciones consentidas de la feria y cambios observados; si faltan, lo declaramos pendiente. |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | El tag `pre-evento` y el registro separan preparación de adaptación durante la hackathon; O-01 sigue por confirmar con fuente oficial. |
+| 1 | ¿La IA predice el consumo? | No; la regla usa consumo histórico conocido y media móvil de demanda. El agente o asistente con IA no inventa números ni aprueba operaciones; su función en preparación es contextualizar y estructurar explicaciones comprensibles basadas en los hechos ya calculados por el motor. |
+| 2 | ¿La IA aprueba rutas sola? | No; la IA no tiene permisos para aprobar rutas. El motor determinista aplica decisiones automáticas solo si se mantienen estrictamente dentro de umbrales operativos configurados. Cualquier desvío significativo, sobrecosto o retraso que supere los límites se escala de forma obligatoria para la decisión de una persona. |
+| 3 | ¿Qué ocurre si DeepSeek cae? | El cálculo no depende de la IA. Si DeepSeek o n8n no están disponibles, el motor logístico determinista en backend continúa planificando rutas y evaluando restricciones con total normalidad. Como respaldo de explicación, el sistema activa plantillas deterministas estructuradas con los datos del cálculo. |
+| 4 | ¿Es la ruta óptima? | No prometemos un óptimo matemático global. El motor resuelve el problema de ruteo con ventanas de tiempo y capacidad mediante una heurística constructiva factible mejorada con 2-opt. Su objetivo es entregar un plan operativo viable y eficiente en pocos segundos, respetando restricciones físicas reales. |
+| 5 | ¿Qué datos requiere? | Requiere cinco fuentes de datos: puntos de servicio con coordenadas y ventanas horarias, catálogo de productos con peso y volumen, saldos de inventario inicial, historial o proyección de demanda, y vehículos con capacidad y jornada. Si falta algún dato no crítico, el importador lo declara como supuesto. |
+| 6 | ¿Qué pasa si nos dan otro Excel? | El importador canónico desacopla el archivo del modelo interno mediante perfiles declarativos. Adaptar un formato nuevo consiste en mapear nombres de columnas y unidades sin modificar código. No prometemos plazos menores a una hora sin medirlo con archivos ajenos, pero el mecanismo está estructurado y probado. |
+| 7 | ¿Cómo conoce el stock? | Por saldos iniciales importados y movimientos de despacho y recepción registrados. La plataforma calcula la cobertura dividiendo el stock entre el consumo proyectado y muestra en pantalla la fecha y hora de frescura de cada dato. No asumimos sincronización en tiempo real sin una integración activa. |
+| 8 | ¿Qué pasa si no hay señal? | La PWA de campo está diseñada para operar sin conexión: almacena la recepción en IndexedDB local. Cuando el dispositivo recupera señal de red, sincroniza las capturas pendientes con el backend. En el pitch lo presentamos con prudencia técnica según lo verificado en pruebas de integración. |
+| 9 | ¿Se duplica una recepción? | No se duplica. La operación de recepción utiliza una clave idempotente única por entrega y control estricto de bultos y cantidades recibidas. Si el conductor reintenta el envío o la red retransmite la petición, el backend detecta la clave existente y no crea registros duplicados. |
+| 10 | ¿Puede cualquiera escanear la caja? | El código QR público dirige a una vista web protegida con token limitado y revocable. Solo muestra hitos generales de trazabilidad y estado logístico del paquete; no expone firmas, montos, nombres privados ni inventarios de bodega. Un token alterado o inválido recibe respuesta 404 por la API. |
+| 11 | ¿Funciona con 80 puntos o a escala nacional? | En vivo mostramos el escenario regional con 15 puntos sintéticos, una bodega y dos vehículos. La escala de 80 puntos se ha evaluado en simulación y pruebas locales de rendimiento donde el motor planifica en menos de cinco segundos. El despliegue nacional requerirá pruebas de carga dedicadas. |
+| 12 | ¿Qué prueba la simulación? | Compara de forma controlada dos políticas operativas bajo 90 días de demanda sintética común: reposición preventiva contra baselines de reposición reactiva y calendario fijo. Evalúa el comportamiento del algoritmo ante variaciones de consumo, pero no constituye una medición de ahorro financiero observado en una empresa. |
+| 13 | ¿Por qué esos baselines? | Representan las prácticas estándar de la industria: la reposición reactiva espera el reclamo por falta de stock y el calendario fijo visita puntos en días preestablecidos sin mirar consumo. Fijamos estas reglas antes de evaluar resultados para asegurar una comparación metodológicamente neutral y auditable. |
+| 14 | ¿Qué significan quiebres evitados y nuevos? | Un quiebre evitado ocurre cuando el motor abastece a tiempo un punto que en el baseline se quedaba sin stock. Un quiebre nuevo ocurre si por capacidad o desvío se desatiende un punto que el baseline sí cubría. Mostramos ambas métricas por separado, sin esconder perjuicios bajo restas netas. |
+| 15 | ¿Por qué tres seeds y una adversa? | Usamos tres semillas aleatorias para verificar que los resultados no dependan de una combinación afortunada de demanda. Añadimos una semilla adversa con picos abruptos y dispersión para estresar el motor y mostrar con honestidad cómo responde el sistema bajo condiciones difíciles, sin seleccionar solo el mejor caso. |
+| 16 | ¿Cuánto ahorra una empresa real? | No prometemos cifras de ahorro en porcentaje ni dinero porque no tenemos mediciones operativas en una empresa real. Los resultados mostrados provienen de simulaciones sintéticas comparadas. El ahorro real dependerá de la flota, dispersión y costos del cliente, lo cual mediremos formalmente en el piloto de cuatro semanas. |
+| 17 | ¿Cuánto cuesta y cuál es el precio? | No fijamos un precio de suscripción arbitrario. El modelo contempla una tarifa de implementación técnica y una suscripción mensual según volumen de puntos y operaciones activas. El importe exacto se definirá tras medir los costos reales de infraestructura y la disposición de pago durante el piloto de cuatro semanas. |
+| 18 | ¿Evita multas hospitalarias? | No afirmamos que evite multas. Las fichas técnicas del SERCOP demuestran que los contratos públicos de limpieza imponen sanciones severas por desabastecimiento de desinfectantes. Nuestra plataforma ayuda a reducir el riesgo de faltantes al anticipar la reposición, pero no podemos certificar la eliminación legal de penalizaciones contractuales. |
+| 19 | ¿Qué validaron con el sector? | Contrastamos con expositores de la feria y personas del sector la problemática operativa: confirmaron que reponer tras la queja genera urgencias costosas y riesgo en contratos públicos. Mantenemos estas conclusiones como hipótesis en validación cualitativa hasta documentar entrevistas formales con consentimiento en el informe final. |
+| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | La estructura base del proyecto y dependencias iniciales estaban identificadas con la etiqueta pre-evento según las reglas de transparencia. Durante la hackathon se desarrollaron e integraron la lógica del motor logístico, los algoritmos de replanificación, los modelos de riesgo, la PWA de campo y las suites de pruebas automatizadas. |
+| 21 | ¿A quién atienden primero si no alcanza el camión? | El motor prioriza mediante un orden determinista y transparente: primero evalúa el nivel de riesgo (Crítico antes que Alto), luego la menor holgura de tiempo (cobertura menos lead time), después la criticidad del punto de servicio, y finalmente el código. Si no alcanza la capacidad, los puntos menos urgentes quedan formalmente clasificados como no atendidos con su motivo explícito (`ReplenishmentAllocator` y `RoutePlanner`). |
+| 22 | ¿Qué pasa ante un cierre vial? | Se ejecuta una replanificación determinista que conserva las paradas ya realizadas y genera una nueva versión de ruta. El motor dispone de modos configurables: `Strict`, `LateService` si admite demoras, o `PrioritizeCritical`, que descarta paradas de consolidación para proteger las entregas críticas. Si el plan resultante supera los límites de costo o jornada, no se auto-ejecuta y escala a aprobación humana. |
+| 23 | ¿Por qué no Dijkstra? | Dijkstra halla el camino mínimo entre nodos aislados en un grafo estático. En nuestro sistema, el servicio OSRM ya calcula distancias y tiempos mínimos sobre la red vial real de OpenStreetMap, respetando sentidos de giro y velocidades reales. Sobre esa matriz real, el algoritmo del motor resuelve el problema complejo de ruteo vehicular con ventanas horarias, jornadas y capacidades físicas. |
+| 24 | ¿Qué pasa si nos dan otro Excel? | El sistema dispone de un importador canónico con perfiles de mapeo declarativos. Permite homologar archivos con distintas columnas, orden o unidades hacia el esquema interno sin modificar una sola línea de código fuente. Su funcionamiento está probado y validado con datasets externos, permitiendo incorporar nuevos datos estructurados con reglas de validación previas. |
 
-El banco cubre las «Preguntas previsibles» de arriba (escalabilidad en la 11, privacidad del QR en la 10); la parte de auditoría append-only sigue solo en esa lista. La pregunta 11 sustituyó el 14-oct a «¿Por qué el jurado escanea y no solo mira pantalla?», cuya condición pasó a la 10; queda sujeto a la revisión humana del kit.
+El banco cubre las «Preguntas previsibles» de arriba (escalabilidad en la 11, privacidad del QR en la 10, prioridad de camión en la 21, cierre vial en la 22, OSRM frente a Dijkstra en la 23, importador canónico en la 6 y 24); la parte de auditoría append-only sigue solo en esa lista. La pregunta 11 sustituyó el 14-oct a «¿Por qué el jurado escanea y no solo mira pantalla?», cuya condición pasó a la 10; queda sujeto a la revisión humana del kit.
 
 La pregunta 16/17 no se responde pronunciando el marcador: se dice «aún no tenemos una medición/precio validado» y se explica el paso de piloto. Ensayar cada respuesta con cronómetro, ≤30 s; no convertir un borrador en hecho técnico hasta enlazar CE y ejecución.
 
 ## Versión de trabajo T2 — 14-oct-2026 (fase 2 del issue #46)
 
-**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). O-04 sigue pendiente: **160/280/400 s son metas internas, no tiempo oficial**. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
+**Borrador aprobado por Joseph el 14-oct; revisión cruzada pendiente.** Redactado con IA (Claude Code, Opus 5.5) a pedido de Joseph Baño. T1 tiene revisión humana registrada; la matriz requiere un segundo revisor y volver a comprobar los ajustes A-16/A-17/A-27. Cada frase sale de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md) (columna «#»). Actualización del 16-oct: se anuncia turno de 5 min y se selecciona el maestro; **160/280/400 s siguen siendo metas internas, no cronometrajes ni duración del turno**. Falta el desglose de preguntas de O-04. No hay ensayos cronometrados todavía; los segundos de abajo son reparto planificado, no mediciones.
 
 **Etiquetas de escena.** `VIVO PREVISTO`: capacidad probada en pruebas automatizadas (EJ-07/08); la escena en pantalla no se ha ensayado y no se anuncia como «en vivo» hasta pasar E2E-04 del 006; si falla, se dice la sustitución. `GRABADO`: video del 15-oct, aún no existe; si se usa, se dice «esto es una grabación». `SIMULADO`: 005, datos sintéticos. `PROPUESTO`: diseño o plan, no demostrado.
 
@@ -189,7 +193,7 @@ Del recorrido de 180 s, del texto base y del complemento del 12-oct se retiran: 
 
 ### Estructura de las siete diapositivas (sin archivo)
 
-O-06 sigue sin respuesta: no se crea editable ni PDF. Esta es la estructura para cuando se confirme el formato.
+Al 14-oct no había respuesta de O-06 y esta sección solo definía la estructura; después se generaron archivos provisionales según el manifiesto del 006. El 16-oct se anuncia Drive para el capitán, pero URL, acceso efectivo y formatos siguen pendientes. Esta actualización no genera materiales finales ni acredita su entrega.
 
 | # | Bloque | Título de trabajo | Contenido | Rótulo visible |
 |---|---|---|---|---|

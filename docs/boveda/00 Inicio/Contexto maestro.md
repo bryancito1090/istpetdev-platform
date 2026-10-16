@@ -1,13 +1,17 @@
 ---
 tipo: guia
 estado: propuesta
-actualizado: 2026-10-07
+actualizado: 2026-10-16
 tags: [hackathon, equipo]
 ---
 
 # Contexto maestro
 
+**Lectura nueva — 16-oct:** [[2026-10-16-1109-bb-charla-limpieza-logistica|charla del sector y organización]]. Aporta testimonio sobre dosificación, consumo por área, inventario fraccionado y despachos consolidados; [[Historia y propuesta de valor]] distingue los tres dolores sintetizados y los límites del hallazgo. Se anuncian pitches de cinco minutos y Drive para el capitán; preguntas, horarios de entrega y organización del jurado siguen parcialmente pendientes en [[Consultas para la organizacion]]. Es contexto documental, sin cambios de software ni validación nueva de la aplicación.
+
 ## Nuestra misión
+
+Para consultar la charla como material de trabajo, usar [[Hallazgos de la charla para el Reto 1]]; enlaza el texto completo y concentra las respuestas de inventario, entregas consolidadas, peso/volumen y pedidos imprevistos. El número de días de anticipación y la regla empresarial para priorizar ante un cierre vial siguen sin respuesta concreta.
 
 Construir una plataforma que ayude a una empresa de limpieza a **reabastecer antes de que falten insumos, reducir el costo de transporte y demostrar cada transferencia desde bodega hasta recepción**.
 

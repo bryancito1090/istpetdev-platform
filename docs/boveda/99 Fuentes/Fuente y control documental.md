@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [istpetdev, documentacion]
 ---
 
@@ -621,3 +621,72 @@ Fuente: requerimiento operativo para el inicio de las jornadas del Hackathon Exp
 
 Verificación documental: **89 notas Markdown**, **951 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
 
+## 16-oct-2026 — Ficha y notas de participante de Bryan Baño
+
+Fuente: inicio de actividades de los integrantes en `NotasEvento`. Se incorpora la ficha personal de Bryan (eliminada después por su instrucción expresa) con los datos de contacto, rol en la escena de la demo (Gerencia Web y coordinación general), equipamiento técnico, registro de mentorías y bitácora de trabajo para las jornadas.
+
+Verificación documental: **90 notas Markdown**, **959 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Registro colaborativo de notas del evento
+
+Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de la entonces existente ficha personal de Bryan, eliminada posteriormente por su instrucción expresa. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
+
+Verificación documental: **92 notas Markdown**, **980 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Primeras observaciones orales del evento
+
+Fuente: dictado de Joseph Baño durante la jornada. Se registran por separado [[2026-10-16-1102-jb-agenda-entregas-y-pitch]], [[2026-10-16-1102-jb-dolores-del-servicio-limpieza]], [[2026-10-16-1102-jb-bodega-inventario-y-rutas]] y [[2026-10-16-1102-jb-personal-especializado-y-emergencias]]. Son relatos de lo oído, no actas oficiales ni entrevistas con consentimiento registrado. Los avisos de horario, Drive y jurados se trasladan como confirmaciones pendientes a [[Consultas para la organizacion]] y al `task.md` del spec 006. Las reglas del manual permanecen vigentes hasta recibir instrucciones comprobables de la organización.
+
+## 16-oct-2026 — Charla del sector y anuncios de organización (issue #184)
+
+Fuente: transcripción compartida por Bryan, registrada en [[2026-10-16-1109-bb-charla-limpieza-logistica|nota de la charla]]. Se conservan extractos, ejemplos empresariales y pasajes dudosos; se distingue el testimonio de la síntesis de tres dolores: aplicación/dosificación, consumo por área y abastecimiento/distribución. No se presenta como entrevista individual consentida, medición, regla técnica de dilución ni validación de la plataforma.
+
+[[Historia y propuesta de valor]], [[Contexto maestro]] y el README enlazan el nuevo contexto. [[Consultas para la organizacion]], [[Hechos canonicos]], [[Evaluacion y entregables]], [[Cronograma oficial]], [[Guion del pitch]] y la plantilla de preparación reciben las precisiones: turno oral de cinco minutos con meta interna 4:40, canal Drive para el capitán y pendientes sobre preguntas, horarios y paneles del jurado. Se conserva el manual y se registran contradicciones; no se alteran pesos, contratos, baselines ni umbrales del motor. Sin ensayo, subida de materiales, despliegue ni cambio de software.
+
+Se integraron los apuntes de Joseph publicados simultáneamente en el PR #181, conservando sus archivos y el seguimiento del spec 006. Se resolvieron los conflictos de hechos canónicos, consultas y este registro: se enlazan ambas fuentes del jurado y se preserva el posible corte de las 13:00 de Joseph junto con los anuncios de la transcripción aportada por Bryan.
+
+Verificación documental tras la integración: **98 notas Markdown**, **1034 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes. Los nueve enlaces Markdown nuevos a las fuentes resuelven y `git diff --check` no reporta errores.
+
+## 16-oct-2026 — Agenda general oficial y matriz de mentorías (issue #188)
+
+Fuente: documento oficial de la organización del Hackathon Expo Clean Ecuador 2026 distribuido a los equipos participantes, registrado en [[2026-10-16-1126-bb-agenda-general-y-mentorias]]. Se incorpora la Agenda General completa para las jornadas de viernes 16 y sábado 17 de octubre, y la matriz oficial de mentorías técnicas para el Reto 1 (Optimización y trazabilidad logística del abastecimiento — 14 equipos).
+
+[[Cronograma oficial]], [[Registro de mentorias]], [[Consultas para la organizacion]] y [[Hechos canonicos]] incorporan las actualizaciones: confirmación de IstpetDev en Reto 1 asignado al mentor Mauro Zurita (16:15–17:00 en supply chain y trazabilidad); resolución de la contradicción sobre cortes de entrega (checkpoint de avances el viernes 16 a las 18:30–19:00 y entrega de hitos el sábado 17 de 16:00 a 16:15 con Mónica Sevilla y William Chamorro); e identificación de conferencias magistrales programadas. No altera contratos, bases de datos ni software.
+
+
+## 16-oct-2026 — Transcripción completa y hallazgos del Reto 1 (issue #189)
+
+Fuente: revisión solicitada por Bryan al reiterar la charla y pedir eliminar su ficha personal. La incorporación del PR #186 conservaba extractos y síntesis; se completa con [[Charla del sector limpieza - transcripcion recibida]], que guarda el texto recibido íntegro de la charla, con los nombres de terceros reservados y sin corregir errores de transcripción. No es un cotejo contra audio.
+
+[[Hallazgos de la charla para el Reto 1]] es el documento de consulta fuera de NotasEvento: preguntas y respuestas, tres operaciones (prestador/comercializadora/fabricante), inventario fraccionado, promociones, pedidos imprevistos, rutas consolidadas y ejemplos de peso/volumen/economía de transporte. Hace explícito que no se respondieron días de anticipación ni política de prioridad ante cierre vial; distingue la agrupación de tres dolores de una enumeración literal del expositor.
+
+Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inventario/rutas. Por instrucción expresa de Bryan se elimina su ficha personal de NotasEvento y se retiran las referencias activas; la charla y sus fuentes permanecen. Se conservan los registros históricos de su alta y limpieza, con referencias en texto. No cambia software, contrato, baseline, umbral ni estado de implementación; no se despliega.
+
+Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
+
+## 16-oct-2026 — Agenda oficial en el plan, entregable 2 e ideas del evento (PR #192)
+
+Fuente: archivo oficial `areas-menotres.xlsx` (hojas «AGENDA DE MENTORIAS», «AGENDA GENERAL VIERNES 16» y «SABADO 17»), cotejado con [[Cronograma oficial]]: las agendas coinciden. Se agrega la convocatoria a conferencias (IstpetDev no está convocado a cuatro conferencias; esos bloques quedan para ensayar) y los hitos del equipo.
+
+Se actualizan los horarios del plan, que seguían el manual: «Días del evento» de [[Definiciones de producto y plan hasta el pitch]] (tabla vigente según la agenda oficial; la del 12-oct queda como antecedente), [[Plan de ejecucion]], [[Registro de mentorias]] y el spec 006 (validación del 17-oct de 11:00–12:30 a 11:30–13:15; congelamiento del código a las 11:30). Nuevas notas: [[Entregable Solucion y propuesta de valor]] (entregable oficial n.º 2, con PDF de una página en el spec 006) y [[Ampliacion de alcance - ideas del evento]]. Los issues #193–#201 ordenan el trabajo del evento con semáforo de prioridad. Redactado por Claude Code (Opus 5.5) a pedido de Joseph Baño; sin cambios de software.
+
+## 16-oct-2026 — Consultas de abastecimiento de solo lectura para planificación y agente (issue #194)
+
+Fuente: implementación y verificación del issue #194 siguiendo el [plan de consultas de abastecimiento](../../specs/003-agente-logistico/plan-194-consultas-abastecimiento.md) y el seguimiento en [task.md](../../specs/003-agente-logistico/task.md). Se agrega `LogisticsQueriesController` bajo `/api/v1/logistics` (`GET /stock`, `POST /sourcing`, `GET /vehicles/available`) sin modificar `RoutePlansController` (#201), reutilizando `SourcingService` (con descuento de `WarehouseSafetyStockPct` una sola vez por bodega y producto) y `VehicleMatcher` (con ventana diaria en la zona horaria operativa de la organización y tarifa de respaldo).
+
+Se documentan los contratos, ejemplos, unidades, reglas de cálculo, códigos de error, RBAC (`Roles.Planning` y `Roles.Automatizacion` con scope `istpetdev-api/automation`) y límite de frescura sin reservas en [[Contratos API y eventos]]. La evidencia de pruebas locales en contenedor PostGIS descartable (`8/8` en `LogisticsQueriesTests` y `528/528` en la suite completa de backend) se registra en [2026-10-16-194-consultas-abastecimiento.md](../../specs/003-agente-logistico/evidencia/2026-10-16-194-consultas-abastecimiento.md). No ejecuta workflows de n8n (#195/#196) ni despliegues.
+
+Verificación documental: **105 notas Markdown**, **1113 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.
+
+Revisión final de #194 por Codex: se unificó la carga de pedidos para respetar
+el remanente de #199 también en la consulta nueva y se corrigió el contrato
+contra los DTOs reales. La regresión de cantidades parciales/completas falla
+antes y pasa después de la corrección. La revisión final pasa 560/560 pruebas
+locales, npm check/auditoría y bóveda (105 notas, 1116 enlaces, cero errores).
+CI y cierre remoto se acreditan en la evidencia y el PR #215.
+
+## 16-oct-2026 — Hora límite para puntos críticos en el planificador (issue #193)
+
+Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-25 y la tarea T16. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
+
+Verificación documental (tras integrar develop con #197, #201 y #192): **105 notas Markdown**, **1115 enlaces internos resueltos**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.

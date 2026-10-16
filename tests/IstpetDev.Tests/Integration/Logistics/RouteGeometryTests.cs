@@ -102,9 +102,43 @@ public class RouteGeometryTests(PostgisContainer postgres) : IClassFixture<Postg
         Assert.Equal(5, result.Coordinates.Count);
     }
 
+    // 16-oct: el OSRM público saturado agotaba el tiempo y la ruta quedaba en rectas.
+    [Fact]
+    public async Task A_transient_osrm_failure_is_retried_and_approximate_lines_are_not_cached()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase(), overrides: NoOsrm);
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var planId = await ProposeFirstPlanAsync(planner);
+        var options = Options.Create(new LogisticsOptions { Osrm = new OsrmOptions { RouteGeometryUrl = "https://osrm.test" } });
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+
+        // 503 y luego 200: el reintento consigue el trazado por calles.
+        var flaky = new FakeOsrm { FailFirst = 1 };
+        var retried = await new RouteGeometryService(db, new HttpClient(flaky), options, new RouteGeometryCache(),
+            NullLogger<RouteGeometryService>.Instance).GetAsync(planId);
+        Assert.Equal("osrm", retried!.Source);
+        Assert.Equal(2, flaky.Calls);
+
+        // Si los dos intentos fallan quedan rectas, pero no se guardan: la siguiente consulta vuelve a OSRM.
+        var down = new FakeOsrm { FailFirst = 2 };
+        var service = new RouteGeometryService(db, new HttpClient(down), options, new RouteGeometryCache(),
+            NullLogger<RouteGeometryService>.Instance);
+        Assert.Equal("approximate", (await service.GetAsync(planId))!.Source);
+        Assert.Equal("osrm", (await service.GetAsync(planId))!.Source);
+        Assert.Equal(3, down.Calls);
+
+        // Un 400 (petición inválida) no se reintenta.
+        var invalid = new FakeOsrm { Status = HttpStatusCode.BadRequest };
+        await new RouteGeometryService(db, new HttpClient(invalid), options, new RouteGeometryCache(),
+            NullLogger<RouteGeometryService>.Instance).GetAsync(planId);
+        Assert.Equal(1, invalid.Calls);
+    }
+
     private sealed class FakeOsrm : HttpMessageHandler
     {
         public HttpStatusCode Status { get; init; } = HttpStatusCode.OK;
+        public int FailFirst { get; init; } // las primeras N respuestas son 503
         public int Calls { get; private set; }
         public string LastUrl { get; private set; } = "";
         public string UserAgent { get; private set; } = "";
@@ -112,6 +146,7 @@ public class RouteGeometryTests(PostgisContainer postgres) : IClassFixture<Postg
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Calls++;
+            if (Calls <= FailFirst) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
             LastUrl = request.RequestUri!.ToString();
             UserAgent = request.Headers.UserAgent.ToString();
             const string body = """
