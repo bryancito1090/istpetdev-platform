@@ -62,6 +62,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Paleta Oficial Expo Clean Ecuador 2026 Refinada (Azul Eléctrico, Cyan, Menta)
+        expo: {
+          blue: '#0066FF',
+          blueDark: '#0052FF',
+          blueHover: '#0047E0',
+          cyan: '#00C2FF',
+          cyanLight: '#00E5FF',
+          cyanDeep: '#00A7C4',
+          mint: '#00E5A3',
+          mintLight: '#00F5A0',
+          mintDark: '#10B981',
+          dark: '#0A1128',
+          navy: '#061224',
+          surface: '#F8FAFC',
+        },
         // Paleta Oficial Expo Clean Ecuador 2026 (Ref: 03 Arquitectura/Sistema de diseno y colores.md)
         primary: cleanCyan,
         'clean-cyan': cleanCyan,
@@ -78,16 +93,16 @@ module.exports = {
         },
         // Compatibilidad con temas derivados hacia tokens oficiales de marca
         stripe: {
-          indigo: '#00A7C4',      // Mapeado a Clean Cyan oficial
-          indigoHover: '#008CA5', // Mapeado a Clean Cyan 600
-          hero: '#2D3748',        // Mapeado a Charcoal Slate oficial
-          heading: '#2D3748',     // Mapeado a Charcoal Slate oficial
+          indigo: '#0066FF',      // Mapeado a Azul Eléctrico Expo Clean
+          indigoHover: '#0052FF', // Mapeado a Azul Hover
+          hero: '#0A1128',        // Mapeado a Dark Navy
+          heading: '#0A1128',     // Mapeado a Dark Navy
           muted: '#64748B',       // Mapeado a Charcoal 500
-          dark: '#1E293B',        // Mapeado a Charcoal 900
+          dark: '#061224',        // Mapeado a Midnight Navy
         }
       },
       fontFamily: {
-        sans: ['Inter', '"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', '"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       },
       boxShadow: {

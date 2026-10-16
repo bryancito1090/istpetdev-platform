@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <!-- Desenfoque difuso ultra-amplio para transiciones suaves y sedosas -->
+    <filter id="softRibbonBlur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="140"/>
+    </filter>
+
+    <!-- Gradiente Cinta Derecha: Tonos sutiles difuminados -->
+    <linearGradient id="rightRibbonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066FF" stop-opacity="0.38"/>
+      <stop offset="36%" stop-color="#00C2FF" stop-opacity="0.32"/>
+      <stop offset="70%" stop-color="#00E5A3" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00F5A0" stop-opacity="0.22"/>
+    </linearGradient>
+
+    <!-- Gradiente Cinta Izquierda: Azul suave y Cyan difuminado -->
+    <linearGradient id="leftRibbonGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0052D9" stop-opacity="0.28"/>
+      <stop offset="45%" stop-color="#0066FF" stop-opacity="0.32"/>
+      <stop offset="85%" stop-color="#00C2FF" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#2DD4BF" stop-opacity="0.20"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo base blanco puro -->
+  <rect width="1920" height="1080" fill="#FFFFFF"/>
+
+  <!-- ================================================================= -->
+  <!-- 1. CINTA DIAGONAL IZQUIERDA (Atenuada y ultra-difuminada)         -->
+  <!-- ================================================================= -->
+  <g filter="url(#softRibbonBlur)">
+    <rect x="-300" y="260" width="520" height="1050" rx="180"
+          transform="rotate(-24 -50 780)"
+          fill="url(#leftRibbonGrad)"/>
+    <!-- Bruma ambiental en esquina inferior -->
+    <circle cx="60" cy="980" r="320" fill="#00C2FF" opacity="0.18"/>
+  </g>
+
+  <!-- ================================================================= -->
+  <!-- 2. CINTA DIAGONAL DERECHA (Atenuada y ultra-difuminada)           -->
+  <!-- ================================================================= -->
+  <g filter="url(#softRibbonBlur)">
+    <!-- Franja diagonal principal con opacidad suave -->
+    <rect x="1440" y="-160" width="480" height="1260" rx="180"
+          transform="rotate(-24 1680 470)"
+          fill="url(#rightRibbonGrad)"/>
+    <!-- Bruma ambiental en esquina superior derecha -->
+    <circle cx="1750" cy="160" r="340" fill="#0066FF" opacity="0.16"/>
+    <!-- Bruma ambiental en esquina inferior derecha -->
+    <circle cx="1820" cy="800" r="320" fill="#00E5A3" opacity="0.18"/>
+  </g>
+
+</svg>

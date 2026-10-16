@@ -30,8 +30,10 @@ import { ButtonComponent, CardComponent } from '@shared/ui';
               <ui-button variant="primary" [fullWidth]="true" (buttonClick)="session.login()">Reintentar</ui-button>
             }
             @default {
-              <ui-button variant="primary" size="lg" [fullWidth]="true" (buttonClick)="session.login()">Iniciar sesión</ui-button>
-              <p class="text-xs text-slate-500 mt-3">Te llevaremos a la página segura de inicio de sesión. Allí también puedes recuperar tu contraseña.</p>
+              <div class="py-3 space-y-3">
+                <div class="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600"></div>
+                <p class="text-sm font-medium text-slate-700">Redirigiendo al portal seguro de autenticación...</p>
+              </div>
             }
           }
         </ui-card>
@@ -47,11 +49,13 @@ export class LoginPage implements OnInit {
 
   ngOnInit(): void {
     if (this.session.status() === 'authenticated') {
-      void this.router.navigateByUrl('/dashboard');
+      void this.router.navigateByUrl('/inicio');
       return;
     }
-    // Una visita a una ruta privada vuelve a Cognito conservando solo un destino interno validado.
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    if (this.session.status() === 'anonymous' && returnUrl) this.session.login(returnUrl);
+    // Si el usuario es anónimo, se le redirige inmediatamente a la pantalla de Cognito sin paso intermedio.
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/inicio';
+    if (this.session.status() === 'anonymous') {
+      this.session.login(returnUrl);
+    }
   }
 }

@@ -16,10 +16,13 @@ export const webOidcConfig: PassedInitialConfig = {
     ignoreNonceAfterRefresh: true,
     disableRefreshTokenOfflineAccessScopeWarning: true,
     logLevel: LogLevel.Warn,
+    customParamsAuthRequest: {
+      lang: 'es'
+    },
     authWellknownEndpoints: {
       issuer: environment.oidc.authority,
       tokenEndpoint: `${environment.oidc.cognitoDomain}/oauth2/token`,
-      authorizationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/authorize`,
+      authorizationEndpoint: `${environment.oidc.cognitoDomain}/oauth2/authorize?lang=es`,
       jwksUri: `${environment.oidc.authority}/.well-known/jwks.json`,
       userInfoEndpoint: `${environment.oidc.cognitoDomain}/oauth2/userInfo`,
       endSessionEndpoint: `${environment.oidc.cognitoDomain}/logout`,

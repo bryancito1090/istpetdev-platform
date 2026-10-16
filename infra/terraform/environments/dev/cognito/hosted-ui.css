@@ -1,12 +1,78 @@
-.background-customizable { background-color: #F8FAFC; }
-.banner-customizable { background-color: #00A7C4; padding: 16px 0; }
-.logo-customizable { max-width: 60%; max-height: 30%; }
-.label-customizable { color: #2D3748; font-weight: 600; }
-.textDescription-customizable { color: #2D3748; }
-.legalText-customizable { color: #4A5568; }
-.inputField-customizable { border-color: #00A7C4; color: #2D3748; }
-.inputField-customizable:focus { border-color: #EA601F; }
-.submitButton-customizable { background-color: #EA601F; border-color: #EA601F; font-weight: 700; }
-.submitButton-customizable:hover { background-color: #C94F17; border-color: #C94F17; }
-.redirect-customizable { color: #00A7C4; }
-.errorMessage-customizable { color: #B42318; border-color: #B42318; background-color: #FEF3F2; }
+.background-customizable {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 0 0 100vmax #F0F9FF, 0 24px 48px -12px rgba(0, 102, 255, 0.16), 0 0 0 1px rgba(0, 194, 255, 0.2);
+  border: 1px solid #E2E8F0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+.banner-customizable {
+  background: linear-gradient(135deg, rgba(0, 102, 255, 0.06) 0%, rgba(0, 194, 255, 0.10) 50%, rgba(0, 229, 163, 0.06) 100%);
+  padding: 28px 16px 16px 16px;
+  text-align: center;
+  border-bottom: 1px solid #E2E8F0;
+}
+.logo-customizable {
+  max-width: 220px;
+  max-height: 52px;
+  display: block;
+  margin: 0 auto;
+}
+.label-customizable {
+  color: #0A2540;
+  font-weight: 600;
+  font-size: 13px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+.textDescription-customizable {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.legalText-customizable {
+  color: #64748B;
+  font-size: 12px;
+}
+.inputField-customizable {
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  color: #0A2540;
+  font-size: 14px;
+  padding: 11px 14px;
+  background-color: #F8FAFC;
+}
+.inputField-customizable:focus {
+  border-color: #0066FF;
+  background-color: #FFFFFF;
+  outline: none;
+}
+.submitButton-customizable {
+  background-color: #0066FF;
+  border: 1px solid #0052D9;
+  border-radius: 9999px;
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 24px;
+  margin-top: 18px;
+  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.35);
+}
+.submitButton-customizable:hover {
+  background-color: #0052D9;
+  border-color: #003EB3;
+}
+.redirect-customizable {
+  color: #0066FF;
+  font-size: 13px;
+  font-weight: 500;
+}
+.errorMessage-customizable {
+  color: #991B1B;
+  background-color: #FEF2F2;
+  border: 1px solid #F87171;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
