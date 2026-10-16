@@ -663,3 +663,15 @@ Fuente: revisión solicitada por Bryan al reiterar la charla y pedir eliminar su
 Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inventario/rutas. Por instrucción expresa de Bryan se elimina su ficha personal de NotasEvento y se retiran las referencias activas; la charla y sus fuentes permanecen. Se conservan los registros históricos de su alta y limpieza, con referencias en texto. No cambia software, contrato, baseline, umbral ni estado de implementación; no se despliega.
 
 Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
+
+## 16-oct-2026 — Herramientas de abastecimiento del agente (issue #195)
+
+Fuente: implementación en la rama `feature/195-herramientas-n8n-abastecimiento`
+(checkout Orca aislado desde `develop` `1dcfb51`), plan y evidencia del issue.
+Se actualizan [[n8n e IA]] con las ocho herramientas del prompt v2, los guards de
+allowlist/deadline y la evidencia determinista en `AgentRun`, y
+[[Contratos API y eventos]] con la ampliación de `AgentRunView`. Los contratos de
+`/api/v1/logistics/*` corresponden a #194 y se conservan íntegros en su PR. Los
+resultados históricos de cinco herramientas y prompt v1 permanecen como
+históricos; no se reescriben. Verificación documental y estado real por separado
+en la evidencia del issue; este registro no acredita por sí solo merge ni ensayo.

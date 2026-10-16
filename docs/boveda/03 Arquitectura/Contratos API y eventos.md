@@ -182,3 +182,28 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; con cualquier `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
+
+## Evidencia determinista del agente y herramientas de abastecimiento (#195, en revisión)
+
+El issue #195 agrega tres herramientas `toolWorkflow` a `vigia`/`incidente`
+(prompt v2): `find_stock`, `plan_sourcing` y `vehicle_availability`. Son
+consumidores de las consultas de solo lectura `/api/v1/logistics/*` de #194; su
+contrato final se rige por el PR de #194 y no se duplica aquí. Los wrappers
+validan UUIDs, listas acotadas a 100 únicas y campos de allowlist, y envían el
+`X-Agent-Run-Id` firmado en los ocho tools.
+
+`GET /api/v1/agent/runs/{id}` (y `GET /api/v1/agent/runs?limit=`) amplía
+`AgentDecisionView` con evidencia derivada por servidor del plan correlacionado,
+sin aceptar valores del callback LLM:
+
+| Campo nuevo | Origen determinista | Uso |
+|---|---|---|
+| `originWarehouseCode` / `originWarehouseName` | `RoutePlan.VehicleId → Vehicle.DepotLocationId → Location` (bodega base real) | Acredita la bodega de origen de la propuesta |
+| `orderedStops: [{ sequence, pointCode }]` | `RouteStop` del plan propuesto, ordenado por `SequenceNumber` (en propuestas de fallback, del `ProposalJson.route` persistido) | Acredita la secuencia real de visita, distinta de la prioridad de asignación del motor |
+| `vehicleCode` (ya existía) | Plan/`ProposalJson` → `Vehicle.Code` | Acredita el vehículo |
+
+No se expone el `summary` del LLM ni respuestas HTTP completas de herramientas;
+la traza de llamadas sigue registrando método, ruta, código y milisegundos.
+Compatible hacia atrás: los campos nuevos son opcionales y las decisiones sin
+plan correlacionado los omiten. Ensayo local y de n8n real en
+`docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.

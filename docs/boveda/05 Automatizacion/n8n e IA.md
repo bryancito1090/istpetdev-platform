@@ -209,3 +209,42 @@ no cambia la instancia productiva. Resultados en
 
 El formato de Error Trigger y el vínculo por configuración de workflow siguen
 la [documentación oficial de n8n](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/).
+
+## Herramientas de abastecimiento del agente — issue #195, 16 de octubre de 2026
+
+El agente pasa de cinco a **ocho herramientas** `toolWorkflow` en `vigia` e
+`incidente` (prompt **v2** en `automation/n8n/prompts/agente-logistico-v2.md`):
+se suman `find_stock`, `plan_sourcing` y `vehicle_availability`, que consumen
+las consultas de solo lectura de #194 bajo `/api/v1/logistics`. El LLM sigue
+eligiendo herramientas y explicando; cantidades, asignaciones, prioridades y
+rutas las calcula el motor (ADR-22).
+
+Recorrido de Watch en el prompt: `get_risks` → `find_stock` por producto →
+`plan_sourcing` con puntos/pedidos reales → `vehicle_availability` una sola vez
+→ `propose_routes` → explicación. Incident conserva `get_incident_impact` y
+`replan` por ruta afectada, y usa las consultas nuevas solo cuando evalúa
+reposición o sustitución; no reabastece carga reservada/en tránsito.
+
+Reglas de seguridad de los wrappers (las ocho herramientas):
+
+- `apiBaseUrl` desde `$env.ISTPETDEV_API_BASE_URL`; `runId`, `kind`,
+  `incidentId` y `deadlineUtc` siempre del payload firmado. Los argumentos del
+  modelo pasan por allowlist por herramienta (UUIDs, listas acotadas a 100 y
+  deduplicadas); no se reenvía el objeto arbitrario.
+- Misma credencial OAuth2 M2M, cabecera `X-Agent-Run-Id` del contexto firmado y
+  HMAC, ACK 202, registro de ejecución y Error Trigger sin cambios.
+- Timeout HTTP dinámico `min(15000, restante − 1200)` con mínimo 1000 ms en las
+  ocho herramientas y margen para el callback; se conserva el guard de 3200 ms
+  restantes y la omisión con motivo (`skipped`) cuando la llamada no cabe.
+- `vehicle_availability` no acepta fecha: el contexto firmado no autoriza otro
+  día, así que consulta el reloj operativo del servidor. La extensión opcional
+  `criticalDeadline` de #193 queda fuera mientras ese campo no exista en
+  `PlanRequest` publicado.
+
+Evidencia determinista en `GET /api/v1/agent/runs/{id}`: por decisión se
+exponen `originWarehouseCode`/`originWarehouseName` (bodega base real del
+vehículo, `Vehicle.DepotLocationId`), `vehicleCode` y `orderedStops` (secuencia
+real de paradas del plan propuesto), derivados por servidor del plan
+correlacionado; nunca de texto libre del LLM. La secuencia final de visita se
+distingue de la prioridad de asignación del motor. Detalle de contratos y
+evidencia en `docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.
