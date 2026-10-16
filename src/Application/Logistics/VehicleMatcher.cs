@@ -62,7 +62,15 @@ public sealed record RouteStopCandidate(
     decimal DeltaVolume,
     TimeOnly WindowStart,
     TimeOnly WindowEnd,
-    int ServiceMinutes
+    int ServiceMinutes,
+    IReadOnlyList<StopLoadDto>? Loads = null
+);
+
+public sealed record StopLoadDto(
+    Guid ProductId,
+    string Sku,
+    decimal Quantity,
+    string BaseUnit
 );
 
 public sealed class VehicleMatcher : IVehicleMatcher

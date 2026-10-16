@@ -44,6 +44,15 @@
 5. `npm run audit:check`
    - Resultado: `PASS` (`Auditoría superada con éxito. Hallazgos cubiertos por excepciones aprobadas vigentes (7 avisos autorizados).`)
 6. `python3 docs/boveda/.github/scripts/check_vault.py`
-   - Resultado: `Resumen: 102 notas Markdown, 1092 enlaces internos, 0 errores, 4 avisos.`
+   - Resultado: `Resumen: 105 notas Markdown, 1113 enlaces internos, 0 errores, 4 avisos.`
 7. `git diff --check`
    - Resultado: limpio (sin salida, código `0`).
+
+## 4. PR, integración con `develop` y resolución de conflictos
+
+- **PR:** [#215](https://github.com/bryancito1090/istpetdev-platform/pull/215) (`feature/194-consultas-abastecimiento-agente` → `develop`, etiqueta `type::feature`).
+- **Primera corrida de CI remoto (`5af0eb3`):** `7/7` checks en `SUCCESS` (run [`38944148815`](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38944148815): `Pruebas Backend (Integración)`, `Pruebas Backend (Unit y E2E)`, `QA Backend (.NET 8)`, `QA Frontend (Angular 22)`, `Ensayo de respaldo y restauración`, `check-vault` y `Validar rama de origen`).
+- **Conflictos resueltos contra avances concurrentes en `origin/develop`:**
+  1. `origin/develop` (`621fdc0`, PR #206 / issue #197): conflicto aditivo al final de `docs/boveda/03 Arquitectura/Contratos API y eventos.md`. Se conservaron íntegras ambas secciones (`#197` y `#194`).
+  2. `origin/develop` (`5dc3470`, PRs #211 y #214 / issues #196 y #201): auto-merge limpio en `src/Application/Logistics/VehicleMatcher.cs` (conservando `StopLoadDto` y `Loads` de #196/#201 junto con `GetAvailableVehiclesAsync` de #194) y resolución aditiva al final de `docs/boveda/99 Fuentes/Fuente y control documental.md` (conservando las entradas de PR #192 e issue #194). `src/Api/Controllers/RoutePlansController.cs` mantiene únicamente los cambios de `origin/develop` (#197/#201), sin modificaciones propias de #194.
+- **Verificación local tras integrar `5dc3470`:** `LogisticsQueriesTests`, `RouteSuggestPriorityTests`, `DeliveryStopSequencerTests` y `OrderBasedRoutingValidationTests` en verde (`21/21 Passed`).

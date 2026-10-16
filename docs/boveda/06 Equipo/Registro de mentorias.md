@@ -35,6 +35,7 @@ Fortalecer las propuestas de los equipos del Reto 1 mediante la aplicación de c
 1. Contrastar el modelo de reposición por stock de seguridad y consumo diario frente a prácticas habituales de la industria.
 2. Validar el mecanismo de trazabilidad con QR offline y custodia de entrega en puntos de servicio.
 3. Consultar sobre factores de distorsión habituales en la cadena de distribución de químicos de limpieza (presentaciones, consolidación, tiempos de entrega de proveedores).
+4. Prioridad de entrega: qué va primero cuando no alcanza el camión y si los hospitales tienen hora límite de recepción. Preguntas en [[Ampliacion de alcance - ideas del evento]].
 
 Copiar [[Plantilla mentoria]] para cada interacción real. Registrar cargo/organización si fue compartido y resulta pertinente, evitando datos personales innecesarios.
 
@@ -55,7 +56,7 @@ Estas preguntas y las de [[Modelo de negocio y piloto]] quedan de reserva para m
 
 ## Complemento propuesto — guion de feria del spec 006, 12-oct-2026
 
-**Uso:** dos integrantes entrevistan expositores el 16-oct en las pausas 11:00–11:30 y 13:00–14:00; regresan con prototipo el 17-oct de 11:00–12:30. Como cautela del equipo, no abordan JIMCORPSERVI/FEDELIMP ni LACIF. La conversación dura unos cinco minutos; se ofrece terminar antes. Un expositor no es automáticamente mentor ni jurado, y una opinión no es una regla oficial.
+**Uso:** dos integrantes entrevistan expositores el 16-oct en las pausas 11:00–11:30 y 13:00–14:00; regresan con prototipo el 17-oct de 11:30–13:15 (Validación integral de la agenda oficial). Como cautela del equipo, no abordan JIMCORPSERVI/FEDELIMP ni LACIF. La conversación dura unos cinco minutos; se ofrece terminar antes. Un expositor no es automáticamente mentor ni jurado, y una opinión no es una regla oficial.
 
 **Apertura (30 s):** «Estamos preparando una propuesta para anticipar faltantes de insumos en empresas de limpieza. ¿Podemos tomar notas anónimas de una conversación breve? Puede omitir preguntas o parar. Si alguna frase sirve para el pitch, le pediremos permiso aparte». Si no consiente, agradecer y no registrar respuesta.
 

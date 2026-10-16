@@ -664,10 +664,16 @@ Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inv
 
 Verificación documental: **101 notas Markdown**, **1077 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes. Se revisaron los enlaces Markdown de entrada/consulta, la presencia de los pasajes finales y la ausencia de enlaces a la ficha eliminada. `npm run check`, `npm run audit:check` y `git diff --check` completados; la auditoría conserva siete avisos cubiertos por excepciones vigentes.
 
+## 16-oct-2026 — Agenda oficial en el plan, entregable 2 e ideas del evento (PR #192)
+
+Fuente: archivo oficial `areas-menotres.xlsx` (hojas «AGENDA DE MENTORIAS», «AGENDA GENERAL VIERNES 16» y «SABADO 17»), cotejado con [[Cronograma oficial]]: las agendas coinciden. Se agrega la convocatoria a conferencias (IstpetDev no está convocado a cuatro conferencias; esos bloques quedan para ensayar) y los hitos del equipo.
+
+Se actualizan los horarios del plan, que seguían el manual: «Días del evento» de [[Definiciones de producto y plan hasta el pitch]] (tabla vigente según la agenda oficial; la del 12-oct queda como antecedente), [[Plan de ejecucion]], [[Registro de mentorias]] y el spec 006 (validación del 17-oct de 11:00–12:30 a 11:30–13:15; congelamiento del código a las 11:30). Nuevas notas: [[Entregable Solucion y propuesta de valor]] (entregable oficial n.º 2, con PDF de una página en el spec 006) y [[Ampliacion de alcance - ideas del evento]]. Los issues #193–#201 ordenan el trabajo del evento con semáforo de prioridad. Redactado por Claude Code (Opus 5.5) a pedido de Joseph Baño; sin cambios de software.
+
 ## 16-oct-2026 — Consultas de abastecimiento de solo lectura para planificación y agente (issue #194)
 
 Fuente: implementación y verificación del issue #194 siguiendo el [plan de consultas de abastecimiento](../../specs/003-agente-logistico/plan-194-consultas-abastecimiento.md) y el seguimiento en [task.md](../../specs/003-agente-logistico/task.md). Se agrega `LogisticsQueriesController` bajo `/api/v1/logistics` (`GET /stock`, `POST /sourcing`, `GET /vehicles/available`) sin modificar `RoutePlansController` (#201), reutilizando `SourcingService` (con descuento de `WarehouseSafetyStockPct` una sola vez por bodega y producto) y `VehicleMatcher` (con ventana diaria en la zona horaria operativa de la organización y tarifa de respaldo).
 
 Se documentan los contratos, ejemplos, unidades, reglas de cálculo, códigos de error, RBAC (`Roles.Planning` y `Roles.Automatizacion` con scope `istpetdev-api/automation`) y límite de frescura sin reservas en [[Contratos API y eventos]]. La evidencia de pruebas locales en contenedor PostGIS descartable (`8/8` en `LogisticsQueriesTests` y `528/528` en la suite completa de backend) se registra en [2026-10-16-194-consultas-abastecimiento.md](../../specs/003-agente-logistico/evidencia/2026-10-16-194-consultas-abastecimiento.md). No ejecuta workflows de n8n (#195/#196) ni despliegues.
 
-Verificación documental: **102 notas Markdown**, **1092 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.
+Verificación documental: **105 notas Markdown**, **1113 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.

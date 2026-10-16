@@ -781,7 +781,6 @@ productiva al ejecutar esta validación.
   de efectos logísticos con integración sobre demo-region/PostGIS descartable (`LogisticsQueriesTests` 8/8, suite backend 528/528, `npm run check`, `npm run audit:check`).
 - [x] Actualizar Contratos API y eventos, Fuente y control documental y registrar
   [evidencia real de pruebas y prelaunch](evidencia/2026-10-16-194-consultas-abastecimiento.md).
-- [ ] Publicar PR a develop, resolver conflictos, verificar CI/revisión e integrar
-  solo si cumple los criterios y las protecciones del repositorio.
+- [x] Publicar [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) a `develop`, resolver conflictos con `origin/develop` (`621fdc0` y `5dc3470` conservando `#197`, `#196` y `#201`), verificar CI (`7/7` verde en `5af0eb3` y revalidación sobre el merge de `5dc3470`) e integrar respetando las protecciones del repositorio.
 
-Estado de esta entrada: código, pruebas de integración (`8/8` en `LogisticsQueriesTests` y `528/528` en suite completa), `npm run check`, `npm run audit:check`, `check_vault.py` (`102` notas, `1092` enlaces, `0` errores) y documentación cerrados localmente en `feature/194-consultas-abastecimiento-agente`; pendiente publicación de PR a `develop`, verificación de CI remoto, revisión/aprobación e integración. No incluye despliegue ni #195/#196.
+Estado de esta entrada: código, pruebas de integración (`8/8` en `LogisticsQueriesTests`, `21/21` combinadas con `#197`/`#201` y `528/528` en suite previa), `npm run check`, `npm run audit:check`, `check_vault.py` (`105` notas, `1113` enlaces, `0` errores) y documentación cerrados; [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) publicado e integrado con `origin/develop` (`5dc3470`). No incluye despliegue ni #195/#196.

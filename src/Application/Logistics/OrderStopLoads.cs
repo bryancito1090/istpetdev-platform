@@ -37,10 +37,14 @@ public static class OrderStopLoads
         foreach (var stop in stops.Where(s => s.Kind != RouteStopKind.Pickup))
         {
             if (loadsBySeq.TryGetValue(stop.SequenceNumber, out var existing) && existing.Count > 0) continue;
-            var pointOrders = orders.Where(o => o.DestinationServicePointId == stop.ServicePointId).Select(o => o.Id).ToHashSet();
+            var pointOrders = orders.Where(o =>
+                (stop.ServicePointId != Guid.Empty && o.DestinationServicePointId == stop.ServicePointId) ||
+                (stop.LocationId.HasValue && o.DestinationLocationId == stop.LocationId)
+            ).Select(o => o.Id).ToHashSet();
+
             var loads = lines.Where(l => pointOrders.Contains(l.DeliveryOrderId))
                 .GroupBy(l => l.ProductId)
-                .Select(g => (ProductId: g.Key, Quantity: g.Sum(l => Math.Max(0m, l.RequestedQuantity - l.DeliveredQuantity))))
+                .Select(g => (ProductId: g.Key, Quantity: g.Sum(l => l.PlannedQuantity > 0 ? l.PlannedQuantity : Math.Max(0m, l.RequestedQuantity - l.DeliveredQuantity))))
                 .Where(x => x.Quantity > 0 && products.ContainsKey(x.ProductId))
                 .Select(x => new StopLoad(x.ProductId, products[x.ProductId].Sku, x.Quantity, products[x.ProductId].BaseUnit))
                 .ToList();
