@@ -37,6 +37,8 @@ tags: [arquitectura, contratos]
 | POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono |
 | GET /api/v1/jobs/{id}                        | Estado y resultado de trabajo           |
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
+| GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
+| PUT /api/v1/route-plans/{id}/driver          | Reasignar conductor de entregas pendientes (#160) |
 | POST /api/v1/deliveries/{id}/dispatch        | Registrar salida y custodia             |
 | POST /api/v1/deliveries/{id}/receipts        | Recepción por líneas, idempotente       |
 | POST /api/v1/receipts/{id}/evidence-uploads  | Obtener autorización de carga           |
