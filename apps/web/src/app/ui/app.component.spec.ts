@@ -8,12 +8,16 @@ import { ApiService } from '@shared/api';
 import { environment } from '@shared/config/environment';
 import { HeaderWidget } from '@widgets/header/header.widget';
 import { FooterWidget } from '@widgets/footer/footer.widget';
+import { SidebarWidget } from '@widgets/sidebar/sidebar.widget';
+import { AuthSession } from '@entities/session';
 import { AppComponent } from './app.component';
 
 @Component({ selector: 'widget-header', standalone: true, template: '' })
 class HeaderStub {}
 @Component({ selector: 'widget-footer', standalone: true, template: '' })
 class FooterStub {}
+@Component({ selector: 'widget-sidebar', standalone: true, template: '' })
+class SidebarStub {}
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -24,11 +28,24 @@ it('muestra el fallo de API en pantalla y retira el aviso al recuperar la consul
   vi.spyOn(console, 'error').mockImplementation(() => {});
   TestBed.configureTestingModule({
     imports: [AppComponent],
-    providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
+    providers: [
+      provideRouter([]),
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      {
+        provide: AuthSession,
+        useValue: {
+          status: () => 'anonymous',
+          role: () => null,
+          me: () => null,
+          logout: () => undefined
+        }
+      }
+    ]
   });
   TestBed.overrideComponent(AppComponent, {
-    remove: { imports: [HeaderWidget, FooterWidget] },
-    add: { imports: [HeaderStub, FooterStub] }
+    remove: { imports: [HeaderWidget, FooterWidget, SidebarWidget] },
+    add: { imports: [HeaderStub, FooterStub, SidebarStub] }
   });
   const fixture = TestBed.createComponent(AppComponent);
   const api = TestBed.inject(ApiService);

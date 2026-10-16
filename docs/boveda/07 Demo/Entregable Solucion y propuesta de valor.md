@@ -7,7 +7,7 @@ tags: [demo, entregable, solucion, propuesta-de-valor, reto-1]
 
 # Entregable Solucion y propuesta de valor
 
-Entregable oficial n.º 2, **Solución** (manual §9: «descripción y funcionamiento»), con la propuesta de valor del Anexo 5.6. Se trabaja en el bloque «Diseño» del 16-oct (14:00–14:30), se revisa en el Checkpoint de avances (16-oct, 18:30–19:00) y se entrega el 17-oct de 16:00 a 16:15 ([[Cronograma oficial]]). PDF de una página: `docs/specs/006-validacion-pitch-entrega/materiales/entregable-2-solucion.pdf`.
+Entregable oficial n.º 2, **Solución** (manual §9: «descripción y funcionamiento»), con la propuesta de valor del Anexo 5.6. Se trabaja en el bloque «Diseño» del 16-oct (14:00–14:30), se revisa en el Checkpoint de avances (16-oct, 18:30–19:00) y se entrega el 17-oct de 16:00 a 16:15 ([[Cronograma oficial]]). Documento formal de 5 páginas (Word editable y PDF) en `docs/specs/006-validacion-pitch-entrega/materiales/entregable-2/`: portada, diagrama del recorrido, paso a paso, capturas del sistema, diferenciadores, propuesta de valor y alcance. Se regenera con `generar.py`; las capturas van en `img/captura-1..4.png`. Esta nota es la fuente del texto.
 
 > [!warning] Borrador para revisión del equipo
 > Redactado por Claude Code (Opus 5.5) a pedido de Joseph Baño el 16-oct. Cada componente lleva su estado real. Lo marcado «en construcción» (issues #193–#196) no se presenta como funcionando hasta que esté en `develop` con prueba.
