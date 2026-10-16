@@ -1,6 +1,6 @@
 ---
 tipo: evidencia
-estado: verificado
+estado: validado
 actualizado: 2026-10-16
 tags: [rutas, prioridad, stock, costo, amp-01, amp-02, pitch, demo, issue-196]
 ---

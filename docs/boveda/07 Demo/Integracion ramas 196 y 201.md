@@ -1,6 +1,6 @@
-﻿---
+---
 tipo: registro-de-integracion
-estado: integrado-localmente
+estado: validado
 actualizado: 2026-10-16
 tags: [rutas, prioridad, stock, capacidad, issue-196, issue-201]
 ---
