@@ -308,3 +308,15 @@ importador: la API sigue calculando y decidiendo; n8n coordina y explica.
   DeepSeek): el LLM cayó y respondió la plantilla determinista con el dictamen
   íntegro; detalle en
   [evidencia #209](../../specs/003-agente-logistico/evidencia/2026-10-16-209-revision-dataset.md).
+
+## Actualización productiva de workflows — 16 de octubre de 2026
+
+Con la API ya liberada (#251, `438c2d6`) se sincronizó la instancia de Bryan con
+respaldo privado previo: `vigia` e `incidente` pasan a ocho herramientas con
+prompt v2, `revision-dataset` queda publicado y `error-agente` no cambia. El
+remapeo de credenciales debe cubrir los sub-workflows embebidos de cada
+herramienta, no solo los nodos de la capa superior: el primer Watch real cayó en
+`agent_error` por ese motivo y se corrigió antes de la verificación. Resultado:
+Watch `Completed` con `promptVersion v2` y las tres consultas nuevas 2xx; firmas
+y tokens inválidos rechazados con 401. Detalle y límites en
+[evidencia de sincronización](../../specs/003-agente-logistico/evidencia/2026-10-16-sincronizacion-productiva.md).

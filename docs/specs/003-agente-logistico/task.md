@@ -841,3 +841,17 @@ Estado: código, pruebas locales y ejecución real n8n completados; sin
 despliegue. La revisión en seco conserva la regla de oro de ADR-22: la API
 calcula los hechos y decide; n8n y el LLM solo explican y nunca completan
 coordenadas, cantidades ni códigos.
+
+## Actualización productiva de workflows — 16-oct-2026
+
+Release #251 (`develop → main`, merge `438c2d6`) con CD de producción en verde
+y sincronización de la instancia n8n de Bryan: `vigia` e `incidente` con 8
+herramientas y prompt v2, `revision-dataset` creado y publicado, `error-agente`
+sin cambios y Schedule apagado. Verificación: webhooks rechazan firmas/tokens
+inválidos (401) y Watch real `Completed` con `promptVersion v2`, traza con
+`/logistics/stock`, `/logistics/sourcing` y `/logistics/vehicles/available`, y
+6/6 decisiones explicadas por LLM (run `01a146dc-7748-7ecf-b5fb-890740270c7f`,
+ejecución n8n `297`). El primer Watch (ejecución `292`) cayó en `agent_error`
+por credenciales locales dentro de los sub-workflows embebidos; se corrigió el
+remapeo y se reaplicó antes de acreditar. Evidencia:
+[2026-10-16-sincronizacion-productiva](evidencia/2026-10-16-sincronizacion-productiva.md).
