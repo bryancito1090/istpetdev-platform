@@ -72,6 +72,23 @@ Reto 1: Optimización y trazabilidad logística del abastecimiento — 14 equipo
 - **Horario:** Viernes 16 de octubre, 16:15–17:00
 - **Seguimiento:** Registrar en [[Registro de mentorias]].
 
+### Conferencias y convocatoria de IstpetDev
+
+Fuente: hoja «AGENDA DE MENTORIAS» del archivo oficial `areas-menotres.xlsx` (compartido a los equipos el 16-oct, 11:46). Las hojas «AGENDA GENERAL VIERNES 16» y «SABADO 17» coinciden con las tablas de arriba.
+
+| Día y hora | Conferencia | Convocados | ¿IstpetDev? |
+|---|---|---|---|
+| Vie 16, 10:00–10:30 | Liderazgo Antifrágil (Hendrith Caripa) | Todos los equipos (51) | Sí |
+| Vie 16, 14:30–15:00 | Humanización del Servicio (María del Pilar Rodríguez) | Equipos del Reto 5 | No |
+| Vie 16, 17:00–18:00 | Global Smart Cleaning (Alexander Gotz Weiler) | Equipos de IA de varios retos | No |
+| Sáb 17, 10:00–10:30 | Pitch que convence (Hendrith Caripa) | Todos los equipos (51) | **Sí** |
+| Sáb 17, 11:00–11:30 | El futuro no avisa (María de Gonzalo) | Equipos de IA de varios retos | No |
+| Sáb 17, 15:00–16:00 | Tendencias de formulación (Catalina Saraus) | Equipos del Reto 4 | No |
+
+**Bloques libres para IstpetDev** (no convocado): vie 14:30–15:00 y 17:00–18:00; sáb 11:00–11:30 y 15:00–16:00. Uso propuesto: ensayos del pitch y, el sábado de 15:00 a 16:00, ensayo final y congelamiento a las 15:45.
+
+**Hitos de IstpetDev según la agenda oficial:** mentoría con Mauro Zurita (vie 16:15–17:00) → Checkpoint de avances (vie 18:30–19:00) → conferencia de pitch (sáb 10:00) → Validación integral con mentores (sáb 11:30–13:15) → **Entrega de hitos (sáb 16:00–16:15)** → Presentaciones finales (sáb 16:15–18:15). El archivo no indica una entrega a las 13:00 del viernes ni el canal y formato de entrega (O-06).
+
 ## Tablas del manual oficial (referencia base)
 
 ## Fases (transcrito de imagen, p. 6, sección 6)

@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-producto
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [producto, reto-1]
 ---
 
@@ -63,3 +63,7 @@ Bryan incorpora como dirección P0 roles/permisos administrables, plantillas y p
 ## Ajuste propuesto — 12 de octubre de 2026
 
 La sesión de definición propone recortar el alcance hasta el 17-oct (D3) y diferir la ampliación del 9 de octubre (RF-17/18/19) a P2 mediante ADR-21. El P0 se concentra en el recorrido que ve el jurado: riesgo → ruta → QR y custodia → recepción offline → simulador. Detalle, cortes y plan B en [[Definiciones de producto y plan hasta el pitch]]. Hasta que se confirmen los Deciders, esta sección es una propuesta y no reemplaza el texto anterior.
+
+## Ideas del evento — 16 de octubre de 2026
+
+Lluvia de ideas a partir de la charla del sector y de las notas del equipo, con esfuerzo, valor en demo y lectura del código de rutas: [[Ampliacion de alcance - ideas del evento]]. Es una propuesta; no amplía el alcance hasta que el equipo apruebe cada idea.
