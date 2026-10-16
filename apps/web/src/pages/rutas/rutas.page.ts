@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -1312,7 +1312,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
     }
   `
 })
-export class RutasPage implements OnInit {
+export class RutasPage implements OnInit, OnDestroy {
   private readonly apiService = inject(ApiService);
   readonly session = inject(AuthSession);
   readonly isAuditor = computed(() => {
@@ -1342,6 +1342,10 @@ export class RutasPage implements OnInit {
   readonly reassignDriverId = signal('');
   readonly routeLegendHasApproximate = computed(() => this.routeLegend().some(i => i.source === 'approximate'));
   private readonly geometries = new Map<string, RouteGeometryDto>();
+  // Las rutas que salieron en rectas (OSRM público saturado) se vuelven a pedir unas veces, cada vez más espaciadas.
+  private geometryRetries = 0;
+  private geometryRetryTimer: ReturnType<typeof setTimeout> | undefined;
+  static readonly GEOMETRY_RETRY_DELAYS_MS = [4000, 10000, 20000];
 
   // #164: Detalle de planificación por parada, producto y conductor
   readonly detailTab = signal<'paradas' | 'productos' | 'conductor'>('paradas');
@@ -1921,7 +1925,7 @@ export class RutasPage implements OnInit {
 
   /** Pide al backend el recorrido por calles de cada ruta vigente que aún no tenga. */
   private loadGeometries(plans: RoutePlanSummaryDto[]): void {
-    const missing = currentPlans(plans).filter(p => !this.geometries.has(p.id));
+    const missing = currentPlans(plans).filter(p => this.geometries.get(p.id)?.source !== 'osrm');
     if (missing.length === 0) {
       if (this.geometries.size > 0) this.renderAllRoutes();
       return;
@@ -1929,7 +1933,22 @@ export class RutasPage implements OnInit {
     forkJoin(missing.map(p => this.apiService.getRoutePlanGeometry(p.id))).subscribe(results => {
       results.forEach((geometry, i) => { if (geometry) this.geometries.set(missing[i].id, geometry); });
       if (this.geometries.size > 0) this.renderAllRoutes();
+      this.scheduleGeometryRetry(plans);
     });
+  }
+
+  private scheduleGeometryRetry(plans: RoutePlanSummaryDto[]): void {
+    clearTimeout(this.geometryRetryTimer);
+    const pending = currentPlans(plans).some(p => this.geometries.get(p.id)?.source === 'approximate');
+    if (!pending) { this.geometryRetries = 0; return; }
+    const delay = RutasPage.GEOMETRY_RETRY_DELAYS_MS[this.geometryRetries];
+    if (delay === undefined) return;
+    this.geometryRetries++;
+    this.geometryRetryTimer = setTimeout(() => this.loadGeometries(this.routePlans()), delay);
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.geometryRetryTimer);
   }
 
   /** Todas las rutas vigentes a la vez: un color por vehículo, la seleccionada resaltada y las bodegas marcadas. */

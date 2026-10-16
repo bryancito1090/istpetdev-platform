@@ -614,3 +614,17 @@ Fuente: PR fusionados en `develop` que faltan en `main`: #158 (spec 015), #159 (
 - No se probaron los roles con cuentas reales ni la pantalla de login de Cognito.
 
 Verificación documental: **88 notas Markdown**, **942 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Plantilla de contexto y notas individuales del evento
+
+Fuente: requerimiento operativo para el inicio de las jornadas del Hackathon Expo Clean Ecuador 2026. Se crea la carpeta `NotasEvento` y la nota [[Plantilla notas del participante]] con el contexto maestro sintetizado (misión, reto, cifras canónicas, stack, accesos, cronograma oficial y reglas de oro) y la estructura de llenado para los integrantes del equipo (datos de acreditación, equipamiento, conectividad, rol en la escena de la demo, registro de mentorías y bitácora de trabajo).
+
+Verificación documental: **89 notas Markdown**, **951 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Ficha y notas de participante de Bryan Baño
+
+Fuente: inicio de actividades de los integrantes en `NotasEvento`. Se incorpora [[NotasBryan]] con los datos de contacto, rol en la escena de la demo (Gerencia Web y coordinación general), equipamiento técnico, registro de mentorías y bitácora de trabajo para las jornadas.
+
+Verificación documental: **90 notas Markdown**, **959 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
+
+
