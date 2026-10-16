@@ -789,22 +789,19 @@ public sealed class RoutePlansController(
             .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse)
             .ToDictionaryAsync(l => l.Id, ct);
 
-        var servicePoints = await db.ServicePoints
-            .Where(sp => sp.OrganizationId == DemoOrganization.Id)
-            .ToDictionaryAsync(sp => sp.Id, ct);
-
         var products = await db.Products
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
 
-        static int PriorityRank(string? p) => (p?.Trim().ToLowerInvariant()) switch
-        {
-            "critical" => 0,
-            "high" => 1,
-            "normal" => 2,
-            "low" => 3,
-            _ => 4
-        };
+        // #197: prioridad y fecha de cada pedido, y ventana de cada punto destino.
+        var destinationPointIds = orders.Values
+            .Where(o => o.DestinationServicePointId.HasValue)
+            .Select(o => o.DestinationServicePointId!.Value)
+            .Distinct()
+            .ToList();
+        var servicePoints = await db.ServicePoints
+            .Where(sp => sp.OrganizationId == DemoOrganization.Id && destinationPointIds.Contains(sp.Id))
+            .ToDictionaryAsync(sp => sp.Id, ct);
 
         var optionsResult = new List<object>();
 
@@ -857,49 +854,15 @@ public sealed class RoutePlansController(
                 ));
             }
 
-            // Entregas por destino agrupadas
-            var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId).ToList();
-
-            // Ordenar entregas por DeliveryOrder.Priority y RequiredDateUtc
-            var rankedDeliveries = deliveriesByDest.Select(destGroup =>
-            {
-                var destOrders = destGroup
-                    .Select(l => orders.GetValueOrDefault(l.OrderId))
-                    .Where(o => o != null)
-                    .ToList();
-
-                int bestRank = destOrders.Count > 0 ? destOrders.Min(o => PriorityRank(o!.Priority)) : 2;
-                DateTime earliestDate = destOrders.Count > 0 ? destOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue;
-
-                return new
-                {
-                    Group = destGroup,
-                    BestRank = bestRank,
-                    EarliestDate = earliestDate
-                };
-            })
-            .OrderBy(x => x.BestRank)
-            .ThenBy(x => x.EarliestDate)
-            .Select(x => x.Group);
-
-            foreach (var destGroup in rankedDeliveries)
+            // Entregas por destino (#197: con la prioridad y fecha del pedido, y la ventana del punto)
+            var deliveryDrafts = new List<DeliveryStopDraft>();
+            var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId);
+            foreach (var destGroup in deliveriesByDest)
             {
                 var firstLine = destGroup.First();
                 decimal totalWeight = 0m;
                 decimal totalVol = 0m;
                 var deliveryLoads = new List<StopLoadDto>();
-
-                // Ventanas y minutos de servicio reales del punto
-                TimeOnly windowStart = new TimeOnly(8, 0);
-                TimeOnly windowEnd = new TimeOnly(17, 0);
-                int serviceMinutes = 15;
-
-                if (!firstLine.IsDestinationWarehouse && servicePoints.TryGetValue(firstLine.DestinationId, out var sp))
-                {
-                    if (sp.WindowStartLocal.HasValue) windowStart = sp.WindowStartLocal.Value;
-                    if (sp.WindowEndLocal.HasValue) windowEnd = sp.WindowEndLocal.Value;
-                    if (sp.ServiceMinutes.HasValue && sp.ServiceMinutes.Value > 0) serviceMinutes = sp.ServiceMinutes.Value;
-                }
 
                 foreach (var line in destGroup)
                 {
@@ -914,21 +877,39 @@ public sealed class RoutePlansController(
                     }
                 }
 
-                candidates.Add(new RouteStopCandidate(
-                    seq++,
-                    RouteStopKind.Delivery,
-                    !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.DestinationCode,
-                    firstLine.DestinationName,
-                    firstLine.DestinationPosition,
-                    -totalWeight,
-                    -totalVol,
-                    windowStart,
-                    windowEnd,
-                    serviceMinutes,
-                    deliveryLoads
+                // Ventana y servicio del punto; una bodega destino o un punto sin datos conserva 08:00–17:00 y 15 min.
+                var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
+                var groupOrders = destGroup
+                    .Select(l => orders.GetValueOrDefault(l.OrderId))
+                    .Where(o => o is not null)
+                    .ToList();
+
+                deliveryDrafts.Add(new DeliveryStopDraft(
+                    new RouteStopCandidate(
+                        0,
+                        RouteStopKind.Delivery,
+                        !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.DestinationCode,
+                        firstLine.DestinationName,
+                        firstLine.DestinationPosition,
+                        -totalWeight,
+                        -totalVol,
+                        point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart,
+                        point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd,
+                        point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes,
+                        deliveryLoads
+                    ),
+                    DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority)),
+                    groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
                 ));
+            }
+
+            // Critical antes que High, Normal y Low; luego fecha requerida y vecino más cercano desde la última recogida.
+            var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
+            foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
+            {
+                candidates.Add(draft.Stop with { Sequence = seq++ });
             }
 
             // Evaluar secuencia con RouteEvaluator
