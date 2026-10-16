@@ -6,8 +6,8 @@ Uso (desde cualquier carpeta):
 
 Errores (salida 1): enlaces internos rotos, nombres de nota duplicados, frontmatter
 incompleto, estados no válidos, IDs definidos fuera de su nota dueña o repetidos,
-rutas personales, bloques de código sin cerrar, conteos desactualizados en
-«Fuente y control documental».
+rutas personales y bloques de código sin cerrar. Los conteos se muestran al
+final; las verificaciones históricas no bloquean nuevas notas.
 
 Avisos (no bloquean): lenguaje absoluto en notas de propuesta.
 
@@ -46,8 +46,6 @@ WIKILINK = re.compile(r"\[\[([^\]|#]+)")
 PERSONAL_PATH = re.compile(r"/home/[A-Za-z0-9_.-]+|[A-Za-z]:[\\/]+Users[\\/]+[A-Za-z0-9_.-]+", re.IGNORECASE)
 ABSOLUTE = re.compile(r"\b(garantiz\w*|instant[áa]ne\w*|imposible|perfectamente|absolut\w*|nivel senior)\b", re.IGNORECASE)
 NEGATION = re.compile(r"\b(no|sin|nunca|ni)\b", re.IGNORECASE)
-COUNT_NOTES = re.compile(r"\*\*(\d+) notas Markdown\*\*")
-COUNT_LINKS = re.compile(r"\*\*(\d+) enlaces internos resueltos\*\*")
 
 
 def vault_notes() -> list[Path]:
@@ -142,15 +140,6 @@ def check_vault(errors: list[str], warnings: list[str]) -> tuple[int, int]:
         if len(places) > 1:
             errors.append(f"{key} definido más de una vez: {', '.join(places)}")
 
-    control = names.get("Fuente y control documental")
-    if control:
-        text = read(control)
-        noted = COUNT_NOTES.findall(text)
-        linked = COUNT_LINKS.findall(text)
-        if not noted or int(noted[-1]) != len(notes):
-            errors.append(f"Fuente y control documental: el último conteo de notas no es {len(notes)}")
-        if not linked or int(linked[-1]) != links:
-            errors.append(f"Fuente y control documental: el último conteo de enlaces no es {links}")
     return len(notes), links
 
 
