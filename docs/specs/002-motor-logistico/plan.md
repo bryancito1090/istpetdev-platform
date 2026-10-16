@@ -103,7 +103,8 @@ public interface IDistanceProvider
     Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct);
 }
 
-public sealed record PlanRequest(DateOnly? Date, IReadOnlyList<string>? VehicleCodes, bool IncludeConsolidation = true);
+public sealed record PlanRequest(DateOnly? Date, IReadOnlyList<string>? VehicleCodes, bool IncludeConsolidation = true,
+    string? CriticalDeadlineLocal = null); // FR-25, #193
 public sealed record PlannedStop(int Sequence, string PointCode, Guid ServicePointId, DateTime ArrivalUtc, DateTime DepartureUtc,
     TimeSpan Wait, IReadOnlyList<StopLoad> Loads, bool IsConsolidation, int? LateMinutes);
 public sealed record StopLoad(Guid ProductId, string Sku, decimal Quantity, string BaseUnit);
@@ -272,7 +273,7 @@ Respuestas en camelCase; errores con Problem Details. Las cifras de los ejemplos
 }
 ```
 
-**`POST /api/v1/route-plans`** — cuerpo `{ "date": null, "vehicleCodes": null, "includeConsolidation": true }` → `201`:
+**`POST /api/v1/route-plans`** — cuerpo `{ "date": null, "vehicleCodes": null, "includeConsolidation": true, "criticalDeadlineLocal": null }` → `201` (`criticalDeadlineLocal` opcional, `"HH:mm"`; mal formado → `400 invalid_critical_deadline`; FR-25):
 
 ```json
 {

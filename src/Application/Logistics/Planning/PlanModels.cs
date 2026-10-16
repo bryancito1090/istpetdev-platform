@@ -3,7 +3,9 @@ namespace IstpetDev.Application.Logistics.Planning;
 public sealed record PlanRequest(
     DateOnly? Date,
     IReadOnlyList<string>? VehicleCodes,
-    bool IncludeConsolidation = true);
+    bool IncludeConsolidation = true,
+    // Hora local "HH:mm" antes de la cual deben atenderse los puntos críticos (#193). Null = sin límite.
+    string? CriticalDeadlineLocal = null);
 
 public sealed record PlannedStop(
     int Sequence,

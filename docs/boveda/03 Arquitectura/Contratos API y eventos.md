@@ -34,7 +34,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/consumptions                    | Registrar uso de insumo                 |
 | GET /api/v1/risks                            | Riesgos con cálculo                     |
 | POST /api/v1/replenishment-requests          | Solicitar cantidad y fecha              |
-| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono |
+| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono; `criticalDeadlineLocal` opcional (#193) |
 | GET /api/v1/jobs/{id}                        | Estado y resultado de trabajo           |
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
@@ -203,6 +203,16 @@ Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factib
   - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
 - **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
 - **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).
+
+## Hora límite para puntos críticos en `POST /api/v1/route-plans` (#193 — 16 de octubre de 2026)
+
+Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya decidía quién entra al camión, pero no a qué hora llega.
+
+- **Campo nuevo, opcional:** `criticalDeadlineLocal` en el cuerpo (`"HH:mm"`, p. ej. `"11:00"`, hora local). Si se omite o es `null`, el plan es el mismo de antes.
+- **A quién aplica:** a las paradas con riesgo `CRITICO` o con criticidad del punto `alta`. Su fin de ventana pasa a ser el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. Las demás paradas conservan su ventana.
+- **Resultado:** la parada crítica llega antes de la hora límite o queda en `unserved` con motivo `time_window`; no hay motivo nuevo.
+- **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
+- **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.
 
 ## Evidencia determinista del agente y herramientas de abastecimiento (#195, en revisión)
 
