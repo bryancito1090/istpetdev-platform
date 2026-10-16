@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { WarehouseComponent } from './warehouse.component';
@@ -154,6 +154,86 @@ describe('WarehouseComponent (Spec 004 / Issue #121)', () => {
 
     expect(component.selectedDelivery()).toBeNull();
     expect(fieldApiMock.getDeliveries).toHaveBeenCalledTimes(2); // init + after dispatch
+  });
+
+  describe('printLabel (Issue #161)', () => {
+    const originalTitle = 'IstpetDev Móvil — Logística PWA';
+    let titleDuringPrint: string[];
+
+    beforeEach(() => {
+      document.title = originalTitle;
+      titleDuringPrint = [];
+      vi.spyOn(window, 'print').mockImplementation(() => {
+        titleDuringPrint.push(document.title);
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    });
+
+    function createWithHu(code: string) {
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      fixture.componentInstance.createdHandlingUnit.set({
+        hu: { ...sampleHuResponse, code },
+        qrDataUrl: 'data:image/png;base64,AAA'
+      });
+      return fixture.componentInstance;
+    }
+
+    it('usa etiqueta-<code>-<fecha> como título del PDF durante la impresión', () => {
+      createWithHu('BULTO-001').printLabel();
+
+      expect(window.print).toHaveBeenCalledTimes(1);
+      expect(titleDuringPrint[0]).toMatch(/^etiqueta-BULTO-001-\d{12}$/);
+    });
+
+    it('restaura el título original al disparar afterprint', () => {
+      createWithHu('BULTO-001').printLabel();
+      expect(document.title).not.toBe(originalTitle);
+
+      window.dispatchEvent(new Event('afterprint'));
+
+      expect(document.title).toBe(originalTitle);
+    });
+
+    it('restaura el título con el temporizador de respaldo si afterprint no llega', () => {
+      vi.useFakeTimers();
+      createWithHu('BULTO-001').printLabel();
+
+      vi.advanceTimersByTime(1000);
+
+      expect(document.title).toBe(originalTitle);
+    });
+
+    it('no pisa un título posterior si el respaldo corre después de afterprint', () => {
+      vi.useFakeTimers();
+      createWithHu('BULTO-001').printLabel();
+      window.dispatchEvent(new Event('afterprint'));
+      document.title = 'Otro título';
+
+      vi.advanceTimersByTime(1000);
+
+      expect(document.title).toBe('Otro título');
+    });
+
+    it('dos bultos distintos producen títulos distintos', () => {
+      createWithHu('BULTO-001').printLabel();
+      window.dispatchEvent(new Event('afterprint'));
+      createWithHu('BULTO-002').printLabel();
+      window.dispatchEvent(new Event('afterprint'));
+
+      expect(titleDuringPrint).toHaveLength(2);
+      expect(titleDuringPrint[0]).not.toBe(titleDuringPrint[1]);
+    });
+
+    it('usa "bulto" si no hay código', () => {
+      const fixture = TestBed.createComponent(WarehouseComponent);
+      fixture.componentInstance.printLabel();
+
+      expect(titleDuringPrint[0]).toMatch(/^etiqueta-bulto-\d{12}$/);
+    });
   });
 
   it('maneja errores 409 y 422 de forma legible para el operador', () => {
