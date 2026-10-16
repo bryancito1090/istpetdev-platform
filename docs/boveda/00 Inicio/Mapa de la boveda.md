@@ -20,10 +20,12 @@ tags: [hackathon, equipo]
 - [[Resumen del manual]], [[Reto 1 oficial]], [[Cronograma oficial]].
 - [[Evaluacion y entregables]], [[Consultas para la organizacion]].
 - [[Fuente y control documental]], [[Informacion inicial del equipo]], [[Manual oficial.pdf]].
+- [[Charla del sector limpieza - transcripcion recibida]] — texto completo aportado de la charla del 16-oct.
 
 ## Producto
 
 - [[Historia y propuesta de valor]], [[Alcance y prioridades]].
+- [[Hallazgos de la charla para el Reto 1]] — preguntas, respuestas y vacíos sobre consumo, inventario, pedidos, despachos y rutas.
 - [[Usuarios y flujos]], [[Requisitos y aceptacion]], [[Modelo de negocio y piloto]].
 
 ## Arquitectura

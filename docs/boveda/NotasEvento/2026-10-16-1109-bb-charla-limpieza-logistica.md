@@ -7,6 +7,8 @@ tags: [hackathon, evento, limpieza, logistica, fuente]
 
 # Charla del sector: limpieza, abastecimiento y organización del evento
 
+**Complemento de cobertura — 16-oct:** esta nota conserva los extractos iniciales. El texto recibido completo está en [[Charla del sector limpieza - transcripcion recibida]] y el documento de consulta para producto, con preguntas y respuestas finales sobre inventario y rutas, en [[Hallazgos de la charla para el Reto 1]].
+
 - **Registró:** Bryan Baño (`bb`), texto aportado y organizado documentalmente con IA.
 - **Registrado:** 16-oct-2026, 11:09, America/Guayaquil (UTC−05:00).
 - **Ocurrió:** charla recién recibida, según Bryan el 16-oct; hora exacta PENDIENTE.

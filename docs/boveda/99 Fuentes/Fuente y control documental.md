@@ -623,13 +623,13 @@ Verificación documental: **89 notas Markdown**, **951 enlaces internos resuelto
 
 ## 16-oct-2026 — Ficha y notas de participante de Bryan Baño
 
-Fuente: inicio de actividades de los integrantes en `NotasEvento`. Se incorpora [[NotasBryan]] con los datos de contacto, rol en la escena de la demo (Gerencia Web y coordinación general), equipamiento técnico, registro de mentorías y bitácora de trabajo para las jornadas.
+Fuente: inicio de actividades de los integrantes en `NotasEvento`. Se incorpora la ficha personal de Bryan (eliminada después por su instrucción expresa) con los datos de contacto, rol en la escena de la demo (Gerencia Web y coordinación general), equipamiento técnico, registro de mentorías y bitácora de trabajo para las jornadas.
 
 Verificación documental: **90 notas Markdown**, **959 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
 
 ## 16-oct-2026 — Registro colaborativo de notas del evento
 
-Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de [[NotasBryan]], ficha de preparación existente. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
+Fuente: solicitud del equipo para recibir y transcribir en caliente los apuntes de sus integrantes. [[Notas del evento]] es el índice único de la carpeta y define un archivo por apunte, fecha y hora de registro, código de autor, tema y sufijo para colisiones; [[Plantilla nota del evento]] da el formato de captura. [[Plantilla notas del participante]] queda como referencia y deja de pedir datos de identificación y contacto en la bóveda compartida; también se retiran esos campos de la ficha personal de Bryan (eliminada después por su instrucción expresa), ficha de preparación existente. El mapa y el README raíz enlazan el índice. El verificador calcula los conteos actuales sin exigir editar este registro histórico en cada PR de notas, evitando conflictos entre colaboradores. Aún no se han recibido apuntes de campo en archivos individuales.
 
 Verificación documental: **92 notas Markdown**, **980 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.
 
@@ -646,3 +646,14 @@ Fuente: transcripción compartida por Bryan, registrada en [[2026-10-16-1109-bb-
 Se integraron los apuntes de Joseph publicados simultáneamente en el PR #181, conservando sus archivos y el seguimiento del spec 006. Se resolvieron los conflictos de hechos canónicos, consultas y este registro: se enlazan ambas fuentes del jurado y se preserva el posible corte de las 13:00 de Joseph junto con los anuncios de la transcripción aportada por Bryan.
 
 Verificación documental tras la integración: **98 notas Markdown**, **1034 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes. Los nueve enlaces Markdown nuevos a las fuentes resuelven y `git diff --check` no reporta errores.
+
+
+## 16-oct-2026 — Transcripción completa y hallazgos del Reto 1 (issue #189)
+
+Fuente: revisión solicitada por Bryan al reiterar la charla y pedir eliminar su ficha personal. La incorporación del PR #186 conservaba extractos y síntesis; se completa con [[Charla del sector limpieza - transcripcion recibida]], que guarda el texto recibido íntegro de la charla, con los nombres de terceros reservados y sin corregir errores de transcripción. No es un cotejo contra audio.
+
+[[Hallazgos de la charla para el Reto 1]] es el documento de consulta fuera de NotasEvento: preguntas y respuestas, tres operaciones (prestador/comercializadora/fabricante), inventario fraccionado, promociones, pedidos imprevistos, rutas consolidadas y ejemplos de peso/volumen/economía de transporte. Hace explícito que no se respondieron días de anticipación ni política de prioridad ante cierre vial; distingue la agrupación de tres dolores de una enumeración literal del expositor.
+
+Se enlaza desde README, mapa, contexto, historia de producto, reto oficial e inventario/rutas. Por instrucción expresa de Bryan se elimina su ficha personal de NotasEvento y se retiran las referencias activas; la charla y sus fuentes permanecen. Se conservan los registros históricos de su alta y limpieza, con referencias en texto. No cambia software, contrato, baseline, umbral ni estado de implementación; no se despliega.
+
+Verificación documental: pendiente sobre esta revisión.

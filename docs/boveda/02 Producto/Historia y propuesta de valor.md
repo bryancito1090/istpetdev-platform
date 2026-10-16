@@ -15,6 +15,8 @@ El escenario de **80 puntos** y un hospital sin desinfectante proviene de [[Info
 
 ## Necesidades recogidas en la charla — 16-oct-2026
 
+**Documento de consulta completo:** [[Hallazgos de la charla para el Reto 1]]. Contiene las preguntas y respuestas, los tres tipos de operación y el detalle de empaques, promociones y rutas de las últimas intervenciones; enlaza la [[Charla del sector limpieza - transcripcion recibida|transcripción completa recibida]].
+
 Fuente: [[2026-10-16-1109-bb-charla-limpieza-logistica|charla sectorial aportada por Bryan]]. **Síntesis interpretativa de tres dolores**, no lista literal del expositor ni entrevista al comprador. La pregunta se refiere a empresas que contratan limpieza; la respuesta procede de la perspectiva del prestador y después distingue comercializadoras y fabricantes.
 
 | Dolor | Necesidad que expresa el testimonio | Relación con IstpetDev |

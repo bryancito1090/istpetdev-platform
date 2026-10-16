@@ -1,7 +1,7 @@
 ---
 tipo: especificacion-datos
 estado: propuesta
-actualizado: 2026-10-06
+actualizado: 2026-10-16
 tags: [datos, algoritmo, validacion]
 ---
 
@@ -12,6 +12,8 @@ tags: [datos, algoritmo, validacion]
 Seleccionar puntos que necesitan abastecimiento y ordenar entregas con restricciones de carretera, tiempo, capacidad y disponibilidad. El mapa muestra una decisión logística, no solo una línea entre coordenadas.
 
 ## Datos necesarios
+
+**Contraste sectorial — 16-oct:** [[Hallazgos de la charla para el Reto 1]] concentra las respuestas finales: programación semanal/quincenal, pedidos imprevistos, reparto por zonas y varios clientes por camión, con peso y volumen. El mínimo personal de 15 entregas y la referencia aproximada a USD 1.000 no son restricciones globales. No se obtuvo una regla empresarial para priorizar/reprogramar ante cierre o retraso ni compatibilidad de cargas; permanecen pendientes de validar, sin cambiar la política del equipo por inferencia.
 
 - Depósito de salida y regreso.
 - Puntos y ventanas de atención.
