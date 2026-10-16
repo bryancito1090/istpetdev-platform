@@ -49,6 +49,22 @@ export interface OutboxItem {
   lastAttemptUtc?: string;
 }
 
+export interface SyncErrorItem {
+  operationId: string;
+  code?: string;
+  message: string;
+}
+
+export interface SyncSummary {
+  attempted: number;
+  synced: number;
+  failed: number;
+  blockedBySimulation?: boolean;
+  blockedByOffline?: boolean;
+  blockedBySessionHeld?: boolean;
+  errors: SyncErrorItem[];
+}
+
 export interface ClassifiedError {
   isBusiness: boolean;
   status: number;
@@ -146,8 +162,20 @@ export class FieldOutboxService {
   readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
   private readonly owner = signal<string | null>(null);
   private readonly legacyPendingCount = signal<number>(0);
+  readonly legacyCount = this.legacyPendingCount.asReadonly();
   readonly pendingCount = computed(
     () => this.outboxItems().filter((item) => item.status !== 'Complete').length + this.legacyPendingCount()
+  );
+  readonly sendableCount = computed(() => {
+    return this.outboxItems().filter((i) =>
+      i.status === 'SavedOnDevice' ||
+      i.status === 'EvidencePending' ||
+      i.status === 'Sending' ||
+      i.status === 'Failed'
+    ).length;
+  });
+  readonly reviewCount = computed(() =>
+    this.outboxItems().filter((i) => i.status === 'RequiresReview' || i.status === 'Conflict').length
   );
 
   constructor() {
@@ -597,34 +625,147 @@ export class FieldOutboxService {
   }
 
   /**
-   * Sincroniza todos los ítems pendientes en cola secuencialmente.
+   * Sincroniza todos los ítems pendientes en cola secuencialmente con diagnóstico completo.
    */
-  async syncAllPending(): Promise<void> {
-    if (this.isSyncing() || !this.canSend()) {
-      return;
+  async syncAllPending(): Promise<SyncSummary> {
+    if (this.isSyncing()) {
+      return { attempted: 0, synced: 0, failed: 0, errors: [] };
+    }
+
+    if (this.isSimulatingOffline()) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedBySimulation: true,
+        errors: [{ operationId: '', code: 'OFFLINE_SIMULATION_ACTIVE', message: 'Desactiva el modo «Sin señal (prueba)» para sincronizar.' }]
+      };
+    }
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedByOffline: true,
+        errors: [{ operationId: '', code: 'NO_NETWORK_CONNECTION', message: 'Sin conexión a Internet.' }]
+      };
+    }
+
+    if (this.syncHeld()) {
+      return {
+        attempted: 0,
+        synced: 0,
+        failed: 0,
+        blockedBySessionHeld: true,
+        errors: [{ operationId: '', code: 'SESSION_HELD', message: 'Sesión iniciada sin señal; renueva sesión para sincronizar.' }]
+      };
     }
 
     this.isSyncing.set(true);
+    const summary: SyncSummary = {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+      errors: []
+    };
+
     try {
       const items = this.outboxItems().filter(
-        (i) => i.status === 'SavedOnDevice' || i.status === 'EvidencePending' || i.status === 'Sending'
+        (i) =>
+          i.status === 'SavedOnDevice' ||
+          i.status === 'EvidencePending' ||
+          i.status === 'Sending' ||
+          i.status === 'Failed'
       );
+
+      summary.attempted = items.length;
 
       for (const it of items) {
         try {
-          await this.syncItem(it.operationId);
-        } catch {
-          // Si uno falla, continúa con los demás si es posible
+          const res = await this.syncItem(it.operationId);
+          if (res.status === 'Complete') {
+            summary.synced++;
+          } else {
+            summary.failed++;
+            if (res.errorMessage || res.errorCode) {
+              summary.errors.push({
+                operationId: it.operationId,
+                code: res.errorCode,
+                message: res.errorMessage || 'Error en sincronización.'
+              });
+            }
+          }
+        } catch (err: any) {
+          summary.failed++;
+          const classified = classifySyncError(err);
+          summary.errors.push({
+            operationId: it.operationId,
+            code: classified.code,
+            message: classified.message
+          });
         }
       }
     } finally {
       this.isSyncing.set(false);
       await this.refreshOutboxItems();
     }
+
+    return summary;
   }
 
-  private canSend(): boolean {
-    return !this.syncHeld() && !this.isSimulatingOffline() && navigator.onLine;
+  canSend(): boolean {
+    return !this.syncHeld() && !this.isSimulatingOffline() && (typeof navigator === 'undefined' || navigator.onLine);
+  }
+
+  /**
+   * Reclama los ítems legados sin cuenta asociándolos a la cuenta actualmente activa.
+   */
+  async claimLegacyItems(): Promise<number> {
+    const owner = this.owner();
+    if (!owner) throw new Error('Inicia sesión para reclamar capturas anteriores.');
+    const db = await this.getDb();
+    const allItems: OutboxItem[] = await db.getAll('outbox_items');
+    const legacy = allItems.filter((i) => !i.ownerAccountId && i.status !== 'Complete');
+    for (const item of legacy) {
+      item.ownerAccountId = owner;
+      item.status = 'SavedOnDevice';
+      await db.put('outbox_items', item);
+    }
+    await this.refreshOutboxItems();
+    return legacy.length;
+  }
+
+  /**
+   * Descarta definitivamente los ítems legados sin cuenta.
+   */
+  async discardLegacyItems(): Promise<number> {
+    const db = await this.getDb();
+    const allItems: OutboxItem[] = await db.getAll('outbox_items');
+    const legacy = allItems.filter((i) => !i.ownerAccountId && i.status !== 'Complete');
+    for (const item of legacy) {
+      await db.delete('outbox_items', item.operationId);
+    }
+    await this.refreshOutboxItems();
+    return legacy.length;
+  }
+
+  /**
+   * Reintenta manualmente un ítem en cola.
+   */
+  async retryItem(operationId: string): Promise<OutboxItem> {
+    const db = await this.getDb();
+    const item = await db.get('outbox_items', operationId);
+    if (!item) throw new Error(`Ítem ${operationId} no encontrado en outbox.`);
+    if (item.ownerAccountId !== this.owner()) throw new Error('La captura pertenece a otra cuenta.');
+
+    item.status = 'SavedOnDevice';
+    item.errorCode = undefined;
+    item.errorMessage = undefined;
+    item.problemType = undefined;
+    await db.put('outbox_items', item);
+    await this.refreshOutboxItems();
+    return this.syncItem(operationId);
   }
 
   private async sendReceiptRequestWithRetry(item: OutboxItem, assertSession: () => void, maxRetries = 3): Promise<ReceiptResponse> {
@@ -839,6 +980,7 @@ export class FieldOutboxService {
       case 'Conflict': return 'Conflicto 409';
       case 'SessionRequired': return 'Sesión requerida';
       case 'RequiresReview': return 'Requiere Revisión';
+      case 'Failed': return 'Error de Envío';
       default: return status;
     }
   }

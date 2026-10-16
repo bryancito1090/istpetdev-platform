@@ -208,4 +208,25 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
     await page.confirmReceiverAction();
     expect(outbox.saveReceiptAtomic).not.toHaveBeenCalled();
   });
+
+  // #163: acción de limpiar pantalla y resetear formulario del Receptor tras registro
+  it('#163: resetReceiverScreen limpia el estado, señales y formulario del receptor', async () => {
+    page.qrInputText = 'QR-123';
+    page.receiverSaved.set(true);
+    page.receiverConfirmedMessage.set('Guardado');
+    page.receiverError.set('Error previo');
+    page.receiverLines = [{ deliveryLineId: 'dl-1' } as any];
+
+    page.resetReceiverScreen();
+
+    expect(page.qrInputText).toBe('');
+    expect(page.receiverSaved()).toBe(false);
+    expect(page.receiverConfirmedMessage()).toBeNull();
+    expect(page.receiverError()).toBeNull();
+    expect(page.receiverActiveBox()).toBeNull();
+    expect(page.receiverQr()).toBeNull();
+    expect(page.receiverLines).toEqual([]);
+    expect(page.receiverPhoto()).toBeNull();
+  });
 });
+

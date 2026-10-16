@@ -149,14 +149,19 @@ const STATUS_LABELS: Record<string, string> = {
                 } @else {
                   <ul class="list-disc pl-5">
                     @for (e of r.evidence; track e.evidenceId) {
-                      <li>
-                        {{ e.kind }} · {{ e.status === 'Confirmed' ? 'confirmada' : 'pendiente' }}
-                        @if (e.byteSize) { · {{ e.byteSize }} bytes }
-                        @if (e.sha256) { · <span class="font-mono" [title]="e.sha256">sha256 {{ e.sha256.slice(0, 12) }}…</span> }
+                      <li class="flex items-center gap-1.5 py-0.5">
+                        <span class="font-semibold capitalize">{{ e.kind === 'photo' ? 'Foto' : e.kind === 'signature' ? 'Firma' : e.kind }}:</span>
+                        @if (e.status === 'Confirmed') {
+                          <span class="text-emerald-700 font-bold">✓ Confirmada en almacenamiento S3</span>
+                        } @else {
+                          <span class="text-amber-700 font-medium">⏳ Pendiente de subida</span>
+                        }
+                        @if (e.byteSize) { · <span class="text-slate-500">{{ e.byteSize }} bytes</span> }
+                        @if (e.sha256) { · <span class="font-mono text-slate-500" [title]="e.sha256">SHA-256: {{ e.sha256.slice(0, 12) }}…</span> }
                       </li>
                     }
                   </ul>
-                  <p class="text-slate-400 mt-1">Solo se muestran metadatos: el backend todavía no almacena el archivo de evidencia.</p>
+                  <p class="text-slate-500 mt-1 text-[11px]">Archivos privados en S3 (cifrados con integridad SHA-256 verificada por el servidor).</p>
                 }
               </div>
             </article>

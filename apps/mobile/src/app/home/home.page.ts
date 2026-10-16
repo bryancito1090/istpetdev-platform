@@ -163,7 +163,23 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 Guardar recepción de la entrega completa
               </ion-button>
             }
-            @if (receiverConfirmedMessage()) { <p role="status">{{ receiverConfirmedMessage() }}</p> }
+            @if (receiverConfirmedMessage()) {
+              <div class="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs space-y-2" role="status">
+                <div class="flex items-center gap-1.5 font-bold">
+                  <span class="text-emerald-700 font-bold text-sm">✓</span>
+                  <span>Recepción guardada</span>
+                </div>
+                <p class="leading-relaxed">{{ receiverConfirmedMessage() }}</p>
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                  <ion-button size="small" color="primary" class="flex-1 font-bold" (click)="resetReceiverScreen()">
+                    Registrar otro bulto / Limpiar
+                  </ion-button>
+                  <ion-button size="small" fill="outline" color="primary" class="flex-1 font-bold" (click)="openSyncQueue()">
+                    Ver cola de sincronización
+                  </ion-button>
+                </div>
+              </div>
+            }
           </ion-card-content>
         </ion-card>
       }
@@ -516,6 +532,18 @@ export class HomePage implements OnInit {
     } finally {
       this.receiverLoading.set(false);
     }
+  }
+
+  resetReceiverScreen(): void {
+    this.qrInputText = '';
+    this.receiverActiveBox.set(null);
+    this.receiverQr.set(null);
+    this.receiverLines = [];
+    this.receiverPhoto.set(null);
+    this.receiverError.set(null);
+    this.receiverSaved.set(false);
+    this.receiverConfirmedMessage.set(null);
+    this.receiverCached.set(false);
   }
 
   private receiverStateMessage(status: string): string | null {

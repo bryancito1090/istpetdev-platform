@@ -243,7 +243,9 @@ public sealed record DeliveryDetailResponse(
     // #160: la Bodega ve a qué vehículo y conductor va la entrega y desde qué bodega sale.
     string? VehicleCode = null,
     string? DriverName = null,
-    string? OriginWarehouseName = null);
+    string? OriginWarehouseName = null,
+    // #163: cantidad de evidencias fotográficas/firma confirmadas en S3.
+    int ConfirmedEvidenceCount = 0);
 
 // ==========================================
 // FR-16: Demo Advance
