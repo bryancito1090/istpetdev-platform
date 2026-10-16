@@ -98,3 +98,25 @@ La tabla corresponde al guion de 5 min; usar puntos equivalentes de los cortes 3
 **Puertas con hora:** 15-oct congelamiento funcional a las 14:00 y video de respaldo después de ensayo funcional; tag `pre-evento` del último commit antes del 16; 17-oct código congelado a las 10:30 salvo bloqueo, evidencia hasta 12:30, materiales a 15:45, entrega oficial 16:00–16:15. El video conserva fecha, commit y etiqueta de grabación. En el paquete, cada archivo tiene hash, responsable y estado `funcional`/`grabado`/`simulado`/`propuesto`; abrir el PDF y video sin red antes de entregar. O-04/O-06 determinan tiempo y formato oficiales.
 
 Runbooks de referencia: [[Entornos y operacion acordados]] e [[Identidad OIDC y sesiones]].
+
+## Contingencia Operativa del Evento — 16 de octubre de 2026 (Issue #198)
+
+> **Contexto de la sede (Expo Clean):** Red WiFi institucional saturada por alta concurrencia (>200 personas). Todo ensayo o presentación en vivo debe ejecutarse bajo este protocolo de contingencia.
+
+### Protocolo de Red Móvil y Hotspot para la Demo
+1. **Conectividad Primaria de Demostración:**
+   - La laptop de presentación y los dispositivos móviles de campo se desconectan de la red WiFi del recinto.
+   - Se conectan exclusivamente a un punto de acceso Hotspot móvil (4G/LTE) provisto por el equipo.
+   - Producción opera en `https://istpetdev.doicela.dev` y `https://istpetdev.doicela.dev/campo/`.
+2. **Validación de Campo Offline en Dispositivos:**
+   - Descarga de hoja de ruta en PWA antes de ingresar a zonas sin cobertura.
+   - Activación de Modo Avión para simular sótanos y áreas aisladas hospitalarias.
+   - Captura de entrega, escaneo QR de caja, firma en canvas y encolado en Outbox local (IndexedDB).
+   - Reconexión al Hotspot: Sincronización idempotente con el servidor sin duplicar registros.
+3. **Plan B Local Espejo (Fallo total de Cloud / WAN):**
+   - Laptop host activa Zona con Cobertura Inalámbrica Móvil (SSID: `ISTPETDEV-DEMO`, IP: `192.168.137.1`).
+   - Contenedores Docker PostGIS (`15432`) y Redis (`6379`) activos con `npm run docker:up`.
+   - Backend API iniciado en todas las interfaces: `dotnet run --project src/Api --urls "http://0.0.0.0:5000"`.
+   - Frontend Web sirviendo en: `npm run dev:web -- --host 0.0.0.0`.
+   - Celulares de evaluación abren directamente `http://192.168.137.1:4200/campo` sin depender de internet.
+

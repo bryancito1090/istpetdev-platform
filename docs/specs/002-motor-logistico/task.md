@@ -139,7 +139,7 @@
 | FR-16–FR-18 | T6–T7 | `AutonomyPolicyTests`, `ReplanningTests`, E2E-03/04 |
 | FR-19–FR-20 | T1, T6 | `FactsTests`, `ExplanationTemplatesTests`, E2E-01/03 |
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
-| FR-24 | T14 | `RoutePlannerTests`, `RoutePlanningTests` |
+| FR-24 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -407,7 +407,37 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 - Backend: 519 de 520. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 78 de 78; lint y `build:web` sin errores.
 
-### T14 — Hora límite para puntos críticos (#193, 16-oct)
+### T14 — El asistente de pedidos ordena por prioridad y usa las ventanas del punto (#197, 16-oct)
+
+**Síntoma:** `POST /route-plans/suggest` armaba las recogidas y después las entregas en el orden en que salían del abastecimiento. No usaba `DeliveryOrder.Priority` ni `RequiredDateUtc`, y ponía a todas las entregas la ventana fija 08:00–17:00 con 15 min de servicio, aunque el punto tuviera la suya.
+
+**Corrección:**
+- **Orden de entregas (`DeliveryStopSequencer`, nuevo):** primero por prioridad (`Critical`, `High`, `Normal`, `Low`; un valor desconocido cuenta como `Normal`) y luego por día requerido. Dentro de cada nivel, vecino más cercano por distancia en línea recta desde la parada anterior, empezando en la última recogida. Si varios pedidos van al mismo destino, manda el más urgente y la fecha más temprana.
+- **Ventanas:** cada entrega toma `WindowStartLocal`, `WindowEndLocal` y `ServiceMinutes` del punto. Si el punto no los tiene, o el destino es una bodega, quedan 08:00–17:00 y 15 min.
+- **Sin cambio de contrato:** la respuesta conserva su forma; el panel del asistente en `apps/web` no cambia. Las recogidas siguen antes que las entregas y `/confirm` no se tocó.
+- **Independiente de #193:** no usa `CriticalDeadlineLocal`. La validación de capacidad por prioridad en `/suggest` y `/confirm` queda para #201.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `DeliveryStopSequencer.cs` | Application | Orden por prioridad, día requerido y vecino más cercano; ventana y servicio de respaldo | Lógica pura que se prueba sin base de datos | Varios pedidos con distinta prioridad | Hecho |
+| `RoutePlansController.SuggestRoutes` | Api | Carga pedidos y puntos destino; ventana y servicio del punto; entregas ordenadas con el secuenciador | El asistente ignoraba prioridad, fecha y ventana | Asistente de pedidos | Hecho |
+| `DeliveryStopSequencerTests.cs` | Pruebas unitarias | Prioridad antes que distancia, día requerido, vecino más cercano encadenado, prioridad por destino compartido | Regresión del orden | — | Pasan |
+| `RouteSuggestPriorityTests.cs` | Pruebas de integración | Critical lejano antes que Normal cercano; ventana propia del punto y respaldo 08:00–17:00 | Criterios de cierre de #197 | `/suggest` con datos `demo-base` | Pasan |
+| `Contratos API y eventos.md` | Bóveda | Regla de orden y ventanas de `/suggest` | Contrato primero | — | Hecho |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Dos pedidos `Normal` del mismo día a CLI-002 y HOS-001 | Primero CLI-002, el más cercano a BOD-UIO | Pasa |
+| El de HOS-001 pasa a `Critical` | HOS-001 antes que CLI-002 aunque esté más lejos | Pasa |
+| Punto con ventana 09:15–11:45 y 25 min | La entrega sale con esa ventana y ese servicio | Pasa |
+| Punto sin ventana ni servicio | La entrega sale con 08:00–17:00 y 15 min | Pasa |
+| Panel del asistente en `apps/web` | Sin cambios; misma forma de respuesta | No verificado en pantalla |
+
+**Verificación:** `dotnet test --filter "DeliveryStopSequencerTests|RouteSuggestPriorityTests|RouteEvaluatorTests"`: 12 de 12. No se corrió la suite completa.
+
+### T16 — Hora límite para puntos críticos (#193, 16-oct)
 
 **Por qué:** la prioridad decidía quién entra al camión, pero no a qué hora llega. Un hospital crítico podía quedar como última parada. Es la pregunta que el sector dejó abierta en la charla del 16-oct (AMP-01).
 
