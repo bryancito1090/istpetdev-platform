@@ -168,3 +168,45 @@ Entonces nosotros de acuerdo a la restricciones que la ciudad tenga y las tensio
 En este 100% eléctricas para hacer entregas dentro de los de 300 kilómetros que nos puede dar una autonomía estos dos.
 
 Muchísimas gracias. Yo creo que ha sido súper valioso. Te agradezco infinitamente por. Conocimiento se nos da un espacio fuerte aplauso por favor. Bueno, yo sé que sus cabezas están pero.
+
+## Diapositivas fotografiadas
+
+Joseph compartió cinco fotos de la proyección el 16-oct-2026. Aquí se transcribe solo el texto legible de las diapositivas. No se guardan las fotos ni se describe a las personas que aparecen en ellas. Algunas palabras quedan tapadas por el expositor; se marcan con `[ilegible]` o con la reconstrucción entre corchetes. Las fotos no identifican al expositor ni confirman que fuera la sesión del mentor asignado.
+
+### «La logística fragmentada erosiona margen y servicio»
+
+- Sobrecostos y distribución
+- Entregas interrumpidas
+- Menor eficiencia y nivel de servicio
+
+### «Objetivo»
+
+> Garantizar que todos los clientes reciban los insumos adecuados, en las cantidades necesarias y en el momento oportuno.
+
+### Almacén central → Transporte → Puntos de servicio
+
+| Almacén central | Transporte | Puntos de servicio |
+|---|---|---|
+| Necesidades del cliente, no siempre anticipa | Tiempos elevados | Quiebres + mermas |
+| Existencia, consumo y movimiento | Distancia, capacidad vehicular, horarios y restricciones | Sobre stock |
+| Falta de visibilidad | Agrupación de entrega por zonas | Empaque deteriorado o roto |
+| | | [E]rror de rotulado / [id]entificación de empaque |
+
+### «Riesgos y estrategias de mitigación»
+
+Texto de la lámina, conservando su redacción:
+
+- Datos incompletos o inconsistentes. Mitigación: estandarizar catálogos, depurar registros y realizar conteos físicos de validación.
+- Resistencia al cambio: capacitar a los usuarios, involucrar al personal operativo y simplificar los registros.
+- Recomendaciones de rutas poco realistas: validar restricciones de capacidad, horarios, tráfico y condiciones de acceso antes de ejecutar las rutas.
+- Pronósticos imprecisos: iniciar con modelos de referencia, medir el error y actualizar los parámetros periódicamente.
+- Falta de integración tecnológica: definir interfaces, responsables de datos y un plan de integración gradual.
+- Costos de implementación superiores a lo previsto: comenzar con un MVP y priorizar funcionalidades que puedan demostrar beneficios medibles.
+
+### «La evidencia debe conectar con soluciones e indicadores»
+
+Costos/km · Faltantes · Servicio · Tiempo · Mermas · Exactitud
+
+### Qué agregan las diapositivas a la transcripción
+
+La transcripción oral no recoge cuatro elementos que sí están en pantalla: la frase del objetivo, el error de rotulado o identificación de empaque, la mitigación de pronósticos imprecisos y la de costos de implementación con un MVP. El análisis está en [[Logistica integral para el Reto 1 - hallazgos y evidencia]].
