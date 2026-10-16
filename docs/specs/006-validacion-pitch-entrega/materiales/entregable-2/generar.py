@@ -305,22 +305,27 @@ for color, titulo, texto in difs:
 
 doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
 h1(doc, "5", "El sistema en funcionamiento")
-para(doc, "Capturas del prototipo desplegado (escenario demo-region).", 9.5, False, GREY, after=6)
-caps = [
-    ("captura-1.png", "Figura 2. Alertas de riesgo con la explicación del cálculo."),
-    ("captura-2.png", "Figura 3. Ruta priorizada sobre el mapa, con paradas y carga."),
-    ("captura-3.png", "Figura 4. Aplicación de campo: escaneo QR y recepción."),
-    ("captura-4.png", "Figura 5. Simulación de 90 días frente a los métodos actuales."),
-]
-grid = doc.add_table(rows=2, cols=2)
+para(doc, "Capturas del prototipo desplegado en https://istpetdev.doicela.dev, 16-oct-2026.", 9.5, False, GREY, after=6)
+doc.add_picture(str(IMG / "captura-rutas.png"), width=Cm(16.6))
+doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+para(doc, "Figura 2. Planificación de rutas: seis vehículos, paradas numeradas sobre calles reales, ventanas horarias y hora estimada de llegada.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=8)
+grid = doc.add_table(rows=1, cols=2)
 borders(grid, "FFFFFF", "0")
-for idx, (img, cap) in enumerate(caps):
-    cell = grid.cell(idx // 2, idx % 2)
-    cell.width = Cm(8.3)
-    cell.paragraphs[0].add_run().add_picture(str(IMG / img), width=Cm(7.9))
-    cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para(cell, cap, 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=8)
-fix_widths(grid, (Cm(8.3), Cm(8.3)))
+a, b = grid.cell(0, 0), grid.cell(0, 1)
+a.paragraphs[0].add_run().add_picture(str(IMG / "captura-consola.png"), width=Cm(11.2))
+a.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+para(a, "Figura 3. Consola de control: red de 80 centros de salud, riesgo de stock, rutas y custodia digital.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
+pic = b.paragraphs[0].add_run().add_picture(str(IMG / "captura-qr.png"), height=Cm(6.6))
+blip = pic._inline.graphic.graphicData.pic.blipFill
+src = OxmlElement("a:srcRect"); src.set("r", "18000")
+blip.insert(1, src)
+pic.width = int(pic.width * 0.82)
+b.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+para(b, "Figura 4. Aplicación de campo: escaneo del QR de cada bulto, también sin conexión.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
+fix_widths(grid, (Cm(11.8), Cm(4.8)))
+for c in (a, b):
+    vcenter(c)
+para(doc, "", after=6)
 
 h1(doc, "6", "Propuesta de valor")
 box = doc.add_table(rows=1, cols=1)
@@ -335,6 +340,7 @@ rich(p, [("Para ", True), ("gerencias de operaciones de empresas de limpieza que
          ("que hoy ", True), ("se enteran del faltante cuando el cliente llama y reponen con calendarios fijos sin poder comprobar qué se entregó, ", False),
          ("IstpetDev ", True), ("anticipa el faltante, decide desde dónde y en qué vehículo atender primero lo crítico, y demuestra cada entrega, ", False),
          ("a diferencia de ", True), ("hojas de cálculo, rutas fijas y listas de control en papel.", False)], 11)
+fix_widths(box, (Cm(16.6),))
 para(doc, "", after=4)
 
 ut = doc.add_table(rows=1, cols=3)
