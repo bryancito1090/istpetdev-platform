@@ -44,11 +44,18 @@ if (builder.Environment.IsDevelopment())
                 var rawKey = trimmed[..sep].Trim();
                 var val = trimmed[(sep + 1)..].Trim();
                 var configKey = rawKey.Replace("__", ":");
-                inMemoryEnv[configKey] = val;
+                // Si el valor ya fue fijado explícitamente por user-secrets (ej. conmutador switch-db), no pisarlo con .env
+                if (string.IsNullOrWhiteSpace(builder.Configuration[configKey]))
+                {
+                    inMemoryEnv[configKey] = val;
+                }
                 Environment.SetEnvironmentVariable(rawKey, val);
             }
         }
-        builder.Configuration.AddInMemoryCollection(inMemoryEnv);
+        if (inMemoryEnv.Count > 0)
+        {
+            builder.Configuration.AddInMemoryCollection(inMemoryEnv);
+        }
     }
 }
 

@@ -1,8 +1,9 @@
 // Fuente: docs/deployment-status.md (8-oct); confirmar con terraform output -json cognito
-// La API se sirve en el mismo origen detrás de Nginx.
+// La API se sirve en el mismo origen detrás de Nginx y la PWA Móvil se entrega bajo /campo/.
 export const environment = {
   production: true,
   apiUrl: '',
+  mobileAppUrl: '/campo/',
   appName: 'IstpetDev Web',
   version: '1.0.0',
   oidc: {
