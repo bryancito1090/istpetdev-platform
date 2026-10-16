@@ -141,6 +141,8 @@ export class FieldOutboxService {
   readonly activeAssignment = signal<MobileAssignmentResponse | null>(null);
   readonly isSyncing = signal<boolean>(false);
   readonly isSimulatingOffline = signal<boolean>(false);
+  /** 015: la sesión se abrió sin señal; se guarda en el teléfono y no se envía hasta renovar la sesión. */
+  readonly syncHeld = signal<boolean>(false);
   readonly activeDriverNotice = signal<{ revision: number; message: string; routePlanId: string } | null>(null);
   private readonly owner = signal<string | null>(null);
   private readonly legacyPendingCount = signal<number>(0);
@@ -165,7 +167,22 @@ export class FieldOutboxService {
     if (accountId) await this.loadCachedAssignment();
   }
 
+  /** La fija MobileAuthService: true mientras la sesión no se pueda renovar (015, FR-04). */
+  setSyncHeld(held: boolean): void {
+    this.syncHeld.set(held);
+  }
+
+  /** Sin esto el navegador puede borrar IndexedDB cuando falta espacio (015, FR-07). */
+  private async requestPersistentStorage(): Promise<void> {
+    try {
+      await navigator.storage?.persist?.();
+    } catch {
+      // Sin soporte: la cola sigue en IndexedDB con el riesgo normal de desalojo.
+    }
+  }
+
   private async init(): Promise<void> {
+    void this.requestPersistentStorage();
     await this.refreshOutboxItems();
     await this.loadCachedAssignment();
   }
@@ -397,7 +414,7 @@ export class FieldOutboxService {
     await this.refreshOutboxItems();
 
     // Si no estamos simulando offline ni desconectados, intentamos sincronizar en background
-    if (!this.isSimulatingOffline() && navigator.onLine) {
+    if (this.canSend()) {
       this.syncItem(operationId).catch(() => {
         // En caso de fallo transitorio, queda en SavedOnDevice
       });
@@ -484,7 +501,7 @@ export class FieldOutboxService {
     const assertSession = () => this.assertSession(item.ownerAccountId, sessionRevision);
     assertSession();
 
-    if (this.isSimulatingOffline() || !navigator.onLine) {
+    if (!this.canSend()) {
       item.status = 'SavedOnDevice';
       await db.put('outbox_items', item);
       await this.refreshOutboxItems();
@@ -583,7 +600,7 @@ export class FieldOutboxService {
    * Sincroniza todos los ítems pendientes en cola secuencialmente.
    */
   async syncAllPending(): Promise<void> {
-    if (this.isSyncing() || this.isSimulatingOffline() || !navigator.onLine) {
+    if (this.isSyncing() || !this.canSend()) {
       return;
     }
 
@@ -604,6 +621,10 @@ export class FieldOutboxService {
       this.isSyncing.set(false);
       await this.refreshOutboxItems();
     }
+  }
+
+  private canSend(): boolean {
+    return !this.syncHeld() && !this.isSimulatingOffline() && navigator.onLine;
   }
 
   private async sendReceiptRequestWithRetry(item: OutboxItem, assertSession: () => void, maxRetries = 3): Promise<ReceiptResponse> {

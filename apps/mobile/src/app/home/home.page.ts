@@ -80,6 +80,14 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
       }
 
+      <!-- 015: la app se abrió sin señal; la cola se envía sola al renovar la sesión -->
+      @if (authService.offline()) {
+        <div role="status" class="mb-3 p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 shadow-sm">
+          <span class="font-bold">Sin conexión: tus capturas se guardan en el teléfono.</span>
+          Se enviarán solas cuando vuelva la señal.
+        </div>
+      }
+
       <!-- Tarjeta de Perfil Activo -->
       <ion-card class="m-0 mb-4 border border-slate-200 shadow-sm bg-white">
         <ion-card-header class="pb-2">

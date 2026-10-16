@@ -10,7 +10,12 @@ import { FIELD_API } from '../field/field-api.interface';
 import { HomePage } from './home.page';
 
 describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
-  let authServiceMock: { logout: ReturnType<typeof vi.fn>; currentRole: ReturnType<typeof signal> };
+  let authServiceMock: {
+    logout: ReturnType<typeof vi.fn>;
+    currentRole: ReturnType<typeof signal>;
+    me: ReturnType<typeof signal>;
+    offline: ReturnType<typeof signal<boolean>>;
+  };
   let outboxServiceMock: {
     pendingCount: ReturnType<typeof signal<number>>;
     outboxItems: ReturnType<typeof signal<any[]>>;
@@ -26,7 +31,9 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
   beforeEach(() => {
     authServiceMock = {
       logout: vi.fn(async () => undefined),
-      currentRole: signal('Conductor')
+      currentRole: signal('Conductor'),
+      me: signal({ accountId: 'c-1', displayName: 'Conductor', role: 'Conductor', platform: 'field' }),
+      offline: signal(false)
     };
 
     outboxServiceMock = {
@@ -58,6 +65,16 @@ describe('HomePage logout y capturas pendientes (H2, FR-09)', () => {
         { provide: FIELD_API, useValue: {} }
       ]
     });
+  });
+
+  it('015: en modo sin conexión avisa que las capturas se guardan en el teléfono', async () => {
+    const fixture = TestBed.createComponent(HomePage);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Sin conexión');
+
+    authServiceMock.offline.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Sin conexión: tus capturas se guardan en el teléfono');
   });
 
   it('si pendingCount es 0, cierra sesión directamente sin mostrar alerta', async () => {
