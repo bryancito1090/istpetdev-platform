@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [hackathon, equipo, ia]
 ---
 
@@ -183,6 +183,7 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Autoría de ADR-04 (aceptación inicial), 09, 13, 14 y 15 | Confirmar Deciders | Reunión del equipo |
 | Alcance de RBAC/configuración para la demo | RF-17/18/19 y RNF-13 en P0 (ADR-16) o diferidos a P2 con núcleo delgado (ADR-21) | Equipo, con Bryan como Decider de ADR-16 |
 | Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
+| Número y distribución de jurados del pitch | Manual y página del hackatón: siete; apunte oral del 16-oct: Joseph oyó cinco y cuatro equipos simultáneos ([[2026-10-16-1102-jb-agenda-entregas-y-pitch]]). Podrían ser paneles o una regla nueva; no reinterpretar sin confirmación. | Organización; registrar respuesta y soporte en O-04 |
 | Papel del LLM | Resuelto el 14-oct: el LLM elige herramientas y explica; el motor determinista calcula y aplica límites (ADR-22) | Bryan, aprobación expresa en revisión de #37 |
 | Scopes de automatización | Resuelto para spec 003: `istpetdev-api/automation` + rol `Automatizacion`, sin operaciones de aprobación/publicación | Bryan, aprobación expresa del diseño 003 |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
