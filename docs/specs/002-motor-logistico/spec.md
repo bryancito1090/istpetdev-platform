@@ -122,6 +122,8 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | FR-23 | `GET /api/v1/route-plans` DEBE listar planes del día de forma paginada, filtrable por vehículo y estado, con revisión vigente, para que el panel 005 descubra IDs sin fijarlos en código; la respuesta no crea propuestas. Dueño: equipo 002; integrar antes de H4. | RF-07, spec 005 |
 | FR-24 | **Atención parcial por capacidad (#199).** Si la carga de un obligatorio no cabe completa en ningún vehículo, el motor DEBE planificar la cantidad que cabe en peso **y** volumen (unidades base enteras) y conservar el remanente pendiente con motivo `capacity`; puede repartirlo en otro vehículo con capacidad libre. Por línea se expone `requiredQuantity` (sugerida o pedida), `quantity`/`plannedQuantity` (factible, la que se publica y reserva) y `pendingQuantity` (remanente), y los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`). Política determinista: entre puntos, el orden de prioridad de FR-08 (nivel, holgura de cobertura, criticidad, código); dentro de una parada, nivel de riesgo y luego SKU (ordinal); entre vehículos, el que lleva más unidades, luego menor costo adicional y luego código. `POST /route-plans/confirm` (validación de #201) exige `vehicleId` de un vehículo activo, recalcula en el servidor la carga de los pedidos y rechaza con 409 la ruta que no cabe en peso, volumen o jornada. En el asistente la atención parcial se pide de forma explícita con `lines` (cantidad por pedido y producto); sin `lines` se planifica todo lo pendiente. Pendiente de una línea = `RequestedQuantity − PlannedQuantity − DeliveredQuantity`: no se puede planificar más (409), lo planificado se **suma** a `PlannedQuantity`, solo pasa a `Planned` el pedido sin remanente y un pedido sin nada pendiente no genera otra ruta (409). La respuesta expone por línea `requiredQuantity` (pendiente antes de esta ruta), `plannedQuantity` y `pendingQuantity`, además de `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`. | RF-03, RF-04, #199 |
 
+| FR-25 | `POST /api/v1/route-plans` PUEDE recibir `criticalDeadlineLocal` (`HH:mm`, hora local). Las paradas críticas (riesgo `CRITICO` o criticidad del punto `alta`) toman como fin de ventana el mínimo entre la del punto y esa hora; si la ventana del punto empieza después, se respeta la del punto. Si no se llega a tiempo, quedan no atendidas con `time_window`. Sin el campo, el plan no cambia. (#193) | AMP-01 de Ampliacion de alcance - ideas del evento |
+
 ### No funcionales
 
 | ID | Requisito | Traza a bóveda |
@@ -142,7 +144,7 @@ El diseño se aprobó en la sesión de brainstorming del 12-oct: motor en .NET d
 | Método y ruta | Rol | Función |
 |---|---|---|
 | `GET /risks` | Cualquiera | Riesgos con entradas, nivel, cantidad sugerida y `facts` |
-| `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`) |
+| `POST /route-plans` | Planificación, Automatización | Propone una ruta por vehículo (guardadas como `Proposed`); `criticalDeadlineLocal` opcional (FR-25) |
 | `GET /route-plans/{id}` | Cualquiera | Revisión con paradas, trazados, origen de distancias y `facts` |
 | `GET /route-plans` | Cualquiera | Lista paginada de planes del día, vehículo, estado y revisión vigente para el panel 005; no crea propuestas |
 | `POST /route-plans/{id}/publish` | Planificación | Crea entregas y reservas; idempotente |

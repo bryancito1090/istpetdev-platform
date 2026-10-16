@@ -34,7 +34,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/consumptions                    | Registrar uso de insumo                 |
 | GET /api/v1/risks                            | Riesgos con cálculo                     |
 | POST /api/v1/replenishment-requests          | Solicitar cantidad y fecha              |
-| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono |
+| POST /api/v1/route-plans                     | Calcular propuesta, 202 si es asíncrono; `criticalDeadlineLocal` opcional (#193) |
 | GET /api/v1/jobs/{id}                        | Estado y resultado de trabajo           |
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
@@ -246,7 +246,7 @@ base del producto. Por bodega y producto:
 
 La seguridad se descuenta una vez del total; el neto de cada lote aún incluye
 esa porción protegida. Lotes en orden FEFO, null al final, desempate por código
-et ID. Las bodegas activas vacías aparecen con totales cero y `lots: []`.
+e ID. Las bodegas activas vacías aparecen con totales cero y `lots: []`.
 
 ### Origen sugerido
 
@@ -330,3 +330,13 @@ Los errores de negocio usan Problem Details (`status`, `title`, `detail`);
 este controlador no añade una extensión `code` ni garantiza códigos en mayúsculas.
 
 Evidencia y regresiones: [validación de #194](../../specs/003-agente-logistico/evidencia/2026-10-16-194-consultas-abastecimiento.md).
+
+## Hora límite para puntos críticos en `POST /api/v1/route-plans` (#193 — 16 de octubre de 2026)
+
+Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya decidía quién entra al camión, pero no a qué hora llega.
+
+- **Campo nuevo, opcional:** `criticalDeadlineLocal` en el cuerpo (`"HH:mm"`, p. ej. `"11:00"`, hora local). Si se omite o es `null`, el plan es el mismo de antes.
+- **A quién aplica:** a las paradas con riesgo `CRITICO` o con criticidad del punto `alta`. Su fin de ventana pasa a ser el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. Las demás paradas conservan su ventana.
+- **Resultado:** la parada crítica llega antes de la hora límite o queda en `unserved` con motivo `time_window`; no hay motivo nuevo.
+- **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
+- **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.
