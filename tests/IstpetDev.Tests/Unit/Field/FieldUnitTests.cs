@@ -30,7 +30,7 @@ public sealed class FieldUnitTests
                 throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded, "Sin líneas");
             }
             return Task.FromResult(new HandlingUnitResponse(
-                Guid.NewGuid(), "HU-01", deliveryId, "Prepared", "https://label", "token123", Array.Empty<HandlingUnitLineDto>(), DateTime.UtcNow));
+                Guid.NewGuid(), "HU-01", deliveryId, "Sealed", "https://label", "token123", Array.Empty<HandlingUnitLineDto>(), DateTime.UtcNow));
         }
 
         public Task<DispatchResponse> DispatchAsync(Guid deliveryId, DispatchRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
@@ -38,14 +38,18 @@ public sealed class FieldUnitTests
             return Task.FromResult(new DispatchResponse(deliveryId, "Dispatched", request.HandlingUnitIds, DateTime.UtcNow, Guid.NewGuid()));
         }
 
-        public Task<ReceiptResponse> CreateReceiptAsync(Guid deliveryId, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
+        public Task<CustodyTransitionResponse> PickupAsync(Guid deliveryId, CustodyTransitionRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
         {
-            if (request.ExpectedDeliveryVersion == 999)
+            if (request.OperationId == Guid.Empty)
             {
-                throw new FieldConflictException(FieldErrorCodes.AssignmentChanged, "Versión en conflicto");
+                throw new FieldForbiddenException(FieldErrorCodes.UnauthorizedAssignment, "El conductor no está asignado a esta entrega.");
             }
-            return Task.FromResult(new ReceiptResponse(
-                Guid.NewGuid(), deliveryId, DateTime.UtcNow, 2, "Delivered", "Pending", Array.Empty<ReceiptLineDto>()));
+            return Task.FromResult(new CustodyTransitionResponse(deliveryId, "InTransit", Array.Empty<Guid>(), DateTime.UtcNow, Guid.NewGuid()));
+        }
+
+        public Task<CustodyTransitionResponse> DeliverAsync(Guid deliveryId, CustodyTransitionRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
+        {
+            return Task.FromResult(new CustodyTransitionResponse(deliveryId, "Delivered", Array.Empty<Guid>(), DateTime.UtcNow, Guid.NewGuid()));
         }
 
         public Task<MobileAssignmentResponse> GetMobileAssignmentsAsync(Guid driverAccountId, CancellationToken ct = default)
@@ -145,7 +149,7 @@ public sealed class FieldUnitTests
     }
 
     [Fact]
-    public async Task DeliveriesController_handles_conflict_exception_as_problem_details_409()
+    public void DeliveriesController_driver_receipt_is_rejected_with_receipt_requires_receiver()
     {
         var fake = new FakeFieldService();
         var controller = new DeliveriesController(fake);
@@ -161,11 +165,13 @@ public sealed class FieldUnitTests
             }
         };
 
-        var req = new CreateReceiptRequest(Guid.NewGuid(), 999, DateTime.UtcNow, Array.Empty<ReceiptLineRequest>());
-        var result = await controller.CreateReceipt(Guid.NewGuid(), req, null, CancellationToken.None);
+        var req = new CreateReceiptRequest(Guid.NewGuid(), 1, DateTime.UtcNow, Array.Empty<ReceiptLineRequest>());
+        var result = controller.CreateReceipt(Guid.NewGuid(), req);
 
         var objectResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(409, objectResult.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal(FieldErrorCodes.ReceiptRequiresReceiver, problem.Title);
     }
 
     [Fact]

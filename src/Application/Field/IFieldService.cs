@@ -20,9 +20,18 @@ public interface IFieldService
         string idempotencyKey,
         CancellationToken ct = default);
 
-    Task<ReceiptResponse> CreateReceiptAsync(
+    // #162: el conductor asignado marca la recogida (Dispatched → InTransit) y la entrega física
+    // (InTransit → Delivered). No mueven stock; solo custodia.
+    Task<CustodyTransitionResponse> PickupAsync(
         Guid deliveryId,
-        CreateReceiptRequest request,
+        CustodyTransitionRequest request,
+        Guid actorAccountId,
+        string idempotencyKey,
+        CancellationToken ct = default);
+
+    Task<CustodyTransitionResponse> DeliverAsync(
+        Guid deliveryId,
+        CustodyTransitionRequest request,
         Guid actorAccountId,
         string idempotencyKey,
         CancellationToken ct = default);

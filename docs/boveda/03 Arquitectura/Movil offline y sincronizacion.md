@@ -115,3 +115,12 @@ Para eliminar fricciones operativas y mitigar riesgos de error humano en rutas d
 - **Conductor:** las capturas pendientes se conservan en el outbox local y se reintentan con idempotencia. La validación en teléfono y modo avión requiere evidencia del recorrido; no se presume por la implementación.
 
 
+
+## Custodia por turnos y comandos del conductor (#162 — 15 de octubre de 2026)
+
+El issue #162 fija que cada rol actúa en su turno: Bodega despacha, el Conductor recoge y entrega, y el Receptor registra el único recibo final. El conductor ya no confirma stock en destino mediante `POST /api/v1/deliveries/{id}/receipts` (responde 409 `RECEIPT_REQUIRES_RECEIVER`).
+
+- **Comandos en la cola durable:** «Recoger» (`POST /deliveries/{id}/pickup`, bultos `Dispatched` → `InTransit`) y «Entregar» (`POST /deliveries/{id}/deliver`, `InTransit` → `Delivered`) se guardan en el mismo outbox IndexedDB con `commandKind` y `operationId`/`Idempotency-Key`. No llevan foto ni firma.
+- **Estados honestos:** el comando queda «Guardado en el teléfono» hasta que el servidor responde; solo entonces la app muestra «Confirmado por el servidor». Un 409 de negocio (`NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`, `HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`) pasa a «Requiere Revisión» sin borrar la operación.
+- **Estados de espera en la PWA:** la parada muestra «Esperando a Bodega» si faltan bultos o despacho; el Receptor ve «Aún en bodega» / «El Conductor aún no entrega este bulto» / «Recibir» / «Ya recibido» según el estado del bulto. La entrada directa a `/receipt/:deliveryId` queda restringida al rol Conductor.
+- **Sincronización del receptor:** la recepción escaneada con QR sigue el flujo del spec 014 (conexión requerida); el outbox conserva la captura si la red falla y reintenta con la misma clave idempotente.

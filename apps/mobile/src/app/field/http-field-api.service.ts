@@ -6,6 +6,8 @@ import {
   HandlingUnitResponse,
   DispatchRequest,
   DispatchResponse,
+  CustodyTransitionRequest,
+  CustodyTransitionResponse,
   MobileAssignmentResponse,
   DeliveryListResponse,
   DeliveryDetailResponse,
@@ -38,6 +40,20 @@ export class HttpFieldApiService implements IFieldApi {
       'Idempotency-Key': idempotencyKey
     });
     return this.http.post<DispatchResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/dispatch`, req, { headers });
+  }
+
+  pickup(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse> {
+    const headers = new HttpHeaders({
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<CustodyTransitionResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/pickup`, req, { headers });
+  }
+
+  deliver(deliveryId: string, req: CustodyTransitionRequest, idempotencyKey: string): Observable<CustodyTransitionResponse> {
+    const headers = new HttpHeaders({
+      'Idempotency-Key': idempotencyKey
+    });
+    return this.http.post<CustodyTransitionResponse>(`${this.baseUrl}/api/v1/deliveries/${deliveryId}/deliver`, req, { headers });
   }
 
   getDeliveries(routePlanId?: string, status?: string, cursor?: string, limit?: number): Observable<DeliveryListResponse> {

@@ -11,6 +11,7 @@ public static class TestTokens
     public const string ClientId = "istpetdev-test-client";
     public const string Planner = "planner-1";
     public const string Driver = "driver-1";
+    public const string Receiver = "receiver-1";
 
     public static readonly RsaSecurityKey Key = new(RSA.Create(2048)) { KeyId = "istpetdev-test" };
 

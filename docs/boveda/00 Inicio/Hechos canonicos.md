@@ -198,3 +198,16 @@ Cerradas el 7 de octubre por be0b127: versión .NET (8), PostgreSQL (16), Angula
 Cerradas el 13 de octubre por Alexander Martínez: cierre de parada por advance y recepción real, sanitización de token QR en fragmento `#t=`, migración `FieldOperations` y lecturas paginadas para panel (`GET /route-plans` y `GET /deliveries`).
 
 Para modificar esta nota: cambiar primero la nota fuente o el ADR y después esta tabla. Ver [[Mapa de la boveda]].
+
+## Custodia por turnos de campo (#162 — 15 de octubre de 2026)
+
+| Dato | Valor | Fuente | Certeza |
+|---|---|---|---|
+| Máquina de estados bulto/entrega | `Sealed` → `Dispatched` → `InTransit` → `Delivered` → `Received`/`Partial`; despacho (Bodega), recogida y entrega (Conductor asignado), recibo final (Receptor con QR) | Issue #162; [Contratos API y eventos](../03%20Arquitectura/Contratos%20API%20y%20eventos.md); código `src/Application/Field/FieldService.cs` | ✅ implementado y probado localmente |
+| Ubicación contable | Cambia solo en despacho (bodega → vehículo) y recepción (vehículo → punto); recogida y entrega solo agregan `CustodyEvent` | [Contratos API y eventos](../03%20Arquitectura/Contratos%20API%20y%20eventos.md) | ✅ |
+| Recepción del conductor | `POST /api/v1/deliveries/{id}/receipts` responde 409 `RECEIPT_REQUIRES_RECEIVER`; el receptor registra con su cuenta y el QR del bulto (spec 014) | Issue #162; spec 014 | ✅ |
+| Recibo final | Único por entrega completa: cubre exactamente todas las líneas despachadas (`aceptada + rechazada = DispatchedQuantity`); `Received` y `Partial` son terminales y cualquier recibo previo responde 409 `ALREADY_RECEIVED` antes de validar la versión; lo rechazado queda bajo custodia del conductor hasta su devolución explícita | Issue #162 (revisión 15-oct); [Contratos API y eventos](../03%20Arquitectura/Contratos%20API%20y%20eventos.md) | ✅ implementado y probado localmente |
+| Idempotencia de custodia | Índice por `(organización, cuenta, operationId)` sin `ActionCode`: UUID reutilizada en otra acción, entrega o cuerpo → 409 `IDEMPOTENCY_CONFLICT`; `Guid.Empty` → 422; el replay legado valida el recurso de la respuesta | Issue #162 (revisión 15-oct); código `FieldService.FindReplayAsync` | ✅ |
+| Compatibilidad legada | Entregas `Delivered` con recibo previo responden `ALREADY_RECEIVED`; bulto `Prepared` es alias de `Sealed` | Issue #162; migración `CustodyChainStates` | ✅ |
+| Modo demo | `advance` es una simulación de recorrido que respeta las guardas de estado y atribuye las transiciones a la cuenta de demo que la invoca, no al conductor real | Issue #162 (revisión 15-oct); `FieldService.AdvanceDemoAsync` | ✅ |
+| Índice de custodia | `CustodyEvent(OrganizationId, OperationId)` deja de ser único: una operación con varios bultos emite un evento por bulto | Migración `20261015234714_CustodyChainStates` | ✅ aplicación local en PostgreSQL efímero de pruebas |

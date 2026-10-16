@@ -186,7 +186,8 @@ internal static class LeanSchema
         model.Entity<Evidence>(e => Fk<Evidence, Receipt>(e, x => x.ReceiptId));
         model.Entity<CustodyEvent>(e =>
         {
-            e.HasIndex(c => new { c.OrganizationId, c.OperationId }).IsUnique();
+            // #162: una operación de custodia genera un evento por bulto; el índice no puede ser único.
+            e.HasIndex(c => new { c.OrganizationId, c.OperationId });
             Fk<CustodyEvent, HandlingUnit>(e, c => c.HandlingUnitId);
             Fk<CustodyEvent, Account>(e, c => c.ActorAccountId);
         });

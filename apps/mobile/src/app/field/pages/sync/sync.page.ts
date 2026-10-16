@@ -143,6 +143,12 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                     <span class="font-mono">{{ item.receiptResponse.receiptId }}</span>
                   </div>
                 }
+                @if (item.custodyResponse) {
+                  <div class="flex justify-between text-emerald-700 font-semibold pt-1 border-t border-slate-200">
+                    <span>Estado confirmado:</span>
+                    <span class="font-mono">{{ item.custodyResponse.status }}</span>
+                  </div>
+                }
               </div>
 
               <!-- Mensaje de Conflicto 409 (FR-12 / F5) -->
@@ -196,7 +202,7 @@ import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.servic
                   </ion-button>
                 }
 
-                @if (item.status === 'RequiresReview' && !item.receiverContext) {
+                @if (item.status === 'RequiresReview' && !item.receiverContext && !item.commandKind) {
                   <ion-button
                     size="small"
                     color="warning"

@@ -35,8 +35,9 @@ export const routes: Routes = [
     path: 'receipt/:deliveryId',
     loadComponent: () => import('./field/pages/receipt/receipt.page').then((m) => m.ReceiptPage),
     canActivate: [roleGuard],
-    data: { roles: ['Conductor', 'Bodega', 'Receptor'] as FieldRole[] },
-    title: 'Recepción y Firma — IstpetDev Móvil'
+    // #162: solo el Conductor opera la custodia de la parada; el Receptor recibe con el QR en Inicio.
+    data: { roles: ['Conductor'] as FieldRole[] },
+    title: 'Custodia en Ruta — IstpetDev Móvil'
   },
   {
     path: 'sync',

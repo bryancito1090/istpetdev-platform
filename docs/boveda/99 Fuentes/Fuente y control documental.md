@@ -574,3 +574,9 @@ Verificación documental: **87 notas Markdown**, **928 enlaces internos resuelto
 ## 15-oct-2026 — Issue #115: recepción PWA y evidencia privada
 
 La rama `feature/115-receptor-recepcion-real` integra captura parcial del Receptor con su endpoint, catálogo V1 compatible con #117, stock en percha/pedido, foto obligatoria en la captura con rechazo y outbox por cuenta. Sustituye la autorización ficticia S3 por PUT privado prefirmado y verifica el objeto antes de confirmar evidencia. Reutiliza la tabla Evidence; sin migración. Configuración de bucket y prueba física en dos teléfonos pendientes de ejecución en el entorno de destino; no afirmar ESC-04/06/15 físicamente validados. Guion y alcance de las pruebas automatizadas: `docs/validation/issue-115-receptor.md`.
+
+## 15-oct-2026 — Custodia por turnos del issue #162 (revisión de un solo recibo)
+
+Fuente: revisión del primer entregable del issue #162 (rama `fix/162-estados-bulto-custodia`, commits `fb4d877`, `ed3a925`, `45d73e5`) con correcciones bloqueantes del coordinador. Se alinean [[Contratos API y eventos]], [[Movil offline y sincronizacion]], [[Usuarios y flujos]] y [[Hechos canonicos]] con: recibo final único por entrega y cobertura exacta (parcial terminal, `ALREADY_RECEIVED` antes de versión), idempotencia por cuenta+operationId con validación de recurso en replay legado, despacho que cubre todos los bultos y lo planificado con ledger por línea-lote, y `advance` como simulación que respeta las guardas y atribuye las transiciones a la cuenta de demo. Verificación local en PostgreSQL efímero; sin ensayo físico, sin despliegue y sin mutar base compartida.
+
+Verificación documental: **87 notas Markdown**, **932 enlaces internos resueltos**, **0 errores**; se mantienen los cuatro avisos de lenguaje preexistentes.

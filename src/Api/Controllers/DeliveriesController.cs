@@ -72,13 +72,27 @@ public sealed class DeliveriesController : ControllerBase
     }
 
     /// <summary>
-    /// FR-06 & FR-07: Recepción en punto, conciliación de cantidades y completar parada. Conductor asignado.
+    /// #162: el despacho ya no autoriza al Conductor a confirmar stock en destino.
+    /// La recepción final la registra el Receptor con el QR del bulto.
     /// </summary>
     [HttpPost("{id:guid}/receipts")]
     [Authorize(Roles = $"{Roles.Conductor},{Roles.Gerencia}")]
-    public async Task<IActionResult> CreateReceipt(
+    public IActionResult CreateReceipt(Guid id, [FromBody] CreateReceiptRequest request)
+    {
+        return Problem(
+            detail: "La recepción final la registra el Receptor escaneando el QR del bulto entregado.",
+            statusCode: StatusCodes.Status409Conflict,
+            title: FieldErrorCodes.ReceiptRequiresReceiver);
+    }
+
+    /// <summary>
+    /// #162: el conductor asignado recoge los bultos despachados (Dispatched → InTransit).
+    /// </summary>
+    [HttpPost("{id:guid}/pickup")]
+    [Authorize(Roles = Roles.Conductor)]
+    public async Task<IActionResult> Pickup(
         Guid id,
-        [FromBody] CreateReceiptRequest request,
+        [FromBody] CustodyTransitionRequest request,
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken ct)
     {
@@ -87,7 +101,32 @@ public sealed class DeliveriesController : ControllerBase
             var key = !string.IsNullOrWhiteSpace(idempotencyKey) ? idempotencyKey : request.OperationId.ToString();
             var actorAccountId = User.AccountId();
             if (actorAccountId is null) return Forbid();
-            var result = await _fieldService.CreateReceiptAsync(id, request, actorAccountId.Value, key, ct);
+            var result = await _fieldService.PickupAsync(id, request, actorAccountId.Value, key, ct);
+            return Ok(result);
+        }
+        catch (FieldException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: ex.StatusCode, title: ex.Code);
+        }
+    }
+
+    /// <summary>
+    /// #162: el conductor asignado declara la entrega física en el punto (InTransit → Delivered).
+    /// </summary>
+    [HttpPost("{id:guid}/deliver")]
+    [Authorize(Roles = Roles.Conductor)]
+    public async Task<IActionResult> Deliver(
+        Guid id,
+        [FromBody] CustodyTransitionRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        CancellationToken ct)
+    {
+        try
+        {
+            var key = !string.IsNullOrWhiteSpace(idempotencyKey) ? idempotencyKey : request.OperationId.ToString();
+            var actorAccountId = User.AccountId();
+            if (actorAccountId is null) return Forbid();
+            var result = await _fieldService.DeliverAsync(id, request, actorAccountId.Value, key, ct);
             return Ok(result);
         }
         catch (FieldException ex)

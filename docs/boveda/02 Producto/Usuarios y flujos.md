@@ -32,10 +32,11 @@ Los roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14, am
 6. El planificador aprueba; se reservan cantidades de forma transaccional.
 7. Bodega escanea en su terminal móvil PWA y despacha; la custodia pasa al vehículo de transporte.
 8. El conductor puede registrar ubicación y eventuales incidentes en ruta.
-9. En el punto de entrega, el conductor entrega el bulto y el receptor hospitalario escanea el código QR desde su PWA móvil, emitiendo su dictamen de recepción: "Todo Conforme" o "Pasó algo malo" (daño físico, precinto violado, faltante o inconsistencia de lote). El conductor captura la firma digital táctil de descargo.
-10. Al regresar la conexión, se sincronizan las operaciones y actas de recepción desde la cola outbox.
-11. El backend procesa de forma idempotente, actualiza inventarios y asienta la custodia final.
-12. Gerencia y Planificador auditan el cumplimiento, alertas e indicadores desde la Torre de Control Web.
+9. El conductor marca «Recogido» al salir de bodega y «Entregado» al llegar al punto (issue #162); nunca registra el recibo final.
+10. En el punto de entrega, el receptor hospitalario escanea el código QR del bulto desde su PWA móvil con su propia cuenta y emite su dictamen de recepción: «Todo Conforme» o «Pasó algo malo» (daño físico, precinto violado, faltante o inconsistencia de lote).
+11. Al regresar la conexión, se sincronizan las operaciones y actas de recepción desde la cola outbox.
+12. El backend procesa de forma idempotente, actualiza inventarios y asienta la custodia final.
+13. Gerencia y Planificador auditan el cumplimiento, alertas e indicadores desde la Torre de Control Web.
 
 ## Excepciones obligatorias
 
@@ -46,7 +47,8 @@ Los roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14, am
 | Incidente después de salir | Mantener paradas ejecutadas y replantear pendientes |
 | QR inválido o desconocido | Mostrar error sin crear movimiento |
 | Entrega parcial | Conciliar líneas y saldo pendiente; no marcar todo entregado |
-| Rechazo por receptor | Registrar motivo y custodia pendiente/devolución |
+| Rechazo por receptor | Registrar motivo del catálogo y custodia pendiente/devolución |
+| Transición fuera de orden (issue #162) | 409 con código estable (`NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`); sin movimientos parciales |
 | Sin red | Persistir localmente y mostrar estado pendiente |
 | Dos registros de una misma entrega | Aplicar idempotencia y validar duplicado de negocio |
 | Lote vencido/bloqueado | Excluir cantidad de disponible |
@@ -54,7 +56,7 @@ Los roles funcionales conforman el seed inicial de **RBAC aceptado en ADR-14, am
 
 ## Estados
 
-Entrega: borrador → planificada → reservada → despachada → en tránsito → recepción pendiente de validación → recibida parcial/completa → conciliada. Puede cancelarse antes de despacho; después se registra devolución u otra acción explícita.
+Entrega: borrador → despachada (Bodega) → en tránsito (el Conductor recoge) → entregada (el Conductor entrega en el punto) → recibida parcial/completa (el Receptor registra el único recibo final, que cubre toda la entrega) → conciliada. Parcial y completa son terminales: no se recibe dos veces y lo rechazado queda bajo custodia del conductor hasta su devolución explícita a bodega. Puede cancelarse antes de despacho; después se registra devolución u otra acción explícita. Bulto: sellado → despachado → en tránsito → entregado → recibido/parcial. Detalle y códigos en `03 Arquitectura/Contratos API y eventos.md` (issue #162).
 
 En el dispositivo: pendiente → enviando → aceptada, con alternativas error recuperable o conflicto. «Guardado en el teléfono» no equivale a «aceptado por el servidor».
 

@@ -22,20 +22,28 @@ public class RejectedCapturesHttpTests(PostgisContainer postgres) : IClassFixtur
     {
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var driver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
+        var receiver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Receiver);
         var op = BaseEntity.NewId();
-        await scope.ServiceProvider.GetRequiredService<IFieldService>().CreateReceiptAsync(d.DeliveryId,
+        await scope.ServiceProvider.GetRequiredService<IFieldService>().CreateReceiverReceiptAsync(d.UnitId!.Value, d.UnitToken!,
             new CreateReceiptRequest(op, 0, DateTime.UtcNow, [new ReceiptLineRequest(d.DeliveryLineId, d.LotId, accepted, rejected, "L", reason)]),
-            driver.Id, op.ToString());
+            receiver.Id, op.ToString());
+    }
+
+    private static async Task<FieldSeed.Dispatched> SeedDeliveredAsync(ApiFactory api, string suffix)
+    {
+        var token = $"token-{suffix}-{Guid.NewGuid():N}";
+        var d = await FieldSeed.DispatchedDeliveryAsync(api, 12m, suffix, withHandlingUnit: true, unitToken: token);
+        await FieldSeed.DeliverUnitAsync(api, d);
+        return d;
     }
 
     [Fact]
     public async Task Lists_receipts_with_rejected_lines_using_the_web_contract()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());
-        var rejected = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "RC-R");
-        var clean = await FieldSeed.DispatchedDeliveryAsync(api, 12m, "RC-C");
-        await ReceiveAsync(api, rejected, 9m, 3m, "Caja mojada");
+        var rejected = await SeedDeliveredAsync(api, "RC-R");
+        var clean = await SeedDeliveredAsync(api, "RC-C");
+        await ReceiveAsync(api, rejected, 9m, 3m, "Daño");
         await ReceiveAsync(api, clean, 12m, 0m, null);
 
         using var planner = api.ClientFor(TestTokens.Planner);
@@ -46,8 +54,9 @@ public class RejectedCapturesHttpTests(PostgisContainer postgres) : IClassFixtur
         Assert.Equal(1, body.GetProperty("count").GetInt32());
         var item = body.GetProperty("items")[0];
         Assert.Equal(rejected.DeliveryId, item.GetProperty("deliveryId").GetGuid());
-        Assert.Equal("Caja mojada", item.GetProperty("reason").GetString());
-        Assert.Equal("Conductor de prueba", item.GetProperty("driverName").GetString());
+        Assert.Equal("Daño", item.GetProperty("reason").GetString());
+        // #162: el rechazo lo registra la cuenta del Receptor (antes el conductor firmaba en su dispositivo).
+        Assert.Equal("Receptor de prueba", item.GetProperty("driverName").GetString());
         var line = item.GetProperty("lines")[0];
         Assert.Equal(3m, line.GetProperty("quantityRejected").GetDecimal());
         Assert.Equal("SKU-RC-R", line.GetProperty("sku").GetString());
