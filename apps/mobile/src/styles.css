@@ -3,6 +3,67 @@
 @import '@ionic/angular/css/structure.css';
 @import '@ionic/angular/css/typography.css';
 
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../public/fonts/inter-0.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(../public/fonts/inter-1.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(../public/fonts/inter-2.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../public/fonts/inter-3.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../public/fonts/plus-jakarta-sans-0.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(../public/fonts/plus-jakarta-sans-1.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(../public/fonts/jetbrains-mono-0.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(../public/fonts/jetbrains-mono-1.ttf) format('truetype');
+}
+
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,4 +80,124 @@
 /* Accesibilidad táctil WCAG 2.1 AA (área táctil mínima >= 44px) */
 ion-button {
   min-height: 44px;
+}
+
+/* CleanTech visual system, scoped to the Campo application. */
+:root {
+  --ion-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --ion-background-color: #f8fafc;
+  --ion-text-color: #0a2540;
+  --ion-color-primary: #0284c7;
+  --ion-color-primary-rgb: 2, 132, 199;
+  --ion-color-primary-shade: #0369a1;
+  --ion-color-primary-tint: #1990cd;
+  --ion-color-success: #047857;
+  --ion-color-success-rgb: 4, 120, 87;
+  --ion-color-success-contrast: #fff;
+  --ion-color-success-shade: #065f46;
+  --ion-color-success-tint: #168665;
+  --ion-color-tertiary: #635bff;
+}
+ion-content {
+  --background: linear-gradient(90deg, transparent calc(100% - 1px), #0a254006 1px) 0 0 / 80px 100%, #f8fafc;
+  --padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+ion-content.ion-padding { --padding-start: 20px; --padding-end: 20px; --padding-top: 24px; }
+ion-header { box-shadow: 0 1px 0 #0a254010 !important; }
+ion-toolbar[color='primary'] {
+  --background: #f8fafcf2;
+  --color: #0a2540;
+  --border-width: 0;
+  --min-height: 72px;
+  --padding-start: 4px;
+  --padding-end: 8px;
+  backdrop-filter: blur(16px);
+}
+ion-title { font-size: 17px; font-weight: 750; padding-inline: 16px; }
+ion-toolbar ion-button { --color: #0369a1; font-size: 13px; letter-spacing: 0; }
+.toolbar-brand { display: inline-block; font-size: 23px; font-weight: 850; letter-spacing: -1px; line-height: 1.1; }
+.toolbar-brand > span { color: #0284c7; }
+.toolbar-brand small { display: block; margin-top: 5px; font-size: 8px; font-weight: 600; letter-spacing: 1.5px; color: #425466; }
+ion-card {
+  --background: #ffffffdc;
+  border: 1px solid #dce8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px -16px #0a254040;
+  backdrop-filter: blur(16px);
+  color: #425466;
+  overflow-wrap: anywhere;
+}
+ion-card-header { padding: 20px; gap: 8px; }
+ion-card-title { color: #0a2540; font-weight: 750; letter-spacing: -.02em; line-height: 1.35; }
+ion-card-subtitle { color: #425466; line-height: 1.6; text-transform: none; }
+ion-card-content { font-size: 14px; line-height: 1.65; }
+ion-button {
+  min-height: 48px;
+  --border-radius: 999px;
+  --box-shadow: 0 6px 16px -8px #0284c780;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  font-weight: 650;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  height: auto;
+}
+ion-button::part(native) { min-height: 48px; padding-block: 10px; line-height: 1.35; }
+ion-button[fill='outline'], ion-button[fill='clear'], ion-toolbar ion-button { --box-shadow: none; }
+ion-badge { border-radius: 999px; padding: 6px 9px; font-size: 11px; white-space: normal; line-height: 1.3; }
+ion-input { --background: #f1f6fa; --padding-start: 12px; --padding-end: 12px; border-radius: 12px; margin-top: 8px; min-height: 48px; }
+input:not([type='checkbox']):not([type='radio']), select, textarea { min-height: 48px; font-size: 16px; accent-color: #0284c7; }
+input[type='file'] { max-width: 100%; font-size: 13px; }
+button { min-height: 44px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #0284c7; outline-offset: 3px; }
+.eyebrow, .action-kicker { color: #0369a1; font: 600 10px/1.6 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 1.5px; }
+.field-hero { position: relative; isolation: isolate; padding: 16px 0 32px; }
+.field-hero::before { content: ''; position: absolute; z-index: -1; inset: -24px -20px 0; background: radial-gradient(ellipse at 95% 5%, #06b6d433, transparent 58%), radial-gradient(ellipse at 60% 75%, #10b98124, transparent 60%); clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
+.field-hero h1, .login-hero h1 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: clamp(28px, 7.8vw, 36px); font-weight: 800; line-height: 1.18; letter-spacing: -.04em; margin: 16px 0; color: #0a2540; }
+.field-hero h1 span, .login-hero h1 span { background: linear-gradient(100deg, #0369a1, #047857); background-clip: text; -webkit-text-fill-color: transparent; }
+.field-hero > p, .login-hero > p { color: #425466; font-size: 14px; line-height: 1.7; max-width: 32ch; }
+.hero-status { display: inline-flex; gap: 8px; align-items: center; margin-top: 20px; font-size: 11px; font-weight: 600; color: #425466; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #047857; box-shadow: 0 0 0 4px #10b98118; }
+.status-dot.is-offline { background: #b45309; box-shadow: 0 0 0 4px #f59e0b18; }
+.identity-card { background: linear-gradient(115deg, #ffffffed, #e0f2fed9); border-color: #fff; box-shadow: 0 10px 30px -16px #0284c766; }
+.identity-mark { display: grid; place-items: center; width: 28px; height: 28px; background: #d1fae5; color: #047857; border-radius: 50%; }
+.pending-summary { display: flex; width: 100%; align-items: center; gap: 12px; padding: 16px; margin: 0 0 24px; text-align: left; background: #0a2540; color: white; border-radius: 16px; box-shadow: 0 8px 20px -12px #0a254080; }
+.pending-summary strong { display: block; font-size: 13px; font-weight: 650; }
+.pending-summary small { display: block; font-size: 11px; color: #c2d6e7; margin-top: 4px; }
+.summary-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #ffffff25; border-radius: 12px; color: #67e8f9; font-size: 22px; flex-shrink: 0; }
+.summary-arrow { margin-left: auto; color: #67e8f9; }
+.driver-actions { display: grid; gap: 8px; }
+.action-kicker { margin: 4px 8px 12px; }
+.login-layout { max-width: 440px; margin: auto; padding: 8px 4px 24px; }
+.login-brand { margin-bottom: 24px; }
+.login-hero { position: relative; z-index: 1; }
+.login-screen { --background: radial-gradient(ellipse at 100% 34%, #06b6d430, transparent 48%), radial-gradient(ellipse at 0% 46%, #635bff18, transparent 45%), #f8fafc; }
+.login-pass { display: block; width: 100%; position: relative; padding: 20px; margin: 24px 0 16px; border: 1px solid white; border-radius: 16px; background: linear-gradient(120deg, #ffffffd9, #e0f2fe99, #d1fae5aa); backdrop-filter: blur(20px); box-shadow: 0 24px 48px -24px #0284c770; color: #0a2540; text-align: left; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.login-pass:not(:disabled):hover { transform: translateY(-3px); box-shadow: 0 28px 48px -24px #0284c790; }
+.login-pass:not(:disabled):active { transform: scale(.98); }
+.login-pass:disabled { cursor: default; opacity: .65; }
+.pass-center { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.pass-description { margin-top: 8px; color: #425466; font-size: 13px; }
+.pass-action { display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin-top: 16px; border-radius: 999px; background: #0284c7; color: white; font-size: 15px; font-weight: 650; }
+.login-feedback { text-align: center; font-size: 12px; color: #425466; line-height: 1.6; }
+.pass-top, .pass-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 600 8px/1.5 ui-monospace, monospace; letter-spacing: 1px; }
+.pass-chip { background: #d1fae5; color: #065f46; border-radius: 999px; padding: 6px 8px; letter-spacing: 0; }
+.pass-symbol { font-size: 38px; color: #0284c7; margin: 12px 0; }
+.login-pass strong { font-size: 20px; letter-spacing: -.5px; }
+.pass-bottom { margin-top: 20px; color: #425466; }
+.pass-bars { width: 48px; height: 20px; background: repeating-linear-gradient(90deg, #0a2540 0 2px, transparent 2px 4px, #0a2540 4px 5px, transparent 5px 8px); }
+.login-panel { position: relative; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffffd9; box-shadow: 0 8px 24px -20px #0a254066; }
+.login-panel h2 { font-size: 22px; font-weight: 750; letter-spacing: -.5px; margin: 8px 0 20px; }
+.login-panel p { font-size: 13px; line-height: 1.65; margin-top: 16px; color: #425466; }
+.login-footnote { margin-top: 24px; text-align: center; font-size: 11px; color: #425466; }
+@media (max-width: 360px) {
+  ion-content.ion-padding { --padding-start: 16px; --padding-end: 16px; }
+  ion-toolbar ion-button { --padding-start: 8px; --padding-end: 8px; font-size: 12px; }
+  .toolbar-brand { font-size: 20px; }
+  .pass-top { letter-spacing: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
