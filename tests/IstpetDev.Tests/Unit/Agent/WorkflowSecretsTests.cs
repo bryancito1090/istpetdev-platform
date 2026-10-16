@@ -25,7 +25,7 @@ public sealed class WorkflowSecretsTests
     {
         var directory = Path.GetFullPath(Path.Combine(Fixtures.Folder("demo-base"), "../../../automation/n8n/workflows"));
         var files = Directory.GetFiles(directory, "*.json");
-        Assert.Equal(["error-agente.json", "incidente.json", "vigia.json"], files.Select(file => Path.GetFileName(file)!).Order().ToArray());
+        Assert.Equal(["error-agente.json", "incidente.json", "revision-dataset.json", "vigia.json"], files.Select(file => Path.GetFileName(file)!).Order().ToArray());
 
         var violations = new List<string>();
         var documents = new Dictionary<string, JsonDocument>();
@@ -73,6 +73,21 @@ public sealed class WorkflowSecretsTests
                 .Distinct()
                 .ToArray();
             Assert.Equal(["8e186867-4916-54b1-b968-c1c273f79a11"], m2mReferences);
+
+            var dataset = documents["revision-dataset.json"].RootElement;
+            Assert.False(dataset.GetProperty("settings").TryGetProperty("errorWorkflow", out _));
+            var datasetNodes = dataset.GetProperty("nodes").EnumerateArray().ToList();
+            Assert.Equal("istpetdev/dataset/review", datasetNodes.Single(node => node.GetProperty("name").GetString() == "Webhook").GetProperty("parameters").GetProperty("path").GetString());
+            var dryRun = datasetNodes.Single(node => node.GetProperty("name").GetString() == "Import Dry-Run");
+            Assert.Contains("/imports?dryRun=true&allowPartial=false", dryRun.GetProperty("parameters").GetProperty("url").GetString());
+            var credentials = datasetNodes.Where(node => node.TryGetProperty("credentials", out _))
+                .SelectMany(node => node.GetProperty("credentials").EnumerateObject())
+                .Select(property => (Type: property.Name, Id: property.Value.GetProperty("id").GetString()!))
+                .ToArray();
+            Assert.Equal(2, credentials.Length);
+            Assert.Equal("8e186867-4916-54b1-b968-c1c273f79a11", credentials.Single(x => x.Type == "oAuth2Api").Id);
+            Assert.Equal("3b8794f0-9241-5c0c-9e19-c531bed733c8", credentials.Single(x => x.Type == "deepSeekApi").Id);
+            Assert.DoesNotContain("allowPartial=true", File.ReadAllText(Path.Combine(directory, "revision-dataset.json")));
         }
         finally
         {

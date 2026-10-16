@@ -703,3 +703,11 @@ resultados históricos de cinco herramientas y prompt v1 permanecen como
 históricos; no se reescriben. Verificación documental y estado real por separado
 en la evidencia del issue; este registro no acredita por sí solo merge ni ensayo.
 
+
+## 16-oct-2026 — Revisión de viabilidad de datasets coordinada por n8n (issue #209)
+
+Fuente: issue #209 y el reporte del importador del spec 001. [[Contratos API y eventos]] documenta `status` y la sección determinista `feasibility` de `POST /api/v1/imports` (puntos sin coordenadas, bodegas sin flota, productos sin peso/volumen y déficit de stock por SKU), el veredicto y la autorización M2M acotada: `Roles.Automatizacion` solo ejecuta el dry-run (`dryRun=true&allowPartial=false`) y aplicar sigue siendo de `Roles.Planning`. El spec 001 actualiza FR-10 y [[n8n e IA]] registra el workflow `revision-dataset`, su prompt versionado y el fallback determinista ante fallo o cifras inventadas del LLM, sin `allowPartial=true`.
+
+Evidencia: 566/566 pruebas backend (6 nuevas de `FeasibilityReportTests`), scripts n8n 8/8 archivos (7 nuevas del workflow), `npm run check`, `npm run audit:check`, bóveda y ejecución real en n8n 2.39.5 con puente HTTP local en [2026-10-16-209-revision-dataset.md](../../specs/003-agente-logistico/evidencia/2026-10-16-209-revision-dataset.md). Sin despliegue.
+
+Verificación documental: **106 notas Markdown**, **1139 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.

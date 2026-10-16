@@ -283,3 +283,28 @@ listas explícitas de puntos o pedidos en vez del valor por defecto. Sin context
 autenticado, en Incident o con listas explícitas vacías, `{}` no habilita la
 consulta. Este valor por defecto evita que el modelo vuelva a generar todos los
 UUIDs y reduce latencia sin ampliar el presupuesto de 10 segundos.
+
+## Revisión de viabilidad de datasets — #209, 16 de octubre de 2026
+
+Workflow `revision-dataset` (export `automation/n8n/workflows/revision-dataset.json`,
+plantilla editable y prompt `revision-dataset-v1.md` bajo `automation/n8n/`).
+Responde a la pregunta «¿qué pasa si nos dan otro Excel?» sin tocar el
+importador: la API sigue calculando y decidiendo; n8n coordina y explica.
+
+- **Recorrido:** el operador sube un archivo por el webhook `istpetdev/dataset/review`
+  con la cabecera `X-IstpetDev-Review-Token` (`ISTPETDEV_WEBHOOK_SECRET`); el
+  workflow normaliza el binario, ejecuta `POST /imports?dryRun=true&allowPartial=false`
+  con la credencial M2M y arma el dictamen con la sección `feasibility` del
+  reporte.
+- **Salida:** veredicto (Viable / Viable con limitaciones / Inviable), balance de
+  entidades, puntos sin coordenadas, stock vs demanda, y acciones separadas
+  entre supuestos automáticos y correcciones que requieren revisión humana.
+- **Salvaguardas (ADR-22 y #209):** el workflow nunca envía `allowPartial=true`;
+  el nodo de análisis solo copia cifras del reporte; el resumen del LLM se
+  descarta si menciona números que no aparecen en los hechos y se sustituye por
+  la plantilla determinista. Sin flota o sin stock, el flujo informa el bloqueo
+  en lugar de completar datos.
+- **Evidencia:** ejecución real en n8n 2.39.5 con un puente HTTP local (sin
+  DeepSeek): el LLM cayó y respondió la plantilla determinista con el dictamen
+  íntegro; detalle en
+  [evidencia #209](../../specs/003-agente-logistico/evidencia/2026-10-16-209-revision-dataset.md).
