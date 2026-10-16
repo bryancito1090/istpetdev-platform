@@ -25,7 +25,7 @@ Resolver en la capacitación del **8 de octubre** y conservar quién respondió,
 
 | ID | Consulta | Respuesta / evidencia |
 |---|---|---|
-| O-06 | ¿Dónde y en qué formatos se entrega presentación, ficha, código y video? | Parcial, 16-oct: carpeta de Drive con acceso para el correo del capitán. Faltan URL, acceso comprobado, formatos/límites y alcance del corte mencionado para hoy 18:00. Sábado 20:00 aparece en una pregunta, sin ratificación; aclarar frente al manual (17-oct 16:00–16:15) |
+| O-06 | ¿Dónde y en qué formatos se entrega presentación, ficha, código y video? | Parcial, 16-oct: carpeta de Drive con acceso para el correo del capitán. Faltan URL, acceso comprobado, formatos/límites y alcance de los cortes mencionados para hoy (13:00 en el apunte de Joseph; 18:00 en ambos). Sábado 20:00 aparece en una pregunta, sin ratificación; aclarar frente al manual (17-oct 16:00–16:15) |
 | O-07 | ¿Cuál es la sede, modalidad y enlace de capacitación/jornadas? | Pendiente. El listado público de la feria indica Centro de Exposiciones Quito (CEQ); el manual no fija dirección (p. 14). Confirmar |
 | O-08 | ¿Qué conectividad, proyección y acceso con teléfonos habrá? | Parcial, 16-oct: pantalla y HDMI anunciados; red de participantes con saturación relatada y oferta de datos móviles. Confirmar adaptador, conexión efectiva y acceso con teléfonos; sin prueba del equipo |
 | O-09 | ¿Está habilitado nuestro equipo y confirmado el Reto 1? | Inscripción declarada por el equipo; evidencia oficial pendiente |
@@ -63,6 +63,10 @@ Revisión documental del kit T1 del spec 006, hecha por IA sobre el repositorio 
 **Nueva revisión el 14-oct (fase 2 del issue #46):** sin cambios. No hay respuesta con fuente en esta nota, en [[Registro de mentorias]], en el issue #46 ni en el PR #71. La duración oficial y el archivo final de diapositivas siguen pendientes.
 
 §7.2 (p. 7) incluye entre los materiales de preparación unas «Indicaciones para pitch y demostración» que no están en el repositorio. Pedir ese documento a la organización puede responder O-04 y O-06; registrarlo con fecha y fuente en esta nota antes de usarlo.
+
+## Avisos orales del 16 de octubre — O-04 y O-06 aún abiertos
+
+Joseph registró en [[2026-10-16-1102-jb-agenda-entregas-y-pitch]] que oyó una dinámica de pitch simultáneo, cinco jurados, cubículos por reto y posibles cargas de idea en Drive hoy a las 13:00 y a las 18:00. En ese registro se indica que la [página del hackatón](https://expocleanecuador.com.ec/es/hackaton/) describe el cálculo con siete jurados; el manual también fija siete y entrega final mañana 17-oct a las 16:00–16:15. Ese apunte no incluía enlace, formato, duración por equipo ni aviso escrito. El complemento de Bryan de abajo añade el anuncio de cinco minutos por equipo; O-04 y O-06 quedan respondidas parcialmente, con desglose, acceso y horarios aún por confirmar. Pedir instrucciones de logística y guardar acuse antes de cambiar el paquete final.
 
 ## Respuestas orales incorporadas — 16 de octubre de 2026
 

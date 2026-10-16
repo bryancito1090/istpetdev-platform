@@ -147,6 +147,8 @@ Responsable y plazo PENDIENTES salvo que se indiquen en la consulta dueña.
 
 ## Seguimiento
 
+Apuntes relacionados de Joseph: [[2026-10-16-1102-jb-agenda-entregas-y-pitch]], [[2026-10-16-1102-jb-dolores-del-servicio-limpieza]] y [[2026-10-16-1102-jb-bodega-inventario-y-rutas]]. Se conservan como registros separados, no entrevistas independientes que validen la misma hipótesis. El apunte de agenda añade un posible corte de Drive a las 13:00, ausente de esta transcripción; O-06 conserva ambas fuentes. El apunte de bodega menciona bolsas y deja abierta la ubicación de la preparación; aquí se relata canecas y preparación en el punto. Precisar presentaciones y etapas antes de convertirlas en requisito, sin reemplazar lo que cada integrante oyó.
+
 [[Historia y propuesta de valor]] recoge la síntesis para producto. [[Guion del pitch]] usa cinco minutos como turno oral anunciado y conserva 4:40 como meta interna. [[Evaluacion y entregables]] y [[Cronograma oficial]] conservan el manual y enlazan las diferencias. [[Fuente y control documental]] registra esta incorporación. No se publica esta fuente como entrevista individual consentida ni se cita a un tercero por nombre.
 
 ## Correcciones posteriores
