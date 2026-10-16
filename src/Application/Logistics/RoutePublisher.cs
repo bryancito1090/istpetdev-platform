@@ -163,11 +163,13 @@ public sealed class RoutePublisher(
 
         // Validar y asignar lotes FEFO
         var originId = vehicleDepotId;
+        var visitedPickupWarehouseIds = new HashSet<Guid>();
         foreach (var stop in stops.Where(s => s.Status != "Completed"))
         {
             // Una recogida en bodega cambia el origen de las entregas siguientes.
             if (stop.Kind == RouteStopKind.Pickup && stop.LocationId is { } pickupId && warehouses.ContainsKey(pickupId))
             {
+                visitedPickupWarehouseIds.Add(pickupId);
                 originId = pickupId;
                 continue;
             }
@@ -192,10 +194,22 @@ public sealed class RoutePublisher(
             foreach (var load in loads)
             {
                 decimal qtyNeeded = load.Quantity;
-                if (!availableByProduct.TryGetValue((originId, load.ProductId), out var candidateBalances))
+                var effectiveOriginId = originId;
+                if (!availableByProduct.TryGetValue((effectiveOriginId, load.ProductId), out var candidateBalances))
                 {
-                    throw new InvalidOperationException(
-                        $"Conflicto de stock: No hay stock disponible para el producto {load.Sku} en la bodega {warehouses[originId].Code}.");
+                    // Buscar entre las bodegas de recogida visitadas previamente en la ruta
+                    var altOrigin = visitedPickupWarehouseIds.FirstOrDefault(whId => availableByProduct.ContainsKey((whId, load.ProductId)));
+                    if (altOrigin != Guid.Empty && availableByProduct.TryGetValue((altOrigin, load.ProductId), out var altBalances))
+                    {
+                        effectiveOriginId = altOrigin;
+                        candidateBalances = altBalances;
+                        delivery.OriginLocationId = altOrigin;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            $"Conflicto de stock: No hay stock disponible para el producto {load.Sku} en la bodega {warehouses[originId].Code}.");
+                    }
                 }
 
                 foreach (var bal in candidateBalances)
