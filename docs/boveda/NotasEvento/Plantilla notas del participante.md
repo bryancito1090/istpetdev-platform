@@ -86,7 +86,8 @@ Las credenciales de acceso se distribuyen por canal privado seguro del equipo:
 - **12:30 – 13:15:** **Mentoría 2** — Revisión final técnica y de negocio.
 - **14:00 – 15:00:** Consolidación de viabilidad, costos y métricas de impacto.
 - **15:00 – 16:00:** Ensayo general del Pitch y sincronización de roles en la escena.
-- **15:45:** **Congelamiento interno:** Cierre de código y generación de versiones finales.
+- **11:30:** **Congelamiento del código.**
+- **15:45:** **Congelamiento de materiales:** versiones finales del pitch y los entregables.
 - **16:00 – 16:15:** Entrega de materiales según el manual; confirmar vigencia del horario y acceso a Drive en O-06.
 - **16:15 – 18:15:** Bloque de presentaciones del manual; se anuncian **5 minutos por equipo** y cuatro presentaciones simultáneas. Turno exacto y reparto de preguntas por confirmar.
 - **18:15 – 18:45:** Deliberación del jurado y anuncio de proyectos premiados.

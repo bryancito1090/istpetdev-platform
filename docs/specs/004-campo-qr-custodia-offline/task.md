@@ -630,3 +630,17 @@ Para avanzar de forma desacoplada y validar la experiencia de usuario, diseño i
 - [x] `NovedadesPage`: visualización de confirmación de evidencias en almacenamiento S3.
 - [x] Pruebas unitarias de outbox y home actualizadas (209/209 frontend pasando; 516/516 backend pasando).
 
+### T15 — Modo sin conexión de Bodega y retiro de bultos por Conductor (#230)
+
+- [x] **Fixtures de demo completadas (`field-demo.fixture.ts`)**: incorporación de `pk-wh-norte-01`, `hu-pickup-001` y token `tok-sec-demo-pk-01` resolviendo el 404 NOT_FOUND en modo simulación/demo al despachar y recoger.
+- [x] **Comando Dispatch en outbox (`field-outbox.service.ts`)**: soporte de `OutboxCommandKind = 'Dispatch'`, guardado atómico con `operationId` para idempotencia y despacho contra `fieldApi.dispatch` al reconectar.
+- [x] **Sincronización FIFO estricta**: `syncAllPending` ordena las operaciones de forma ascendente por `capturedAtUtc` y `operationId`, garantizando que `Dispatch` se ejecute antes de `Pickup`, y `Pickup` antes de `Deliver`.
+- [x] **Vista Bodega sin conexión (`warehouse.component.ts`)**: banner visible «Sin conexión», persistencia y lectura desde caché local, encolado de despacho en outbox sin red y mensaje explicativo al preparar bultos/QR sin señal.
+- [x] **Avance de custodia offline para Conductor (`custody-state.ts`, `receipt.page.ts`)**:
+  - `effectiveDeliveryStatus` reconoce `latestPendingCustodyStatus` (`InTransit` / `Delivered`) cuando el comando está en cola local sin confirmación del servidor.
+  - `actionInFlight` no bloquea transiciones en el dispositivo con comandos `SavedOnDevice`.
+  - Botón `↻ Actualizar estado` y sincronización local de estado con `updateAssignmentDeliveryStatus`.
+- [x] **Escaneo flexible (`scan.page.ts`)**: soporte de coincidencia por `labelUrl`, UUID parcial o código de bulto, con actualización automática de la asignación si no se encuentra en caché local y hay conexión.
+- [x] **Pruebas en verde**: 129/129 pruebas móviles y suite completa de frontend (`test:frontend`) pasando.
+
+

@@ -91,3 +91,7 @@ Imprimir o copiar una hoja por conversación. Cada permiso se marca en su propia
 Tras cada conversación, pasar el registro anonimizado a [[Plantilla evidencia]] con tipo «entrevista»; no guardar firma, foto, audio, teléfono ni nombre personal por defecto. El pitch usa `[CITA DE LA FERIA]` solo con el permiso 2 y menciona rol/organización solo con el permiso 3; conserva el contexto de la cita. La meta de [[Plan de validacion]] es al menos tres conversaciones, una con reacción al prototipo, antes del 17-oct a las 12:30; si falla, se declara pendiente.
 
 **Ajustes del 14-oct-2026 (kit T1, preparados por IA y sujetos a la revisión humana del [task 006](../../specs/006-validacion-pitch-entrega/task.md)):** las preguntas 2 y 4 ya no presuponen que hubo un cambio de ruta ni un faltante; los permisos de notas, cita y mención de rol/organización quedan en casillas separadas, como pide ER-04; se añade el enlace a evidencia del contrato de hoja de entrevista. No hay entrevistas registradas.
+
+## Charla de logística integral — 16-oct-2026
+
+Bryan registró una charla de logística integral ([[Charla de logistica integral - transcripcion recibida]]) y Joseph fotografió sus diapositivas. Por horario y tema **podría** ser la sesión con Mauro Zurita (16:15–17:00), pero no está confirmado: no registrarla como mentoría hasta que un integrante presente lo confirme. Si se confirma, copiar [[Plantilla mentoria]] y anotar si el mentor puede ser jurado (manual §11.5). Sus recomendaciones ya orientan el norte del pitch: [[Planificacion potenciada - propuesta del evento]].

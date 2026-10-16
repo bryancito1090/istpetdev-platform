@@ -102,6 +102,9 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
               <p class="text-xs text-amber-800">
                 Bodega debe empacar, sellar y despachar los bultos antes de que puedas recogerlos.
               </p>
+              <ion-button size="small" fill="outline" color="warning" class="mt-2" [disabled]="isRefreshing()" (click)="refreshData()">
+                {{ isRefreshing() ? 'Actualizando...' : '↻ Actualizar estado' }}
+              </ion-button>
             </div>
           }
 
@@ -218,13 +221,54 @@ export class ReceiptPage implements OnInit {
   });
 
   readonly actionInFlight = computed(() => {
+    if (this.busy()) return true;
     const item = this.activeItem();
-    return this.busy() || (!!item && item.status !== 'Complete' && item.status !== 'RequiresReview' && item.status !== 'SessionRequired');
+    if (!item) return false;
+    return item.status === 'Sending';
   });
+
+  readonly isRefreshing = signal(false);
 
   ngOnInit(): void {
     const deliveryId = this.route.snapshot.paramMap.get('deliveryId');
     if (deliveryId) {
+      this.loadDeliveryData(deliveryId);
+      const del = this.delivery();
+      if (
+        del &&
+        (del.status === 'Draft' || del.handlingUnits.length === 0) &&
+        typeof navigator !== 'undefined' &&
+        navigator.onLine &&
+        !this.outboxService.isSimulatingOffline?.() &&
+        typeof this.outboxService.downloadRouteAssignment === 'function'
+      ) {
+        void this.refreshData();
+      }
+    }
+  }
+
+  refreshData(): void {
+    const deliveryId = this.route.snapshot.paramMap.get('deliveryId');
+    if (!deliveryId) return;
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.onLine &&
+      !this.outboxService.isSimulatingOffline?.() &&
+      typeof this.outboxService.downloadRouteAssignment === 'function'
+    ) {
+      this.isRefreshing.set(true);
+      this.outboxService
+        .downloadRouteAssignment()
+        .then(() => {
+          this.loadDeliveryData(deliveryId);
+        })
+        .catch(() => {
+          this.loadDeliveryData(deliveryId);
+        })
+        .finally(() => {
+          this.isRefreshing.set(false);
+        });
+    } else {
       this.loadDeliveryData(deliveryId);
     }
   }

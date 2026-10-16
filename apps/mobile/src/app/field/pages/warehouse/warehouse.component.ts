@@ -18,6 +18,7 @@ import {
   HandlingUnitResponse
 } from '@istpetdev/shared-core';
 import { FIELD_API } from '../../field-api.interface';
+import { FieldOutboxService } from '../../outbox/field-outbox.service';
 
 @Component({
   selector: 'app-warehouse',
@@ -62,6 +63,18 @@ import { FIELD_API } from '../../field-api.interface';
           </div>
         </ion-card-header>
       </ion-card>
+
+      <!-- Banner de Modo Sin Conexión (#230) -->
+      @if (isOffline()) {
+        <div class="p-3 bg-amber-50 border border-amber-300 text-amber-950 rounded-xl text-xs space-y-1 shadow-sm" role="status">
+          <div class="flex items-center gap-2 font-bold text-amber-900">
+            <span>📡 Modo sin conexión — Mostrando datos en caché</span>
+          </div>
+          <p class="leading-relaxed text-[11px] text-amber-800">
+            Puedes consultar entregas y despachar bultos ya preparados (se guardarán en el teléfono y sincronizarán automáticamente al volver la señal). La preparación de nuevos bultos con QR requiere conexión para emitir identificadores oficiales.
+          </p>
+        </div>
+      }
 
       <!-- Mensajes de Estado / Alertas -->
       @if (errorMessage()) {
@@ -367,36 +380,66 @@ import { FIELD_API } from '../../field-api.interface';
 })
 export class WarehouseComponent implements OnInit, OnDestroy {
   private readonly fieldApi = inject(FIELD_API);
+  private readonly outboxService = inject(FieldOutboxService);
 
   readonly draftDeliveries = signal<DeliveryListItem[]>([]);
   readonly loadingDeliveries = signal<boolean>(false);
   readonly selectedDelivery = signal<DeliveryDetailResponse | null>(null);
   readonly loadingDetail = signal<boolean>(false);
   readonly createdHandlingUnit = signal<{ hu: HandlingUnitResponse; qrDataUrl: string } | null>(null);
+  readonly isOffline = signal<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
   // Restauración pendiente del título tras imprimir (#161); conserva el título original
   private afterPrintListener: (() => void) | null = null;
+  private readonly networkListener = () => {
+    const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    this.isOffline.set(offline);
+    if (!offline) {
+      this.loadDraftDeliveries();
+    }
+  };
+
   readonly preparing = signal<boolean>(false);
   readonly dispatching = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', this.networkListener);
+      window.addEventListener('offline', this.networkListener);
+    }
     this.loadDraftDeliveries();
   }
 
   loadDraftDeliveries(): void {
     this.loadingDeliveries.set(true);
     this.errorMessage.set(null);
+    const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    this.isOffline.set(offline);
+
+    if (offline) {
+      this.loadCachedDraftDeliveries();
+      this.loadingDeliveries.set(false);
+      return;
+    }
 
     this.fieldApi.getDeliveries(undefined, 'Draft').subscribe({
       next: (res) => {
-        this.draftDeliveries.set(res.items || []);
+        const items = res.items || [];
+        this.draftDeliveries.set(items);
+        this.cacheDraftDeliveries(items);
         this.loadingDeliveries.set(false);
       },
       error: (err) => {
         this.loadingDeliveries.set(false);
-        this.errorMessage.set(this.formatError(err));
+        const status = err?.status || err?.statusCode;
+        if (status === 0 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+          this.isOffline.set(true);
+          this.loadCachedDraftDeliveries();
+        } else {
+          this.errorMessage.set(this.formatError(err));
+        }
       }
     });
   }
@@ -405,15 +448,30 @@ export class WarehouseComponent implements OnInit, OnDestroy {
     this.loadingDetail.set(true);
     this.errorMessage.set(null);
     this.createdHandlingUnit.set(null);
+    const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    this.isOffline.set(offline);
+
+    if (offline) {
+      this.loadCachedDeliveryDetail(del.deliveryId);
+      this.loadingDetail.set(false);
+      return;
+    }
 
     this.fieldApi.getDelivery(del.deliveryId).subscribe({
       next: (detail) => {
         this.selectedDelivery.set(detail);
+        this.cacheDeliveryDetail(detail);
         this.loadingDetail.set(false);
       },
       error: (err) => {
         this.loadingDetail.set(false);
-        this.errorMessage.set(this.formatError(err));
+        const status = err?.status || err?.statusCode;
+        if (status === 0 || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+          this.isOffline.set(true);
+          this.loadCachedDeliveryDetail(del.deliveryId);
+        } else {
+          this.errorMessage.set(this.formatError(err));
+        }
       }
     });
   }
@@ -425,8 +483,8 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   }
 
   createHandlingUnit(detail: DeliveryDetailResponse): void {
-    if (!navigator.onLine) {
-      this.errorMessage.set('Necesitas señal para preparar o despachar.');
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      this.errorMessage.set('La preparación de bultos y emisión de QR requiere conexión con el servidor para emitir el código y token de custodia.');
       return;
     }
 
@@ -465,10 +523,12 @@ export class WarehouseComponent implements OnInit, OnDestroy {
               status: hu.status
             });
           }
-          this.selectedDelivery.set({
+          const updatedDetail: DeliveryDetailResponse = {
             ...detail,
             handlingUnits: updatedUnits
-          });
+          };
+          this.selectedDelivery.set(updatedDetail);
+          this.cacheDeliveryDetail(updatedDetail);
 
           this.successMessage.set(`Bulto ${hu.code} creado exitosamente.`);
         } catch (qrErr) {
@@ -485,11 +545,6 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   }
 
   dispatchToVehicle(detail: DeliveryDetailResponse): void {
-    if (!navigator.onLine) {
-      this.errorMessage.set('Necesitas señal para preparar o despachar.');
-      return;
-    }
-
     const huIds = detail.handlingUnits.map((u) => u.handlingUnitId);
     if (this.createdHandlingUnit()) {
       const createdId = this.createdHandlingUnit()!.hu.handlingUnitId;
@@ -506,11 +561,31 @@ export class WarehouseComponent implements OnInit, OnDestroy {
     this.dispatching.set(true);
     this.errorMessage.set(null);
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const label = `Despacho ${detail.pointName} (${detail.deliveryId})`;
+      this.outboxService.saveDispatchCommand({
+        deliveryId: detail.deliveryId,
+        handlingUnitIds: huIds,
+        label
+      }).then(() => {
+        this.dispatching.set(false);
+        this.successMessage.set('Despacho guardado en este dispositivo. Se enviará automáticamente cuando vuelva la conexión.');
+        this.markDeliveryAsDispatchedInCache(detail.deliveryId);
+        this.selectedDelivery.set(null);
+        this.createdHandlingUnit.set(null);
+      }).catch((err) => {
+        this.dispatching.set(false);
+        this.errorMessage.set(err instanceof Error ? err.message : 'Error al guardar despacho offline.');
+      });
+      return;
+    }
+
     const operationId = crypto.randomUUID();
     this.fieldApi.dispatch(detail.deliveryId, { operationId, handlingUnitIds: huIds }, operationId).subscribe({
       next: (res) => {
         this.dispatching.set(false);
         this.successMessage.set('Entrega despachada exitosamente al vehículo.');
+        this.markDeliveryAsDispatchedInCache(detail.deliveryId);
         this.selectedDelivery.set(null);
         this.createdHandlingUnit.set(null);
         this.loadDraftDeliveries();
@@ -520,6 +595,81 @@ export class WarehouseComponent implements OnInit, OnDestroy {
         this.errorMessage.set(this.formatError(err));
       }
     });
+  }
+
+  private cacheDraftDeliveries(items: DeliveryListItem[]): void {
+    try {
+      localStorage.setItem('istpetdev_warehouse_draft_deliveries_cache', JSON.stringify(items));
+    } catch {
+      // Silencioso
+    }
+  }
+
+  private loadCachedDraftDeliveries(): void {
+    try {
+      const raw = localStorage.getItem('istpetdev_warehouse_draft_deliveries_cache');
+      if (raw) {
+        this.draftDeliveries.set(JSON.parse(raw));
+      } else {
+        this.draftDeliveries.set([]);
+      }
+    } catch {
+      this.draftDeliveries.set([]);
+    }
+  }
+
+  private cacheDeliveryDetail(detail: DeliveryDetailResponse): void {
+    try {
+      localStorage.setItem(`istpetdev_warehouse_detail_${detail.deliveryId}`, JSON.stringify(detail));
+    } catch {
+      // Silencioso
+    }
+  }
+
+  private loadCachedDeliveryDetail(deliveryId: string): void {
+    try {
+      const raw = localStorage.getItem(`istpetdev_warehouse_detail_${deliveryId}`);
+      if (raw) {
+        this.selectedDelivery.set(JSON.parse(raw));
+      } else {
+        const draft = this.draftDeliveries().find((d) => d.deliveryId === deliveryId);
+        if (draft) {
+          this.selectedDelivery.set({
+            deliveryId: draft.deliveryId,
+            status: draft.status,
+            version: 1,
+            pointName: draft.pointName,
+            routePlanId: draft.routePlanId,
+            lines: [],
+            handlingUnits: [],
+            confirmedEvidenceCount: 0
+          });
+        } else {
+          this.errorMessage.set('No hay datos en caché para esta entrega.');
+        }
+      }
+    } catch {
+      this.errorMessage.set('Error al recuperar datos de entrega en caché.');
+    }
+  }
+
+  private markDeliveryAsDispatchedInCache(deliveryId: string): void {
+    try {
+      const cached = this.draftDeliveries().filter((d) => d.deliveryId !== deliveryId);
+      this.draftDeliveries.set(cached);
+      localStorage.setItem('istpetdev_warehouse_draft_deliveries_cache', JSON.stringify(cached));
+      const detail = this.selectedDelivery();
+      if (detail && detail.deliveryId === deliveryId) {
+        const updatedDetail: DeliveryDetailResponse = {
+          ...detail,
+          status: 'Dispatched',
+          handlingUnits: detail.handlingUnits.map((hu) => ({ ...hu, status: 'Dispatched' }))
+        };
+        this.cacheDeliveryDetail(updatedDetail);
+      }
+    } catch {
+      // Silencioso
+    }
   }
 
   printLabel(): void {
@@ -540,6 +690,10 @@ export class WarehouseComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.afterPrintListener?.();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.networkListener);
+      window.removeEventListener('offline', this.networkListener);
+    }
   }
 
   private restorePrintTitle(original: string): void {
@@ -566,8 +720,8 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   }
 
   private formatError(err: any): string {
-    if (!navigator.onLine) {
-      return 'Necesitas señal para preparar o despachar.';
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return 'Sin conexión con el servidor. Mostrando datos en caché.';
     }
     const status = err?.status || err?.statusCode;
     if (status === 409) {
