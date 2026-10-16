@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [arquitectura, contratos]
 ---
 
@@ -182,3 +182,11 @@ El issue #162 exige que cada rol actúe solo en su turno y que la traza pública
 - **Compatibilidad legada:** las entregas anteriores al 15-oct usaban `Delivered` como recepción final; con cualquier `Receipt` previo, una clave nueva responde `ALREADY_RECEIVED` y no repite efectos. El bulto `Prepared` se acepta como alias de `Sealed` y se normaliza en la siguiente transición.
 - **Traza pública:** `PublicTraceService` deriva hitos persistidos: `Preparada`, `Despachada`, `En ruta`, `Entregada`, `Recibida`/`Recibida Parcial`; los códigos estables de error se documentan en `FieldErrorCodes`.
 - **Demo:** `POST /api/v1/demo/route-plans/{id}/advance` es una **simulación de recorrido** que igualmente ejecuta preparación, despacho, recogida, entrega y recepción reales con sus guardas de estado, atribuidas a la cuenta de demo que la invoca (no al conductor real); es idempotente por `operationId` y ya no marca paradas con horas planificadas.
+
+## Asistente de pedidos: orden de entregas y ventanas (#197 — 16 de octubre de 2026)
+
+`POST /api/v1/route-plans/suggest` conserva la forma de su respuesta (`options[].stops`, `evaluation`, `sourcingLines`, `vehicleMatches`); solo cambia cómo se arman las paradas de entrega:
+
+- **Orden:** las recogidas en bodega siguen primero. Las entregas se ordenan por `DeliveryOrder.Priority` (`Critical` → `High` → `Normal` → `Low`; un valor desconocido cuenta como `Normal`) y luego por el día de `RequiredDateUtc`. Dentro de cada nivel se elige el destino más cercano a la parada anterior, empezando en la última recogida. Si varios pedidos van al mismo destino, manda el más urgente y la fecha más temprana. `sequence` se renumera en ese orden.
+- **Ventanas:** `windowStart`, `windowEnd` y `serviceMinutes` de cada entrega salen de `WindowStartLocal`, `WindowEndLocal` y `ServiceMinutes` del punto de servicio. Si el punto no los tiene, o el destino es una bodega, se usan 08:00–17:00 y 15 min, los valores fijos anteriores.
+- **Fuera de alcance:** validar capacidad por prioridad en `/suggest` y `/confirm` es el issue #201.
