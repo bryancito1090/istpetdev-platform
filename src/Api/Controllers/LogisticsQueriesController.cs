@@ -147,72 +147,7 @@ public sealed class LogisticsQueriesController(
                     detail: $"El pedido '{missing}' no existe en la organización.");
             }
 
-            var lines = await db.DeliveryOrderLines
-                .AsNoTracking()
-                .Where(l => l.OrganizationId == DemoOrganization.Id && distinctOrderIds.Contains(l.DeliveryOrderId))
-                .ToListAsync(ct);
-
-            var warehouses = await db.Locations
-                .AsNoTracking()
-                .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.IsActive)
-                .ToDictionaryAsync(l => l.Id, ct);
-
-            var servicePoints = await db.ServicePoints
-                .AsNoTracking()
-                .Where(sp => sp.OrganizationId == DemoOrganization.Id)
-                .ToDictionaryAsync(sp => sp.Id, ct);
-
-            var ordersById = orders.ToDictionary(o => o.Id);
-            var demandInputs = new List<SourcingDemandInput>();
-
-            foreach (var orderId in distinctOrderIds)
-            {
-                var ord = ordersById[orderId];
-
-                (Guid Id, string Code, string Name, bool IsWh, GeoPoint Pos) dest;
-                if (ord.DestinationServicePointId.HasValue && servicePoints.TryGetValue(ord.DestinationServicePointId.Value, out var sp))
-                {
-                    var pos = sp.Position != null
-                        ? new GeoPoint((decimal)sp.Position.Y, (decimal)sp.Position.X)
-                        : new GeoPoint(-0.2295m, -78.5243m);
-                    dest = (sp.Id, sp.Code, sp.Name, false, pos);
-                }
-                else if (ord.DestinationLocationId.HasValue && warehouses.TryGetValue(ord.DestinationLocationId.Value, out var wh))
-                {
-                    var pos = wh.Position != null
-                        ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X)
-                        : new GeoPoint(-0.2295m, -78.5243m);
-                    dest = (wh.Id, wh.Code, wh.Name, true, pos);
-                }
-                else
-                {
-                    dest = (Guid.Empty, "UNK", "Destino Desconocido", false, new GeoPoint(-0.2295m, -78.5243m));
-                }
-
-                var ordLines = lines
-                    .Where(l => l.DeliveryOrderId == ord.Id)
-                    .OrderBy(l => l.ProductId)
-                    .ThenBy(l => l.Id)
-                    .ToList();
-
-                foreach (var line in ordLines)
-                {
-                    demandInputs.Add(new SourcingDemandInput(
-                        ord.Id,
-                        ord.OrderNumber,
-                        "Order",
-                        dest.Id,
-                        dest.IsWh,
-                        dest.Code,
-                        dest.Name,
-                        dest.Pos,
-                        line.ProductId,
-                        line.RequestedQuantity
-                    ));
-                }
-            }
-
-            var orderResult = await sourcingService.PlanDemandSourcingAsync(demandInputs, "Order", ct);
+            var orderResult = await sourcingService.QueryOrderSourcingAsync(distinctOrderIds, ct);
             return Ok(orderResult);
         }
 

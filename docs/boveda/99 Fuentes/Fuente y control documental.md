@@ -677,3 +677,9 @@ Fuente: implementación y verificación del issue #194 siguiendo el [plan de con
 Se documentan los contratos, ejemplos, unidades, reglas de cálculo, códigos de error, RBAC (`Roles.Planning` y `Roles.Automatizacion` con scope `istpetdev-api/automation`) y límite de frescura sin reservas en [[Contratos API y eventos]]. La evidencia de pruebas locales en contenedor PostGIS descartable (`8/8` en `LogisticsQueriesTests` y `528/528` en la suite completa de backend) se registra en [2026-10-16-194-consultas-abastecimiento.md](../../specs/003-agente-logistico/evidencia/2026-10-16-194-consultas-abastecimiento.md). No ejecuta workflows de n8n (#195/#196) ni despliegues.
 
 Verificación documental: **105 notas Markdown**, **1113 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.
+
+Revisión final de #194 por Codex: se unificó la carga de pedidos para respetar
+el remanente de #199 también en la consulta nueva y se corrigió el contrato
+contra los DTOs reales. La regresión de cantidades parciales/completas falla
+antes y pasa después de la corrección. CI y cierre remoto se registran en la
+misma evidencia del issue.

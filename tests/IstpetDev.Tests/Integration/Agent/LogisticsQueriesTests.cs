@@ -526,6 +526,55 @@ public sealed class LogisticsQueriesTests(PostgisContainer postgres) : IClassFix
         var suggestLines = suggestOpts[0].GetProperty("sourcingLines").EnumerateArray().ToList();
         Assert.Equal(80m, suggestLines[0].GetProperty("totalAllocated").GetDecimal());
         Assert.Equal(55m, suggestLines[1].GetProperty("totalAllocated").GetDecimal());
+
+        // #199: ambas consultas deben ofrecer solo lo que aún no está planificado.
+        await using (var db = TestDb.Context(connection))
+        {
+            var partialLine = await db.DeliveryOrderLines.SingleAsync(l => l.DeliveryOrderId == order1Id);
+            var completeLine = await db.DeliveryOrderLines.SingleAsync(l => l.DeliveryOrderId == order2Id);
+            partialLine.PlannedQuantity = 60m;
+            completeLine.PlannedQuantity = completeLine.RequestedQuantity;
+            await db.SaveChangesAsync();
+        }
+
+        var remainingResp = await planner.PostAsJsonAsync("/api/v1/logistics/sourcing", new
+        {
+            orderIds = new[] { order1Id, order2Id }
+        });
+        remainingResp.EnsureSuccessStatusCode();
+        var remainingJson = await remainingResp.Content.ReadFromJsonAsync<JsonElement>();
+        var remainingDemand = Assert.Single(remainingJson.GetProperty("demands").EnumerateArray());
+        Assert.Equal(order1Id, remainingDemand.GetProperty("orderId").GetGuid());
+        Assert.Equal(20m, remainingDemand.GetProperty("requestedQuantity").GetDecimal());
+        Assert.Equal(20m, remainingDemand.GetProperty("allocatedQuantity").GetDecimal());
+
+        var remainingSuggestResp = await planner.PostAsJsonAsync("/api/v1/route-plans/suggest", new
+        {
+            orderIds = new[] { order1Id, order2Id },
+            plannedDate = "2026-10-12"
+        });
+        remainingSuggestResp.EnsureSuccessStatusCode();
+        var remainingSuggest = await remainingSuggestResp.Content.ReadFromJsonAsync<JsonElement>();
+        var remainingSuggestLine = Assert.Single(remainingSuggest.GetProperty("options")[0].GetProperty("sourcingLines").EnumerateArray());
+        Assert.Equal(20m, remainingSuggestLine.GetProperty("requestedQuantity").GetDecimal());
+        Assert.Equal(20m, remainingSuggestLine.GetProperty("totalAllocated").GetDecimal());
+
+        await using (var db = TestDb.Context(connection))
+        {
+            var partialLine = await db.DeliveryOrderLines.SingleAsync(l => l.DeliveryOrderId == order1Id);
+            Assert.Equal(60m, partialLine.PlannedQuantity);
+            partialLine.PlannedQuantity = partialLine.RequestedQuantity;
+            await db.SaveChangesAsync();
+        }
+
+        var fullyPlannedResp = await planner.PostAsJsonAsync("/api/v1/logistics/sourcing", new
+        {
+            orderIds = new[] { order1Id, order2Id }
+        });
+        fullyPlannedResp.EnsureSuccessStatusCode();
+        var fullyPlanned = await fullyPlannedResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Empty(fullyPlanned.GetProperty("demands").EnumerateArray());
+        Assert.Empty(fullyPlanned.GetProperty("options").EnumerateArray());
     }
 
     [Fact]

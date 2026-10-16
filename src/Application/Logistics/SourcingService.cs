@@ -158,6 +158,7 @@ public sealed record SourcingPlanOption(
 public interface ISourcingService
 {
     Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
+    Task<DemandSourcingResult> QueryOrderSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default);
     Task<WarehouseStockQueryResult?> GetWarehouseStockAsync(Guid productId, Guid? warehouseId = null, CancellationToken ct = default);
     Task<DemandSourcingResult> PlanDemandSourcingAsync(IReadOnlyList<SourcingDemandInput> demands, string sourceKind, CancellationToken ct = default);
 }
@@ -305,7 +306,7 @@ public sealed class SourcingService : ISourcingService
         );
     }
 
-    public async Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    private async Task<List<SourcingDemandInput>> LoadOrderDemandsAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct)
     {
         var distinctOrderIds = orderIds
             .Where(id => id != Guid.Empty)
@@ -393,7 +394,21 @@ public sealed class SourcingService : ISourcingService
             }
         }
 
-        var result = await AllocateDemandsCoreAsync(demandInputs, "Order", includeEmptyDefaultOption: true, ct);
+        return demandInputs;
+    }
+
+    public async Task<DemandSourcingResult> QueryOrderSourcingAsync(
+        IReadOnlyList<Guid> orderIds,
+        CancellationToken ct = default)
+    {
+        var demands = await LoadOrderDemandsAsync(orderIds, ct);
+        return await AllocateDemandsCoreAsync(demands, "Order", includeEmptyDefaultOption: false, ct);
+    }
+
+    public async Task<IReadOnlyList<SourcingPlanOption>> PlanSourcingAsync(IReadOnlyList<Guid> orderIds, CancellationToken ct = default)
+    {
+        var demands = await LoadOrderDemandsAsync(orderIds, ct);
+        var result = await AllocateDemandsCoreAsync(demands, "Order", includeEmptyDefaultOption: true, ct);
 
         return result.Options
             .Select(opt => new SourcingPlanOption(

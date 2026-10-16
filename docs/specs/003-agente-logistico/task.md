@@ -781,6 +781,8 @@ productiva al ejecutar esta validación.
   de efectos logísticos con integración sobre demo-region/PostGIS descartable (`LogisticsQueriesTests` 8/8, suite backend 528/528, `npm run check`, `npm run audit:check`).
 - [x] Actualizar Contratos API y eventos, Fuente y control documental y registrar
   [evidencia real de pruebas y prelaunch](evidencia/2026-10-16-194-consultas-abastecimiento.md).
-- [x] Publicar [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) a `develop`, resolver conflictos con `origin/develop` (`621fdc0`, `5dc3470` y `0c296bf` conservando `#197`, `#196`, `#201` y `#199`), verificar CI (`7/7` verde en `5af0eb3` y `f913cff`, más revalidación sobre el merge de `0c296bf`) e integrar respetando las protecciones del repositorio (registrando la limitación de GitHub sobre autoaprobación del propio autor).
+- [x] Publicar [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) a develop y resolver conflictos de los avances #197/#196/#201/#199.
+- [x] Revisión final: reproducir y corregir la sobreasignación de pedidos parcialmente planificados; unificar carga de demandas con `/suggest` y corregir el contrato documentado.
+- [ ] Integrar el último develop, comprobar CI del HEAD final, fusionar el PR y verificar cierre de #194.
 
-Estado de esta entrada: código, pruebas de integración (`8/8` en `LogisticsQueriesTests`, suite combinada con `#197`/`#201`/`#199` y `528/528` en suite previa), `npm run check`, `npm run audit:check`, `check_vault.py` (`105` notas, `1113` enlaces, `0` errores) y documentación cerrados; [PR #215](https://github.com/bryancito1090/istpetdev-platform/pull/215) publicado e integrado con `origin/develop` (`0c296bf`). No incluye despliegue ni #195/#196.
+Estado: implementación y validación local inicial acreditadas; revisión final de Codex en curso por encargo de Bryan. La regresión nueva falló antes de corregir y pasó después (21/21 pruebas dirigidas, build Release sin errores). CI de los commits previos en verde; el merge y cierre del issue aún no están acreditados. Sin despliegue.
