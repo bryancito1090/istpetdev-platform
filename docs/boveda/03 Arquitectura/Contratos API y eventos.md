@@ -366,7 +366,7 @@ compatible desde el plan. Una renombración posterior no altera nuevas decisione
 No se expone el `summary` del LLM ni respuestas HTTP completas de herramientas;
 la traza de llamadas sigue registrando método, ruta, código y milisegundos.
 Compatible hacia atrás: los campos nuevos son opcionales y las decisiones sin
-plan correlacionado los omiten. Ensayo local y de n8n real en
+plan correlacionado pueden devolverlos nulos. Ensayo local y de n8n real en
 `docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.
 
 

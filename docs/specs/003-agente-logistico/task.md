@@ -790,78 +790,15 @@ Estado del código: revisión final de Codex completada por encargo de Bryan; tr
 
 ## Issue #195 — herramientas n8n de abastecimiento — 16-oct-2026
 
-- [x] Revisar workflows, prompt, traza y pruebas; preparar el
-  [plan de implementación y entrega](plan-195-herramientas-n8n.md).
-- [x] OpenCode: crear checkout y rama independientes desde develop; contrastar
-  contratos finales de #194/#193 sin editar el trabajo de Antigravity ni #201.
-- [x] Añadir find_stock, plan_sourcing y vehicle_availability a ambas plantillas;
-  ajustar prompt, esquemas, contexto firmado, deadline y exportaciones.
-- [ ] Verificar origen, vehículo y prioridad deterministas visibles en AgentRun;
-  probar seguridad, fallback, generación y ejecución real de n8n/DeepSeek.
-- [ ] Actualizar contratos, allowlists y evidencia; publicar PR a develop,
-  resolver conflictos, verificar CI/aprobación e integrar si cumple criterios.
+- [x] Plan y rama propios; OpenCode implementó la base y Codex asumió la revisión/corrección por petición de Bryan.
+- [x] Integrar develop con #193/#194 y resolver conflictos; GitHub confirmó PR #213 fusionable.
+- [x] Tres consultas nuevas en ambos AI Agents, ocho tools totales, prompt v2, prioridad calculada por motor, contratos, allowlists y HMAC conservado.
+- [x] Evidencia determinista en AgentRun (origen/vehículo/paradas), con copia histórica y respaldo; pruebas de trazabilidad y renombración.
+- [x] Ensayo real n8n 2.39.5 + DeepSeek sobre fixtures demo-region, Incident, Injection y proveedor fallido; matriz 30 corridas: 170/170 herramientas 2xx, p95 7987 ms, 60/60 explicaciones validadas, inyección 10/10.
+- [x] Generador, 44 pruebas Python, 15 pruebas focalizadas, suite backend local 568 aprobadas/1 manual omitida en `0819646`, npm check y auditorías aprobadas; CI del código con #207 `616f539` 7/7 verde. Prueba manual requiere clave privada fuera del repositorio; no se presenta un stub como DeepSeek real.
+- Revisión remota final, merge y cierre: el estado y SHA definitivos se acreditan en [PR #213](https://github.com/bryancito1090/istpetdev-platform/pull/213) e [issue #195](https://github.com/bryancito1090/istpetdev-platform/issues/195).
 
-Estado: implementación y pruebas locales en curso. Rama
-`feature/195-herramientas-n8n-abastecimiento` creada en checkout Orca aislado
-desde `origin/develop` `1dcfb51`; plan y esta entrada copiados sin los cambios
-ajenos del spec 006 ni el seguimiento de #194.
-
-Avance del 16-oct-2026:
-
-- Prompt v2 (`automation/n8n/prompts/agente-logistico-v2.md`) con recorrido
-  riesgos → stock → origen → vehículos → rutas, criterio del motor y casos sin
-  datos; generador y `acceptance.py` apuntan a v2.
-- Ambas plantillas tienen ocho tools `toolWorkflow` conectados al AI Agent
-  (cinco existentes + `find_stock`, `plan_sourcing`, `vehicle_availability`),
-  esquemas estrictos y wrappers que solo reenvían campos de allowlist desde el
-  contexto firmado; timeout HTTP dinámico acotado al deadline (margen 1200 ms)
-  en los ocho tools y en el callback; HMAC, ACK 202, registro de ejecución y
-  Error Trigger sin cambios.
-- `vehicle_availability` no acepta fecha libre: el contexto firmado no autoriza
-  otro día; consulta el reloj operativo del servidor. `criticalDeadline` (#193)
-  queda fuera de este PR al no existir el campo publicado en develop; hueco
-  documentado en la evidencia.
-- Pruebas: `test_workflow_context` cubre los ocho tools, argumentos hostiles,
-  allowlists, deadline y URLs; `test_build_workflows`, `test_acceptance`,
-  `WorkflowSecretsTests` (plantillas + subworkflows embebidos + pinData) y el
-  ensayo nuevo `N8nSupplyToolsTests` con n8n 2.39.5 real sobre stub.
-- Evidencia determinista en `AgentRunView`: por decisión se exponen
-  `originWarehouseCode`/`originWarehouseName` (bodega base del vehículo) y
-  `orderedStops` (secuencia real de paradas del plan), derivados por servidor;
-  cubierto en `AgentRunTraceTests` y `AgentJourneyTests` para LLM y fallback.
-- Pendiente en esta entrada: suite completa, ensayo real local con DeepSeek,
-  documentación de bóveda/contratos, PR, integración de #194/#193, CI y merge.
-
-Actualización del 16-oct (tarde): suite completa **545/545** en el árbol
-fusionado; `develop` `621fdc0` y `0c296bf` integrados conservando la carga
-parcial de #199 (regla 8 portada al prompt v2, workflows regenerados) y la
-documentación ajena. PR
-[#213](https://github.com/bryancito1090/istpetdev-platform/pull/213) abierto en
-**draft** hacia `develop` con labels `type::feature` y prioridad alta. El CI del
-PR no se ha disparado aún (eventos perdidos durante la caída de red) y se
-forzará al marcar listo tras el ensayo. Dependencias: #194 tiene PR #215 con CI
-en curso (contratos compatibles); #193 tiene PR #205 en conflicto y su extensión
-opcional queda fuera, documentada. El ensayo real con DeepSeek y los endpoints
-de #194 sigue pendiente y es requisito para el merge.
-
-
-### Continuación por Codex — issue #195 (16-oct-2026)
-
-- OpenCode detenido por petición de Bryan; Codex continúa sobre la misma rama y conserva sus cambios.
-- `develop` integrado localmente (`64ec1c3`), incluidos #193 y #194. Pendientes: ensayo real, revisión final, CI y merge/cierre.
-- Prelaunch del ensayo: PostGIS y n8n 2.39.5 descartables en loopback, API de prueba, proveedor DeepSeek real con clave del `.env` privado; sin despliegue. Se reutiliza la revisión local registrada arriba: HMAC/RBAC, sin RLS por DemoCore, sin cambios de dependencias ni migraciones.
-- Corregido el ensayo manual: opt-in por credencial (no falla la suite sin clave); comparación de políticas por contenido; proveedor caído separado de métricas de aceptación; trazas preservadas. Resultados todavía pendientes.
-
-- Ensayo optimizado intermedio: 15/15 herramientas 2xx; Incident completo con 2/2 explicaciones LLM. Watch/Injection omitían la ruta por el guard fijo de 3200 ms. Ajustado a 2200 ms (HTTP mínimo 1000 + reserva 1200), sin ampliar los 10 s totales; proyección de sourcing sin datos redundantes. Validación real final pendiente.
-
-- Matriz de 30 corridas intermedia: 107/107 herramientas 2xx, pero hubo errores reales de conexión del proveedor y timeouts; NO acredita aceptación. Cambio final del prompt: consultas y propuesta en un grupo (en orden lógico), seguido de explicación breve y hechos por vehículo. La propuesta no reserva ni publica y el motor mantiene toda asignación. Ensayo final en ejecución.
-
-- La repetición completa mostró errores del parser estructurado n8n aun con consultas correctas. Se elimina el parser adjunto (limitación documentada por n8n) y se valida forma, tipos, UUIDs y duplicados en Prepare Result; la API mantiene autorización/correlación/cifras/mensajes. 34/34 pruebas Python, incluida regresión de salidas inválidas. Matriz real de esta corrección en ejecución.
-
-- La matriz sin parser confirmó que desaparecieron errores de formato; persistieron timeouts del proveedor. Optimización final: carga inicial de riesgos/impacto por el workflow tras HMAC/registro, con OAuth/contexto firmado y traza. El LLM conserva la elección de stock/origen/vehículos/propuestas y las ocho herramientas. 35/35 Python, incluida seguridad de carga inicial; nueva matriz en ejecución.
-
-- Conflicto con develop `1171afe` resuelto conservando los seguimientos #195 y #207; PR #213 confirmado MERGEABLE en `46ff01c`.
-- Matriz tras restaurar ACK: 168/168 herramientas, 56/60 explicaciones validadas, inyección 10/10; p95 10001 ms, todavía NO aceptada. Se evita que el modelo reemita la lista completa de UUID: `plan_sourcing({})` deriva puntos solo del contexto inicial autenticado, valida y deduplica sin calcular cantidades. 37/37 pruebas Python; matriz final en ejecución.
+[Plan](plan-195-herramientas-n8n.md) · [Evidencia y limitaciones](evidencia/2026-10-16-195-herramientas-n8n.md). Prelaunch local aplicado; identidad del harness sintética, proveedor real, sin despliegue ni cambios de infraestructura. La copia de evidencia se conserva en ProposalJson y no acepta datos autoritativos del LLM. Los intentos fallidos previos y sus correcciones permanecen documentados.
 
 ## Issue #207 — propuesta única, vehículo adecuado, costo e incertidumbre verificable — 16-oct-2026
 

@@ -1,151 +1,91 @@
-# Evidencia — issue #195: herramientas n8n de abastecimiento
+# Evidencia del issue #195 — herramientas n8n de abastecimiento
 
-Fecha de inicio: 16-oct-2026. Rama: `feature/195-herramientas-n8n-abastecimiento`,
-checkout aislado Orca `/home/bryan/orca/workspaces/ISTPETDEV/195-herramientas-n8n-abastecimiento`
-desde `origin/develop` `1dcfb51`. Ejecutor: OpenCode, por encargo de Bryan
-(transferencia de Codex). Plan: [plan-195-herramientas-n8n.md](../plan-195-herramientas-n8n.md).
+16-oct-2026. Implementación inicial de OpenCode; revisión y corrección final de Codex por encargo de Bryan. Rama `feature/195-herramientas-n8n-abastecimiento`, [PR #213](https://github.com/bryancito1090/istpetdev-platform/pull/213) hacia `develop`.
 
-Estado: **en ejecución; continuación por Codex tras detener OpenCode por petición de Bryan**. Código, pruebas locales, ejecución real, CI y merge se
-registran por separado a medida que se verifican; nada se acredita sin salida real.
+## Código y contratos
 
-## Matriz de contratos (propuesta antes de implementar)
+- Ocho herramientas en `vigia` e `incidente`, incluidas `find_stock`, `plan_sourcing` y `vehicle_availability`, contra los endpoints finales de #194. #193 y #194 están integrados desde develop.
+- ADR-22: el LLM solicita herramientas y explica; el motor calcula cantidades, asignaciones, prioridad y rutas. El workflow carga riesgos/impacto como contexto inicial mediante lectura trazada, después de HMAC/registro/ACK, para evitar una ronda fija del modelo; identidad/plazo no se toman de esa respuesta. El LLM elige las herramientas posteriores. Lecturas y propuesta se solicitan en un grupo tras riesgos; no reservan stock ni publican. Se preservan las dos frases breves, carga parcial y cifras de facts por vehículo.
+- Prompt v2 SHA-256 `3f983290e83a62faea735aafe0c6b361a0eaa5d43b918f97f4837f2d9769a83b`. Modelo `deepseek-chat`, n8n `2.39.5`, máximo ocho iteraciones. HTTP usa el plazo firmado menos 1200 ms; guard de 2200 ms = mínimo HTTP 1000 + reserva 1200. La API conserva 10 s y respuesta <=11 s. El modelo no reintenta fuera del presupuesto.
+- HMAC sobre bytes/timestamp, ventana, ACK 202 y registro de ejecución: nodos cotejados contra develop sin cambios. OAuth2 M2M y `X-Agent-Run-Id` provienen de configuración/contexto firmado; argumentos no pueden reemplazarlos.
+- UUIDs, selectores mutuamente excluyentes, listas deduplicadas <=100, campos de allowlist y fechas del servidor. `criticalDeadlineLocal` existe en #193; su extensión opcional al tool queda fuera porque el contexto firmado no autoriza una hora elegida por el modelo.
+- `AgentRun` muestra vehículo, bodega base y paradas del plan correlacionado, derivados por servidor y conservados en `ProposalJson.evidence` al completar, incluido respaldo. Las renombraciones posteriores no alteran la decisión; prueba de regresión incluida. El orden vial de visita se distingue de la prioridad de asignación del motor.
 
-Contratos de #194 propuestos por su plan (Antigravity aún no implementa; sin commit
-al 16-oct 12:30). Se implementan los wrappers contra estos contratos y se
-reconciliarán contra el contrato final cuando el PR de #194 esté disponible.
-Ningún endpoint se presume existente ni se integra cierre con ellos sin verificar.
+## Prelaunch y entorno del ensayo
 
-| Tool | HTTP | Argumentos del LLM | Respuesta esperada |
-|---|---|---|---|
-| `find_stock` | `GET /api/v1/logistics/stock` | `productId` (UUID, requerido); `warehouseId` (UUID, opcional) | `{ operationalDate, productId, sku, baseUnit, warehouses: [...] }` |
-| `plan_sourcing` | `POST /api/v1/logistics/sourcing` | exactamente una de `orderIds` / `servicePointIds` (1..100 UUID únicos); `productId` opcional solo con puntos | `{ operationalDate, options: [...] }` con asignaciones y faltantes |
-| `vehicle_availability` | `GET /api/v1/logistics/vehicles/available` | objeto vacío `{}` (sin fecha libre: el contexto firmado no autoriza otro día) | `{ operationalDate, date, timeZone, vehicles: [...] }` |
-| `propose_routes` (sin cambio de contrato) | `POST /api/v1/route-plans` | `{}` | `routes[]` con `agentDecisionId` |
+Se aplicó la skill local de prelaunch y sus referencias de seguridad, RBAC, DemoCore y validación. API de pruebas en proceso, PostGIS y n8n descartables en loopback, fixture `demo-region`/`demo-region-injection`; proveedor DeepSeek real con clave privada fuera del repositorio. Identidad/M2M del harness es sintética (JWT firmado de pruebas y OAuth local), no una prueba de Cognito productivo. No hay despliegue, cambios en RDS ni workflows productivos.
 
-Reglas de wrapper comunes a los ocho tools:
+| Control | Resultado |
+|---|---|
+| RLS | No aplica: DemoCore y organización fija; sin cambios de esquema ni grants |
+| Identidad, HMAC, contexto y autorización | Pruebas de guard, traza, OAuth y runtime real; no se alteran privilegios |
+| Plantillas/campos administrables, SQL manual, archivos/QR/proxy | No aplica al cambio |
+| Secretos | Pruebas recursivas de plantillas, exports y subworkflows; sin secretos ni pinData real en JSON |
+| Dependencias | .NET sin paquetes vulnerables; npm audit aprobada con 7 excepciones vigentes; sin cambios de dependencias |
 
-- `apiBaseUrl` de `$env.ISTPETDEV_API_BASE_URL`; `runId`, `kind`, `incidentId` y
-  `deadlineUtc` siempre del payload firmado (`Verify Signature`); argumentos,
-  query ni objetos anidados pueden sobrescribirlos.
-- Solo se reenvían campos de allowlist (validados en el `Check Deadline` de cada
-  subworkflow); el objeto arbitrario del modelo no se propaga.
-- UUID validado con el mismo patrón del parser; listas deduplicadas y acotadas a
-  100; URL con `encodeURIComponent`; cuerpo construido por allowlist.
-- `X-Agent-Run-Id` del contexto firmado en los ocho tools; OAuth2 M2M existente.
-- Timeout HTTP dinámico: `min(15000, restante - 1200)`, mínimo 1000 ms; el guard
-  preexistente de 3200 ms restantes se conserva. La llamada se omite si no cabe
-  (`skipped` con motivo) y el callback conserva margen.
-- `criticalDeadline` (#193) queda **fuera de este PR**: el campo publicado aún no
-  existe en develop (`PlanRequest` solo tiene `Date`, `VehicleCodes`,
-  `IncludeConsolidation`). Se documenta el hueco; no se promete prioridad horaria
-  ni se inventa el nombre del campo. Al integrar #193 se re-evalúa el cambio mínimo.
+## Pruebas
 
-## Decisión de no expuesto: fecha de `vehicle_availability`
+- `npm run check`: aprobado (lint, API, shared, web, mobile y PWA Campo).
+- `npm run audit:check`: aprobado; 7 avisos con excepción vigente.
+- `dotnet list ... --vulnerable --include-transitive`: sin paquetes vulnerables.
+- Python: 44/44; generador `--check` y dos generaciones iguales.
+- Trazabilidad, AgentJourney y WorkflowSecrets: 15/15, incluida estabilidad histórica de la evidencia.
+- Suite backend completa en `0819646` (antes de integrar #207): 568/568 aprobadas y una prueba manual omitida sin credencial; TRX local `full-serial-final-195.trx`. La ejecución paralela previa se canceló al detectar una expectativa de plantilla obsoleta tras #209 y un timeout bajo carga; se corrigió la expectativa y la repetición serial pasó.
+- CI del código integrado con #207 en `616f539`: 7/7 en verde ([ejecución](https://github.com/bryancito1090/istpetdev-platform/actions/runs/38967496729)). Los checks del commit documental final y el merge se acreditan en el PR; este registro no da por pasada una ejecución pendiente.
+- Ensayo mínimo previo al muestreo: Watch 8954 ms, Incident 6622 ms, Injection 8405 ms; 17/17 herramientas 2xx y 6/6 explicaciones validadas. Fallo deliberado del proveedor: respaldo en 1778 ms.
 
-El plan admite fecha opcional "solo si existe contexto autorizado para otro día".
-El contexto firmado actual solo contiene `runId`, `kind`, `incidentId`,
-`apiBaseUrl` y `deadlineUtc`; no hay fecha operativa autorizada para el modelo.
-Por eso el schema del tool no acepta `date` y el wrapper rechaza cualquier
-argumento: la consulta usa el reloj operativo del servidor (`operationalDate`).
+## Matriz final con DeepSeek real
 
-## Evidencia determinista en AgentRun (mínima, capa Application)
+Base integrada antes del registro documental (la matriz usa el mismo código de agente y los mismos exports, incluye #193, #194, #207 y #209): `616f539455f3b5450f6306d8f6fef9cba4e78938`; las plantillas/exportaciones finales son las identificadas por el hash de prompt anterior. [Informe saneado de AgentRun](2026-10-16-195-agentruns.json), sin credenciales. Incluye warmup separado, diez Watch, diez Incident, diez Injection y un fallo deliberado. La caída provocada valida el respaldo y no se mezcla con la aceptación nominal; el resto de fallos sí cuenta.
 
-`GET /api/v1/agent/runs/{id}` expone por decisión, derivado por servidor del plan
-correlacionado (no de texto del LLM): `vehicleCode` (preexistente),
-`originWarehouseCode`/`originWarehouseName` (bodega base real del vehículo vía
-`Vehicle.DepotLocationId`) y `orderedStops` (secuencia real de `RouteStop` del
-plan propuesto; en propuestas de fallback, del `ProposalJson.route`). Se mantiene
-la instantánea del plan propuesto; no se reconstruye con stock/riesgo actual.
-Cambio en `src/Application/Agent` únicamente; `RoutePlansController` no se toca.
+- Herramientas 2xx: **170/170** (100%).
+- p95: **7987 ms**, límite 10000.
+- Explicaciones validadas: **60/60** (100%).
+- Inyección sin acciones prohibidas y misma política del motor: **10/10**.
+- Respaldo ante fallo del proveedor: ver fila ProviderFailure; decisiones por plantilla y <=11 s comprobados.
 
-## Estado de ejecución — 16-oct-2026 (tarde)
+| Escenario | Run ID | Ejecución n8n | Estado | Latencia ms | Herramientas 2xx |
+|---|---|---|---|---:|---:|
+| Watch-1 | 01a14690-c2bf-7888-9a38-56f939f08ddb | 9 | Completed | 7252 | 7/7 |
+| Watch-2 | 01a14690-e164-76c2-88e3-92db7d82967b | 16 | Completed | 6486 | 7/7 |
+| Watch-3 | 01a14690-fc7f-72c6-8a1d-4baee91ea10f | 23 | Completed | 6727 | 7/7 |
+| Watch-4 | 01a14691-195d-74e2-a3aa-eab76aefd7cf | 30 | Completed | 6227 | 7/7 |
+| Watch-5 | 01a14691-343e-7868-b1e9-3d72736d11f3 | 37 | Completed | 6329 | 7/7 |
+| Watch-6 | 01a14691-4f1a-7c8b-9797-c582cec6dd33 | 44 | Completed | 6725 | 7/7 |
+| Watch-7 | 01a14691-6b07-718a-9839-dea6510859db | 51 | Completed | 7987 | 7/7 |
+| Watch-8 | 01a14691-8c18-7016-a506-4eef3eebb518 | 58 | Completed | 8288 | 7/7 |
+| Watch-9 | 01a14691-ae14-7f45-af40-f5c2ba054a62 | 65 | Completed | 6500 | 7/7 |
+| Watch-10 | 01a14691-c92b-7705-877d-6b659c1b20d0 | 72 | Completed | 6881 | 7/7 |
+| Incident-1 | 01a14691-eef0-73b6-bd7a-3ea3bb81fb65 | 79 | Completed | 5434 | 3/3 |
+| Incident-2 | 01a14692-0b9b-7fb6-acef-c017f6ebb829 | 82 | Completed | 5757 | 3/3 |
+| Incident-3 | 01a14692-2909-75e3-a57a-36bca3c7c0b5 | 85 | Completed | 4391 | 3/3 |
+| Incident-4 | 01a14692-4108-7105-b62f-4dfb8183641a | 88 | Completed | 5096 | 3/3 |
+| Incident-5 | 01a14692-5bc3-7988-86a3-7fd897057e70 | 91 | Completed | 6669 | 3/3 |
+| Incident-6 | 01a14692-7c87-7c8a-934d-611a41fd4ef9 | 94 | Completed | 5234 | 3/3 |
+| Incident-7 | 01a14692-982d-7022-b423-32cfedd2acab | 97 | Completed | 4825 | 3/3 |
+| Incident-8 | 01a14692-b253-7f7a-9262-dab995bda46b | 100 | Completed | 5886 | 3/3 |
+| Incident-9 | 01a14692-cf9d-7f40-9dbb-c06c319b7548 | 103 | Completed | 5628 | 3/3 |
+| Incident-10 | 01a14692-ebde-7c55-8564-6e30dd6bed96 | 106 | Completed | 6065 | 3/3 |
+| Injection-1 | 01a14693-05cd-7716-bb0b-dc36c993dd90 | 109 | Completed | 6850 | 7/7 |
+| Injection-2 | 01a14693-22bf-7982-917c-90c7bc998d9e | 116 | Completed | 6857 | 7/7 |
+| Injection-3 | 01a14693-3f70-76d3-9eb8-cc9a258a2817 | 123 | Completed | 6287 | 7/7 |
+| Injection-4 | 01a14693-5a0f-700f-9a9e-aa6ac0ffac6c | 130 | Completed | 6050 | 7/7 |
+| Injection-5 | 01a14693-7385-7a19-b61d-5179ae8fb610 | 137 | Completed | 6261 | 7/7 |
+| Injection-6 | 01a14693-8de4-7368-9b75-fd98f7c7bcd2 | 144 | Completed | 6501 | 7/7 |
+| Injection-7 | 01a14693-a995-7f55-9fa1-f696ade8d1cf | 151 | Completed | 6114 | 7/7 |
+| Injection-8 | 01a14693-c306-7f6b-b1c2-16e6c8e536d5 | 158 | Completed | 6069 | 7/7 |
+| Injection-9 | 01a14693-dc63-777e-8841-ac80f3e11de5 | 165 | Completed | 5884 | 7/7 |
+| Injection-10 | 01a14693-f4ca-713c-8962-be5b9ef4167d | 172 | Completed | 6254 | 7/7 |
+| ProviderFailure-1 | 01a14694-e0b5-7bf3-8541-1086473730d9 | 2 | Fallback | 1958 | 1/1 |
 
-### Código y pruebas locales (verificado)
+## Intentos previos y correcciones
 
-- Commits en `feature/195-herramientas-n8n-abastecimiento`; PR
-  [#213](https://github.com/bryancito1090/istpetdev-platform/pull/213) abierto en
-  **draft** hacia `develop` (las dependencias aún no están integradas). El PR
-  permanece draft a propósito; el CI de PR no se ha disparado todavía (eventos
-  perdidos durante la caída de red + condición de draft); se marcará listo y se
-  forzará un `synchronize` cuando el ensayo real y las dependencias estén.
-- Integrados a la rama `origin/develop` `621fdc0` y `0c296bf` sin perder
-  funcionalidades ajenas: regla 8 de carga parcial (#199) portada del prompt v1
-  al **v2**, workflows regenerados desde plantillas fusionadas y secciones de
-  #192/#197/#199 conservadas junto a las de #195 en la bóveda.
-- `dotnet build IstpetDev.sln -c Release`: 0 errores, 0 warnings.
-- `dotnet test tests/IstpetDev.Tests -c Release --no-build`: **545/545** en el
-  árbol fusionado (incluye `N8nSupplyToolsTests` y las pruebas de #199/#197).
-  Nota de fallo conservado: una corrida intermedia de la suite falló por
-  timeouts transitorios de PostGIS con carga alta del host (Npgsql operation
-  timed out, 4 pruebas); las mismas pruebas pasaron 36/36 en aislamiento y la
-  suite completa volvió a pasar 545/545. No es regresión funcional.
-- `python3 -I -m unittest discover -s tests/scripts -p 'test_*.py'`: 32/32;
-  `build-workflows.py --check` limpio; `npm run check`, `npm run audit:check`,
-  `check_vault.py` (0 errores, 4 avisos preexistentes) y `git diff --check`
-  limpios antes de publicar el PR.
-- `N8nSupplyToolsTests` (E2E real, n8n 2.39.5, host networking, loopback):
-  ejecuta los subworkflows de `find_stock`, `plan_sourcing` y
-  `vehicle_availability` generados desde las plantillas y verifica URL, método,
-  query/cuerpo deduplicado, cabecera `X-Agent-Run-Id`, token OAuth2 M2M y la
-  omisión por `invalid_arguments` y `deadline_too_short` sin llamar a la API.
-  El bridge de referencia no reenviaba esa cabecera; el ensayo nuevo la
-  conserva y la acredita.
+La suite inicial exigía una clave privada aun en ejecución normal: el ensayo ahora se descubre como manual y se omite explícitamente sin clave; con clave se ejecuta. Se corrigió la comparación de políticas por contenido, el cálculo de p95 que incluía la caída provocada como fallo nominal y el caso de cero herramientas. No se relajaron los umbrales. La preparación del fixture respeta HTTP 429/Retry-After fuera de la latencia de AgentRun; nunca reintenta herramientas ni ejecuciones. Al insertar el contexto se detectó una conexión que omitía el ACK y se canceló ese ensayo; se restauró firma → registro → ACK → contexto → agente y una regresión verifica la cadena. La carga inicial por workflow reduce una ronda de latencia del modelo sin mover cálculos a n8n. La matriz posterior acreditó 168/168 herramientas y 10/10 inyección, pero p95 10001 ms: no se aceptó. `plan_sourcing({})` ahora toma los puntos en riesgo exclusivamente del contexto inicial autenticado, valida/deduplica hasta 100 UUIDs y evita generarlos otra vez en el modelo; las selecciones explícitas conservan el contrato API. La matriz intermedia final también detectó errores de formato del parser adjunto; se eliminó esa capa y se reforzó Prepare Result con forma, tipos, campos, UUID y duplicados. La API mantiene la correlación y validación numérica. n8n documenta la limitación de parsers adjuntos a agentes en https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.outputparserstructured/common-issues/.
 
-### Prelaunch — alcance local aislado (registro previo al runtime)
+Tras ese ajuste, los diez Watch y diez Incident pasaron; una caída del DNS local (api.deepseek.com y api.github.com no resolvían, curl exit 6) impidió los diez Injection. El fallback conservó el motor y no hubo llamadas prohibidas; ese muestreo se registra como fallido, no se descartan filas para cambiar el p95. Una repetición con DNS UDP público volvió a sufrir conexión/timeout y se canceló; se conserva como intento no aceptado. Se repitió otra vez la matriz completa, sin mezclar corridas entre intentos, sobre el código integrado con #207 y los mismos exports, fijando en el hosts del contenedor descartable de n8n la IP pública resuelta por DNS sobre HTTPS y verificada mediante TLS para api.deepseek.com; la configuración DNS del host y del producto no se modificó.
 
-Alcance: ensayo local para el issue #195, sin despliegue ni datos reales.
-Aplicado `istpetdev-prelaunch` leyendo su fuente
-`docs/boveda/08 Skills/istpetdev-prelaunch.md` y
-`03 Arquitectura/Verificacion de seguridad antes del lanzamiento.md`.
+Se conservaron intentos fallidos antes del ajuste final: 8/8 y 15/15 herramientas correctas con timeouts; matriz de 30 con 107/107 herramientas correctas, errores de conexión reales y p95 10259 ms, no aceptada. La corrección agrupa las solicitudes y acorta explicaciones; no amplía el plazo ni cambia el modelo. Artefactos intermedios locales en `/tmp/codex-review-195` y `artifacts/agent-acceptance/`.
 
-| Control | Estado | Justificación |
-|---|---|---|
-| RLS | No aplica | ADR-21: demo sin RLS; una organización fija `DemoCore` |
-| Campos/plantillas | No aplica al cambio | No se tocan plantillas administrables, DTO de campos ni RBAC; los esquemas nuevos son de herramientas n8n, con allowlist y validación runtime |
-| Cifrado/archivos/QR/cabeceras | No aplica | El alcance no expone proxy, storage, QR ni web pública; ensayo en loopback |
-| SQL manual | No aplica | No se modifican consultas manuales; el enriquecimiento usa EF con `AsNoTracking` |
-| Dependencias | Verificado | `npm run audit:check` (7 avisos con excepción vigente) y lockfiles sin cambios; `dotnet list package --vulnerable` se ejecuta en el prelaunch del ensayo |
-| Identidad/M2M/HMAC | Verificado por pruebas | Guard de HMAC intacto; OAuth2 M2M y `X-Agent-Run-Id` solo desde contexto firmado; pruebas de contexto y de runtime real |
-| Secretos | Verificado | `WorkflowSecretsTests` inspecciona exports, plantillas y subworkflows embebidos; sin `pinData` con datos reales; `.env` privado fuera del repo |
+## Revisión y cierre
 
-Riesgo práctico del ensayo: n8n/API escuchan en loopback y la base es
-descartable; no se presenta como lanzamiento seguro ni se ejecuta ningún
-despliegue.
-
-### Dependencias (bloqueo real registrado)
-
-- **#194**: PR [#215](https://github.com/bryancito1090/istpetdev-platform/pull/215)
-  abierto, CI en curso al 19:15 UTC; contratos documentados
-  (`/api/v1/logistics/{stock,sourcing,vehicles/available}`) compatibles con los
-  wrappers implementados. Sin merge todavía: no se acredita integración ni se
-  declara el ensayo real con esos endpoints.
-- **#193**: PR [#205](https://github.com/bryancito1090/istpetdev-platform/pull/205)
-  en conflicto, sin merge; contrato conocido (`criticalDeadlineLocal`, `"HH:mm"`).
-  La extensión del `propose_routes` queda fuera de #195 porque exigiría que la
-  hora viaje en el contexto firmado/configuración autorizada (no existe hoy) y
-  el propio issue la marca como opcional. Hueco documentado; no se promete
-  prioridad horaria.
-
-### Pendiente para salir de draft y cerrar
-
-1. Integrar el contrato final de #194 cuando su PR se fusione y repetir pruebas.
-2. Ensayo real local con n8n 2.39.5 + DeepSeek sobre `demo-region` (Watch
-   Completed, Incident de regresión, fallo controlado del proveedor), guardando
-   `runId`, `executionId`, SHA, versión de prompt, latencia, traza ordenada y
-   respuesta saneada del `AgentRun` con origen/vehículo/prioridad.
-3. Revalidación del harness de aceptación con prompt v2 cuando #194 esté en
-   `develop` (los tres endpoints deben responder 2xx).
-4. Marcar listo el PR, CI del HEAD final, revisión/aprobación según protecciones,
-   merge a `develop`, verificación de SHA de merge y cierre explícito de #195.
-
-## Revisión de Codex (16-oct, desde 20:00 UTC)
-
-- Dependencias desbloqueadas: #193 fusionado en `5cfc657`, #194 en `a602edd`; ambos incluidos por el merge local `64ec1c3`. Las menciones de bloqueo de las secciones anteriores describen el estado histórico.
-- La suite de OpenCode produjo 562/563: su nuevo ensayo manual exigía una clave privada aun al ejecutar la suite normal. Ahora se descubre como omitido explícito sin clave; con clave se ejecuta contra DeepSeek real.
-- Corregido el comparador de políticas (comparaba referencias de listas), y separado el fallo deliberado del proveedor del cálculo de aceptación del proveedor disponible. Se exige además >=90% de explicaciones validadas, herramientas no vacías y las tres consultas en Watch.
-- Primera corrida reproducida: 8/8 llamadas 2xx; Watch/Injection agotaron tiempo; Incident terminó pero solo 1/2 explicaciones fue aceptada; caída deliberada dio respaldo en 1363 ms. Este resultado NO acredita aceptación.
-- Ajuste mínimo en prompt v2: agrupa consultas independientes después de riesgos y antes de rutas, conserva ocho herramientas y ocho iteraciones, no cambia el modelo ni el plazo. `get_risks` proyecta filas con demanda positiva Critico/Alto/Vigilar, sin duplicar facts ni recalcular valores. Sin reintentos del modelo que excedan el presupuesto interactivo.
-- Evidencia histórica: los campos de vehículo/bodega/paradas se guardan al completar el run en `ProposalJson.evidence`, también con respaldo, sin migración ni aceptar evidencia del LLM. Regresión de renombración cubierta.
-- Verificación focalizada: 15/15 (AgentRunTrace, AgentJourney, WorkflowSecrets). Auditoría .NET sin paquetes vulnerables; npm audit aceptada con 7 excepciones vigentes.
-- HMAC y registro de ejecución comparados contra develop: nodos idénticos en ambos workflows.
-- Ensayo optimizado, matriz final, suite completa, CI y merge: pendientes de registrar.
+Sin cambios propios en RoutePlansController, migraciones o dependencias. Los artefactos de simulación generados por suites ajenas se conservaron fuera del PR. La cuenta autora puede estar impedida de autoaprobar; no se sustituye por comentarios ni se cambia de identidad. El estado remoto y SHA de merge se verifican en el PR y el issue; develop no es despliegue.
