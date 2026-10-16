@@ -1,7 +1,7 @@
 ---
 tipo: validacion
 estado: propuesta
-actualizado: 2026-10-12
+actualizado: 2026-10-16
 tags: [demo, validacion, istpetdev]
 ---
 
@@ -127,3 +127,9 @@ Los siguientes IDs solo se definen aquí; su ejecución sigue pendiente. Usar [[
 | V-43 | Paquete y trabajo previo | Siete entregables, editable/PDF, video fechado, tag `pre-evento`, registro de cambios y congelamiento 15:45 | Manifiesto, archivos locales, tag, registro y acuse de entrega |
 
 La revisión de fichas SERCOP en [[SERCOP limpieza hospitalaria y sanciones]] aporta contexto de preguntas, no medición del costo de un faltante ni prueba de sanción causada por este prototipo. Si O-04 u O-06 siguen pendientes, V-41/V-43 no se marcan validados aunque haya ensayos de preparación.
+
+## Casos derivados de la charla de logística integral — 16-oct
+
+[[Logistica integral para el Reto 1 - hallazgos y evidencia]] enlaza las recomendaciones de detectar faltantes, comparar escenarios y rastrear de extremo a extremo con los criterios V existentes. Incluye ventana ilustrativa 07:00–09:30, carga/acceso incompatible, conteo físico, entrega parcial con corrección, agotamiento en bodega y alternativa de subcentro.
+
+Son casos propuestos, pendientes de ejecución y de datos empresariales. Registrar baseline, entradas al corte, recursos iguales, versión/entorno, cantidades/actores, km/tiempo/costos y límites. La charla exige distinguir beneficios declarados de resultados demostrados y comprensión de toda la operación; revisar también V-20 con personal operativo. No se crean resultados, porcentajes de ahorro ni validación de usuario a partir del testimonio.

@@ -110,3 +110,11 @@ sin duplicarlas; recepción/stock completados permanecen históricos. Fechas del
 dispositivo de demo siguen la ruta; la hora de servidor permanece real.
 Fuente: [spec 002](../../specs/002-motor-logistico/spec.md) y
 [seguimiento #39](../../specs/003-agente-logistico/task.md).
+
+## Contraste adicional: logística integral — recibido el 16-oct
+
+[[Logistica integral para el Reto 1 - hallazgos y evidencia]] propone validar acceso, flota, tráfico, capacidad y ventanas antes de zonificar la carga. El ejemplo de centro comercial 07:00–09:30 ilustra por qué el destino más cercano puede no ser la primera parada adecuada: el vehículo conserva su salida real desde bodega. Esa franja no es una restricción universal ni las menciones de Quito/Guayaquil/Cuenca sustituyen normativa vigente.
+
+La exposición pide hacer visibles esperas, horas extras, combustible y el costo adicional de corregir faltantes (“retroceso”). Para compararlos se necesitan registros por ruta/incidente y componentes de costo definidos, evitando contar dos veces personal, combustible o tramos. Negociar un costo promedio y consolidar entregas son prácticas relatadas en las preguntas finales; no se proporciona fórmula de ajuste del combustible ni tarifas comprobadas. Ver en la nota enlazada las incertidumbres sobre decreto, diésel, flota eléctrica y mantenimiento.
+
+La cobertura con subcentros puede evaluarse junto a ADR-28 para bloqueos o accesos difíciles; requiere inventario, flota y acceso disponibles. Los casos de ventana, vehículo incompatible, reentrega y bloqueo se proponen para V-05/V-06/V-07/V-18; su formulación no demuestra que estén implementados o ejecutados.
