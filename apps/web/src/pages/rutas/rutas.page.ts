@@ -530,6 +530,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                               <!-- Tabla de productos y lotes de la parada -->
                               @if (stop.lines && stop.lines.length > 0) {
+                                @if (stop.kind === 'Pickup') {
+                                  <p class="text-xs font-semibold text-amber-800 mb-1" data-pickup-load>Cargar en esta bodega (se entrega en las paradas siguientes):</p>
+                                }
                                 <div class="overflow-x-auto">
                                   <table class="w-full text-left text-xs min-w-[500px]">
                                     <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
@@ -588,8 +591,8 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 </div>
                               } @else {
                                 <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
-                                  @if (stop.sequence === 1) {
-                                    <span>Bodega de origen (recogida central). No descarga productos en este punto.</span>
+                                  @if (stop.kind === 'Pickup') {
+                                    <span>Bodega de recogida: no hay productos para cargar aquí.</span>
                                   } @else {
                                     <span>Sin productos registrados para esta parada.</span>
                                   }

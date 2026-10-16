@@ -188,12 +188,14 @@ public sealed class RoutePlansController(
         var plannedLoadsBySeq = new Dictionary<int, List<(Guid ProductId, string Sku, decimal Quantity, string BaseUnit)>>();
         string? polyline = null;
         List<double[]>? coordinates = null;
+        IReadOnlyList<Guid> orderIds = [];
         try
         {
             if (!string.IsNullOrWhiteSpace(plan.InputJson))
             {
                 using var doc = JsonDocument.Parse(plan.InputJson);
                 var root = doc.RootElement;
+                orderIds = OrderStopLoads.OrderIds(root);
                 if (root.TryGetProperty("polyline", out var polyElem))
                     polyline = polyElem.GetString();
                 if (root.TryGetProperty("coordinates", out var coordsElem) && coordsElem.ValueKind == JsonValueKind.Array)
@@ -228,6 +230,22 @@ public sealed class RoutePlansController(
         }
         catch { }
 
+        // Rutas del asistente: guardan los pedidos y no las cargas; se muestran las líneas pendientes de cada punto.
+        if (orderIds.Count > 0)
+        {
+            var fromOrders = new Dictionary<int, List<StopLoad>>();
+            await OrderStopLoads.FillAsync(db, orderIds,
+                stops.Where(s => !plannedLoadsBySeq.TryGetValue(s.SequenceNumber, out var l) || l.Count == 0), fromOrders, ct);
+            foreach (var (seq, loads) in fromOrders)
+            {
+                plannedLoadsBySeq[seq] = loads.Select(l => (l.ProductId, l.Sku, l.Quantity, l.BaseUnit)).ToList();
+                foreach (var load in loads) allProductIds.Add(load.ProductId);
+            }
+        }
+
+        var pickupLocationIds = stops.Where(s => s.Kind == RouteStopKind.Pickup && s.LocationId.HasValue).Select(s => s.LocationId!.Value).ToList();
+        var pickupLocations = await db.Locations.AsNoTracking().Where(l => pickupLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
+
         var products = await db.Products.AsNoTracking()
             .Where(p => allProductIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
@@ -238,14 +256,11 @@ public sealed class RoutePlansController(
             .ToDictionaryAsync(sp => sp.Id, ct);
 
         // Mapeo detallado de paradas con productos, lotes, bultos y entregas (#164)
-        var stopDetailList = stops.Select(s =>
+        var stopLinesById = stops.ToDictionary(s => s.Id, s =>
         {
-            servicePoints.TryGetValue(s.ServicePointId, out var sp);
             var stopDeliveries = planDeliveries.Where(d => d.RouteStopId == s.Id).ToList();
-            var primaryDelivery = stopDeliveries.FirstOrDefault();
-            var stopHus = stopDeliveries.SelectMany(d => husByDelivery.GetValueOrDefault(d.Id, new List<HandlingUnit>())).GroupBy(hu => hu.Id).Select(g => g.First()).ToList();
-
             var stopLines = new List<object>();
+            if (s.Kind == RouteStopKind.Pickup) return stopLines;
             if (stopDeliveries.Count > 0)
             {
                 foreach (var d in stopDeliveries)
@@ -309,14 +324,61 @@ public sealed class RoutePlansController(
                     });
                 }
             }
+            return stopLines;
+        });
+
+        // En una recogida en bodega se carga lo que se entrega hasta la siguiente recogida.
+        var pickupLoads = new Dictionary<Guid, List<dynamic>>();
+        List<dynamic>? loading = null;
+        foreach (var s in stops)
+        {
+            if (s.Kind == RouteStopKind.Pickup) { loading = pickupLoads[s.Id] = []; continue; }
+            loading?.AddRange(stopLinesById[s.Id].Cast<dynamic>());
+        }
+        foreach (var (pickupId, delivered) in pickupLoads)
+        {
+            stopLinesById[pickupId] = delivered
+                .GroupBy(l => ((Guid)l.productId, (string)l.sku))
+                .Select(g => (object)new
+                {
+                    deliveryId = (Guid?)null,
+                    deliveryCode = (string?)null,
+                    deliveryStatus = "Cargar",
+                    productId = g.Key.Item1,
+                    sku = g.Key.Item2,
+                    productName = (string)g.First().productName,
+                    lotId = (Guid?)null,
+                    lotCode = string.Join(", ", g.Select(l => (string)l.lotCode).Where(c => !string.IsNullOrEmpty(c)).Distinct()),
+                    lotExpiresOn = (string?)null,
+                    plannedQuantity = g.Sum(l => (decimal)l.plannedQuantity),
+                    dispatchedQuantity = g.Sum(l => (decimal)l.dispatchedQuantity),
+                    acceptedQuantity = 0m,
+                    rejectedQuantity = 0m,
+                    baseUnit = (string)g.First().baseUnit,
+                    handlingUnitId = (Guid?)null,
+                    handlingUnitCode = "",
+                    handlingUnitStatus = ""
+                })
+                .ToList();
+        }
+
+        var stopDetailList = stops.Select(s =>
+        {
+            servicePoints.TryGetValue(s.ServicePointId, out var sp);
+            var pickupLocation = s.LocationId is { } locId ? pickupLocations.GetValueOrDefault(locId) : null;
+            var stopDeliveries = planDeliveries.Where(d => d.RouteStopId == s.Id).ToList();
+            var primaryDelivery = stopDeliveries.FirstOrDefault();
+            var stopHus = stopDeliveries.SelectMany(d => husByDelivery.GetValueOrDefault(d.Id, new List<HandlingUnit>())).GroupBy(hu => hu.Id).Select(g => g.First()).ToList();
+            var stopLines = stopLinesById[s.Id];
 
             return new
             {
                 sequenceNumber = s.SequenceNumber,
+                kind = s.Kind.ToString(),
                 sequence = s.SequenceNumber,
                 servicePointId = s.ServicePointId,
-                servicePointCode = sp?.Code ?? "",
-                servicePointName = sp?.Name ?? sp?.Code ?? "",
+                servicePointCode = pickupLocation?.Code ?? sp?.Code ?? "",
+                servicePointName = pickupLocation?.Name ?? sp?.Name ?? sp?.Code ?? "",
                 status = s.Status,
                 plannedArrivalUtc = s.PlannedArrivalUtc,
                 plannedDepartureUtc = s.PlannedDepartureUtc,
@@ -343,7 +405,8 @@ public sealed class RoutePlansController(
         }).ToList();
 
         // Resumen agregado por producto de la ruta (#164)
-        var allLines = stopDetailList.SelectMany(s => s.lines.Cast<dynamic>()).ToList();
+        var deliveryStopsDetail = stopDetailList.Where(s => s.kind != nameof(RouteStopKind.Pickup)).ToList();
+        var allLines = deliveryStopsDetail.SelectMany(s => s.lines.Cast<dynamic>()).ToList();
         var productsSummary = allLines
             .GroupBy(l => (string)l.sku)
             .Where(g => !string.IsNullOrEmpty(g.Key))
@@ -356,7 +419,7 @@ public sealed class RoutePlansController(
                     .Select(lg => new { lotCode = lg.Key, quantity = lg.Sum(x => (decimal)x.plannedQuantity) })
                     .ToList();
 
-                var stopsCount = stopDetailList.Count(s => s.lines.Cast<dynamic>().Any(l => (string)l.sku == g.Key));
+                var stopsCount = deliveryStopsDetail.Count(s => s.lines.Cast<dynamic>().Any(l => (string)l.sku == g.Key));
                 var statuses = g.Select(x => (string)x.deliveryStatus).Where(st => !string.IsNullOrEmpty(st)).Distinct().ToList();
 
                 return new
