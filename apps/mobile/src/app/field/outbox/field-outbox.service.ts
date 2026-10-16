@@ -12,6 +12,7 @@ import {
 } from '@istpetdev/shared-core';
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { generateUuidV7 } from '../uuid';
+import { effectiveDeliveryStatus } from '../custody-state';
 
 export type OutboxCommandKind = 'Receipt' | 'Pickup' | 'Deliver';
 
@@ -753,7 +754,9 @@ export class FieldOutboxService {
     }
 
     if (item.ownerAccountId !== this.owner()) throw new Error('La captura pertenece a otra cuenta.');
-    if (newVersion !== undefined) {
+    if (newVersion !== undefined && item.receiptPayload) {
+      // #162: los comandos de custodia no tienen receiptPayload; solo las capturas de recepción
+      // adaptan su versión esperada.
       item.expectedDeliveryVersion = newVersion;
       item.receiptPayload.expectedDeliveryVersion = newVersion;
     }
@@ -788,6 +791,18 @@ export class FieldOutboxService {
       .sort((a, b) => new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime())
       .pop();
     return accepted?.custodyResponse?.status ?? null;
+  }
+
+  /**
+   * #162: estado monotónico de la entrega que combina snapshot, comandos confirmados y el estado
+   * de los bultos; un snapshot Received/Partial nuevo no retrocede por un Deliver viejo en IndexedDB.
+   */
+  effectiveDeliveryStatus(deliveryId: string, snapshotStatus: string, handlingUnitStatuses: string[]): string {
+    return effectiveDeliveryStatus({
+      deliveryStatus: snapshotStatus,
+      handlingUnits: handlingUnitStatuses.map((status) => ({ status })),
+      acceptedCustodyStatus: this.latestCustodyStatus(deliveryId),
+    });
   }
 
   /**

@@ -52,7 +52,11 @@ export type FieldErrorCode =
   | 'INVALID_STATE_TRANSITION'
   | 'HANDLING_UNIT_STATE_CONFLICT'
   | 'NO_HANDLING_UNITS'
-  | 'RECEIPT_REQUIRES_RECEIVER';
+  | 'RECEIPT_REQUIRES_RECEIVER'
+  | 'INCOMPLETE_HANDLING_UNITS'
+  | 'INSUFFICIENT_VEHICLE_STOCK'
+  | 'RECEIPT_COVERAGE_MISMATCH'
+  | 'INVALID_OPERATION_ID';
 
 // Problem Details estandarizado (RFC 7807)
 export interface FieldProblemDetails {
@@ -359,8 +363,12 @@ export interface RejectedCaptureDto {
   servicePointId: string;
   servicePointCode: string;
   servicePointName: string;
+  /** @deprecated campo legado: desde #162 la recepción la registra el Receptor, no el Conductor. */
   driverId: string;
+  /** @deprecated usar registeredByName; se conserva por compatibilidad del contrato. */
   driverName: string;
+  /** #162: nombre de quien registró la recepción (el Receptor). */
+  registeredByName?: string;
   receivedAtUtc: string;
   reason: string;
   status: string;

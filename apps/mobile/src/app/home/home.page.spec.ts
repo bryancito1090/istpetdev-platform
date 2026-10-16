@@ -116,7 +116,8 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
   let page: HomePage;
   let outbox: { saveReceiptAtomic: ReturnType<typeof vi.fn>; loadReceiverUnit: ReturnType<typeof vi.fn>; pendingCount: ReturnType<typeof signal<number>> };
   const unit = { handlingUnitId: 'hu', code: 'BULTO', status: 'Delivered', deliveryId: 'delivery', deliveryVersion: 3,
-    destinationName: 'Hospital', lines: [{ deliveryLineId: 'line', lotId: 'lot', lotCode: 'L-01', sku: 'SKU', productName: 'Insumo', quantity: 10, unit: 'L' }] };
+    destinationName: 'Hospital', boxes: [{ handlingUnitId: 'hu', code: 'BULTO', status: 'Delivered' }, { handlingUnitId: 'hu-2', code: 'BULTO-2', status: 'Delivered' }],
+    lines: [{ deliveryLineId: 'line', lotId: 'lot', lotCode: 'L-01', sku: 'SKU', productName: 'Insumo', quantity: 10, unit: 'L' }] };
   beforeEach(async () => {
     outbox = { pendingCount: signal(0), saveReceiptAtomic: vi.fn(async () => ({})),
       loadReceiverUnit: vi.fn(async () => ({ unit, cached: true })) };
@@ -130,6 +131,8 @@ describe('Receptor: recepción parcial y evidencia #115', () => {
   });
 
   it('valida motivo y foto antes de guardar 6 aceptadas y 4 rechazadas', async () => {
+    // #162: el alcance es la entrega completa con todos sus bultos.
+    expect(page.receiverActiveBox()?.boxes.length).toBe(2);
     page.receiverLines[0].quantityAccepted = 6;
     await page.confirmReceiverAction();
     expect(page.receiverError()).toContain('motivo');

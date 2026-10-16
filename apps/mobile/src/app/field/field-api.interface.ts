@@ -62,6 +62,12 @@ export interface ReceiverUnitLine {
   unit: string;
 }
 
+export interface ReceiverUnitBox {
+  handlingUnitId: string;
+  code: string;
+  status: string;
+}
+
 export interface ReceiverUnit {
   handlingUnitId: string;
   code: string;
@@ -69,6 +75,8 @@ export interface ReceiverUnit {
   deliveryId: string;
   deliveryVersion: number;
   destinationName: string;
+  /** #162: todos los bultos de la entrega; el recibo final cubre la entrega completa. */
+  boxes: ReceiverUnitBox[];
   lines: ReceiverUnitLine[];
 }
 

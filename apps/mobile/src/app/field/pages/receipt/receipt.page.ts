@@ -192,8 +192,12 @@ export class ReceiptPage implements OnInit {
     const del = this.delivery();
     if (!del) return 'WaitingWarehouse';
 
-    // El último comando aceptado por el servidor manda sobre el snapshot descargado.
-    const status = this.outboxService.latestCustodyStatus(del.deliveryId) ?? del.status;
+    // Estado monotónico: snapshot + comandos confirmados + estado de los bultos.
+    const status = this.outboxService.effectiveDeliveryStatus(
+      del.deliveryId,
+      del.status,
+      del.handlingUnits.map((hu) => hu.status),
+    );
 
     if (status === 'Delivered') return 'Delivered';
     if (status === 'Received' || status === 'Partial') return 'Received';
@@ -303,6 +307,14 @@ export class ReceiptPage implements OnInit {
   private async runCommand(command: 'Pickup' | 'Deliver', label: string): Promise<void> {
     const del = this.delivery();
     if (!del || this.busy()) return;
+
+    // Guarda también antes de guardar el comando, no solo en la plantilla.
+    const expectedStage: CustodyStage = command === 'Pickup' ? 'ToPickup' : 'ToDeliver';
+    if (this.stage() !== expectedStage) {
+      this.validationError.set('La entrega no está en el estado que permite esa acción. Descarga la ruta de nuevo.');
+      return;
+    }
+
     this.validationError.set(null);
     this.busy.set(true);
     try {

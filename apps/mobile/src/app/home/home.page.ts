@@ -115,6 +115,10 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
             }
             @if (receiverActiveBox(); as box) {
               <h2 class="font-bold">{{ box.code }} · {{ box.destinationName }}</h2>
+              <p class="text-xs text-slate-600">
+                Recepción por <strong>entrega completa</strong>: {{ box.boxes.length }} bulto(s)
+                ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma todas las líneas enviadas.
+              </p>
               @for (line of receiverLines; track line.deliveryLineId) {
                 <div class="space-y-3 rounded border p-3">
                   <h3 class="font-bold">{{ line.productName }}</h3>
@@ -148,7 +152,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
               @if (receiverPhoto(); as photo) { <p>Foto adjunta: {{ photo.name }}</p> }
               <ion-button expand="block" color="success" (click)="confirmReceiverAction()"
                 [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
-                Guardar recepción
+                Guardar recepción de la entrega completa
               </ion-button>
             }
             @if (receiverConfirmedMessage()) { <p role="status">{{ receiverConfirmedMessage() }}</p> }
@@ -516,9 +520,13 @@ export class HomePage implements OnInit {
     }
   }
 
-  // #162: el conductor solo recoge/entrega; el snapshot se corrige con el último comando confirmado.
+  // #162: el conductor solo recoge/entrega; el estado es monotónico (snapshot + comandos confirmados + bultos).
   private driverStage(del: MobileAssignmentDelivery): string {
-    const status = this.outboxService.latestCustodyStatus(del.deliveryId) ?? del.status;
+    const status = this.outboxService.effectiveDeliveryStatus(
+      del.deliveryId,
+      del.status,
+      del.handlingUnits.map((hu) => hu.status),
+    );
     if (status === 'Dispatched') {
       const unitsReady = del.handlingUnits.length > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
       return unitsReady ? 'Dispatched' : 'WaitingWarehouse';
