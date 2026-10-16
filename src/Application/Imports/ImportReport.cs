@@ -40,7 +40,9 @@ public sealed class ImportReport(Guid batchId, string profile, bool dryRun)
     public string Profile { get; } = profile;
     public bool DryRun { get; } = dryRun;
     public bool Applied { get; set; }
+    public string Status { get; set; } = "Pending";
     public string CountsMode { get; set; } = "Planned";
+    public FeasibilityReport? Feasibility { get; set; }
     public int ErrorCount { get; private set; }
     public int WarningCount { get; private set; }
     public int OmittedIssues { get; private set; }

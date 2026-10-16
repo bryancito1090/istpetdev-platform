@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using IstpetDev.Application.Common.Interfaces;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ public interface IImportService
 
 public sealed class ImportConflictException(string message) : Exception(message);
 
-public sealed class ImportService(IApplicationDbContext db, ITabularReader reader) : IImportService
+public sealed class ImportService(IApplicationDbContext db, ITabularReader reader, IOperationalClock? clock = null) : IImportService
 {
     public async Task<ImportReport> RunAsync(ImportRequest request, CancellationToken cancellationToken = default)
     {
@@ -85,11 +86,14 @@ public sealed class ImportService(IApplicationDbContext db, ITabularReader reade
             var writer = new CanonicalWriter(db, context, report, batch.Id, request.ActorAccountId);
             foreach (var entity in CanonicalSchema.Order)
                 if (parsed.TryGetValue(entity, out var rows)) writer.Write(entity, rows);
+            var today = clock is null ? DateOnly.FromDateTime(DateTime.UtcNow) : await clock.TodayAsync(cancellationToken);
+            report.Feasibility = FeasibilityAnalyzer.Analyze(context, parsed, today);
             var validChanges = report.Entities.Sum(e => e.Created + e.Updated) > 0;
             if (!validChanges && !report.HasErrors) report.Error(request.Files[0].Entity, 0, null, "empty_dataset", "El envío no contiene filas válidas; añada datos antes de importar.");
             report.Applied = !request.DryRun && validChanges && (!report.HasErrors || request.AllowPartial);
             if (!report.Applied) db.ChangeTracker.Clear();
             batch.Status = report.Applied ? "Applied" : report.HasErrors || !validChanges ? "Rejected" : "DryRun";
+            report.Status = batch.Status;
             report.CountsMode = report.Applied ? "Committed" : batch.Status == "DryRun" ? "Planned" : "None";
             if (batch.Status == "Rejected")
                 foreach (var entity in report.Entities) { entity.Created = 0; entity.Updated = 0; }
@@ -108,7 +112,7 @@ public sealed class ImportService(IApplicationDbContext db, ITabularReader reade
             report.CountsMode = "None";
             foreach (var entity in report.Entities) { entity.Created = 0; entity.Updated = 0; }
             report.Error(request.Files[0].Entity, 0, null, "transaction_failed", "No se aplicó el lote; revise el conflicto y vuelva a validar en seco.");
-            batch.Status = "Rejected"; batch.ReportJson = report.ToJson();
+            batch.Status = "Rejected"; report.Status = batch.Status; batch.ReportJson = report.ToJson();
             db.ImportBatches.Add(batch);
             try { await db.SaveChangesAsync(CancellationToken.None); }
             catch { db.ChangeTracker.Clear(); throw; }

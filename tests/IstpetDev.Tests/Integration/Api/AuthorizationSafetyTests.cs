@@ -69,7 +69,7 @@ public sealed class AuthorizationSafetyTests(PostgisContainer postgres) : IClass
     }
 
     [Fact]
-    public async Task Technical_account_uses_registered_client_and_technical_scope_and_cannot_import()
+    public async Task Technical_account_uses_registered_client_and_technical_scope_and_cannot_apply_imports()
     {
         const string technicalClient = "technical-test-client";
         var connection = postgres.NewDatabase();
@@ -80,7 +80,10 @@ public sealed class AuthorizationSafetyTests(PostgisContainer postgres) : IClass
         { db.Add(new Account { Kind = "technical", Issuer = TestTokens.Issuer, Subject = technicalClient, Role = Roles.Automatizacion, IsActive = true }); await db.SaveChangesAsync(); }
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestTokens.Create("provider-sub", clientId: technicalClient, scope: "automation/risk.read"));
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/v1/service-points")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/imports", null)).StatusCode);
+        // #209: la automatización puede revisar en seco (sin cuerpo aquí: 400), pero nunca aplicar ni descartar filas.
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync("/api/v1/imports", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/imports?dryRun=false", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/imports?allowPartial=true", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/demo/reset", null)).StatusCode);
     }
 }
