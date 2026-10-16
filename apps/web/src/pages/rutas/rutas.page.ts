@@ -17,7 +17,9 @@ import {
   AgentRunViewDto,
   RejectedCaptureDto,
   RouteGeometryDto,
-  DriverOptionDto
+  DriverOptionDto,
+  PendingLoadLineDto,
+  describePendingLines
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
@@ -589,7 +591,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                     </tbody>
                                   </table>
                                 </div>
-                              } @else {
+                              }
+                              @if (hasPending(stop.loadQuantities)) {
+                                <!-- #199: atención parcial: lo requerido, lo que va en esta ruta y lo que queda pendiente -->
+                                <div class="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900" data-partial-load>
+                                  <p class="font-semibold mb-1">Carga parcial por capacidad</p>
+                                  @for (q of stop.loadQuantities; track q.sku) {
+                                    <p class="font-mono">{{ q.sku }}: requeridas {{ q.requiredQuantity | number:'1.0-2' }} · planificadas {{ q.plannedQuantity | number:'1.0-2' }} · pendientes {{ q.pendingQuantity | number:'1.0-2' }} {{ q.baseUnit }}</p>
+                                  }
+                                </div>
+                              }
+                              @if (!stop.lines || stop.lines.length === 0) {
                                 <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
                                   @if (stop.kind === 'Pickup') {
                                     <span>Bodega de recogida: no hay productos para cargar aquí.</span>
@@ -1228,17 +1240,19 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <div class="space-y-2">
                     @for (vm of availableVehicleMatches(); track vm.vehicleId) {
                       <div
-                        (click)="vm.isMatch ? selectedVehicleId.set(vm.vehicleId) : null"
+                        (click)="canSelectVehicle(vm) ? selectedVehicleId.set(vm.vehicleId) : null"
                         class="p-3 rounded-xl border text-xs transition-all"
                         [ngClass]="{
-                          'border-primary-600 ring-2 ring-primary-100 bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
-                          'border-slate-200 bg-white hover:border-slate-300 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
-                          'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed': !vm.isMatch
+                          'border-primary-600 ring-2 ring-primary-100 bg-white cursor-pointer': canSelectVehicle(vm) && selectedVehicleId() === vm.vehicleId,
+                          'border-slate-200 bg-white hover:border-slate-300 cursor-pointer': canSelectVehicle(vm) && selectedVehicleId() !== vm.vehicleId,
+                          'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed': !canSelectVehicle(vm)
                         }">
                         <div class="flex items-center justify-between">
                           <span class="font-bold text-slate-900 text-sm">{{ vm.vehicleCode }}</span>
                           @if (vm.isMatch) {
                             <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">COMPATIBLE</span>
+                          } @else if (canSelectVehicle(vm)) {
+                            <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">CARGA PARCIAL</span>
                           } @else {
                             <span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">NO COMPATIBLE</span>
                           }
@@ -1558,6 +1572,17 @@ export class RutasPage implements OnInit, OnDestroy {
     });
   }
 
+  // #199: un vehículo descartado solo por peso o volumen puede llevar una carga parcial;
+  // al confirmar, el servidor planifica lo que cabe y deja el remanente pendiente.
+  canSelectVehicle(vm: { isMatch: boolean; discardReason?: string | null }): boolean {
+    return vm.isMatch || (vm.discardReason ?? '').startsWith('excede_');
+  }
+
+  // #199: la parada tiene alguna línea con remanente pendiente.
+  hasPending(lines: PendingLoadLineDto[] | null | undefined): boolean {
+    return (lines || []).some(l => Number(l.pendingQuantity) > 0);
+  }
+
   generatePlan(): void {
     if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
@@ -1566,11 +1591,16 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         const count = res?.routes?.length ?? 0;
+        // #199: la API devuelve lo que no cupo por capacidad con sus cantidades; se informa sin recalcular.
+        const pendingLines: PendingLoadLineDto[] = (res?.unserved || []).flatMap((u: any) =>
+          (u.lines || []).map((l: any) => ({ ...l, pointCode: u.pointCode })));
+        const pendingText = describePendingLines(pendingLines);
         this.feedbackMessage.set({
           type: 'success',
-          text: count > 0 
+          text: (count > 0 
             ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!`
-            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.'
+            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.')
+            + (pendingText ? ` Carga parcial — ${pendingText}.` : '')
         });
         if (count > 0) {
           const first = res.routes[0];
@@ -1810,9 +1840,12 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.closeWizard();
+        // #199: el servidor recalcula la carga; si no cupo todo, el remanente queda pendiente en el pedido.
+        const pendingText = describePendingLines(res?.lines);
         this.feedbackMessage.set({
           type: 'success',
           text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+            + (pendingText ? ` Carga parcial por capacidad del vehículo — ${pendingText}. El remanente queda pendiente.` : '')
         });
         if (res?.id) this.selectedPlanId.set(res.id);
         this.loadPlans();
