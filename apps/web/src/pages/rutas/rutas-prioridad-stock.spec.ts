@@ -261,7 +261,7 @@ describe('RutasPage - Prioridad de Entrega, Costo de Priorizar y Stock por Bodeg
     const cardEl = fixture.nativeElement.querySelector('[data-testid="prioritization-comparison-card"]');
     expect(cardEl).toBeTruthy();
     const cardText = cardEl.textContent;
-    expect(cardText).toContain('Análisis Comparativo: Impacto de Priorizar Entregas Críticas');
+    expect(cardText).toContain('Análisis Comparativo: Costo de Priorizar Entregas Críticas');
     expect(cardText).toContain('Hora Límite: 11:00');
     expect(cardText).toContain('Hospital Pediátrico Baca Ortiz');
     expect(cardText).toContain('Llega antes de 11:00');

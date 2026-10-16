@@ -55,26 +55,28 @@ class BuildWorkflowsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.prompt = self.root / "prompt.md"
+        self.dataset_prompt = self.root / "dataset-prompt.md"
         self.templates = self.root / "templates"
         self.output = self.root / "output"
         self.templates.mkdir()
         self.prompt.write_text("Prompt de prueba", encoding="utf-8")
+        self.dataset_prompt.write_text("Prompt de dataset de prueba", encoding="utf-8")
         for name in builder.REQUIRED_WORKFLOWS:
-            (self.templates / f"{name}.template.json").write_text(
-                json.dumps(error_workflow() if name == "error-agente" else {
-                    **sample_workflow(),
-                    "settings": {"errorWorkflow": builder.ERROR_WORKFLOW_ID_MARKER},
-                }), encoding="utf-8"
-            )
+            workflow = error_workflow() if name == "error-agente" else sample_workflow()
+            if name in builder.AGENT_WORKFLOWS:
+                workflow["settings"] = {"errorWorkflow": builder.ERROR_WORKFLOW_ID_MARKER}
+            (self.templates / f"{name}.template.json").write_text(json.dumps(workflow), encoding="utf-8")
 
     def tearDown(self):
         self.temp.cleanup()
 
+    def build(self, *args, **kwargs):
+        return builder.build_workflows(self.prompt, self.templates, self.output, dataset_prompt_file=self.dataset_prompt, *args, **kwargs)
+
     def test_build_is_reproducible_and_injects_prompt_and_version(self):
-        args = (self.prompt, self.templates, self.output)
-        self.assertEqual(0, builder.build_workflows(*args))
+        self.assertEqual(0, self.build())
         first = {p.name: p.read_bytes() for p in self.output.glob("*.json")}
-        self.assertEqual(0, builder.build_workflows(*args))
+        self.assertEqual(0, self.build())
         second = {p.name: p.read_bytes() for p in self.output.glob("*.json")}
         self.assertEqual(first, second)
         for filename, content in first.items():
@@ -86,12 +88,17 @@ class BuildWorkflowsTests(unittest.TestCase):
                 self.assertEqual("n8n-nodes-base.errorTrigger", workflow["nodes"][0]["type"])
                 continue
             agent = next(n for n in workflow["nodes"] if "agent" in n["type"])
-            self.assertEqual("Prompt de prueba", agent["parameters"]["options"]["systemMessage"])
+            expected_prompt = "Prompt de dataset de prueba" if filename == "revision-dataset.json" else "Prompt de prueba"
+            self.assertEqual(expected_prompt, agent["parameters"]["options"]["systemMessage"])
             result = next(n for n in workflow["nodes"] if n["name"] == "Send Result")
-            self.assertEqual("v1", result["parameters"]["body"]["promptVersion"])
-            self.assertEqual("v1", workflow["meta"]["promptVersion"])
-            self.assertEqual(builder.ERROR_WORKFLOW_ID_MARKER, workflow["settings"]["errorWorkflow"])
-        self.assertEqual(0, builder.build_workflows(*args, check_only=True))
+            expected_version = "v1" if filename == "revision-dataset.json" else "v2"
+            self.assertEqual(expected_version, result["parameters"]["body"]["promptVersion"])
+            self.assertEqual(expected_version, workflow["meta"]["promptVersion"])
+            if filename == "revision-dataset.json":
+                self.assertNotIn("errorWorkflow", workflow.get("settings", {}))
+            else:
+                self.assertEqual(builder.ERROR_WORKFLOW_ID_MARKER, workflow["settings"]["errorWorkflow"])
+        self.assertEqual(0, self.build(check_only=True))
 
     def test_error_workflow_must_start_with_error_trigger(self):
         path = self.templates / "error-agente.template.json"
@@ -99,12 +106,12 @@ class BuildWorkflowsTests(unittest.TestCase):
         workflow["nodes"][0]["type"] = "n8n-nodes-base.webhook"
         path.write_text(json.dumps(workflow), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "primer nodo debe ser Error Trigger"):
-            builder.build_workflows(self.prompt, self.templates, self.output)
+            self.build()
 
     def test_missing_template_fails_before_creating_outputs(self):
         (self.templates / "incidente.template.json").unlink()
         with self.assertRaises(FileNotFoundError):
-            builder.build_workflows(self.prompt, self.templates, self.output)
+            self.build()
         self.assertFalse(self.output.exists())
 
     def test_secret_fields_are_rejected(self):

@@ -21,8 +21,11 @@ tags: [hackathon, equipo]
 - [[Evaluacion y entregables]], [[Consultas para la organizacion]].
 - [[Fuente y control documental]], [[Informacion inicial del equipo]], [[Manual oficial.pdf]].
 - [[Charla del sector limpieza - transcripcion recibida]] — texto completo aportado de la charla del 16-oct.
+- [[Charla de logistica integral - transcripcion recibida]] — segunda charla aportada por Bryan: cadena completa, costos y preguntas sobre combustible/flota.
 
 ## Producto
+
+- [[Logistica integral para el Reto 1 - hallazgos y evidencia]] — charla prioritaria señalada por Bryan; recomendaciones, ejemplos, indicadores y casos por comprobar.
 
 - [[Historia y propuesta de valor]], [[Alcance y prioridades]].
 - [[Hallazgos de la charla para el Reto 1]] — preguntas, respuestas y vacíos sobre consumo, inventario, pedidos, despachos y rutas.

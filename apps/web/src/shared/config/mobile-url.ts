@@ -11,6 +11,15 @@ export function getMobileAppUrl(): string {
     return environment.mobileAppUrl || '/campo/';
   }
 
+  if (typeof window !== 'undefined') {
+    if (
+      window.location.hostname === 'istpetdev.doicela.dev' ||
+      (window.location.protocol === 'https:' && !window.location.hostname.endsWith('.localhost'))
+    ) {
+      return '/campo/';
+    }
+  }
+
   const rawUrl = environment.mobileAppUrl || 'http://localhost:8100';
 
   if (typeof window === 'undefined') {

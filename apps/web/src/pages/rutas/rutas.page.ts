@@ -87,54 +87,54 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 @Component({
   selector: 'page-rutas',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent],
+  imports: [CommonModule, FormsModule, MapViewComponent],
   template: `
     <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <!-- Encabezado Principal -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-[22px] font-semibold text-[#1A2C44] tracking-tight">
-              Planificación de Rutas y Distribución
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+              Planificación y Asignación de Rutas
             </h1>
             @if (isAuditor()) {
-              <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]">
-                Auditoría (Solo Lectura)
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Panel de Auditoría (Solo Lectura)
               </span>
             }
           </div>
-          <p class="text-[13px] text-[#3C4F69] mt-0.5">
+          <p class="text-sm text-slate-500 mt-1">
             @if (isAuditor()) {
-              Auditoría y fiscalización de itinerarios: verificación de ventanas de atención, tiempos estimados de llegada y kilometraje de la red.
+              Auditoría y fiscalización de itinerarios: verificación de ventanas de atención, ETAs calculadas, tiempos de viaje y kilometraje.
             } @else {
-              Genera rutas de despacho hospitalario con abastecimiento automático desde los almacenes más cercanos y asignación de vehículos de transporte.
+              Genera rutas basadas en pedidos con abastecimiento automático desde la bodega más cercana, opciones multi-recogida y selección de vehículos.
             }
           </p>
         </div>
 
         @if (session.canWrite()) {
           <div class="flex items-center gap-2">
-            <!-- Botón Asistente IA de Rutas -->
+            <!-- Botón Pedir al Agente IA (n8n) -->
             <button
               type="button"
               (click)="triggerAgentWatch()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-1.5 rounded-md bg-white border border-[#E3E8EE] text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs disabled:opacity-50">
+              class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
               @if (agentLoading()) {
-                <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-[#635BFF] border-t-transparent rounded-full"></span>
-                <span>Consultando asistente…</span>
+                <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                <span>Consultando agente…</span>
               } @else {
-                <span>Consultar Asistente de Rutas</span>
+                <span>🤖 Pedir al Agente IA</span>
               }
             </button>
 
-            <!-- Botón de Ruta Urgente -->
+            <!-- Botón de Emergencia -->
             <button
               type="button"
               (click)="triggerEmergencyFlow()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center text-[13px] font-medium px-3.5 py-1.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs disabled:opacity-50">
-              <span>Proponer Ruta de Urgencia</span>
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
+              <span>Proponer Ruta de Emergencia</span>
             </button>
 
             <!-- Botón Nueva Ruta por Pedidos -->
@@ -142,7 +142,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               type="button"
               (click)="openOrderRoutingModal()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center text-[13px] font-medium px-4 py-1.5 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs disabled:opacity-50">
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50">
               <span>+ Nueva Ruta por Pedidos</span>
             </button>
           </div>
@@ -150,24 +150,24 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       </div>
 
       <!-- Selector de Pestañas: Rutas / Bandeja de Rechazos -->
-      <div class="flex items-center gap-6 border-b border-[#E3E8EE]">
+      <div class="flex items-center gap-6 border-b border-slate-200">
         <button
           type="button"
           (click)="activeTab.set('rutas')"
-          class="pb-3 text-[13px] font-medium border-b-2 transition-colors flex items-center gap-2"
-          [ngClass]="activeTab() === 'rutas' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
+          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+          [ngClass]="activeTab() === 'rutas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
           <span>Rutas Planificadas</span>
-          <span class="text-[11px] px-1.5 py-0.2 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#697386] font-mono">{{ routePlans().length }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">{{ routePlans().length }}</span>
         </button>
 
         <button
           type="button"
           (click)="activeTab.set('rechazos'); loadRejectedCaptures()"
-          class="pb-3 text-[13px] font-medium border-b-2 transition-colors flex items-center gap-2"
-          [ngClass]="activeTab() === 'rechazos' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
-          <span>Entregas con Novedad</span>
+          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
+          [ngClass]="activeTab() === 'rechazos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <span>Bandeja de Capturas Rechazadas</span>
           @if (rejectedCaptures().length > 0) {
-            <span class="text-[11px] px-1.5 py-0.2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-medium font-mono">{{ rejectedCaptures().length }}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold font-mono">{{ rejectedCaptures().length }}</span>
           }
         </button>
       </div>
@@ -176,53 +176,53 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         <!-- Banner de retroalimentación -->
         @if (feedbackMessage()) {
         <div 
-          class="p-3.5 rounded-lg text-[13px] font-medium flex items-center justify-between transition-all"
+          class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
           [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
           <div class="flex items-center gap-2">
-            <span class="font-semibold">[{{ feedbackMessage()!.type === 'success' ? 'Completado' : 'Aviso' }}]</span>
+            <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button (click)="feedbackMessage.set(null)" class="text-[#697386] hover:text-[#1A2C44] font-medium ml-3 text-[12px]">Cerrar</button>
+          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
         </div>
       }
 
-      <!-- Tarjeta del Asistente IA -->
+      <!-- Tarjeta del Agente IA n8n -->
       @if (agentRun()) {
-        <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 shadow-2xs space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F3F5] pb-3">
+        <div class="bg-gradient-to-r from-indigo-50/80 via-white to-purple-50/50 border border-indigo-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
             <div class="flex items-center gap-2.5">
-              <span class="px-2 py-1 bg-[#635BFF] text-white rounded-md text-[11px] font-semibold leading-none">Asistente</span>
+              <span class="p-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold leading-none">IA</span>
               <div>
-                <h3 class="text-[14px] font-semibold text-[#1A2C44]">Propuesta de Asignación Logística</h3>
-                <p class="text-[12px] text-[#697386]">
-                  Ejecución {{ agentRun()!.runId.substring(0, 8) }} &bull; Modelo: {{ agentRun()!.model || 'Estándar' }} &bull; Tiempo de respuesta: {{ agentRun()!.latencyMs }} ms
+                <h3 class="text-sm font-bold text-slate-900">Propuesta del agente logístico</h3>
+                <p class="text-[11px] text-slate-500">
+                  Ejecución {{ agentRun()!.runId.substring(0, 8) }} · Modelo: {{ agentRun()!.model || 'No informado' }} · Latencia: {{ agentRun()!.latencyMs }} ms
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-2">
               <span
-                class="text-[11px] px-2 py-0.5 rounded-md font-medium border"
+                class="text-xs px-2.5 py-1 rounded-full font-semibold border"
                 [ngClass]="agentRun()!.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
-                {{ agentRun()!.status === 'Completed' ? 'Completado' : agentRun()!.status === 'Fallback' ? 'Cálculo de respaldo' : agentRun()!.status === 'Running' ? 'En ejecución' : 'No completado' }}
+                {{ agentRun()!.status === 'Completed' ? '✓ Completado' : agentRun()!.status === 'Fallback' ? '⚠ Respuesta determinista' : agentRun()!.status === 'Running' ? 'En ejecución' : 'Falló la ejecución' }}
               </span>
-              <button (click)="agentRun.set(null)" class="text-[#8792A2] hover:text-[#1A2C44] text-[13px] ml-2">✕</button>
+              <button (click)="agentRun.set(null)" class="text-slate-400 hover:text-slate-600 text-sm ml-2">✕</button>
             </div>
           </div>
 
           <!-- Decisiones generadas por el Agente -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             @for (decision of agentRun()!.decisions; track decision.agentDecisionId) {
-              <div class="bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg p-3.5 space-y-2 text-[13px]">
+              <div class="bg-white border border-indigo-100 rounded-xl p-3.5 space-y-2 text-xs shadow-xs">
                 <div class="flex items-center justify-between">
-                  <span class="font-semibold text-[#1A2C44]">Vehículo: {{ decision.vehicleCode }}</span>
-                  <span class="text-[11px] font-medium text-[#697386] bg-white px-2 py-0.5 rounded border border-[#E3E8EE]">
-                    Fuente: {{ decision.source === 'Llm' ? 'Asistente IA' : 'Regla de negocio' }}
+                  <span class="font-bold text-slate-900">Vehículo: {{ decision.vehicleCode }}</span>
+                  <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    Fuente: {{ decision.source === 'Llm' ? 'DeepSeek LLM' : 'Plantilla' }}
                   </span>
                 </div>
-                <p class="text-[#3C4F69] leading-relaxed">{{ decision.explanation }}</p>
+                <p class="text-slate-700 leading-relaxed">{{ decision.explanation }}</p>
                 @if (decision.driverMessage) {
-                  <div class="bg-white border border-[#E3E8EE] rounded-md p-2 text-[12px] text-[#30313D]">
-                    <span class="font-medium text-[#1A2C44]">Instrucción al conductor:</span> "{{ decision.driverMessage }}"
+                  <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] text-slate-600">
+                    <span class="font-semibold text-slate-700">Mensaje al conductor:</span> "{{ decision.driverMessage }}"
                   </div>
                 }
               </div>
@@ -231,40 +231,40 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         </div>
       }
 
-      <!-- Panel de Planificación y Prioridad de Entrega -->
+      <!-- Panel de Planificación y Prioridad de Entrega (AMP-01 / AMP-02 / Issue #196) -->
       @if (session.canWrite()) {
-        <div class="bg-white border border-[#E3E8EE] rounded-lg p-4 shadow-2xs space-y-3" data-testid="planning-control-panel">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3" data-testid="planning-control-panel">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="space-y-0.5">
+            <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <h3 class="text-[14px] font-semibold text-[#1A2C44]">
-                  Planificación Automática y Prioridad de Entrega
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  Planificación Automática & Prioridad de Entrega
                 </h3>
-                <span class="text-[11px] font-medium px-2 py-0.5 rounded bg-[#F8FAFC] text-[#30313D] border border-[#E3E8EE]">
-                  Optimización de Rutas
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                  Motor VRP Determinista
                 </span>
               </div>
-              <p class="text-[13px] text-[#3C4F69]">
-                Calcula la ruta más eficiente desde los almacenes. Puedes fijar una hora límite para que los hospitales o clínicas con mayor prioridad reciban antes de ese horario.
+              <p class="text-xs text-slate-500">
+                Calcula el plan óptimo desde bodegas centrales. Puedes fijar una hora límite para que los puntos críticos (hospitales/quirófanos) reciban antes de ese horario.
               </p>
             </div>
 
             <!-- Selector de Hora Límite y Botones -->
             <div class="flex flex-wrap items-center gap-2">
-              <div class="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded-md px-2.5 py-1">
-                <label for="critical-deadline-select" class="text-[12px] font-medium text-[#30313D] whitespace-nowrap">
-                  Hora límite prioritaria:
+              <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+                <label for="critical-deadline-select" class="text-xs font-semibold text-slate-700 whitespace-nowrap">
+                  Hora límite para críticos:
                 </label>
                 <select
                   id="critical-deadline-select"
                   [ngModel]="criticalDeadline()"
                   (ngModelChange)="criticalDeadline.set($event)"
                   data-testid="critical-deadline-select"
-                  class="text-[12px] font-medium bg-white border border-[#E3E8EE] rounded px-2 py-1 text-[#1A2C44] focus:outline-none focus:border-[#635BFF]">
+                  class="text-xs font-medium bg-white border border-slate-300 rounded px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary-500">
                   <option value="">Sin hora límite (estándar)</option>
                   <option value="09:00">09:00</option>
                   <option value="10:00">10:00</option>
-                  <option value="11:00">11:00 (Prioridad Hospitalaria)</option>
+                  <option value="11:00">11:00 (Prioridad Quirófano / Reto 1)</option>
                   <option value="12:00">12:00</option>
                   <option value="13:00">13:00</option>
                   <option value="14:00">14:00</option>
@@ -276,12 +276,12 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 (click)="generatePlan()"
                 [disabled]="actionLoading() || comparisonLoading()"
                 data-testid="generate-plan-button"
-                class="inline-flex items-center gap-1 text-[13px] font-medium px-3.5 py-1.5 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs disabled:opacity-50">
+                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-xs disabled:opacity-50">
                 @if (actionLoading()) {
-                  <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Calculando...</span>
                 } @else {
-                  <span>Calcular Plan de Rutas</span>
+                  <span>⚡ Calcular Plan</span>
                 }
               </button>
 
@@ -290,12 +290,12 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 (click)="comparePrioritization()"
                 [disabled]="actionLoading() || comparisonLoading()"
                 data-testid="compare-cost-button"
-                class="inline-flex items-center gap-1 text-[13px] font-medium px-3.5 py-1.5 rounded-md bg-white border border-[#E3E8EE] text-[#30313D] hover:bg-[#F8FAFC] transition-colors shadow-2xs disabled:opacity-50">
+                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition-colors shadow-xs disabled:opacity-50">
                 @if (comparisonLoading()) {
-                  <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-[#635BFF] border-t-transparent rounded-full"></span>
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Comparando...</span>
                 } @else {
-                  <span>Comparar Impacto de Prioridad</span>
+                  <span>⚖ Costo de Priorizar</span>
                 }
               </button>
             </div>
@@ -303,18 +303,18 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         </div>
       }
 
-      <!-- Tarjeta de Comparación: Costo de Priorizar -->
+      <!-- Tarjeta de Comparación: Costo de Priorizar (AMP-02) -->
       @if (prioritizationComparison()) {
-        <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 shadow-2xs space-y-4" data-testid="prioritization-comparison-card">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F3F5] pb-3">
+        <div class="bg-white border-2 border-indigo-200 rounded-xl p-5 shadow-sm space-y-4" data-testid="prioritization-comparison-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-[15px] font-semibold text-[#1A2C44]">Análisis Comparativo: Impacto de Priorizar Entregas Críticas</span>
-                <span class="text-[11px] px-2 py-0.5 rounded-md font-medium bg-[#F8FAFC] text-[#30313D] border border-[#E3E8EE]">
+                <span class="text-base font-bold text-slate-900">Análisis Comparativo: Costo de Priorizar Entregas Críticas</span>
+                <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                   Hora Límite: {{ prioritizationComparison()!.prioritized.deadline }}
                 </span>
               </div>
-              <p class="text-[13px] text-[#3C4F69] mt-0.5">
+              <p class="text-xs text-slate-500 mt-0.5">
                 Comparativa de viabilidad económica y cumplimiento horario: Plan Estándar (por costo) vs. Plan Priorizado (con ventana crítica).
               </p>
             </div>
@@ -322,120 +322,120 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <button
               type="button"
               (click)="prioritizationComparison.set(null)"
-              class="text-[12px] font-medium text-[#697386] hover:text-[#1A2C44] px-2 py-1 rounded hover:bg-[#F8FAFC]">
-              ✕ Cerrar
+              class="text-xs font-semibold text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100">
+              ✕ Cerrar comparación
             </button>
           </div>
 
           <!-- Grilla de Métricas Comparativas -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <!-- Kilómetros -->
-            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
-              <span class="text-[11px] font-semibold text-[#697386] uppercase">Recorrido Total</span>
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Recorrido Total</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-[18px] font-bold text-[#1A2C44] font-mono">
+                <span class="text-lg font-bold text-slate-800 font-mono">
                   {{ prioritizationComparison()!.prioritized.totalKm | number:'1.1-2' }} km
                 </span>
-                <span class="text-[12px] font-semibold font-mono"
+                <span class="text-xs font-semibold font-mono"
                   [ngClass]="prioritizationComparison()!.diffKm > 0 ? 'text-amber-600' : 'text-emerald-600'">
                   {{ prioritizationComparison()!.diffKm >= 0 ? '+' : '' }}{{ prioritizationComparison()!.diffKm | number:'1.1-2' }} km
                 </span>
               </div>
-              <span class="text-[11px] text-[#8792A2]">Sin hora límite: {{ prioritizationComparison()!.baseline.totalKm | number:'1.1-2' }} km</span>
+              <span class="text-[10px] text-slate-400">Sin hora límite: {{ prioritizationComparison()!.baseline.totalKm | number:'1.1-2' }} km</span>
             </div>
 
             <!-- Costo USD -->
-            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
-              <span class="text-[11px] font-semibold text-[#697386] uppercase">Costo Estimado</span>
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Costo Operativo (USD)</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-[18px] font-bold text-[#1A2C44] font-mono">
+                <span class="text-lg font-bold text-slate-800 font-mono">
                   USD {{ prioritizationComparison()!.prioritized.totalCost | number:'1.2-2' }}
                 </span>
-                <span class="text-[12px] font-semibold font-mono"
+                <span class="text-xs font-semibold font-mono"
                   [ngClass]="prioritizationComparison()!.diffCost > 0 ? 'text-rose-600' : 'text-emerald-600'">
                   {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
                 </span>
               </div>
-              <span class="text-[11px] text-[#8792A2]">Sin hora límite: USD {{ prioritizationComparison()!.baseline.totalCost | number:'1.2-2' }}</span>
+              <span class="text-[10px] text-slate-400">Sin hora límite: USD {{ prioritizationComparison()!.baseline.totalCost | number:'1.2-2' }}</span>
             </div>
 
             <!-- Paradas No Atendidas -->
-            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
-              <span class="text-[11px] font-semibold text-[#697386] uppercase">Paradas No Asignadas</span>
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">Paradas No Atendidas</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-[18px] font-bold font-mono"
+                <span class="text-lg font-bold font-mono"
                   [ngClass]="prioritizationComparison()!.prioritized.unservedCount > 0 ? 'text-amber-600' : 'text-emerald-600'">
                   {{ prioritizationComparison()!.prioritized.unservedCount }}
                 </span>
-                <span class="text-[12px] font-medium font-mono text-[#697386]">
+                <span class="text-xs font-semibold font-mono text-slate-500">
                   Base: {{ prioritizationComparison()!.baseline.unservedCount }}
                 </span>
               </div>
-              <span class="text-[11px] text-[#8792A2]">
+              <span class="text-[10px] text-slate-400">
                 {{ prioritizationComparison()!.diffUnserved > 0 ? 'Afectadas por ventana' : '100% de cobertura' }}
               </span>
             </div>
 
-            <!-- Resumen Decisión -->
-            <div class="p-3.5 bg-white rounded-lg border border-[#E3E8EE] flex flex-col justify-between">
-              <span class="text-[11px] font-semibold text-[#697386] uppercase">Diferencial de Costo</span>
-              <p class="text-[16px] font-bold text-[#1A2C44] mt-1">
+            <!-- Resumen Pitch -->
+            <div class="p-3 bg-indigo-50/70 rounded-lg border border-indigo-200 flex flex-col justify-between">
+              <span class="text-[11px] font-bold text-indigo-900 uppercase">Sobrecosto de Decisión</span>
+              <p class="text-xs font-bold text-indigo-900 mt-1">
                 {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
               </p>
-              <span class="text-[11px] text-[#3C4F69]">
-                {{ prioritizationComparison()!.criticalPoints.length }} punto(s) prioritario(s) adelantados
+              <span class="text-[10px] text-indigo-700">
+                {{ prioritizationComparison()!.criticalPoints.length }} punto(s) crítico(s) adelantados a tiempo
               </span>
             </div>
           </div>
 
           <!-- Tabla de Hora de Llegada de los Críticos -->
           <div class="space-y-2">
-            <span class="text-[12px] font-semibold text-[#1A2C44] uppercase tracking-wider">
-              Llegada Estimada a Centros Prioritarios (Hospitales / Quirófanos)
+            <span class="text-xs font-bold text-slate-700 uppercase">
+              Hora de Llegada de Puntos Críticos (Hospitales / Quirófanos)
             </span>
 
             @if (prioritizationComparison()!.criticalPoints.length === 0) {
-              <p class="text-[12px] text-[#697386] italic p-3 bg-[#F8FAFC] rounded border border-[#E3E8EE]">
+              <p class="text-xs text-slate-500 italic p-3 bg-slate-50 rounded">
                 No se detectaron paradas con criticidad alta en las órdenes del plan actual.
               </p>
             } @else {
-              <div class="overflow-x-auto border border-[#E3E8EE] rounded-lg shadow-2xs bg-white">
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
                 <table class="w-full text-xs text-left" data-testid="critical-points-table">
-                  <thead class="bg-[#F8FAFC] border-b border-[#E3E8EE] text-[#697386] uppercase font-semibold text-[11px]">
+                  <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
                     <tr>
-                      <th class="p-2.5">Centro de Salud</th>
-                      <th class="p-2.5">Prioridad</th>
+                      <th class="p-2.5">Punto de Entrega</th>
+                      <th class="p-2.5">Criticidad</th>
                       <th class="p-2.5">Sin Hora Límite</th>
                       <th class="p-2.5">Con Hora Límite ({{ prioritizationComparison()!.prioritized.deadline }})</th>
                       <th class="p-2.5">Diferencia</th>
                       <th class="p-2.5">Cumplimiento</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-[#F1F3F5] font-mono text-[#30313D]">
+                  <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
                     @for (pt of prioritizationComparison()!.criticalPoints; track pt.pointCode) {
-                      <tr class="hover:bg-[#F8FAFC]/50">
-                        <td class="p-2.5 font-sans font-medium text-[#1A2C44]">
-                          {{ pt.pointName }} <span class="text-[11px] text-[#8792A2] font-mono">({{ pt.pointCode }})</span>
+                      <tr class="hover:bg-slate-50/60">
+                        <td class="p-2.5 font-sans font-bold text-slate-900">
+                          {{ pt.pointName }} <span class="text-xs text-slate-400 font-mono">({{ pt.pointCode }})</span>
                         </td>
-                        <td class="p-2.5 font-sans">
-                          <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                        <td class="p-2.5">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
                             {{ pt.criticality }}
                           </span>
                         </td>
-                        <td class="p-2.5 text-[#697386]">{{ pt.baselineArrival }}</td>
-                        <td class="p-2.5 font-bold text-[#635BFF]">{{ pt.prioritizedArrival }}</td>
+                        <td class="p-2.5 text-slate-500">{{ pt.baselineArrival }}</td>
+                        <td class="p-2.5 font-bold text-primary-700">{{ pt.prioritizedArrival }}</td>
                         <td class="p-2.5 font-semibold"
-                          [ngClass]="pt.differenceMinutes < 0 ? 'text-emerald-600' : 'text-[#697386]'">
+                          [ngClass]="pt.differenceMinutes < 0 ? 'text-emerald-600' : 'text-slate-500'">
                           {{ pt.differenceMinutes < 0 ? (pt.differenceMinutes * -1) + ' min antes' : (pt.differenceMinutes === 0 ? 'Sin cambio' : pt.differenceMinutes + ' min después') }}
                         </td>
-                        <td class="p-2.5 font-sans">
+                        <td class="p-2.5">
                           @if (pt.meetsDeadline) {
-                            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                              Llega antes de {{ pt.deadline }}
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                              ✓ Llega antes de {{ pt.deadline }}
                             </span>
                           } @else {
-                            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                              Excede horario
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                              ⚠ Excede límite
                             </span>
                           }
                         </td>
@@ -451,34 +451,34 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Estado cargando -->
       @if (loading()) {
-        <div class="p-8 text-center text-[#697386] text-[13px] bg-white border border-[#E3E8EE] rounded-lg">
+        <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
           Cargando rutas de distribución...
         </div>
       }
 
       <!-- Estado vacío -->
       @if (!loading() && routePlans().length === 0) {
-        <div class="p-8 text-center bg-white border border-[#E3E8EE] rounded-lg space-y-3">
-          <p class="text-[#3C4F69] text-[13px]">No hay rutas planificadas todavía.</p>
+        <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-3">
+          <p class="text-slate-600 text-sm">No hay rutas planificadas todavía.</p>
           <div class="flex justify-center gap-3">
             @if (session.canWrite()) {
               <button
                 type="button"
                 (click)="openOrderRoutingModal()"
-                class="inline-flex items-center text-[13px] font-medium px-4 py-1.5 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] shadow-2xs">
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
                 Crear primera ruta por pedidos
               </button>
               <button
                 type="button"
                 (click)="triggerEmergencyFlow()"
-                class="inline-flex items-center text-[13px] font-medium px-4 py-1.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100">
-                Evaluar requerimientos de urgencia
+                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+                Evaluar requerimientos de emergencia
               </button>
             }
             <a 
               routerLink="/alertas" 
-              class="inline-flex items-center text-[13px] font-medium px-3.5 py-1.5 rounded-md bg-white border border-[#E3E8EE] text-[#30313D] hover:bg-[#F8FAFC] transition-colors">
-              Ver alertas de stock
+              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+              Ver alertas pendientes
             </a>
           </div>
         </div>
@@ -489,28 +489,28 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Columna izquierda: Lista de rutas -->
           <div class="space-y-3">
-            <h2 class="text-[12px] font-semibold text-[#697386] uppercase tracking-wider">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Rutas registradas ({{ routePlans().length }})
             </h2>
             <div class="space-y-2">
               @for (plan of routePlans(); track plan.id) {
                 <div 
                   (click)="selectPlan(plan.id)"
-                  class="p-3.5 rounded-lg border cursor-pointer transition-all bg-white"
-                  [ngClass]="selectedPlanId() === plan.id ? 'border-[#635BFF] ring-1 ring-[#635BFF] bg-[#F8FAFC]/60' : 'border-[#E3E8EE] hover:border-[#8792A2]'">
+                  class="p-4 rounded-xl border cursor-pointer transition-all bg-white"
+                  [ngClass]="selectedPlanId() === plan.id ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200 hover:border-slate-300'">
                   <div class="flex items-center justify-between">
-                    <span class="font-semibold text-[13px] text-[#1A2C44]">{{ plan.code }}</span>
+                    <span class="font-bold text-sm text-slate-900">{{ plan.code }}</span>
                     <span
-                      class="text-[10px] font-mono px-2 py-0.5 rounded font-medium"
+                      class="text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold"
                       [ngClass]="{
                         'bg-emerald-50 text-emerald-700 border border-emerald-200': plan.status === 'Published',
                         'bg-amber-50 text-amber-700 border border-amber-200': plan.status === 'Proposed',
-                        'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]': plan.status !== 'Published' && plan.status !== 'Proposed'
+                        'bg-slate-50 text-slate-600 border border-slate-200': plan.status !== 'Published' && plan.status !== 'Proposed'
                       }">
-                      {{ plan.status === 'Published' ? 'Publicada' : plan.status === 'Proposed' ? 'Propuesta' : plan.status }}
+                      {{ plan.status }}
                     </span>
                   </div>
-                  <div class="text-[12px] text-[#697386] mt-2 flex justify-between font-mono">
+                  <div class="text-xs text-slate-500 mt-2 flex justify-between font-mono">
                     <span>Vehículo: {{ plan.vehicleCode || 'C-01' }}</span>
                     <span>{{ plan.totalDistanceKm }} km</span>
                   </div>
@@ -522,80 +522,78 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Columna derecha: Detalle y Paradas -->
           <div class="lg:col-span-2 space-y-4">
             @if (selectedDetail()) {
-              <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 space-y-4 shadow-2xs">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F1F3F5] pb-4">
+              <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
-                    <h3 class="font-semibold text-[#1A2C44] text-[16px]">{{ selectedDetail()!.code }}</h3>
-                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[#3C4F69] font-mono mt-1">
+                    <h3 class="font-bold text-slate-900 text-base">{{ selectedDetail()!.code }}</h3>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 font-mono mt-1">
                       <span><strong>Distancia:</strong> {{ selectedDetail()!.totalDistanceKm }} km</span>
                       <span><strong>Duración:</strong> {{ selectedDetail()!.totalDurationMinutes }} min</span>
                       <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleCode || 'C-01' }}</span>
                       <span><strong>Salida:</strong> {{ selectedDetail()!.plannedStartUtc | date:'shortTime' }}</span>
                       @if (selectedDetail()!.plannedEndUtc) {
-                        <span><strong>Llegada est.:</strong> {{ selectedDetail()!.plannedEndUtc | date:'shortTime' }}</span>
+                        <span><strong>Fin Est.:</strong> {{ selectedDetail()!.plannedEndUtc | date:'shortTime' }}</span>
                       }
                     </div>
                   </div>
 
                   @if (selectedDetail()!.status !== 'Published') {
                     @if (session.canWrite()) {
-                      <div class="flex items-center gap-2">
-                        <label class="text-[12px] text-[#3C4F69] flex items-center gap-2">
-                          Conductor:
-                          <select class="border border-[#E3E8EE] rounded-md px-2 py-1 text-[12px] bg-white text-[#1A2C44] focus:outline-none focus:border-[#635BFF]" aria-label="Conductor de la ruta"
-                            [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
-                            <option value="">Elegir conductor…</option>
-                            @for (driver of drivers(); track driver.accountId) {
-                              <option [value]="driver.accountId">{{ driver.displayName }}</option>
-                            }
-                          </select>
-                        </label>
-                        <button
-                          type="button"
-                          (click)="publishPlan(selectedDetail()!.id)"
-                          [disabled]="actionLoading() || !selectedDriverId()"
-                          [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
-                          class="inline-flex items-center text-[12px] font-medium px-3.5 py-1.5 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-2xs disabled:opacity-50">
-                          {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
-                        </button>
-                      </div>
+                      <label class="text-xs text-slate-600 flex items-center gap-2">
+                        Conductor
+                        <select class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs" aria-label="Conductor de la ruta"
+                          [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
+                          <option value="">Elegir conductor…</option>
+                          @for (driver of drivers(); track driver.accountId) {
+                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
+                          }
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        (click)="publishPlan(selectedDetail()!.id)"
+                        [disabled]="actionLoading() || !selectedDriverId()"
+                        [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
+                        class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                        {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
+                      </button>
                       @if (drivers().length === 0) {
-                        <span class="text-[11px] text-amber-700">No hay conductores activos registrados en el sistema.</span>
+                        <span class="text-[11px] text-amber-700">No hay conductores activos: Gerencia debe crear una cuenta de Conductor.</span>
                       }
                     } @else {
-                      <span class="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+                      <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
                         Pendiente de publicación
                       </span>
                     }
                   } @else {
-                    <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
                       Ruta Publicada al Conductor
                     </span>
                   }
                 </div>
 
-                <!-- Datos de asignación de la ruta -->
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#3C4F69]" data-route-assignment>
-                  <span><span class="text-[#8792A2]">Almacén origen:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.originWarehouseName || 'Sin almacén' }}</strong></span>
-                  <span><span class="text-[#8792A2]">Vehículo:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
+                <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600" data-route-assignment>
+                  <span><span class="text-slate-400">Bodega:</span> <strong>{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
+                  <span><span class="text-slate-400">Vehículo:</span> <strong>{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
                   @if (selectedDetail()!.status === 'Published') {
                     <span>
-                      <span class="text-[#8792A2]">Conductor:</span>
-                      <strong [class.text-rose-700]="!selectedDetail()!.driverName" class="text-[#1A2C44]">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
+                      <span class="text-slate-400">Conductor:</span>
+                      <strong [class.text-rose-700]="!selectedDetail()!.driverName">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
                     </span>
                     @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
-                      <span class="text-rose-700 font-medium">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor.</span>
+                      <span class="text-rose-700">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
                     }
                     @if (session.canWrite()) {
                       <span class="flex items-center gap-2">
-                        <select class="border border-[#E3E8EE] rounded-md px-2 py-1 text-[12px] bg-white text-[#1A2C44]" aria-label="Reasignar conductor"
+                        <select class="border border-slate-300 rounded-lg px-2 py-1 text-xs" aria-label="Reasignar conductor"
                           [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
                           <option value="">Cambiar conductor…</option>
                           @for (driver of drivers(); track driver.accountId) {
                             <option [value]="driver.accountId">{{ driver.displayName }}</option>
                           }
                         </select>
-                        <button type="button" class="text-[12px] font-medium text-[#635BFF] hover:underline disabled:opacity-50"
+                        <button type="button" class="text-xs font-semibold text-slate-700 underline disabled:opacity-50"
                           [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
                           Asignar
                         </button>
@@ -604,9 +602,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
-                <!-- Mapa interactivo de la ruta -->
+                <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
-                  <div class="h-72 rounded-lg overflow-hidden border border-[#E3E8EE] shadow-2xs">
+                  <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
                     <ui-map-view 
                       [markers]="mapMarkers()" 
                       [polylines]="mapPolylines()"
@@ -618,30 +616,30 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <div class="flex flex-wrap gap-2" aria-label="Leyenda de rutas">
                     @for (item of routeLegend(); track item.planId) {
                       <button type="button" (click)="selectPlan(item.planId)" [attr.data-legend]="item.vehicleCode"
-                        class="inline-flex items-center gap-2 text-[11px] px-2.5 py-1 rounded-md border bg-white hover:bg-[#F8FAFC] transition-colors"
-                        [class.border-[#635BFF]]="item.selected" [class.border-[#E3E8EE]]="!item.selected">
-                        <span class="inline-block w-2.5 h-2.5 rounded-full" [style.background-color]="item.color"></span>
-                        <span class="font-medium text-[#1A2C44]">{{ item.vehicleCode }}</span>
-                        <span class="text-[#697386]">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por red vial' : 'aprox.' }} &bull; {{ item.stops }} paradas</span>
+                        class="inline-flex items-center gap-2 text-[11px] px-2 py-1 rounded-lg border bg-white hover:bg-slate-50"
+                        [class.border-slate-900]="item.selected" [class.border-slate-200]="!item.selected">
+                        <span class="inline-block w-3 h-3 rounded-full" [style.background-color]="item.color"></span>
+                        <span class="font-semibold text-slate-800">{{ item.vehicleCode }}</span>
+                        <span class="text-slate-500">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
                       </button>
                     }
                   </div>
                   @if (routeLegendHasApproximate()) {
                     <p class="text-[11px] text-amber-700">
-                      Las líneas punteadas son aproximadas (trazado recto entre paradas).
+                      Las líneas punteadas son aproximadas (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
                     </p>
                   }
                 }
 
-                <!-- Pestañas de Detalle de la Planificación -->
-                <div class="border-b border-[#E3E8EE] flex flex-wrap gap-2 pt-2">
+                <!-- Pestañas de Detalle de la Planificación (#164) -->
+                <div class="border-b border-slate-200 flex flex-wrap gap-2 pt-2">
                   <button
                     type="button"
                     (click)="detailTab.set('paradas')"
-                    class="pb-2.5 px-3 text-[12px] font-medium border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'paradas' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
-                    <span>Itinerario y Paradas</span>
-                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#697386] font-mono">
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'paradas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>📍 Itinerario y Paradas</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
                       {{ selectedDetail()!.stops.length }}
                     </span>
                   </button>
@@ -649,11 +647,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="detailTab.set('productos')"
-                    class="pb-2.5 px-3 text-[12px] font-medium border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'productos' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
-                    <span>Por Producto (SKUs)</span>
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'productos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>📦 Por Producto (SKUs)</span>
                     @if (aggregatedProducts().length > 0) {
-                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] font-medium font-mono">
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 font-bold font-mono">
                         {{ aggregatedProducts().length }}
                       </span>
                     }
@@ -662,11 +660,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="detailTab.set('conductor')"
-                    class="pb-2.5 px-3 text-[12px] font-medium border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'conductor' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
-                    <span>Por Conductor</span>
-                    <span class="text-[10px] px-1.5 py-0.2 rounded font-mono"
-                      [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-50 text-emerald-700 font-medium' : 'bg-amber-50 text-amber-700'">
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'conductor' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>🚚 Por Conductor</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
+                      [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-amber-50 text-amber-700'">
                       {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente' }}
                     </span>
                   </button>
@@ -675,11 +673,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="detailTab.set('stock-bodegas'); loadWarehouseStockForSelected()"
                     data-testid="tab-stock-bodegas"
-                    class="pb-2.5 px-3 text-[12px] font-medium border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'stock-bodegas' ? 'border-[#635BFF] text-[#1A2C44] font-semibold' : 'border-transparent text-[#697386] hover:text-[#30313D]'">
-                    <span>Stock por Almacén</span>
+                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
+                    [ngClass]="detailTab() === 'stock-bodegas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    <span>🏬 Stock por Bodega</span>
                     @if (warehouseStock().length > 0) {
-                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#697386] font-mono">
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
                         {{ filteredWarehouseStock().length }}
                       </span>
                     }
@@ -691,25 +689,25 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <div class="space-y-3">
                     <div class="flex items-center justify-between">
                       <div>
-                        <h4 class="text-[12px] font-semibold text-[#1A2C44] uppercase tracking-wider">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
                           Paradas, Productos, Lotes y Bultos
                         </h4>
-                        <span class="text-[11px] text-[#697386] font-mono">
-                          {{ selectedDetail()!.stops.length }} paradas programadas &bull; {{ totalPlannedUnits() | number:'1.0-2' }} unidades totales
+                        <span class="text-[11px] text-slate-500 font-mono">
+                          {{ selectedDetail()!.stops.length }} paradas programadas · {{ totalPlannedUnits() | number:'1.0-2' }} unidades totales
                         </span>
                       </div>
                       <div class="flex items-center gap-2">
                         <button
                           type="button"
                           (click)="expandAllStops()"
-                          class="text-[11px] font-medium text-[#635BFF] hover:underline">
+                          class="text-[11px] font-semibold text-primary-600 hover:text-primary-800 underline">
                           Expandir todo
                         </button>
-                        <span class="text-[#E3E8EE]">|</span>
+                        <span class="text-slate-300">|</span>
                         <button
                           type="button"
                           (click)="collapseAllStops()"
-                          class="text-[11px] font-medium text-[#697386] hover:text-[#1A2C44] hover:underline">
+                          class="text-[11px] font-semibold text-slate-500 hover:text-slate-700 underline">
                           Colapsar todo
                         </button>
                       </div>
@@ -717,30 +715,30 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                     <div class="space-y-3">
                       @for (stop of selectedDetail()!.stops; track stop.sequence) {
-                        <div class="border border-[#E3E8EE] rounded-lg overflow-hidden bg-white shadow-2xs transition-all">
+                        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs transition-all">
                           <!-- Cabecera de la parada (clic para colapsar/expandir) -->
                           <div
                             (click)="toggleStopExpansion(stop.sequence)"
-                            class="p-3 bg-[#F8FAFC] hover:bg-slate-100/70 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 select-none border-b border-[#E3E8EE]">
+                            class="p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 select-none border-b border-slate-200">
                             <div class="flex items-center gap-2.5">
-                              <span class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold font-mono"
-                                [ngClass]="stop.sequence === 1 ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-200 text-slate-800'">
+                              <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold font-mono"
+                                [ngClass]="stop.sequence === 1 ? 'bg-amber-200 text-amber-900' : 'bg-primary-100 text-primary-800'">
                                 {{ stop.sequence }}
                               </span>
                               <div>
                                 <div class="flex items-center gap-2">
-                                  <span class="px-2 py-0.5 rounded text-[10px] font-medium"
-                                    [ngClass]="stop.sequence === 1 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'">
+                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                    [ngClass]="stop.sequence === 1 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-blue-100 text-blue-800 border border-blue-200'">
                                     {{ stop.sequence === 1 ? 'RECOGIDA' : 'ENTREGA' }}
                                   </span>
-                                  <span class="font-semibold text-[13px] text-[#1A2C44]">
+                                  <span class="font-bold text-xs text-slate-900">
                                     {{ stop.servicePointName || stop.servicePointCode }}
                                   </span>
-                                  <span class="text-[11px] font-mono text-[#8792A2]">({{ stop.servicePointCode }})</span>
+                                  <span class="text-[10px] font-mono text-slate-400">({{ stop.servicePointCode }})</span>
                                 </div>
-                                <div class="flex flex-wrap gap-x-3 text-[11px] text-[#3C4F69] font-mono mt-0.5">
+                                <div class="flex flex-wrap gap-x-3 text-[11px] text-slate-500 font-mono mt-0.5">
                                   <span><strong>Ventana:</strong> {{ stop.windowStart || '08:00' }} - {{ stop.windowEnd || '17:00' }}</span>
-                                  <span><strong>Llegada estimada:</strong> <strong class="text-[#635BFF]">{{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : '08:30' }}</strong></span>
+                                  <span><strong>Llegada ETA:</strong> <strong class="text-primary-700">{{ stop.etaUtc ? (stop.etaUtc | date:'shortTime') : '08:30' }}</strong></span>
                                   <span><strong>Atención:</strong> {{ stop.serviceMinutes || 15 }} min</span>
                                 </div>
                               </div>
@@ -751,26 +749,26 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 type="button"
                                 (click)="$event.stopPropagation(); inspectStockForStop(stop)"
                                 [attr.data-testid]="'stop-stock-btn-' + stop.sequence"
-                                class="px-2 py-0.5 rounded text-[10px] font-medium bg-white text-[#30313D] hover:bg-[#F8FAFC] border border-[#E3E8EE] shadow-2xs transition-colors"
-                                title="Consultar existencias por almacén para esta parada">
-                                Stock en almacenes
+                                class="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200"
+                                title="Consultar existencias por bodega para esta parada">
+                                🏬 Stock en bodegas
                               </button>
                               @if (stop.lines && stop.lines.length > 0) {
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#F8FAFC] text-[#30313D] border border-[#E3E8EE] font-mono">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
                                   {{ stop.lines.length }} {{ stop.lines.length === 1 ? 'producto' : 'productos' }}
                                 </span>
                               }
                               @if (stop.deliveryStatus) {
-                                <span class="px-2 py-0.5 rounded text-[10px] font-medium"
-                                  [ngClass]="stop.deliveryStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : (stop.deliveryStatus === 'Proposed' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]')">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  [ngClass]="stop.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : (stop.deliveryStatus === 'Proposed' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700')">
                                   Entrega: {{ stop.deliveryStatus }}
                                 </span>
                               }
-                              <span class="px-2 py-0.5 rounded text-[10px] font-medium"
-                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]'">
+                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
                                 Parada: {{ stop.status }}
                               </span>
-                              <span class="text-xs text-[#8792A2] font-mono">
+                              <span class="text-xs text-slate-400 font-mono">
                                 {{ expandedStopSeqs().has(stop.sequence) ? '▲' : '▼' }}
                               </span>
                             </div>
@@ -781,22 +779,22 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             <div class="p-3 bg-white space-y-3">
                               <!-- Metadatos de la entrega y bultos -->
                               @if (stop.deliveryCode || (stop.handlingUnits && stop.handlingUnits.length > 0)) {
-                                <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-md bg-[#F8FAFC] border border-[#E3E8EE] text-[11px]">
+                                <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 text-[11px]">
                                   <div class="flex items-center gap-2">
-                                    <span class="text-[#697386] font-mono">Entrega:</span>
-                                    <strong class="font-mono text-[#1A2C44]">{{ stop.deliveryCode || 'DEL-...' }}</strong>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white border border-[#E3E8EE] text-[#30313D]">
+                                    <span class="text-slate-500 font-mono">Entrega:</span>
+                                    <strong class="font-mono text-slate-800">{{ stop.deliveryCode || 'DEL-...' }}</strong>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200">
                                       {{ stop.deliveryStatus || 'Planificada' }}
                                     </span>
                                   </div>
 
                                   @if (stop.handlingUnits && stop.handlingUnits.length > 0) {
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                      <span class="text-[#697386] font-mono">Bultos:</span>
+                                      <span class="text-slate-500 font-mono">Bultos:</span>
                                       @for (hu of stop.handlingUnits; track hu.id) {
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-[#E3E8EE] font-mono text-[10px] text-[#30313D]">
-                                          <span>{{ hu.code }}</span>
-                                          <span class="text-[9px] px-1 rounded bg-[#F8FAFC] text-[#697386] font-medium uppercase">{{ hu.status }}</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-300 font-mono text-[10px]">
+                                          <span>📦 {{ hu.code }}</span>
+                                          <span class="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-bold uppercase">{{ hu.status }}</span>
                                         </span>
                                       }
                                     </div>
@@ -807,56 +805,56 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                               <!-- Tabla de productos y lotes de la parada -->
                               @if (stop.lines && stop.lines.length > 0) {
                                 @if (stop.kind === 'Pickup') {
-                                  <p class="text-[12px] font-medium text-amber-800 mb-1" data-pickup-load>Cargar en este almacén (se entrega en las paradas siguientes):</p>
+                                  <p class="text-xs font-semibold text-amber-800 mb-1" data-pickup-load>Cargar en esta bodega (se entrega en las paradas siguientes):</p>
                                 }
-                                <div class="overflow-x-auto border border-[#E3E8EE] rounded-lg">
+                                <div class="overflow-x-auto">
                                   <table class="w-full text-left text-xs min-w-[500px]">
-                                    <thead class="bg-[#F8FAFC] text-[10px] text-[#697386] uppercase border-b border-[#E3E8EE] font-mono">
+                                    <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
                                       <tr>
                                         <th class="p-2">SKU</th>
                                         <th class="p-2">Producto</th>
                                         <th class="p-2">Lote Asignado</th>
                                         <th class="p-2 text-right">Cantidad Planificada</th>
-                                        <th class="p-2">Bulto</th>
+                                        <th class="p-2">Bulto / HU</th>
                                         <th class="p-2 text-right">Estado</th>
                                       </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-[#F1F3F5]">
+                                    <tbody class="divide-y divide-slate-100">
                                       @for (line of stop.lines; track line.productId + (line.lotId || '') + line.sku) {
-                                        <tr class="hover:bg-[#F8FAFC]/50">
-                                          <td class="p-2 font-mono font-medium text-[#1A2C44]">{{ line.sku }}</td>
-                                          <td class="p-2 text-[#30313D] font-medium">{{ line.productName }}</td>
+                                        <tr class="hover:bg-slate-50/50">
+                                          <td class="p-2 font-mono font-bold text-slate-900">{{ line.sku }}</td>
+                                          <td class="p-2 text-slate-800 font-medium">{{ line.productName }}</td>
                                           <td class="p-2">
                                             @if (line.lotCode) {
                                               <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-mono text-[10px]">
-                                                <span>{{ line.lotCode }}</span>
+                                                <span>🏷️ {{ line.lotCode }}</span>
                                                 @if (line.lotExpiresOn) {
                                                   <span class="text-[9px] text-amber-600">({{ line.lotExpiresOn }})</span>
                                                 }
                                               </span>
                                             } @else {
-                                              <span class="text-[#8792A2] font-mono text-[11px]">— Asignación al publicar —</span>
+                                              <span class="text-slate-400 font-mono text-[11px]">— Asignación al publicar —</span>
                                             }
                                           </td>
-                                          <td class="p-2 text-right font-mono font-bold text-[#1A2C44]">
-                                            {{ line.plannedQuantity | number:'1.0-2' }} <span class="text-[#8792A2] font-normal text-[10px]">{{ line.baseUnit }}</span>
+                                          <td class="p-2 text-right font-mono font-bold text-slate-900">
+                                            {{ line.plannedQuantity | number:'1.0-2' }} <span class="text-slate-500 font-normal text-[10px]">{{ line.baseUnit }}</span>
                                           </td>
                                           <td class="p-2">
                                             @if (line.handlingUnitCode) {
-                                              <span class="px-1.5 py-0.5 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] font-mono text-[10px]">
+                                              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
                                                 {{ line.handlingUnitCode }}
                                               </span>
                                             } @else if (stop.handlingUnits && stop.handlingUnits.length > 0) {
-                                              <span class="px-1.5 py-0.5 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] font-mono text-[10px]">
+                                              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
                                                 {{ stop.handlingUnits[0].code }}
                                               </span>
                                             } @else {
-                                              <span class="text-[#8792A2] font-mono text-[10px]">Sin consolidar</span>
+                                              <span class="text-slate-400 font-mono text-[10px]">Sin consolidar</span>
                                             }
                                           </td>
                                           <td class="p-2 text-right">
-                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                                              [ngClass]="line.deliveryStatus === 'Delivered' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]'">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                              [ngClass]="line.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
                                               {{ line.deliveryStatus || stop.deliveryStatus || 'Planificada' }}
                                             </span>
                                           </td>
@@ -867,17 +865,18 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 </div>
                               }
                               @if (hasPending(stop.loadQuantities)) {
-                                <div class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900" data-partial-load>
-                                  <p class="font-semibold mb-1">Carga parcial por capacidad de vehículo</p>
+                                <!-- #199: atención parcial: lo requerido, lo que va en esta ruta y lo que queda pendiente -->
+                                <div class="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900" data-partial-load>
+                                  <p class="font-semibold mb-1">Carga parcial por capacidad</p>
                                   @for (q of stop.loadQuantities; track q.sku) {
-                                    <p class="font-mono text-[11px]">{{ q.sku }}: requeridas {{ q.requiredQuantity | number:'1.0-2' }} &bull; planificadas {{ q.plannedQuantity | number:'1.0-2' }} &bull; pendientes {{ q.pendingQuantity | number:'1.0-2' }} {{ q.baseUnit }}</p>
+                                    <p class="font-mono">{{ q.sku }}: requeridas {{ q.requiredQuantity | number:'1.0-2' }} · planificadas {{ q.plannedQuantity | number:'1.0-2' }} · pendientes {{ q.pendingQuantity | number:'1.0-2' }} {{ q.baseUnit }}</p>
                                   }
                                 </div>
                               }
                               @if (!stop.lines || stop.lines.length === 0) {
-                                <div class="p-3 text-center text-xs text-[#697386] bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
+                                <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
                                   @if (stop.kind === 'Pickup') {
-                                    <span>Almacén de recogida: sin productos para cargar en este punto.</span>
+                                    <span>Bodega de recogida: no hay productos para cargar aquí.</span>
                                   } @else {
                                     <span>Sin productos registrados para esta parada.</span>
                                   }
@@ -891,32 +890,32 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   </div>
                 }
 
-                <!-- CONTENIDO PESTAÑA 2: VISTA AGREGADA POR PRODUCTO -->
+                <!-- CONTENIDO PESTAÑA 2: VISTA AGREGADA POR PRODUCTO (SUMA POR SKU) -->
                 @if (detailTab() === 'productos') {
                   <div class="space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <h4 class="text-[12px] font-semibold text-[#1A2C44] uppercase tracking-wider">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
                           Resumen Agregado de Carga por Producto (SKU)
                         </h4>
-                        <p class="text-[12px] text-[#3C4F69]">
+                        <p class="text-[11px] text-slate-500">
                           Total consolidado de insumos que salen del almacén en este vehículo y ruta.
                         </p>
                       </div>
                       <div class="flex items-center gap-3 text-xs font-mono">
-                        <span class="px-2 py-1 rounded bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D]">
+                        <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">
                           <strong>{{ aggregatedProducts().length }}</strong> SKUs distintos
                         </span>
-                        <span class="px-2 py-1 rounded bg-[#F8FAFC] text-[#1A2C44] border border-[#E3E8EE] font-semibold">
-                          {{ totalPlannedUnits() | number:'1.0-2' }} unidades totales
+                        <span class="px-2 py-1 rounded bg-primary-50 text-primary-800 border border-primary-200">
+                          <strong>{{ totalPlannedUnits() | number:'1.0-2' }}</strong> unidades totales
                         </span>
                       </div>
                     </div>
 
                     @if (aggregatedProducts().length > 0) {
-                      <div class="border border-[#E3E8EE] rounded-lg overflow-x-auto bg-white shadow-2xs">
+                      <div class="border border-slate-200 rounded-lg overflow-x-auto bg-white">
                         <table class="w-full text-left text-xs min-w-[600px]">
-                          <thead class="bg-[#F8FAFC] text-[11px] text-[#697386] uppercase border-b border-[#E3E8EE] font-semibold">
+                          <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
                             <tr>
                               <th class="p-3">SKU</th>
                               <th class="p-3">Nombre del Producto</th>
@@ -927,15 +926,15 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                               <th class="p-3 text-right">Estados</th>
                             </tr>
                           </thead>
-                          <tbody class="divide-y divide-[#F1F3F5]">
+                          <tbody class="divide-y divide-slate-100">
                             @for (item of aggregatedProducts(); track item.sku) {
-                              <tr class="hover:bg-[#F8FAFC]/50">
-                                <td class="p-3 font-mono font-medium text-[#1A2C44]">{{ item.sku }}</td>
-                                <td class="p-3 font-medium text-[#30313D]">{{ item.productName }}</td>
-                                <td class="p-3 text-right font-mono font-bold text-[#635BFF] text-[13px]">
+                              <tr class="hover:bg-slate-50/50">
+                                <td class="p-3 font-mono font-bold text-slate-900">{{ item.sku }}</td>
+                                <td class="p-3 font-medium text-slate-800">{{ item.productName }}</td>
+                                <td class="p-3 text-right font-mono font-bold text-primary-700 text-sm">
                                   {{ item.totalPlannedQuantity | number:'1.0-2' }}
                                 </td>
-                                <td class="p-3 font-mono text-[#697386]">{{ item.baseUnit }}</td>
+                                <td class="p-3 font-mono text-slate-600">{{ item.baseUnit }}</td>
                                 <td class="p-3">
                                   @if (item.lots && item.lots.length > 0) {
                                     <div class="flex flex-wrap gap-1">
@@ -946,18 +945,18 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                       }
                                     </div>
                                   } @else {
-                                    <span class="text-[#8792A2] font-mono text-[10px]">Asignación automática</span>
+                                    <span class="text-slate-400 font-mono text-[10px]">Asignación automática</span>
                                   }
                                 </td>
                                 <td class="p-3 text-center font-mono">
-                                  <span class="px-2 py-0.5 rounded-full bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] font-medium text-[10px]">
+                                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px]">
                                     {{ item.stopsCount }} {{ item.stopsCount === 1 ? 'parada' : 'paradas' }}
                                   </span>
                                 </td>
                                 <td class="p-3 text-right">
                                   @for (st of item.deliveryStatuses; track st) {
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                                      [ngClass]="st === 'Delivered' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]'">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                      [ngClass]="st === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
                                       {{ st }}
                                     </span>
                                   }
@@ -968,7 +967,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         </table>
                       </div>
                     } @else {
-                      <div class="p-8 text-center text-xs text-[#697386] bg-white border border-[#E3E8EE] rounded-lg">
+                      <div class="p-8 text-center text-xs text-slate-500 bg-white border border-slate-200 rounded-lg">
                         No hay productos planificados en esta ruta aún.
                       </div>
                     }
@@ -979,44 +978,44 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 @if (detailTab() === 'conductor') {
                   <div class="space-y-4">
                     <!-- Ficha del conductor de esta ruta -->
-                    <div class="bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg p-4 space-y-3">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
-                          <div class="w-9 h-9 rounded-full bg-[#E3E8EE] text-[#1A2C44] flex items-center justify-center font-bold text-xs">
-                            C
+                          <div class="w-10 h-10 rounded-full bg-primary-100 text-primary-800 flex items-center justify-center font-bold text-sm">
+                            🚚
                           </div>
                           <div>
-                            <span class="text-[10px] uppercase font-semibold text-[#697386]">Conductor Asignado a Esta Ruta</span>
-                            <h4 class="font-semibold text-[#1A2C44] text-[14px]">
+                            <span class="text-[10px] uppercase font-bold text-slate-400">Conductor Asignado a Esta Ruta</span>
+                            <h4 class="font-bold text-slate-900 text-sm">
                               {{ selectedDetail()!.driverName || 'Sin conductor asignado' }}
                             </h4>
                           </div>
                         </div>
 
                         <div class="flex items-center gap-2">
-                          <span class="px-2.5 py-1 rounded-md text-[11px] font-medium"
-                            [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
-                            {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente de Asignación' }}
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                            [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
+                            {{ selectedDetail()!.driverName ? 'Conductor Asignado' : 'Pendiente de Asignación' }}
                           </span>
                         </div>
                       </div>
 
-                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-[#E3E8EE] text-xs">
+                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/60 text-xs">
                         <div>
-                          <span class="text-[#8792A2] block text-[10px] uppercase font-medium">Vehículo</span>
-                          <strong class="font-mono text-[#1A2C44]">{{ selectedDetail()!.vehicleCode || '—' }}</strong>
+                          <span class="text-slate-400 block text-[10px]">Vehículo</span>
+                          <strong class="font-mono text-slate-800">{{ selectedDetail()!.vehicleCode || '—' }}</strong>
                         </div>
                         <div>
-                          <span class="text-[#8792A2] block text-[10px] uppercase font-medium">Almacén Origen</span>
-                          <strong class="text-[#1A2C44]">{{ selectedDetail()!.originWarehouseName || 'Central' }}</strong>
+                          <span class="text-slate-400 block text-[10px]">Bodega Origen</span>
+                          <strong class="text-slate-800">{{ selectedDetail()!.originWarehouseName || 'Central' }}</strong>
                         </div>
                         <div>
-                          <span class="text-[#8792A2] block text-[10px] uppercase font-medium">Entregas Totales</span>
-                          <strong class="font-mono text-[#1A2C44]">{{ selectedDetail()!.deliveriesCount || selectedDetail()!.stops.length }}</strong>
+                          <span class="text-slate-400 block text-[10px]">Entregas Totales</span>
+                          <strong class="font-mono text-slate-800">{{ selectedDetail()!.deliveriesCount || selectedDetail()!.stops.length }}</strong>
                         </div>
                         <div>
-                          <span class="text-[#8792A2] block text-[10px] uppercase font-medium">Entregas sin Conductor</span>
-                          <strong [class.text-rose-700]="(selectedDetail()!.unassignedDeliveries ?? 0) > 0" class="font-mono text-[#1A2C44]">
+                          <span class="text-slate-400 block text-[10px]">Entregas sin Conductor</span>
+                          <strong [class.text-rose-700]="(selectedDetail()!.unassignedDeliveries ?? 0) > 0" class="font-mono">
                             {{ selectedDetail()!.unassignedDeliveries ?? 0 }}
                           </strong>
                         </div>
@@ -1025,14 +1024,14 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                     <!-- Rutas que lleva este conductor -->
                     <div class="space-y-2">
-                      <h4 class="text-[12px] font-semibold text-[#1A2C44] uppercase tracking-wider">
+                      <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
                         Rutas a Cargo de Este Conductor ({{ driverAssignedRoutes().length }})
                       </h4>
 
                       @if (driverAssignedRoutes().length > 0) {
-                        <div class="border border-[#E3E8EE] rounded-lg overflow-x-auto bg-white shadow-2xs">
+                        <div class="border border-slate-200 rounded-lg overflow-x-auto bg-white">
                           <table class="w-full text-left text-xs min-w-[550px]">
-                            <thead class="bg-[#F8FAFC] text-[11px] text-[#697386] uppercase border-b border-[#E3E8EE] font-semibold">
+                            <thead class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200 font-mono">
                               <tr>
                                 <th class="p-2.5">Código de Ruta</th>
                                 <th class="p-2.5">Vehículo</th>
@@ -1043,26 +1042,26 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 <th class="p-2.5 text-right">Estado</th>
                               </tr>
                             </thead>
-                            <tbody class="divide-y divide-[#F1F3F5]">
+                            <tbody class="divide-y divide-slate-100">
                               @for (r of driverAssignedRoutes(); track r.id) {
-                                <tr class="hover:bg-[#F8FAFC]/60 cursor-pointer"
-                                  [class.bg-[#F8FAFC]]="r.isCurrent"
+                                <tr class="hover:bg-slate-50 cursor-pointer"
+                                  [class.bg-primary-50]="r.isCurrent"
                                   (click)="selectPlan(r.id)">
-                                  <td class="p-2.5 font-mono font-medium text-[#1A2C44] flex items-center gap-1.5">
+                                  <td class="p-2.5 font-mono font-bold text-slate-900 flex items-center gap-1.5">
                                     <span>{{ r.code }}</span>
                                     @if (r.isCurrent) {
-                                      <span class="px-1.5 py-0.2 rounded text-[9px] bg-[#635BFF] text-white font-medium">Actual</span>
+                                      <span class="px-1.5 py-0.2 rounded text-[9px] bg-primary-600 text-white font-semibold">Actual</span>
                                     }
                                   </td>
-                                  <td class="p-2.5 font-mono text-[#30313D]">{{ r.vehicleCode }}</td>
-                                  <td class="p-2.5 text-[#697386] font-mono text-[11px]">{{ r.plannedStartUtc | date:'short' }}</td>
-                                  <td class="p-2.5 text-right font-mono text-[#30313D]">{{ r.totalDistanceKm | number:'1.0-1' }} km</td>
-                                  <td class="p-2.5 text-right font-mono text-[#30313D]">{{ r.totalDurationMinutes | number:'1.0-0' }} min</td>
-                                  <td class="p-2.5 text-center font-mono text-[#30313D]">{{ r.stopsCount }}</td>
+                                  <td class="p-2.5 font-mono text-slate-700">{{ r.vehicleCode }}</td>
+                                  <td class="p-2.5 text-slate-600 font-mono text-[11px]">{{ r.plannedStartUtc | date:'short' }}</td>
+                                  <td class="p-2.5 text-right font-mono">{{ r.totalDistanceKm | number:'1.0-1' }} km</td>
+                                  <td class="p-2.5 text-right font-mono">{{ r.totalDurationMinutes | number:'1.0-0' }} min</td>
+                                  <td class="p-2.5 text-center font-mono">{{ r.stopsCount }}</td>
                                   <td class="p-2.5 text-right">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium"
-                                      [ngClass]="r.status === 'Published' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]'">
-                                      {{ r.status === 'Published' ? 'Publicada' : r.status }}
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
+                                      [ngClass]="r.status === 'Published' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
+                                      {{ r.status }}
                                     </span>
                                   </td>
                                 </tr>
@@ -1071,7 +1070,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </table>
                         </div>
                       } @else {
-                        <div class="p-4 bg-white border border-[#E3E8EE] rounded-lg text-xs text-[#697386] text-center">
+                        <div class="p-4 bg-white border border-slate-200 rounded-lg text-xs text-slate-500 text-center">
                           @if (!selectedDetail()!.driverName) {
                             <span>Asigna un conductor a la ruta para consultar su itinerario y otras rutas asignadas.</span>
                           } @else {
@@ -1083,29 +1082,29 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                     <!-- Cuadro global de conductores de la flota -->
                     <div class="space-y-2 pt-2">
-                      <h4 class="text-[12px] font-semibold text-[#1A2C44] uppercase tracking-wider">
+                      <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
                         Distribución de Rutas por Conductor en la Flota
                       </h4>
                       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         @for (dw of allDriversWorkload(); track dw.driverName) {
-                          <div class="p-3 bg-white border border-[#E3E8EE] rounded-lg space-y-2 shadow-2xs">
+                          <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
                             <div class="flex items-center justify-between">
-                              <strong class="text-xs text-[#1A2C44]">{{ dw.driverName }}</strong>
-                              <span class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] font-mono">
+                              <strong class="text-xs text-slate-900">{{ dw.driverName }}</strong>
+                              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
                                 {{ dw.routesCount }} {{ dw.routesCount === 1 ? 'ruta' : 'rutas' }}
                               </span>
                             </div>
-                            <div class="flex items-center justify-between text-[11px] text-[#697386] font-mono">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono">
                               <span>{{ dw.totalStops }} paradas</span>
                               <span>{{ dw.totalKm | number:'1.0-1' }} km</span>
                             </div>
-                            <div class="flex flex-wrap gap-1 pt-1 border-t border-[#F1F3F5]">
+                            <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
                               @for (r of dw.routes; track r.id) {
                                 <button
                                   type="button"
                                   (click)="selectPlan(r.id)"
-                                  class="text-[10px] font-mono px-2 py-0.5 rounded-md transition-colors"
-                                  [ngClass]="r.id === selectedDetail()!.id ? 'bg-[#635BFF] text-white' : 'bg-[#F8FAFC] border border-[#E3E8EE] text-[#30313D] hover:bg-slate-100'">
+                                  class="text-[10px] font-mono px-1.5 py-0.5 rounded hover:underline"
+                                  [ngClass]="r.id === selectedDetail()!.id ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700'">
                                   {{ r.code }}
                                 </button>
                               }
@@ -1117,19 +1116,19 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   </div>
                 }
 
-                <!-- CONTENIDO PESTAÑA 4: STOCK POR ALMACÉN -->
+                <!-- CONTENIDO PESTAÑA 4: STOCK POR BODEGA (Issue #196) -->
                 @if (detailTab() === 'stock-bodegas') {
                   <div class="space-y-4" data-testid="warehouse-stock-panel">
                     <!-- Filtros de contexto: Parada o SKU -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F8FAFC] p-3 rounded-lg border border-[#E3E8EE]">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <div class="flex flex-wrap items-center gap-3">
-                        <label for="stock-stop-select" class="text-[12px] font-medium text-[#30313D]">Filtrar por Parada:</label>
+                        <label for="stock-stop-select" class="text-xs font-bold text-slate-700">Filtrar por Parada:</label>
                         <select
                           id="stock-stop-select"
                           [ngModel]="selectedStopForStock()?.servicePointId || ''"
                           (ngModelChange)="onStockStopSelect($event)"
                           data-testid="stock-stop-select"
-                          class="text-xs p-1.5 border border-[#E3E8EE] rounded-md bg-white text-[#1A2C44] min-w-[200px] focus:outline-none focus:border-[#635BFF]">
+                          class="text-xs p-1.5 border border-slate-300 rounded bg-white min-w-[200px]">
                           <option value="">Todas las paradas del plan</option>
                           @for (s of selectedDetail()!.stops; track s.sequence) {
                             <option [value]="s.servicePointId">{{ s.sequence }}. {{ s.servicePointName || s.servicePointCode }}</option>
@@ -1143,7 +1142,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             type="button"
                             (click)="clearStockFilter()"
                             data-testid="clear-stock-filter-btn"
-                            class="text-xs font-medium text-[#635BFF] hover:underline">
+                            class="text-xs font-semibold text-primary-600 hover:underline">
                             Limpiar filtro
                           </button>
                         }
@@ -1152,56 +1151,56 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           (click)="loadWarehouseStockForSelected()"
                           [disabled]="warehouseStockLoading()"
                           data-testid="refresh-stock-btn"
-                          class="inline-flex items-center gap-1 text-[12px] font-medium px-2.5 py-1 rounded-md bg-white border border-[#E3E8EE] hover:bg-[#F8FAFC] text-[#30313D] transition-colors shadow-2xs">
+                          class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded bg-white border border-slate-300 hover:bg-slate-50 text-slate-700">
                           @if (warehouseStockLoading()) {
-                            <span class="inline-block animate-spin h-3 w-3 border-2 border-[#635BFF] border-t-transparent rounded-full"></span>
+                            <span class="inline-block animate-spin h-3 w-3 border-2 border-slate-600 border-t-transparent rounded-full"></span>
                           }
-                          <span>Actualizar Stock</span>
+                          <span>↻ Actualizar Stock</span>
                         </button>
                       </div>
                     </div>
 
                     <!-- Indicador de contexto activo -->
                     @if (selectedStopForStock()) {
-                      <div class="p-2.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded-md text-xs text-[#1A2C44] flex items-center justify-between" data-testid="stock-active-context-stop">
+                      <div class="p-2.5 bg-primary-50/70 border border-primary-200 rounded-lg text-xs text-primary-900 flex items-center justify-between" data-testid="stock-active-context-stop">
                         <span>
-                          Mostrando disponibilidad en almacenes para la parada:
+                          Mostrando disponibilidad en bodegas para la parada seleccionada:
                           <strong>{{ selectedStopForStock()!.servicePointName || selectedStopForStock()!.servicePointCode }}</strong>
                         </span>
-                        <span class="text-[11px] font-mono font-medium bg-white border border-[#E3E8EE] px-2 py-0.5 rounded">
+                        <span class="text-[11px] font-mono font-bold bg-primary-100 px-2 py-0.5 rounded">
                           Parada #{{ selectedStopForStock()!.sequence }}
                         </span>
                       </div>
                     } @else if (selectedProductSkuForStock()) {
-                      <div class="p-2.5 bg-[#F8FAFC] border border-[#E3E8EE] rounded-md text-xs text-[#1A2C44] flex items-center justify-between" data-testid="stock-active-context-sku">
+                      <div class="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs text-indigo-900 flex items-center justify-between" data-testid="stock-active-context-sku">
                         <span>
-                          Mostrando disponibilidad en almacenes para el SKU:
+                          Mostrando disponibilidad en bodegas para el SKU:
                           <strong>{{ selectedProductSkuForStock() }}</strong>
                         </span>
-                        <button (click)="clearStockFilter()" class="text-xs text-[#635BFF] hover:underline font-medium">✕ Quitar filtro</button>
+                        <button (click)="clearStockFilter()" class="text-xs text-indigo-600 hover:underline font-semibold">✕ Quitar filtro</button>
                       </div>
                     }
 
                     <!-- Cargando -->
                     @if (warehouseStockLoading()) {
-                      <div class="p-6 text-center text-[#697386] text-xs bg-white border border-[#E3E8EE] rounded-lg" data-testid="stock-loading-indicator">
-                        Consultando existencias por almacén...
+                      <div class="p-6 text-center text-slate-500 text-xs bg-white border border-slate-200 rounded-xl" data-testid="stock-loading-indicator">
+                        Consultando existencias por bodega...
                       </div>
                     }
 
-                    <!-- Lista de existencias por almacén -->
+                    <!-- Lista de existencias por bodega -->
                     @if (!warehouseStockLoading() && filteredWarehouseStock().length === 0) {
-                      <div class="p-6 text-center bg-white border border-[#E3E8EE] rounded-lg text-xs text-[#697386]" data-testid="stock-empty-message">
-                        No se encontraron registros de existencias en almacén para la selección actual.
+                      <div class="p-6 text-center bg-white border border-slate-200 rounded-xl text-xs text-slate-500" data-testid="stock-empty-message">
+                        No se encontraron registros de existencias en bodega para la selección actual.
                       </div>
                     }
 
                     @if (!warehouseStockLoading() && filteredWarehouseStock().length > 0) {
-                      <div class="overflow-x-auto border border-[#E3E8EE] rounded-lg bg-white shadow-2xs">
+                      <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs">
                         <table class="w-full text-xs text-left" data-testid="warehouse-stock-table">
-                          <thead class="bg-[#F8FAFC] border-b border-[#E3E8EE] text-[#697386] uppercase font-semibold text-[11px]">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
                             <tr>
-                              <th class="p-3">Almacén</th>
+                              <th class="p-3">Bodega</th>
                               <th class="p-3">Producto / SKU</th>
                               <th class="p-3 text-right">Disponible</th>
                               <th class="p-3 text-right">Físico</th>
@@ -1209,39 +1208,39 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                               <th class="p-3 text-center">Estado</th>
                             </tr>
                           </thead>
-                          <tbody class="divide-y divide-[#F1F3F5] font-mono text-[#30313D]">
+                          <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
                             @for (item of filteredWarehouseStock(); track item.locationId + '-' + item.productId) {
-                              <tr class="hover:bg-[#F8FAFC]/50" data-testid="warehouse-stock-row">
-                                <td class="p-3 font-sans font-medium text-[#1A2C44]">
+                              <tr class="hover:bg-slate-50/60" data-testid="warehouse-stock-row">
+                                <td class="p-3 font-sans font-bold text-slate-900">
                                   {{ item.locationName || item.locationCode }}
-                                  <span class="text-xs text-[#8792A2] font-mono ml-1">({{ item.locationCode }})</span>
+                                  <span class="text-xs text-slate-400 font-mono ml-1">({{ item.locationCode }})</span>
                                 </td>
                                 <td class="p-3 font-sans">
-                                  <div class="font-medium text-[#1A2C44]">{{ item.productName }}</div>
-                                  <div class="text-[11px] text-[#8792A2] font-mono">{{ item.sku }}</div>
+                                  <div class="font-semibold text-slate-800">{{ item.productName }}</div>
+                                  <div class="text-[11px] text-slate-400 font-mono">{{ item.sku }}</div>
                                 </td>
-                                <td class="p-3 text-right font-bold text-[#1A2C44]">
+                                <td class="p-3 text-right font-bold text-slate-900">
                                   {{ item.availableQuantity | number:'1.0-2' }}
                                 </td>
-                                <td class="p-3 text-right text-[#697386]">
+                                <td class="p-3 text-right text-slate-600">
                                   {{ item.quantityOnHand | number:'1.0-2' }}
                                 </td>
-                                <td class="p-3 text-right text-[#8792A2]">
+                                <td class="p-3 text-right text-slate-500">
                                   {{ item.quantityReserved | number:'1.0-2' }}
                                 </td>
                                 <td class="p-3 text-center font-sans">
                                   @switch (item.status) {
                                     @case ('Critico') {
-                                      <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">Crítico</span>
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Crítico</span>
                                     }
                                     @case ('SinStock') {
-                                      <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-800 border border-rose-200">Sin Stock</span>
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">Sin Stock</span>
                                     }
                                     @case ('Exceso') {
-                                      <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Exceso</span>
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Exceso</span>
                                     }
                                     @default {
-                                      <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span>
+                                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Normal</span>
                                     }
                                   }
                                 </td>
@@ -1261,143 +1260,144 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       } <!-- Fin pestaña rutas -->
 
       <!-- ======================================================== -->
-      <!-- BANDEJA DE ENTREGAS CON NOVEDAD POR CENTRO DE SALUD -->
+      <!-- BANDEJA DE CAPTURAS RECHAZADAS POR PUNTO (ESC-23 / ESC-25) -->
       <!-- ======================================================== -->
       @if (activeTab() === 'rechazos') {
-        <div class="space-y-4">
-          <!-- Filtros y Barra de Acciones -->
-          <div class="bg-white border border-[#E3E8EE] rounded-lg p-3.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
-              <label class="text-[13px] font-medium text-[#30313D]">Centro de salud o destino:</label>
+        <div class="space-y-6">
+          <!-- Filtros y Resumen -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <label class="text-xs font-bold text-slate-700">Filtrar por Punto de Servicio:</label>
               <select
                 [ngModel]="selectedServicePointFilter()"
                 (ngModelChange)="onServicePointFilterChange($event)"
-                class="text-[13px] h-9 px-3 border border-[#E3E8EE] rounded-md bg-white text-[#1A2C44] min-w-[240px] focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF]">
-                <option value="">Todos los centros (Vista general)</option>
+                class="text-xs p-2 border border-slate-300 rounded-lg bg-white min-w-[220px]">
+                <option value="">Todos los puntos (General)</option>
                 @for (pt of availableLocations(); track pt.id) {
                   <option [value]="pt.id">{{ pt.name }} ({{ pt.code }})</option>
                 }
               </select>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
               <button
                 type="button"
                 (click)="loadRejectedCaptures()"
                 [disabled]="rejectedLoading()"
-                class="inline-flex items-center gap-1.5 h-9 px-3 text-[13px] font-medium rounded-md bg-[#F8FAFC] text-[#30313D] border border-[#E3E8EE] hover:bg-[#F1F4F8] transition-colors disabled:opacity-50">
+                class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50">
                 @if (rejectedLoading()) {
-                  <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-[#635BFF] border-t-transparent rounded-full"></span>
+                  <span class="inline-block animate-spin h-3 w-3 border-2 border-slate-600 border-t-transparent rounded-full"></span>
                 }
-                <span>Actualizar registros</span>
+                <span>↻ Actualizar</span>
               </button>
             </div>
           </div>
 
-          <!-- Métricas Resumen -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="bg-white border border-[#E3E8EE] rounded-lg p-3.5 shadow-xs">
-              <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Entregas con Observación</span>
-              <p class="text-2xl font-bold text-rose-600 mt-1">{{ rejectedCaptures().length }}</p>
-              <p class="text-[12px] text-[#8792A2] mt-0.5">Pendientes de revisión de inventario</p>
+          <!-- Métricas Rápidas -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Total Capturas Aisladas</span>
+              <p class="text-2xl font-bold text-rose-600 mt-1 font-mono">{{ rejectedCaptures().length }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Capturas en «Requiere Revisión»</p>
             </div>
-            <div class="bg-white border border-[#E3E8EE] rounded-lg p-3.5 shadow-xs">
-              <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Centros Afectados</span>
-              <p class="text-2xl font-bold text-amber-600 mt-1">{{ uniqueRejectedPointsCount() }}</p>
-              <p class="text-[12px] text-[#8792A2] mt-0.5">Centros con novedades en recepción</p>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Puntos con Incidencias</span>
+              <p class="text-2xl font-bold text-amber-600 mt-1 font-mono">{{ uniqueRejectedPointsCount() }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Puntos de entrega afectados</p>
             </div>
-            <div class="bg-white border border-[#E3E8EE] rounded-lg p-3.5 shadow-xs">
-              <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Productos no Recibidos</span>
-              <p class="text-2xl font-bold text-[#1A2C44] mt-1">{{ totalRejectedUnitsCount() }}</p>
-              <p class="text-[12px] text-[#8792A2] mt-0.5">Unidades devueltas o con daño físico</p>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+              <span class="text-xs font-semibold text-slate-500 uppercase">Unidades Rechazadas</span>
+              <p class="text-2xl font-bold text-slate-800 mt-1 font-mono">{{ totalRejectedUnitsCount() }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">Discrepancias o daños de stock</p>
             </div>
           </div>
 
           <!-- Estado Cargando -->
           @if (rejectedLoading()) {
-            <div class="p-8 text-center text-[#8792A2] text-[13px] bg-white border border-[#E3E8EE] rounded-lg shadow-xs">
-              Consultando registros de novedades de entrega...
+            <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
+              Consultando capturas rechazadas por punto...
             </div>
           }
 
           <!-- Estado Vacío -->
           @if (!rejectedLoading() && rejectedCaptures().length === 0) {
-            <div class="p-8 text-center bg-white border border-[#E3E8EE] rounded-lg shadow-xs space-y-2">
-              <div class="w-10 h-10 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">✓</div>
-              <p class="text-[#1A2C44] font-semibold text-sm">Sin entregas observadas pendientes</p>
-              <p class="text-[#8792A2] text-[13px] max-w-md mx-auto">
-                No hay novedades ni rechazos reportados para el filtro actual. Todas las entregas registradas se completaron conformes.
+            <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-2">
+              <div class="text-3xl text-emerald-600">✓</div>
+              <p class="text-slate-800 font-bold text-sm">Sin capturas rechazadas pendientes</p>
+              <p class="text-slate-500 text-xs">
+                No hay elementos en outbox con estado «Requiere Revisión» para los filtros seleccionados.
+                Todas las entregas y sincronizaciones de campo se encuentran operativas.
               </p>
             </div>
           }
 
-          <!-- Lista de Entregas con Novedad -->
+          <!-- Lista de Capturas Rechazadas -->
           @if (!rejectedLoading() && rejectedCaptures().length > 0) {
-            <div class="space-y-3">
+            <div class="space-y-4">
               @for (capture of rejectedCaptures(); track capture.receiptId) {
-                <div class="bg-white border border-[#E3E8EE] rounded-lg p-4 shadow-xs space-y-3">
-                  <!-- Cabecera de la entrega -->
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E3E8EE] pb-3">
+                <div class="bg-white border border-rose-200 rounded-xl p-5 shadow-xs space-y-4">
+                  <!-- Cabecera de la captura -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <div>
                       <div class="flex items-center gap-2">
-                        <span class="font-semibold text-[#1A2C44] text-[14px]">{{ capture.servicePointName }}</span>
-                        <span class="text-[11px] px-2 py-0.5 rounded bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE] font-medium">
+                        <span class="font-bold text-slate-900 text-sm">{{ capture.servicePointName }}</span>
+                        <span class="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
                           {{ capture.servicePointCode }}
                         </span>
                       </div>
-                      <p class="text-[12px] text-[#8792A2] mt-0.5">
-                        Entrega: <strong class="text-[#30313D]">{{ capture.deliveryCode }}</strong> · 
-                        Registrado por: <strong class="text-[#30313D]">{{ capture.registeredByName || capture.driverName }}</strong> · 
+                      <p class="text-xs text-slate-500 mt-0.5 font-mono">
+                        Entrega: <strong class="text-slate-800">{{ capture.deliveryCode }}</strong> · 
+                        Registrado por: <strong class="text-slate-800">{{ capture.registeredByName || capture.driverName }}</strong> ·
                         Fecha: {{ capture.receivedAtUtc | date:'medium' }}
                       </p>
                     </div>
 
                     <div class="flex items-center gap-2">
-                      <span class="text-[11px] px-2.5 py-1 rounded-md font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                        Requiere revisión
+                      <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        ⚠ Requiere Revisión
                       </span>
                     </div>
                   </div>
 
-                  <!-- Motivo de la novedad -->
-                  <div class="bg-[#F8FAFC] border border-[#E3E8EE] rounded-md p-3 text-[12px] space-y-1">
-                    <div class="flex items-center gap-1.5 font-semibold text-[#1A2C44]">
-                      <span>Motivo reportado:</span>
-                      <span class="text-[11px] bg-white border border-[#E3E8EE] px-1.5 py-0.5 rounded text-[#30313D]">{{ capture.reason }}</span>
+                  <!-- Motivo de rechazo de negocio -->
+                  <div class="bg-rose-50/70 border border-rose-200 rounded-lg p-3 text-xs space-y-1">
+                    <div class="flex items-center gap-1.5 font-bold text-rose-900">
+                      <span>Causa de Aislamiento:</span>
+                      <span class="font-mono text-[11px] bg-rose-100 px-1.5 py-0.5 rounded">{{ capture.reason }}</span>
                     </div>
-                    <p class="text-[#8792A2] text-[11px]">
-                      Registro aislado temporalmente para permitir que los despachos activos continúen sin interrupciones operativas.
+                    <p class="text-rose-700 text-[11px]">
+                      Aislada del flujo normal (ESC-23 / ESC-25) para evitar reintentos continuos y permitir que el resto de la cola continúe sincronizando.
                     </p>
                   </div>
 
-                  <!-- Detalle de productos -->
+                  <!-- Detalle de líneas -->
                   <div>
-                    <h5 class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider mb-2">Detalle de productos y cantidades</h5>
-                    <div class="border border-[#E3E8EE] rounded-md overflow-x-auto">
-                      <table class="w-full text-left text-[13px] min-w-[500px]">
-                        <thead class="bg-[#F8FAFC] text-[11px] font-medium text-[#8792A2] uppercase tracking-wider border-b border-[#E3E8EE]">
+                    <h5 class="text-[11px] font-bold text-slate-600 uppercase mb-2">Detalle de Productos y Líneas Rechazadas</h5>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                      <table class="w-full text-left text-xs min-w-[500px]">
+                        <thead class="bg-slate-50 text-[11px] text-slate-500 uppercase border-b border-slate-200">
                           <tr>
-                            <th class="p-2.5">Producto</th>
-                            <th class="p-2.5 text-center">Recibido Conforme</th>
-                            <th class="p-2.5 text-center">No Recibido / Rechazado</th>
-                            <th class="p-2.5">Observación</th>
+                            <th class="p-2.5">Producto / SKU</th>
+                            <th class="p-2.5 text-center">Cant. Aceptada</th>
+                            <th class="p-2.5 text-center">Cant. Rechazada</th>
+                            <th class="p-2.5">Motivo Específico</th>
                           </tr>
                         </thead>
-                        <tbody class="divide-y divide-[#E3E8EE]">
+                        <tbody class="divide-y divide-slate-100">
                           @for (line of capture.lines; track line.productId) {
                             <tr>
-                              <td class="p-2.5 font-medium text-[#1A2C44]">
+                              <td class="p-2.5 font-medium text-slate-800">
                                 {{ line.productName }}
-                                <span class="block text-[11px] text-[#8792A2] font-mono">{{ line.sku }}</span>
+                                <span class="block text-[10px] text-slate-400 font-mono">{{ line.sku }}</span>
                               </td>
-                              <td class="p-2.5 text-center font-medium text-emerald-700">
+                              <td class="p-2.5 text-center font-mono font-semibold text-emerald-700">
                                 {{ line.quantityAccepted }} u
                               </td>
-                              <td class="p-2.5 text-center font-bold text-rose-600">
+                              <td class="p-2.5 text-center font-mono font-bold text-rose-600">
                                 {{ line.quantityRejected }} u
                               </td>
-                              <td class="p-2.5 text-[#4F5B66] text-[12px]">
-                                {{ line.rejectionReason || 'Diferencia en recepción física' }}
+                              <td class="p-2.5 text-slate-600 text-[11px]">
+                                {{ line.rejectionReason || 'Discrepancia en recepción física' }}
                               </td>
                             </tr>
                           }
@@ -1417,63 +1417,56 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
     <!-- MODAL ASISTENTE DE RUTAS POR PEDIDOS (4 PASOS) -->
     <!-- ======================================================== -->
     @if (isWizardOpen()) {
-      <div class="fixed inset-0 z-50 bg-[#0A2540]/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white w-full max-w-7xl h-[92vh] rounded-xl shadow-xl flex flex-col overflow-hidden border border-[#E3E8EE]">
+      <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white w-full max-w-7xl h-[94vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
           
           <!-- Header Asistente -->
-          <div class="px-5 py-3.5 bg-[#1A2C44] text-white flex items-center justify-between border-b border-slate-700">
+          <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
             <div>
-              <div class="flex items-center gap-2.5">
-                <h2 class="text-sm font-semibold text-white">Asistente de Planificación de Rutas y Distribución</h2>
-                <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-emerald-300 border border-white/20">
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold">Planificador de Rutas por Pedidos y Abastecimiento</h2>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   Paso {{ wizardStep() }} de 4
                 </span>
               </div>
-              <p class="text-[12px] text-slate-300 mt-0.5">
-                @if (wizardStep() === 1) { Selecciona los pedidos a incluir o registra un nuevo pedido de medicamentos. }
-                @if (wizardStep() === 2) { Revisa la asignación de almacenes con inventario disponible más cercanos a cada centro de salud. }
-                @if (wizardStep() === 3) { Evalúa las alternativas de recorrido y organiza el orden de las paradas. }
-                @if (wizardStep() === 4) { Asigna el vehículo disponible según capacidad de carga de peso y volumen. }
+              <p class="text-xs text-slate-300 mt-0.5">
+                @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
+                @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
+                @if (wizardStep() === 3) { Evalúa las opciones de viaje (A: Consolidado vs B: Escalonado) y valida el orden de paradas. }
+                @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
               </p>
             </div>
 
-            <button
-              type="button"
-              (click)="closeWizard()"
-              class="text-xs font-medium px-2.5 py-1.5 rounded-md bg-white/10 text-slate-200 hover:text-white hover:bg-white/20 transition-colors">
-              Cerrar
-            </button>
+            <button type="button" (click)="closeWizard()" class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors">Cerrar</button>
           </div>
 
           <!-- Cuerpo Asistente -->
           <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             
             <!-- Columna Izquierda: Formulario y Pasos (5 Cols) -->
-            <div class="lg:col-span-5 p-4 border-r border-[#E3E8EE] flex flex-col gap-3 bg-[#F8FAFC] overflow-y-auto">
+            <div class="lg:col-span-5 p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto">
               
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
                 <div class="space-y-3">
                   <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Pedidos Pendientes de Entrega</span>
+                    <span class="text-xs font-bold text-slate-700 uppercase">Pedidos Pendientes de Despacho</span>
                     <button
                       type="button"
                       (click)="showNewOrderForm.set(!showNewOrderForm())"
-                      class="text-[12px] font-medium text-[#635BFF] hover:underline">
-                      {{ showNewOrderForm() ? 'Cancelar nuevo' : '+ Registrar Solicitud Manual' }}
+                      class="text-[11px] font-semibold text-primary-600 hover:underline">
+                      {{ showNewOrderForm() ? 'Cancelar nuevo' : '+ Crear Pedido Manual' }}
                     </button>
                   </div>
 
                   <!-- Formulario Nuevo Pedido Rápido -->
                   @if (showNewOrderForm()) {
-                    <div class="p-3.5 bg-white rounded-lg border border-[#E3E8EE] shadow-xs space-y-2.5 text-[12px]">
-                      <span class="font-semibold text-[#1A2C44] block text-[12px]">Nueva Solicitud de Entrega</span>
+                    <div class="p-3 bg-white rounded-xl border border-primary-200 shadow-sm space-y-2 text-xs">
+                      <span class="font-bold text-slate-800 block text-[11px] uppercase">Nuevo Pedido</span>
                       
                       <div>
-                        <label class="text-[11px] text-[#4F5B66] block mb-1">Centro de Salud Destino</label>
-                        <select
-                          [(ngModel)]="newOrderDestId"
-                          class="w-full text-[12px] h-8 px-2 border border-[#E3E8EE] rounded-md bg-white text-[#1A2C44] focus:outline-none focus:border-[#635BFF]">
+                        <label class="text-[10px] text-slate-500 block">Destino (Punto de Entrega o Bodega)</label>
+                        <select [(ngModel)]="newOrderDestId" class="w-full text-xs p-1.5 border rounded">
                           <option value="">Selecciona destino...</option>
                           @for (loc of availableLocations(); track loc.id) {
                             <option [value]="loc.id">{{ loc.name }} ({{ loc.code }})</option>
@@ -1483,10 +1476,8 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                       <div class="grid grid-cols-2 gap-2">
                         <div>
-                          <label class="text-[11px] text-[#4F5B66] block mb-1">Producto</label>
-                          <select
-                            [(ngModel)]="newOrderProdId"
-                            class="w-full text-[12px] h-8 px-2 border border-[#E3E8EE] rounded-md bg-white text-[#1A2C44] focus:outline-none focus:border-[#635BFF]">
+                          <label class="text-[10px] text-slate-500 block">Producto</label>
+                          <select [(ngModel)]="newOrderProdId" class="w-full text-xs p-1.5 border rounded">
                             <option value="">Selecciona...</option>
                             @for (p of availableProducts(); track p.id) {
                               <option [value]="p.id">{{ p.name }} ({{ p.sku }})</option>
@@ -1494,12 +1485,8 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </select>
                         </div>
                         <div>
-                          <label class="text-[11px] text-[#4F5B66] block mb-1">Cantidad Solicitada</label>
-                          <input
-                            type="number"
-                            [(ngModel)]="newOrderQty"
-                            min="1"
-                            class="w-full text-[12px] h-8 px-2 border border-[#E3E8EE] rounded-md bg-white text-[#1A2C44] font-medium focus:outline-none focus:border-[#635BFF]" />
+                          <label class="text-[10px] text-slate-500 block">Cantidad Requerida</label>
+                          <input type="number" [(ngModel)]="newOrderQty" min="1" class="w-full text-xs p-1.5 border rounded font-mono" />
                         </div>
                       </div>
 
@@ -1507,8 +1494,8 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         type="button"
                         (click)="submitNewOrder()"
                         [disabled]="!newOrderDestId || !newOrderProdId || newOrderQty <= 0"
-                        class="w-full h-8 rounded-md bg-[#635BFF] text-white font-medium hover:bg-[#5248E0] transition-colors disabled:opacity-50">
-                        Guardar Solicitud
+                        class="w-full py-1.5 rounded bg-primary-600 text-white font-bold hover:bg-primary-700 disabled:opacity-50">
+                        Guardar Pedido
                       </button>
                     </div>
                   }
@@ -1516,25 +1503,25 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <!-- Lista de Pedidos Disponibles con Checkbox -->
                   <div class="space-y-2">
                     @for (ord of pendingOrders(); track ord.id) {
-                      <div class="p-3 rounded-lg border bg-white shadow-xs flex items-start gap-2.5 text-[12px] cursor-pointer transition-all"
-                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-[#635BFF] ring-2 ring-[#635BFF]/10' : 'border-[#E3E8EE] hover:border-slate-300'"
+                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2 text-xs cursor-pointer"
+                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200'"
                         (click)="toggleOrderSelection(ord.id)">
                         <input
                           type="checkbox"
                           [checked]="selectedOrderIds().has(ord.id)"
                           (click)="$event.stopPropagation()"
                           (change)="toggleOrderSelection(ord.id)"
-                          class="mt-0.5 rounded text-[#635BFF] focus:ring-[#635BFF]" />
+                          class="mt-0.5 rounded text-primary-600" />
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center justify-between">
-                            <span class="font-semibold text-[#1A2C44]">{{ ord.orderNumber }}</span>
-                            <span class="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                              [ngClass]="ord.priority === 'Critical' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE]'">
-                              {{ ord.priority === 'Critical' ? 'Prioritario' : 'Ordinario' }}
+                            <span class="font-bold text-slate-900">{{ ord.orderNumber }}</span>
+                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold"
+                              [ngClass]="ord.priority === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'">
+                              {{ ord.priority }}
                             </span>
                           </div>
-                          <p class="text-[12px] font-medium text-[#635BFF] mt-0.5">Destino: {{ ord.destinationName }}</p>
-                          <div class="mt-1 space-y-0.5 text-[11px] text-[#4F5B66]">
+                          <p class="text-[11px] font-semibold text-primary-700 mt-0.5">Destino: {{ ord.destinationName }}</p>
+                          <div class="mt-1 space-y-0.5 text-[10px] text-slate-500 font-mono">
                             @for (l of ord.lines; track l.id) {
                               <div>• {{ l.productName }}: <strong>{{ l.requestedQuantity }} u</strong></div>
                             }
@@ -1549,22 +1536,22 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <!-- PASO 2: REVISIÓN DE ABASTECIMIENTO -->
               @if (wizardStep() === 2) {
                 <div class="space-y-3">
-                  <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Asignación de Almacenes por Proximidad</span>
-                  <p class="text-[12px] text-[#4F5B66]">
-                    El sistema verificó el stock con caducidad más próxima (FEFO) y seleccionó automáticamente el almacén disponible más cercano a cada destino:
+                  <span class="text-xs font-bold text-slate-700 uppercase">Asignación de Bodegas por Cercanía</span>
+                  <p class="text-xs text-slate-500">
+                    El sistema verificó el stock FEFO disponible y asignó automáticamente la bodega más próxima:
                   </p>
 
                   @for (opt of routeOptions(); track opt.optionId) {
-                    <div class="p-3.5 rounded-lg border border-[#E3E8EE] bg-white shadow-xs space-y-2 text-[12px]">
-                      <span class="font-semibold text-[#1A2C44] block text-[13px]">{{ opt.title }}</span>
-                      <p class="text-[12px] text-[#8792A2]">{{ opt.description }}</p>
+                    <div class="p-3 rounded-xl border bg-white space-y-2 text-xs">
+                      <span class="font-bold text-slate-800 block text-xs">{{ opt.title }}</span>
+                      <p class="text-[11px] text-slate-500">{{ opt.description }}</p>
 
-                      <div class="border border-[#E3E8EE] rounded-md p-2.5 bg-[#F8FAFC] space-y-1.5">
+                      <div class="border border-slate-100 rounded-lg p-2 bg-slate-50 space-y-1">
                         @for (l of opt.sourcingLines; track l.orderId) {
-                          <div class="border-b border-[#E3E8EE] pb-1.5 last:border-0 last:pb-0">
-                            <div class="font-medium text-[#1A2C44]">{{ l.productName }} ({{ l.requestedQuantity }} u)</div>
-                            <div class="text-[11px] text-[#8792A2]">Destino: {{ l.destinationName }}</div>
-                            <div class="mt-1 text-[11px] text-emerald-700 font-medium">
+                          <div class="border-b border-slate-200/60 pb-1 last:border-0 last:pb-0">
+                            <div class="font-semibold text-slate-800">{{ l.productName }} ({{ l.requestedQuantity }} u)</div>
+                            <div class="text-[10px] text-slate-500">Para: {{ l.destinationName }}</div>
+                            <div class="mt-1 text-[10px] text-emerald-700 font-mono">
                               @for (a of l.allocations; track a.warehouseId) {
                                 <div>Origen {{ a.warehouseCode }}: {{ a.quantity }} u</div>
                               }
@@ -1577,63 +1564,63 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 </div>
               }
 
-              <!-- PASO 3: OPCIONES DE RUTA & REORDENAR PARADAS -->
+              <!-- PASO 3: OPCIONES A/B & REORDENAR PARADAS -->
               @if (wizardStep() === 3) {
                 <div class="space-y-3">
-                  <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Alternativas de Recorrido y Paradas</span>
+                  <span class="text-xs font-bold text-slate-700 uppercase">Opciones de Ruta & Secuencia de Paradas</span>
 
                   <div class="grid grid-cols-2 gap-2">
                     @for (opt of routeOptions(); track opt.optionId) {
                       <div
                         (click)="selectedOptionId.set(opt.optionId); onOptionSelected(opt)"
-                        class="p-3 rounded-lg border cursor-pointer text-[12px] transition-all"
-                        [ngClass]="selectedOptionId() === opt.optionId ? 'border-[#635BFF] ring-2 ring-[#635BFF]/10 bg-white' : 'border-[#E3E8EE] bg-white hover:border-slate-300'">
+                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all"
+                        [ngClass]="selectedOptionId() === opt.optionId ? 'border-primary-600 ring-2 ring-primary-100 bg-white' : 'border-slate-200 bg-white/70'">
                         <div class="flex items-center justify-between">
-                          <span class="font-semibold text-[#1A2C44]">Opción {{ opt.optionId }}</span>
+                          <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
                           @if (opt.isRecommended) {
-                            <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">Recomendado</span>
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
                           }
                         </div>
-                        <p class="text-[11px] text-[#8792A2] mt-1 line-clamp-2">{{ opt.title }}</p>
-                        <div class="text-[11px] font-medium mt-2 text-[#30313D]">
-                          {{ opt.evaluation.totalDistanceKm }} km · {{ opt.evaluation.totalDurationMinutes }} min aprox.
+                        <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
+                        <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
+                          {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
                         </div>
                       </div>
                     }
                   </div>
 
                   <!-- Lista interactiva de paradas con reordenamiento -->
-                  <div class="bg-white p-3.5 rounded-lg border border-[#E3E8EE] shadow-xs space-y-2">
+                  <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
                     <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Orden de Paradas ({{ editableStops().length }})</span>
-                      <button (click)="restoreOptimalOrder()" class="text-[11px] text-[#635BFF] hover:underline font-medium">
-                        Restaurar orden sugerido
+                      <span class="text-[11px] font-bold text-slate-700 uppercase">Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
+                      <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
+                        Restaurar orden óptimo
                       </button>
                     </div>
 
                     <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
                       @for (s of editableStops(); track s.sequence; let idx = $index) {
-                        <div class="p-2 rounded-md border flex items-center justify-between text-[12px]"
-                          [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/60 border-amber-200' : 'bg-[#F8FAFC] border-[#E3E8EE]'">
+                        <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
+                          [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
                           <div class="flex items-center gap-2 min-w-0">
                             <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
-                              [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-[#635BFF]'">
+                              [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
                               {{ idx + 1 }}
                             </span>
                             <div class="min-w-0">
-                              <p class="font-medium text-[#1A2C44] truncate">{{ s.name }}</p>
-                              <p class="text-[11px] text-[#8792A2]">
-                                {{ s.kind === 'Pickup' ? 'Recogida en almacén' : 'Entrega a centro de salud' }}
+                              <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
+                              <p class="text-[9px] font-mono text-slate-500">
+                                {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
                               </p>
                             </div>
                           </div>
 
                           <div class="flex items-center gap-1">
                             @if (idx > 0) {
-                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-[#4F5B66] text-[10px]" title="Subir parada">▲</button>
+                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
                             }
                             @if (idx < editableStops().length - 1) {
-                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-[#4F5B66] text-[10px]" title="Bajar parada">▼</button>
+                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
                             }
                           </div>
                         </div>
@@ -1641,9 +1628,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </div>
 
                     @if (currentEvaluation()?.validationErrors?.length) {
-                      <div class="p-2.5 bg-rose-50 border border-rose-200 rounded-md text-[11px] text-rose-700 space-y-0.5">
+                      <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
                         @for (err of currentEvaluation()!.validationErrors; track err) {
-                          <div>Observación: {{ err }}</div>
+                          <div>[Aviso] {{ err }}</div>
                         }
                       </div>
                     }
@@ -1654,40 +1641,40 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <!-- PASO 4: SELECCIÓN DE VEHÍCULO & CONFIRMACIÓN -->
               @if (wizardStep() === 4) {
                 <div class="space-y-3">
-                  <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Vehículos de Transporte Disponibles</span>
-                  <p class="text-[12px] text-[#4F5B66]">
-                    Se evaluó el perfil de carga en cada tramo para descartar vehículos que no cumplan con el peso o volumen requerido:
+                  <span class="text-xs font-bold text-slate-700 uppercase">Vehículos Compatibles con la Carga</span>
+                  <p class="text-xs text-slate-500">
+                    El sistema calculó el perfil de carga tramo a tramo para descartar vehículos que no soportan el peso o volumen:
                   </p>
 
                   <div class="space-y-2">
                     @for (vm of availableVehicleMatches(); track vm.vehicleId) {
                       <div
                         (click)="vm.isMatch ? selectedVehicleId.set(vm.vehicleId) : null"
-                        class="p-3.5 rounded-lg border text-[12px] transition-all"
+                        class="p-3 rounded-xl border text-xs transition-all"
                         [ngClass]="{
-                          'border-[#635BFF] ring-2 ring-[#635BFF]/10 bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
-                          'border-[#E3E8EE] bg-white hover:border-slate-300 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
-                          'border-[#E3E8EE] bg-[#F8FAFC] opacity-60 cursor-not-allowed': !vm.isMatch
+                          'border-primary-600 ring-2 ring-primary-100 bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
+                          'border-slate-200 bg-white hover:border-slate-300 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
+                          'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed': !vm.isMatch
                         }">
                         <div class="flex items-center justify-between">
-                          <span class="font-semibold text-[#1A2C44] text-[13px]">{{ vm.vehicleCode }}</span>
+                          <span class="font-bold text-slate-900 text-sm">{{ vm.vehicleCode }}</span>
                           @if (vm.isMatch) {
-                            <span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium px-2 py-0.5 rounded">Compatible</span>
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">COMPATIBLE</span>
                           } @else {
-                            <span class="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 font-medium px-2 py-0.5 rounded">No compatible</span>
+                            <span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded">NO COMPATIBLE</span>
                           }
                         </div>
 
-                        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] text-[#4F5B66]">
-                          <div>Capacidad de carga: <strong class="text-[#1A2C44]">{{ vm.maxWeight }} kg</strong></div>
-                          <div>Uso estimado: <strong class="text-[#1A2C44]">{{ vm.weightUtilizationPct }}%</strong></div>
-                          <div>Distancia inicial: <strong class="text-[#1A2C44]">{{ vm.distanceToFirstPickupKm }} km</strong></div>
-                          <div>Costo operativo: <strong class="text-[#1A2C44]">USD {{ vm.estimatedCost }}</strong></div>
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-600">
+                          <div>Capacidad: <strong>{{ vm.maxWeight }} kg</strong></div>
+                          <div>Uso estimado: <strong>{{ vm.weightUtilizationPct }}%</strong></div>
+                          <div>Depósito base: <strong>{{ vm.distanceToFirstPickupKm }} km</strong></div>
+                          <div>Costo estimado: <strong>USD {{ vm.estimatedCost }}</strong></div>
                         </div>
 
                         @if (!vm.isMatch) {
-                          <p class="text-[11px] text-rose-700 mt-2 font-medium">
-                            Motivo de descarte: {{ vm.discardReason }}
+                          <p class="text-[10px] text-rose-600 mt-2 font-semibold">
+                            Motivo descarte: {{ vm.discardReason }}
                           </p>
                         }
                       </div>
@@ -1697,13 +1684,13 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               }
 
               <!-- Botones de Navegación del Asistente -->
-              <div class="mt-auto pt-3 border-t border-[#E3E8EE] flex items-center justify-between gap-2">
+              <div class="mt-auto pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
                 @if (wizardStep() > 1) {
                   <button
                     type="button"
                     (click)="stepBack()"
-                    class="h-9 px-3.5 text-[13px] font-medium rounded-md bg-white border border-[#E3E8EE] text-[#30313D] hover:bg-[#F8FAFC] transition-colors">
-                    ← Paso Anterior
+                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    ← Anterior
                   </button>
                 } @else {
                   <div></div>
@@ -1714,15 +1701,15 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="advanceWizardStep()"
                     [disabled]="selectedOrderIds().size === 0 || actionLoading()"
-                    class="h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors disabled:opacity-50">
-                    Siguiente Paso →
+                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50">
+                    Siguiente →
                   </button>
                 } @else {
                   <button
                     type="button"
                     (click)="confirmAndSavePlan()"
                     [disabled]="!selectedVehicleId() || actionLoading()"
-                    class="h-9 px-4 text-[13px] font-medium rounded-md bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50">
+                    class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50">
                     {{ actionLoading() ? 'Creando Ruta...' : 'Confirmar y Crear Ruta' }}
                   </button>
                 }
@@ -1740,7 +1727,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             </div>
             @if (wizardApproximate()) {
               <p class="text-[11px] text-amber-700 mt-1">
-                Trazado aproximado (rectas entre paradas): el servicio de cálculo de calles no se encuentra disponible.
+                Trazado aproximado (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
               </p>
             }
           </div>

@@ -204,6 +204,55 @@ public sealed class AgentRunTraceTests(PostgisContainer postgres) : IClassFixtur
         Assert.Equal(AgentRunStatus.Completed, view.Status);
         Assert.Equal(2, view.Decisions.Count);
         Assert.All(view.Decisions, decision => Assert.Equal(ExplanationSource.Llm, decision.Source));
+
+        // Evidencia determinista: origen, vehículo y secuencia real de paradas del plan
+        // propuesto, derivados por servidor y no del texto del LLM.
+        Assert.All(view.Decisions, decision =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(decision.VehicleCode));
+            Assert.False(string.IsNullOrWhiteSpace(decision.OriginWarehouseCode));
+            Assert.False(string.IsNullOrWhiteSpace(decision.OriginWarehouseName));
+            Assert.NotEmpty(decision.OrderedStops!);
+        });
+        await using (var db = TestDb.Context(connection))
+        {
+            foreach (var decision in view.Decisions)
+            {
+                var stored = await db.AgentDecisions.AsNoTracking().SingleAsync(d => d.Id == decision.AgentDecisionId);
+                using var proposal = JsonDocument.Parse(stored.ProposalJson);
+                var planId = proposal.RootElement.GetProperty("proposedRoutePlanId").GetGuid();
+                var expectedStops = await (from stop in db.RouteStops.AsNoTracking()
+                                           where stop.RoutePlanId == planId
+                                           join point in db.ServicePoints.AsNoTracking() on stop.ServicePointId equals point.Id
+                                           orderby stop.SequenceNumber
+                                           select point.Code).ToListAsync();
+                Assert.Equal(expectedStops, decision.OrderedStops!.Select(stop => stop.PointCode).ToList());
+                Assert.Equal(Enumerable.Range(1, expectedStops.Count), decision.OrderedStops!.Select(stop => stop.Sequence).ToList());
+                var plan = await db.RoutePlans.AsNoTracking().SingleAsync(p => p.Id == planId);
+                var vehicle = await db.Vehicles.AsNoTracking().SingleAsync(v => v.Id == plan.VehicleId);
+                var depot = await db.Locations.AsNoTracking().SingleAsync(l => l.Id == vehicle.DepotLocationId);
+                Assert.Equal(depot.Code, decision.OriginWarehouseCode);
+                Assert.Equal(depot.Name, decision.OriginWarehouseName);
+                Assert.Equal(vehicle.Code, decision.VehicleCode);
+            }
+            // La consulta histórica debe conservar la decisión aunque cambie el catálogo.
+            await db.Vehicles.ExecuteUpdateAsync(setters => setters.SetProperty(v => v.Code, v => "NEW-" + v.Code));
+            await db.Locations.ExecuteUpdateAsync(setters => setters.SetProperty(l => l.Name, "Bodega renombrada"));
+            await db.ServicePoints.ExecuteUpdateAsync(setters => setters.SetProperty(p => p.Code, p => "NEW-" + p.Code));
+        }
+        var historical = (await planner.GetFromJsonAsync<AgentRunView>($"/api/v1/agent/runs/{view.RunId}", new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        }))!;
+        foreach (var original in view.Decisions)
+        {
+            var saved = Assert.Single(historical.Decisions, d => d.AgentDecisionId == original.AgentDecisionId);
+            Assert.Equal(original.VehicleCode, saved.VehicleCode);
+            Assert.Equal(original.OriginWarehouseCode, saved.OriginWarehouseCode);
+            Assert.Equal(original.OriginWarehouseName, saved.OriginWarehouseName);
+            Assert.Equal(original.OrderedStops, saved.OrderedStops);
+        }
     }
 
     [Fact]

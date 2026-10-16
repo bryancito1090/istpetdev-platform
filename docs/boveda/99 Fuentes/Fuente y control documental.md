@@ -690,3 +690,30 @@ CI y cierre remoto se acreditan en la evidencia y el PR #215.
 Fuente: issue #193, que implementa AMP-01 de [[Ampliacion de alcance - ideas del evento]]. [[Contratos API y eventos]] registra el campo opcional `criticalDeadlineLocal` de `POST /api/v1/route-plans` y el error 400 `invalid_critical_deadline`; el spec 002 añade FR-25 y la tarea T16. Sin el campo, el plan no cambia. No altera baselines, umbrales ni datos; no se despliega.
 
 Verificación documental (tras integrar develop con #197, #201 y #192): **105 notas Markdown**, **1115 enlaces internos resueltos**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Herramientas de abastecimiento del agente (issue #195)
+
+Fuente: implementación en la rama `feature/195-herramientas-n8n-abastecimiento`
+(checkout Orca aislado desde `develop` `1dcfb51`), plan y evidencia del issue.
+Se actualizan [[n8n e IA]] con las ocho herramientas del prompt v2, los guards de
+allowlist/deadline y la evidencia determinista en `AgentRun`, y
+[[Contratos API y eventos]] con la ampliación de `AgentRunView`. Los contratos de
+`/api/v1/logistics/*` corresponden a #194 y se conservan íntegros en su PR. Los
+resultados históricos de cinco herramientas y prompt v1 permanecen como
+históricos; no se reescriben. Verificación documental y estado real por separado
+en la evidencia del issue; este registro no acredita por sí solo merge ni ensayo.
+
+
+## 16-oct-2026 — Revisión de viabilidad de datasets coordinada por n8n (issue #209)
+
+Fuente: issue #209 y el reporte del importador del spec 001. [[Contratos API y eventos]] documenta `status` y la sección determinista `feasibility` de `POST /api/v1/imports` (puntos sin coordenadas, bodegas sin flota, productos sin peso/volumen y déficit de stock por SKU), el veredicto y la autorización M2M acotada: `Roles.Automatizacion` solo ejecuta el dry-run (`dryRun=true&allowPartial=false`) y aplicar sigue siendo de `Roles.Planning`. El spec 001 actualiza FR-10 y [[n8n e IA]] registra el workflow `revision-dataset`, su prompt versionado y el fallback determinista ante fallo o cifras inventadas del LLM, sin `allowPartial=true`.
+
+Evidencia: 566/566 pruebas backend (6 nuevas de `FeasibilityReportTests`), scripts n8n 8/8 archivos (7 nuevas del workflow), `npm run check`, `npm run audit:check`, bóveda y ejecución real en n8n 2.39.5 con puente HTTP local en [2026-10-16-209-revision-dataset.md](../../specs/003-agente-logistico/evidencia/2026-10-16-209-revision-dataset.md). Sin despliegue.
+
+Verificación documental: **106 notas Markdown**, **1139 enlaces internos resueltos**, **0 errores**; se conservan cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Charla de logística integral para el Reto 1 (issue #232)
+
+Fuente: texto aportado por Bryan en la conversación, conservado íntegro en [[Charla de logistica integral - transcripcion recibida]], con una mención de tercero reservada y errores de transcripción explícitos. [[Logistica integral para el Reto 1 - hallazgos y evidencia]] organiza cadena proveedor–almacén–transporte–cliente, cuatro componentes, seis palancas, indicadores, ejemplos, riesgos, mitigaciones y las preguntas de combustible/flota, con pendientes de aclaración. Se enlazan inventario, rutas, validación, reto oficial, hallazgos previos, hechos canónicos y los índices.
+
+Cambio documental: sin cambios de software, contratos, prioridades aprobadas ni despliegue. No acredita prueba funcional, estudio empresarial, normativa urbana/combustible ni ejecución de planes de flota. La fecha es de recepción; autoría y momento de la exposición siguen pendientes. Verificación local: `python docs/boveda/.github/scripts/check_vault.py` — **108 notas Markdown, 1166 enlaces internos, 0 errores y los 4 avisos de lenguaje preexistentes**; `git diff --check`, `npm run check` y `npm run audit:check` terminan correctamente. La auditoría conserva 7 avisos cubiertos por excepciones vigentes; el build muestra avisos de la regla ESLint deprecada y Leaflet CommonJS. Estos checks comprueban documentación/compilación, no los casos operativos propuestos en la charla.

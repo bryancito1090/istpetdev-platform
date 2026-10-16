@@ -237,7 +237,7 @@ Utilizado para catálogos de centros de salud, insumos hospitalarios, monitoreo 
 
 ---
 
-## 5. Glosario de Lenguaje Claro y Comprensible
+## 5. UX Writing: Lenguaje Claro, Humano y Accesible para Todo Público
 
 Para preservar la sobriedad ejecutiva, se mantiene estrictamente la prohibición de tecnicismos crudos o jerga de desarrollo:
 
@@ -248,7 +248,7 @@ Para preservar la sobriedad ejecutiva, se mantiene estrictamente la prohibición
 | Cobertura menor a umbral | **Quedan menos de 5 días de insumos** | Tablas de Alertas |
 | Matriz VRP ejecutada | **Ruta óptima de entrega calculada** | `/rutas` |
 | Hash criptográfico y cadena de custodia | **Confirmación de entrega con firma y código QR** | `/public-trace` |
-| Payload vacío / Empty collection | **No hay entregas pendientes para hoy** | Empty States |
+| Payload vacío / Empty collection | **No hay entregas pendientes para hoy** | Estados de Vacío (*Empty States*) |
 
 ---
 

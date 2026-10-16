@@ -143,8 +143,9 @@ for path in source.glob("*.json"):
     workflow = json.loads(path.read_text(encoding="utf-8"))
     if path.name == "error-agente.json":
         workflow["id"] = error_id
-    else:
-        workflow.setdefault("settings", {})["errorWorkflow"] = error_id
+    elif "errorWorkflow" in workflow.get("settings", {}):
+        # Solo los workflows con el marcador resuelven el AgentRun de error (vigia/incidente).
+        workflow["settings"]["errorWorkflow"] = error_id
     (destination / path.name).write_text(
         json.dumps(workflow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
