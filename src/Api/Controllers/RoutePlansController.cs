@@ -789,6 +789,20 @@ public sealed class RoutePlansController(
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
 
+        // #197: prioridad y fecha de cada pedido, y ventana de cada punto destino.
+        var orders = await db.DeliveryOrders
+            .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
+            .ToDictionaryAsync(o => o.Id, ct);
+
+        var destinationPointIds = orders.Values
+            .Where(o => o.DestinationServicePointId.HasValue)
+            .Select(o => o.DestinationServicePointId!.Value)
+            .Distinct()
+            .ToList();
+        var servicePoints = await db.ServicePoints
+            .Where(sp => sp.OrganizationId == DemoOrganization.Id && destinationPointIds.Contains(sp.Id))
+            .ToDictionaryAsync(sp => sp.Id, ct);
+
         var optionsResult = new List<object>();
 
         foreach (var opt in sourcingOptions)
@@ -834,7 +848,8 @@ public sealed class RoutePlansController(
                 ));
             }
 
-            // Entregas por destino
+            // Entregas por destino (#197: con la prioridad y fecha del pedido, y la ventana del punto)
+            var deliveryDrafts = new List<DeliveryStopDraft>();
             var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId);
             foreach (var destGroup in deliveriesByDest)
             {
@@ -851,20 +866,38 @@ public sealed class RoutePlansController(
                     }
                 }
 
-                candidates.Add(new RouteStopCandidate(
-                    seq++,
-                    RouteStopKind.Delivery,
-                    !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.DestinationCode,
-                    firstLine.DestinationName,
-                    firstLine.DestinationPosition,
-                    -totalWeight,
-                    -totalVol,
-                    new TimeOnly(8, 0),
-                    new TimeOnly(17, 0),
-                    15
+                // Ventana y servicio del punto; una bodega destino o un punto sin datos conserva 08:00–17:00 y 15 min.
+                var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
+                var groupOrders = destGroup
+                    .Select(l => orders.GetValueOrDefault(l.OrderId))
+                    .Where(o => o is not null)
+                    .ToList();
+
+                deliveryDrafts.Add(new DeliveryStopDraft(
+                    new RouteStopCandidate(
+                        0,
+                        RouteStopKind.Delivery,
+                        !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.DestinationCode,
+                        firstLine.DestinationName,
+                        firstLine.DestinationPosition,
+                        -totalWeight,
+                        -totalVol,
+                        point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart,
+                        point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd,
+                        point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes
+                    ),
+                    DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority)),
+                    groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
                 ));
+            }
+
+            // Critical antes que High, Normal y Low; luego fecha requerida y vecino más cercano desde la última recogida.
+            var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
+            foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
+            {
+                candidates.Add(draft.Stop with { Sequence = seq++ });
             }
 
             // Evaluar secuencia con RouteEvaluator
