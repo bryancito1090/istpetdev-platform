@@ -85,6 +85,9 @@ public sealed class RejectedCapturesController(IApplicationDbContext db) : Contr
                 servicePointName = point?.Name ?? "",
                 driverId = r.ActorAccountId,
                 driverName = actors.TryGetValue(r.ActorAccountId, out var name) ? name : "",
+                // #162: el campo legado driverName ahora identifica a quien registró la recepción
+                // (el Receptor). registeredByName lo expone con su nombre correcto sin romper el contrato.
+                registeredByName = actors.TryGetValue(r.ActorAccountId, out var registeredBy) ? registeredBy : "",
                 receivedAtUtc = r.ReceivedAtServer,
                 reason = string.Join(" · ", reasons),
                 status = delivery?.Status ?? "",

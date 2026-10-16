@@ -29,6 +29,10 @@ public static class FieldErrorCodes
     public const string HandlingUnitStateConflict = "HANDLING_UNIT_STATE_CONFLICT";
     public const string NoHandlingUnits = "NO_HANDLING_UNITS";
     public const string ReceiptRequiresReceiver = "RECEIPT_REQUIRES_RECEIVER";
+    public const string IncompleteHandlingUnits = "INCOMPLETE_HANDLING_UNITS";
+    public const string InsufficientVehicleStock = "INSUFFICIENT_VEHICLE_STOCK";
+    public const string ReceiptCoverageMismatch = "RECEIPT_COVERAGE_MISMATCH";
+    public const string InvalidOperationId = "INVALID_OPERATION_ID";
 }
 
 // ==========================================
@@ -289,11 +293,15 @@ public sealed record HandlingUnitTraceResponse(
     IReadOnlyList<HandlingUnitTraceEvent> Events);
 
 // 014: lo que ve el Receptor al escanear el QR del bulto.
+// #162: el recibo es por ENTREGA completa; la respuesta muestra todos los bultos y todas las
+// líneas despachadas para que el receptor conozca el alcance antes de confirmar.
+public sealed record ReceiverUnitBoxDto(Guid HandlingUnitId, string Code, string Status);
+
 public sealed record ReceiverUnitLineDto(Guid DeliveryLineId, Guid LotId, string LotCode, string Sku, string ProductName, decimal Quantity, string Unit);
 
 public sealed record ReceiverUnitResponse(
     Guid HandlingUnitId, string Code, string Status, Guid DeliveryId, long DeliveryVersion,
-    string DestinationName, IReadOnlyList<ReceiverUnitLineDto> Lines);
+    string DestinationName, IReadOnlyList<ReceiverUnitBoxDto> Boxes, IReadOnlyList<ReceiverUnitLineDto> Lines);
 
 
 // ==========================================

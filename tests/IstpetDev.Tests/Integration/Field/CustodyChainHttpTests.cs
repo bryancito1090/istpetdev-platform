@@ -412,4 +412,331 @@ public class CustodyChainHttpTests(PostgisContainer postgres) : IClassFixture<Po
         var receiverPickup = await PostJsonAsync(receiver, $"/api/v1/deliveries/{s.DeliveryId}/pickup", new { operationId = BaseEntity.NewId() });
         Assert.Equal(HttpStatusCode.Forbidden, receiverPickup.StatusCode);
     }
+
+    private sealed record MultiSeeded(
+        Guid DeliveryId,
+        Guid PointLocationId,
+        Guid VehicleLocationId,
+        Guid WarehouseLocationId,
+        Guid DriverAccountId,
+        Guid BodegaAccountId,
+        Guid ReceiverAccountId,
+        IReadOnlyList<(Guid LineId, Guid LotId)> Lines);
+
+    // Entrega Draft con varias líneas; sameLot comparte un único lote entre las líneas.
+    private static async Task<MultiSeeded> SeedMultiLineAsync(ApiFactory api, string suffix, bool sameLot, decimal quantityPerLine = 10m, int lineCount = 2)
+    {
+        var bodegaId = await EnsureAccountAsync(api, BodegaSubject, Roles.Bodega);
+        var receiverId = await EnsureAccountAsync(api, TestTokens.Receiver, Roles.Receptor);
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var driver = await db.Accounts.SingleAsync(a => a.Subject == TestTokens.Driver);
+        var code = $"{suffix}-{Guid.NewGuid().ToString("N")[..4].ToUpperInvariant()}";
+
+        var product = new Product { Sku = $"SKU-162-{code}", Name = "Producto 162", BaseUnit = "L", IsActive = true };
+        var point = new IstpetDev.Domain.Entities.ServicePoint { Code = $"P-162-{code}", Name = "Punto 162", Criticality = "normal", IsActive = true };
+        var warehouse = new Location { Code = $"B-162-{code}", Name = "Bodega 162", Kind = LocationKinds.Warehouse, IsActive = true };
+        var pointLocation = new Location { Code = $"P-162-{code}", Name = "Punto 162", Kind = LocationKinds.ServicePoint, ServicePointId = point.Id, IsActive = true };
+        var vehicle = new Vehicle { Code = $"V-162-{code}", DepotLocationId = warehouse.Id, MaxWeight = 1000, IsActive = true };
+        var vehicleLocation = new Location { Code = $"V-162-{code}", Name = "Vehículo 162", Kind = LocationKinds.Vehicle, VehicleId = vehicle.Id, IsActive = true };
+        var plan = new RoutePlan { Code = $"R-162-{code}", Revision = 1, VehicleId = vehicle.Id, Status = "Published", ProposedBy = "test", PlannedStartUtc = DateTime.UtcNow, AlgorithmVersion = "test" };
+        var stop = new RouteStop { RoutePlanId = plan.Id, ServicePointId = point.Id, SequenceNumber = 1 };
+        var delivery = new Delivery
+        {
+            Code = $"D-162-{code}",
+            RouteStopId = stop.Id,
+            OriginLocationId = warehouse.Id,
+            ServicePointId = point.Id,
+            Status = DeliveryStates.Draft,
+            AssignedAccountId = driver.Id,
+        };
+
+        db.AddRange(product, point, warehouse, pointLocation, vehicle, vehicleLocation, plan, stop, delivery);
+
+        var lotsCreated = new List<Lot>();
+        var lines = new List<(Guid LineId, Guid LotId)>();
+        for (var i = 0; i < lineCount; i++)
+        {
+            var lot = sameLot ? lotsCreated.FirstOrDefault() : null;
+            if (lot is null)
+            {
+                lot = new Lot { ProductId = product.Id, Code = $"LOTE-162-{code}-{i}" };
+                db.Add(lot);
+                lotsCreated.Add(lot);
+            }
+            var line = new DeliveryLine { DeliveryId = delivery.Id, LotId = lot.Id, PlannedQuantity = quantityPerLine };
+            db.Add(line);
+            lines.Add((line.Id, lot.Id));
+        }
+
+        foreach (var lot in lotsCreated)
+        {
+            var total = quantityPerLine * lines.Count(l => l.LotId == lot.Id);
+            db.Add(new StockBalance { LocationId = warehouse.Id, LotId = lot.Id, QuantityOnHand = total, QuantityReserved = total });
+        }
+
+        await db.SaveChangesAsync();
+        return new MultiSeeded(delivery.Id, pointLocation.Id, vehicleLocation.Id, warehouse.Id, driver.Id, bodegaId, receiverId, lines);
+    }
+
+    private static async Task<(int Receipts, int ReceiptLines, int Movements, int CustodyEvents)> EffectCountsAsync(ApiFactory api, Guid deliveryId)
+    {
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var receiptIds = db.Receipts.Where(r => r.DeliveryId == deliveryId).Select(r => r.Id);
+        var lineIds = await db.DeliveryLines.Where(dl => dl.DeliveryId == deliveryId).Select(dl => dl.Id).ToListAsync();
+        return (
+            await receiptIds.CountAsync(),
+            await db.ReceiptLines.CountAsync(l => receiptIds.Contains(l.ReceiptId)),
+            await db.InventoryMovements.CountAsync(m => m.DeliveryLineId.HasValue && lineIds.Contains(m.DeliveryLineId.Value)),
+            await db.CustodyEvents.CountAsync(e => e.DeliveryId == deliveryId));
+    }
+
+    private static async Task<(Guid Hu1, Guid Hu2, string Token1, string Token2)> PrepareTwoBoxesAsync(ApiFactory api, MultiSeeded s)
+    {
+        using var scope = api.Services.CreateScope();
+        var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
+        var hu1 = await field.CreateHandlingUnitAsync(s.DeliveryId, new CreateHandlingUnitRequest(BaseEntity.NewId(),
+            [new CreateHandlingUnitLineRequest(s.Lines[0].LineId, s.Lines[0].LotId, 10m)]), s.BodegaAccountId);
+        var hu2 = await field.CreateHandlingUnitAsync(s.DeliveryId, new CreateHandlingUnitRequest(BaseEntity.NewId(),
+            [new CreateHandlingUnitLineRequest(s.Lines[1].LineId, s.Lines[1].LotId, 10m)]), s.BodegaAccountId);
+        return (hu1.HandlingUnitId, hu2.HandlingUnitId, hu1.Token!, hu2.Token!);
+    }
+
+    private static async Task AdvanceToDeliveredAsync(ApiFactory api, MultiSeeded s, Guid hu1, Guid hu2)
+    {
+        using var scope = api.Services.CreateScope();
+        var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
+        await field.DispatchAsync(s.DeliveryId, new DispatchRequest(BaseEntity.NewId(), [hu1, hu2]), s.BodegaAccountId, $"disp-{Guid.NewGuid()}");
+        await field.PickupAsync(s.DeliveryId, new CustodyTransitionRequest(BaseEntity.NewId()), s.DriverAccountId, $"pick-{Guid.NewGuid()}");
+        await field.DeliverAsync(s.DeliveryId, new CustodyTransitionRequest(BaseEntity.NewId()), s.DriverAccountId, $"delv-{Guid.NewGuid()}");
+    }
+
+    [Fact]
+    public async Task Dispatch_requires_all_boxes_and_full_planned_coverage_without_effects()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedDraftAsync(api, "DCOV");
+        using var bodega = api.ClientFor(BodegaSubject);
+
+        Guid huHalf;
+        Guid huOther;
+        using (var scope = api.Services.CreateScope())
+        {
+            var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
+            huHalf = (await field.CreateHandlingUnitAsync(s.DeliveryId, new CreateHandlingUnitRequest(BaseEntity.NewId(),
+                [new CreateHandlingUnitLineRequest(s.DeliveryLineId, s.LotId, 6m)]), s.BodegaAccountId)).HandlingUnitId;
+            huOther = (await field.CreateHandlingUnitAsync(s.DeliveryId, new CreateHandlingUnitRequest(BaseEntity.NewId(),
+                [new CreateHandlingUnitLineRequest(s.DeliveryLineId, s.LotId, 6m)]), s.BodegaAccountId)).HandlingUnitId;
+        }
+
+        var before = await EffectCountsAsync(api, s.DeliveryId);
+
+        // IDs extra ajenos al conjunto de la entrega: sin efectos.
+        var extra = await PostJsonAsync(bodega, $"/api/v1/deliveries/{s.DeliveryId}/dispatch",
+            new { operationId = BaseEntity.NewId(), handlingUnitIds = new[] { huHalf, huOther, Guid.NewGuid() } });
+        Assert.Equal(HttpStatusCode.Conflict, extra.StatusCode);
+        Assert.Contains(FieldErrorCodes.IncompleteHandlingUnits, await extra.Content.ReadAsStringAsync());
+        Assert.Equal(before, await EffectCountsAsync(api, s.DeliveryId));
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, s.WarehouseLocationId, s.LotId));
+
+        // Subconjunto: falta uno de los dos bultos de la entrega.
+        var subset = await PostJsonAsync(bodega, $"/api/v1/deliveries/{s.DeliveryId}/dispatch",
+            new { operationId = BaseEntity.NewId(), handlingUnitIds = new[] { huHalf } });
+        Assert.Equal(HttpStatusCode.Conflict, subset.StatusCode);
+        Assert.Contains(FieldErrorCodes.IncompleteHandlingUnits, await subset.Content.ReadAsStringAsync());
+        Assert.Equal(before, await EffectCountsAsync(api, s.DeliveryId));
+
+        // Con ambos bultos cubre exactamente la línea: un solo movimiento por línea y lote.
+        var ok = await PostJsonAsync(bodega, $"/api/v1/deliveries/{s.DeliveryId}/dispatch",
+            new { operationId = BaseEntity.NewId(), handlingUnitIds = new[] { huHalf, huOther } });
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, s.WarehouseLocationId, s.LotId));
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, s.VehicleLocationId, s.LotId));
+
+        using var scope2 = api.Services.CreateScope();
+        var db = scope2.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(1, await db.InventoryMovements.CountAsync(m => m.Kind == "Dispatch"));
+    }
+
+    [Fact]
+    public async Task Dispatch_requires_full_planned_coverage_per_line()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedDraftAsync(api, "DPLAN");
+        using var bodega = api.ClientFor(BodegaSubject);
+
+        Guid huPartial;
+        using (var scope = api.Services.CreateScope())
+        {
+            var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
+            huPartial = (await field.CreateHandlingUnitAsync(s.DeliveryId, new CreateHandlingUnitRequest(BaseEntity.NewId(),
+                [new CreateHandlingUnitLineRequest(s.DeliveryLineId, s.LotId, 7m)]), s.BodegaAccountId)).HandlingUnitId;
+        }
+
+        var before = await EffectCountsAsync(api, s.DeliveryId);
+        var incomplete = await PostJsonAsync(bodega, $"/api/v1/deliveries/{s.DeliveryId}/dispatch",
+            new { operationId = BaseEntity.NewId(), handlingUnitIds = new[] { huPartial } });
+        Assert.Equal(HttpStatusCode.Conflict, incomplete.StatusCode);
+        Assert.Contains(FieldErrorCodes.IncompleteHandlingUnits, await incomplete.Content.ReadAsStringAsync());
+        Assert.Equal(before, await EffectCountsAsync(api, s.DeliveryId));
+        Assert.Equal(12m, await FieldSeed.OnHandAsync(api, s.WarehouseLocationId, s.LotId));
+    }
+
+    [Fact]
+    public async Task Dispatch_of_two_lines_sharing_a_lot_creates_one_vehicle_balance()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedMultiLineAsync(api, "SAME", sameLot: true, quantityPerLine: 10m, lineCount: 2);
+        var (hu1, hu2, _, _) = await PrepareTwoBoxesAsync(api, s);
+        using var bodega = api.ClientFor(BodegaSubject);
+
+        var dispatch = await PostJsonAsync(bodega, $"/api/v1/deliveries/{s.DeliveryId}/dispatch",
+            new { operationId = BaseEntity.NewId(), handlingUnitIds = new[] { hu1, hu2 } });
+        Assert.Equal(HttpStatusCode.OK, dispatch.StatusCode);
+
+        var lotId = s.Lines[0].LotId;
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var vehicleBalances = await db.StockBalances.Where(b => b.LocationId == s.VehicleLocationId && b.LotId == lotId).ToListAsync();
+        Assert.Single(vehicleBalances);
+        Assert.Equal(20m, vehicleBalances[0].QuantityOnHand);
+        Assert.Equal(2, await db.InventoryMovements.CountAsync(m => m.Kind == "Dispatch")); // uno por línea y lote
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, s.WarehouseLocationId, lotId));
+    }
+
+    [Fact]
+    public async Task Multi_box_delivery_is_received_once_with_full_coverage()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedMultiLineAsync(api, "MULTI", sameLot: true, quantityPerLine: 10m, lineCount: 2);
+        var (hu1, hu2, token1, _) = await PrepareTwoBoxesAsync(api, s);
+        await AdvanceToDeliveredAsync(api, s, hu1, hu2);
+
+        // El receptor escanea un bulto y ve TODOS los bultos y TODAS las líneas de la entrega.
+        using var receiver = api.ClientFor(TestTokens.Receiver);
+        var get = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/receiver/handling-units/{hu1}");
+        get.Headers.Add("X-Trace-Token", token1);
+        var getResponse = await receiver.SendAsync(get);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        using var json = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.Equal(2, json.RootElement.GetProperty("boxes").GetArrayLength());
+        var linesJson = json.RootElement.GetProperty("lines").EnumerateArray().ToList();
+        Assert.Equal(2, linesJson.Count);
+        Assert.All(linesJson, l => Assert.Equal(10m, l.GetProperty("quantity").GetDecimal()));
+
+        var op = BaseEntity.NewId();
+        var body = new
+        {
+            operationId = op,
+            expectedDeliveryVersion = 0,
+            occurredAtDevice = DateTime.UtcNow,
+            lines = s.Lines.Select(l => new { deliveryLineId = l.LineId, lotId = l.LotId, quantityAccepted = 10m, quantityRejected = 0m, unit = "L" }).ToArray()
+        };
+        var receipt = await PostJsonAsync(receiver, $"/api/v1/receiver/handling-units/{hu1}/receipt", body, op, token1);
+        Assert.Equal(HttpStatusCode.OK, receipt.StatusCode);
+
+        Assert.Equal(20m, await FieldSeed.OnHandAsync(api, s.PointLocationId, s.Lines[0].LotId));
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, s.VehicleLocationId, s.Lines[0].LotId));
+        var counts = await EffectCountsAsync(api, s.DeliveryId);
+        Assert.Equal(1, counts.Receipts);
+        Assert.Equal(2, counts.ReceiptLines);
+        // Dos bultos × (despacho, recogida, entrega, recibo) = 8 eventos de custodia.
+        Assert.Equal(8, counts.CustodyEvents);
+    }
+
+    [Fact]
+    public async Task Receipt_requires_exact_full_coverage_without_effects()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedMultiLineAsync(api, "COV", sameLot: true, quantityPerLine: 10m, lineCount: 2);
+        var (hu1, hu2, token1, _) = await PrepareTwoBoxesAsync(api, s);
+        await AdvanceToDeliveredAsync(api, s, hu1, hu2);
+        using var receiver = api.ClientFor(TestTokens.Receiver);
+
+        var before = await EffectCountsAsync(api, s.DeliveryId);
+        var url = $"/api/v1/receiver/handling-units/{hu1}/receipt";
+
+        async Task<HttpResponseMessage> AttemptAsync(object[] lines)
+        {
+            var op = BaseEntity.NewId();
+            var body = new { operationId = op, expectedDeliveryVersion = 0, occurredAtDevice = DateTime.UtcNow, lines };
+            return await PostJsonAsync(receiver, url, body, op, token1);
+        }
+
+        object Line(int index, decimal accepted, decimal rejected = 0m, Guid? lotOverride = null, Guid? lineOverride = null) => new
+        {
+            deliveryLineId = lineOverride ?? s.Lines[index].LineId,
+            lotId = lotOverride ?? s.Lines[index].LotId,
+            quantityAccepted = accepted,
+            quantityRejected = rejected,
+            unit = "L"
+        };
+
+        var omission = await AttemptAsync([Line(0, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, omission.StatusCode);
+        Assert.Contains(FieldErrorCodes.ReceiptCoverageMismatch, await omission.Content.ReadAsStringAsync());
+
+        var duplicate = await AttemptAsync([Line(0, 10m), Line(0, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, duplicate.StatusCode);
+        Assert.Contains(FieldErrorCodes.ReceiptCoverageMismatch, await duplicate.Content.ReadAsStringAsync());
+
+        var foreign = await AttemptAsync([Line(0, 10m), Line(1, 10m, lineOverride: Guid.NewGuid())]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, foreign.StatusCode);
+        Assert.Contains(FieldErrorCodes.ReceiptCoverageMismatch, await foreign.Content.ReadAsStringAsync());
+
+        var wrongLot = await AttemptAsync([Line(0, 10m, lotOverride: Guid.NewGuid()), Line(1, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, wrongLot.StatusCode);
+        Assert.Contains(FieldErrorCodes.ReceiptCoverageMismatch, await wrongLot.Content.ReadAsStringAsync());
+
+        var negative = await AttemptAsync([Line(0, -1m), Line(1, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, negative.StatusCode);
+        Assert.Contains(FieldErrorCodes.QuantityExceeded, await negative.Content.ReadAsStringAsync());
+
+        var underReport = await AttemptAsync([Line(0, 9m), Line(1, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, underReport.StatusCode);
+        Assert.Contains(FieldErrorCodes.QuantityExceeded, await underReport.Content.ReadAsStringAsync());
+
+        var overReport = await AttemptAsync([Line(0, 11m), Line(1, 10m)]);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, overReport.StatusCode);
+        Assert.Contains(FieldErrorCodes.QuantityExceeded, await overReport.Content.ReadAsStringAsync());
+
+        Assert.Equal(before, await EffectCountsAsync(api, s.DeliveryId));
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, s.PointLocationId, s.Lines[0].LotId));
+
+        // Cobertura exacta completa: un solo recibo.
+        var ok = await AttemptAsync([Line(0, 10m), Line(1, 10m)]);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var counts = await EffectCountsAsync(api, s.DeliveryId);
+        Assert.Equal(1, counts.Receipts);
+        Assert.Equal(2, counts.ReceiptLines);
+    }
+
+    [Fact]
+    public async Task Receipt_rejects_insufficient_vehicle_stock_without_effects()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var s = await SeedDraftAsync(api, "VSTOCK");
+        var (unitId, unitToken) = await PrepareDispatchPickupDeliverAsync(api, s);
+
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var vehicleBalance = await db.StockBalances.SingleAsync(b => b.LocationId == s.VehicleLocationId && b.LotId == s.LotId);
+            vehicleBalance.QuantityOnHand = 5m; // menos que lo aceptado (12)
+            await db.SaveChangesAsync();
+        }
+
+        using var receiver = api.ClientFor(TestTokens.Receiver);
+        var before = await EffectCountsAsync(api, s.DeliveryId);
+        var op = BaseEntity.NewId();
+        var response = await PostJsonAsync(receiver, $"/api/v1/receiver/handling-units/{unitId}/receipt",
+            ReceiptBody(op, s.DeliveryLineId, s.LotId, 12m), op, unitToken);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains(FieldErrorCodes.InsufficientVehicleStock, await response.Content.ReadAsStringAsync());
+        Assert.Equal(before, await EffectCountsAsync(api, s.DeliveryId));
+        Assert.Equal(0m, await FieldSeed.OnHandAsync(api, s.PointLocationId, s.LotId));
+        Assert.Equal(5m, await FieldSeed.OnHandAsync(api, s.VehicleLocationId, s.LotId));
+    }
 }

@@ -80,14 +80,15 @@ public class ReceiptReconciliationTests(PostgisContainer postgres) : IClassFixtu
         return new Seeded(delivery.Id, lineA.Id, lotA.Id, lineB.Id, lotB.Id, productA.Id, productB.Id, point.Id, pointLocation.Id, driver.Id, unit.Id, unitToken);
     }
 
-    private static async Task<ReceiptResponse> ReceiveAsync(ApiFactory api, Seeded d, ReceiptLineRequest a, ReceiptLineRequest b, Guid? operationId = null)
+    private static async Task<ReceiptResponse> ReceiveAsync(ApiFactory api, Seeded d, ReceiptLineRequest a, ReceiptLineRequest b,
+        Guid? operationId = null, DateTime? occurredAt = null)
     {
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var field = scope.ServiceProvider.GetRequiredService<IFieldService>();
         var receiver = await db.Accounts.SingleAsync(x => x.Subject == TestTokens.Receiver);
         var op = operationId ?? BaseEntity.NewId();
-        return await field.CreateReceiverReceiptAsync(d.UnitId, d.UnitToken, new CreateReceiptRequest(op, 0, DateTime.UtcNow, [a, b]), receiver.Id, op.ToString());
+        return await field.CreateReceiverReceiptAsync(d.UnitId, d.UnitToken, new CreateReceiptRequest(op, 0, occurredAt ?? DateTime.UtcNow, [a, b]), receiver.Id, op.ToString());
     }
 
     private static ReceiptLineRequest Line(Guid lineId, Guid lotId, decimal accepted, decimal? remaining = null, decimal? next = null) =>
@@ -197,8 +198,9 @@ public class ReceiptReconciliationTests(PostgisContainer postgres) : IClassFixtu
         var d = await SeedAsync(api, shelfA: 0m, shelfB: 0m, secondProduct: true);
         var operationId = BaseEntity.NewId();
 
-        var first = await ReceiveAsync(api, d, Line(d.LineA, d.LotA, 10m, next: 20m), Line(d.LineB, d.LotB, 10m, next: 15m), operationId);
-        var retry = await ReceiveAsync(api, d, Line(d.LineA, d.LotA, 10m, next: 20m), Line(d.LineB, d.LotB, 10m, next: 15m), operationId);
+        var occurredAt = DateTime.UtcNow;
+        var first = await ReceiveAsync(api, d, Line(d.LineA, d.LotA, 10m, next: 20m), Line(d.LineB, d.LotB, 10m, next: 15m), operationId, occurredAt: occurredAt);
+        var retry = await ReceiveAsync(api, d, Line(d.LineA, d.LotA, 10m, next: 20m), Line(d.LineB, d.LotB, 10m, next: 15m), operationId, occurredAt: occurredAt);
 
         Assert.Equal(first.ReceiptId, retry.ReceiptId);
         var db = Db(api, out var scope);

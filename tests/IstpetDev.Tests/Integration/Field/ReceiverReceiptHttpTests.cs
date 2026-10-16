@@ -26,15 +26,11 @@ namespace IstpetDev.Tests.Integration.Field;
 [Trait("Category", "Integration")]
 public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture<PostgisContainer>
 {
-    private const string Receiver = "receiver-1";
+    private const string Receiver = TestTokens.Receiver;
     private const string Token = "token-receptor-0123456789abcdef0123456789abcdef";
 
-    private EvidenceApi NewApi() => new(postgres.NewDatabase(), overrides: new Dictionary<string, string?>
-    {
-        ["Demo:Accounts:5:Subject"] = Receiver,
-        ["Demo:Accounts:5:DisplayName"] = "Receptor de prueba",
-        ["Demo:Accounts:5:Role"] = Roles.Receptor,
-    });
+    // #162: la cuenta del receptor vive en la configuración base de ApiFactory (índice 2); no se duplica.
+    private EvidenceApi NewApi() => new(postgres.NewDatabase(), overrides: new Dictionary<string, string?>());
 
     private sealed class RecordingStorage : IEvidenceStorage
     {
@@ -155,8 +151,10 @@ public class ReceiverReceiptHttpTests(PostgisContainer postgres) : IClassFixture
         var operationId = Guid.NewGuid();
         var client = api.ClientFor(Receiver);
 
-        var first = await client.SendAsync(Request(HttpMethod.Post, url, Token, ReceiptBody(operationId, d, 10m, 2m), operationId));
-        var retry = await client.SendAsync(Request(HttpMethod.Post, url, Token, ReceiptBody(operationId, d, 10m, 2m), operationId));
+        // Un replay real reenvía el mismo cuerpo: se serializa una vez y se reutiliza.
+        var body = ReceiptBody(operationId, d, 10m, 2m);
+        var first = await client.SendAsync(Request(HttpMethod.Post, url, Token, body, operationId));
+        var retry = await client.SendAsync(Request(HttpMethod.Post, url, Token, body, operationId));
         var other = Guid.NewGuid();
         var second = await client.SendAsync(Request(HttpMethod.Post, url, Token, ReceiptBody(other, d, 1m, 0m), other));
 

@@ -14,7 +14,9 @@ public static class DeliveryStates
     public const string Cancelled = "Cancelled";
 
     // Recibo final previo o estado terminal: no admite una segunda recepción.
-    public static bool IsReceived(string status) => status is Received;
+    // #162: Received y Partial son terminales; lo rechazado sigue bajo custodia del conductor
+    // hasta una devolución explícita a bodega, no se vuelve a recibir.
+    public static bool IsReceived(string status) => status is Received or Partial;
 }
 
 public static class HandlingUnitStates

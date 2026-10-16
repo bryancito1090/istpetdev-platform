@@ -27,15 +27,18 @@ public class DemoAdvanceTests(PostgisContainer postgres)
         var routePlanId = proposal.GetProperty("routes")[0].GetProperty("routePlanId").GetGuid();
 
         string vehicleCode;
+        Guid driverAccountId;
         using (var planScope = api.Services.CreateScope())
         {
             var planDb = planScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var vehicleId = await planDb.RoutePlans.Where(p => p.Id == routePlanId).Select(p => p.VehicleId).SingleAsync();
             vehicleCode = await planDb.Vehicles.Where(v => v.Id == vehicleId).Select(v => v.Code).SingleAsync();
+            // La asignación de publicación espera el Account.Id interno, no el subject del token.
+            driverAccountId = await planDb.Accounts.Where(a => a.Subject == TestTokens.Driver).Select(a => a.Id).SingleAsync();
         }
 
         var publish = await planner.PostAsJsonAsync($"/api/v1/route-plans/{routePlanId}/publish",
-            new { driverAssignments = new Dictionary<string, string> { [vehicleCode] = TestTokens.Driver } });
+            new { driverAssignments = new Dictionary<string, string> { [vehicleCode] = driverAccountId.ToString() } });
         Assert.True(publish.IsSuccessStatusCode, await publish.Content.ReadAsStringAsync());
 
         var operationId = BaseEntity.NewId();

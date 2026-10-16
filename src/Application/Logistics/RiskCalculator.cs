@@ -83,10 +83,14 @@ public sealed class RiskCalculator(
             .Where(c => c.OrganizationId == DemoOrganization.Id && spIds.Contains(c.ServicePointId))
             .ToListAsync(ct);
 
-        // 3. Entregas en tránsito hacia el punto (despachadas y no completadas/canceladas)
+        // 3. Entregas en tránsito hacia el punto (despachadas, recogidas o entregadas y aún no recibidas).
+        // #162: Delivered sigue pendiente del recibo del receptor; Received/Partial ya conciliaron.
+        // Compatibilidad legada: una entrega Delivered con recibo previo ya es recepción final.
         var pendingDeliveries = await db.Deliveries
             .AsNoTracking()
-            .Where(d => d.OrganizationId == DemoOrganization.Id && spIds.Contains(d.ServicePointId) && d.DispatchedAtUtc != null && d.Status != "Delivered" && d.Status != "Cancelled")
+            .Where(d => d.OrganizationId == DemoOrganization.Id && spIds.Contains(d.ServicePointId) && d.DispatchedAtUtc != null
+                && (d.Status == DeliveryStates.Dispatched || d.Status == DeliveryStates.InTransit || d.Status == DeliveryStates.Delivered)
+                && !(d.Status == DeliveryStates.Delivered && db.Receipts.Any(r => r.OrganizationId == DemoOrganization.Id && r.DeliveryId == d.Id)))
             .Select(d => d.Id)
             .ToListAsync(ct);
 

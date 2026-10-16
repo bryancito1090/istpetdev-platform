@@ -291,4 +291,43 @@ public sealed class RoutePublisherTests(PostgisContainer postgres) : IClassFixtu
         Assert.Equal("Completed", completedStop2.Status);
         Assert.Equal(plannedArr, completedStop2.ActualArrivalUtc);
     }
+
+    // #162: una revisión no puede retirar una entrega ya en tránsito ni entregada pendiente de recibo.
+    [Fact]
+    public async Task Revision_cannot_remove_an_in_transit_delivery()
+    {
+        var connection = postgres.NewDatabase();
+        await using var db = TestDb.Context(connection);
+
+        var warehouse = new DomainLocation { Code = "B-REV2", Name = "Bodega", Kind = LocationKinds.Warehouse, IsActive = true };
+        var spOld = new ServicePoint { Code = "SP-OLD2", Name = "Viejo", Criticality = "normal", IsActive = true };
+        var spNew = new ServicePoint { Code = "SP-NEW2", Name = "Nuevo", Criticality = "normal", IsActive = true };
+        var vehicle = new Vehicle { Code = "V-REV2", DepotLocationId = warehouse.Id, MaxWeight = 1000, IsActive = true };
+        var previous = new RoutePlan { Code = "R-REV2", Revision = 1, VehicleId = vehicle.Id, Status = "Published", ProposedBy = "test", PlannedStartUtc = DateTime.UtcNow, AlgorithmVersion = "test" };
+        var oldStop = new RouteStop { RoutePlanId = previous.Id, ServicePointId = spOld.Id, SequenceNumber = 1, Status = "Pending" };
+        var delivery = new Delivery { Code = "D-REV2", RouteStopId = oldStop.Id, OriginLocationId = warehouse.Id, ServicePointId = spOld.Id, Status = DeliveryStates.InTransit, DispatchedAtUtc = DateTime.UtcNow };
+        var current = new RoutePlan
+        {
+            Code = "R-REV2",
+            Revision = 2,
+            VehicleId = vehicle.Id,
+            Status = "Proposed",
+            ProposedBy = "System:IncidentReplanner",
+            SupersedesRoutePlanId = previous.Id,
+            PlannedStartUtc = DateTime.UtcNow,
+            AlgorithmVersion = "test",
+            InputJson = "{\"stops\":[]}"
+        };
+        var newStop = new RouteStop { RoutePlanId = current.Id, ServicePointId = spNew.Id, SequenceNumber = 1, Status = "Pending" };
+        db.AddRange(warehouse, spOld, spNew, vehicle, previous, oldStop, delivery, current, newStop);
+        await db.SaveChangesAsync();
+
+        var options = DefaultOptions();
+        var publisher = new RoutePublisher(db, new OperationalClock(db, options), options);
+
+        var error = await Assert.ThrowsAsync<ReplanConflictException>(() => publisher.PublishAsync(new PublishRequest(current.Id)));
+        Assert.Contains("despachada", error.Message);
+        Assert.Equal("Proposed", (await db.RoutePlans.SingleAsync(p => p.Id == current.Id)).Status);
+        Assert.Equal(DeliveryStates.InTransit, (await db.Deliveries.SingleAsync(d => d.Id == delivery.Id)).Status);
+    }
 }

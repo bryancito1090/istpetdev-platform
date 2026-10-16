@@ -13,6 +13,7 @@ using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -50,6 +51,10 @@ public sealed class FieldService : IFieldService
         Guid actorAccountId,
         CancellationToken ct = default)
     {
+        // #162: el alta de bultos usa el mismo bloqueo de organización que el despacho; sin él,
+        // una preparación concurrente podría crear un bulto Sealed después de que la entrega salió.
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
+
         var delivery = await _db.Deliveries
             .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
@@ -186,6 +191,7 @@ public sealed class FieldService : IFieldService
         _db.QrAccessTokens.Add(qrToken);
 
         await _db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
 
         var labelUrl = $"https://istpetdev.doicela.dev/public-trace/{handlingUnit.Id}#t={clearToken}";
 
@@ -210,15 +216,13 @@ public sealed class FieldService : IFieldService
         const string actionCode = "Dispatch";
 
         // 1. Replay rápido de la misma operación (respuesta idempotente antes de cualquier efecto).
-        var replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        var replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
-        // El bloqueo de organización serializa despachos y recepciones concurrentes sobre la misma demo.
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        await _db.LockOrganizationAsync(ct);
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
 
         // Un reintento concurrente de la misma operación ya entró: devolver su respuesta sin volver a mover stock.
-        replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        replay = await FindReplayAsync<DispatchResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
         var delivery = await _db.Deliveries
@@ -238,22 +242,33 @@ public sealed class FieldService : IFieldService
                 "El despacho debe incluir al menos un bulto preparado por Bodega.");
         }
 
-        var handlingUnits = await _db.HandlingUnits
-            .Where(hu => request.HandlingUnitIds.Contains(hu.Id) && hu.OrganizationId == DemoOrganization.Id)
+        // El despacho cubre TODOS los bultos de la entrega: un subconjunto dejaría otra caja Sealed
+        // irrecuperable porque después del despacho ya no se puede preparar.
+        var allDeliveryUnits = await _db.HandlingUnits
+            .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
-        if (handlingUnits.Count != request.HandlingUnitIds.Count)
+        if (allDeliveryUnits.Count == 0)
         {
-            throw new FieldUnprocessableException(FieldErrorCodes.UnitNotFound, "Una o más cajas solicitadas no existen.");
+            throw new FieldConflictException(FieldErrorCodes.NoHandlingUnits,
+                "La entrega no tiene bultos preparados por Bodega.");
         }
+
+        var requestedIds = request.HandlingUnitIds.Distinct().ToList();
+        var allUnitIds = allDeliveryUnits.Select(hu => hu.Id).ToHashSet();
+        if (requestedIds.Count != request.HandlingUnitIds.Count // IDs repetidos
+            || requestedIds.Count != allDeliveryUnits.Count
+            || !requestedIds.ToHashSet().SetEquals(allUnitIds))
+        {
+            var missing = allDeliveryUnits.Where(hu => !requestedIds.Contains(hu.Id)).Select(hu => hu.Code).ToList();
+            throw new FieldConflictException(FieldErrorCodes.IncompleteHandlingUnits,
+                $"El despacho debe incluir exactamente todos los bultos de la entrega; pendientes: {string.Join(", ", missing)}.");
+        }
+
+        var handlingUnits = allDeliveryUnits;
 
         foreach (var hu in handlingUnits)
         {
-            if (hu.DeliveryId != delivery.Id)
-            {
-                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict, $"La caja {hu.Code} no pertenece a esta entrega.");
-            }
-
             if (!HandlingUnitStates.IsPrepared(hu.Status))
             {
                 throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
@@ -280,10 +295,18 @@ public sealed class FieldService : IFieldService
             }
         }
 
-        // Consumir reservas y mover stock de bodega a vehículo
+        // Consumir reservas y mover stock de bodega a vehículo. El ledger se agrupa por línea y lote:
+        // dos bultos del mismo lote generan un solo movimiento y evitan que la primera reserva consumida
+        // oculte el saldo de la segunda caja.
         var huLines = await _db.HandlingUnitLines
             .Where(hul => request.HandlingUnitIds.Contains(hul.HandlingUnitId) && hul.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
+
+        if (huLines.Count == 0 || huLines.Any(l => l.Quantity <= 0m))
+        {
+            throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                "Los bultos del despacho no tienen líneas válidas con cantidad positiva.");
+        }
 
         var reservations = await _db.RouteStockReservations
             .Where(r => r.DeliveryId == delivery.Id && r.OrganizationId == DemoOrganization.Id && r.Status == RouteStockReservationStatus.Active)
@@ -295,67 +318,118 @@ public sealed class FieldService : IFieldService
 
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
-        foreach (var huLine in huLines)
+        var dispatchGroups = new List<(DeliveryLine DeliveryLine, Guid LotId, decimal Quantity)>();
+        foreach (var group in huLines
+            .GroupBy(l => (l.DeliveryLineId, l.LotId))
+            .Select(g => new { g.Key.DeliveryLineId, g.Key.LotId, Quantity = g.Sum(x => x.Quantity) })
+            .OrderBy(g => g.DeliveryLineId)
+            .ThenBy(g => g.LotId))
         {
-            if (huLine.DeliveryLineId.HasValue && dLinesById.TryGetValue(huLine.DeliveryLineId.Value, out var dLine))
+            if (group.DeliveryLineId is not Guid lineId || !dLinesById.TryGetValue(lineId, out var dLine))
             {
-                dLine.DispatchedQuantity += huLine.Quantity;
-
-                var res = reservations.FirstOrDefault(r => r.DeliveryLineId == dLine.Id && r.LotId == huLine.LotId && r.Status == RouteStockReservationStatus.Active);
-                if (res != null)
-                {
-                    res.Status = RouteStockReservationStatus.Consumed;
-                    res.ClosedAtUtc = DateTime.UtcNow;
-
-                    // Descontar en StockBalance de bodega
-                    var depotBalance = await _db.StockBalances
-                        .FirstOrDefaultAsync(sb => sb.LocationId == delivery.OriginLocationId && sb.LotId == huLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-
-                    if (depotBalance != null)
-                    {
-                        depotBalance.QuantityReserved = Math.Max(0m, depotBalance.QuantityReserved - huLine.Quantity);
-                        depotBalance.QuantityOnHand = Math.Max(0m, depotBalance.QuantityOnHand - huLine.Quantity);
-                    }
-
-                    // Acreditar en StockBalance del vehículo
-                    var vehicleBalance = await _db.StockBalances
-                        .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId && sb.LotId == huLine.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-
-                    if (vehicleBalance == null)
-                    {
-                        vehicleBalance = new StockBalance
-                        {
-                            OrganizationId = DemoOrganization.Id,
-                            LocationId = vehicleLocationId,
-                            LotId = huLine.LotId,
-                            QuantityOnHand = huLine.Quantity,
-                            QuantityReserved = 0m
-                        };
-                        _db.StockBalances.Add(vehicleBalance);
-                    }
-                    else
-                    {
-                        vehicleBalance.QuantityOnHand += huLine.Quantity;
-                    }
-
-                    // Registrar movimiento de inventario bodega -> vehículo
-                    var movement = new InventoryMovement
-                    {
-                        OrganizationId = DemoOrganization.Id,
-                        Kind = "Dispatch",
-                        LotId = huLine.LotId,
-                        FromLocationId = delivery.OriginLocationId,
-                        ToLocationId = vehicleLocationId,
-                        Quantity = huLine.Quantity,
-                        ActorAccountId = actorAccountId,
-                        OperationId = request.OperationId,
-                        OccurredAtUtc = request.OccurredAtDevice ?? DateTime.UtcNow,
-                        DeliveryLineId = dLine.Id,
-                        Reason = "Despacho de entrega y transferencia de custodia"
-                    };
-                    _db.InventoryMovements.Add(movement);
-                }
+                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                    "Una línea de bulto no pertenece a las líneas de la entrega.");
             }
+
+            if (dLine.LotId != group.LotId)
+            {
+                throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                    "El lote del bulto no coincide con el lote reservado de la línea.");
+            }
+
+            // El despacho cubre exactamente lo planificado: después no se admiten bultos nuevos y
+            // una línea a medias quedaría irrecuperable para el recibo final.
+            if (dLine.DispatchedQuantity + group.Quantity != dLine.PlannedQuantity)
+            {
+                throw new FieldConflictException(FieldErrorCodes.IncompleteHandlingUnits,
+                    $"El despacho debe cubrir exactamente lo planificado de la línea {dLine.Id}: hay {dLine.DispatchedQuantity + group.Quantity} de {dLine.PlannedQuantity}.");
+            }
+
+            dispatchGroups.Add((dLine, group.LotId, group.Quantity));
+        }
+
+        var coveredLineIds = dispatchGroups.Select(g => g.DeliveryLine.Id).ToHashSet();
+        var uncoveredLines = deliveryLines.Where(dl => dl.PlannedQuantity > 0m && !coveredLineIds.Contains(dl.Id)).Select(dl => dl.Id).ToList();
+        if (uncoveredLines.Count > 0)
+        {
+            throw new FieldConflictException(FieldErrorCodes.IncompleteHandlingUnits,
+                $"El despacho debe cubrir todas las líneas planificadas; sin bultos: {string.Join(", ", uncoveredLines)}.");
+        }
+
+        if (vehicleLocationId == delivery.OriginLocationId)
+        {
+            throw new FieldConflictException(FieldErrorCodes.HandlingUnitStateConflict,
+                "La entrega no tiene una ubicación de vehículo distinta a la bodega de origen.");
+        }
+
+        // Saldos en memoria: dos líneas del mismo lote comparten la misma fila y no se duplican altas.
+        var dispatchBalances = new Dictionary<(Guid LocationId, Guid LotId), StockBalance>();
+        async Task<StockBalance?> FindDispatchBalanceAsync(Guid locationId, Guid lotId)
+        {
+            if (dispatchBalances.TryGetValue((locationId, lotId), out var cached)) return cached;
+            var found = await _db.StockBalances
+                .FirstOrDefaultAsync(sb => sb.LocationId == locationId && sb.LotId == lotId && sb.OrganizationId == DemoOrganization.Id, ct);
+            if (found != null) dispatchBalances[(locationId, lotId)] = found;
+            return found;
+        }
+
+        StockBalance NewDispatchBalance(Guid locationId, Guid lotId, decimal initial)
+        {
+            var created = new StockBalance
+            {
+                OrganizationId = DemoOrganization.Id,
+                LocationId = locationId,
+                LotId = lotId,
+                QuantityOnHand = initial,
+                QuantityReserved = 0m
+            };
+            _db.StockBalances.Add(created);
+            dispatchBalances[(locationId, lotId)] = created;
+            return created;
+        }
+
+        foreach (var (dLine, lotId, quantity) in dispatchGroups)
+        {
+            dLine.DispatchedQuantity += quantity;
+
+            // Descontar en StockBalance de bodega: sin Math.Max que oculte un faltante.
+            var depotBalance = await FindDispatchBalanceAsync(delivery.OriginLocationId, lotId);
+            if (depotBalance is null || depotBalance.QuantityOnHand < quantity)
+            {
+                throw new FieldConflictException(FieldErrorCodes.QuantityExceeded,
+                    $"Stock insuficiente en bodega para despachar {quantity} del lote {lotId}.");
+            }
+
+            depotBalance.QuantityOnHand -= quantity;
+            depotBalance.QuantityReserved = Math.Max(0m, depotBalance.QuantityReserved - quantity);
+
+            // Acreditar en StockBalance del vehículo
+            var vehicleBalance = await FindDispatchBalanceAsync(vehicleLocationId, lotId);
+            if (vehicleBalance == null) NewDispatchBalance(vehicleLocationId, lotId, quantity);
+            else vehicleBalance.QuantityOnHand += quantity;
+
+            // Conciliar todas las reservas activas de la línea y lote.
+            foreach (var res in reservations.Where(r => r.DeliveryLineId == dLine.Id && r.LotId == lotId && r.Status == RouteStockReservationStatus.Active))
+            {
+                res.Status = RouteStockReservationStatus.Consumed;
+                res.ClosedAtUtc = DateTime.UtcNow;
+            }
+
+            // Registrar un solo movimiento de inventario bodega -> vehículo por línea y lote.
+            _db.InventoryMovements.Add(new InventoryMovement
+            {
+                OrganizationId = DemoOrganization.Id,
+                Kind = "Dispatch",
+                LotId = lotId,
+                FromLocationId = delivery.OriginLocationId,
+                ToLocationId = vehicleLocationId,
+                Quantity = quantity,
+                ActorAccountId = actorAccountId,
+                OperationId = request.OperationId,
+                OccurredAtUtc = request.OccurredAtDevice ?? DateTime.UtcNow,
+                DeliveryLineId = dLine.Id,
+                Reason = "Despacho de entrega y transferencia de custodia"
+            });
         }
 
         Guid firstCustodyEventId = Guid.Empty;
@@ -403,7 +477,7 @@ public sealed class FieldService : IFieldService
             AccountId = actorAccountId,
             OperationId = request.OperationId,
             ActionCode = actionCode,
-            RequestHash = ComputeSha256(idempotencyKey + request.OperationId),
+            RequestHash = ComputeRequestFingerprint(actionCode, deliveryId, request),
             ResponseStatus = 200,
             ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
             CompletedAtUtc = now,
@@ -412,7 +486,7 @@ public sealed class FieldService : IFieldService
         _db.IdempotencyRecords.Add(record);
 
         await _db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
         return response;
     }
 
@@ -452,13 +526,12 @@ public sealed class FieldService : IFieldService
         CancellationToken ct,
         bool requireAssignedDriver = true)
     {
-        var replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        var replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        await _db.LockOrganizationAsync(ct);
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
 
-        replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        replay = await FindReplayAsync<CustodyTransitionResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
         var delivery = await _db.Deliveries
@@ -554,7 +627,7 @@ public sealed class FieldService : IFieldService
             AccountId = actorAccountId,
             OperationId = request.OperationId,
             ActionCode = actionCode,
-            RequestHash = ComputeSha256(idempotencyKey + request.OperationId),
+            RequestHash = ComputeRequestFingerprint(actionCode, deliveryId, request),
             ResponseStatus = 200,
             ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
             CompletedAtUtc = now,
@@ -562,7 +635,7 @@ public sealed class FieldService : IFieldService
         });
 
         await _db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
         return response;
     }
 
@@ -577,21 +650,31 @@ public sealed class FieldService : IFieldService
 
         // 1. Replay rápido de la misma operación válida: devuelve la respuesta previa incluso
         //    después de que la entrega avanzó a un estado terminal.
-        var replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        var replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
-        // El bloqueo de organización serializa recepciones concurrentes: dos cuentas o claves no duplican stock.
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        await _db.LockOrganizationAsync(ct);
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
 
-        replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, ct);
+        replay = await FindReplayAsync<ReceiptResponse>(actorAccountId, request.OperationId, actionCode, deliveryId, request, idempotencyKey, ct, legacyResourceSelector: r => r.DeliveryId);
         if (replay is not null) return replay;
 
         var delivery = await _db.Deliveries
             .FirstOrDefaultAsync(d => d.Id == deliveryId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Entrega {deliveryId} no encontrada.");
 
-        // 2. Validación de versión esperada
+        // 2. Máquina de estados #162: Received y Partial son terminales y cualquier recibo previo
+        //    (incluso con estado legado Delivered o inconsistente) responde ALREADY_RECEIVED ANTES
+        //    de validar la versión: el contrato exige ese código para cualquier recibo final previo.
+        var previousReceipt = await _db.Receipts
+            .AnyAsync(r => r.DeliveryId == delivery.Id && r.OrganizationId == DemoOrganization.Id, ct);
+
+        if (DeliveryStates.IsReceived(delivery.Status) || previousReceipt)
+        {
+            throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
+                "La entrega ya tiene un recibo final; no se repiten efectos. Lo rechazado permanece bajo custodia del conductor hasta su devolución explícita.");
+        }
+
+        // 3. Validación de versión esperada (solo para entregas aún no recibidas)
         if (request.ExpectedDeliveryVersion > 0 && delivery.Version != request.ExpectedDeliveryVersion)
         {
             throw new FieldConflictException(FieldErrorCodes.AssignmentChanged,
@@ -601,18 +684,6 @@ public sealed class FieldService : IFieldService
         if (request.Lines.Count == 0)
         {
             throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded, "La recepción debe incluir al menos una línea.");
-        }
-
-        // 3. Máquina de estados #162: solo un bulto entregado por el conductor puede recibirse.
-        //    Compatibilidad: el estado legado "Delivered" con un recibo previo ya es recepción final.
-        var previousReceipt = await _db.Receipts
-            .AnyAsync(r => r.DeliveryId == delivery.Id && r.OrganizationId == DemoOrganization.Id, ct);
-
-        if (delivery.Status == DeliveryStates.Received ||
-            (delivery.Status == DeliveryStates.Delivered && previousReceipt))
-        {
-            throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
-                "La entrega ya tiene un recibo final; no se repiten efectos.");
         }
 
         if (delivery.Status == DeliveryStates.Draft)
@@ -627,9 +698,9 @@ public sealed class FieldService : IFieldService
                 "El Conductor aún no entrega este bulto en el punto.");
         }
 
-        if (delivery.Status is not (DeliveryStates.Delivered or DeliveryStates.Partial))
+        if (delivery.Status != DeliveryStates.Delivered)
         {
-            throw new FieldUnprocessableException(FieldErrorCodes.InvalidStateTransition,
+            throw new FieldConflictException(FieldErrorCodes.InvalidStateTransition,
                 $"La entrega está en un estado que no admite recepción ({delivery.Status}).");
         }
 
@@ -637,15 +708,21 @@ public sealed class FieldService : IFieldService
             .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
+        if (handlingUnits.Count == 0)
+        {
+            throw new FieldConflictException(FieldErrorCodes.NoHandlingUnits,
+                "La entrega no tiene bultos entregados que recibir.");
+        }
+
         foreach (var hu in handlingUnits)
         {
-            if (hu.Status == HandlingUnitStates.Received)
+            if (HandlingUnitStates.IsReceived(hu.Status))
             {
                 throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
                     $"El bulto {hu.Code} ya fue recibido; no se repiten efectos.");
             }
 
-            if (hu.Status is not (HandlingUnitStates.Delivered or HandlingUnitStates.Partial))
+            if (hu.Status != HandlingUnitStates.Delivered)
             {
                 throw new FieldConflictException(FieldErrorCodes.NotDelivered,
                     $"El bulto {hu.Code} no está entregado por el conductor (estado {hu.Status}).");
@@ -658,24 +735,49 @@ public sealed class FieldService : IFieldService
 
         var dLinesById = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
-        // Reintento con clave nueva sobre una entrega parcial: solo si queda cantidad pendiente.
-        if (delivery.Status == DeliveryStates.Partial)
+        // 4. Cobertura completa y exacta ANTES de crear Receipt/ReceiptLine: un recibo final por
+        //    entrega cubre todas las líneas despachadas, sin omisiones, duplicados ni lotes ajenos.
+        if (request.Lines.Select(l => l.DeliveryLineId).Distinct().Count() != request.Lines.Count)
         {
-            var requested = deliveryLines.Where(dl => request.Lines.Any(l => l.DeliveryLineId == dl.Id)).ToList();
-            var fullyAccounted = requested.Count > 0 && requested.All(dl =>
+            throw new FieldUnprocessableException(FieldErrorCodes.ReceiptCoverageMismatch,
+                "La recepción no admite líneas de entrega duplicadas.");
+        }
+
+        if (request.Lines.Any(l => l.QuantityAccepted < 0m || l.QuantityRejected < 0m))
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded,
+                "Las cantidades aceptadas y rechazadas no pueden ser negativas.");
+        }
+
+        var dispatchedLines = deliveryLines.Where(dl => dl.DispatchedQuantity > 0m).ToList();
+        var requestedIds = request.Lines.Select(l => l.DeliveryLineId).ToHashSet();
+        var expectedIds = dispatchedLines.Select(dl => dl.Id).ToHashSet();
+
+        if (dispatchedLines.Count == 0 || !requestedIds.SetEquals(expectedIds))
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.ReceiptCoverageMismatch,
+                "El recibo debe cubrir exactamente todas las líneas despachadas de la entrega.");
+        }
+
+        foreach (var reqLine in request.Lines)
+        {
+            var dLine = dLinesById[reqLine.DeliveryLineId];
+
+            if (dLine.LotId != reqLine.LotId)
             {
-                var max = dl.DispatchedQuantity > 0 ? dl.DispatchedQuantity : dl.PlannedQuantity;
-                return dl.AcceptedQuantity + dl.RejectedQuantity >= max;
-            });
-            if (fullyAccounted)
+                throw new FieldUnprocessableException(FieldErrorCodes.ReceiptCoverageMismatch,
+                    $"El lote de la línea {dLine.Id} no coincide con lo despachado.");
+            }
+
+            if (reqLine.QuantityAccepted + reqLine.QuantityRejected != dLine.DispatchedQuantity)
             {
-                throw new FieldConflictException(FieldErrorCodes.AlreadyReceived,
-                    "La entrega no tiene cantidades pendientes por recibir; no se repiten efectos.");
+                throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded,
+                    $"La suma aceptada+rechazada debe ser exactamente la cantidad despachada ({dLine.DispatchedQuantity}) por línea.");
             }
         }
 
-        // Ubicaciones para movimiento
-        Guid? vehicleLocationId = delivery.OriginLocationId;
+        // 5. Ubicaciones: el vehículo debe ser distinto al punto y tener saldo suficiente para lo aceptado.
+        Guid? vehicleLocationId = null;
         Guid destinationLocationId = delivery.OriginLocationId;
 
         if (delivery.RouteStopId.HasValue)
@@ -698,16 +800,29 @@ public sealed class FieldService : IFieldService
             var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == delivery.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
             if (pLoc != null) destinationLocationId = pLoc.Id;
 
-            var huLocId = await _db.HandlingUnits
-                .Where(hu => hu.DeliveryId == delivery.Id && hu.OrganizationId == DemoOrganization.Id)
-                .Select(hu => (Guid?)hu.LocationId)
-                .FirstOrDefaultAsync(ct);
-            if (huLocId.HasValue) vehicleLocationId = huLocId.Value;
+            vehicleLocationId = handlingUnits.Select(hu => (Guid?)hu.LocationId).FirstOrDefault();
         }
 
-        if (vehicleLocationId == destinationLocationId)
+        if (vehicleLocationId is null || vehicleLocationId == destinationLocationId)
         {
-            vehicleLocationId = null;
+            throw new FieldConflictException(FieldErrorCodes.NotDelivered,
+                "La entrega no tiene una ubicación de vehículo distinta al punto; no se puede transferir stock.");
+        }
+
+        var acceptedByLot = request.Lines
+            .GroupBy(l => l.LotId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityAccepted));
+
+        foreach (var (lotId, accepted) in acceptedByLot)
+        {
+            if (accepted <= 0m) continue;
+            var vehicleBalance = await _db.StockBalances
+                .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId.Value && sb.LotId == lotId && sb.OrganizationId == DemoOrganization.Id, ct);
+            if (vehicleBalance is null || vehicleBalance.QuantityOnHand < accepted)
+            {
+                throw new FieldConflictException(FieldErrorCodes.InsufficientVehicleStock,
+                    $"El vehículo no tiene saldo suficiente del lote {lotId} para transferir {accepted}.");
+            }
         }
 
         var receipt = new Receipt
@@ -757,26 +872,13 @@ public sealed class FieldService : IFieldService
             return created;
         }
 
-        // 4. Validar líneas y registrar lo recibido
+        // 6. Registrar lo recibido: la cobertura exacta ya está validada; es el único recibo de la entrega.
         var receiptLines = new List<(ReceiptLineRequest Request, DeliveryLine DeliveryLine, ReceiptLine ReceiptLine)>();
         foreach (var reqLine in request.Lines)
         {
-            if (!dLinesById.TryGetValue(reqLine.DeliveryLineId, out var dLine))
-            {
-                throw new FieldUnprocessableException(FieldErrorCodes.QuantityExceeded, $"Línea de entrega {reqLine.DeliveryLineId} no existe.");
-            }
-
-            var totalReported = reqLine.QuantityAccepted + reqLine.QuantityRejected;
-            var maxAllowed = dLine.DispatchedQuantity > 0 ? dLine.DispatchedQuantity : dLine.PlannedQuantity;
-
-            if (dLine.AcceptedQuantity + dLine.RejectedQuantity + totalReported > maxAllowed)
-            {
-                throw new FieldConflictException(FieldErrorCodes.QuantityExceeded,
-                    $"Cantidad total ({totalReported}) excede lo disponible por recibir ({maxAllowed - dLine.AcceptedQuantity - dLine.RejectedQuantity}).");
-            }
-
-            dLine.AcceptedQuantity += reqLine.QuantityAccepted;
-            dLine.RejectedQuantity += reqLine.QuantityRejected;
+            var dLine = dLinesById[reqLine.DeliveryLineId];
+            dLine.AcceptedQuantity = reqLine.QuantityAccepted;
+            dLine.RejectedQuantity = reqLine.QuantityRejected;
 
             if (reqLine.QuantityRejected > 0)
             {
@@ -858,19 +960,19 @@ public sealed class FieldService : IFieldService
             }
         }
 
-        // 6. Mover inventario de lo aceptado vehículo -> punto de destino
+        // 7. Mover inventario de lo aceptado vehículo -> punto de destino. El saldo del vehículo
+        //    ya se validó por lote antes de crear el recibo; se descuenta lo aceptado, sin ocultar faltantes.
         foreach (var (reqLine, dLine, rLine) in receiptLines)
         {
             if (reqLine.QuantityAccepted <= 0m) continue;
 
-            if (vehicleLocationId.HasValue)
+            var vehicleBalance = await FindBalanceAsync(vehicleLocationId!.Value, reqLine.LotId);
+            if (vehicleBalance is null || vehicleBalance.QuantityOnHand < reqLine.QuantityAccepted)
             {
-                var vehicleBalance = await FindBalanceAsync(vehicleLocationId.Value, reqLine.LotId);
-                if (vehicleBalance != null)
-                {
-                    vehicleBalance.QuantityOnHand = Math.Max(0m, vehicleBalance.QuantityOnHand - reqLine.QuantityAccepted);
-                }
+                throw new FieldConflictException(FieldErrorCodes.InsufficientVehicleStock,
+                    $"El vehículo no tiene saldo suficiente del lote {reqLine.LotId} para transferir {reqLine.QuantityAccepted}.");
             }
+            vehicleBalance.QuantityOnHand -= reqLine.QuantityAccepted;
 
             var destBalance = await FindBalanceAsync(destinationLocationId, reqLine.LotId)
                 ?? NewBalance(destinationLocationId, reqLine.LotId);
@@ -1017,7 +1119,7 @@ public sealed class FieldService : IFieldService
             AccountId = actorAccountId,
             OperationId = request.OperationId,
             ActionCode = "Receipt",
-            RequestHash = ComputeSha256(idempotencyKey + request.OperationId),
+            RequestHash = ComputeRequestFingerprint(actionCode, deliveryId, request),
             ResponseStatus = 200,
             ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
             CompletedAtUtc = DateTime.UtcNow,
@@ -1026,7 +1128,7 @@ public sealed class FieldService : IFieldService
         _db.IdempotencyRecords.Add(record);
 
         await _db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
         return response;
     }
 
@@ -1356,23 +1458,40 @@ public sealed class FieldService : IFieldService
         if (hu.DeliveryId is not Guid deliveryId) throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
         var delivery = await _db.Deliveries.SingleAsync(d => d.Id == deliveryId, ct);
         var point = await _db.ServicePoints.FirstOrDefaultAsync(p => p.Id == delivery.ServicePointId, ct);
-        var deliveryLines = await _db.DeliveryLines.Where(l => l.DeliveryId == deliveryId).ToListAsync(ct);
-        var unitLines = await _db.HandlingUnitLines.Where(l => l.HandlingUnitId == hu.Id).ToListAsync(ct);
-        var lotIds = unitLines.Select(l => l.LotId).ToList();
+
+        // #162: el recibo final es por ENTREGA. El receptor ve todos los bultos y todas las líneas
+        // despachadas, no solo las de la caja escaneada, para no perder carga de otras cajas.
+        var boxes = await _db.HandlingUnits
+            .Where(h => h.DeliveryId == deliveryId && h.OrganizationId == DemoOrganization.Id)
+            .OrderBy(h => h.Code)
+            .Select(h => new ReceiverUnitBoxDto(h.Id, h.Code, h.Status))
+            .ToListAsync(ct);
+
+        var dispatchedLines = await _db.DeliveryLines
+            .Where(l => l.DeliveryId == deliveryId && l.DispatchedQuantity > 0m)
+            .ToListAsync(ct);
+
+        var lotIds = dispatchedLines.Select(l => l.LotId).Distinct().ToList();
         var lots = await _db.Lots.Where(l => lotIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
-        var productIds = lots.Values.Select(l => l.ProductId).ToList();
+        var productIds = lots.Values.Select(l => l.ProductId).Distinct().ToList();
         var products = await _db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
 
-        var lines = unitLines.Select(l =>
+        var lines = dispatchedLines.Select(l =>
         {
-            // La línea de la caja puede no traer DeliveryLineId: se resuelve por lote dentro de la entrega.
-            var deliveryLineId = l.DeliveryLineId ?? deliveryLines.First(dl => dl.LotId == l.LotId).Id;
-            var lot = lots[l.LotId];
-            var product = products[lot.ProductId];
-            return new ReceiverUnitLineDto(deliveryLineId, lot.Id, lot.Code, product.Sku, product.Name, l.Quantity, product.BaseUnit);
+            lots.TryGetValue(l.LotId, out var lot);
+            Product? product = null;
+            if (lot != null) products.TryGetValue(lot.ProductId, out product);
+            return new ReceiverUnitLineDto(
+                l.Id,
+                l.LotId,
+                lot?.Code ?? "LOTE",
+                product?.Sku ?? "MED-001",
+                product?.Name ?? "Producto",
+                l.DispatchedQuantity,
+                product?.BaseUnit ?? "U");
         }).ToList();
 
-        return new ReceiverUnitResponse(hu.Id, hu.Code, hu.Status, deliveryId, delivery.Version, point?.Name ?? "", lines);
+        return new ReceiverUnitResponse(hu.Id, hu.Code, hu.Status, deliveryId, delivery.Version, point?.Name ?? "", boxes, lines);
     }
 
     public async Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default)
@@ -1473,7 +1592,13 @@ public sealed class FieldService : IFieldService
         CancellationToken ct = default)
     {
         // Idempotencia de la operación de demo completa: repetir el mismo operationId devuelve el resultado previo.
-        var replay = await FindReplayAsync<DemoAdvanceResponse>(actorAccountId, request.OperationId, "DemoAdvance", ct);
+        var legacyAdvanceHash = ComputeSha256($"demo-advance:{routePlanId}:{request.Stops}");
+        var replay = await FindReplayAsync<DemoAdvanceResponse>(actorAccountId, request.OperationId, "DemoAdvance", routePlanId, request, request.OperationId.ToString(), ct, legacyAdvanceHash);
+        if (replay is not null) return replay;
+
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
+
+        replay = await FindReplayAsync<DemoAdvanceResponse>(actorAccountId, request.OperationId, "DemoAdvance", routePlanId, request, request.OperationId.ToString(), ct, legacyAdvanceHash);
         if (replay is not null) return replay;
 
         var plan = await _db.RoutePlans
@@ -1503,16 +1628,17 @@ public sealed class FieldService : IFieldService
                     .Where(dl => dl.DeliveryId == del.Id && dl.OrganizationId == DemoOrganization.Id)
                     .ToListAsync(ct);
 
-                // El avance de demo usa las operaciones reales: no salta estados de custodia.
-                // La custodia se atribuye al conductor asignado cuando existe.
-                var custodyActor = del.AssignedAccountId ?? actorAccountId;
+                // Es una simulación de recorrido, no una acción física: las transiciones reales se
+                // atribuyen a la cuenta que invoca el avance (Planificación/Gerencia), no al conductor.
+                var custodyActor = actorAccountId;
 
                 // 1. Preparar HandlingUnit si no existe
-                var existingHu = await _db.HandlingUnits
-                    .FirstOrDefaultAsync(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id, ct);
+                var existingHus = await _db.HandlingUnits
+                    .Where(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id)
+                    .ToListAsync(ct);
 
                 Guid huId;
-                if (existingHu == null)
+                if (existingHus.Count == 0)
                 {
                     var prepReq = new CreateHandlingUnitRequest(
                         Guid.NewGuid(),
@@ -1523,13 +1649,19 @@ public sealed class FieldService : IFieldService
                 }
                 else
                 {
-                    huId = existingHu.Id;
+                    huId = existingHus[0].Id;
                 }
 
-                // 2. Despachar (solo desde Draft; una entrega ya avanzada no se re-despacha)
+                // 2. Despachar TODOS los bultos (solo desde Draft; una entrega ya avanzada no se re-despacha)
                 if (del.Status == DeliveryStates.Draft)
                 {
-                    var dispReq = new DispatchRequest(Guid.NewGuid(), new[] { huId }, occurredAt);
+                    var allUnitIds = await _db.HandlingUnits
+                        .Where(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id)
+                        .Select(hu => hu.Id)
+                        .ToListAsync(ct);
+                    if (allUnitIds.Count == 0) allUnitIds = new List<Guid> { huId };
+
+                    var dispReq = new DispatchRequest(Guid.NewGuid(), allUnitIds, occurredAt);
                     await DispatchAsync(del.Id, dispReq, actorAccountId, $"adv-{Guid.NewGuid()}", ct);
                 }
 
@@ -1549,12 +1681,13 @@ public sealed class FieldService : IFieldService
                         HandlingUnitStates.Delivered, CustodyEventKinds.Delivered, ct, requireAssignedDriver: false);
                 }
 
-                // 4. Recibir 100% aceptado (el rol Receptor no participa en el avance de demo)
+                // 4. Recibir 100% aceptado cubriendo todas las líneas despachadas (el rol Receptor no participa en el avance de demo)
                 var receiptReq = new CreateReceiptRequest(
                     Guid.NewGuid(),
                     del.Version,
                     occurredAt,
-                    delLines.Select(dl => new ReceiptLineRequest(dl.Id, dl.LotId, dl.PlannedQuantity, 0m, "U")).ToList());
+                    delLines.Where(dl => dl.DispatchedQuantity > 0m)
+                        .Select(dl => new ReceiptLineRequest(dl.Id, dl.LotId, dl.DispatchedQuantity, 0m, "U")).ToList());
 
                 var receiptResp = await CreateReceiptCoreAsync(del.Id, receiptReq, custodyActor, $"rec-{Guid.NewGuid()}", ct);
 
@@ -1573,13 +1706,14 @@ public sealed class FieldService : IFieldService
             AccountId = actorAccountId,
             OperationId = request.OperationId,
             ActionCode = "DemoAdvance",
-            RequestHash = ComputeSha256($"demo-advance:{routePlanId}:{request.Stops}"),
+            RequestHash = ComputeRequestFingerprint("DemoAdvance", routePlanId, request),
             ResponseStatus = 200,
             ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
             CompletedAtUtc = DateTime.UtcNow,
             RetainUntilUtc = DateTime.UtcNow.AddDays(7)
         });
         await _db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
         return response;
     }
 
@@ -1656,25 +1790,84 @@ public sealed class FieldService : IFieldService
         return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
     }
 
-    private async Task<T?> FindReplayAsync<T>(Guid actorAccountId, Guid operationId, string actionCode, CancellationToken ct)
+    private async Task<T?> FindReplayAsync<T>(
+        Guid actorAccountId,
+        Guid operationId,
+        string actionCode,
+        Guid resourceId,
+        object payload,
+        string idempotencyKey,
+        CancellationToken ct,
+        string? legacyHash = null,
+        Func<T, Guid?>? legacyResourceSelector = null)
         where T : class
     {
+        if (operationId == Guid.Empty)
+        {
+            throw new FieldUnprocessableException(FieldErrorCodes.InvalidOperationId,
+                "La operación requiere un operationId distinto de Guid.Empty.");
+        }
+
+        // #162: el índice idempotente es (organización, cuenta, operationId) SIN actionCode. Buscar
+        // solo por operación evita el 23505 cuando una UUID se reutiliza en otra acción o entrega.
         var record = await _db.IdempotencyRecords
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.OrganizationId == DemoOrganization.Id &&
                                       r.AccountId == actorAccountId &&
-                                      r.OperationId == operationId &&
-                                      r.ActionCode == actionCode, ct);
-
+                                      r.OperationId == operationId, ct);
         if (record is null) return null;
-        if (record.ResponseStatus == 200 && !string.IsNullOrWhiteSpace(record.ResponseJson))
+
+        if (!string.Equals(record.ActionCode, actionCode, StringComparison.Ordinal))
         {
-            return JsonSerializer.Deserialize<T>(record.ResponseJson, JsonOptions)
-                ?? throw new InvalidOperationException("No se pudo deserializar la respuesta idempotente previa.");
+            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
+                $"La operación {operationId} ya fue registrada con otra acción ({record.ActionCode}); no se repite con efectos nuevos.");
         }
 
-        throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
-            "La operación ya fue procesada con un conflicto.");
+        var fingerprint = ComputeRequestFingerprint(actionCode, resourceId, payload);
+        // Compatibilidad con registros de la primera entrega, cuyo hash incluía la clave del cliente.
+        var legacyFingerprint = legacyHash ?? ComputeSha256(idempotencyKey + operationId);
+        var matchesCurrentFingerprint = record.RequestHash == fingerprint;
+        if (!matchesCurrentFingerprint && record.RequestHash != legacyFingerprint)
+        {
+            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
+                "La misma operación ya fue procesada con otro recurso o contenido.");
+        }
+
+        if (record.ResponseStatus != 200 || string.IsNullOrWhiteSpace(record.ResponseJson))
+        {
+            throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
+                "La operación previa no tiene una respuesta aceptada.");
+        }
+
+        var response = JsonSerializer.Deserialize<T>(record.ResponseJson, JsonOptions)
+            ?? throw new InvalidOperationException("No se pudo deserializar la respuesta idempotente previa.");
+
+        // El hash legado solo cubre clave+UUID y no guardó el cuerpo: se valida el recurso de la
+        // respuesta antes de aceptar el replay (límite documentado: no se revalida el cuerpo histórico).
+        if (!matchesCurrentFingerprint && legacyResourceSelector is not null)
+        {
+            var storedResource = legacyResourceSelector(response);
+            if (storedResource != resourceId)
+            {
+                throw new FieldConflictException(FieldErrorCodes.IdempotencyConflict,
+                    "El registro idempotente legado pertenece a otro recurso; no se repite con efectos nuevos.");
+            }
+        }
+
+        return response;
+    }
+
+    private static string ComputeRequestFingerprint(string actionCode, Guid resourceId, object payload) =>
+        ComputeSha256($"{actionCode}|{resourceId:N}|{JsonSerializer.Serialize(payload, JsonOptions)}");
+
+    // ponytail: un lock global por organización serializa toda la custodia de la demo (bajo volumen);
+    // particionar por entrega solo si algún día se necesita concurrencia real dentro de la organización.
+    private async Task<IDbContextTransaction?> BeginSerializedTransactionAsync(CancellationToken ct)
+    {
+        if (_db.Database.CurrentTransaction is not null) return null;
+        var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.LockOrganizationAsync(ct);
+        return transaction;
     }
 
     // Ubicación del vehículo y del punto de destino para eventos de custodia y movimientos.
