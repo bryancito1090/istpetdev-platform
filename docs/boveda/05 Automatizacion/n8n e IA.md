@@ -210,6 +210,80 @@ no cambia la instancia productiva. Resultados en
 El formato de Error Trigger y el vínculo por configuración de workflow siguen
 la [documentación oficial de n8n](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/).
 
+## Herramientas de abastecimiento del agente — issue #195, 16 de octubre de 2026
+
+El agente pasa de cinco a **ocho herramientas** `toolWorkflow` en `vigia` e
+`incidente` (prompt **v2** en `automation/n8n/prompts/agente-logistico-v2.md`):
+se suman `find_stock`, `plan_sourcing` y `vehicle_availability`, que consumen
+las consultas de solo lectura de #194 bajo `/api/v1/logistics`. El LLM sigue
+eligiendo herramientas y explicando; cantidades, asignaciones, prioridades y
+rutas las calcula el motor (ADR-22).
+
+Recorrido de Watch en el prompt: `get_risks` → `find_stock` por producto →
+`plan_sourcing` con puntos/pedidos reales → `vehicle_availability` una sola vez
+→ `propose_routes` → explicación. Después de riesgos, stock, origen y disponibilidad
+son lecturas independientes. El modelo solicita ese grupo y, al final del
+mismo, la propuesta determinista: ninguna de estas operaciones reserva stock
+ni publica. Espera los resultados para explicar; así evita una ronda intermedia
+sin calcular asignaciones. `get_risks` conserva las filas con demanda positiva
+y nivel Critico/Alto/Vigilar; omite la copia redundante de facts, sin recalcular
+valores. `plan_sourcing` conserva cantidades, faltantes, asignaciones y opciones
+sin repetir coordenadas ni lotes ya consultables en stock. El modelo no reintenta llamadas fallidas dentro del plazo interactivo.
+Incident conserva `get_incident_impact` y
+`replan` por ruta afectada, y usa las consultas nuevas solo cuando evalúa
+reposición o sustitución; no reabastece carga reservada/en tránsito.
+
+Reglas de seguridad de los wrappers (las ocho herramientas):
+
+- `apiBaseUrl` desde `$env.ISTPETDEV_API_BASE_URL`; `runId`, `kind`,
+  `incidentId` y `deadlineUtc` siempre del payload firmado. Los argumentos del
+  modelo pasan por allowlist por herramienta (UUIDs, listas acotadas a 100 y
+  deduplicadas); no se reenvía el objeto arbitrario.
+- Misma credencial OAuth2 M2M, cabecera `X-Agent-Run-Id` del contexto firmado y
+  HMAC, ACK 202, registro de ejecución y Error Trigger sin cambios.
+- Timeout HTTP dinámico `min(15000, restante − 1200)` con mínimo 1000 ms en las
+  ocho herramientas y margen para el callback; el guard requiere 2200 ms
+  restantes (1000 ms mínimos de HTTP + 1200 ms de reserva) y la omisión con motivo (`skipped`) cuando la llamada no cabe.
+- `vehicle_availability` no acepta fecha: el contexto firmado no autoriza otro
+  día, así que consulta el reloj operativo del servidor. La extensión opcional
+  `criticalDeadlineLocal` de #193 existe en `develop`, pero queda fuera del tool
+  opcional: el contexto firmado aún no transporta una hora autorizada. El LLM no la inventa.
+
+Evidencia determinista en `GET /api/v1/agent/runs/{id}`: por decisión se
+exponen `originWarehouseCode`/`originWarehouseName` (bodega base real del
+vehículo, `Vehicle.DepotLocationId`), `vehicleCode` y `orderedStops` (secuencia
+real de paradas del plan propuesto), derivados por servidor del plan
+correlacionado; nunca de texto libre del LLM. Al completar el run (LLM o respaldo),
+se guarda en `ProposalJson.evidence` una copia de los valores de esos campos; los cambios
+posteriores del catálogo no alteran el historial. La secuencia final de visita se
+distingue de la prioridad de asignación del motor. Detalle de contratos y
+evidencia en `docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.
+
+El formato final se valida en `Prepare Result`: JSON con campos permitidos,
+tipos de texto, UUIDs y decisiones sin duplicar; luego la API valida correlación,
+cifras y mensaje. Se elimina el parser estructurado adjunto al agente, que
+produjo errores de formato durante la matriz real, sin añadir otra llamada LLM.
+n8n documenta esa limitación del parser con agentes en sus
+[incidencias de formato estructurado](https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.outputparserstructured/common-issues/).
+Salida inválida conserva el camino de respaldo determinista.
+
+Para mantener el presupuesto interactivo, tras firma/ACK/registro el workflow
+consulta una vez el contexto inicial: riesgos en Watch o impacto firmado en
+Incident. Es una lectura OAuth M2M a la URL configurada con X-Agent-Run-Id
+firmado, guard de plazo y timeout acotado; también queda en la traza. El agente
+recibe ese resultado como `initialContext` y elige las herramientas posteriores;
+get_risks/get_incident_impact siguen disponibles cuando falta ese contexto.
+Los datos de la respuesta se anidan y no pueden reemplazar identidad ni plazo.
+
+`plan_sourcing({})` en Watch usa los puntos con demanda positiva y riesgo
+Critico/Alto/Vigilar de `Load Initial Context`, consultado con OAuth y run firmado.
+El wrapper deduplica y valida UUIDs y límite de 100 antes de construir la lista
+`servicePointIds` del contrato API; no calcula demanda. El modelo puede escoger
+listas explícitas de puntos o pedidos en vez del valor por defecto. Sin contexto
+autenticado, en Incident o con listas explícitas vacías, `{}` no habilita la
+consulta. Este valor por defecto evita que el modelo vuelva a generar todos los
+UUIDs y reduce latencia sin ampliar el presupuesto de 10 segundos.
+
 ## Revisión de viabilidad de datasets — #209, 16 de octubre de 2026
 
 Workflow `revision-dataset` (export `automation/n8n/workflows/revision-dataset.json`,

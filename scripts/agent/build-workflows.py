@@ -11,11 +11,11 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/agente-logistico-v1.md"
+PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/agente-logistico-v2.md"
 DATASET_PROMPT_FILE = REPO_ROOT / "automation/n8n/prompts/revision-dataset-v1.md"
 TEMPLATES_DIR = REPO_ROOT / "automation/n8n/templates"
 WORKFLOWS_DIR = REPO_ROOT / "automation/n8n/workflows"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 N8N_VERSION = "2.39.5"
 AGENT_WORKFLOWS = ("vigia", "incidente")
 DATASET_WORKFLOWS = ("revision-dataset",)
@@ -77,32 +77,32 @@ def _replace_system_message(value: Any, prompt: str) -> int:
     return count
 
 
-def _inject_prompt_version(value: Any) -> int:
+def _inject_prompt_version(value: Any, prompt_version: str) -> int:
     count = 0
     if isinstance(value, dict):
         for key, child in list(value.items()):
             if _normalized_key(str(key)) == "promptversion":
-                value[key] = PROMPT_VERSION
+                value[key] = prompt_version
                 count += 1
             else:
-                replaced, replacements = _replace_marker(child)
+                replaced, replacements = _replace_marker(child, prompt_version)
                 value[key] = replaced
                 count += replacements
                 if replacements == 0:
-                    count += _inject_prompt_version(child)
+                    count += _inject_prompt_version(child, prompt_version)
     elif isinstance(value, list):
         for index, child in enumerate(value):
-            replaced, replacements = _replace_marker(child)
+            replaced, replacements = _replace_marker(child, prompt_version)
             value[index] = replaced
             count += replacements
             if replacements == 0:
-                count += _inject_prompt_version(child)
+                count += _inject_prompt_version(child, prompt_version)
     return count
 
 
-def _replace_marker(value: Any) -> tuple[Any, int]:
+def _replace_marker(value: Any, prompt_version: str) -> tuple[Any, int]:
     if isinstance(value, str) and "{{PROMPT_VERSION}}" in value:
-        return value.replace("{{PROMPT_VERSION}}", PROMPT_VERSION), 1
+        return value.replace("{{PROMPT_VERSION}}", prompt_version), 1
     return value, 0
 
 
@@ -126,12 +126,13 @@ def inject_prompt_into_workflow(workflow: dict[str, Any], prompt: str, name: str
     ]
     if not result_nodes:
         raise ValueError(f"{name}: falta el nodo fijo Send Result")
-    version_fields = sum(_inject_prompt_version(node.get("parameters", {})) for node in result_nodes)
+    prompt_version = "v1" if name in DATASET_WORKFLOWS else PROMPT_VERSION
+    version_fields = sum(_inject_prompt_version(node.get("parameters", {}), prompt_version) for node in result_nodes)
     if version_fields == 0:
         raise ValueError(f"{name}: Send Result debe enviar promptVersion o incluir {{PROMPT_VERSION}}")
 
     workflow_meta = workflow.setdefault("meta", {})
-    workflow_meta["promptVersion"] = PROMPT_VERSION
+    workflow_meta["promptVersion"] = prompt_version
     workflow_meta["n8nVersion"] = N8N_VERSION
     # Runtime revision IDs are assigned by n8n when importing the source.
     workflow.pop("versionId", None)

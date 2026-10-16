@@ -50,7 +50,12 @@ public sealed record AgentDecisionView(
     string DriverMessage,
     ExplanationSource Source,
     string? MismatchReason,
-    IReadOnlyList<Fact> Facts);
+    IReadOnlyList<Fact> Facts,
+    string? OriginWarehouseCode = null,
+    string? OriginWarehouseName = null,
+    IReadOnlyList<DecisionStopView>? OrderedStops = null);
+
+public sealed record DecisionStopView(int Sequence, string PointCode);
 
 public sealed record AgentResult(
     IReadOnlyList<DecisionText> Decisions,

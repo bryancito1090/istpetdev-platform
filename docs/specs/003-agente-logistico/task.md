@@ -788,6 +788,18 @@ productiva al ejecutar esta validación.
 
 Estado del código: revisión final de Codex completada por encargo de Bryan; tres consultas con RBAC y sin efectos logísticos, contrato cotejado con DTOs. La regresión falla antes y pasa después; 21/21 dirigidas y 560/560 en la suite completa, npm check/auditoría y bóveda aprobados. Se conserva el intento local abortado bajo concurrencia en la evidencia. CI sobre el código revisado 7/7 verde; la finalización del PR y issue se acredita en sus estados de GitHub. Sin despliegue.
 
+## Issue #195 — herramientas n8n de abastecimiento — 16-oct-2026
+
+- [x] Plan y rama propios; OpenCode implementó la base y Codex asumió la revisión/corrección por petición de Bryan.
+- [x] Integrar develop con #193/#194 y resolver conflictos; GitHub confirmó PR #213 fusionable.
+- [x] Tres consultas nuevas en ambos AI Agents, ocho tools totales, prompt v2, prioridad calculada por motor, contratos, allowlists y HMAC conservado.
+- [x] Evidencia determinista en AgentRun (origen/vehículo/paradas), con copia histórica y respaldo; pruebas de trazabilidad y renombración.
+- [x] Ensayo real n8n 2.39.5 + DeepSeek sobre fixtures demo-region, Incident, Injection y proveedor fallido; matriz 30 corridas: 170/170 herramientas 2xx, p95 7987 ms, 60/60 explicaciones validadas, inyección 10/10.
+- [x] Generador, 44 pruebas Python, 15 pruebas focalizadas, suite backend local 568 aprobadas/1 manual omitida en `0819646`, npm check y auditorías aprobadas; CI del código con #207 `616f539` 7/7 verde. Prueba manual requiere clave privada fuera del repositorio; no se presenta un stub como DeepSeek real.
+- Revisión remota final, merge y cierre: el estado y SHA definitivos se acreditan en [PR #213](https://github.com/bryancito1090/istpetdev-platform/pull/213) e [issue #195](https://github.com/bryancito1090/istpetdev-platform/issues/195).
+
+[Plan](plan-195-herramientas-n8n.md) · [Evidencia y limitaciones](evidencia/2026-10-16-195-herramientas-n8n.md). Prelaunch local aplicado; identidad del harness sintética, proveedor real, sin despliegue ni cambios de infraestructura. La copia de evidencia se conserva en ProposalJson y no acepta datos autoritativos del LLM. Los intentos fallidos previos y sus correcciones permanecen documentados.
+
 ## Issue #207 — propuesta única, vehículo adecuado, costo e incertidumbre verificable — 16-oct-2026
 
 - [x] Contrato de propuesta única en `RoutePlansController.SuggestRoutes`: un solo viaje/itinerario recomendado, sin menú alternativo A/B (`options` con exactamente 1 propuesta), con idempotencia por `requestId`.

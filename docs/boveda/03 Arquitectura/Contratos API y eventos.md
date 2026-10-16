@@ -341,6 +341,35 @@ Responde AMP-01 de [[Ampliacion de alcance - ideas del evento]]: la prioridad ya
 - **Error:** un valor que no sea `HH:mm` o `HH:mm:ss` responde 400 `invalid_critical_deadline`.
 - **Alcance:** solo la propuesta inicial. Replanificar no recibe hora límite.
 
+## Evidencia determinista del agente y herramientas de abastecimiento (#195, en revisión)
+
+El issue #195 agrega tres herramientas `toolWorkflow` a `vigia`/`incidente`
+(prompt v2): `find_stock`, `plan_sourcing` y `vehicle_availability`. Son
+consumidores de las consultas de solo lectura `/api/v1/logistics/*` de #194; su
+contrato final se rige por el PR de #194 y no se duplica aquí. Los wrappers
+validan UUIDs, listas acotadas a 100 únicas y campos de allowlist, y envían el
+`X-Agent-Run-Id` firmado en los ocho tools.
+
+`GET /api/v1/agent/runs/{id}` (y `GET /api/v1/agent/runs?limit=`) amplía
+`AgentDecisionView` con evidencia derivada por servidor del plan correlacionado,
+sin aceptar valores del callback LLM. Al completar la ejecución se conserva una
+copia en `ProposalJson.evidence` (vehículo, bodega y paradas), también en
+el respaldo; para decisiones históricas sin copia guardada se conserva la proyección
+compatible desde el plan. Una renombración posterior no altera nuevas decisiones:
+
+| Campo nuevo | Origen determinista | Uso |
+|---|---|---|
+| `originWarehouseCode` / `originWarehouseName` | `RoutePlan.VehicleId → Vehicle.DepotLocationId → Location` (bodega base real) | Acredita la bodega de origen de la propuesta |
+| `orderedStops: [{ sequence, pointCode }]` | `RouteStop` del plan propuesto, ordenado por `SequenceNumber` (en propuestas de fallback, del `ProposalJson.route` persistido) | Acredita la secuencia real de visita, distinta de la prioridad de asignación del motor |
+| `vehicleCode` (ya existía) | Plan/`ProposalJson` → `Vehicle.Code` | Acredita el vehículo |
+
+No se expone el `summary` del LLM ni respuestas HTTP completas de herramientas;
+la traza de llamadas sigue registrando método, ruta, código y milisegundos.
+Compatible hacia atrás: los campos nuevos son opcionales y las decisiones sin
+plan correlacionado pueden devolverlos nulos. Ensayo local y de n8n real en
+`docs/specs/003-agente-logistico/evidencia/2026-10-16-195-herramientas-n8n.md`.
+
+
 ## Revisión de viabilidad de datasets (#209 — 16 de octubre de 2026)
 
 Amplía el reporte del importador del spec 001 sin cambiar su validación estricta

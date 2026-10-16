@@ -91,8 +91,9 @@ class BuildWorkflowsTests(unittest.TestCase):
             expected_prompt = "Prompt de dataset de prueba" if filename == "revision-dataset.json" else "Prompt de prueba"
             self.assertEqual(expected_prompt, agent["parameters"]["options"]["systemMessage"])
             result = next(n for n in workflow["nodes"] if n["name"] == "Send Result")
-            self.assertEqual("v1", result["parameters"]["body"]["promptVersion"])
-            self.assertEqual("v1", workflow["meta"]["promptVersion"])
+            expected_version = "v1" if filename == "revision-dataset.json" else "v2"
+            self.assertEqual(expected_version, result["parameters"]["body"]["promptVersion"])
+            self.assertEqual(expected_version, workflow["meta"]["promptVersion"])
             if filename == "revision-dataset.json":
                 self.assertNotIn("errorWorkflow", workflow.get("settings", {}))
             else:
