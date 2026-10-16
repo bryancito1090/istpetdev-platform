@@ -280,16 +280,23 @@ Respuestas en camelCase; errores con Problem Details. Las cifras de los ejemplos
     {
       "routePlanId": "…", "code": "R-2026-10-12-VEH-01", "revision": 1, "status": "Proposed",
       "vehicleCode": "VEH-01", "km": 41.2, "minutes": 214, "cost": 52.6, "hasApproximations": false,
-      "stops": [ { "sequence": 1, "pointCode": "HOS-N01", "arrival": "2026-10-12T12:35:00Z", "isConsolidation": false, "loads": [ { "sku": "DES-01", "quantity": 60, "baseUnit": "L" } ] } ],
+      "stops": [ { "sequence": 1, "pointCode": "HOS-N01", "arrival": "2026-10-12T12:35:00Z", "isConsolidation": false, "loads": [ { "sku": "DES-01", "quantity": 60, "requiredQuantity": 60, "pendingQuantity": 0, "baseUnit": "L" } ] } ],
       "legs": [ { "from": [-0.2850, -78.5400], "to": [-0.1180, -78.4880], "km": 21.3, "minutes": 38, "source": "Road", "polyline": "…" } ]
     }
   ],
-  "unserved": [],
+  "unserved": [
+    { "pointCode": "HOS-S02", "reason": "capacity", "facts": [ … ],
+      "lines": [ { "sku": "DES-01", "baseUnit": "L", "requiredQuantity": 150, "plannedQuantity": 100, "pendingQuantity": 50 } ] }
+  ],
   "decision": { "agentDecisionId": "…", "outcome": "Escalated", "reasons": ["initial_plan_requires_approval"] },
   "facts": [ … ],
   "explanation": "…"
 }
 ```
+
+Atención parcial (FR-24, #199): `quantity` de cada carga es lo planificado y lo que se publica y reserva; `requiredQuantity` es lo sugerido o pedido y `pendingQuantity` el remanente. Cada ruta de la respuesta trae también `vehicleCode`, `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y sus `stops` con `loads`. Un no atendido con `reason: "capacity"` y `plannedQuantity > 0` es una entrega parcial; el remanente queda pendiente para otra planificación.
+
+**`POST /api/v1/route-plans/confirm`** (asistente por pedidos) — exige `vehicleId` (400 si falta; 422 si no existe o está inactivo). Recalcula las cargas desde los pedidos (`RequestedQuantity − PlannedQuantity` por línea) para las paradas de entrega enviadas, planifica lo que cabe en peso y volumen y responde `201` con `lines` (`orderId`, `orderNumber`, `pointCode`, `sku`, `baseUnit`, `requiredQuantity`, `plannedQuantity`, `pendingQuantity`), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`. Los totales de distancia/costo del panel se guardan como referencia, pero la carga no se toma del panel. 422 si un pedido no existe, está cancelado, no tiene saldo pendiente o su destino no está entre las paradas, o si no cabe ninguna unidad.
 
 **`POST /api/v1/route-plans/{id}/publish`** — cuerpo `{ "assignments": { "VEH-01": "<sub del conductor>" } }` (opcional) → `200` con las entregas creadas; repetir devuelve las mismas.
 
