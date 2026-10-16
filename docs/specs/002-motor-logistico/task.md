@@ -139,6 +139,7 @@
 | FR-16–FR-18 | T6–T7 | `AutonomyPolicyTests`, `ReplanningTests`, E2E-03/04 |
 | FR-19–FR-20 | T1, T6 | `FactsTests`, `ExplanationTemplatesTests`, E2E-01/03 |
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
+| FR-25 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -435,3 +436,87 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | Panel del asistente en `apps/web` | Sin cambios; misma forma de respuesta | No verificado en pantalla |
 
 **Verificación:** `dotnet test --filter "DeliveryStopSequencerTests|RouteSuggestPriorityTests|RouteEvaluatorTests"`: 12 de 12. No se corrió la suite completa.
+
+### T15 — Carga parcial según capacidad y remanente pendiente (#199, 16-oct)
+
+**Síntoma:** si la carga sugerida superaba el peso o el volumen del vehículo, la propuesta automática dejaba la parada entera en `unserved: capacity`. En el asistente por pedidos, `confirm` daba los pedidos por planificados sin revisar capacidad ni saldo.
+
+**Causa** (por lectura del código; las pruebas nuevas cubren cada caso después de la corrección):
+1. `RoutePlanner` creaba la carga con toda la cantidad asignada; si no cabía, no planificaba nada de esa parada.
+2. `ReplenishmentAllocator` guardaba una asignación por punto: el segundo SKU de un mismo punto sobrescribía al primero, así que una parada nunca llevaba varios productos.
+3. `confirm`, ya validado por #201 (vehículo obligatorio y capacidad), tomaba como cantidad por defecto la ya planificada y la **sobrescribía**. Una segunda ruta del remanente volvía a planificar lo de la primera. Además, `suggest` ofrecía lo pedido completo.
+
+**Contrato** (FR-24 nuevo y FR-09 precisado en `spec.md`; cuerpos en `plan.md`): por línea, `requiredQuantity`, `quantity`/`plannedQuantity` (lo que se publica y reserva) y `pendingQuantity`. Una atención parcial del motor es un no atendido `capacity` con `lines` y `plannedQuantity > 0`, más los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`).
+
+**Política de reparto (determinista):**
+- **Entre puntos (motor):** el orden de obligatorios de FR-08: nivel, holgura de cobertura, criticidad y código. El primero se llena antes que el siguiente.
+- **Dentro de una parada:** nivel de riesgo del SKU y luego SKU (ordinal). Una línea que no cabe completa se recorta a unidades base enteras.
+- **Entre vehículos:** si la parada no cabe completa, el remanente va al vehículo que lleva más unidades, luego al de menor costo adicional y luego al de menor código. Un punto no se repite en la misma ruta.
+- **Asistente por pedidos:** se respeta la decisión de #201: la ruta que no cabe se rechaza con 409, y la parcial se pide con `lines`. #199 añade el tope de lo pendiente y la suma de lo planificado.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `plan.md` | Spec | FR-24 nuevo, FR-09 precisado, contrato de `POST /route-plans` y `confirm` | Contrato antes de implementar | — | Hecho |
+| `PlanModels.cs` | Aplicación | `StopLoad.RequiredQuantity`/`PendingQuantity`, `PendingLine`, `Unserved.Lines` | Exponer requerida, planificada y pendiente | Todos | Hecho |
+| `ReplenishmentAllocator.cs` | Aplicación | Una línea por punto y producto (`Lines`) | El segundo SKU sobrescribía al primero | Varios productos | Hecho |
+| `RoutePlanner.cs` | Aplicación | Parada con todas sus líneas; `FitLoads` y `SplitByCapacity`; pendientes y hechos por línea | Planificar lo factible y conservar el remanente | 150 u de 1 kg con vehículo de 100 kg | Hecho |
+| `RoutePlansController.CreatePlan` | API | Cada ruta con `vehicleCode`, carga, capacidad y paradas con `loads` | Panel y n8n ven las cifras | Propuesta automática | Hecho |
+| `RoutePlansController.ConfirmRoutePlan` | API | Pendiente = solicitado − planificado − entregado; 409 si se pide más o no queda nada; suma `PlannedQuantity`; respuesta con `lines`, carga y `partial` | Segunda planificación sin duplicar | Segundo confirm | Hecho |
+| `RoutePlansController.GetById` | API | `loadQuantities` por parada | Mostrar la atención parcial en el detalle | Ruta propuesta | Hecho |
+| `SourcingService.cs` | Aplicación | Ofrece solo `Requested − Planned` | `suggest` del remanente | Segundo confirm | Hecho |
+| `api.service.ts`, `rutas.page.ts` | Web | Recuadro de carga parcial en la parada y cifras en los avisos de generar y confirmar | Mostrar requeridas, planificadas y pendientes | Panel | Hecho |
+| `agente-logistico-v1.md`, `workflows/*.json` | n8n | Regla 8: explicar la carga parcial con las cifras de la API | El contrato de respuesta cambió | Vigía | Hecho |
+| `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `PartialLoadTests.cs`, `api.service.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| 150 u de 1 kg, un vehículo de 100 kg, stock suficiente (motor) | Carga ≤ 100 kg; 100 planificadas, 150 requeridas, 50 pendientes; no atendido `capacity` con la línea | Pasa |
+| Igual con dos vehículos de 100 kg | 100 + 50 en dos rutas, nada pendiente | Pasa |
+| Dos puntos de 150 u, un vehículo de 100 kg, criticidad alta frente a media | El de criticidad alta recibe 100 aunque su código sea mayor; el otro queda pendiente completo | Pasa |
+| Dos productos (uno pesado, otro voluminoso), 200 kg y 5 m³ | Peso y volumen respetados (150 + 48), 102 pendientes; mismo resultado en dos corridas | Pasa |
+| `confirm` de 150 u de 1 kg con vehículo de 100 kg, sin `lines` | 409; pedido sin cambios | Pasa |
+| `confirm` con `lines` = 200 de un pendiente de 150 | 409 | Pasa |
+| `confirm` con `lines` = 100 | 201 con `partial` y 150/100/50; pedido `Pending`; la publicación crea y reserva 100 | Pasa |
+| Segundo `confirm` sin `lines` | Planifica las 50 restantes; pedido `Planned` con 150; un tercero responde 409 | Pasa |
+| `confirm` sin `vehicleId` o con vehículo desconocido | 409, no crea plan | Pasa |
+| `confirm` con pedido sin parada de entrega, o con una unidad de 200 kg | 409, pedido sin cambios | Pasa |
+
+**Pendiente:**
+- El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado. Es comportamiento previo; queda para decidir.
+- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente.
+- El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía. Un pedido que no cabe en ningún vehículo compatible no se puede confirmar desde el panel.
+- Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.
+- ~~Cuando se integre #193 (hora límite de críticos) habrá que revisar que `SplitByCapacity` evalúe con las mismas reglas de ventana que la inserción.~~ Revisado al integrar #193 (ver T16): la parte hereda la ventana recortada.
+
+### T16 — Hora límite para puntos críticos (#193, 16-oct)
+
+**Por qué:** la prioridad decidía quién entra al camión, pero no a qué hora llega. Un hospital crítico podía quedar como última parada. Es la pregunta que el sector dejó abierta en la charla del 16-oct (AMP-01).
+
+**Regla (FR-25):** `PlanRequest.CriticalDeadlineLocal` es opcional (`"HH:mm"`). Una parada es crítica si su riesgo es `CRITICO` o la criticidad del punto es `alta`. Su fin de ventana es el mínimo entre la ventana del punto y la hora límite. Si la ventana del punto empieza después de la hora límite, se respeta la del punto. `RouteFeasibility` no cambia: ya rechaza con `time_window` las llegadas fuera de ventana.
+
+**Con #199 (T15):** `SplitByCapacity` arma cada parte con `candidate with { Loads = … }`, así que la parte parcial hereda la ventana ya recortada por la hora límite y se evalúa con la misma regla que la inserción. Esto resuelve el último pendiente de T15.
+
+**Fuera de alcance:** replanificar (`ReplanAsync`) no recibe hora límite; el selector en la página Rutas y la comparación de costos (AMP-02) van en otros issues.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `PlanModels.cs` | Application | Campo opcional `CriticalDeadlineLocal` en `PlanRequest` | Recibir la hora límite sin romper llamadas existentes | Plan sin el campo | Hecho |
+| `RoutePlanner.cs` | Application | `ParseCriticalDeadline` y `ApplyCriticalDeadline` al crear cada `StopCandidate` | Recortar solo la ventana de los críticos | Plan con `"11:00"` | Hecho |
+| `RoutePlansController.cs` | API | Hora mal formada → 400 `invalid_critical_deadline` | Era un 500 por error del cliente | `"once"` | Hecho |
+| `RoutePlannerTests.cs` | Pruebas | Recorte, ventana que termina antes, ventana que empieza después, no crítico, sin límite, formato, `time_window` | Regla aislada | — | Pasan |
+| `RoutePlanningTests.cs` | Pruebas | Crítico llega antes de las 11:00; con jornada 10:00 y límite 10:00 el crítico queda `time_window` y el no crítico sigue en ruta | Regla con base real (PostGIS) | — | Pasan |
+
+**Escenarios de prueba:**
+
+| Escenario | Esperado | Estado |
+|---|---|---|
+| Sin `criticalDeadlineLocal` | El plan del fixture no cambia (prueba determinista existente) | Pasa |
+| Crítico con límite `"11:00"` y jornada 07:00 | HOS-01 llega antes de las 11:00, sin retraso | Pasa |
+| Crítico con límite `"10:00"` y jornada 10:00 | HOS-01 en `unserved` con `time_window` | Pasa |
+| No crítico (riesgo `ALTO`, criticidad `media`) con el mismo límite | HOS-02 conserva 08:00–17:00 y sigue en la ruta tras las 10:00 | Pasa |
+| Ventana del punto que empieza después del límite | Se respeta la ventana del punto | Pasa (unitaria) |
+| Valor `"once"` | `ArgumentException` en el motor; 400 en la API | Pasa la unitaria; el 400 no tiene prueba HTTP |
+
+**Verificación:** `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RoutePlanner|FullyQualifiedName~RoutePlanning"` → 20 de 20.

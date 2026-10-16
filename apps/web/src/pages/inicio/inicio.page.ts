@@ -21,39 +21,16 @@ interface ProcessStep {
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      <!-- Encabezado Principal según Rol -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-              @if (isAuditor()) {
-                Consola de Fiscalización y Control de Operaciones
-              } @else if (isGerencia()) {
-                Tablero Directivo y Gestión Estratégica
-              } @else {
-                Flujo de Trabajo Operativo y Despacho Logístico
-              }
-            </h1>
-            <span 
-              class="text-xs font-semibold px-2.5 py-0.5 rounded-full border"
-              [ngClass]="{
-                'bg-indigo-50 text-indigo-700 border-indigo-200': isAuditor(),
-                'bg-slate-100 text-slate-800 border-slate-300': isGerencia(),
-                'bg-emerald-50 text-emerald-700 border-emerald-200': !isAuditor() && !isGerencia()
-              }">
-              [{{ userRoleBadge() }}]
-            </span>
-          </div>
-          <p class="text-sm text-slate-500 mt-1">
-            @if (isAuditor()) {
-              Fiscalización independiente de la red logística: control de alertas de quiebre, auditoría de rutas y verificación de custodia digital.
-            } @else if (isGerencia()) {
-              Supervisión ejecutiva de la red de distribución, simulación de políticas y administración de accesos del sistema.
-            } @else {
-              Ciclo operativo guiado: sincronización de catálogos maestros, análisis de rotura de inventario y optimización de rutas.
-            }
-          </p>
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-10 bg-white">
+      <!-- Encabezado Principal Estilo Stripe: "Hoy" -->
+      <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+        <div class="flex items-baseline gap-3">
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight font-sans">
+            Hoy
+          </h1>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/70">
+            {{ userRoleBadge() }}
+          </span>
         </div>
 
         <div class="flex items-center gap-3">
@@ -61,229 +38,276 @@ interface ProcessStep {
             type="button"
             (click)="refreshPulse()"
             [disabled]="loadingPulse()"
-            class="inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors shadow-xs disabled:opacity-50">
+            class="inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-2xs disabled:opacity-50 cursor-pointer">
+            <svg 
+              class="w-3.5 h-3.5 text-slate-400" 
+              [ngClass]="{'animate-spin text-[#635BFF]': loadingPulse()}"
+              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
             <span>{{ loadingPulse() ? 'Actualizando...' : 'Actualizar Estado' }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Tarjetas de Pulso de la Red en Tiempo Real (KPIs del Sistema) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Puntos Hospitalarios -->
-        <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Red Hospitalaria</span>
-            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-              Puntos Activos
-            </span>
+      <!-- Fila Superior Asimétrica: Gráfico a la Izquierda y KPIs a la Derecha (Estilo Exacto Stripe Dashboard) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        
+        <!-- Columna Izquierda (8 cols): Métrica Principal + Gráfico de Línea Temporal -->
+        <div class="lg:col-span-8 space-y-5">
+          <!-- Selectores y Métrica Principal limpia -->
+          <div>
+            <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
+              <button type="button" class="inline-flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer">
+                <span>Red Hospitalaria</span>
+                <svg class="w-3 h-3 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+              </button>
+              <button type="button" class="inline-flex items-center gap-1 hover:text-slate-800 transition-colors cursor-pointer">
+                <span>Jornada Operativa</span>
+                <svg class="w-3 h-3 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+              </button>
+            </div>
+
+            <!-- Número Principal en Sans-serif (sin ceros punteados retro) -->
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight font-sans">
+                {{ servicePointsCount() }}
+              </span>
+              <span class="text-sm font-medium text-slate-500">
+                centros de salud activos
+              </span>
+            </div>
+
+            <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+              <span>{{ warehousesCount() }} bodega base</span>
+              <span class="text-slate-300">&bull;</span>
+              <span class="text-emerald-600 font-medium">100% Red asignada</span>
+              <span class="text-slate-300">&bull;</span>
+              <span>17:00 corte de despacho</span>
+            </div>
           </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-mono text-slate-900">{{ servicePointsCount() }}</span>
-            <span class="text-xs text-slate-500">centros de salud</span>
+
+          <!-- Gráfico de Línea Temporal Estilo Stripe (con línea continua y tramo punteado) -->
+          <div class="pt-4">
+            <div class="relative w-full h-12 flex flex-col justify-end">
+              <!-- SVG Curva/Línea estilo Stripe con proyección punteada -->
+              <div class="w-full h-2 relative flex items-center">
+                <div class="w-3/4 h-[2px] bg-[#635BFF]"></div>
+                <div class="w-1/4 h-[2px] border-b-2 border-dashed border-[#635BFF]/40"></div>
+              </div>
+              <!-- Eje de horas -->
+              <div class="flex justify-between items-center text-[11px] text-slate-400 font-sans mt-2">
+                <span>07:00</span>
+                <span class="text-slate-400 font-normal">12:00</span>
+                <span>17:00</span>
+              </div>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-500 mt-2">
-            {{ warehousesCount() }} bodegas base de suministro registradas.
-          </p>
         </div>
 
-        <!-- Alertas de Stock -->
-        <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Riesgo de Stock</span>
-            <span 
-              class="text-[10px] font-mono font-bold px-2 py-0.5 rounded"
-              [ngClass]="criticalRisksCount() > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'">
-              {{ criticalRisksCount() > 0 ? criticalRisksCount() + ' Críticos' : 'Normal' }}
-            </span>
+        <!-- Columna Derecha (4 cols): KPIs en Lista Vertical Limpia (Estilo Saldos y Transferencias de Stripe) -->
+        <div class="lg:col-span-4 space-y-5 lg:border-l lg:border-[#E3E8EE] lg:pl-8">
+          
+          <!-- KPI 1: Riesgo de Stock (equivalente a Saldos en Stripe) -->
+          <div class="space-y-0.5">
+            <div class="flex items-center justify-between text-[14px] leading-[20px]">
+              <span class="text-[#30313D] font-medium">Riesgo de Stock</span>
+              <a routerLink="/alertas" class="text-[#635BFF] hover:underline font-medium text-[13px]">Ver más</a>
+            </div>
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span 
+                class="text-[20px] leading-[28px] font-semibold tracking-tight"
+                [ngClass]="criticalRisksCount() > 0 ? 'text-rose-600' : 'text-[#1A2C44]'">
+                {{ criticalRisksCount() }} crítico
+              </span>
+              <span class="text-[13px] text-[#8792A2] cursor-help" title="Insumos con cobertura crítica menor a 5 días">&#9432;</span>
+            </div>
+            <p class="text-[13px] leading-[18px] text-[#3C4F69]">
+              {{ warningRisksCount() }} en margen de reposición
+            </p>
           </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-mono" [ngClass]="criticalRisksCount() > 0 ? 'text-rose-700' : 'text-slate-900'">
-              {{ criticalRisksCount() }}
-            </span>
-            <span class="text-xs text-slate-500">quiebres inminentes</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-2">
-            {{ warningRisksCount() }} centros adicionales en margen preventivo.
-          </p>
-        </div>
 
-        <!-- Rutas del Día -->
-        <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Distribución</span>
-            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200">
-              Rutas Activas
-            </span>
+          <!-- KPI 2: Distribución y Rutas (equivalente a Transferencias en Stripe) -->
+          <div class="space-y-0.5 pt-4 border-t border-[#F1F3F5]">
+            <div class="flex items-center justify-between text-[14px] leading-[20px]">
+              <span class="text-[#30313D] font-medium">Distribución</span>
+              <a routerLink="/rutas" class="text-[#635BFF] hover:underline font-medium text-[13px]">Ver datos</a>
+            </div>
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span class="text-[20px] leading-[28px] font-semibold text-[#1A2C44] tracking-tight">
+                {{ publishedRoutesCount() }} publicadas
+              </span>
+              <span class="text-[13px] text-[#8792A2] cursor-help" title="Rutas activas publicadas para despacho">&#9432;</span>
+            </div>
+            <p class="text-[13px] leading-[18px] text-[#3C4F69]">
+              {{ routePlansCount() }} rutas planificadas hoy
+            </p>
           </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-bold font-mono text-primary-700">{{ routePlansCount() }}</span>
-            <span class="text-xs text-slate-500">rutas generadas</span>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-2">
-            {{ publishedRoutesCount() }} publicadas a conductores para entrega.
-          </p>
-        </div>
 
-        <!-- Modo de Autonomía -->
-        <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Motor Logístico</span>
-            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-              Política
-            </span>
+          <!-- KPI 3: Motor Logístico -->
+          <div class="space-y-0.5 pt-4 border-t border-[#F1F3F5]">
+            <div class="flex items-center justify-between text-[14px] leading-[20px]">
+              <span class="text-[#30313D] font-medium">Planificación de Rutas</span>
+              <span class="text-[12px] text-[#8792A2]">Automática</span>
+            </div>
+            <div class="flex items-center gap-1.5 pt-0.5">
+              <span class="text-[18px] leading-[26px] font-semibold text-[#1A2C44] tracking-tight">
+                {{ autonomyMode() === 'AutoWithLimits' ? 'Automático Supervisado' : autonomyMode() }}
+              </span>
+              <span class="text-[13px] text-[#8792A2] cursor-help" title="El sistema calcula automáticamente las mejores rutas de entrega">&#9432;</span>
+            </div>
+            <p class="text-[13px] leading-[18px] text-[#3C4F69]">
+              Rutas eficientes &bull; Cobertura hospitalaria total
+            </p>
           </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-base font-bold font-mono text-slate-800">
-              {{ autonomyMode() }}
-            </span>
+
+          <!-- KPI 4: Conectividad y Base de Datos -->
+          <div class="space-y-0.5 pt-4 border-t border-[#F1F3F5]">
+            <div class="flex items-center justify-between text-[14px] leading-[20px]">
+              <span class="text-[#30313D] font-medium">Infraestructura</span>
+              <a routerLink="/public-trace" class="text-[#635BFF] hover:underline font-medium text-[13px]">Traza QR</a>
+            </div>
+            <div class="flex items-center gap-2 pt-0.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-[14px] font-semibold text-[#1A2C44]">
+                AWS EC2
+              </span>
+              <span class="text-[11px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200/50">
+                Conectado
+              </span>
+            </div>
+            <p class="text-[12px] text-[#8792A2] font-mono">
+              34.234.100.56:5432
+            </p>
           </div>
-          <p class="text-[11px] text-slate-500 mt-2">
-            Algoritmo determinista con límite de desvío y sobrecosto.
-          </p>
+
         </div>
       </div>
 
-      <!-- SECCIÓN ESPECÍFICA PARA AUDITOR -->
-      @if (isAuditor()) {
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">
-                Frentes de Fiscalización para Auditoría
-              </h2>
-              <p class="text-xs text-slate-500 mt-0.5">
-                Accede a las vistas especializadas de inspección y trazabilidad conforme a la normativa.
-              </p>
-            </div>
-            <span class="text-xs font-semibold px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
-              Solo Lectura
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- 1. Alertas de Cobertura -->
-            <div class="p-5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
-              <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-sm text-slate-900">Auditoría de Demanda</span>
-                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
-                    {{ criticalRisksCount() }} Alertas
-                  </span>
-                </div>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed">
-                  Fiscaliza el cálculo determinístico de días de cobertura contra el umbral normativo (Lead Time + Margen) y audita el volumen sugerido.
-                </p>
-              </div>
-              <a
-                routerLink="/alertas"
-                class="inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                Auditar Alertas de Stock
-              </a>
-            </div>
-
-            <!-- 2. Fiscalización de Rutas -->
-            <div class="p-5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
-              <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-sm text-slate-900">Fiscalización de Rutas</span>
-                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                    {{ routePlansCount() }} Rutas
-                  </span>
-                </div>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed">
-                  Verifica tiempos de viaje, ventanas horarias de atención en centros de salud, kilometraje total y asignación de vehículos.
-                </p>
-              </div>
-              <a
-                routerLink="/rutas"
-                class="inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                Auditar Itinerario de Rutas
-              </a>
-            </div>
-
-            <!-- 3. Trazabilidad Pública QR -->
-            <div class="p-5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
-              <div>
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-sm text-slate-900">Custodia Digital</span>
-                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
-                    QR Seguro
-                  </span>
-                </div>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed">
-                  Comprueba la cadena de custodia de bultos y transferencias con firma criptográfica sin exposición de datos confidenciales.
-                </p>
-              </div>
-              <a
-                routerLink="/public-trace"
-                class="inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                Consultar Trazabilidad QR
-              </a>
-            </div>
+      <!-- SECCIÓN: Tu resumen (Idéntica a Stripe Imagen 3 con Tarjetas de Métricas) -->
+      <div class="pt-6 space-y-5 border-t border-slate-100">
+        <!-- Encabezado de Tu Resumen -->
+        <div class="flex items-center justify-between">
+          <div class="space-y-0.5">
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight font-sans">
+              Tu resumen
+            </h2>
+            <p class="text-xs text-[#697386]">
+              Estado del flujo logístico de abastecimiento hospitalario en tiempo real.
+            </p>
           </div>
         </div>
-      }
 
-      <!-- FLUJO OPERATIVO GUIADO (Para Planificador y Referencia Arquitectónica) -->
-      <div class="space-y-4">
-        <div>
-          <h2 class="text-base font-bold text-slate-900">
-            Ciclo del Proceso Logístico
-          </h2>
-          <p class="text-xs text-slate-500 mt-0.5">
-            Secuencia metodológica de operaciones: desde la ingesta de datos hasta la optimización y distribución.
-          </p>
-        </div>
-
-        <div class="space-y-3">
+        <!-- Tarjetas de Resumen en Cuadrícula Estilo Stripe (Imagen 3) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           @for (step of steps(); track step.id) {
-            <div class="bg-white border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-              <div class="flex items-start gap-4">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 bg-slate-100 text-slate-700">
-                  {{ step.id }}
+            <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 hover:border-slate-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all flex flex-col justify-between group">
+              <div>
+                <!-- Encabezado de la Tarjeta con ⓘ (Exacto a DevTools Stripe: h3, 14px, #30313D) -->
+                <div class="flex items-center justify-between">
+                  <h3 class="text-[14px] leading-[20px] font-medium text-[#30313D] truncate">
+                    {{ step.title }}
+                  </h3>
+                  <span class="text-[#8792A2] group-hover:text-[#3C4F69] transition-colors cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-sm font-bold text-slate-900">{{ step.title }}</h3>
-                    <span 
-                      class="text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold border"
-                      [ngClass]="step.badgeClass">
-                      {{ step.badge }}
-                    </span>
+
+                <!-- Métrica Principal de la Tarjeta (24px, #1A2C44) -->
+                <div class="mt-2.5">
+                  <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight">
+                    @if (step.id === 1) {
+                      {{ servicePointsCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">puntos</span>
+                    } @else if (step.id === 2) {
+                      <span [ngClass]="criticalRisksCount() > 0 ? 'text-rose-600' : 'text-[#1A2C44]'">
+                        {{ criticalRisksCount() }}
+                      </span>
+                      <span class="text-[14px] font-normal text-[#3C4F69]"> quiebres</span>
+                    } @else if (step.id === 3) {
+                      {{ publishedRoutesCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">/ {{ routePlansCount() }} rutas</span>
+                    } @else {
+                      {{ warehousesCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">bodega</span>
+                    }
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">{{ step.desc }}</p>
+
+                  <!-- Subtexto comparativo (Exacto a DevTools Stripe: 14px, #3C4F69, mb-0.5) -->
+                  <div class="text-[13px] leading-[18px] text-[#3C4F69] mt-0.5 mb-[2px] line-clamp-2">
+                    {{ step.desc }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Enlace de acción respetando permisos RBAC (FR-21: Auditor no escribe) -->
-              @if (!step.writeOnly || session.canWrite()) {
-                <div class="shrink-0 self-end sm:self-auto">
+              <!-- Acción Inferior estilo Stripe Link -->
+              <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
+                <span 
+                  class="text-[11px] px-2 py-0.5 rounded-full font-medium border"
+                  [ngClass]="step.badgeClass">
+                  {{ step.badge }}
+                </span>
+
+                @if (!step.writeOnly || session.canWrite()) {
                   <a
                     [routerLink]="step.route"
-                    class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                    {{ step.actionText }}
+                    class="text-[13px] font-medium text-[#635BFF] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer">
+                    <span>{{ step.actionText }}</span>
+                    <span>&rarr;</span>
                   </a>
-                </div>
-              } @else {
-                <div class="shrink-0 self-end sm:self-auto">
-                  <span class="text-[11px] font-medium text-slate-400 italic">
-                    Acceso de solo lectura
-                  </span>
-                </div>
-              }
+                } @else {
+                  <span class="text-[12px] text-[#8792A2] italic">Solo lectura</span>
+                }
+              </div>
             </div>
           }
         </div>
       </div>
 
-      <!-- Resumen Institucional y de Entorno -->
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <span class="font-bold text-slate-800 block">Plataforma Logística ISTPET &mdash; Expo Clean Ecuador 2026</span>
-          <span class="text-slate-500 text-[11px]">Conectado a la base centralizada en AWS EC2 (America/Guayaquil)</span>
-        </div>
-        <div class="font-mono text-[11px] text-slate-500">
-          Modo Operativo: {{ isAuditor() ? 'Auditoría' : (isGerencia() ? 'Gerencia' : 'Planificación') }}
+      <!-- Sección Secundaria: Recomendaciones Operativas del Sistema -->
+      <div class="pt-4 border-t border-[#F1F3F5]">
+        <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h3 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44]">
+                Recomendaciones Operativas del Sistema
+              </h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
+                Atención Prioritaria
+              </span>
+            </div>
+            <span class="text-[12px] text-[#8792A2]">Motor Determinista Activo</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1 text-xs">
+            <div class="space-y-1.5 p-3 rounded-md bg-[#F8FAFC] border border-[#E3E8EE]/70">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-rose-600">Alerta de Stock</span>
+              <p class="text-[13px] leading-[18px] text-[#30313D]">
+                {{ criticalRisksCount() > 0 ? 'Detectado ' + criticalRisksCount() + ' quiebre de stock crítico inminente en centros de salud.' : 'Todos los puntos de salud operan en niveles normales de cobertura.' }}
+              </p>
+              <a routerLink="/alertas" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
+                <span>Resolver alertas de stock</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+
+            <div class="space-y-1.5 p-3 rounded-md bg-[#F8FAFC] border border-[#E3E8EE]/70">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-blue-600">Flota y Despacho</span>
+              <p class="text-[13px] leading-[18px] text-[#30313D]">
+                {{ publishedRoutesCount() }} rutas despachadas. Revisa el estado de entrega y custodia con firma digital.
+              </p>
+              <a routerLink="/rutas" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
+                <span>Inspeccionar rutas</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+
+            <div class="space-y-1.5 p-3 rounded-md bg-[#F8FAFC] border border-[#E3E8EE]/70">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">Simulación y Proyección</span>
+              <p class="text-[13px] leading-[18px] text-[#30313D]">
+                Prueba el modelo de optimización logística frente a baselines a 90 días.
+              </p>
+              <a routerLink="/simulation" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
+                <span>Abrir simulador 90d</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

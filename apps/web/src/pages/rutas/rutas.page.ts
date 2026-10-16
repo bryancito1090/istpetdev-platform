@@ -18,7 +18,9 @@ import {
   RejectedCaptureDto,
   RouteGeometryDto,
   DriverOptionDto,
-  WarehouseStockDto
+  WarehouseStockDto,
+  PendingLoadLineDto,
+  describePendingLines
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
@@ -871,7 +873,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                     </tbody>
                                   </table>
                                 </div>
-                              } @else {
+                              }
+                              @if (hasPending(stop.loadQuantities)) {
+                                <!-- #199: atención parcial: lo requerido, lo que va en esta ruta y lo que queda pendiente -->
+                                <div class="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900" data-partial-load>
+                                  <p class="font-semibold mb-1">Carga parcial por capacidad</p>
+                                  @for (q of stop.loadQuantities; track q.sku) {
+                                    <p class="font-mono">{{ q.sku }}: requeridas {{ q.requiredQuantity | number:'1.0-2' }} · planificadas {{ q.plannedQuantity | number:'1.0-2' }} · pendientes {{ q.pendingQuantity | number:'1.0-2' }} {{ q.baseUnit }}</p>
+                                  }
+                                </div>
+                              }
+                              @if (!stop.lines || stop.lines.length === 0) {
                                 <div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">
                                   @if (stop.kind === 'Pickup') {
                                     <span>Bodega de recogida: no hay productos para cargar aquí.</span>
@@ -2207,6 +2219,11 @@ export class RutasPage implements OnInit, OnDestroy {
     });
   }
 
+  // #199: la parada tiene alguna línea con remanente pendiente.
+  hasPending(lines: PendingLoadLineDto[] | null | undefined): boolean {
+    return (lines || []).some(l => Number(l.pendingQuantity) > 0);
+  }
+
   generatePlan(): void {
     if (!this.session.canWrite()) return;
     this.actionLoading.set(true);
@@ -2220,11 +2237,16 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         const count = res?.routes?.length ?? 0;
+        // #199: la API devuelve lo que no cupo por capacidad con sus cantidades; se informa sin recalcular.
+        const pendingLines: PendingLoadLineDto[] = (res?.unserved || []).flatMap((u: any) =>
+          (u.lines || []).map((l: any) => ({ ...l, pointCode: u.pointCode })));
+        const pendingText = describePendingLines(pendingLines);
         this.feedbackMessage.set({
           type: 'success',
-          text: count > 0 
+          text: (count > 0
             ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!${deadline ? ' (Hora límite para críticos: ' + deadline + ')' : ''}`
-            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.'
+            : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.')
+            + (pendingText ? ` Carga parcial — ${pendingText}.` : '')
         });
         if (count > 0) {
           const first = res.routes[0];
@@ -2696,12 +2718,16 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.closeWizard();
+        // #199: el servidor recalcula la carga y devuelve por línea lo planificado y lo que queda pendiente.
         const remainingCount = remainingPending.length;
-        if (remainingCount > 0) {
+        const pendingText = describePendingLines(res?.lines);
+        const hasRemanente = remainingCount > 0 || !!pendingText;
+        if (hasRemanente) {
           this.hasRemainingPendingOrders.set(true);
           this.feedbackMessage.set({
             type: 'success',
-            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas! Quedan ${remainingCount} pedido(s) pendientes en el sistema.`
+            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+              + (pendingText ? ` Carga parcial — ${pendingText}. El remanente queda pendiente en el pedido.` : (remainingCount > 0 ? ` Quedan ${remainingCount} pedido(s) pendientes en el sistema.` : ''))
           });
         } else {
           this.hasRemainingPendingOrders.set(false);

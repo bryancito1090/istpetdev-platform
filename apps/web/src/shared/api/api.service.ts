@@ -128,6 +128,26 @@ export interface RouteStopLineDto {
   handlingUnitStatus?: string;
 }
 
+/** #199: cantidades de una línea: lo requerido (sugerido o pedido), lo planificado en la ruta y lo pendiente. */
+export interface PendingLoadLineDto {
+  sku: string;
+  baseUnit: string;
+  requiredQuantity: number;
+  plannedQuantity: number;
+  pendingQuantity: number;
+  pointCode?: string;
+  orderNumber?: string;
+}
+
+/** #199: resume las líneas con remanente («SKU: 100 de 150 u, pendientes 50»); vacío si no queda nada pendiente. */
+export function describePendingLines(lines: PendingLoadLineDto[] | null | undefined): string {
+  const pending = (lines || []).filter(l => Number(l.pendingQuantity) > 0);
+  if (pending.length === 0) return '';
+  return pending
+    .map(l => `${l.pointCode ? l.pointCode + ' ' : ''}${l.sku}: ${l.plannedQuantity} de ${l.requiredQuantity} ${l.baseUnit} planificadas, pendientes ${l.pendingQuantity}`)
+    .join('; ');
+}
+
 export interface RouteStopHandlingUnitDto {
   id: string;
   code: string;
@@ -200,6 +220,8 @@ export interface RoutePlanDetailDto {
     deliveryStatus?: string;
     handlingUnits?: RouteStopHandlingUnitDto[];
     lines?: RouteStopLineDto[];
+    // #199: requerida, planificada y pendiente por línea (rutas guardadas con atención parcial).
+    loadQuantities?: PendingLoadLineDto[];
   }>;
   productsSummary?: RouteProductSummaryDto[];
   driverRoutes?: RouteDriverAssignmentDto[];
@@ -566,7 +588,8 @@ export class ApiService {
             deliveryCode: s.deliveryCode || '',
             deliveryStatus: s.deliveryStatus || '',
             handlingUnits: s.handlingUnits || [],
-            lines: s.lines || []
+            lines: s.lines || [],
+            loadQuantities: s.loadQuantities || []
           })),
           productsSummary: res.productsSummary || [],
           driverRoutes: res.driverRoutes || []

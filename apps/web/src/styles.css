@@ -24,15 +24,15 @@
   --color-surface-card: #FFFFFF;     /* White: Contenedores modulares */
   --color-border-card: #E2E8F0;      /* Slate 200: Bordes estructurados */
 
-  /* Capa Tipográfica Institucional */
-  --font-primary-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Capa Tipográfica Institucional Estilo Stripe Dashboard */
+  --font-primary-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Inter", sans-serif;
 }
 
 body {
   margin: 0;
   font-family: var(--font-primary-sans);
   background-color: #ffffff;
-  color: var(--color-charcoal-slate);
+  color: #30313D;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -88,7 +88,7 @@ code,
 kbd,
 samp {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-feature-settings: "tnum" 1, "zero" 1;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Efecto Cinta Mesh Multicolor Expo Clean Ecuador 2026 (Clean Cyan, Expo Lime, Energy Orange) */
@@ -168,6 +168,69 @@ samp {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ==============================================================================
+ * PALETA OFICIAL EXPO CLEAN ECUADOR 2026: AZUL ELÉCTRICO, CYAN Y MENTA
+ * ============================================================================== */
+
+.glass-credential-card {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 102, 255, 0.16),
+    0 12px 24px -8px rgba(0, 194, 255, 0.09),
+    0 0 0 1px rgba(0, 102, 255, 0.06);
+}
+
+.glass-stat-badge {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 12px 28px -4px rgba(10, 17, 40, 0.09),
+    0 2px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.text-gradient-cyan-mint {
+  background: linear-gradient(135deg, #00A7C4 0%, #00C2FF 40%, #00E5A3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, #0052FF 0%, #0066FF 55%, #00C2FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animación de Cinta Móvil Continua Infinita (Estilo Marquee Stripe) */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-tape {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-tape:hover {
+  animation-play-state: paused;
+}
+
+.tape-fade-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
 
 
