@@ -401,15 +401,15 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
                   <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
                     <div class="flex items-center justify-between mb-1.5">
-                      <span class="stop-tag">Parada #{{ pickup.sequence }} · Punto de distribución</span>
-                      <span class="text-xs font-bold text-[#00A7C4] underline">Escanear caja →</span>
+                      <span class="stop-tag">Parada #{{ pickup.sequence }} · Recogida en Bodega</span>
+                      <span class="text-xs font-bold text-[#00A7C4] underline">Escanear y cargar caja →</span>
                     </div>
                     <h2 class="stop-title">{{ pickup.pointName }}</h2>
                     @if (pickup.address) {
                       <p class="stop-address">{{ pickup.address }}</p>
                     }
                     <div class="text-xs text-slate-600 font-medium">
-                      Toca aquí para escanear y verificar las cajas para este punto de distribución.
+                      Toca aquí para escanear y certificar las cajas que subes al vehículo.
                     </div>
                   </div>
                 }
@@ -418,8 +418,8 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   @if (del.kind === 'Pickup') {
                     <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
                       <div class="flex items-center justify-between mb-1.5">
-                        <span class="stop-tag">Parada #{{ del.sequence }} · Punto de distribución</span>
-                        <span class="text-xs font-bold text-[#00A7C4] underline">Escanear caja →</span>
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Recogida en Bodega</span>
+                        <span class="text-xs font-bold text-[#00A7C4] underline">Escanear y cargar caja →</span>
                       </div>
                       <h2 class="stop-title">{{ del.pointName }}</h2>
                       @if (del.address) {
@@ -427,7 +427,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                       }
                       @if (getDeliveryProducts(del).length > 0) {
                         <div class="stop-products-section">
-                          <span class="stop-products-title">Productos a entregar:</span>
+                          <span class="stop-products-title">Cajas y productos a cargar:</span>
                           <div class="space-y-1.5">
                             @for (prod of getDeliveryProducts(del); track prod.name) {
                               <div class="product-row">
@@ -439,13 +439,13 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                         </div>
                       }
                       <div class="text-xs text-slate-600 font-medium">
-                        Toca aquí para escanear y verificar las cajas para este punto de distribución.
+                        Toca aquí para escanear y certificar las cajas que subes al vehículo.
                       </div>
                     </div>
                   } @else {
                     <div class="driver-stop-card">
                       <div class="flex items-center justify-between mb-2">
-                        <span class="stop-tag">Parada #{{ del.sequence }} · Punto de distribución</span>
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Entrega en Punto de Distribución</span>
                         <span class="status-badge" [class.is-done]="driverStage(del) === 'Received' || driverStage(del) === 'Partial'">
                           {{ driverStageLabel(del) }}
                         </span>
@@ -1379,7 +1379,7 @@ export class HomePage {
     switch (this.driverStage(del)) {
       case 'WaitingWarehouse': return 'Esperando a Bodega';
       case 'Draft': return 'En preparación';
-      case 'Dispatched': return 'Listo para entrega';
+      case 'Dispatched': return 'Listo para recoger';
       case 'InTransit': return 'En ruta';
       case 'Delivered': return 'Entregado';
       case 'Received': return 'Recibido';
@@ -1396,7 +1396,7 @@ export class HomePage {
   driverActionLabel(del: MobileAssignmentDelivery): string {
     switch (this.driverStage(del)) {
       case 'WaitingWarehouse': return 'Esperando a Bodega';
-      case 'Dispatched': return 'Entregar →';
+      case 'Dispatched': return 'Recoger →';
       case 'InTransit': return 'Entregar →';
       case 'Delivered': return 'Esperando receptor';
       case 'Received':

@@ -124,3 +124,34 @@ El issue #162 fija que cada rol actúa en su turno: Bodega despacha, el Conducto
 - **Estados honestos:** el comando queda «Guardado en el teléfono» hasta que el servidor responde; solo entonces la app muestra «Confirmado por el servidor». Un 409 de negocio (`NOT_DISPATCHED`, `NOT_DELIVERED`, `ALREADY_RECEIVED`, `INVALID_STATE_TRANSITION`, `HANDLING_UNIT_STATE_CONFLICT`, `NO_HANDLING_UNITS`) pasa a «Requiere Revisión» sin borrar la operación.
 - **Estados de espera en la PWA:** la parada muestra «Esperando a Bodega» si faltan bultos o despacho; el Receptor ve «Aún en bodega» / «El Conductor aún no entrega este bulto» / «Recibir» / «Ya recibido» según el estado del bulto. La entrada directa a `/receipt/:deliveryId` queda restringida al rol Conductor.
 - **Sincronización del receptor:** la recepción escaneada con QR sigue el flujo del spec 014 (conexión requerida); el outbox conserva la captura si la red falla y reintenta con la misma clave idempotente.
+
+## Cadena de custodia obligatoria y ciclo de vida de bultos (16 de octubre de 2026)
+
+Se establece y formaliza la obligatoriedad secuencial de la cadena de custodia entre los roles del sistema:
+
+### 1. Planificación (Precondición de Creación)
+- La entrega (`Delivery`) con sus líneas (`DeliveryLine`), vehículo y reserva de inventario nace exclusivamente cuando el **Planificador** confirma y publica la ruta (estado `Draft`).
+- **Restricción estricta:** Bodega no puede armar bultos de entregas no planificadas ni inventar órdenes. Solo procesa entregas existentes en estado `Draft`.
+
+### 2. Bodega (Armado, Emisión de QR y Despacho)
+- El operador de bodega realiza la **doble verificación física** (checkbox) de productos y lotes en la mesa de empaque.
+- Crea el bulto (`HandlingUnit`, estado `Sealed`), genera el token efímero de custodia e **imprime la etiqueta QR adhesiva** pegándola en la caja física.
+- Ejecuta el despacho (`POST /deliveries/{id}/dispatch`), pasando la entrega y sus bultos al estado **`Dispatched`**.
+- **Restricción estricta:** Hasta que Bodega no despache, la entrega está bloqueada para el conductor (la app muestra «Esperando a Bodega» y el backend rechaza la recogida con HTTP 422 `NOT_DISPATCHED`).
+
+### 3. Conductor (Recogida y Entrega Física — Subir y Bajar Cajas)
+El conductor opera en dos momentos físicos claramente diferenciados:
+- **Momento 1 — Recogida en Bodega (Subir al vehículo):**
+  - El conductor se encuentra en bodega física.
+  - Escanea los códigos QR de los bultos para certificar la carga completa en su furgón/vehículo.
+  - Ejecuta la transición de custodia **Recoger** (`POST /deliveries/{id}/pickup`), avanzando la entrega de `Dispatched` a **`InTransit`**.
+  - *Reversibilidad/Control de Carga:* Si el conductor detecta una caja dañada, goteando o asignada por error antes de iniciar marcha, puede desmarcar la unidad o asentar la novedad para bajarla del camión.
+- **Momento 2 — Entrega en Punto de Distribución / Hospital (Bajar del vehículo):**
+  - El conductor llega al destino hospitalario, estaciona y **baja físicamente las cajas** del vehículo hacia la recepción/bodega del hospital.
+  - Ejecuta la transición **Entregar** (`POST /deliveries/{id}/deliver`), avanzando el estado de `InTransit` a **`Delivered`**.
+  - Al completar la entrega física, la custodia pasa al punto de destino y el conductor queda en espera («Esperando receptor»).
+
+### 4. Receptor / Encargado (Doble Validación y Cierre)
+- **Restricción estricta:** El receptor solo puede escanear y procesar bultos que se encuentren en estado **`Delivered`**. Si el conductor aún no ha entregado físicamente la caja, el sistema bloquea la recepción («El Conductor aún no entrega este bulto»).
+- El receptor escanea el QR de la caja física (`/public-trace/{unitId}#t={token}`), valida los insumos y lotes mediante checkboxes (doble validación) y confirma la recepción atómica.
+- La entrega y bultos pasan al estado final de cierre: **`Received`** (100% conforme) o **`Partial`** (recepción parcial con novedad y evidencia fotográfica).
