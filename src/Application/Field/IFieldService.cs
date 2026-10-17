@@ -71,6 +71,8 @@ public interface IFieldService
         Guid actorAccountId,
         CancellationToken ct = default);
 
+    Task<IReadOnlyList<TodayRoutePlanDto>> GetTodayRoutePlansAsync(CancellationToken ct = default);
+
     Task<EvidenceUploadResponse> CreateEvidenceUploadAsync(
         Guid receiptId,
         EvidenceUploadRequest request,

@@ -135,6 +135,7 @@ public sealed class ReturnGuideUnitTests
         public Task<HandlingUnitTraceResponse> GetOperativeTraceAsync(Guid unitId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task RevokePublicTokenAsync(Guid unitId, Guid actorAccountId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<DemoAdvanceResponse> AdvanceDemoAsync(Guid routePlanId, DemoAdvanceRequest request, Guid actorAccountId, CancellationToken ct = default) => throw new NotImplementedException();
+        public Task<IReadOnlyList<TodayRoutePlanDto>> GetTodayRoutePlansAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<TodayRoutePlanDto>>(Array.Empty<TodayRoutePlanDto>());
         public Task<EvidenceUploadResponse> CreateEvidenceUploadAsync(Guid receiptId, EvidenceUploadRequest request, Guid actorAccountId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<EvidenceConfirmResponse> ConfirmEvidenceAsync(Guid evidenceId, EvidenceConfirmRequest request, Guid actorAccountId, CancellationToken ct = default) => throw new NotImplementedException();
         public Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default) => throw new NotImplementedException();

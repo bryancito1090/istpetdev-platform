@@ -19,7 +19,8 @@ import {
   EvidenceConfirmResponse,
   DemoAdvanceRequest,
   DemoAdvanceResponse,
-  PublicTraceUnitDto
+  PublicTraceUnitDto,
+  TodayRoutePlanDto
 } from '@istpetdev/shared-core';
 import { environment } from '../config/environment';
 import { IFieldApi, ReceiverUnit } from './field-api.interface';
@@ -76,6 +77,10 @@ export class HttpFieldApiService implements IFieldApi {
 
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse> {
     return this.http.post<DemoAdvanceResponse>(`${this.baseUrl}/api/v1/demo/route-plans/${routePlanId}/advance`, req);
+  }
+
+  getTodayRoutePlans(): Observable<TodayRoutePlanDto[]> {
+    return this.http.get<TodayRoutePlanDto[]>(`${this.baseUrl}/api/v1/demo/route-plans/today`);
   }
 
   getAssignments(): Observable<MobileAssignmentResponse> {

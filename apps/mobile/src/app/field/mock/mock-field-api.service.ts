@@ -22,7 +22,9 @@ import {
   DemoAdvanceRequest,
   DemoAdvanceResponse,
   PublicTraceUnitDto,
-  FieldProblemDetails
+  FieldProblemDetails,
+  TodayRoutePlanDto,
+  TodayRouteStopDto
 } from '@istpetdev/shared-core';
 import { IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { MockServerStore } from './mock-server.store';
@@ -641,21 +643,37 @@ export class MockFieldApiService implements IFieldApi {
         this.checkFailureHooks();
         const state = await this.store.getState();
         const completed: any[] = [];
+        let checkpointCompleted = 'Avance simulado';
+        let nextCheckpoint = 'Ruta finalizada';
 
         for (const route of state.assignment.routes) {
           if (route.routePlanId === routePlanId) {
-            const pendingDeliveries = route.deliveries.slice(0, req.stops);
-            for (const d of pendingDeliveries) {
-              // Sin bultos preparados el avance real responde NO_HANDLING_UNITS; el mock no inventa un recibo.
-              if (d.handlingUnits.length === 0) continue;
-              // #162: el avance de demo recorre los mismos estados reales de custodia.
-              d.handlingUnits.forEach((hu) => (hu.status = 'Dispatched'));
-              d.status = 'Dispatched';
-              d.handlingUnits.forEach((hu) => (hu.status = 'InTransit'));
-              d.status = 'InTransit';
-              d.handlingUnits.forEach((hu) => (hu.status = 'Delivered'));
-              d.status = 'Delivered';
-              d.handlingUnits.forEach((hu) => (hu.status = 'Received'));
+            const pendingDeliveries = route.deliveries.filter((d) => d.status !== 'Received' && d.status !== 'Partial');
+            let toProcess = pendingDeliveries;
+            if (req.mode === 'half') {
+              const count = Math.ceil(pendingDeliveries.length / 2);
+              toProcess = pendingDeliveries.slice(0, count);
+            } else if (req.mode === 'next') {
+              toProcess = pendingDeliveries.slice(0, 1);
+            } else if (!req.mode && req.stops) {
+              toProcess = pendingDeliveries.slice(0, req.stops);
+            }
+
+            for (const d of toProcess) {
+              if (d.handlingUnits.length === 0) {
+                d.handlingUnits.push({
+                  handlingUnitId: `hu-${generateUuidV7().slice(0, 8)}`,
+                  code: `CAJA-${Math.floor(1000 + Math.random() * 9000)}`,
+                  deliveryId: d.deliveryId,
+                  status: 'Received',
+                  labelUrl: '',
+                  token: `tok-${generateUuidV7()}`,
+                  lines: [],
+                  createdAtUtc: new Date().toISOString()
+                });
+              } else {
+                d.handlingUnits.forEach((hu) => (hu.status = 'Received'));
+              }
               d.status = 'Received';
               const rcptId = `rcpt-adv-${generateUuidV7().slice(0, 8)}`;
               completed.push({
@@ -665,11 +683,63 @@ export class MockFieldApiService implements IFieldApi {
                 acceptedAtUtc: new Date().toISOString()
               });
             }
+
+            const remaining = route.deliveries.filter((d) => d.status !== 'Received' && d.status !== 'Partial');
+            nextCheckpoint = remaining.length === 0 ? 'Ruta finalizada' : `Parada ${remaining[0].sequence}: ${remaining[0].pointName}`;
+            checkpointCompleted = req.mode === 'next' ? `Parada completada` : `${completed.length} paradas procesadas`;
           }
         }
 
         await this.store.saveState(state);
-        return { completedStops: completed };
+        return {
+          completedStops: completed,
+          checkpointCompleted,
+          nextCheckpoint,
+          totalStops: completed.length,
+          completedStopsCount: completed.length,
+          status: 'Success'
+        };
+      })()
+    ).pipe(delay(this.latencyMs));
+  }
+
+  getTodayRoutePlans(): Observable<TodayRoutePlanDto[]> {
+    return from(
+      (async () => {
+        this.checkFailureHooks();
+        const state = await this.store.getState();
+        const routes: TodayRoutePlanDto[] = (state.assignment.routes || []).map((r) => {
+          const totalStops = r.deliveries.length;
+          const completedStops = r.deliveries.filter((d) => d.status === 'Received' || d.status === 'Partial').length;
+          let status = 'Published';
+          if (completedStops === totalStops && totalStops > 0) {
+            status = 'Completed';
+          } else if (completedStops > 0) {
+            status = 'InProgress';
+          }
+          const stops: TodayRouteStopDto[] = r.deliveries.map((d) => ({
+            stopId: d.deliveryId,
+            sequenceNumber: d.sequence,
+            kind: d.kind || 'Delivery',
+            pointName: d.pointName,
+            status: (d.status === 'Received' || d.status === 'Partial') ? 'Completed' : 'Pending',
+            plannedArrivalUtc: new Date().toISOString(),
+            actualArrivalUtc: (d.status === 'Received' || d.status === 'Partial') ? new Date().toISOString() : undefined
+          }));
+          return {
+            routePlanId: r.routePlanId,
+            code: r.routePlanId,
+            status,
+            vehicleCode: r.vehicleCode,
+            driverName: 'Conductor Demo',
+            totalStops,
+            completedStops,
+            nextCheckpoint: completedStops >= totalStops ? 'Ruta finalizada' : `Parada ${completedStops + 1}`,
+            plannedStartUtc: new Date().toISOString(),
+            stops
+          };
+        });
+        return routes;
       })()
     ).pipe(delay(this.latencyMs));
   }

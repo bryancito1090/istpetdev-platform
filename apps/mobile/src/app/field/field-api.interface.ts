@@ -18,7 +18,8 @@ import {
   EvidenceConfirmResponse,
   DemoAdvanceRequest,
   DemoAdvanceResponse,
-  PublicTraceUnitDto
+  PublicTraceUnitDto,
+  TodayRoutePlanDto
 } from '@istpetdev/shared-core';
 
 /**
@@ -34,6 +35,7 @@ export interface IFieldApi {
   getDelivery(deliveryId: string): Observable<DeliveryDetailResponse>;
   revokePublicToken(unitId: string): Observable<void>;
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse>;
+  getTodayRoutePlans(): Observable<TodayRoutePlanDto[]>;
 
   // Conductor (Mobile / Captura y Sincronización)
   getAssignments(): Observable<MobileAssignmentResponse>;
