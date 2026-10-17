@@ -89,6 +89,6 @@ public interface IFieldService
 
     // Issue #247: Guía de Retorno de lo no entregado
     Task<ReturnGuideDto> GenerateReturnGuideAsync(Guid routePlanId, Guid actorAccountId, CancellationToken ct = default);
-    Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default);
+    Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, Guid actorAccountId, CancellationToken ct = default);
     Task<ReceiveReturnGuideResponse> ReceiveReturnGuideAsync(ReceiveReturnGuideRequest request, Guid actorAccountId, CancellationToken ct = default);
 }

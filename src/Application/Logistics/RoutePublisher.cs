@@ -1,3 +1,4 @@
+using IstpetDev.Application.Common;
 using System.Text.Json;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
@@ -44,6 +45,14 @@ public sealed class RoutePublisher(
 
     public async Task<PublishResult> PublishAsync(PublishRequest request, CancellationToken ct = default)
     {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await PublishAsyncCore(request, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private async Task<PublishResult> PublishAsyncCore(PublishRequest request, CancellationToken ct)
+    {
         var plan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == request.RoutePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"RoutePlan {request.RoutePlanId} no encontrado.");
@@ -65,6 +74,9 @@ public sealed class RoutePublisher(
             if (existingDeliveries.Count > 0)
                 return new PublishResult(plan.Id, plan.Status, existingDeliveries, existingReservations);
         }
+
+        if (plan.Status is not ("Proposed" or "Published"))
+            throw new InvalidOperationException($"La ruta está en {plan.Status}; solo se publica una propuesta vigente.");
 
         var today = await clock.TodayAsync(ct);
 
@@ -289,6 +301,14 @@ public sealed class RoutePublisher(
     /// </summary>
     public async Task<int> AssignDriverAsync(Guid routePlanId, Guid driverAccountId, CancellationToken ct = default)
     {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await AssignDriverAsyncCore(routePlanId, driverAccountId, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private async Task<int> AssignDriverAsyncCore(Guid routePlanId, Guid driverAccountId, CancellationToken ct)
+    {
         var plan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"RoutePlan {routePlanId} no encontrado.");
@@ -407,6 +427,14 @@ public sealed class RoutePublisher(
     }
 
     public async Task<RouteStop> CompleteStopAsync(CompleteStopRequest request, CancellationToken ct = default)
+    {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await CompleteStopAsyncCore(request, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private async Task<RouteStop> CompleteStopAsyncCore(CompleteStopRequest request, CancellationToken ct)
     {
         var stop = await db.RouteStops
             .FirstOrDefaultAsync(s => s.RoutePlanId == request.RoutePlanId &&

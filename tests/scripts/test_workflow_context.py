@@ -78,9 +78,9 @@ process.stdout.write(JSON.stringify(vm.runInNewContext(x.expression.slice(3,-2),
         for filename in ("vigia.json", "incidente.json"):
             workflow = load_workflow(filename)
             nodes = {n["name"]: n for n in workflow["nodes"]}
-            self.assertEqual("Register Execution", workflow["connections"]["Valid Signature?"]["main"][0][0]["node"])
-            self.assertEqual("Respond Accepted", workflow["connections"]["Register Execution"]["main"][0][0]["node"])
-            self.assertEqual("Initial Context Allowed?", workflow["connections"]["Respond Accepted"]["main"][0][0]["node"])
+            self.assertEqual("Respond Accepted", workflow["connections"]["Valid Signature?"]["main"][0][0]["node"])
+            self.assertEqual("Register Execution", workflow["connections"]["Respond Accepted"]["main"][0][0]["node"])
+            self.assertEqual("Initial Context Allowed?", workflow["connections"]["Register Execution"]["main"][0][0]["node"])
             params = nodes["Load Initial Context"]["parameters"]
             self.assertIn("$env.ISTPETDEV_API_BASE_URL", params["url"])
             self.assertEqual("={{ $('Verify Signature').first().json.payload.runId }}", params["headerParameters"]["parameters"][0]["value"])
