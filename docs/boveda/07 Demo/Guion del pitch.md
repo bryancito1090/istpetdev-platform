@@ -9,7 +9,7 @@ tags: [demo, validacion, istpetdev, planificacion]
 
 ## Propuesta v4 (17-oct): dolor, innovación e IA al frente
 
-Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: propuesta aprobada por Joseph; falta ensayarla y ajustar las láminas.** La v3 queda debajo como respaldo.
+Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: propuesta aprobada por Joseph; falta ensayarla.** Láminas: [`pitch-v4.pptx`](../../specs/006-validacion-pitch-entrega/materiales/pitch-v4.pptx) (PDF y PNG en `render-v4/`), generadas con `materiales/generar_v4.py`. La lámina 5 muestra «CAPTURA PENDIENTE» hasta que se guarde C1 como `materiales/assets/capturas-v4/c1-alerta.png` y se vuelva a ejecutar el script. La v3 queda debajo como respaldo.
 
 **Frase central:** «Detectamos el faltante antes de que el cliente llame, proponemos cómo atenderlo al costo real y dejamos prueba de cada entrega. El motor calcula, la IA explica y la persona decide.»
 
