@@ -278,8 +278,8 @@ public sealed class FieldUnitTests
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var catalog = Assert.IsType<RejectionReasonsCatalogResponse>(okResult.Value);
-        Assert.Equal("V1", catalog.Version);
-        Assert.Equal(6, catalog.Reasons.Count);
+        Assert.Equal("V2", catalog.Version); // #236: V2 agrega ErrorRotulado
+        Assert.Equal(7, catalog.Reasons.Count);
     }
 
     [Fact]

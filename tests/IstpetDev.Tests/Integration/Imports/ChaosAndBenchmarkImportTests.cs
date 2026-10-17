@@ -197,10 +197,10 @@ public sealed class ChaosAndBenchmarkImportTests(PostgisContainer postgres) : IC
     }
 
     /// <summary>
-    /// Catálogo de motivos de rechazo versionado V1 (Issue #117).
+    /// Catálogo de motivos de rechazo versionado (Issue #117; V2 agrega ErrorRotulado, #236).
     /// </summary>
     [Fact]
-    public async Task Receipt_rejection_reasons_catalog_returns_version_v1_and_normalizes_aliases()
+    public async Task Receipt_rejection_reasons_catalog_returns_current_version_and_normalizes_aliases()
     {
         var connection = postgres.NewDatabase();
         await using var api = new ApiFactory(connection);
@@ -212,7 +212,7 @@ public sealed class ChaosAndBenchmarkImportTests(PostgisContainer postgres) : IC
         var catalog = await catalogResponse.Content.ReadFromJsonAsync<RejectionReasonsCatalogResponse>();
         Assert.NotNull(catalog);
         Assert.Equal(ReceiptRejectionReasons.Version, catalog.Version);
-        Assert.Equal(6, catalog.Reasons.Count);
+        Assert.Equal(7, catalog.Reasons.Count);
 
         var codes = catalog.Reasons.Select(r => r.Code).ToList();
         Assert.Contains(ReceiptRejectionReasons.Faltante, codes);
@@ -221,6 +221,7 @@ public sealed class ChaosAndBenchmarkImportTests(PostgisContainer postgres) : IC
         Assert.Contains(ReceiptRejectionReasons.PrecintoViolado, codes);
         Assert.Contains(ReceiptRejectionReasons.LoteNoCoincide, codes);
         Assert.Contains(ReceiptRejectionReasons.CadenaDeFrio, codes);
+        Assert.Contains(ReceiptRejectionReasons.ErrorRotulado, codes);
 
         // Prueba de normalización de alias
         Assert.True(ReceiptRejectionReasons.TryNormalize("cadena-de-frio", out var c1));

@@ -360,7 +360,13 @@ public sealed record ReceiptExceptionDto(
     bool HasRejections,
     bool HasAdjustments,
     IReadOnlyList<ReceiptExceptionLineDto> Lines,
-    IReadOnlyList<ReceiptEvidenceDto> Evidence);
+    IReadOnlyList<ReceiptEvidenceDto> Evidence,
+    EstimatedBacktrackDto? EstimatedBacktrack = null);
+
+// #237: reentrega estimada (ida y vuelta bodega de origen → punto) por rechazos Faltante, Daño o ErrorRotulado.
+// Siempre es una estimación; IsApproximate = algún tramo salió de la aproximación en línea recta (Haversine).
+// Es informativa: no se suma al costo de la ruta original. Null si no aplica o faltan coordenadas.
+public sealed record EstimatedBacktrackDto(decimal Km, decimal CostUsd, decimal Hours, bool IsApproximate);
 
 public sealed record ReceiptExceptionsResponse(IReadOnlyList<ReceiptExceptionDto> Items, int Total);
 

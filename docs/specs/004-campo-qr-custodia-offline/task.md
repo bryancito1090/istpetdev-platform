@@ -644,3 +644,47 @@ Para avanzar de forma desacoplada y validar la experiencia de usuario, diseño i
 - [x] **Pruebas en verde**: 129/129 pruebas móviles y suite completa de frontend (`test:frontend`) pasando.
 
 
+
+### T16 — Motivo de rechazo «error de rotulado» y resumen por motivo (#236)
+
+Fuente: charla de logística integral del 16-oct (#234), lámina «Puntos de servicio».
+
+| Archivo | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `src/Domain/Common/ReceiptRejectionReasons.cs` | Dominio | `ErrorRotulado` (constante, `All`, descripción); sinónimos `errorrotulado`, `error_rotulado`, `error-rotulado`, `mislabeled`, `wrong_label`; `Version` → `V2` | Sin el motivo no se puede contar el error que la trazabilidad con QR debería atrapar | Simple | Hecho y probado |
+| `src/Application/Field/FieldService.cs` | Backend | El mensaje de `INVALID_REJECTION_REASON` cita la versión vigente del catálogo, no «V1» fijo | El texto quedaba desactualizado con V2 | Borde | Hecho |
+| `tests/.../Unit/Field/ReceiptRejectionReasonsTests.cs` | Backend (pruebas) | `TryNormalize("mislabeled")` → `ErrorRotulado`; los sinónimos de V1 no cambian; orden de `All` y versión | Criterio de aceptación del issue | Simple, Borde | 14/14 en verde |
+| `tests/.../Integration/Field/FieldExceptionsHttpTests.cs` | Backend (pruebas) | Rechazo con `mislabeled` → `rejectionReason = "ErrorRotulado"` en `GET /receipts/exceptions` | La recepción con el motivo nuevo aparece en Novedades, sin migración | Simple | En verde (PostGIS) |
+| `tests/.../Integration/Imports/ChaosAndBenchmarkImportTests.cs` | Backend (pruebas) | El catálogo HTTP devuelve 7 motivos, incluido `ErrorRotulado` | La prueba contaba 6 | Simple | En verde (PostGIS) |
+| `tests/.../Unit/Field/FieldUnitTests.cs` | Backend (pruebas) | El catálogo del controlador espera `V2` y 7 motivos | La prueba fijaba `V1` y 6 | Simple | En verde |
+| `apps/web/src/pages/novedades/novedades.page.ts` | Frontend | Resumen «Líneas rechazadas por motivo» arriba de la lista (líneas y unidades); etiquetas legibles del catálogo en la columna Motivo | Alimenta «Mermas» y «Exactitud» del tablero de indicadores | Simple, Borde | Hecho y probado |
+| `apps/web/src/pages/novedades/novedades.page.spec.ts` | Frontend (pruebas) | 3 casos: conteo por motivo, recepción con `ErrorRotulado` en lista y resumen, sin resumen si solo hay ajustes | Cubre el criterio en la web | Simple, Borde | 7/7 en verde |
+| PWA (`libs/shared-core/.../field.contract.ts`, `home.page.ts`, `field-outbox.service.ts`) | Frontend móvil | Sin cambios | La PWA usa una lista fija V1 y no lee el endpoint; esos archivos son de #230 (Bryan) según #253 | Borde | Pendiente (aviso a Bryan) |
+| Base de datos | DB | Sin cambios | El motivo ya se guarda como texto | — | No requerido |
+
+**Decisiones:**
+- El resumen se calcula en el cliente sobre las recepciones cargadas (hasta `limit`) y lo dice en pantalla; no es un total histórico.
+- Un motivo fuera del catálogo (texto libre legado) se agrupa con su texto tal cual; una línea rechazada sin motivo se agrupa como «Sin motivo registrado». No se reasigna ningún dato.
+
+### T17 — Costo de retroceso estimado en Novedades (#237)
+
+Fuente: charla de logística integral del 16-oct (#234): «si yo cubro un retroceso, ¿cuánto me costó en tiempo, en costo y en kilómetros?». Depende de T16 (#236, `ErrorRotulado`).
+
+| Archivo | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `src/Application/Logistics/BacktrackCostEstimator.cs` | Backend | Estimador puro: km y minutos de ida + vuelta, costo con `ServiceCostCalculator` (#240) sin paradas, `isApproximate` si un tramo es aproximado; `RequiresRedelivery` para `Faltante`, `Daño`, `ErrorRotulado` | Medir lo que cuesta corregir un rechazo sin tocar la calculadora de #240 | Simple, Borde | Hecho y probado |
+| `src/Application/Field/Dtos/FieldContracts.cs` | Backend | `EstimatedBacktrackDto(km, costUsd, hours, isApproximate)` y campo opcional `EstimatedBacktrack` en `ReceiptExceptionDto` | Contrato del issue; opcional para no romper clientes | Simple | Hecho |
+| `src/Api/Controllers/ReceiptsController.cs` | Backend | Arma un viaje por recepción (bodega de origen → punto), vehículo de la ruta si existe, una consulta de matriz a `IDistanceProvider` | Reutiliza tramos guardados/OSRM/aproximación del motor | Simple, Borde | Hecho y probado |
+| `tests/.../Unit/Logistics/BacktrackCostEstimatorTests.cs` | Backend (pruebas) | Caso fijo 2 × 9,2 km y 2 × 18 min → 18,4 km, 0,6 h, USD 11,88; sin vehículo; tramo aproximado; con perfil de #240; motivos que aplican | Criterio de aceptación | Simple, Borde | 14/14 en verde |
+| `tests/.../Integration/Field/FieldExceptionsHttpTests.cs` | Backend (pruebas) | Tramos guardados → no aproximado; sin tramo → aproximado; `Sobrante` y punto sin coordenadas → `null` | Contrato HTTP de punta a punta | Simple, Borde | En verde (PostGIS) |
+| `apps/web/src/shared/api/field-exceptions.api.ts` | Frontend | Tipo `EstimatedBacktrackDto` y campo opcional | Contrato en un solo lugar | Simple | Hecho |
+| `apps/web/src/pages/novedades/novedades.page.ts` | Frontend | Línea «Reentrega estimada: … km · USD … · … h» en cada tarjeta, «(aproximado: distancia en línea recta)» si corresponde; aviso de que no se suma a la ruta | Visibilidad del retroceso para el Planificador | Simple, Borde | Hecho y probado |
+| `apps/web/src/pages/novedades/novedades.page.spec.ts` | Frontend (pruebas) | 3 casos: formato, línea normal y aproximada, sin estimación | Criterio en la web | Simple, Borde | 10/10 en verde |
+| Base de datos | DB | Sin cambios | Se calcula al leer; no se persiste | — | No requerido |
+
+**Decisiones:**
+- No se suma a `RoutePlan.TotalCost` ni a ningún costo de la ruta original (evita el doble conteo de la nota de hallazgos); el endpoint es de solo lectura y no escribe el valor.
+- El tiempo es solo de viaje (ida y vuelta) según la matriz; no incluye descarga, espera ni el factor de hora pico de #245 (la reentrega no tiene hora de salida conocida), y el costo no incluye ayudantes ni merma.
+- Una reentrega por recepción aunque haya varias líneas rechazadas; varias recepciones del mismo punto no se consolidan en un viaje.
+- Sin coordenadas de la bodega o del punto, `estimatedBacktrack` es `null` y la tarjeta no muestra la línea.
+- Si OSRM está configurado y faltan tramos, la consulta puede tardar hasta su timeout (3 s por bloque) y guarda los tramos obtenidos, igual que el resto del motor.

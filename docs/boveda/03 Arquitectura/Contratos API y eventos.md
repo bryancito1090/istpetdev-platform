@@ -470,6 +470,52 @@ Una ruta que sale a las 07:00 no tarda lo mismo que una que sale a las 11:00. OS
 - **`RouteEvaluationResult.stops[]`:** agrega `trafficFactorApplied` con la misma regla; `legDurationMinutes` ya viene corregido (redondeado a 0,1 min solo cuando hay factor).
 - **Fuera de alcance:** `VehicleMatcher` estima la duración total para descartar por jornada sin horas por tramo; no aplica el factor (lo toca #244 en paralelo). `DeliveryStopSequencer` ordena por prioridad y distancia, sin duraciones, y no cambia.
 
+## Motivo de rechazo «error de rotulado» (#236 — 16 de octubre de 2026)
+
+`GET /api/v1/deliveries/rejection-reasons` responde `version: "V2"`. El catálogo
+agrega `ErrorRotulado` («El rótulo o la identificación del empaque no coincide
+con el producto o el despacho») al final de la lista; los seis códigos de V1 y
+sus sinónimos no cambian. El servidor normaliza `error_rotulado`,
+`error-rotulado`, `mislabeled` y `wrong_label` a `ErrorRotulado` al registrar la
+recepción, y `GET /api/v1/receipts/exceptions` devuelve el código canónico en
+`rejectionReason`. La forma de las respuestas no cambia y no hay migración: el
+motivo ya se guarda como texto.
+
+La PWA no lee este endpoint: usa la lista fija `RECEIPT_REJECTION_REASONS`
+(versión `V1`) de `libs/shared-core/src/contracts/field.contract.ts`, y el
+outbox valida el motivo contra esa lista. Hasta que se actualice (PWA de #230,
+Bryan), el receptor no puede elegir `ErrorRotulado` desde el teléfono.
+
+La página web de Novedades muestra arriba de la lista las líneas y unidades
+rechazadas por motivo, calculadas en el cliente sobre las recepciones cargadas
+(máximo `limit`), no sobre el total histórico.
+
+## Costo de retroceso estimado en Novedades (#237 — 16 de octubre de 2026)
+
+Cada elemento de `GET /api/v1/receipts/exceptions` agrega `estimatedBacktrack`
+(nullable):
+
+| Campo | Unidad / significado |
+|---|---|
+| `km` | Km de ida y vuelta bodega de origen (`Delivery.OriginLocationId`) → punto → bodega; 2 decimales |
+| `costUsd` | USD estimados con `ServiceCostCalculator` de #240, sin paradas (sin ayudantes ni merma); sin perfil de costo, su respaldo `LogisticsCostCalculator` con `CostPerKm` del vehículo de la ruta o `DefaultCostPerKm` y `CostPerHour` |
+| `hours` | Horas de viaje de ida y vuelta según la matriz (sin tiempo de descarga ni factor de hora pico de #245); 2 decimales |
+| `isApproximate` | `true` si algún tramo salió de la aproximación en línea recta (Haversine × factor de desvío) y no de un tramo guardado u OSRM |
+
+- Solo se calcula si alguna línea tiene rechazo `Faltante`, `Daño` o
+  `ErrorRotulado` (también sus sinónimos). `Sobrante`, `PrecintoViolado`,
+  `LoteNoCoincide` y `CadenaDeFrio` no implican reentrega por sí solos.
+- Una reentrega por recepción. El peso de lo rechazado alimenta la fracción de
+  carga del consumo de #240.
+- `null` si no aplica o faltan coordenadas de la bodega o del punto; no se
+  inventa una distancia.
+- Los tramos salen de `IDistanceProvider` en una sola consulta de matriz
+  (tramos guardados, OSRM o aproximación).
+- Es una **estimación** informativa: no se escribe en la base y **no se suma**
+  a `RoutePlan.TotalCost` ni a ningún costo de la ruta original. La web muestra
+  «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h» y agrega «aproximado» cuando
+  corresponde.
+
 ## Incidentes con retraso parcial (#246 — 16 de octubre de 2026)
 
 Un accidente, una congestión o una manifestación casi nunca cierran del todo la vía: la vuelven lenta. Antes un incidente solo podía bloquear un tramo (`BloqueoVial`/`ROAD_CLOSURE`) o demorarlo con un factor fijo (`DELAY`, minutos × 2).
@@ -480,3 +526,4 @@ Un accidente, una congestión o una manifestación casi nunca cierran del todo l
 - **Efecto:** `IncidentEvaluator` marca en `IncidentEffect.SlowFactors` los tramos dentro del radio, tanto de las rutas publicadas como de la caché de tramos, con el multiplicador de minutos 1 / factor. `IncidentEffect` ya tenía `SlowFactors` y `RouteFeasibility` ya lo aplicaba; se reutiliza en lugar de crear un `SlowedLegs` paralelo con la misma información. Las rutas afectadas se informan en `affectedRoutes` como antes.
 - **Replanificación:** sin cambios en `Replanner`. Si la ETA corregida respeta las ventanas, la revisión se acepta según la política; si un obligatorio sale de su ventana, la revisión estricta lo deja como no atendido (`time_window`) y se escala con `late_service` y `prioritize_critical`.
 - **Sin cambios:** `BloqueoVial`/`ROAD_CLOSURE` siguen bloqueando, `DELAY` sigue con minutos × 2 y `VEHICLE_BREAKDOWN` deja el vehículo no disponible. Un incidente de tipo nuevo guardado sin marca (por ejemplo, insertado a mano) se trata como `DELAY`.
+
