@@ -359,7 +359,7 @@ public sealed class AgentRunService(
                     Kind = "WATCH_ROUTE_PROPOSAL",
                     Status = "Proposed",
                     ProposalJson = JsonSerializer.Serialize(new { vehicleCode = route.VehicleCode, route, facts }, JsonOpts),
-                    Rationale = explanationTemplates.Explain("plan", facts),
+                    Rationale = explanationTemplates.Explain("plan", facts.OrderByDescending(f => string.Equals(f.Subject, route.VehicleCode, StringComparison.OrdinalIgnoreCase)).ToList()),
                     DriverMessage = "Consulta la propuesta de ruta antes de iniciar el recorrido.",
                     ExplanationSource = "Template",
                     CorrelationId = run.Id,
