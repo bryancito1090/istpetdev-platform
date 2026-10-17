@@ -16,14 +16,15 @@ public static class RouteImprover
         IncidentEffect? incidentEffect = null,
         ReplanMode replanMode = ReplanMode.Strict,
         GeoPoint? returnDepot = null,
-        DateTime? workdayEndUtc = null)
+        DateTime? workdayEndUtc = null,
+        IReadOnlyList<TrafficBandOptions>? trafficBands = null)
     {
         if (stops.Count < 2) return stops;
 
         var currentStops = new List<StopCandidate>(stops);
         var currentEvaluation = RouteFeasibility.EvaluateRoute(
             vehicle, depotPos, currentStops, workdayStartUtc, workdayHours,
-            costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc);
+            costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc, trafficBands);
 
         // A closure may require relocating a stop before any reversal is
         // feasible (for three stops, the two cyclic orders are relocations).
@@ -38,7 +39,7 @@ public static class RouteImprover
                 repaired.Insert(to, moved);
                 var evaluation = RouteFeasibility.EvaluateRoute(vehicle, depotPos, repaired, workdayStartUtc,
                     workdayHours, costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode,
-                    returnDepot, workdayEndUtc);
+                    returnDepot, workdayEndUtc, trafficBands);
                 if (evaluation.IsFeasible) { currentStops = repaired; currentEvaluation = evaluation; }
             }
         }
@@ -54,7 +55,7 @@ public static class RouteImprover
                     var newRoute = TwoOptSwap(currentStops, i, k);
                     var eval = RouteFeasibility.EvaluateRoute(
                         vehicle, depotPos, newRoute, workdayStartUtc, workdayHours,
-                        costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc);
+                        costPerHour, defaultCostPerKm, distanceMatrix, incidentEffect, replanMode, returnDepot, workdayEndUtc, trafficBands);
 
                     if (eval.IsFeasible && (!currentEvaluation.IsFeasible || eval.CumulativeCost < currentEvaluation.CumulativeCost))
                     {

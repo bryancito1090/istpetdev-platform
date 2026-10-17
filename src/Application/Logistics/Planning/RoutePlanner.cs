@@ -221,7 +221,7 @@ public sealed class RoutePlanner(
         {
             vehicleRoutes[v.Code] = RouteImprover.TwoOpt(
                 v, depots[v.Code], vehicleRoutes[v.Code], workdayStartUtc, _options.WorkdayHours,
-                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
         }
 
         // 9. Consolidación de candidatos Vigilar si desvío <= MaxDetourMinutes
@@ -238,7 +238,7 @@ public sealed class RoutePlanner(
                 var v = vehicles.First(veh => veh.Code == bestVehicleCode);
                 vehicleRoutes[bestVehicleCode] = RouteImprover.TwoOpt(
                     v, depots[v.Code], vehicleRoutes[bestVehicleCode], workdayStartUtc, _options.WorkdayHours,
-                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
             }
         }
 
@@ -296,7 +296,7 @@ public sealed class RoutePlanner(
             }
             var eval = RouteFeasibility.EvaluateRoute(
                 v, depots[v.Code], stops, workdayStartUtc, _options.WorkdayHours,
-                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
             var plannedStops = new List<PlannedStop>();
             DateTime curTimeUtc = workdayStartUtc;
@@ -306,7 +306,9 @@ public sealed class RoutePlanner(
             {
                 var stop = stops[i];
                 var leg = distanceMatrix[(curPos, stop.Position)];
-                curTimeUtc = curTimeUtc.AddMinutes((double)leg.Minutes);
+                // #245: misma corrección por hora pico que RouteFeasibility
+                var speedFactor = TrafficBands.SpeedFactorAt(_options.TrafficBands, TimeOnly.FromDateTime(curTimeUtc.AddHours(-5)));
+                curTimeUtc = curTimeUtc.AddMinutes((double)TrafficBands.Apply(leg.Minutes, speedFactor));
                 var arrUtc = curTimeUtc;
 
                 var localArr = TimeOnly.FromDateTime(curTimeUtc.AddHours(-5));
@@ -328,7 +330,8 @@ public sealed class RoutePlanner(
 
                 var stopLoads = stop.Loads.Select(l => l with { PendingQuantity = PendingOf(stop.ServicePointId, l) }).ToList();
                 plannedStops.Add(new PlannedStop(
-                    i + 1, stop.PointCode, stop.ServicePointId, arrUtc, depUtc, wait, stopLoads, stop.IsConsolidation, late));
+                    i + 1, stop.PointCode, stop.ServicePointId, arrUtc, depUtc, wait, stopLoads, stop.IsConsolidation, late)
+                { TrafficFactorApplied = TrafficBands.Reported(speedFactor) });
             }
 
             routes.Add(new VehicleRoute(
@@ -433,10 +436,10 @@ public sealed class RoutePlanner(
                 new[] { position, depotPos }.Concat(candidates.Select(c => c.Position)).Distinct().ToList(), ct);
             FeasibilityCheck Evaluate(IReadOnlyList<StopCandidate> stops) => RouteFeasibility.EvaluateRoute(
                 vehicle, position, stops, prefix.ReadyAtUtc, _options.WorkdayHours, _options.CostPerHour,
-                _options.DefaultCostPerKm, matrix, input.Effect, input.Mode, depotPos, workdayEnd);
+                _options.DefaultCostPerKm, matrix, input.Effect, input.Mode, depotPos, workdayEnd, _options.TrafficBands);
             var selected = RouteImprover.TwoOpt(vehicle, position, candidates, prefix.ReadyAtUtc,
                 _options.WorkdayHours, _options.CostPerHour, _options.DefaultCostPerKm, matrix,
-                input.Effect, input.Mode, depotPos, workdayEnd);
+                input.Effect, input.Mode, depotPos, workdayEnd, _options.TrafficBands);
             if (!Evaluate(selected).IsFeasible)
             {
                 selected.Clear();
@@ -466,7 +469,8 @@ public sealed class RoutePlanner(
             var from = position;
             foreach (var stop in selected)
             {
-                var minutes = matrix[(from, stop.Position)].Minutes *
+                var speedFactor = TrafficBands.SpeedFactorAt(_options.TrafficBands, TimeOnly.FromDateTime(time.AddHours(-5)));
+                var minutes = TrafficBands.Apply(matrix[(from, stop.Position)].Minutes, speedFactor) *
                     input.Effect.SlowFactors.GetValueOrDefault((from, stop.Position), 1m);
                 time = time.AddMinutes((double)minutes);
                 var arrival = time;
@@ -477,7 +481,8 @@ public sealed class RoutePlanner(
                     ? (int)Math.Ceiling((local.ToTimeSpan() - stop.WindowEndLocal.ToTimeSpan()).TotalMinutes) : null;
                 time = time.Add(wait).AddMinutes(stop.ServiceMinutes);
                 planned.Add(new PlannedStop(prefix.CompletedPointCodes.Count + planned.Count + 1,
-                    stop.PointCode, stop.ServicePointId, arrival, time, wait, stop.Loads, stop.IsConsolidation, late));
+                    stop.PointCode, stop.ServicePointId, arrival, time, wait, stop.Loads, stop.IsConsolidation, late)
+                { TrafficFactorApplied = TrafficBands.Reported(speedFactor) });
                 from = stop.Position;
             }
             routes.Add(new VehicleRoute(vehicle.Code, vehicle.Id, planned, completedKm + evaluation.CumulativeKm,
@@ -553,7 +558,7 @@ public sealed class RoutePlanner(
                 var units = loads.Sum(l => l.Quantity);
                 var currentCost = RouteFeasibility.EvaluateRoute(
                     v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
-                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix).CumulativeCost;
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands).CumulativeCost;
 
                 for (int pos = 0; pos <= route.Count; pos++)
                 {
@@ -561,7 +566,7 @@ public sealed class RoutePlanner(
                     proposal.Insert(pos, part);
                     var eval = RouteFeasibility.EvaluateRoute(
                         v, depots[v.Code], proposal, workdayStartUtc, _options.WorkdayHours,
-                        _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                        _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
                     if (!eval.IsFeasible) continue;
 
                     var delta = eval.CumulativeCost - currentCost;
@@ -608,7 +613,7 @@ public sealed class RoutePlanner(
             var route = currentRoutes[v.Code];
             var currentEval = RouteFeasibility.EvaluateRoute(
                 v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
-                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
             for (int pos = 0; pos <= route.Count; pos++)
             {
@@ -617,7 +622,7 @@ public sealed class RoutePlanner(
 
                 var newEval = RouteFeasibility.EvaluateRoute(
                     v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
-                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
                 if (newEval.IsFeasible)
                 {
@@ -665,7 +670,7 @@ public sealed class RoutePlanner(
             var route = currentRoutes[v.Code];
             var currentEval = RouteFeasibility.EvaluateRoute(
                 v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
-                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
             for (int pos = 0; pos <= route.Count; pos++)
             {
@@ -674,7 +679,7 @@ public sealed class RoutePlanner(
 
                 var newEval = RouteFeasibility.EvaluateRoute(
                     v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
-                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
                 if (newEval.IsFeasible)
                 {
@@ -728,7 +733,7 @@ public sealed class RoutePlanner(
             var candidateRoute = new List<StopCandidate>(route) { candidate };
             var eval = RouteFeasibility.EvaluateRoute(
                 v, depots[v.Code], candidateRoute, workdayStartUtc, _options.WorkdayHours,
-                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix);
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
 
             if (!eval.IsFeasible && eval.FailureReason != null)
             {

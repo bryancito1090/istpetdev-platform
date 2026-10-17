@@ -140,6 +140,7 @@
 | FR-19–FR-20 | T1, T6 | `FactsTests`, `ExplanationTemplatesTests`, E2E-01/03 |
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
 | FR-25 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
+| FR-26 | T17 | `TrafficBandTests`, `TrafficBandsQuitoTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -520,3 +521,43 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | Valor `"once"` | `ArgumentException` en el motor; 400 en la API | Pasa la unitaria; el 400 no tiene prueba HTTP |
 
 **Verificación:** `dotnet test tests/IstpetDev.Tests --filter "FullyQualifiedName~RoutePlanner|FullyQualifiedName~RoutePlanning"` → 20 de 20.
+
+### T17 — Hora pico por franja (#245, 16-oct)
+
+**Por qué:** OSRM y la velocidad de respaldo (`ApproxSpeedKmh = 40`) no consideran el tráfico; una ruta que sale a las 07:00 parecía tan rápida como una de las 11:00. Diseño: [Planificacion potenciada - propuesta del evento](../../boveda/02%20Producto/Planificacion%20potenciada%20-%20propuesta%20del%20evento.md).
+
+**Regla (FR-26):** `Logistics:TrafficBands` con `{ Start, End, SpeedFactor }` en hora local. La duración del tramo se divide entre el factor de la franja que contiene la hora de **inicio** del tramo (`[Start, End)`; franjas inválidas se ignoran; con solape gana la más lenta). Sin configuración no cambia nada. Cada parada informa `trafficFactorApplied`. Contrato en [Contratos API y eventos](../../boveda/03%20Arquitectura/Contratos%20API%20y%20eventos.md#hora-pico-por-franja-245--16-de-octubre-de-2026).
+
+**Configuración compartida (tablero #253):** clase nueva `TrafficBandOptions.cs`; en `LogisticsOptions.cs` solo la propiedad `TrafficBands` al final. `DependencyInjection.cs` no cambia: `Program.cs` ya enlaza toda la sección `Logistics`, listas incluidas.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `TrafficBandOptions.cs` (nuevo) | Application | Opciones de la franja y `TrafficBands.SpeedFactorAt`/`Apply`/`Reported` | Una sola regla para todos los cálculos | Franjas del issue y de la demo | Hecho |
+| `LogisticsOptions.cs` | Application | Propiedad `TrafficBands` (vacía por defecto) al final | Regla del tablero #253 | Sin configuración | Hecho |
+| `RouteFeasibility.cs` | Application | Parámetro opcional `trafficBands`; factor por tramo, también en el regreso | Ventanas, jornada y costo con la ETA corregida | 07:30 frente a 11:00 | Hecho |
+| `RouteImprover.cs` | Application | Pasa `trafficBands` a cada evaluación del 2-opt | Que el orden elegido use las mismas duraciones | — | Hecho |
+| `RoutePlanner.cs` | Application | Pasa `_options.TrafficBands` a cada evaluación; llegadas de `PlanAsync` y `ReplanAsync` con el factor y `TrafficFactorApplied` por parada | Las horas publicadas deben coincidir con las evaluadas | Plan con franjas de Quito | Hecho |
+| `PlanModels.cs` | Application | `PlannedStop.TrafficFactorApplied` (init, opcional) | Exponer el factor sin romper constructores (archivo compartido con #199) | — | Hecho |
+| `RouteEvaluator.cs` | Application | Factor por tramo en `/evaluate` y `/suggest`; `EvaluatedStopDto.TrafficFactorApplied` | El asistente también muestra ETAs | 07:30 frente a 11:00 | Hecho |
+| `RoutePlansController.cs` | Api | `trafficFactorApplied` en la respuesta de `POST /route-plans`, en `InputJson.stops[]` y en `GET /route-plans/{id}` | La pantalla puede decir «hora pico» | Detalle de ruta | Hecho |
+| `Replanner.cs` | Application | Guarda `trafficFactorApplied` en `InputJson.stops[]` de la revisión | El detalle de la revisión también lo muestra | Replan por incidente | Hecho |
+| `VehicleMatcher.cs` | Application | Sin cambios | Solo estima la duración total para descartar por jornada; #244 toca el mismo bloque | — | No aplica |
+| `DeliveryStopSequencer.cs` | Application | Sin cambios | Ordena por prioridad y distancia, no calcula duraciones | — | No aplica |
+| `TrafficBandTests.cs` | Pruebas unitarias | Escenarios de abajo | Criterios de #245 | — | Pasan |
+| `TrafficBandsQuitoTests.cs` | Pruebas de integración | `demo-quito-planificacion` con las franjas de `appsettings.demo-quito.json` | Regla con base real (PostGIS) | Plan de Quito | Pasa |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Tramo de 20 min con franja 06:30–09:30 a 0,5, salida 07:30 frente a 11:00 | 40 min frente a 20 min (el doble) | Pasa |
+| Ventana que cierra 07:30, salida 07:00, tramo de 20 min | Sin franjas llega 07:20 (factible); con 0,5 llega 07:40: `time_window` en estricto y factible en servicio tardío | Pasa |
+| Llegada temprana con la ETA corregida | Espera hasta la apertura y el regreso se calcula desde esa hora | Pasa |
+| Sin `TrafficBands` (null o lista vacía) | Minutos, costo y tramos idénticos a antes | Pasa |
+| Bordes y franjas inválidas | `Start` incluido, `End` excluido; inválidas ignoradas; solape → la más lenta | Pasa |
+| `RouteEvaluator` a las 07:30 y a las 11:00 | 40 min con `trafficFactorApplied = 0.5`; 20 min con `null` | Pasa |
+| Plan de `demo-quito-planificacion` con jornada 07:00 y franjas de Quito | La primera parada de cada ruta llega con `trafficFactorApplied = 0.64`, también en `GET /route-plans/{id}` | Pasa |
+| Pantalla de Rutas mostrando «hora pico» | Lee `trafficFactorApplied` | No implementado (web fuera de este issue) |
+
+**Pendiente:** el factor se toma al inicio del tramo; un tramo que cruza el borde de una franja no se reparte. `VehicleMatcher` no aplica el factor a su estimación de jornada.
+
