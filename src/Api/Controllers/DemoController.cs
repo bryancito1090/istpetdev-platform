@@ -86,7 +86,7 @@ public sealed class DemoController(
     [Authorize(Roles = $"{Roles.Planning},{Roles.Bodega},{Roles.Conductor}")]
     public async Task<IActionResult> GetTodayRoutePlans(CancellationToken ct = default)
     {
-        if (!fieldSimulationOptions.Value.Enabled) return NotFound();
+        if (!fieldSimulationOptions.Value.Enabled && !options.Value.Enabled) return NotFound();
 
         var routes = await fieldService.GetTodayRoutePlansAsync(ct);
         return Ok(routes);

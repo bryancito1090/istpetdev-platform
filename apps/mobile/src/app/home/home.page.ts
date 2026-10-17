@@ -1292,7 +1292,10 @@ export class HomePage {
     }
     this.fieldApi.getTodayRoutePlans().subscribe({
       next: () => this.demoAvailable.set(true),
-      error: () => this.demoAvailable.set(false)
+      error: (err) => {
+        console.warn('Simulador demo no disponible en el backend:', err?.status);
+        this.demoAvailable.set(false);
+      }
     });
   }
 
