@@ -7,11 +7,12 @@ import { FooterWidget } from '@widgets/footer/footer.widget';
 import { SidebarWidget } from '@widgets/sidebar/sidebar.widget';
 import { ApiService } from '@shared/api';
 import { AuthSession } from '@entities/session';
+import { AlertNotificationService, AlertToastComponent } from '@features/alert-notification';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, HeaderWidget, FooterWidget, SidebarWidget],
+  imports: [CommonModule, RouterOutlet, RouterLink, HeaderWidget, FooterWidget, SidebarWidget, AlertToastComponent],
   template: `
     @if (isSystemArea() && session.status() === 'authenticated') {
       <!-- Layout con Barra Lateral Estilo Stripe Dashboard para el Sistema Autenticado -->
@@ -62,10 +63,19 @@ import { AuthSession } from '@entities/session';
               <a
                 routerLink="/alertas"
                 class="relative p-1.5 hover:text-[#1A2C44] hover:bg-[#F1F3F5] rounded-md transition-colors"
-                title="Alertas de stock e insumos">
+                [title]="alertNotification?.hasAlerts() ? 'Tienes ' + alertNotification.alertCount() + ' alerta(s) de stock activa(s)' : 'Sin alertas de stock'"
+                aria-label="Alertas">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>
+                @if (alertNotification?.hasAlerts()) {
+                  <span class="absolute top-1 right-1 flex h-2 w-2">
+                    @if (alertNotification.hasNewAlert()) {
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    }
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+                  </span>
+                }
               </a>
 
               <!-- Icono Engranaje / Ajustes -->
@@ -146,11 +156,13 @@ import { AuthSession } from '@entities/session';
         <widget-footer></widget-footer>
       </div>
     }
+    <ui-alert-toast></ui-alert-toast>
   `
 })
 export class AppComponent {
   private readonly api = inject(ApiService);
   readonly session = inject(AuthSession);
+  readonly alertNotification = inject(AlertNotificationService, { optional: true });
   readonly apiErrorMessages = computed(() => Object.values(this.api.loadErrors()));
   private readonly router = inject(Router);
   readonly currentUrl = signal(this.router.url);

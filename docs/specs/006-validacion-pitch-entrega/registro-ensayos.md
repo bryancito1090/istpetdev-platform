@@ -149,7 +149,7 @@ Guía para quien presenta con `materiales/pitch-v3.pptx`. Todas las láminas ent
 | 2 | Problema | 2 | Auto: título → «Mirar solo kilómetros» (barrido) → Chillo (zoom). Clic 1: «Comparar el servicio completo» → hipótesis. Clic 2: globo. | Entra solo; globo en el clic 2 |
 | 3 | Solución | 4 | Auto: título → línea dorada. Clics 1 a 4: Comparar, Desglosar, Explicar, Decidir; tras el 4 aparecen solos el rótulo PROPUESTA y «La IA explica; el planificador decide». | — |
 | 4 | Captura de rutas | 0 | Auto: título → captura (barrido) → tarjeta → rótulo «datos sintéticos». | — |
-| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Flota, Críticos a tiempo, Puntaje (en cascada). Clic 2: Costo total → marco dorado en C y recomendación del motor. Clic 3: globo. | Entra solo; globo en el clic 3 |
+| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Críticos a tiempo, Costo frente a A, Puntaje (en cascada). Clic 2: Costo total → marco dorado en C y recomendación del motor. Clic 3: globo. | Entra solo; globo en el clic 3 |
 | 6 | Impacto | 0 | Auto: título → seis indicadores en cascada. | — |
 | 7 | Viabilidad | 0 | Auto: título → tarjeta 01 → tarjeta 02 → banda «Límite» (barrido). | — |
 | 8 | Modelo de negocio | 0 | Auto: título → tarjeta 01 → tarjeta 02 → frase del piloto. | — |

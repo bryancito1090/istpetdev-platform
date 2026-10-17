@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthSession } from '@entities/session';
 import { ApiService, RiskItemDto } from '@shared/api';
+import { AlertNotificationService } from '@features/alert-notification';
 
 type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
 
@@ -432,6 +433,7 @@ type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
 export class AlertasPage implements OnInit {
   private readonly apiService = inject(ApiService);
   readonly session = inject(AuthSession);
+  private readonly alertNotification = inject(AlertNotificationService, { optional: true });
 
   readonly allItems = signal<RiskItemDto[]>([]);
   readonly loading = signal(true);
@@ -495,6 +497,7 @@ export class AlertasPage implements OnInit {
   }
 
   refreshData(): void {
+    this.alertNotification?.checkRisks();
     this.fetchRisks(true);
   }
 
