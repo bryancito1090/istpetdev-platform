@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthSession } from '@entities/session';
 
@@ -8,12 +8,16 @@ import { AuthSession } from '@entities/session';
   standalone: true,
   template: `<p class="p-8 text-center text-sm text-slate-500">Verificando tu cuenta…</p>`,
 })
-export class AuthCallbackPage implements OnInit {
+export class AuthCallbackPage {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
-  ngOnInit(): void {
-    const target = this.session.status() === 'authenticated' ? this.session.takeReturnUrl() : '/login';
-    void this.router.navigateByUrl(target, { replaceUrl: true });
+  constructor() {
+    effect(() => {
+      const status = this.session.status();
+      if (status === 'loading') return;
+      const target = status === 'authenticated' ? this.session.takeReturnUrl() : '/login';
+      void this.router.navigateByUrl(target, { replaceUrl: true });
+    });
   }
 }
