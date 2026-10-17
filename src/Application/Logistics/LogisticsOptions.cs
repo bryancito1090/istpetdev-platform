@@ -4,6 +4,7 @@ public sealed class LogisticsOptions
 {
     public const string SectionName = "Logistics";
 
+    public ServiceCostOptions? ServiceCost { get; set; }
     public ClockOptions Clock { get; set; } = new();
     public string WorkdayStart { get; set; } = "07:00";
     public int WorkdayHours { get; set; } = 10;

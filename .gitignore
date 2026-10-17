@@ -80,3 +80,4 @@ GEMINI.md
 # Evidencia local generada por las pruebas (CI conserva sus artifacts)
 **/TestResults/
 artifacts/
+.tools/

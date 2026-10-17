@@ -2,19 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonBackButton,
   IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonBadge
+  AlertController
 } from '@ionic/angular/standalone';
 import { MobileAssignmentDelivery } from '@istpetdev/shared-core';
 import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.service';
@@ -26,103 +15,247 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
   standalone: true,
   imports: [
     CommonModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
-    IonButtons,
-    IonBackButton,
-    IonContent,
-    IonCard,
-    IonCardHeader,
-    IonCardTitle,
-    IonCardSubtitle,
-    IonCardContent,
-    IonButton,
-    IonBadge
+    IonContent
   ],
   template: `
-    <ion-header>
-      <ion-toolbar color="primary">
-        <ion-buttons slot="start">
-          <ion-back-button defaultHref="/home"></ion-back-button>
-        </ion-buttons>
-        <ion-title>Custodia en Ruta</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <!-- Barra Superior: ISTPET DEV (Dark Cyan Bar) -->
+    <div class="stripe-top-banner">
+      <div class="stripe-banner-left">
+        <span class="banner-title">Entorno de prueba</span>
+        <button type="button" class="info-bubble-btn" (click)="openTestEnvInfo()" aria-label="Información de entorno">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
 
-    <ion-content class="ion-padding">
+      <button type="button" class="stripe-verify-pill" (click)="openVerifyModal()">
+        Verificar tu empresa
+      </button>
+    </div>
+
+    <!-- Contenedor Principal con Bordes Redondeados Superiores -->
+    <div class="stripe-header-card">
+      <div class="stripe-nav-header">
+        <button type="button" class="stripe-nav-btn" aria-label="Volver" (click)="goHome()">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </button>
+
+        <h1 class="stripe-user-title">
+          Custodia en Ruta
+        </h1>
+
+        <div class="stripe-header-actions">
+          <button type="button" class="stripe-nav-btn relative" aria-label="Cola de sincronización" (click)="openSyncQueue()">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            @if (pendingCount() > 0) {
+              <span class="stripe-bell-badge">{{ pendingCount() }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
+    <ion-content class="ion-padding stripe-main-content">
       @if (delivery(); as del) {
-        <ion-card class="mb-4">
-          <ion-card-header>
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-mono text-slate-500">{{ del.deliveryId }}</span>
-              <div class="flex items-center gap-1">
-                <ion-badge [color]="stageBadgeColor()">{{ stageLabel() }}</ion-badge>
-                <ion-badge color="medium">#{{ del.sequence }}</ion-badge>
-              </div>
+        <!-- Tarjeta de Información de la Parada -->
+        <div class="driver-stop-card mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="stop-tag">Parada #{{ del.sequence }} · Punto de distribución</span>
+            <div class="flex items-center gap-1.5">
+              <span class="status-badge"
+                    [class.is-done]="stage() === 'Delivered' || stage() === 'Received'"
+                    [class.is-intransit]="stage() === 'ToDeliver'">
+                {{ stageLabel() }}
+              </span>
+              <span class="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-bold">
+                #{{ del.sequence }}
+              </span>
             </div>
-            <ion-card-title class="text-lg">{{ del.pointName }}</ion-card-title>
-            <ion-card-subtitle>{{ del.address }}</ion-card-subtitle>
-          </ion-card-header>
-        </ion-card>
+          </div>
 
-        <!-- Bultos de la entrega -->
-        <ion-card class="mb-4">
-          <ion-card-header>
-            <ion-card-title class="text-base">Bultos de la parada</ion-card-title>
-            <ion-card-subtitle>
+          <h2 class="stop-title">{{ del.pointName }}</h2>
+          @if (del.address) {
+            <p class="stop-address">{{ del.address }}</p>
+          }
+          <div class="text-[11px] font-mono text-slate-400 mt-1">
+            ID: {{ del.deliveryId }}
+          </div>
+        </div>
+
+        <!-- Bultos de la entrega con Checkbox de Custodia -->
+        <div class="driver-stop-card mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="stop-tag">
+              @if (stage() === 'ToPickup') {
+                Verificación de Carga (Subida al Vehículo)
+              } @else if (stage() === 'ToDeliver') {
+                Verificación de Descarga (Entrega en Destino)
+              } @else {
+                Bultos de la parada
+              }
+            </span>
+            @if (del.handlingUnits.length > 0 && (stage() === 'ToPickup' || stage() === 'ToDeliver')) {
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                    [class.bg-emerald-100]="allUnitsChecked()"
+                    [class.text-emerald-800]="allUnitsChecked()"
+                    [class.bg-amber-100]="!allUnitsChecked()"
+                    [class.text-amber-800]="!allUnitsChecked()">
+                {{ checkedUnits().size }} / {{ del.handlingUnits.length }} verificados
+              </span>
+            }
+          </div>
+
+          <p class="stop-address mb-3">
+            @if (stage() === 'ToPickup') {
+              Marca los bultos con el checkbox físico o escanéalos con la cámara para certificar la subida.
+            } @else if (stage() === 'ToDeliver') {
+              Verifica los bultos descargados del vehículo antes de entregarlos al receptor.
+            } @else {
               {{ del.handlingUnits.length }} bulto(s) · el receptor confirmará las cantidades con su cuenta
-            </ion-card-subtitle>
-          </ion-card-header>
-          <ion-card-content class="space-y-2">
+            }
+          </p>
+
+          @if (del.handlingUnits.length > 0 && (stage() === 'ToPickup' || stage() === 'ToDeliver')) {
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <button
+                type="button"
+                class="text-xs font-bold text-[#00A7C4] hover:text-[#008CA5] underline"
+                (click)="toggleCheckAllUnits()">
+                {{ allUnitsChecked() ? 'Desmarcar todos' : '✓ Marcar todos verificados' }}
+              </button>
+              <button
+                type="button"
+                class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                (click)="openScanForVerification()">
+                📷 Escanear QR
+              </button>
+            </div>
+          }
+
+          @if (verifiedSuccessMsg(); as msg) {
+            <div class="p-2.5 mb-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs font-bold flex items-center justify-between">
+              <span>✅ {{ msg }}</span>
+              <button type="button" class="text-emerald-800 text-sm font-bold" (click)="verifiedSuccessMsg.set(null)">✕</button>
+            </div>
+          }
+
+          <div class="space-y-2.5">
             @for (hu of del.handlingUnits; track hu.handlingUnitId) {
-              <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
-                <div>
-                  <span class="font-bold text-xs text-slate-800 block">{{ hu.code }}</span>
-                  <span class="text-[11px] text-slate-500">
-                    {{ hu.lines.length }} línea(s) · {{ huStatusLabel(hu.status) }}
+              <div class="p-3 border rounded-xl flex flex-col gap-2 transition cursor-pointer select-none"
+                   [class.bg-emerald-50]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.border-emerald-300]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.bg-slate-50]="!isUnitChecked(hu.handlingUnitId, hu.code)"
+                   [class.border-slate-200]="!isUnitChecked(hu.handlingUnitId, hu.code)"
+                   (click)="toggleUnitCheck(hu.handlingUnitId)">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    @if (stage() === 'ToPickup' || stage() === 'ToDeliver') {
+                      <input
+                        type="checkbox"
+                        class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                        [checked]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleUnitCheck(hu.handlingUnitId)" />
+                    }
+                    <div>
+                      <span class="font-bold text-xs text-slate-800 block" [class.line-through]="isUnitChecked(hu.handlingUnitId, hu.code)">
+                        {{ hu.code }}
+                      </span>
+                      <span class="text-[11px] text-slate-500">
+                        {{ hu.lines.length }} línea(s) · {{ huStatusLabel(hu.status) }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                        [class.bg-emerald-200]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                        [class.text-emerald-900]="isUnitChecked(hu.handlingUnitId, hu.code)"
+                        [class.bg-slate-200]="!isUnitChecked(hu.handlingUnitId, hu.code)"
+                        [class.text-slate-700]="!isUnitChecked(hu.handlingUnitId, hu.code)">
+                    {{ isUnitChecked(hu.handlingUnitId, hu.code) ? '✓ Verificado' : hu.status }}
                   </span>
                 </div>
-                <ion-badge color="medium">{{ hu.status }}</ion-badge>
+
+                <!-- Desglose de productos y líneas del bulto -->
+                @if (hu.lines.length > 0) {
+                  <div class="mt-1 pt-1.5 border-t border-slate-200/60 space-y-1">
+                    @for (l of hu.lines; track l.deliveryLineId) {
+                      <div class="product-row">
+                        <span class="product-name">• SKU: {{ l.sku }}</span>
+                        <span class="product-qty">{{ l.quantity }} {{ l.unit }}</span>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
+
             @if (del.handlingUnits.length === 0) {
               <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
                 La entrega aún no tiene bultos empacados por Bodega.
               </div>
             }
-          </ion-card-content>
-        </ion-card>
+          </div>
+        </div>
 
         <!-- Acciones de custodia por turno -->
-        <div class="space-y-2 pb-8">
+        <div class="space-y-3 pb-8">
           @if (stage() === 'WaitingWarehouse') {
-            <div class="p-4 bg-amber-50 border border-amber-300 rounded-lg text-center space-y-1">
-              <p class="font-bold text-amber-900">Esperando a Bodega</p>
+            <div class="driver-stop-card bg-amber-50 border-amber-300 text-center space-y-1">
+              <p class="font-bold text-amber-900 text-sm">Esperando a Bodega</p>
               <p class="text-xs text-amber-800">
                 Bodega debe empacar, sellar y despachar los bultos antes de que puedas recogerlos.
               </p>
-              <ion-button size="small" fill="outline" color="warning" class="mt-2" [disabled]="isRefreshing()" (click)="refreshData()">
+              <button
+                type="button"
+                class="mt-2 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg transition disabled:opacity-50"
+                [disabled]="isRefreshing()"
+                (click)="refreshData()">
                 {{ isRefreshing() ? 'Actualizando...' : '↻ Actualizar estado' }}
-              </ion-button>
+              </button>
             </div>
           }
 
           @if (stage() === 'ToPickup') {
-            <ion-button expand="block" size="large" color="warning" [disabled]="actionInFlight()" (click)="pickup()">
-              {{ actionInFlight() ? 'Registrando...' : 'Marcar Recogido' }}
-            </ion-button>
+            @if (!allUnitsChecked() && del.handlingUnits.length > 0) {
+              <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2 shadow-xs">
+                <span class="text-amber-700 font-bold text-sm">⚠️</span>
+                <span class="leading-relaxed">Doble verificación: Marca o escanea todos los bultos para certificar que subiste la totalidad de la carga al vehículo.</span>
+              </div>
+            }
+            <button
+              type="button"
+              class="stop-action-btn"
+              [disabled]="actionInFlight() || (!allUnitsChecked() && del.handlingUnits.length > 0)"
+              (click)="pickup()">
+              {{ actionInFlight() ? 'Registrando...' : 'Marcar Recogido (Carga Completa)' }}
+            </button>
           }
 
           @if (stage() === 'ToDeliver') {
-            <ion-button expand="block" size="large" color="success" [disabled]="actionInFlight()" (click)="deliver()">
+            @if (!allUnitsChecked() && del.handlingUnits.length > 0) {
+              <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2 shadow-xs">
+                <span class="text-amber-700 font-bold text-sm">⚠️</span>
+                <span class="leading-relaxed">Doble verificación: Verifica los bultos que estás bajando del vehículo antes de confirmar la entrega física.</span>
+              </div>
+            }
+            <button
+              type="button"
+              class="stop-action-btn"
+              [disabled]="actionInFlight() || (!allUnitsChecked() && del.handlingUnits.length > 0)"
+              (click)="deliver()">
               {{ actionInFlight() ? 'Registrando...' : 'Marcar Entregado en el Punto' }}
-            </ion-button>
+            </button>
           }
 
           @if (stage() === 'Delivered') {
-            <div class="p-4 bg-emerald-50 border border-emerald-300 rounded-lg text-center space-y-1">
-              <p class="font-bold text-emerald-900">Entregado — esperando al Receptor</p>
+            <div class="driver-stop-card bg-emerald-50 border-emerald-300 text-center space-y-1">
+              <p class="font-bold text-emerald-900 text-sm">Entregado — esperando al Receptor</p>
               <p class="text-xs text-emerald-800">
                 El Receptor del punto confirmará la recepción escaneando el QR del bulto.
               </p>
@@ -130,29 +263,29 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
           }
 
           @if (stage() === 'Received') {
-            <div class="p-4 bg-emerald-50 border border-emerald-300 rounded-lg text-center space-y-1">
-              <p class="font-bold text-emerald-900">Recibido en el punto</p>
+            <div class="driver-stop-card bg-emerald-50 border-emerald-300 text-center space-y-1">
+              <p class="font-bold text-emerald-900 text-sm">Recibido en el punto</p>
               <p class="text-xs text-emerald-800">La recepción quedó registrada con la cuenta del Receptor.</p>
             </div>
           }
 
-          <!-- Estado real del último comando guardado (nunca se presenta una captura local como confirmación) -->
+          <!-- Estado real del último comando guardado -->
           @if (activeItem(); as item) {
-            <div class="p-3 rounded-lg border text-xs space-y-1"
-                 [class.bg-blue-50]="item.status === 'SavedOnDevice'"
-                 [class.border-blue-200]="item.status === 'SavedOnDevice'"
+            <div class="driver-stop-card text-xs space-y-1"
+                 [class.bg-sky-50]="item.status === 'SavedOnDevice'"
+                 [class.border-sky-200]="item.status === 'SavedOnDevice'"
                  [class.bg-emerald-50]="item.status === 'Complete'"
                  [class.border-emerald-200]="item.status === 'Complete'"
                  [class.bg-amber-50]="item.status === 'RequiresReview' || item.status === 'SessionRequired'"
                  [class.border-amber-300]="item.status === 'RequiresReview' || item.status === 'SessionRequired'">
-              <p class="font-bold">
+              <p class="font-bold text-slate-800">
                 {{ commandTitle(item) }}: {{ outboxService.statusLabel(item.status) }}
               </p>
               @if (item.status === 'SavedOnDevice') {
-                <p>Guardado en este teléfono; aún no confirmado por el servidor. Reintenta desde la cola.</p>
+                <p class="text-slate-600">Guardado en este teléfono; aún no confirmado por el servidor. Reintenta desde la cola.</p>
               }
               @if (item.status === 'Complete') {
-                <p>Confirmado por el servidor a las {{ item.custodyResponse?.changedAtUtc | date:'shortTime' }}.</p>
+                <p class="text-emerald-800 font-medium">Confirmado por el servidor a las {{ item.custodyResponse?.changedAtUtc | date:'shortTime' }}.</p>
               }
               @if (item.errorMessage) {
                 <p class="text-amber-900">{{ item.errorMessage }}</p>
@@ -161,35 +294,323 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
           }
 
           @if (validationError(); as error) {
-            <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">{{ error }}</div>
+            <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">{{ error }}</div>
           }
 
-          <ion-button expand="block" fill="outline" (click)="openSyncQueue()">
+          <button
+            type="button"
+            class="w-full py-2.5 px-4 text-xs font-bold text-[#0A2540] bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition shadow-xs"
+            (click)="openSyncQueue()">
             Ver Cola de Sincronización
-          </ion-button>
+          </button>
         </div>
       } @else if (loadError(); as loadErrorMsg) {
-        <div class="text-center py-12 space-y-4">
+        <div class="driver-stop-card text-center py-10 space-y-3">
           <p class="text-sm text-slate-600">{{ loadErrorMsg }}</p>
-          <ion-button expand="block" (click)="goHome()">Volver a Inicio</ion-button>
+          <button
+            type="button"
+            class="stop-action-btn"
+            (click)="goHome()">
+            Volver a Inicio
+          </button>
         </div>
       } @else {
-        <div class="text-center py-12">
+        <div class="driver-stop-card text-center py-10">
           <p class="text-sm text-slate-500">Cargando entrega seleccionada...</p>
         </div>
       }
     </ion-content>
-  `
+  `,
+  styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background-color: #04303B;
+    }
+
+    .stripe-top-banner {
+      background: #04303B;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 14px;
+      min-height: 48px;
+    }
+
+    .stripe-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .banner-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .info-bubble-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+    }
+
+    .stripe-verify-pill {
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 9999px;
+      padding: 6px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .stripe-verify-pill:hover {
+      background: #008CA5;
+    }
+
+    .stripe-verify-pill:active {
+      transform: scale(0.97);
+    }
+
+    .stripe-header-card {
+      background: #ffffff;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding-top: 14px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 20;
+    }
+
+    .stripe-nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px 10px;
+    }
+
+    .stripe-user-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 750;
+      color: #0A2540;
+      letter-spacing: -0.02em;
+      flex: 1;
+      margin-left: 8px;
+    }
+
+    .stripe-nav-btn {
+      background: transparent;
+      border: none;
+      color: #0A2540;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .stripe-nav-btn:hover {
+      background: #f1f5f9;
+    }
+
+    .stripe-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stripe-bell-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #EA601F;
+      color: white;
+      font-size: 9px;
+      font-weight: 750;
+      border-radius: 9999px;
+      min-width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .stripe-main-content {
+      --background: #F8FAFC;
+      flex: 1;
+    }
+
+    .driver-stop-card {
+      background: #ffffff;
+      border: 1px solid #E3E8EF;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .stop-tag {
+      font-size: 11px;
+      font-weight: 750;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .status-badge.is-done {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .status-badge.is-intransit {
+      background: #E0F2FE;
+      color: #0369A1;
+    }
+
+    .stop-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0A2540;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+
+    .stop-address {
+      font-size: 12px;
+      color: #64748B;
+      margin: 0 0 12px;
+      line-height: 1.35;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      padding: 3px 0;
+    }
+
+    .product-name {
+      color: #1E293B;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .product-qty {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 750;
+      color: #0A2540;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stop-action-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .stop-action-btn:hover {
+      background: #008CA5;
+    }
+
+    .stop-action-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
+    }
+  `]
 })
 export class ReceiptPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly outboxService = inject(FieldOutboxService);
+  private readonly alerts = inject(AlertController, { optional: true });
 
   readonly delivery = signal<MobileAssignmentDelivery | null>(null);
   readonly validationError = signal<string | null>(null);
   readonly loadError = signal<string | null>(null);
   readonly busy = signal<boolean>(false);
+  readonly pendingCount = computed(() => {
+    return typeof this.outboxService.pendingCount === 'function' ? this.outboxService.pendingCount() : 0;
+  });
+
+  // Doble verificación / checklist de custodia física del conductor
+  readonly checkedUnits = signal<Set<string>>(new Set<string>());
+  readonly verifiedSuccessMsg = signal<string | null>(null);
+
+  readonly allUnitsChecked = computed(() => {
+    const del = this.delivery();
+    if (!del || !del.handlingUnits || del.handlingUnits.length === 0) return true;
+    const checked = this.checkedUnits();
+    return del.handlingUnits.every((hu) => checked.has(hu.handlingUnitId) || checked.has(hu.code));
+  });
+
+  toggleUnitCheck(unitId: string): void {
+    const next = new Set(this.checkedUnits());
+    if (next.has(unitId)) {
+      next.delete(unitId);
+    } else {
+      next.add(unitId);
+    }
+    this.checkedUnits.set(next);
+  }
+
+  toggleCheckAllUnits(): void {
+    const del = this.delivery();
+    if (!del) return;
+    if (this.allUnitsChecked()) {
+      this.checkedUnits.set(new Set());
+    } else {
+      this.checkedUnits.set(new Set(del.handlingUnits.map((u) => u.handlingUnitId)));
+    }
+  }
+
+  isUnitChecked(unitId: string, code?: string): boolean {
+    const set = this.checkedUnits();
+    return set.has(unitId) || (!!code && set.has(code));
+  }
+
+  openScanForVerification(): void {
+    this.router.navigate(['/scan']);
+  }
 
   readonly stage = computed<CustodyStage>(() => {
     const del = this.delivery();
@@ -230,7 +651,7 @@ export class ReceiptPage implements OnInit {
   readonly isRefreshing = signal(false);
 
   ngOnInit(): void {
-    const deliveryId = this.route.snapshot.paramMap.get('deliveryId');
+    const deliveryId = this.route.snapshot.paramMap?.get('deliveryId');
     if (deliveryId) {
       this.loadDeliveryData(deliveryId);
       const del = this.delivery();
@@ -270,6 +691,20 @@ export class ReceiptPage implements OnInit {
         });
     } else {
       this.loadDeliveryData(deliveryId);
+    }
+
+    const verifiedUnitId = this.route.snapshot.queryParamMap?.get('verifiedUnitId');
+    const scannedFromStorage = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('lastScannedUnitId') : null;
+    const unitToVerify = verifiedUnitId || scannedFromStorage;
+
+    if (unitToVerify) {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('lastScannedUnitId');
+      }
+      const next = new Set(this.checkedUnits());
+      next.add(unitToVerify);
+      this.checkedUnits.set(next);
+      this.verifiedSuccessMsg.set('Bulto verificado correctamente mediante código QR.');
     }
   }
 
@@ -368,5 +803,27 @@ export class ReceiptPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  async openTestEnvInfo(): Promise<void> {
+    if (!this.alerts) return;
+    const alert = await this.alerts.create({
+      header: 'Entorno de prueba activo',
+      subHeader: 'Expo Clean Ecuador 2026',
+      message: 'Estás operando en el modo seguro de validación de campo. Las operaciones offline se concilian mediante firma y código QR trazable.',
+      buttons: ['Entendido']
+    });
+    await alert.present();
+  }
+
+  async openVerifyModal(): Promise<void> {
+    if (!this.alerts) return;
+    const alert = await this.alerts.create({
+      header: 'Verificación de Empresa',
+      subHeader: 'Certificación de Custodia Digital',
+      message: 'Empresa: IstpetDev Operaciones Nacionales\nRUC: 1793148291001\nEstado: Validación en proceso (45%)\nProtocolo de custodia digital activo con claves M2M.',
+      buttons: ['Aceptar']
+    });
+    await alert.present();
   }
 }

@@ -1,0 +1,139 @@
+{
+  "dataset": "demo-base",
+  "synthetic": true,
+  "product": "DES-01",
+  "quantity": 200,
+  "vehicle": "VEH-01",
+  "evaluated": {
+    "isValid": true,
+    "totalDistanceKm": 10.7,
+    "totalDurationMinutes": 56,
+    "totalCost": 15.05,
+    "maxWeightOnRoute": 210,
+    "maxVolumeOnRoute": 0.2,
+    "stops": [
+      {
+        "sequence": 1,
+        "kind": "Pickup",
+        "servicePointId": null,
+        "locationId": "01a146d6-1804-7f67-a5d5-e42096f1263f",
+        "code": "BOD-UIO",
+        "name": "Bodega central Quito (sint\u00E9tica)",
+        "position": {
+          "lat": -0.2295,
+          "lon": -78.5243
+        },
+        "plannedArrivalUtc": "2026-10-16T12:00:00Z",
+        "plannedDepartureUtc": "2026-10-16T12:20:00Z",
+        "legDistanceKm": 0,
+        "legDurationMinutes": 0,
+        "accumulatedWeightOnArrival": 210,
+        "accumulatedVolumeOnArrival": 0.2,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null
+      },
+      {
+        "sequence": 2,
+        "kind": "Delivery",
+        "servicePointId": "01a146d6-1804-7d88-874d-ff725458e5a6",
+        "locationId": null,
+        "code": "HOS-001",
+        "name": "Hospital Norte (sint\u00E9tico)",
+        "position": {
+          "lat": -0.17,
+          "lon": -78.48
+        },
+        "plannedArrivalUtc": "2026-10-16T12:36:05.1Z",
+        "plannedDepartureUtc": "2026-10-16T12:56:05.1Z",
+        "legDistanceKm": 10.723,
+        "legDurationMinutes": 16.085,
+        "accumulatedWeightOnArrival": 0,
+        "accumulatedVolumeOnArrival": 0.0,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null
+      }
+    ],
+    "validationErrors": [],
+    "warnings": [],
+    "coordinates": [
+      [
+        -0.2295,
+        -78.5243
+      ],
+      [
+        -0.17,
+        -78.48
+      ]
+    ],
+    "coordinatesSource": "approximate",
+    "serviceCostBreakdown": {
+      "fuel": 1.13,
+      "wear": 1.07,
+      "driver": 5.61,
+      "helpers": 3.74,
+      "shrink": 3.50,
+      "total": 15.05,
+      "loadPct": 17.500,
+      "helperCount": 1,
+      "fuelPrice": {
+        "value": 3.785,
+        "date": "2026-10-16",
+        "source": "sint\u00E9tico",
+        "unit": "USD/gal"
+      },
+      "notes": [
+        "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+      ],
+      "legacyTransport": 0,
+      "label": "estimado",
+      "currency": "USD"
+    }
+  },
+  "match": {
+    "vehicle": {
+      "code": "VEH-01",
+      "depotLocationId": "01a146d6-1804-7f67-a5d5-e42096f1263f",
+      "maxWeight": 1200.000,
+      "maxVolume": 8.000,
+      "costPerKm": 0.450,
+      "vehicleType": "camioneta",
+      "usageScope": "urbano",
+      "isActive": true,
+      "organizationId": "01990000-0000-7000-8000-000000000001",
+      "id": "01a146d6-1806-754e-8130-ffac5a684854",
+      "createdAtUtc": "2026-10-16T22:29:58.410888Z",
+      "updatedAtUtc": "2026-10-16T22:29:58.647625Z",
+      "version": 2
+    },
+    "isMatch": true,
+    "discardReason": null,
+    "weightUtilizationPct": 17.5,
+    "volumeUtilizationPct": 2.5,
+    "estimatedTotalCost": 19.94,
+    "distanceToFirstPickupKm": 0.0,
+    "serviceCostBreakdown": {
+      "fuel": 2.26,
+      "wear": 2.15,
+      "driver": 7.22,
+      "helpers": 4.81,
+      "shrink": 3.50,
+      "total": 19.94,
+      "loadPct": 17.500,
+      "helperCount": 1,
+      "fuelPrice": {
+        "value": 3.785,
+        "date": "2026-10-16",
+        "source": "sint\u00E9tico",
+        "unit": "USD/gal"
+      },
+      "notes": [
+        "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+      ],
+      "legacyTransport": 0,
+      "label": "estimado",
+      "currency": "USD"
+    }
+  }
+}

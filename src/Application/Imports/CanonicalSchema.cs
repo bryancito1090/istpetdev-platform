@@ -50,6 +50,8 @@ public static class CanonicalSchema
                 new("name", FieldType.Text, true, ["nombre", "descripcion", "producto"]),
                 new("base_unit", FieldType.Text, true, ["unidad", "um", "unidad_medida", "unidad_base"]),
                 new("weight_per_unit", FieldType.Decimal, false, ["peso", "peso_unitario", "kg"], DefaultValue: "0", MissingNote: "capacidad por peso no evaluable"),
+                new("unit_value", FieldType.Decimal, false, ["valor_unitario"]),
+                new("units_per_package", FieldType.Decimal, false, ["unidades_por_bulto"]),
                 new("volume_per_unit", FieldType.Decimal, false, ["volumen", "volumen_unitario", "m3"], DefaultValue: "0", MissingNote: "capacidad por volumen no evaluable"),
             ],
             [ImportEntity.Vehicles] =
@@ -58,6 +60,8 @@ public static class CanonicalSchema
                 Code("depot_code", "bodega", "deposito", "base", "codigo_bodega"),
                 new("max_weight", FieldType.Decimal, true, ["capacidad_kg", "capacidad", "carga_maxima", "peso_maximo"]),
                 new("max_volume", FieldType.Decimal, false, ["capacidad_m3", "volumen_maximo"], MissingNote: "sin límite de volumen"),
+                new("vehicle_type", FieldType.Text, false, ["tipo_vehiculo"]),
+                new("usage_scope", FieldType.Text, false, ["uso_vehiculo"]),
                 new("cost_per_km", FieldType.Decimal, false, ["costo_km", "costo_por_km"], MissingNote: "se usará el costo por km global"),
             ],
             [ImportEntity.Lots] =
