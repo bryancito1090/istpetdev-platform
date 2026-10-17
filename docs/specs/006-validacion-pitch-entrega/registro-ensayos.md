@@ -56,7 +56,7 @@ Se cronometra aparte del pitch. Una persona lee la pregunta y quien responde no 
 | 17 | ¿Cuánto cuesta y cuál es el precio? | — | — | — | — | — |
 | 18 | ¿Evita multas hospitalarias? | — | — | — | — | — |
 | 19 | ¿Qué validaron con el sector? | — | — | — | — | — |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | — | — | — | — | — |
+| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | — | — | — | — | — |
 | 21 | ¿A quién atienden primero si no alcanza el camión? | — | — | — | — | — |
 | 22 | ¿Qué pasa ante un cierre vial? | — | — | — | — | — |
 | 23 | ¿Por qué no Dijkstra? | — | — | — | — | — |
@@ -93,7 +93,7 @@ Las respuestas se revisaron contra la [matriz de afirmaciones](matriz-afirmacion
 | 17 | ¿Cuánto cuesta y cuál es el precio? | A-26, A-30, A-31 | 28 | Proponemos implementación e integración más suscripción. El costo de operación y el precio siguen por validar con costos reales y disposición de pago; no presentamos una tarifa fija. |
 | 18 | ¿Evita multas hospitalarias? | A-01, A-33 | 21 | No afirmamos que evite multas. La propuesta busca reducir el riesgo de faltantes; cualquier afirmación contractual requiere contrastar la cláusula aplicable. |
 | 19 | ¿Qué validaron con el sector? | A-02, A-29 | 22 | La propuesta se está contrastando con el sector. No atribuimos entrevistas, acuerdos ni confirmación general del problema sin registros que lo acrediten. |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | A-28, A-33 | 24 | No hacemos afirmaciones de cronología. Puedo explicar el alcance verificado: hay pruebas de motor y una maqueta A/B/C; la comparación contratada sigue en integración. |
+| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | P-02, P-03, P-11 | 27 | La maqueta A/B/C y las pruebas configuradas del motor son hechos con alcances distintos. La comparación contratada, la recomendación calculada y la validación operativa están en la hoja de ruta. |
 | 21 | ¿A quién atienden primero si no alcanza el camión? | A-34 | 27 | El motor prioriza entregas y puede conservar una parte pendiente cuando la capacidad no alcanza. No afirmamos que la comparación con operador contratado ya decida esa asignación. |
 | 22 | ¿Qué pasa ante un cierre vial? | A-09, A-12 | 28 | Ante incidentes compatibles, el motor conserva lo ya ejecutado y evalúa una nueva versión para lo pendiente. Eso no incluye ralentizaciones parciales ni reasignación a un operador contratado. |
 | 23 | ¿Por qué no Dijkstra? | A-07, A-33 | 29 | Para el pitch importa el plan completo: el motor propone rutas con ventanas, capacidad y jornada. No prometemos óptimo global; la matriz no compara algoritmos como afirmación de producto. |
@@ -104,3 +104,37 @@ Las respuestas se revisaron contra la [matriz de afirmaciones](matriz-afirmacion
 | 28 | ¿De dónde salen los datos del escenario? | P-04, A-03 | 27 | El escenario es sintético y generado por el equipo; algunas ubicaciones usan referencias geográficas públicas. Ventanas, demanda, costos e incidentes son supuestos, no clientes ni operaciones medidas. |
 | 29 | ¿Cómo considera las horas pico y restricciones de Quito? | P-10, P-11 | 28 | Hay pruebas del motor con franjas horarias configuradas; son supuestos, no tráfico en vivo. Las restricciones de circulación verificadas para cada vehículo siguen en la hoja de ruta. |
 | 30 | ¿Qué pasa con lo que no se entrega? | P-13, A-34 | 30 | El motor puede conservar demanda pendiente cuando la capacidad no alcanza. La guía de retorno y la prioridad automática al planificar el día siguiente son propuestas de hoja de ruta. |
+
+## Registro de ensayos del equipo
+
+Completar una fila por sesión real; los horarios siguientes son una propuesta compatible con la agenda, no ensayos ya realizados. En la sesión final, congelar materiales a las 15:45.
+
+| Fecha/hora | Versión guion / slides | Duración real | Papeles (N/W/M/T/G) | Fallos observados | Cambio decidido |
+|---|---|---:|---|---|---|
+| — | — | — | — | — | — |
+| — | — | — | — | — | — |
+| — | — | — | — | — | — |
+
+## Reparto propuesto de papeles
+
+Propuesta basada en áreas de contribución registradas en los PR y documentos del equipo; cada integrante confirma su disponibilidad antes de ensayar. La autoría de código orienta la asignación técnica, no acredita práctica escénica.
+
+| Papel | Integrante propuesto | Base de contribución |
+|---|---|---|
+| Narración | Joseph Baño | Coordinación, documentación y pitch; mantenerlo en el rol no crítico de presentación. |
+| Web | Alexander Martínez | Interfaz de rutas, planificador web y campo; responsable de tomar la captura A/B/C cuando #241 esté integrado. |
+| Móvil | Anthony Pilatasig | Motor de rutas y flujos operativos; coordinar la demostración del recorrido móvil si se incluye. |
+| Técnica | Bryan Baño | Motor/agente, datos y costos; responsable de #241 y de explicar límites de integración. |
+| Negocio | Jorge Doicela | Infraestructura, despliegue y panel; presentar viabilidad, riesgos y piloto propuesto. |
+
+## Tres ensayos propuestos
+
+La ronda E2E #118 está cerrada y no sustituye estos ensayos del pitch.
+
+| Sesión | Bloque libre | Enfoque | Responsable de cronómetro/registro |
+|---|---|---|---|
+| 1 | Sábado 11:00–11:30 | Recorrido de papeles, transiciones y riesgos; registrar fallos de la demo y asignar cambios. | Joseph (propuesto; confirmar) |
+| 2 | Sábado 15:00–15:20 | Pasada completa de 280 s con cronómetro; verificar legibilidad, demo y corte si falla la conexión. | Anthony (propuesto; confirmar) |
+| 3 | Sábado 15:20–15:45 | Pasada final, preguntas breves y revisión de archivos; congelar materiales exactamente a las 15:45. | Jorge (propuesto; confirmar) |
+
+Los cinco integrantes cubren su papel en cada pasada. Registrar duración real y fallos solo después de ejecutarlos.
