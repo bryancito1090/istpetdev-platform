@@ -137,8 +137,15 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
           </p>
         </div>
         <div class="flex items-center gap-2.5 shrink-0">
-          <button type="button" (click)="loadAll()" [disabled]="receiptsLoading() || ordersLoading()"
-            class="h-9 inline-flex items-center gap-2 text-xs font-semibold px-4 rounded-lg border border-[#E3E8EE] bg-white text-[#1A2C44] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all shadow-2xs disabled:opacity-50">
+          @if (session.canWrite()) {
+            <button type="button" (click)="seedSample()" [disabled]="seeding() || receiptsLoading() || ordersLoading()"
+              class="h-9 inline-flex items-center gap-2 text-xs font-semibold px-3.5 rounded-lg border border-[#008CA5] bg-[#008CA5] text-white hover:bg-[#007388] transition-all shadow-2xs disabled:opacity-50 cursor-pointer">
+              <svg lucideBoxes [size]="14" [class.animate-spin]="seeding()"></svg>
+              <span>{{ seeding() ? 'Cargando datos…' : 'Cargar datos de prueba' }}</span>
+            </button>
+          }
+          <button type="button" (click)="loadAll()" [disabled]="receiptsLoading() || ordersLoading() || seeding()"
+            class="h-9 inline-flex items-center gap-2 text-xs font-semibold px-4 rounded-lg border border-[#E3E8EE] bg-white text-[#1A2C44] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all shadow-2xs disabled:opacity-50 cursor-pointer">
             <svg lucideRefreshCw [size]="14" [class.animate-spin]="receiptsLoading() || ordersLoading()"></svg>
             Actualizar
           </button>
@@ -325,8 +332,17 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
               <button type="button" class="text-xs font-semibold underline hover:text-rose-900" (click)="loadReceipts()">Reintentar</button>
             </div>
           } @else if (receipts().length === 0) {
-            <div class="p-8 text-center text-sm text-[#697386] rounded-xl border border-dashed border-[#E3E8EE] bg-[#F8FAFC]">
-              No hay recepciones con rechazos ni ajustes.
+            <div class="p-8 text-center text-sm text-[#697386] rounded-xl border border-dashed border-[#E3E8EE] bg-[#F8FAFC] space-y-3">
+              <p>No hay recepciones con rechazos ni ajustes registradas aún.</p>
+              @if (session.canWrite()) {
+                <div>
+                  <button type="button" (click)="seedSample()" [disabled]="seeding() || receiptsLoading() || ordersLoading()"
+                    class="h-8 inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-all shadow-2xs disabled:opacity-50 cursor-pointer">
+                    <svg lucideBoxes [size]="13" [class.animate-spin]="seeding()"></svg>
+                    <span>{{ seeding() ? 'Generando datos…' : 'Cargar datos de prueba' }}</span>
+                  </button>
+                </div>
+              }
             </div>
           } @else {
             <!-- Resumen de líneas rechazadas por motivo (Requerimiento #236) -->
@@ -700,6 +716,7 @@ export class NovedadesPage implements OnInit {
   readonly cancellingId = signal<string | null>(null);
   readonly actionMessage = signal<string | null>(null);
   readonly actionIsError = signal(false);
+  readonly seeding = signal(false);
 
   // Control de pestaña activa para navegación fluida e intuitiva
   readonly activeTab = signal<'all' | 'rejections' | 'adjustments' | 'orders'>('all');
@@ -840,6 +857,25 @@ export class NovedadesPage implements OnInit {
         this.actionMessage.set(errorMessage(err, `No se pudo cancelar el pedido ${order.orderNumber}.`));
         // 409: el pedido cambió (planificado por otro usuario o versión vieja); se muestra el estado real.
         if (err instanceof HttpErrorResponse && err.status === 409) this.loadOrders();
+      },
+    });
+  }
+
+  seedSample(): void {
+    if (this.seeding()) return;
+    this.seeding.set(true);
+    this.actionMessage.set(null);
+    this.api.seedFieldActivity().subscribe({
+      next: () => {
+        this.seeding.set(false);
+        this.actionIsError.set(false);
+        this.actionMessage.set('Muestra operativa de campo cargada exitosamente.');
+        this.loadAll();
+      },
+      error: err => {
+        this.seeding.set(false);
+        this.actionIsError.set(true);
+        this.actionMessage.set(errorMessage(err, 'No se pudo cargar la muestra operativa.'));
       },
     });
   }
