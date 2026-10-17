@@ -95,6 +95,6 @@ Litros y kilogramos (u otras unidades base) nunca se suman entre sí.
 - **Historia enriquecida:** reglas en el README del fixture y en `historyRules` del manifiesto; la ventana de decisión de 14 días se conserva.
 - **Vehículo adverso retirado:** `VEH-0001`.
 - **A/B/C del pitch:** verificado sin cambios: A 57,89; B 69,89; C 66,90 (recomendada), en `EnsayoPlanificacionIntegrationTests`.
-- **Commit de implementación:** pendiente de registrar en el PR de #319.
+- **Commit de implementación:** `ceeaf03` (`feat(simulacion): conectar dataset importado y metricas reales`).
 
 Notas relacionadas: [[Dataset y escenarios]], [[Simulador y metricas]], [[Guion del pitch]].
