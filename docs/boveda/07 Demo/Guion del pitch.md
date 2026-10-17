@@ -1,11 +1,67 @@
 ---
 tipo: demo
 estado: propuesta
-actualizado: 2026-10-16
+actualizado: 2026-10-17
 tags: [demo, validacion, istpetdev, planificacion]
 ---
 
 # Guion del pitch — T4 (alineado a diapositivas v3)
+
+## Propuesta v4 (17-oct): dolor, innovación e IA al frente
+
+Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: propuesta aprobada por Joseph; falta ensayarla y ajustar las láminas.** La v3 queda debajo como respaldo.
+
+**Frase central:** «Detectamos el faltante antes de que el cliente llame, proponemos cómo atenderlo al costo real y dejamos prueba de cada entrega. El motor calcula, la IA explica y la persona decide.»
+
+**Diferencial frente a un inventario con alertas** (el Modelo 2 del mentor, «StockClean», se parece a nosotros): nosotros no paramos en la alerta, sino que la convertimos en decisión de ruta con el costo completo y en evidencia de entrega. Decirlo en el primer minuto.
+
+**Regla de honestidad:** se dice una sola vez, en el bloque de validación, con el formato del mentor: construido, probado y pendiente. El resto del guion no repite advertencias en cada frase, pero tampoco afirma nada fuera de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md).
+
+### Guion v4 — 240 s (deja ~1 min para preguntas)
+
+| # (mentor) | Lámina propuesta | s | Texto para ensayar | Respaldo |
+|---|---|---:|---|---|
+| 1. Problema (gancho) | 1 · Portada con la pregunta | 15 | «¿Cómo se entera hoy una empresa de limpieza de que a un hospital le falta desinfectante? Cuando el hospital llama. Ese día ya es tarde.» | Dolor recogido en la charla del sector ([[2026-10-16-1109-bb-charla-limpieza-logistica]]); es hipótesis (A-02), no cifra. |
+| 2. Usuario | 2 · Tres dolores | 25 | «Lo escuchamos ayer en la charla del sector. El planificador repone por calendario o por urgencia; bodega pierde de vista el insumo cuando sale; y nadie puede probar qué se entregó. Cuando se apura una entrega, se decide mirando kilómetros y no el costo real: personal, combustible, descarga y producto que se daña.» | [[Historia y propuesta de valor]] |
+| 3. Solución | 3 · Detectar → Decidir → Entregar → Probar | 25 | «IstpetDev une eso en una sola cadena. Detecta: revisa el inventario y avisa qué punto se quedará sin producto. Decide: compara cómo atenderlo con flota propia o con un operador contratado, sumando todo lo que cuesta servir. Entrega: arma la ruta respetando capacidad, horarios y jornada. Y prueba: cada caja viaja con QR hasta que el cliente la recibe.» | A-04, A-07, P-02, A-13 |
+| 4. Diferenciación (IA + n8n) | 4 · Cómo funciona por dentro | 30 | «¿Qué es lo nuevo? Que no es otro inventario con alertas: la alerta termina en una decisión con costo y en una entrega comprobable. Lo calcula un motor con reglas, siempre igual con los mismos datos. Encima trabaja un agente de inteligencia artificial, orquestado con n8n, que lee esos resultados y le explica al planificador, en lenguaje simple, por qué conviene cada opción. La IA no inventa cifras: solo explica las del motor, y si falla, hay una explicación de respaldo. La persona aprueba.» | A-08, A-11, A-12, A-10 |
+| 5. Demo (a) | 5 · Captura de la alerta en vivo | 20 | «Así se ve: el sistema detecta que un punto entra en riesgo y lo avisa en pantalla, con días de cobertura y la cantidad sugerida para reponer.» | #318 (fusionado el 17-oct; hecho sin ensayo). Mostrar captura real del entorno de demo. |
+| 5. Demo (b) | 6 · Panel A/B/C (lámina 5 de v3) | 45 | «Y esta es la decisión. A, flota propia: la más barata, 57,89 dólares, pero llega a tiempo solo al 83 % de los críticos. B llega al 100 %, pero cuesta un 20,7 % más. C, un operador contratado, también llega al 100 % y cuesta un 4,3 % menos que B. El motor recomienda C con 90,8 puntos y la IA explica por qué. La más barata no siempre es la mejor.» | P-02, P-05 (#285) |
+| 6. Validación | 7 · Construido / Probado / Falta | 30 | «Seamos claros con lo que hay. Construido: inventario con alertas, motor de rutas y costos, agente de IA con n8n y custodia con QR. Probado: el motor y la comparación A/B/C en un ensayo técnico con un escenario sintético de Quito de 40 puntos, y una corrida registrada del agente, incluida su caída al respaldo. Falta: ensayar el recorrido en teléfono sin señal, llevar la comparación a producción y medir con datos de una empresa real.» | P-04, P-05, A-03, A-11, A-12, A-15, #198 |
+| 7. Impacto | 8 · Indicadores | 20 | «El impacto que buscamos: menos faltantes que se descubren tarde, entregas críticas a tiempo y saber cuánto cuesta realmente cada entrega. No prometemos un ahorro: lo mediremos en un piloto contra una línea base.» | A-21 |
+| 8–9. Viabilidad y modelo | 9 · Modelo y riesgos | 15 | «No necesita hardware nuevo: funciona en la web y en el teléfono del conductor. Proponemos implementación inicial más suscripción. Y si faltan datos, el sistema dice “sin dato” y no inventa.» | A-22, [[Modelo de negocio y piloto]] |
+| 10. Próximo paso | 10 · Hoja de ruta | 15 | «El siguiente paso: un piloto con una empresa de limpieza, una línea base e indicadores acordados. Buscamos ese aliado aquí. Gracias.» | — |
+
+**Suma:** 15 + 25 + 25 + 30 + 20 + 45 + 30 + 20 + 15 + 15 = **240 s**.
+
+### Cambios de láminas respecto de v3
+
+| v4 | Viene de v3 | Cambio |
+|---|---|---|
+| 1 | 1 · Portada | Añadir la pregunta del gancho como título grande; el nombre del equipo queda pequeño. |
+| 2 | 2 · ¿Flota propia o contratada? | Nuevo título «El faltante se descubre cuando el cliente llama» y los tres dolores (planificación reactiva, bodega sin visibilidad, entrega sin prueba). |
+| 3 | 3 · Comparar, Desglosar, Explicar, Decidir | Cambiar los cuatro pasos por **Detectar → Decidir → Entregar → Probar**. |
+| 4 | — (nueva) | Esquema: datos → **motor** (calcula) → **agente IA en n8n** (explica) → **persona** (aprueba), con la nota «si la IA falla, explicación de respaldo». |
+| 5 | 4 · Captura de rutas | Sustituir por la captura de la alerta en vivo (#318). La captura de rutas puede quedar de fondo o salir. |
+| 6 | 5 · Panel A/B/C | Sin cambios. |
+| 7 | 7 · Lo que podemos respaldar hoy | Rehacer como tres columnas: **Construido / Probado / Falta**. |
+| 8 | 6 · Indicadores | Sin cambios de fondo. |
+| 9 | 8 + 9 · Modelo y riesgos | Fusionar: modelo en una línea y los cuatro riesgos con su mitigación en una tabla corta. |
+| 10 | 10 · Hoja de ruta | Cerrar con «Buscamos una empresa para el piloto». |
+
+### Capturas y video
+
+La lista de capturas (C1–C7) y el guion del video v4, plano por plano y con la ruta web de cada pantalla, están en el [guion del video de respaldo](../../specs/006-validacion-pitch-entrega/guion-video-respaldo.md). Las láminas 3, 4 y 5 de la v4 dependen de C1, C3, C5 y C6.
+
+### Preguntas probables del jurado (nuevas)
+
+- **«¿En qué se diferencian de un sistema de inventario con alertas?»** — La alerta no es el final: el sistema propone cómo atenderla con el costo completo y deja la cadena de custodia hasta la recepción.
+- **«¿Qué hace exactamente la IA?»** — Explica. El cálculo es determinista y reproducible; el agente (DeepSeek, orquestado con n8n) traduce los resultados y no puede cambiar cifras. Si falla, hay un texto de respaldo y la decisión siempre es humana.
+- **«¿Por qué n8n?»** — Separa la orquestación del agente del núcleo del sistema: se puede cambiar de modelo o de flujo sin tocar el motor, y cada corrida queda registrada.
+
+---
+
+## Versión v3 (respaldo)
 
 Versión para el Reto 1 de Hackathon Expo Clean 2026. Sigue los siete bloques del Anexo 5.7. El guion maestro dura **280 s (4:40)**; el margen restante del turno anunciado de cinco minutos es operativo. Los cortes de **160 s** y **400 s** son metas de ensayo para turnos de tres y siete minutos, respectivamente. Son tiempos planificados, no resultados de ensayo. No hay pasadas registradas en [registro de ensayos](../../specs/006-validacion-pitch-entrega/registro-ensayos.md).
 
