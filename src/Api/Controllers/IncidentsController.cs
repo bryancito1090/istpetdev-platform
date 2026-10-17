@@ -28,6 +28,16 @@ public sealed class IncidentsController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> CreateIncident([FromBody] CreateIncidentRequest request, CancellationToken ct = default)
     {
+        // #246: los tipos de retraso parcial exigen el factor de velocidad (slowdownFactor o factor) en (0, 1].
+        decimal? slowdown = null;
+        if (IncidentSlowdown.IsSlowdownKind(request.Kind))
+        {
+            slowdown = request.SlowdownFactor ?? request.Factor;
+            if (slowdown is not { } value || !IncidentSlowdown.IsValidFactor(value))
+                return Problem(statusCode: StatusCodes.Status400BadRequest, title: "invalid_slowdown_factor",
+                    detail: $"{request.Kind} requiere slowdownFactor (o factor) mayor que 0 y hasta 1, p. ej. 0.3 = la velocidad cae al 30 %.");
+        }
+
         Point? position = null;
         if (request.Lat.HasValue && request.Lon.HasValue)
         {
@@ -39,7 +49,8 @@ public sealed class IncidentsController(
             OrganizationId = DemoOrganization.Id,
             Kind = request.Kind,
             Severity = request.Severity ?? "ALTA",
-            Description = request.Description ?? "",
+            // Sin migración: el factor viaja al final de la descripción (ver IncidentSlowdown).
+            Description = slowdown is { } factor ? IncidentSlowdown.WithFactor(request.Description, factor) : request.Description ?? "",
             Position = position,
             RadiusKm = request.RadiusKm,
             IsSynthetic = request.IsSynthetic,
@@ -100,6 +111,7 @@ public sealed class IncidentsController(
         {
             incidentId = incident.Id,
             kind = incident.Kind,
+            slowdownFactor = slowdown,
             runId,
             affectedRoutes = impact.AffectedRoutes.Select(r => new
             {
@@ -129,6 +141,7 @@ public sealed class IncidentsController(
             description = incident.Description,
             occurredAtUtc = incident.OccurredAtUtc,
             radiusKm = incident.RadiusKm,
+            slowdownFactor = IncidentSlowdown.IsSlowdownKind(incident.Kind) ? IncidentSlowdown.ReadFactor(incident.Description) : null,
             affectedRoutes = impact.AffectedRoutes.Select(r => new
             {
                 routePlanId = r.RoutePlanId,
@@ -149,4 +162,6 @@ public sealed record CreateIncidentRequest(
     string? VehicleCode = null,
     string? Severity = null,
     string? Description = null,
-    bool IsSynthetic = true);
+    bool IsSynthetic = true,
+    // #246: mismo dato que Factor con el nombre de incidentes.json; tiene prioridad si llegan los dos.
+    decimal? SlowdownFactor = null);

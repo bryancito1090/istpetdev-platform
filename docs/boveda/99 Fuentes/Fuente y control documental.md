@@ -740,8 +740,15 @@ Fuente: issue #245 y el diseño de [[Planificacion potenciada - propuesta del ev
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
 
+## 16-oct-2026 — Incidentes con retraso parcial (issue #246)
+
+Fuente: issue #246 y el diseño de [[Planificacion potenciada - propuesta del evento]]. [[Contratos API y eventos]] registra los tipos `Congestion`, `Manifestacion` y `Accidente` con `slowdownFactor` en `POST /api/v1/incidents`, el error 400 `invalid_slowdown_factor` y la decisión de guardar el factor al final de la descripción sin migración; el spec 002 añade FR-27 y la tarea T18. `BloqueoVial` no cambia. Los factores de prueba son los presets de `incidentes.json` (#243), que su README declara como supuestos de la demo. No altera baselines ni datos; no se despliega.
+
+Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
 ## 16-oct-2026 — Reserva antes del despacho, cancelación y cantidad por línea (issue #199, fase 2)
 
 Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y eventos]] registra `POST /api/v1/route-plans/{id}/cancel`, `InputJson.orderLines` de `confirm`, el cálculo de `inTransit` con entregas `Draft` y la carga de `confirm` desde lo planificado por línea; el spec 002 añade la tarea T19. La consolidación parcial (`VIGILAR`) queda fuera de alcance. Sin migración ni cambios de datos; no se despliega.
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
