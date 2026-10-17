@@ -504,3 +504,15 @@ Cada elemento de `GET /api/v1/receipts/exceptions` agrega `estimatedBacktrack`
   a `RoutePlan.TotalCost` ni a ningún costo de la ruta original. La web muestra
   «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h» y agrega «aproximado» cuando
   corresponde.
+
+## Incidentes con retraso parcial (#246 — 16 de octubre de 2026)
+
+Un accidente, una congestión o una manifestación casi nunca cierran del todo la vía: la vuelven lenta. Antes un incidente solo podía bloquear un tramo (`BloqueoVial`/`ROAD_CLOSURE`) o demorarlo con un factor fijo (`DELAY`, minutos × 2).
+
+- **Tipos nuevos de `POST /api/v1/incidents`:** `Congestion`, `Manifestacion` y `Accidente` (sin distinguir mayúsculas). Exigen el factor de velocidad en `slowdownFactor` (nombre de `incidentes.json`) o en `factor` (campo que ya existía); si llegan los dos, manda `slowdownFactor`. Debe estar en (0, 1]: 0,3 = la velocidad cae al 30 % y el tramo dura 1 / 0,3 veces más. Sin factor o fuera de rango responde 400 `invalid_slowdown_factor`. Los demás tipos ignoran el factor y se comportan como antes.
+- **Respuesta:** `POST` y `GET /api/v1/incidents/{id}` agregan `slowdownFactor` (`null` en los demás tipos).
+- **Dónde se guarda (sin migración):** la única migración de la noche era #240, así que el factor se agrega al final de `Incident.Description` como texto legible, p. ej. «Marcha desde la Av. 10 de Agosto… (velocidad al 30 %)», y se vuelve a leer de ahí (`IncidentSlowdown`). Es provisional: cuando se coordine una migración, pasa a una columna `SlowdownFactor` y la marca deja de escribirse.
+- **Efecto:** `IncidentEvaluator` marca en `IncidentEffect.SlowFactors` los tramos dentro del radio, tanto de las rutas publicadas como de la caché de tramos, con el multiplicador de minutos 1 / factor. `IncidentEffect` ya tenía `SlowFactors` y `RouteFeasibility` ya lo aplicaba; se reutiliza en lugar de crear un `SlowedLegs` paralelo con la misma información. Las rutas afectadas se informan en `affectedRoutes` como antes.
+- **Replanificación:** sin cambios en `Replanner`. Si la ETA corregida respeta las ventanas, la revisión se acepta según la política; si un obligatorio sale de su ventana, la revisión estricta lo deja como no atendido (`time_window`) y se escala con `late_service` y `prioritize_critical`.
+- **Sin cambios:** `BloqueoVial`/`ROAD_CLOSURE` siguen bloqueando, `DELAY` sigue con minutos × 2 y `VEHICLE_BREAKDOWN` deja el vehículo no disponible. Un incidente de tipo nuevo guardado sin marca (por ejemplo, insertado a mano) se trata como `DELAY`.
+

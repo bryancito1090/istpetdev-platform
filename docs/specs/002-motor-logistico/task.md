@@ -141,6 +141,7 @@
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
 | FR-25 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
 | FR-26 | T17 | `TrafficBandTests`, `TrafficBandsQuitoTests` |
+| FR-27 | T18 | `IncidentSlowdownTests`, `SlowdownIncidentQuitoTests`, `DemoRegionTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -561,3 +562,40 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 
 **Pendiente:** el factor se toma al inicio del tramo; un tramo que cruza el borde de una franja no se reparte. `VehicleMatcher` no aplica el factor a su estimación de jornada.
 
+### T18 — Incidentes con retraso parcial (#246, 16-oct)
+
+**Por qué:** un incidente solo podía bloquear un tramo; el sistema decía «no puedes pasar» pero no «llegarás tarde». Va después de T17 (#245) porque toca el mismo `RouteFeasibility` y se combina con el factor de hora pico.
+
+**Regla (FR-27):** `Congestion`, `Manifestacion` y `Accidente` con `slowdownFactor` (o `factor`) en (0, 1]. Los tramos dentro del radio duran 1 / factor veces más; `BloqueoVial` sigue igual. Contrato en [Contratos API y eventos](../../boveda/03%20Arquitectura/Contratos%20API%20y%20eventos.md#incidentes-con-retraso-parcial-246--16-de-octubre-de-2026).
+
+**Decisiones:**
+- **Factor sin migración:** el tablero #253 dejó #240 como única migración de la noche. El factor se guarda al final de `Incident.Description` como «(velocidad al 30 %)» y se lee con `IncidentSlowdown.ReadFactor`. Se descartó derivarlo del tipo porque el dataset trae dos accidentes con factores distintos (0,5 y 0,4). Cuando haya una migración coordinada, pasa a una columna propia.
+- **Sin `SlowedLegs`:** `IncidentEffect.SlowFactors` (multiplicador de minutos) ya existía, y `RouteFeasibility` y `RoutePlanner.ReplanAsync` ya lo aplicaban; se llena con 1 / factor. `PlanModels.cs` (compartido con #199) no cambia en este issue.
+- **Caché de tramos:** como en el cierre, también se ralentizan los tramos de la caché dentro del radio, para que un orden alternativo por la misma zona no parezca rápido.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `IncidentSlowdown.cs` (nuevo) | Application | Tipos de retraso parcial, validación del factor, multiplicador y marca en la descripción | Una sola regla para la API y el evaluador | Presets de `incidentes.json` | Hecho |
+| `IncidentEvaluator.cs` | Application | Lee el factor; tramos de rutas publicadas y de la caché dentro del radio con 1 / factor | Llenar los tramos lentos | Manifestación 0,3 | Hecho |
+| `IncidentsController.cs` | Api | Acepta `slowdownFactor`/`factor`, 400 `invalid_slowdown_factor`, guarda la marca y devuelve `slowdownFactor` en `POST` y `GET` | El request tenía `Factor` sin usar y el preset usa `slowdownFactor` | Preset enviado tal cual | Hecho |
+| `RouteFeasibility.cs`, `Replanner.cs` | Application | Sin cambios | Ya aplicaban `SlowFactors` y ya ofrecían `late_service`/`prioritize_critical` | — | No aplica |
+| `IncidentSlowdownTests.cs` | Pruebas unitarias | Escenarios de abajo | Criterios de #246 | — | Pasan |
+| `SlowdownIncidentQuitoTests.cs` | Pruebas de integración | Preset `manifestacion-centro-historico` sobre `demo-quito-planificacion` | Regla con base real (PostGIS) | Plan publicado de Quito | Pasa |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Tramo de 15 min con manifestación 0,3 | Dura 50 min; la ruta sigue siendo factible | Pasa |
+| Crítico con ventana hasta 07:30, salida 07:00 | Sin incidente llega 07:15; con 0,3 llega 07:50: `time_window` en estricto y factible en servicio tardío | Pasa |
+| Factor guardado y leído | «(velocidad al 30 %)», 64 % y 42,5 %; guardar otra vez reemplaza la marca | Pasa |
+| Tipos | Solo `Congestion`, `Manifestacion` y `Accidente` usan el factor | Pasa |
+| Preset `manifestacion-centro-historico` enviado tal cual a `POST /incidents` | 201 con `slowdownFactor = 0.3`; `GET` lo devuelve; tramos afectados con multiplicador 1 / 0,3 y ninguno bloqueado | Pasa |
+| Replanificación de las rutas afectadas | Al menos una ruta sube su ETA sin descartar paradas; al menos un crítico (`alta`) sale de su ventana y se escala con `late_service` factible y `prioritize_critical` | Pasa |
+| `BloqueoVial` (`cierre-norte` de `demo-region`) | Mismo resultado de siempre | Pasa (`DemoRegionTests`) |
+| `slowdownFactor` ausente, o `factor` 1,5, en un tipo nuevo | 400 `invalid_slowdown_factor` | Pasa |
+
+**Pendiente:**
+- Error previo encontrado al probar: `RoutePlanner.ReplanAsync` arma un diccionario por código de punto y falla (500, clave repetida) cuando una ruta publicada tiene el mismo punto como parada obligatoria y como consolidación. La prueba de integración planifica sin consolidación para no depender de él. No se corrige aquí porque el archivo es compartido con #199.
+- El README del fixture todavía dice que los tipos nuevos esperan #246; lo actualiza su dueño (#243).
+- La pantalla de incidentes del web no envía `slowdownFactor`.
