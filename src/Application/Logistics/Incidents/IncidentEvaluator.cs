@@ -98,18 +98,26 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
         bool isClosure = string.Equals(incident.Kind, "ROAD_CLOSURE", StringComparison.OrdinalIgnoreCase)
             || string.Equals(incident.Kind, "BloqueoVial", StringComparison.OrdinalIgnoreCase);
         decimal delayFactor = 2.0m; // Factor por defecto para demoras
+        // #246: Congestion, Manifestacion y Accidente ralentizan según su SlowdownFactor guardado.
+        // Sin factor guardado se conserva el comportamiento anterior (demora × 2).
+        var slowdown = !isClosure && IncidentSlowdown.IsSlowdownKind(incident.Kind)
+            ? IncidentSlowdown.ReadFactor(incident.Description) : null;
+        if (slowdown is { } speedFactor) delayFactor = IncidentSlowdown.MinutesMultiplier(speedFactor);
 
         // Also exclude affected cached legs from alternative orders, rather than
         // permitting a new leg through the same closure simply because it was
         // absent from the previous route.
-        if (isClosure)
+        // #246: lo mismo para un retraso parcial, para que otro orden por la misma zona también sea lento.
+        if (isClosure || slowdown.HasValue)
         {
             var edges = await db.RoadMatrixEdges.Where(e => e.OrganizationId == DemoOrganization.Id).ToListAsync(ct);
             foreach (var edge in edges)
             {
                 var leg = new Leg(new GeoPoint(edge.FromLat, edge.FromLon), new GeoPoint(edge.ToLat, edge.ToLon),
                     edge.DistanceKm, edge.DurationMinutes, DistanceSource.Road, edge.EncodedPolyline);
-                if (IsLegAffected(leg, incidentCenter, radiusKm)) blockedLegs.Add((leg.From, leg.To));
+                if (!IsLegAffected(leg, incidentCenter, radiusKm)) continue;
+                if (isClosure) blockedLegs.Add((leg.From, leg.To));
+                else slowFactors[(leg.From, leg.To)] = delayFactor;
             }
         }
 
