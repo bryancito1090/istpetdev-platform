@@ -24,7 +24,9 @@ import {
   PublicTraceUnitDto,
   FieldProblemDetails,
   TodayRoutePlanDto,
-  TodayRouteStopDto
+  TodayRouteStopDto,
+  ReportIncidentRequest,
+  ReportIncidentResponse
 } from '@istpetdev/shared-core';
 import { IFieldApi, ReceiverUnit } from '../field-api.interface';
 import { MockServerStore } from './mock-server.store';
@@ -497,6 +499,22 @@ export class MockFieldApiService implements IFieldApi {
           evidenceId,
           status: 'Confirmed' as EvidenceStatus,
           confirmedAtUtc: ev.confirmedAtUtc
+        };
+      })()
+    ).pipe(delay(this.latencyMs));
+  }
+
+  reportIncident(req: ReportIncidentRequest): Observable<ReportIncidentResponse> {
+    return from(
+      (async (): Promise<ReportIncidentResponse> => {
+        this.checkFailureHooks();
+        const incidentId = `inc-${generateUuidV7().slice(0, 8)}`;
+        return {
+          incidentId,
+          kind: req.kind,
+          slowdownFactor: req.slowdownFactor ?? req.factor ?? null,
+          runId: `run-${generateUuidV7().slice(0, 8)}`,
+          affectedRoutes: []
         };
       })()
     ).pipe(delay(this.latencyMs));
