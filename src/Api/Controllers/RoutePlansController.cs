@@ -16,7 +16,7 @@ namespace IstpetDev.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/route-plans")]
-public sealed class RoutePlansController(
+public sealed partial class RoutePlansController(
     IApplicationDbContext db,
     IRoutePlanner planner,
     IRoutePublisher publisher,
@@ -50,6 +50,8 @@ public sealed class RoutePlansController(
         {
             query = query.Where(p => p.Status == status);
         }
+
+        if (string.IsNullOrWhiteSpace(status)) query = query.Where(p => p.Status != RouteProposalAcceptance.Discarded);
 
         if (date.HasValue)
         {
@@ -136,6 +138,7 @@ public sealed class RoutePlansController(
                 totalDurationMinutes = p.TotalMinutes ?? 0m,
                 cost = p.TotalCost,
                 totalCost = p.TotalCost,
+                planningDecisionId = ReadPlanningDecisionId(p.InputJson),
                 costStatus = recStatus ?? (p.TotalCost.HasValue ? "estimated" : "unknown"),
                 reconciledCost = recCost,
                 reconciledExecution = recExec,
@@ -537,6 +540,7 @@ public sealed class RoutePlansController(
         {
             routePlanId = plan.Id,
             id = plan.Id,
+            planningDecisionId = ReadPlanningDecisionId(plan.InputJson),
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
@@ -595,6 +599,7 @@ public sealed class RoutePlansController(
         var agentRunId = await GetAgentRunIdAsync("Watch", ct);
 
         // Guardar cada ruta como un RoutePlan con estado Proposed
+        var proposalBatchId = Guid.NewGuid();
         var createdPlans = new List<RoutePlan>();
         var agentDecisions = new Dictionary<Guid, Guid>();
         foreach (var r in result.Routes)
@@ -624,6 +629,7 @@ public sealed class RoutePlansController(
                 AlgorithmVersion = "2.0-deterministic",
                 InputJson = JsonSerializer.Serialize(new
                 {
+                    proposalBatchId,
                     stops = r.Stops.Select(s => new
                     {
                         sequence = s.Sequence,
@@ -747,6 +753,9 @@ public sealed class RoutePlansController(
     [RetryableOperation("PublishRoutePlan")]
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
+        var groupedPlan = await db.RoutePlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id && p.OrganizationId == DemoOrganization.Id, ct);
+        if (ReadPlanningDecisionId(groupedPlan?.InputJson) is not null)
+            return Conflict(new { message = "Esta ruta pertenece a una alternativa aceptada. Publica el conjunto desde su cálculo para conservar todas sus rutas." });
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
         try
         {
@@ -881,6 +890,9 @@ public sealed class RoutePlansController(
     [HttpPost("suggest")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> SuggestRoutes([FromBody] SuggestRoutesRequest req, CancellationToken ct = default)
+        => await BuildSuggestionAsync(req, ct);
+
+    private async Task<IActionResult> BuildSuggestionAsync(SuggestRoutesRequest req, CancellationToken ct)
     {
         if (req == null || req.OrderIds == null || req.OrderIds.Count == 0)
         {
@@ -1447,6 +1459,9 @@ public sealed class RoutePlansController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     [RetryableOperation("ConfirmRoutePlan")]
     public async Task<IActionResult> ConfirmRoutePlan([FromBody] ConfirmRoutePlanRequest req, CancellationToken ct = default)
+        => await ConfirmRoutePlanCoreAsync(req, ct);
+
+    private async Task<IActionResult> ConfirmRoutePlanCoreAsync(ConfirmRoutePlanRequest req, CancellationToken ct, bool preservePickupLoads = false)
     {
         if (req == null || req.Stops == null || req.Stops.Count == 0)
         {
@@ -1624,7 +1639,7 @@ public sealed class RoutePlansController(
 
         // Si hay paradas de pickup, asignarles la carga total a recoger si supera lo enviado.
         // #199: con pedidos, la recogida es exactamente lo planificado (no el total que envía el panel).
-        for (int i = 0; i < stopsToEvaluate.Count; i++)
+        for (int i = 0; !preservePickupLoads && i < stopsToEvaluate.Count; i++)
         {
             if (stopsToEvaluate[i].Kind == RouteStopKind.Pickup)
             {
@@ -2433,6 +2448,13 @@ public sealed class RoutePlansController(
         }
 
         return result.OrderBy(t => t.TripDate).ToList();
+    }
+
+    private static Guid? ReadPlanningDecisionId(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonNode.Parse(json)?["planningDecisionId"]?.GetValue<Guid>(); }
+        catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException) { return null; }
     }
 
     private static void ExtractReconciledInfo(string? inputJson, out decimal? reconciledCost, out object? reconciledExecution, out string? reconciledCostStatus)

@@ -80,6 +80,7 @@ export interface RisksResponseDto {
 }
 
 export interface RoutePlanSummaryDto {
+  planningDecisionId?: string | null;
   id: string;
   code: string;
   revision: number;
@@ -96,6 +97,46 @@ export interface RoutePlanSummaryDto {
   stopsCount: number;
   driverName?: string;
   driverAccountId?: string | null;
+  totalCost?: number | null;
+  costStatus?: string;
+}
+
+export interface PlanningDecisionRoute {
+  id: string;
+  vehicleId: string;
+  vehicleCode: string;
+  maxWeight: number;
+  maxVolume: number | null;
+  stops: RouteCandidateStop[];
+  evaluation: RouteSuggestionOptionDto['evaluation'];
+  orderIds: string[];
+  lines: Array<{ deliveryOrderId: string; productId: string; plannedQuantity: number }>;
+}
+
+export interface PlanningAlternative {
+  optionId: string;
+  title: string;
+  description: string;
+  isRecommended: boolean;
+  carrierType: string;
+  blockedReason: string | null;
+  routes: PlanningDecisionRoute[];
+  totalCost: number | null;
+  totalDistanceKm: number | null;
+  pendingOrdersCount: number;
+  status: 'Available' | 'Accepted' | 'Discarded';
+}
+
+export interface PlanningDecision {
+  published: boolean;
+  id: string;
+  version: number;
+  status: 'Open' | 'Accepted';
+  acceptedOptionId: string | null;
+  routeIds: string[];
+  orderIds: string[];
+  plannedStartUtc: string;
+  options: PlanningAlternative[];
 }
 
 export interface DriverOptionDto {
@@ -195,6 +236,7 @@ export interface RouteDriverAssignmentDto {
 }
 
 export interface RoutePlanDetailDto {
+  planningDecisionId?: string | null;
   id: string;
   code: string;
   revision: number;
@@ -629,6 +671,11 @@ export class ApiService {
           status: item.status,
           vehicleId: item.vehicleId,
           vehicleCode: item.vehicleCode,
+          planningDecisionId: item.planningDecisionId ?? null,
+          totalCost: item.totalCost ?? null,
+          costStatus: item.costStatus,
+          driverAccountId: item.driverAccountId ?? null,
+          driverName: item.driverName,
           plannedStartUtc: item.plannedStartUtc,
           totalDistanceKm: item.totalDistanceKm ?? item.km ?? 0,
           totalDurationMinutes: item.totalDurationMinutes ?? item.minutes ?? 0,
@@ -659,6 +706,7 @@ export class ApiService {
           status: res.status,
           vehicleId: res.vehicleId,
           vehicleCode: res.vehicleCode,
+          planningDecisionId: res.planningDecisionId ?? null,
           plannedStartUtc: res.plannedStartUtc,
           plannedEndUtc: res.plannedEndUtc,
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,
@@ -715,6 +763,24 @@ export class ApiService {
   }
 
   // --- MÉTODOS DE RUTAS POR PEDIDOS & VEHÍCULOS ---
+  preparePlanningDecision(orderIds: string[], operationId: string): Observable<PlanningDecision> {
+    return this.http.post<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions`, { orderIds, operationId });
+  }
+
+  getPlanningDecision(id: string): Observable<PlanningDecision> {
+    return this.http.get<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions/${encodeURIComponent(id)}`);
+  }
+
+  acceptPlanningDecision(id: string, optionId: string, expectedVersion: number, operationId: string): Observable<PlanningDecision> {
+    return this.http.post<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions/${encodeURIComponent(id)}/accept`,
+      { optionId, expectedVersion, operationId });
+  }
+
+  publishPlanningDecision(id: string, driverAssignments: Record<string, string>, operationId: string): Observable<PlanningDecision> {
+    return this.http.post<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions/${encodeURIComponent(id)}/publish`,
+      { driverAssignments, operationId });
+  }
+
   suggestRoutes(orderIds: string[], plannedDate?: string, optionId?: string): Observable<RouteSuggestionResponseDto> {
     return this.http.post<RouteSuggestionResponseDto>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
       orderIds,

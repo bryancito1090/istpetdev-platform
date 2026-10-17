@@ -49,6 +49,23 @@ describe('MapViewComponent: animación de ruta', () => {
     fixture.destroy();
   });
 
+  it('conserva la reproducción activa al refrescar el mismo trazado', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(MapViewComponent);
+    fixture.componentRef.setInput('polylines', [route]);
+    fixture.componentRef.setInput('animatedPolylineId', route.id);
+    fixture.componentRef.setInput('animationMode', 'journey');
+    fixture.detectChanges();
+    cancel.mockClear();
+    fixture.componentRef.setInput('polylines', [{ ...route, coordinates: route.coordinates.map(point => [...point]) }]);
+    fixture.detectChanges();
+    expect(cancel).not.toHaveBeenCalled();
+    expect((fixture.componentInstance as unknown as LayerAccess).animationLayer?.getLayers().length).toBeGreaterThan(0);
+    fixture.destroy();
+  });
+
   it('no anima los trazados aproximados punteados', () => {
     const fixture = TestBed.createComponent(MapViewComponent);
     const component = fixture.componentInstance;

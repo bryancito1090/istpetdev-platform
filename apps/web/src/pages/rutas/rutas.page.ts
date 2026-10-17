@@ -26,6 +26,11 @@ import {
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
+import { LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute, LucideUserRound } from '@lucide/angular';
+import { RouteJourneyPlayer } from './route-journey-player.component';
+import { JourneyRoute } from './route-journey.model';
+import { RouteDecisionWorkbench } from './route-decision-workbench.component';
+import { planningDecisionStorageKey, routeComparisonLabels } from './planning-decision.model';
 import {
   RouteOptionComparisonData,
   mapSourcingComparison,
@@ -106,15 +111,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 @Component({
   selector: 'page-rutas',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent, RouteDecisionWorkbench, RouteJourneyPlayer, LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute, LucideUserRound],
+  styleUrl: './rutas.page.css',
   template: `
-    <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div class="rutas-root">
+      <p class="rutas-eyebrow">ISTPET DEV <span>/</span> TORRE DE CONTROL</p>
       <!-- Encabezado Principal -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2.5">
             <h1 class="text-2xl font-bold text-[#1A2C44] tracking-tight">
-              Planificación y Asignación de Rutas
+              Planificación de rutas
             </h1>
             @if (isAuditor()) {
               <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE]">
@@ -143,10 +150,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                 <span>Consultando agente…</span>
               } @else {
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Pedir al Agente IA</span>
+                <span><svg lucideBot [size]="15" aria-hidden="true"></svg> Pedir al Agente IA</span>
               }
             </button>
 
@@ -172,6 +176,12 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         }
       </div>
 
+      <div class="rutas-overview" aria-label="Resumen de rutas cargadas">
+        <div><svg lucideRoute [size]="20"></svg><strong>{{ visibleRoutePlans().length }}</strong><span>rutas cargadas</span></div>
+        <div><svg lucideMapPin [size]="20"></svg><strong>{{ loadedStopsCount() }}</strong><span>paradas planificadas</span></div>
+        <div><svg lucideTruck [size]="20"></svg><strong>{{ loadedVehicleCount() }}</strong><span>vehículos involucrados</span></div>
+        @if (session.canWrite() && previousDecisionId()) { <button type="button" (click)="openPreviousDecision()">Continuar última propuesta <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></button> }
+      </div>
       <!-- Selector de Pestañas: Rutas / Bandeja de Rechazos -->
       <div class="flex items-center gap-8 border-b border-[#E3E8EE]">
         <button
@@ -182,7 +192,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <span>Rutas Planificadas</span>
           <span class="text-[11px] px-2 py-0.5 rounded-full font-mono"
             [ngClass]="activeTab() === 'rutas' ? 'bg-[#F1F3F5] text-[#1A2C44] font-bold' : 'bg-[#F1F3F5] text-[#697386]'">
-            {{ routePlans().length }}
+            {{ visibleRoutePlans().length }}
           </span>
         </button>
 
@@ -204,7 +214,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         <!-- Banner de retroalimentación -->
         @if (feedbackMessage()) {
         <div 
-          class="p-3.5 rounded-xl text-xs font-medium flex items-center justify-between border shadow-2xs transition-all"
+          class="p-3.5 rounded-xl text-xs font-medium flex items-center justify-between border shadow-2xs transition-colors"
           [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-[#F8FAFC] text-[#00875A] border-[#B3E6CD]' : 'bg-[#F8FAFC] text-[#DF1B41] border-[#F8B4C0]'">
           <div class="flex items-center gap-2">
             <span class="font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 rounded font-mono"
@@ -244,7 +254,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <span
                 class="text-xs px-2.5 py-0.5 rounded-full font-medium border"
                 [ngClass]="agentRun()!.status === 'Completed' ? 'bg-[#E8F7F0] text-[#00875A] border-[#B3E6CD]' : 'bg-[#FFF4E5] text-[#B76E00] border-[#FFE2B5]'">
-                {{ agentRun()!.status === 'Completed' ? '✓ Completado' : agentRun()!.status === 'Fallback' ? '⚠ Respuesta determinista' : agentRun()!.status === 'Running' ? 'En ejecución' : 'Falló la ejecución' }}
+                {{ agentRun()!.status === 'Completed' ? ' Completado' : agentRun()!.status === 'Fallback' ? ' Respuesta determinista' : agentRun()!.status === 'Running' ? 'En ejecución' : 'Falló la ejecución' }}
               </span>
               <button (click)="agentRun.set(null)" class="text-[#697386] hover:text-[#1A2C44] text-sm ml-2">✕</button>
             </div>
@@ -274,6 +284,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Panel de Planificación y Prioridad de Entrega (AMP-01 / AMP-02 / Issue #196) -->
       @if (session.canWrite()) {
+        <details class="rutas-planning-controls"><summary>Planificación automática y prioridades</summary>
         <div class="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-2xs space-y-3" data-testid="planning-control-panel">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="space-y-1">
@@ -322,7 +333,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Calculando...</span>
                 } @else {
-                  <span>⚡ Calcular Plan</span>
+                  <span><svg lucideZap [size]="15" aria-hidden="true"></svg> Calcular Plan</span>
                 }
               </button>
 
@@ -336,12 +347,13 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Comparando...</span>
                 } @else {
-                  <span>⚖ Costo de Priorizar</span>
+                  <span><svg lucideScale [size]="15" aria-hidden="true"></svg> Costo de Priorizar</span>
                 }
               </button>
             </div>
           </div>
         </div>
+        </details>
       }
 
       <!-- Tarjeta de Comparación: Costo de Priorizar (AMP-02) -->
@@ -472,11 +484,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         <td class="p-2.5">
                           @if (pt.meetsDeadline) {
                             <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#00875A] bg-[#E8F7F0] border border-[#B3E6CD] px-2 py-0.5 rounded-full">
-                              ✓ Llega antes de {{ pt.deadline }}
+                               Llega antes de {{ pt.deadline }}
                             </span>
                           } @else {
                             <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#DF1B41] bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                              ⚠ Excede límite
+                               Excede límite
                             </span>
                           }
                         </td>
@@ -498,7 +510,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       }
 
       <!-- Estado vacío -->
-      @if (!loading() && routePlans().length === 0) {
+      @if (!loading() && visibleRoutePlans().length === 0) {
         <div class="p-8 text-center bg-white border border-[#E3E8EE] rounded-xl space-y-3 shadow-2xs">
           <p class="text-[#2D3748] text-sm font-medium">No hay rutas planificadas todavía.</p>
           <div class="flex justify-center gap-3">
@@ -526,53 +538,53 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       }
 
       <!-- Listado y detalle de rutas -->
-      @if (!loading() && routePlans().length > 0) {
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Columna izquierda: Lista de rutas -->
-          <div class="space-y-3">
-            <h2 class="text-xs font-semibold text-[#697386] uppercase tracking-wider">
-              Rutas registradas ({{ routePlans().length }})
-            </h2>
-            <div class="space-y-2">
-              @for (plan of routePlans(); track plan.id) {
-                <div 
-                  (click)="selectPlan(plan.id)"
-                  class="p-3.5 rounded-xl border cursor-pointer transition-all bg-white shadow-2xs"
-                  [ngClass]="selectedPlanId() === plan.id ? 'border-[#635BFF] ring-1 ring-[#635BFF] bg-[#F8FAFC]/50' : 'border-[#E3E8EE] hover:border-[#CBD5E1]'">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-sm text-[#1A2C44]">{{ plan.code }}</span>
-                    <span
-                      class="text-[10px] font-mono px-2 py-0.5 rounded font-semibold"
-                      [ngClass]="{
-                        'bg-[#E8F7F0] text-[#00875A] border border-[#B3E6CD]': plan.status === 'Published',
-                        'bg-[#FFF4E5] text-[#B76E00] border border-[#FFE2B5]': plan.status === 'Proposed',
-                        'bg-[#F1F3F5] text-[#4F5B66] border border-[#E3E8EE]': plan.status !== 'Published' && plan.status !== 'Proposed'
-                      }">
-                      {{ plan.status }}
-                    </span>
-                  </div>
-                  <div class="text-xs text-[#697386] mt-2 flex justify-between font-mono">
-                    <span [title]="plan.vehicleDescription || plan.vehicleCode || 'C-01'">
-                      Vehículo: {{ plan.vehicleDescription || plan.vehiclePlate || plan.vehicleCode || 'C-01' }}
-                    </span>
-                    <span>{{ plan.totalDistanceKm }} km</span>
-                  </div>
-                </div>
+      @if (!loading() && visibleRoutePlans().length > 0) {
+        <div class="rutas-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section class="rutas-registry" aria-labelledby="registered-routes-title">
+            <div class="registry-heading"><div><h2 id="registered-routes-title">Rutas registradas ({{ visibleRoutePlans().length }})</h2><p>Selecciona una ruta para ver su recorrido. Las etiquetas comparan propuestas de la misma fecha; revisa también sus paradas y cobertura.</p></div><div class="registry-controls"><button type="button" aria-label="Ver rutas anteriores" (click)="registeredRoutes.scrollBy({left: -330})"><svg lucideArrowLeft [size]="18"></svg></button><button type="button" aria-label="Ver más rutas" (click)="registeredRoutes.scrollBy({left: 330})"><svg lucideArrowRight [size]="18"></svg></button></div></div>
+            <div #registeredRoutes class="registered-route-cards" aria-label="Rutas registradas">
+              @for (plan of visibleRoutePlans(); track plan.id) {
+                <button type="button" (click)="selectPlan(plan.id)" class="route-card" [class.route-selected]="selectedPlanId() === plan.id" [attr.aria-pressed]="selectedPlanId() === plan.id">
+                  <div class="route-card-heading"><strong>{{ plan.code }}</strong><span class="route-status" [class.proposed]="plan.status === 'Proposed'">{{ plan.status === 'Proposed' ? 'Propuesta' : plan.status === 'Published' ? 'Publicada' : plan.status }}</span></div>
+                  @if (plan.status === 'Proposed') { <div class="route-reasons" aria-label="Diferencias de esta propuesta">@for (label of registeredRouteLabels(plan); track label) { <span>{{ label }}</span> }</div> }
+                  <div class="route-card-vehicle"><svg lucideTruck [size]="16"></svg>{{ plan.vehicleDescription || plan.vehiclePlate || plan.vehicleCode || 'Sin vehículo' }}<span>{{ plan.stopsCount }} paradas</span></div>
+                  <div class="route-card-metrics"><strong>{{ plan.totalCost == null ? 'Costo sin dato' : '$ ' + (plan.totalCost | number:'1.2-2') }}</strong><span>{{ plan.totalDistanceKm | number:'1.0-1' }} km · {{ plan.totalDurationMinutes | number:'1.0-0' }} min</span></div>
+                  <span class="route-card-link">{{ selectedPlanId() === plan.id ? 'Viendo recorrido' : 'Ver recorrido' }}<svg lucideArrowUpRight [size]="15"></svg></span>
+                </button>
               }
             </div>
-          </div>
+          </section>
 
           <!-- Columna derecha: Detalle y Paradas -->
-          <div class="lg:col-span-2 space-y-4">
+          <div class="rutas-detail lg:col-span-2 space-y-4">
             @if (selectedDetail()) {
-              <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 space-y-4 shadow-2xs">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F1F3F5] pb-4">
+              <div class="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 space-y-4">
+                @if (routeLegend().length > 0) {
+                  <div class="vehicle-selector" role="tablist" aria-label="Seleccionar vehículo de la propuesta">
+                    @for (item of routeLegend(); track item.planId) {
+                      <button type="button" (click)="selectPlan(item.planId)" [attr.data-legend]="item.vehicleCode" role="tab" [attr.aria-selected]="item.selected"
+                        class="vehicle-selector-button"
+                        [class.border-slate-900]="item.selected" [class.border-slate-200]="!item.selected">
+                        <span class="inline-block w-3 h-3 rounded-full" [style.background-color]="item.color"></span>
+                        <span class="font-semibold text-slate-800">{{ item.vehicleCode }}</span>
+                        <span class="text-slate-500">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
+                      </button>
+                    }
+                  </div>
+                  @if (routeLegendHasApproximate()) {
+                    <p class="text-[11px] text-amber-700">
+                      Las líneas punteadas son aproximadas (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
+                    </p>
+                  }
+                }
+
+                <div class="route-approval-bar">
                   <div>
                     <h3 class="font-bold text-[#1A2C44] text-base">{{ selectedDetail()!.code }}</h3>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386] font-mono mt-1">
                       <span><strong>Distancia:</strong> {{ selectedDetail()!.totalDistanceKm }} km</span>
                       <span><strong>Duración:</strong> {{ selectedDetail()!.totalDurationMinutes }} min</span>
-                      <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'C-01' }}</span>
+                      <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}</span>
                       <span><strong>Salida:</strong> {{ selectedDetail()!.plannedStartUtc | date:'shortTime' }}</span>
                       @if (selectedDetail()!.plannedEndUtc) {
                         <span><strong>Fin Est.:</strong> {{ selectedDetail()!.plannedEndUtc | date:'shortTime' }}</span>
@@ -580,13 +592,13 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </div>
                   </div>
 
-                  @if (selectedDetail()!.status !== 'Published') {
+                  @if (selectedDetail()!.status === 'Proposed') {
                     @if (session.canWrite()) {
-                      <div class="flex items-center gap-2">
+                      <div class="route-approval-actions">
                         <label class="text-xs text-[#4F5B66] flex items-center gap-2">
-                          <span>Conductor</span>
+                          <span>Conductor de {{ selectedDetail()!.vehicleCode }}</span>
                           <select class="h-9 border border-[#E3E8EE] rounded-lg px-2.5 text-xs text-[#2D3748] bg-white focus:outline-none focus:ring-1 focus:ring-[#00A7C4]" aria-label="Conductor de la ruta"
-                            [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
+                            [ngModel]="selectedDriverId()" (ngModelChange)="assignSelectedDriver($event)">
                             <option value="">Elegir conductor…</option>
                             @for (driver of drivers(); track driver.accountId) {
                               <option [value]="driver.accountId">{{ driver.displayName }}</option>
@@ -596,10 +608,10 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         <button
                           type="button"
                           (click)="publishPlan(selectedDetail()!.id)"
-                          [disabled]="actionLoading() || !selectedDriverId()"
-                          [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
-                          class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#00A7C4] text-white hover:bg-[#0093AD] transition-colors shadow-2xs disabled:opacity-50">
-                          {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
+                          [disabled]="actionLoading() || (!selectedDetail()!.planningDecisionId && !selectedDriverId())"
+                          [title]="selectedDetail()!.planningDecisionId || selectedDriverId() ? '' : 'Selecciona un conductor para aprobar y publicar esta ruta'"
+                          class="route-approve-button">
+                          {{ actionLoading() ? 'Publicando…' : selectedDetail()!.planningDecisionId ? 'Revisar y publicar propuesta' : 'Aprobar y publicar ruta' }}<svg lucideArrowUpRight [size]="20" aria-hidden="true"></svg>
                         </button>
                       </div>
                       @if (drivers().length === 0) {
@@ -641,56 +653,64 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
-                <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#697386]" data-route-assignment>
-                  <span><span class="text-[#697386]">Bodega:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
-                  <span><span class="text-[#697386]">Vehículo:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || '—' }}</strong></span>
+                <section class="rounded-xl border border-[#dce4ed] bg-white p-4 space-y-4" data-route-assignment aria-label="Asignación de la ruta">
+                  <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideWarehouse [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Bodega de origen</dt><dd class="text-sm font-semibold text-[#152a42] break-words">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</dd></div></div>
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}</dd></div></div>
+                    @if (selectedDetail()!.status === 'Published') {
+                      <div class="flex items-start gap-3 min-w-0"><svg lucideUserRound [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Conductor asignado</dt><dd class="text-sm font-semibold break-words" [class]="selectedDetail()!.driverName ? 'text-[#152a42]' : 'text-amber-800'">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</dd></div></div>
+                    }
+                  </dl>
+                </section>
                   @if (selectedDetail()!.status === 'Published') {
-                    <span>
-                      <span class="text-[#697386]">Conductor:</span>
-                      <strong [class.text-[#DF1B41]]="!selectedDetail()!.driverName" class="text-[#1A2C44]">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
-                    </span>
                     @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
-                      <span class="text-[#DF1B41]">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
+                      <p role="status" class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">{{ selectedDetail()!.unassignedDeliveries }} entregas pendientes de asignar a un conductor.</p>
                     }
                     @if (session.canWrite()) {
-                      <span class="flex items-center gap-2">
-                        <select class="h-8 border border-[#E3E8EE] rounded-md px-2 py-0.5 text-xs text-[#2D3748] bg-white" aria-label="Reasignar conductor"
-                          [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
-                          <option value="">Cambiar conductor…</option>
-                          @for (driver of drivers(); track driver.accountId) {
-                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
-                          }
-                        </select>
-                        <button type="button" class="text-xs font-semibold text-[#00A7C4] hover:text-[#0093AD] underline disabled:opacity-50"
+                      <div class="flex flex-col sm:flex-row sm:items-end gap-3 border-t border-[#dce4ed] pt-4">
+                        <label class="flex-1 min-w-0 text-xs text-[#53647b]">{{ selectedDetail()!.driverName ? 'Cambiar conductor de ' : 'Elegir conductor para ' }}{{ selectedDetail()!.vehicleCode }}
+                          <select class="mt-2 block w-full min-h-11 border border-[#dce4ed] rounded-lg px-3 text-sm text-[#152a42] bg-white" aria-label="Reasignar conductor"
+                            [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)" [disabled]="actionLoading()">
+                            <option value="">Seleccionar conductor</option>
+                            @for (driver of drivers(); track driver.accountId) { <option [value]="driver.accountId">{{ driver.displayName }}</option> }
+                          </select>
+                        </label>
+                        <button type="button" class="min-h-11 px-5 rounded-lg bg-[#0066ff] text-white text-sm font-semibold hover:bg-[#0052d9] disabled:opacity-50 inline-flex items-center justify-center gap-2"
                           [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
-                          Asignar
+                          <svg lucideUserRound [size]="17"></svg>{{ actionLoading() ? 'Asignando…' : 'Asignar conductor' }}
                         </button>
-                      </span>
+                      </div>
                     }
                   }
-                </div>
+                </section>
+
+                <!-- Mapa -->
+                @if (mapMarkers().length > 0) {
+                  <div class="rutas-map rounded-lg overflow-hidden border border-slate-200">
+                    <route-journey-player [routes]="operationJourneyRoutes()" [focusedRouteId]="selectedPlanId()" [replayKey]="routeReplayKey()" (focusRoute)="selectPlan($event)"></route-journey-player>
+                  </div>
+                }
 
                 <!-- #231: SEGUIMIENTO EN VIVO: LÍNEA DE AVANCE, RESUMEN Y ESTADOS EN ESPAÑOL -->
                 @if (selectedDetail()!.stops.length > 0) {
-                  <div class="bg-[#1A2C44] text-white rounded-lg p-4 space-y-3 border border-[#2D3E53] shadow-xs" data-testid="tracking-card">
+                  <div class="bg-white text-[#152a42] rounded-lg p-4 space-y-3 border border-[#dce4ed] shadow-xs" data-testid="tracking-card">
                     <!-- Resumen superior y botón de actualización -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2D3E53] pb-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#dce4ed] pb-3">
                       <div class="flex items-center gap-2.5">
                         <span class="relative flex h-2.5 w-2.5">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00D924] opacity-75"></span>
+                          <span class="absolute inline-flex h-full w-full rounded-full bg-[#00D924] opacity-75"></span>
                           <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00D924]"></span>
                         </span>
                         <div>
                           <div class="flex items-center gap-2">
-                            <h4 class="text-xs font-semibold tracking-tight text-white uppercase tracking-wider">
+                            <h4 class="text-xs font-semibold tracking-tight text-[#152a42] uppercase tracking-wider">
                               Seguimiento de Ruta en Vivo
                             </h4>
-                            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#00D924]/20 text-[#CBF4C9] border border-[#00D924]/30">
+                            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#e6f5ec] text-[#087b59] border border-[#c2e6d0]">
                               Autorefresco 25s
                             </span>
                           </div>
-                          <p class="text-xs text-[#A0AEC0] font-mono mt-0.5" data-testid="tracking-summary-text">
+                          <p class="text-xs text-[#53647b] font-mono mt-0.5" data-testid="tracking-summary-text">
                             {{ trackingSummary().summaryText }}
                           </p>
                         </div>
@@ -698,18 +718,16 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                       <!-- Controles de actualización -->
                       <div class="flex items-center gap-2 text-xs">
-                        <span class="text-[11px] text-[#A0AEC0] font-mono" data-testid="last-tracking-update">
+                        <span class="text-[11px] text-[#53647b] font-mono" data-testid="last-tracking-update">
                           {{ lastTrackingUpdateText() }}
                         </span>
                         <button
                           type="button"
                           (click)="manualRefreshTracking()"
                           [disabled]="trackingRefreshing()"
-                          class="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-[#2D3E53] hover:bg-[#3B4E66] text-white font-medium text-xs transition-colors border border-[#3B4E66]/80 disabled:opacity-50"
+                          class="h-8 inline-flex items-center gap-1.5 px-3 rounded-md bg-[#edf2f7] hover:bg-[#e2eaf2] text-[#152a42] font-medium text-xs transition-colors border border-[#dce4ed]/80 disabled:opacity-50"
                           data-testid="btn-refresh-tracking">
-                          <svg [class.animate-spin]="trackingRefreshing()" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
+                          <svg lucideRefreshCw [size]="15" [class.animate-spin]="trackingRefreshing()" aria-hidden="true"></svg>
                           <span>Actualizar</span>
                         </button>
                       </div>
@@ -723,7 +741,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             <!-- Conector entre paradas -->
                             @if (!last) {
                               <div class="absolute top-3.5 left-1/2 w-full h-0.5 -z-0"
-                                   [ngClass]="stop.isCompleted ? 'bg-[#00D924]' : (stop.isCurrent ? 'bg-gradient-to-r from-[#F5A623] to-[#2D3E53]' : 'bg-[#2D3E53]')">
+                                   [ngClass]="stop.isCompleted ? 'bg-[#00D924]' : (stop.isCurrent ? 'bg-gradient-to-r from-[#F5A623] to-[#dce4ed]' : 'bg-[#edf2f7]')">
                               </div>
                             }
 
@@ -732,7 +750,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                  [ngClass]="{
                                    'bg-[#00D924] text-[#1A2C44] shadow-xs ring-2 ring-[#00D924]/40': stop.isCompleted,
                                    'bg-[#F5A623] text-[#1A2C44] font-bold shadow-xs ring-4 ring-[#F5A623]/30': stop.isCurrent,
-                                   'bg-[#2D3E53] text-[#A0AEC0] border border-[#3B4E66]': stop.isPending
+                                   'bg-[#edf2f7] text-[#53647b] border border-[#dce4ed]': stop.isPending
                                  }">
                               @if (stop.isCompleted) {
                                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -753,19 +771,19 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             }
 
                             <!-- Info de la parada -->
-                            <span class="mt-1 text-xs font-medium text-white truncate max-w-[130px]" [title]="stop.code + ' - ' + stop.name">
+                            <span class="mt-1 text-xs font-medium text-[#152a42] truncate max-w-[130px]" [title]="stop.code + ' - ' + stop.name">
                               {{ stop.name }}
                             </span>
-                            <span class="text-[10px] text-[#A0AEC0] font-mono">
-                              {{ stop.kind === 'Pickup' ? 'Bodega' : stop.code }} · {{ stop.etaOrWindow }}
+                            <span class="text-[10px] text-[#53647b] font-mono">
+                              {{ stop.kind === 'Pickup' ? 'Bodega' : 'Parada ' + stop.sequence }} · {{ stop.etaOrWindow }}
                             </span>
 
                             <!-- Estado en español -->
                             <span class="mt-1 px-2 py-0.5 rounded text-[10px] font-medium"
                                   [ngClass]="{
-                                    'bg-[#00D924]/20 text-[#CBF4C9] border border-[#00D924]/30': stop.isCompleted,
-                                    'bg-[#F5A623]/20 text-[#F5A623] border border-[#F5A623]/30': stop.isCurrent,
-                                    'bg-[#2D3E53] text-[#A0AEC0] border border-[#3B4E66]': stop.isPending
+                                    'bg-[#e6f5ec] text-[#087b59] border border-[#c2e6d0]': stop.isCompleted,
+                                    'bg-[#F5A623]/20 text-[#996000] border border-[#F5A623]/30': stop.isCurrent,
+                                    'bg-[#edf2f7] text-[#53647b] border border-[#dce4ed]': stop.isPending
                                   }">
                               {{ stop.statusLabel }}
                             </span>
@@ -776,36 +794,6 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   </div>
                 }
 
-                <!-- Mapa -->
-                @if (mapMarkers().length > 0) {
-                  <div class="h-72 rounded-xl overflow-hidden border border-[#E3E8EE]">
-                    <ui-map-view 
-                      [markers]="mapMarkers()" 
-                      [polylines]="mapPolylines()"
-                      [animatedPolylineId]="selectedPlanId()"
-                      [zoom]="7">
-                    </ui-map-view>
-                  </div>
-                }
-                @if (routeLegend().length > 0) {
-                  <div class="flex flex-wrap gap-2" aria-label="Leyenda de rutas">
-                    @for (item of routeLegend(); track item.planId) {
-                      <button type="button" (click)="selectPlan(item.planId)" [attr.data-legend]="item.vehicleCode"
-                        class="inline-flex items-center gap-2 text-[11px] px-2.5 py-1 rounded-lg border bg-white hover:bg-[#F8FAFC] transition-colors"
-                        [class.border-[#1A2C44]]="item.selected" [class.border-[#E3E8EE]]="!item.selected">
-                        <span class="inline-block w-3 h-3 rounded-full" [style.background-color]="item.color"></span>
-                        <span class="font-semibold text-[#1A2C44]">{{ item.vehicleCode }}</span>
-                        <span class="text-[#697386]">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
-                      </button>
-                    }
-                  </div>
-                  @if (routeLegendHasApproximate()) {
-                    <p class="text-[11px] text-[#B76E00]">
-                      Las líneas punteadas son aproximadas (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
-                    </p>
-                  }
-                }
-
                 <!-- Pestañas de Detalle de la Planificación (#164) -->
                 <div class="border-b border-[#E3E8EE] flex flex-wrap gap-6 pt-2">
                   <button
@@ -813,7 +801,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     (click)="detailTab.set('paradas')"
                     class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
                     [ngClass]="detailTab() === 'paradas' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
-                    <span>📍 Itinerario y Paradas</span>
+                    <span><svg lucideMapPin [size]="15" aria-hidden="true"></svg> Itinerario y Paradas</span>
                     <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F1F3F5] text-[#4F5B66] font-mono">
                       {{ selectedDetail()!.stops.length }}
                     </span>
@@ -824,7 +812,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     (click)="detailTab.set('productos')"
                     class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
                     [ngClass]="detailTab() === 'productos' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
-                    <span>📦 Por Producto (SKUs)</span>
+                    <span><svg lucidePackage [size]="15" aria-hidden="true"></svg> Por Producto (SKUs)</span>
                     @if (aggregatedProducts().length > 0) {
                       <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8F7F0] text-[#00875A] font-bold font-mono border border-[#B3E6CD]">
                         {{ aggregatedProducts().length }}
@@ -837,7 +825,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     (click)="detailTab.set('conductor')"
                     class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
                     [ngClass]="detailTab() === 'conductor' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
-                    <span>🚚 Por Conductor</span>
+                    <span><svg lucideTruck [size]="15" aria-hidden="true"></svg> Por Conductor</span>
                     <span class="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
                       [ngClass]="selectedDetail()!.driverName ? 'bg-[#E8F7F0] text-[#00875A] font-bold border border-[#B3E6CD]' : 'bg-[#FFF4E5] text-[#B76E00] border border-[#FFE2B5]'">
                       {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente' }}
@@ -850,7 +838,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     data-testid="tab-stock-bodegas"
                     class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
                     [ngClass]="detailTab() === 'stock-bodegas' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
-                    <span>🏬 Stock por Bodega</span>
+                    <span><svg lucideWarehouse [size]="15" aria-hidden="true"></svg> Stock por Bodega</span>
                     @if (warehouseStock().length > 0) {
                       <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F1F3F5] text-[#4F5B66] font-mono">
                         {{ filteredWarehouseStock().length }}
@@ -890,7 +878,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                     <div class="space-y-3">
                       @for (stop of selectedDetail()!.stops; track stop.sequence) {
-                        <div class="border border-[#E3E8EE] rounded-md overflow-hidden bg-white shadow-xs transition-all">
+                        <div class="border border-[#E3E8EE] rounded-md overflow-hidden bg-white shadow-xs transition-colors">
                           <!-- Cabecera de la parada (clic para colapsar/expandir) -->
                           <div
                             (click)="toggleStopExpansion(stop.sequence)"
@@ -1512,7 +1500,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Estado Vacío -->
           @if (!rejectedLoading() && rejectedCaptures().length === 0) {
             <div class="p-8 text-center bg-white border border-dashed border-[#E3E8EE] rounded-md space-y-2">
-              <div class="w-8 h-8 rounded-full bg-[#00D924]/10 text-[#0E6245] flex items-center justify-center mx-auto text-sm font-bold">✓</div>
+              <div class="w-8 h-8 rounded-full bg-[#00D924]/10 text-[#0E6245] flex items-center justify-center mx-auto text-sm font-bold"></div>
               <p class="text-[#1A2C44] font-semibold text-sm">Sin capturas rechazadas pendientes</p>
               <p class="text-[#697386] text-xs max-w-md mx-auto">
                 No hay elementos en outbox con estado «Requiere Revisión» para los filtros seleccionados.
@@ -1544,7 +1532,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                     <div class="flex items-center gap-2">
                       <span class="text-xs px-2.5 py-1 rounded font-medium bg-[#DF1B41]/10 text-[#DF1B41] border border-[#DF1B41]/30">
-                        ⚠ Requiere Revisión
+                         Requiere Revisión
                       </span>
                     </div>
                   </div>
@@ -1610,21 +1598,21 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
     <!-- MODAL ASISTENTE DE RUTAS POR PEDIDOS (4 PASOS) -->
     <!-- ======================================================== -->
     @if (isWizardOpen()) {
-      <div class="fixed inset-0 z-50 bg-[#1A2C44]/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white w-full max-w-7xl h-[94vh] rounded-lg shadow-xl flex flex-col overflow-hidden border border-[#E3E8EE]">
+      <div [class.invisible]="isDecisionWorkbenchOpen()" class="rutas-dialog fixed inset-0 z-50 bg-[#1A2C44]/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white w-full max-w-[1600px] h-[94vh] rounded-2xl shadow-xl flex flex-col overflow-hidden border border-[#E3E8EE]">
           
           <!-- Header Asistente -->
-          <div class="px-6 py-4 bg-[#1A2C44] text-white flex items-center justify-between border-b border-[#2D3E53]">
+          <div class="px-4 sm:px-6 py-4 bg-white text-[#1A2C44] flex items-center justify-between gap-3 border-b border-[#E3E8EE]">
             <div>
               <div class="flex items-center gap-2.5">
-                <h2 class="text-base font-semibold text-white tracking-tight">Planificador de Rutas por Pedidos y Abastecimiento</h2>
-                <span class="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
+                <h2 class="text-base font-semibold tracking-tight">Planifica tus entregas</h2>
+                <span class="text-[11px] font-medium whitespace-nowrap px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                   Paso {{ wizardStep() }} de 4
                 </span>
               </div>
-              <p class="text-xs text-[#A0AEC0] mt-0.5">
+              <p class="text-xs text-[#53647b] mt-1">
                 @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
-                @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
+                @if (wizardStep() === 2) { Revisa las recogidas y entregas en el mapa. Después podrás comparar y aprobar tu propuesta. }
                 @if (wizardStep() === 3) { Compara opciones A/B/C (propia vs contratada), desglose de costos, riesgos y justificación. }
                 @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
               </p>
@@ -1633,18 +1621,18 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <button
               type="button"
               (click)="closeWizard()"
-              class="h-8 px-3 rounded-md bg-[#2D3E53] hover:bg-[#3B4E66] text-white text-xs font-medium border border-[#3B4E66] transition-colors">
+              class="h-10 px-3 rounded-lg bg-white hover:bg-slate-50 text-[#53647b] text-xs font-medium border border-[#E3E8EE] transition-colors">
               Cerrar
             </button>
           </div>
 
           <!-- Cuerpo Asistente -->
-          <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-            
+          <div class="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
+
             <!-- Columna Izquierda: Formulario y Pasos -->
-            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col gap-3.5 bg-[#F8FAFC] overflow-y-auto transition-all"
-              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
-              
+            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col shrink-0 gap-3.5 bg-[#F8FAFC] lg:overflow-y-auto min-w-0"
+              [ngClass]="wizardStep() === 2 ? 'order-2 lg:order-1 lg:col-span-4' : wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
+
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
                 <div class="space-y-3.5">
@@ -1763,7 +1751,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <!-- Lista de Pedidos Disponibles con Checkbox y Jerarquía Visual -->
                   <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                     @for (ord of filteredPendingOrders(); track ord.id) {
-                      <div class="p-3 rounded-md border bg-white shadow-xs flex items-start gap-2.5 text-xs cursor-pointer transition-all"
+                      <div class="p-3 rounded-md border bg-white shadow-xs flex items-start gap-2.5 text-xs cursor-pointer transition-colors"
                         [ngClass]="selectedOrderIds().has(ord.id) ? 'border-[#635BFF] ring-1 ring-[#635BFF] bg-[#F8FAFC]/50' : 'border-[#E3E8EE] hover:border-[#697386]/40'"
                         (click)="toggleOrderSelection(ord.id)">
                         <input
@@ -1835,32 +1823,39 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <!-- PASO 2: REVISIÓN DE ABASTECIMIENTO -->
               @if (wizardStep() === 2) {
                 <div class="space-y-3.5">
-                  <div>
-                    <span class="text-xs font-semibold text-[#1A2C44] uppercase tracking-wider">Asignación de Bodegas por Cercanía</span>
-                    <p class="text-xs text-[#697386] mt-0.5">
-                      El sistema verificó el stock FEFO disponible y asignó automáticamente la bodega más próxima:
-                    </p>
+                  <div class="flex items-center gap-3">
+                    <svg lucideWarehouse [size]="24" class="text-sky-700 shrink-0"></svg>
+                    <div><h3 class="text-base font-semibold text-[#1A2C44]">Recogidas y entregas</h3><p class="text-xs text-[#53647b] mt-1">Stock disponible, priorizando los lotes que vencen antes.</p></div>
                   </div>
-
-                  @for (opt of routeOptions(); track opt.optionId) {
-                    <div class="p-3.5 rounded-md border border-[#E3E8EE] bg-white space-y-2.5 text-xs shadow-xs">
-                      <span class="font-semibold text-[#1A2C44] block text-xs">{{ opt.title }}</span>
-                      <p class="text-[11px] text-[#697386]">{{ opt.description }}</p>
-
-                      <div class="border border-[#E3E8EE] rounded-md p-2.5 bg-[#F8FAFC] space-y-1.5">
-                        @for (l of opt.sourcingLines; track l.orderId) {
-                          <div class="border-b border-[#E3E8EE] pb-1.5 last:border-0 last:pb-0">
-                            <div class="font-medium text-[#1A2C44]">{{ l.productName }} ({{ l.requestedQuantity }} u)</div>
-                            <div class="text-[10px] text-[#697386]">Para: {{ l.destinationName }}</div>
-                            <div class="mt-1 text-[10px] text-[#0E6245] font-mono">
-                              @for (a of l.allocations; track a.warehouseId) {
-                                <div>Origen {{ a.warehouseCode }}: {{ a.quantity }} u</div>
-                              }
-                            </div>
-                          </div>
-                        }
-                      </div>
+                  @if (routeOptions().length > 1) {
+                    <label class="block text-xs font-medium text-[#53647b]">Propuesta a visualizar
+                      <select class="mt-2 w-full min-h-11 rounded-lg border border-[#dce4ed] bg-white px-3 text-[#152a42]" [ngModel]="selectedOptionId()" (ngModelChange)="selectComparisonOption($event)" [disabled]="actionLoading()">
+                        @for (opt of routeOptions(); track opt.optionId) { <option [value]="opt.sourcingOptionId ?? opt.optionId">{{ opt.isRecommended ? 'Recomendada · ' : '' }}{{ opt.title }}</option> }
+                      </select>
+                    </label>
+                  }
+                  @if (wizardSelectedOption(); as opt) {
+                    <div class="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 space-y-2">
+                      <div class="flex flex-wrap gap-2">@if (opt.isRecommended) { <strong>Recomendada por el planificador</strong> } @for (label of wizardOptionLabels(opt); track label) { <span>{{ label }}</span> }</div>
+                      <p>{{ opt.description }}</p>
+                      <div class="flex flex-wrap gap-4 font-semibold"><span>{{ opt.evaluation.totalDistanceKm | number:'1.0-1' }} km</span><span>{{ opt.evaluation.totalDurationMinutes | number:'1.0-0' }} min</span><span>$ {{ opt.evaluation.totalCost | number:'1.2-2' }}</span></div>
                     </div>
+                    <div class="space-y-3" aria-label="Productos, orígenes y destinos">
+                      @for (line of opt.sourcingLines; track $index) {
+                        <article class="rounded-xl border border-[#dce4ed] bg-white p-4 text-xs space-y-3">
+                          <div class="flex items-center gap-2"><svg lucidePackage [size]="17" class="text-sky-700 shrink-0"></svg><h4 class="font-semibold text-[#152a42]">{{ line.productName }} <span class="font-normal text-[#53647b]">· {{ line.requestedQuantity }} u</span></h4></div>
+                          <div class="border-l-2 border-sky-200 ml-2 pl-4 space-y-3">
+                            <div><p class="text-[10px] uppercase tracking-wide text-[#53647b] mb-1">Recoger en</p>@for (allocation of line.allocations; track allocation.warehouseId) { <p class="font-medium text-[#152a42]">{{ allocation.warehouseCode }} <span class="text-[#53647b]">· {{ allocation.quantity }} u</span></p> }</div>
+                            <div><p class="text-[10px] uppercase tracking-wide text-[#53647b] mb-1">Entregar en</p><p class="font-medium text-[#152a42]">{{ line.destinationName }}</p></div>
+                          </div>
+                        </article>
+                      }
+                      @if (!opt.sourcingLines.length) { <p class="text-xs text-[#53647b]">Consulta las recogidas y entregas de esta propuesta en el mapa.</p> }
+                    </div>
+                    <div class="flex items-start gap-2 text-xs text-[#53647b]"><svg lucideRoute [size]="16" class="shrink-0"></svg><p>La ruta es una vista previa. En el siguiente paso eliges la propuesta y revisas los vehículos antes de aprobar.</p></div>
+                    @if (!opt.evaluation.isValid) {
+                      <div role="alert" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Esta secuencia tiene restricciones. Revisa las alternativas antes de aprobar.</div>
+                    }
                   }
                 </div>
               }
@@ -1889,7 +1884,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       <button
                         type="button"
                         (click)="isProjectorMode.set(!isProjectorMode())"
-                        class="h-8 px-3 text-xs font-medium rounded-md border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        class="h-8 px-3 text-xs font-medium rounded-md border transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
                         [ngClass]="isProjectorMode() ? 'bg-[#635BFF] text-white border-[#635BFF]' : 'bg-white text-[#2D3748] border-[#E3E8EE] hover:bg-[#F8FAFC]'"
                         title="Modo Proyector: expande a pantalla completa y aumenta tamaño de fuente para proyección a 3 metros">
                         <span>{{ isProjectorMode() ? '⛶ Modo Normal' : '⛶ Modo Proyector (3 m)' }}</span>
@@ -2269,7 +2264,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   @if (selectedVehicleOverweight()) {
                     <div class="p-3.5 bg-[#F5A623]/10 border border-[#F5A623]/30 rounded-md text-xs text-[#B7791F] space-y-1">
                       <div class="font-semibold flex items-center gap-1.5 text-[#B7791F]">
-                        <span>Advertencia de Capacidad y Remanentes</span>
+                        <span><svg lucideTriangleAlert [size]="15" aria-hidden="true"></svg> Advertencia de Capacidad y Remanentes</span>
                       </div>
                       <p class="text-[11px]">
                         El peso total seleccionado (<strong>{{ selectedOrdersSummary().weightKg }} kg</strong>) supera la capacidad del vehículo seleccionado (<strong>{{ selectedVehicleCapacity() }} kg</strong>).
@@ -2289,7 +2284,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="stepBack()"
                     class="h-9 px-4 text-xs font-medium rounded-md bg-white border border-[#E3E8EE] text-[#2D3748] hover:bg-[#F8FAFC] transition-colors">
-                    ← Anterior
+                    <svg lucideArrowLeft [size]="15" class="inline mr-1"></svg> Anterior
                   </button>
                 } @else {
                   <div></div>
@@ -2298,10 +2293,10 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 @if (wizardStep() < 4) {
                   <button
                     type="button"
-                    (click)="advanceWizardStep()"
+                    (click)="advanceWizardFlow()"
                     [disabled]="selectedOrderIds().size === 0 || actionLoading() || (wizardStep() > 1 && (comparisonMode() === 'saved' || !routeOptions().length || (wizardStep() === 3 && selectedComparisonOption()?.category === 'Contratada')))"
-                    class="h-9 px-4 text-xs font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5249E0] transition-colors disabled:opacity-50 shadow-xs">
-                    Siguiente →
+                    class="min-h-12 px-4 text-xs font-semibold rounded-xl bg-[#0066ff] text-white hover:bg-[#0052d9] transition-colors disabled:opacity-50 shadow-xs">
+                    {{ wizardStep() === 1 ? (actionLoading() ? 'Calculando recorridos…' : 'Calcular recorridos') : wizardStep() === 2 ? 'Comparar y aprobar' : 'Siguiente' }} <svg lucideArrowRight [size]="16" class="inline ml-2"></svg>
                   </button>
                 } @else {
                   <button
@@ -2316,8 +2311,13 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             </div>
 
             <!-- Columna Derecha: Mapa -->
-            <div class="relative h-full min-h-[450px] transition-all bg-[#F8FAFC]"
-              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
+            <div class="relative shrink-0 min-w-0 min-h-[450px] lg:h-full bg-[#F8FAFC]"
+              [ngClass]="wizardStep() === 2 ? 'order-1 lg:order-2 lg:col-span-8 p-3 sm:p-5' : wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
+              @if (wizardStep() === 2) {
+                @if (wizardJourney(); as route) {
+                  <route-journey-player class="wizard-journey" [routes]="[route]" [focusedRouteId]="route.id" [replayKey]="wizardReplayKey()"></route-journey-player>
+                } @else { <div class="p-8 text-sm text-[#53647b]">No hay un recorrido disponible para esta propuesta. Compara las alternativas para revisar su viabilidad.</div> }
+              } @else {
               <ui-map-view
                 #wizardMapView
                 [markers]="wizardMarkers()"
@@ -2325,8 +2325,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 animatedPolylineId="wizard-road-route"
                 [zoom]="8">
               </ui-map-view>
+              }
             </div>
-            @if (wizardApproximate()) {
+            @if (wizardApproximate() && wizardStep() !== 2) {
               <p class="text-[11px] text-[#B7791F] mt-1 px-3 py-1 bg-[#F5A623]/10 border-t border-[#F5A623]/30">
                 Trazado aproximado (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
               </p>
@@ -2334,6 +2335,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           </div>
         </div>
       </div>
+    }
+    @if (isDecisionWorkbenchOpen()) {
+      <route-decision-workbench [orderIds]="decisionOrderIds()" [decisionId]="activeDecisionId()" [initialOptionId]="isWizardOpen() ? selectedOptionId() : ''" [initialAssignments]="vehicleDriverAssignments()" (assignmentsChanged)="onVehicleAssignmentsChanged($event)" (closed)="closeDecisionWorkbench()" (requestOrders)="startNewDecision()" (saved)="onDecisionSaved($event)"></route-decision-workbench>
     }
   `
 })
@@ -2351,6 +2355,85 @@ export class RutasPage implements OnInit, OnDestroy {
   @ViewChild('wizardMapView') wizardMapView?: MapViewComponent;
 
   readonly routePlans = signal<RoutePlanSummaryDto[]>([]);
+  readonly visibleRoutePlans = this.routePlans;
+  readonly routeReplayKey = signal(0);
+  readonly vehicleDriverAssignments = signal<Record<string, string>>({});
+
+  onVehicleAssignmentsChanged(assignments: Record<string, string>): void {
+    this.vehicleDriverAssignments.set(assignments);
+    const vehicle = this.selectedDetail()?.vehicleCode;
+    if (vehicle) this.selectedDriverId.set(assignments[vehicle] || '');
+  }
+  assignSelectedDriver(accountId: string): void {
+    const vehicle = this.selectedDetail()?.vehicleCode;
+    if (!vehicle) return;
+    this.selectedDriverId.set(accountId);
+    this.vehicleDriverAssignments.update(assignments => ({ ...assignments, [vehicle]: accountId }));
+  }
+  private plansForMap(plans = this.visibleRoutePlans()): RoutePlanSummaryDto[] {
+    const selected = plans.find(plan => plan.id === this.selectedPlanId());
+    return currentPlans(selected ? [selected, ...plans.filter(plan => plan.vehicleId !== selected.vehicleId)] : plans);
+  }
+  readonly isDecisionWorkbenchOpen = signal(false);
+  readonly decisionOrderIds = signal<string[]>([]);
+  readonly activeDecisionId = signal<string | null>(null);
+  readonly storedDecisionId = signal<string | null>(this.readStoredDecisionId());
+  readonly previousDecisionId = computed(() => this.storedDecisionId() || this.routePlans().find(p => p.planningDecisionId)?.planningDecisionId || null);
+
+  registeredRouteLabels(plan: RoutePlanSummaryDto): string[] {
+    return routeComparisonLabels(plan, this.routePlans().filter(p => p.status === 'Proposed'
+      && p.plannedStartUtc.slice(0, 10) === plan.plannedStartUtc.slice(0, 10)));
+  }
+
+  private readStoredDecisionId(): string | null {
+    try { return localStorage.getItem(planningDecisionStorageKey(this.session.me?.()?.accountId)); }
+    catch { return null; }
+  }
+
+  closeDecisionWorkbench(): void {
+    this.isDecisionWorkbenchOpen.set(false);
+    this.storedDecisionId.set(this.readStoredDecisionId());
+  }
+
+  startNewDecision(): void {
+    this.closeDecisionWorkbench();
+    this.openOrderRoutingModal();
+  }
+  readonly operationJourneyRoutes = computed<JourneyRoute[]>(() => {
+    const lines = this.mapPolylines();
+    return lines.flatMap(line => {
+      const geometry = this.geometries.get(line.id);
+      if (!geometry) return [];
+      const detail = this.selectedDetail()?.id === line.id ? this.selectedDetail() : null;
+      const stops = geometry.stops.map(stop => ({ sequence: stop.sequence, name: stop.name || stop.code,
+        kind: detail?.stops.find(s => s.sequence === stop.sequence)?.kind || 'Delivery',
+        position: { lat: stop.latitude, lon: stop.longitude } }));
+      if (geometry.depot && (stops[0]?.kind !== 'Pickup' || Math.hypot(stops[0].position.lat - geometry.depot.latitude, stops[0].position.lon - geometry.depot.longitude) > .000001)) stops.unshift({ sequence: 0, name: geometry.depot.name || geometry.depot.code,
+        kind: 'Pickup', position: { lat: geometry.depot.latitude, lon: geometry.depot.longitude } });
+      if (geometry.depot && stops.length > 1) stops.push({ sequence: Math.max(...stops.map(stop => stop.sequence)) + 1, name: `Regreso a ${geometry.depot.name || geometry.depot.code}`, kind: 'Return', position: { lat: geometry.depot.latitude, lon: geometry.depot.longitude } });
+      return [{ id: line.id, vehicleCode: geometry.vehicleCode, color: line.color || '#0284c7',
+        approximate: geometry.source !== 'osrm', coordinates: geometry.coordinates, stops }];
+    });
+  });
+  readonly loadedStopsCount = computed(() => this.visibleRoutePlans().reduce((sum, route) => sum + route.stopsCount, 0));
+  readonly loadedVehicleCount = computed(() => new Set(this.visibleRoutePlans().map(route => route.vehicleId)).size);
+
+  openPreviousDecision(): void {
+    const id = this.previousDecisionId();
+    if (!id) { this.startNewDecision(); return; }
+    this.decisionOrderIds.set([]);
+    this.activeDecisionId.set(id);
+    this.isDecisionWorkbenchOpen.set(true);
+  }
+
+  onDecisionSaved(ids: string[]): void {
+    this.storedDecisionId.set(this.readStoredDecisionId());
+    this.closeWizard();
+    if (ids[0]) this.selectedPlanId.set(ids[0]);
+    this.loadPlans();
+    this.loadPendingOrders();
+  }
+
   readonly selectedPlanId = signal<string | null>(null);
   readonly selectedDetail = signal<RoutePlanDetailDto | null>(null);
   readonly loading = signal(true);
@@ -2748,6 +2831,25 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
   readonly wizardApproximate = signal(false);
+  readonly wizardReplayKey = signal(0);
+  readonly wizardSelectedOption = computed(() => this.routeOptions().find(option =>
+    (option.sourcingOptionId ?? option.optionId) === this.selectedOptionId()));
+  readonly wizardJourney = computed<JourneyRoute | null>(() => {
+    const option = this.wizardSelectedOption(), stops = this.editableStops();
+    if (!option || stops.length < 2 || this.comparisonMode() === 'saved') return null;
+    const evaluation = this.currentEvaluation();
+    const coordinates = this.wizardPolylines()[0]?.coordinates || stops.map(stop => [stop.position.lat, stop.position.lon] as [number, number]);
+    const vehicle = this.availableVehicleMatches().find(v => v.vehicleId === this.selectedVehicleId());
+    return { id: `sourcing-${option.sourcingOptionId ?? option.optionId}`, vehicleCode: vehicle ? `Vista previa · ${vehicle.vehicleCode}` : 'Vista previa',
+      color: ROUTE_COLORS[0], approximate: !this.wizardPolylines().length || this.wizardApproximate(), coordinates,
+      stops: stops.map((stop, index) => ({ ...stop,
+        legDistanceKm: evaluation?.stops?.[index]?.legDistanceKm,
+        legDurationMinutes: evaluation?.stops?.[index]?.legDurationMinutes })) };
+  });
+  wizardOptionLabels(option: RouteSuggestionOptionDto): string[] {
+    const viable = this.routeOptions().filter(o => o.evaluation.isValid);
+    return option.evaluation.isValid ? routeComparisonLabels(option.evaluation, viable.map(o => o.evaluation)) : ['Revisar restricciones'];
+  }
 
   // Pestaña Activa: Rutas o Bandeja de Rechazos
   readonly activeTab = signal<'rutas' | 'rechazos'>('rutas');
@@ -2798,11 +2900,12 @@ export class RutasPage implements OnInit, OnDestroy {
       next: (plans) => {
         this.loading.set(false);
         this.routePlans.set(plans || []);
-        this.loadGeometries(plans || []);
-        if (plans && plans.length > 0) {
-          if (!this.selectedPlanId() || !plans.some(p => p.id === this.selectedPlanId())) {
-            this.selectPlan(plans[0].id);
-          }
+        const visible = this.visibleRoutePlans();
+        if (visible.length > 0) {
+          const selected = visible.find(plan => plan.id === this.selectedPlanId()) || visible[0];
+          if (selected.id !== this.selectedPlanId() || this.selectedDetail()?.id !== selected.id) {
+            this.selectPlan(selected.id);
+          } else this.loadGeometries(visible);
         } else {
           this.selectedPlanId.set(null);
           this.selectedDetail.set(null);
@@ -2814,16 +2917,19 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   selectPlan(id: string): void {
+    this.routeReplayKey.update(key => key + 1);
     this.selectedPlanId.set(id);
     this.apiService.getRoutePlanById(id).subscribe({
       next: (detail) => {
+        if (this.selectedPlanId() !== id) return;
         this.selectedDetail.set(detail);
+        this.selectedDriverId.set(detail?.vehicleCode ? this.vehicleDriverAssignments()[detail.vehicleCode] || detail.driverAccountId || '' : '');
         if (detail?.stops) {
           const seqs = detail.stops.map(s => s.sequence);
           this.expandedStopSeqs.set(new Set(seqs));
         }
-        if (this.geometries.size > 0) this.renderAllRoutes();
-        else this.buildMap(detail);
+        this.loadGeometries(this.visibleRoutePlans());
+        if (this.geometries.size === 0) this.buildMap(detail);
         this.startTrackingTimer();
       },
       error: () => {}
@@ -3134,6 +3240,12 @@ export class RutasPage implements OnInit, OnDestroy {
 
   publishPlan(id: string): void {
     if (!this.session.canWrite()) return;
+    if (this.selectedDetail()?.planningDecisionId) {
+      this.activeDecisionId.set(this.selectedDetail()!.planningDecisionId!);
+      this.decisionOrderIds.set([]);
+      this.isDecisionWorkbenchOpen.set(true);
+      return;
+    }
     const vehicleCode = this.selectedDetail()?.vehicleCode;
     const driverAccountId = this.selectedDriverId();
     if (!vehicleCode || !driverAccountId) {
@@ -3328,6 +3440,16 @@ export class RutasPage implements OnInit, OnDestroy {
     });
   }
 
+  advanceWizardFlow(): void {
+    if (this.wizardStep() === 2 && this.comparisonMode() !== 'saved' && this.routeOptions().length) {
+      this.decisionOrderIds.set(Array.from(this.selectedOrderIds()));
+      this.activeDecisionId.set(null);
+      this.isDecisionWorkbenchOpen.set(true);
+      return;
+    }
+    this.advanceWizardStep();
+  }
+
   advanceWizardStep(): void {
     if (this.actionLoading()) return;
     const current = this.wizardStep();
@@ -3345,8 +3467,10 @@ export class RutasPage implements OnInit, OnDestroy {
           this.routeOptionsMessage.set(opts.length ? null : res?.message || 'La API no proporcionó un motivo.');
 
           if (opts.length > 0) {
-            this.selectedOptionId.set(opts[0].sourcingOptionId ?? opts[0].optionId);
-            this.onOptionSelected(opts[0]);
+            const preferred = opts.find(option => option.isRecommended && option.evaluation.isValid)
+              || opts.find(option => option.evaluation.isValid) || opts[0];
+            this.selectedOptionId.set(preferred.sourcingOptionId ?? preferred.optionId);
+            this.onOptionSelected(preferred);
             if (this.selectedComparisonOption()?.category === 'Contratada') this.selectComparisonOption(this.selectedOptionId());
           }
 
@@ -3444,7 +3568,7 @@ export class RutasPage implements OnInit, OnDestroy {
     this.wizardStep.set(4);
     this.feedbackMessage.set({
       type: 'success',
-      text: `★ Opción ${rec.optionId} (${rec.category}) seleccionada. Verifica el vehículo asignado o confirma directamente.`
+      text: `Opción ${rec.optionId} (${rec.category}) seleccionada. Verifica el vehículo asignado o confirma directamente.`
     });
   }
 
@@ -3629,6 +3753,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   private updateWizardMap(stops: RouteCandidateStop[], coordinates?: [number, number][], source?: string): void {
+    this.wizardReplayKey.update(key => key + 1);
     const markers: MapMarker[] = stops.map(s => ({
       id: s.servicePointId || s.locationId || s.code,
       latitude: s.position.lat,
@@ -3659,7 +3784,7 @@ export class RutasPage implements OnInit, OnDestroy {
 
   /** Pide al backend el recorrido por calles de cada ruta vigente que aún no tenga. */
   private loadGeometries(plans: RoutePlanSummaryDto[]): void {
-    const missing = currentPlans(plans).filter(p => this.geometries.get(p.id)?.source !== 'osrm');
+    const missing = this.plansForMap(plans).filter(p => this.geometries.get(p.id)?.source !== 'osrm');
     if (missing.length === 0) {
       if (this.geometries.size > 0) this.renderAllRoutes();
       return;
@@ -3673,12 +3798,12 @@ export class RutasPage implements OnInit, OnDestroy {
 
   private scheduleGeometryRetry(plans: RoutePlanSummaryDto[]): void {
     clearTimeout(this.geometryRetryTimer);
-    const pending = currentPlans(plans).some(p => this.geometries.get(p.id)?.source === 'approximate');
+    const pending = this.plansForMap(plans).some(p => this.geometries.get(p.id)?.source === 'approximate');
     if (!pending) { this.geometryRetries = 0; return; }
     const delay = RutasPage.GEOMETRY_RETRY_DELAYS_MS[this.geometryRetries];
     if (delay === undefined) return;
     this.geometryRetries++;
-    this.geometryRetryTimer = setTimeout(() => this.loadGeometries(this.routePlans()), delay);
+    this.geometryRetryTimer = setTimeout(() => this.loadGeometries(this.visibleRoutePlans()), delay);
   }
 
   ngOnDestroy(): void {
@@ -3694,7 +3819,7 @@ export class RutasPage implements OnInit, OnDestroy {
     const legend: RouteLegendItem[] = [];
     const depots = new Map<string, MapMarker>();
 
-    currentPlans(this.routePlans()).forEach((plan, index) => {
+    this.plansForMap().forEach((plan, index) => {
       const geometry = this.geometries.get(plan.id);
       if (!geometry) return;
       const color = ROUTE_COLORS[index % ROUTE_COLORS.length];

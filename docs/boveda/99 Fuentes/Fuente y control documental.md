@@ -796,3 +796,8 @@ conexión a bases compartidas, despliegue ni afirmaciones nuevas para el pitch.
 Fuente: issue #300 y el hallazgo de T21 del spec 002. [[Contratos API y eventos]] registra que `POST /api/v1/route-plans/{id}/replan` acepta rutas del asistente y conserva la recogida en bodega, que el evaluador de incidentes arma los tramos de las rutas sin `legs` y que una parada en bodega se nombra por su bodega. El spec 002 añade FR-29 y la tarea T22, con el error reproducido en develop. No hay endpoints ni campos nuevos, migración ni cambios de datos; no se despliega.
 
 Verificación documental: **117 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+
+## 17-oct-2026 — Renovación y aceptación persistente de rutas (#242)
+
+Fuente: ampliaciones funcionales de Bryan y código/pruebas de `feature/242-rutas-interactivas`. [[05 Estandar visual de rutas y operaciones]] recoge el modo claro, mapa dominante, recorrido completo por vehículo, conductor por vehículo y aprobación de una alternativa completa. Los planes de spec 002 distinguen la decisión persistente, el descarte transaccional y la compatibilidad por lote/recibo del motor anterior. Se incorpora la migración aditiva `20261017143616_RoutePlanningDecisions`, aplicada únicamente en PostgreSQL local. Evidencia, reparación local de ocho borradores, pruebas y límites Cognito/deploy en [revisión local de rutas](../../evidence/renovacion-visual-rutas-2026-10-17.md). No se confunde la animación con seguimiento GPS ni con ejecución real del agente.

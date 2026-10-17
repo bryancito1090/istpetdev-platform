@@ -16,6 +16,22 @@ export function distanceMeters(a: LatLng, b: LatLng): number {
   return Math.hypot(north, east);
 }
 
+/** Recorrido progresivo por distancia, incluida una posición entre dos vértices. */
+export function progressiveRoute(coordinates: LatLng[], fraction: number): LatLng[] {
+  if (coordinates.length < 2 || fraction <= 0) return coordinates.slice(0, 1);
+  if (fraction >= 1) return coordinates.slice();
+  const distances = cumulativeDistances(coordinates);
+  const target = distances[distances.length - 1] * fraction;
+  for (let i = 1; i < coordinates.length; i++) {
+    if (distances[i] < target) continue;
+    const length = distances[i] - distances[i - 1];
+    const part = length > 0 ? (target - distances[i - 1]) / length : 0;
+    const previous = coordinates[i - 1], next = coordinates[i];
+    return [...coordinates.slice(0, i), [previous[0] + (next[0] - previous[0]) * part, previous[1] + (next[1] - previous[1]) * part]];
+  }
+  return coordinates.slice();
+}
+
 function cumulativeDistances(coordinates: LatLng[]): number[] {
   const cumulative = [0];
   for (let i = 1; i < coordinates.length; i++) {
