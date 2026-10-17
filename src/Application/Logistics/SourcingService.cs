@@ -204,7 +204,8 @@ public sealed record SourcingPlanOption(
     string CarrierType = "Propia",
     decimal TotalCost = 0m,
     decimal Score = 0m,
-    string? Justification = null
+    string? Justification = null,
+    OptionCostBreakdownDto? CostBreakdown = null
 );
 
 public interface ISourcingService
@@ -494,7 +495,8 @@ public sealed class SourcingService : ISourcingService
                 opt.CarrierType,
                 opt.TotalCost,
                 opt.Score,
-                opt.Justification
+                opt.Justification,
+                opt.CostBreakdown
             ))
             .ToList();
     }

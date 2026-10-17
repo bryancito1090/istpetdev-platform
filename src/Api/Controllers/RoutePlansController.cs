@@ -24,7 +24,8 @@ public sealed class RoutePlansController(
     ISourcingService sourcingService,
     IVehicleMatcher vehicleMatcher,
     IRouteEvaluator routeEvaluator,
-    IEmergencyPlanner emergencyPlanner) : ControllerBase
+    IEmergencyPlanner emergencyPlanner,
+    Microsoft.Extensions.Options.IOptions<LogisticsOptions>? logisticsOptions = null) : ControllerBase
 {
     private static readonly ConcurrentDictionary<string, object> ProposalCache = new();
     // FR-23: Lectura para el panel 005 (no crea propuestas)
@@ -882,275 +883,368 @@ public sealed class RoutePlansController(
             return Ok(blockedResult);
         }
 
-        // Seleccionar la propuesta de abastecimiento (recomendada por defecto, o la seleccionada por el planificador)
-        var opt = (!string.IsNullOrWhiteSpace(req.OptionId)
-            ? sourcingOptions.FirstOrDefault(o => o.OptionId.Equals(req.OptionId, StringComparison.OrdinalIgnoreCase))
-            : null) ?? sourcingOptions.FirstOrDefault(o => o.IsRecommended) ?? sourcingOptions.First();
+        var evaluatedOptions = new List<EvaluatedOptionDto>();
 
-        var candidates = new List<RouteStopCandidate>();
-        int seq = 1;
-
-        // Agrupar recogidas por bodega
-        var pickupsByWarehouse = opt.Lines
-            .SelectMany(l => l.Allocations.Select(a => new { Line = l, Allocation = a }))
-            .GroupBy(x => x.Allocation.WarehouseId);
-
-        foreach (var whGroup in pickupsByWarehouse)
+        foreach (var sOpt in sourcingOptions)
         {
-            var wh = warehouses.GetValueOrDefault(whGroup.Key);
-            var whPos = wh?.Position != null ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X) : new GeoPoint(-0.2295m, -78.5243m);
+            var candidates = new List<RouteStopCandidate>();
+            int seq = 1;
 
-            decimal totalWeight = 0m;
-            decimal totalVol = 0m;
-            var pickupLoads = new List<StopLoadDto>();
+            // Agrupar recogidas por bodega
+            var pickupsByWarehouse = sOpt.Lines
+                .SelectMany(l => l.Allocations.Select(a => new { Line = l, Allocation = a }))
+                .GroupBy(x => x.Allocation.WarehouseId);
 
-            var prodsInWh = whGroup.GroupBy(x => x.Line.ProductId);
-            foreach (var pGroup in prodsInWh)
+            foreach (var whGroup in pickupsByWarehouse)
             {
-                decimal pQty = pGroup.Sum(x => x.Allocation.Quantity);
-                if (products.TryGetValue(pGroup.Key, out var prod))
+                var wh = warehouses.GetValueOrDefault(whGroup.Key);
+                var whPos = wh?.Position != null ? new GeoPoint((decimal)wh.Position.Y, (decimal)wh.Position.X) : new GeoPoint(-0.2295m, -78.5243m);
+
+                decimal totalWeight = 0m;
+                decimal totalVol = 0m;
+                var pickupLoads = new List<StopLoadDto>();
+
+                var prodsInWh = whGroup.GroupBy(x => x.Line.ProductId);
+                foreach (var pGroup in prodsInWh)
                 {
-                    totalWeight += pQty * prod.WeightPerBaseUnit;
-                    totalVol += pQty * prod.VolumePerBaseUnit;
-                    pickupLoads.Add(new StopLoadDto(prod.Id, prod.Sku, pQty, prod.BaseUnit));
-                }
-            }
-
-            candidates.Add(new RouteStopCandidate(
-                seq++,
-                RouteStopKind.Pickup,
-                null,
-                whGroup.Key,
-                wh?.Code ?? "WH",
-                wh?.Name ?? "Bodega",
-                whPos,
-                totalWeight,
-                totalVol,
-                new TimeOnly(7, 0),
-                new TimeOnly(19, 0),
-                20,
-                pickupLoads
-            ));
-        }
-
-        // Entregas por destino (#197 / #207: con la prioridad y fecha del pedido, y ventana del punto)
-        var deliveryDrafts = new List<DeliveryStopDraft>();
-        var deliveriesByDest = opt.Lines.GroupBy(l => l.DestinationId);
-        foreach (var destGroup in deliveriesByDest)
-        {
-            var firstLine = destGroup.First();
-            decimal totalWeight = 0m;
-            decimal totalVol = 0m;
-            var deliveryLoads = new List<StopLoadDto>();
-
-            foreach (var line in destGroup)
-            {
-                if (products.TryGetValue(line.ProductId, out var prod))
-                {
-                    totalWeight += line.TotalAllocated * prod.WeightPerBaseUnit;
-                    totalVol += line.TotalAllocated * prod.VolumePerBaseUnit;
-                    if (line.TotalAllocated > 0)
+                    decimal pQty = pGroup.Sum(x => x.Allocation.Quantity);
+                    if (products.TryGetValue(pGroup.Key, out var prod))
                     {
-                        deliveryLoads.Add(new StopLoadDto(prod.Id, prod.Sku, line.TotalAllocated, prod.BaseUnit));
+                        totalWeight += pQty * prod.WeightPerBaseUnit;
+                        totalVol += pQty * prod.VolumePerBaseUnit;
+                        pickupLoads.Add(new StopLoadDto(prod.Id, prod.Sku, pQty, prod.BaseUnit));
                     }
                 }
+
+                candidates.Add(new RouteStopCandidate(
+                    seq++,
+                    RouteStopKind.Pickup,
+                    null,
+                    whGroup.Key,
+                    wh?.Code ?? "WH",
+                    wh?.Name ?? "Bodega",
+                    whPos,
+                    totalWeight,
+                    totalVol,
+                    new TimeOnly(7, 0),
+                    new TimeOnly(19, 0),
+                    20,
+                    pickupLoads
+                ));
             }
 
-            var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
-            var groupOrders = destGroup
-                .Select(l => orders.GetValueOrDefault(l.OrderId))
-                .Where(o => o is not null)
-                .ToList();
-
-            var winStart = point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart;
-            var winEnd = point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd;
-
-            // Integración #193: si se especifica hora límite para críticos, acotar ventana
-            var urgency = DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority));
-            if (!string.IsNullOrWhiteSpace(req.CriticalDeadlineLocal) &&
-                urgency == "Critical" &&
-                TimeOnly.TryParse(req.CriticalDeadlineLocal, out var deadline))
+            // Entregas por destino (#197 / #207: con la prioridad y fecha del pedido, y ventana del punto)
+            var deliveryDrafts = new List<DeliveryStopDraft>();
+            var deliveriesByDest = sOpt.Lines.GroupBy(l => l.DestinationId);
+            foreach (var destGroup in deliveriesByDest)
             {
-                if (deadline < winEnd) winEnd = deadline;
+                var firstLine = destGroup.First();
+                decimal totalWeight = 0m;
+                decimal totalVol = 0m;
+                var deliveryLoads = new List<StopLoadDto>();
+
+                foreach (var line in destGroup)
+                {
+                    if (products.TryGetValue(line.ProductId, out var prod))
+                    {
+                        totalWeight += line.TotalAllocated * prod.WeightPerBaseUnit;
+                        totalVol += line.TotalAllocated * prod.VolumePerBaseUnit;
+                        if (line.TotalAllocated > 0)
+                        {
+                            deliveryLoads.Add(new StopLoadDto(prod.Id, prod.Sku, line.TotalAllocated, prod.BaseUnit));
+                        }
+                    }
+                }
+
+                var point = !firstLine.IsDestinationWarehouse ? servicePoints.GetValueOrDefault(firstLine.DestinationId) : null;
+                var groupOrders = destGroup
+                    .Select(l => orders.GetValueOrDefault(l.OrderId))
+                    .Where(o => o is not null)
+                    .ToList();
+
+                var winStart = point?.WindowStartLocal ?? DeliveryStopSequencer.FallbackWindowStart;
+                var winEnd = point?.WindowEndLocal ?? DeliveryStopSequencer.FallbackWindowEnd;
+
+                // Integración #193: si se especifica hora límite para críticos, acotar ventana
+                var urgency = DeliveryStopSequencer.MostUrgent(groupOrders.Select(o => o!.Priority));
+                if (!string.IsNullOrWhiteSpace(req.CriticalDeadlineLocal) &&
+                    urgency == "Critical" &&
+                    TimeOnly.TryParse(req.CriticalDeadlineLocal, out var deadline))
+                {
+                    if (deadline < winEnd) winEnd = deadline;
+                }
+
+                deliveryDrafts.Add(new DeliveryStopDraft(
+                    new RouteStopCandidate(
+                        0,
+                        RouteStopKind.Delivery,
+                        !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
+                        firstLine.DestinationCode,
+                        firstLine.DestinationName,
+                        firstLine.DestinationPosition,
+                        -totalWeight,
+                        -totalVol,
+                        winStart,
+                        winEnd,
+                        point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes,
+                        deliveryLoads
+                    ),
+                    urgency,
+                    groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
+                ));
             }
 
-            deliveryDrafts.Add(new DeliveryStopDraft(
-                new RouteStopCandidate(
-                    0,
-                    RouteStopKind.Delivery,
-                    !firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.IsDestinationWarehouse ? firstLine.DestinationId : null,
-                    firstLine.DestinationCode,
-                    firstLine.DestinationName,
-                    firstLine.DestinationPosition,
-                    -totalWeight,
-                    -totalVol,
-                    winStart,
-                    winEnd,
-                    point?.ServiceMinutes ?? DeliveryStopSequencer.FallbackServiceMinutes,
-                    deliveryLoads
-                ),
-                urgency,
-                groupOrders.Count > 0 ? groupOrders.Min(o => o!.RequiredDateUtc) : DateTime.MaxValue
-            ));
-        }
-
-        // Orden estricto por prioridad: Critical antes que High, Normal y Low
-        var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
-        foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
-        {
-            candidates.Add(draft.Stop with { Sequence = seq++ });
-        }
-
-        // Emparejar vehículos con evaluación completa de costo de viaje
-        var vehicleMatches = await vehicleMatcher.MatchVehiclesAsync(candidates, plannedStartUtc, ct);
-        var bestVehicleMatch = vehicleMatches.FirstOrDefault(m => m.IsMatch);
-
-        // Evaluar secuencia con el vehículo óptimo seleccionado
-        var eval = await routeEvaluator.EvaluateSequenceAsync(candidates, bestVehicleMatch?.Vehicle, plannedStartUtc, ct);
-
-        var sourcingLinesResult = opt.Lines.Select(l => new
-        {
-            orderId = l.OrderId,
-            orderNumber = l.OrderNumber,
-            destinationId = l.DestinationId,
-            isDestinationWarehouse = l.IsDestinationWarehouse,
-            destinationCode = l.DestinationCode,
-            destinationName = l.DestinationName,
-            destinationPosition = l.DestinationPosition,
-            productId = l.ProductId,
-            sku = l.Sku,
-            productName = l.ProductName,
-            requestedQuantity = l.RequestedQuantity,
-            plannedQuantity = l.TotalAllocated,
-            pendingQuantity = Math.Max(0m, l.RequestedQuantity - l.TotalAllocated),
-            allocations = l.Allocations,
-            totalAllocated = l.TotalAllocated,
-            fullySourced = l.FullySourced
-        }).ToList();
-
-        var pendingDemands = sourcingLinesResult
-            .Where(l => l.pendingQuantity > 0)
-            .Select(l => new
+            // Orden estricto por prioridad: Critical antes que High, Normal y Low
+            var deliveryStart = candidates.Count > 0 ? candidates[^1].Position : new GeoPoint(-0.2295m, -78.5243m);
+            foreach (var draft in DeliveryStopSequencer.Order(deliveryDrafts, deliveryStart))
             {
-                orderId = l.orderId,
-                orderNumber = l.orderNumber,
-                sku = l.sku,
-                pendingQuantity = l.pendingQuantity,
-                reason = bestVehicleMatch == null ? "sin_capacidad_de_flota" : "capacidad_parcial"
+                candidates.Add(draft.Stop with { Sequence = seq++ });
+            }
+
+            var sourcingLinesResult = sOpt.Lines.Select(l => new
+            {
+                orderId = l.OrderId,
+                orderNumber = l.OrderNumber,
+                destinationId = l.DestinationId,
+                isDestinationWarehouse = l.IsDestinationWarehouse,
+                destinationCode = l.DestinationCode,
+                destinationName = l.DestinationName,
+                destinationPosition = l.DestinationPosition,
+                productId = l.ProductId,
+                sku = l.Sku,
+                productName = l.ProductName,
+                requestedQuantity = l.RequestedQuantity,
+                plannedQuantity = l.TotalAllocated,
+                pendingQuantity = Math.Max(0m, l.RequestedQuantity - l.TotalAllocated),
+                allocations = l.Allocations,
+                totalAllocated = l.TotalAllocated,
+                fullySourced = l.FullySourced
             }).ToList();
 
-        string status;
-        if (bestVehicleMatch == null)
-        {
-            bool needsData = vehicleMatches.Any(m => m.DiscardReason != null && (m.DiscardReason.Contains("datos_faltantes") || m.DiscardReason.Contains("dimensiones_incompatibles")));
-            status = needsData ? "NeedsData" : "Blocked";
-        }
-        else if (!eval.IsValid)
-        {
-            status = "Blocked";
-        }
-        else if (pendingDemands.Count > 0)
-        {
-            status = "Partial";
-        }
-        else
-        {
-            status = "Feasible";
-        }
+            var pendingDemands = sourcingLinesResult
+                .Where(l => l.pendingQuantity > 0)
+                .Select(l => new
+                {
+                    orderId = l.orderId,
+                    orderNumber = l.orderNumber,
+                    sku = l.sku,
+                    pendingQuantity = l.pendingQuantity,
+                    reason = "capacidad_parcial"
+                }).ToList();
 
-        decimal vehicleCostKm = bestVehicleMatch?.Vehicle.CostPerKm ?? 0.45m;
-        var costBreakdown = LogisticsCostCalculator.ComputeBreakdown(
-            eval.TotalDistanceKm,
-            eval.TotalDurationMinutes,
-            vehicleCostKm,
-            6.0m,
-            tollsCost: 0m
-        );
-
-        var uncertainty = CostUncertaintyService.GetUncalibratedResult();
-        var proposalId = Guid.NewGuid();
-
-        var selectedVehicleObj = bestVehicleMatch != null ? new
-        {
-            id = bestVehicleMatch.Vehicle.Id,
-            code = bestVehicleMatch.Vehicle.Code,
-            vehicleId = bestVehicleMatch.Vehicle.Id,
-            vehicleCode = bestVehicleMatch.Vehicle.Code,
-            maxWeight = bestVehicleMatch.Vehicle.MaxWeight,
-            maxVolume = bestVehicleMatch.Vehicle.MaxVolume,
-            isMatch = bestVehicleMatch.IsMatch,
-            discardReason = bestVehicleMatch.DiscardReason,
-            warnings = bestVehicleMatch.Warnings,
-            weightUtilizationPct = bestVehicleMatch.WeightUtilizationPct,
-            volumeUtilizationPct = bestVehicleMatch.VolumeUtilizationPct,
-            costPerKm = vehicleCostKm,
-            estimatedCost = bestVehicleMatch.EstimatedTotalCost,
-            estimatedTotalCost = bestVehicleMatch.EstimatedTotalCost,
-            distanceToFirstPickupKm = bestVehicleMatch.DistanceToFirstPickupKm
-        } : null;
-
-        var singleOption = new
-        {
-            optionId = "1",
-            sourcingOptionId = opt.OptionId,
-            proposalId,
-            revision = 1,
-            status,
-            requestId = req.RequestId,
-            title = opt.Title,
-            description = opt.Description,
-            isRecommended = true,
-            totalCost = eval.TotalCost,
-            estimatedTotalCost = eval.TotalCost,
-            totalDistanceKm = eval.TotalDistanceKm,
-            totalDurationMinutes = eval.TotalDurationMinutes,
-            selectedVehicle = selectedVehicleObj,
-            chosenVehicle = selectedVehicleObj,
-            evaluation = eval,
-            costBreakdown,
-            uncertainty,
-            costUncertainty = uncertainty,
-            stops = candidates,
-            sourcingLines = sourcingLinesResult,
-            pendingDemands,
-            vehicleMatches = vehicleMatches.Select(m => new
+            var uncertainty = CostUncertaintyService.GetUncalibratedResult();
+            var proposalId = Guid.NewGuid();
+            if (sOpt.CarrierType == "Contratada" || sOpt.OptionId.Equals("C", StringComparison.OrdinalIgnoreCase))
             {
-                vehicleId = m.Vehicle.Id,
-                vehicleCode = m.Vehicle.Code,
-                maxWeight = m.Vehicle.MaxWeight,
-                maxVolume = m.Vehicle.MaxVolume,
-                isMatch = m.IsMatch,
-                discardReason = m.DiscardReason,
-                warnings = m.Warnings,
-                weightUtilizationPct = m.WeightUtilizationPct,
-                volumeUtilizationPct = m.VolumeUtilizationPct,
-                estimatedCost = m.EstimatedTotalCost,
-                distanceToFirstPickupKm = m.DistanceToFirstPickupKm
-            })
-        };
+                var carrier = logisticsOptions?.Value?.ContractedCarrier;
+                var evalContracted = await routeEvaluator.EvaluateSequenceAsync(candidates, null, plannedStartUtc, ct);
+                decimal costC = sOpt.TotalCost > 0m ? sOpt.TotalCost : (evalContracted.TotalCost > 0m ? evalContracted.TotalCost : 35.00m);
+                var carrierBreakdown = new
+                {
+                    currency = "USD",
+                    calculatorVersion = "1.0",
+                    kmCost = 0m,
+                    hourCost = 0m,
+                    fuel = 0m,
+                    fuelCost = 0m,
+                    wear = 0m,
+                    wearCost = 0m,
+                    driver = 0m,
+                    driverCost = 0m,
+                    helpers = 0m,
+                    helpersCost = 0m,
+                    helpersCount = 0,
+                    shrink = sOpt.CostBreakdown?.Shrink ?? 0m,
+                    expectedShrinkageCost = sOpt.CostBreakdown?.Shrink ?? 0m,
+                    carrierTariff = sOpt.CostBreakdown?.CarrierTariff ?? costC,
+                    totalCost = costC,
+                    fuelPrice = new ServiceFuelPrice(null, null, null),
+                    notes = sOpt.CostBreakdown?.Notes ?? (IReadOnlyList<string>)[$"Tarifa de operador contratado: USD {costC:F2}"]
+                };
+
+                evaluatedOptions.Add(new EvaluatedOptionDto(
+                    sOpt.OptionId,
+                    sOpt.OptionId,
+                    proposalId,
+                    1,
+                    "Feasible",
+                    req.RequestId,
+                    sOpt.Title,
+                    sOpt.Description,
+                    sOpt.IsRecommended,
+                    sOpt.Justification,
+                    sOpt.Score,
+                    "Contratada",
+                    carrier?.Name ?? "Operador Logístico Contratado (Quito)",
+                    costC,
+                    costC,
+                    evalContracted.TotalDistanceKm,
+                    evalContracted.TotalDurationMinutes,
+                    null,
+                    null,
+                    evalContracted with { TotalCost = costC, IsValid = true },
+                    carrierBreakdown,
+                    null,
+                    uncertainty,
+                    uncertainty,
+                    candidates,
+                    sourcingLinesResult,
+                    Array.Empty<object>(),
+                    Array.Empty<object>()
+                ));
+            }
+            else
+            {
+                var vehicleMatches = await vehicleMatcher.MatchVehiclesAsync(candidates, plannedStartUtc, ct);
+                var bestVehicleMatch = vehicleMatches.FirstOrDefault(m => m.IsMatch);
+                var eval = await routeEvaluator.EvaluateSequenceAsync(candidates, bestVehicleMatch?.Vehicle, plannedStartUtc, ct);
+
+                string status;
+                if (bestVehicleMatch == null)
+                {
+                    bool needsData = vehicleMatches.Any(m => m.DiscardReason != null && (m.DiscardReason.Contains("datos_faltantes") || m.DiscardReason.Contains("dimensiones_incompatibles")));
+                    status = needsData ? "NeedsData" : "Blocked";
+                }
+                else if (!eval.IsValid)
+                {
+                    status = "Blocked";
+                }
+                else if (pendingDemands.Count > 0)
+                {
+                    status = "Partial";
+                }
+                else
+                {
+                    status = "Feasible";
+                }
+
+                decimal vehicleCostKm = bestVehicleMatch?.Vehicle.CostPerKm ?? 0.45m;
+                var scb = eval.ServiceCostBreakdown;
+                var costBreakdown = new
+                {
+                    currency = "USD",
+                    calculatorVersion = "1.0",
+                    kmCost = eval.TotalDistanceKm * vehicleCostKm,
+                    hourCost = (eval.TotalDurationMinutes / 60m) * 6.0m,
+                    fuel = scb?.Fuel ?? 0m,
+                    fuelCost = scb?.Fuel ?? 0m,
+                    wear = scb?.Wear ?? 0m,
+                    wearCost = scb?.Wear ?? 0m,
+                    driver = scb?.Driver ?? Math.Round((eval.TotalDurationMinutes / 60m) * 6.0m, 2),
+                    driverCost = scb?.Driver ?? Math.Round((eval.TotalDurationMinutes / 60m) * 6.0m, 2),
+                    helpers = scb?.Helpers ?? 0m,
+                    helpersCost = scb?.Helpers ?? 0m,
+                    helpersCount = scb?.HelperCount ?? 0,
+                    shrink = scb?.Shrink ?? 0m,
+                    expectedShrinkageCost = scb?.Shrink ?? 0m,
+                    carrierTariff = 0m,
+                    totalCost = eval.TotalCost,
+                    fuelPrice = scb?.FuelPrice ?? new ServiceFuelPrice(null, null, null),
+                    notes = scb?.Notes ?? (IReadOnlyList<string>)[]
+                };
+
+                var selectedVehicleObj = bestVehicleMatch != null ? new
+                {
+                    id = bestVehicleMatch.Vehicle.Id,
+                    code = bestVehicleMatch.Vehicle.Code,
+                    vehicleId = bestVehicleMatch.Vehicle.Id,
+                    vehicleCode = bestVehicleMatch.Vehicle.Code,
+                    maxWeight = bestVehicleMatch.Vehicle.MaxWeight,
+                    maxVolume = bestVehicleMatch.Vehicle.MaxVolume,
+                    isMatch = bestVehicleMatch.IsMatch,
+                    discardReason = bestVehicleMatch.DiscardReason,
+                    warnings = bestVehicleMatch.Warnings,
+                    weightUtilizationPct = bestVehicleMatch.WeightUtilizationPct,
+                    volumeUtilizationPct = bestVehicleMatch.VolumeUtilizationPct,
+                    costPerKm = vehicleCostKm,
+                    estimatedCost = bestVehicleMatch.EstimatedTotalCost,
+                    estimatedTotalCost = bestVehicleMatch.EstimatedTotalCost,
+                    distanceToFirstPickupKm = bestVehicleMatch.DistanceToFirstPickupKm
+                } : null;
+
+                var vehicleMatchesDto = vehicleMatches.Select(m => new
+                {
+                    vehicleId = m.Vehicle.Id,
+                    vehicleCode = m.Vehicle.Code,
+                    maxWeight = m.Vehicle.MaxWeight,
+                    maxVolume = m.Vehicle.MaxVolume,
+                    isMatch = m.IsMatch,
+                    discardReason = m.DiscardReason,
+                    warnings = m.Warnings,
+                    weightUtilizationPct = m.WeightUtilizationPct,
+                    volumeUtilizationPct = m.VolumeUtilizationPct,
+                    estimatedCost = m.EstimatedTotalCost,
+                    distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+                }).ToList();
+
+                evaluatedOptions.Add(new EvaluatedOptionDto(
+                    sOpt.OptionId,
+                    sOpt.OptionId,
+                    proposalId,
+                    1,
+                    status,
+                    req.RequestId,
+                    sOpt.Title,
+                    sOpt.Description,
+                    sOpt.IsRecommended,
+                    sOpt.Justification,
+                    sOpt.Score,
+                    "Propia",
+                    null,
+                    eval.TotalCost,
+                    eval.TotalCost,
+                    eval.TotalDistanceKm,
+                    eval.TotalDurationMinutes,
+                    selectedVehicleObj,
+                    selectedVehicleObj,
+                    eval,
+                    costBreakdown,
+                    scb,
+                    uncertainty,
+                    uncertainty,
+                    candidates,
+                    sourcingLinesResult,
+                    pendingDemands,
+                    vehicleMatchesDto
+                ));
+            }
+        }
+
+        var chosenOption = (!string.IsNullOrWhiteSpace(req.OptionId)
+            ? evaluatedOptions.FirstOrDefault(o => o.OptionId.Equals(req.OptionId, StringComparison.OrdinalIgnoreCase))
+            : null)
+            ?? evaluatedOptions.FirstOrDefault(o => o.IsRecommended)
+            ?? evaluatedOptions.First();
+
+        var chosenObj = ToOptionObject(chosenOption);
+        bool showAll = req.IncludeAlternatives == true || evaluatedOptions.Any(o => o.OptionId.Equals("C", StringComparison.OrdinalIgnoreCase));
+        var optionsArray = showAll
+            ? (object)evaluatedOptions.Select(ToOptionObject).ToArray()
+            : new object[] { chosenObj };
 
         // #276: conservar la propuesta operativa y exponer el contrato comparativo de #241.
         var comparison = await sourcingService.QueryOrderSourcingAsync(req.OrderIds, ct);
         var responsePayload = new
         {
             comparison,
-            proposalId,
+            proposalId = chosenOption.ProposalId,
             revision = 1,
-            status,
+            status = chosenOption.Status,
             requestId = req.RequestId,
-            proposal = singleOption,
-            selectedVehicle = selectedVehicleObj,
-            chosenVehicle = selectedVehicleObj,
-            evaluation = eval,
-            costBreakdown,
-            uncertainty,
-            costUncertainty = uncertainty,
-            stops = candidates,
-            sourcingLines = sourcingLinesResult,
-            pendingDemands,
-            vehicleMatches = singleOption.vehicleMatches,
-            options = new object[] { singleOption } // Exactamente una sola propuesta (cero alternativas A/B)
+            proposal = chosenObj,
+            selectedVehicle = chosenOption.SelectedVehicle,
+            chosenVehicle = chosenOption.ChosenVehicle,
+            evaluation = chosenOption.Evaluation,
+            costBreakdown = chosenOption.CostBreakdown,
+            serviceCostBreakdown = chosenOption.ServiceCostBreakdown,
+            uncertainty = chosenOption.Uncertainty,
+            costUncertainty = chosenOption.CostUncertainty,
+            stops = chosenOption.Stops,
+            sourcingLines = chosenOption.SourcingLines,
+            pendingDemands = chosenOption.PendingDemands,
+            vehicleMatches = chosenOption.VehicleMatches,
+            options = optionsArray
         };
 
         if (!string.IsNullOrWhiteSpace(req.RequestId))
@@ -1160,6 +1254,69 @@ public sealed class RoutePlansController(
 
         return Ok(responsePayload);
     }
+
+    private static object ToOptionObject(EvaluatedOptionDto o) => new
+    {
+        optionId = o.OptionId,
+        sourcingOptionId = o.SourcingOptionId,
+        proposalId = o.ProposalId,
+        revision = o.Revision,
+        status = o.Status,
+        requestId = o.RequestId,
+        title = o.Title,
+        description = o.Description,
+        isRecommended = o.IsRecommended,
+        justification = o.Justification,
+        score = o.Score,
+        carrierType = o.CarrierType,
+        carrierName = o.CarrierName,
+        totalCost = o.TotalCost,
+        estimatedTotalCost = o.EstimatedTotalCost,
+        totalDistanceKm = o.TotalDistanceKm,
+        totalDurationMinutes = o.TotalDurationMinutes,
+        selectedVehicle = o.SelectedVehicle,
+        chosenVehicle = o.ChosenVehicle,
+        evaluation = o.Evaluation,
+        costBreakdown = o.CostBreakdown,
+        serviceCostBreakdown = o.ServiceCostBreakdown,
+        uncertainty = o.Uncertainty,
+        costUncertainty = o.CostUncertainty,
+        stops = o.Stops,
+        sourcingLines = o.SourcingLines,
+        pendingDemands = o.PendingDemands,
+        vehicleMatches = o.VehicleMatches
+    };
+
+    private sealed record EvaluatedOptionDto(
+        string OptionId,
+        string SourcingOptionId,
+        Guid ProposalId,
+        int Revision,
+        string Status,
+        string? RequestId,
+        string Title,
+        string Description,
+        bool IsRecommended,
+        string? Justification,
+        decimal Score,
+        string CarrierType,
+        string? CarrierName,
+        decimal TotalCost,
+        decimal EstimatedTotalCost,
+        decimal TotalDistanceKm,
+        decimal TotalDurationMinutes,
+        object? SelectedVehicle,
+        object? ChosenVehicle,
+        RouteEvaluationResult Evaluation,
+        object CostBreakdown,
+        ServiceCostBreakdown? ServiceCostBreakdown,
+        CostUncertaintyResult Uncertainty,
+        CostUncertaintyResult CostUncertainty,
+        IReadOnlyList<RouteStopCandidate> Stops,
+        object SourcingLines,
+        object PendingDemands,
+        object VehicleMatches
+    );
 
     [HttpPost("evaluate")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
@@ -1721,7 +1878,8 @@ public sealed record SuggestRoutesRequest(
     DateOnly? PlannedDate = null,
     string? RequestId = null,
     string? CriticalDeadlineLocal = null,
-    string? OptionId = null
+    string? OptionId = null,
+    bool? IncludeAlternatives = null
 );
 
 public sealed record EvaluateRouteRequest(
