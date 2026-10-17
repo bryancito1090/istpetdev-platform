@@ -218,6 +218,16 @@ Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factib
   - **`404`:** el plan no existe.
 - **Panel del asistente (paso 4):** permite editar la cantidad de cada línea pendiente. Por defecto propone todo lo pendiente; solo las líneas editadas se envían en `lines`. No deja confirmar una cantidad ≤ 0 o mayor que lo pendiente.
 
+### Consolidación parcial, revisiones y botón de cancelar (#199, cierre — 16 de octubre de 2026)
+
+Detalle en el FR-28 del spec 002. No hay endpoints nuevos ni campos nuevos; cambian estos comportamientos:
+
+- **`POST /api/v1/route-plans`:** una parada de consolidación (`isConsolidation: true`) que no cabe completa lleva la parte que cabe, con `loads[].quantity` < `requiredQuantity` y `pendingQuantity` > 0. Solo entra después de todos los obligatorios y con desvío ≤ `MaxDetourMinutes`. No aparece en `unserved`, pero emite los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`), así que la regla 8 del prompt de n8n la explica sin cambios.
+- **`POST /api/v1/route-plans/{id}/publish` de una revisión por incidente** (también al aprobar su decisión): si retira una parada con pedidos, resta de `DeliveryOrderLine.PlannedQuantity` lo que el plan sumó a los pedidos de ese destino y guarda en la revisión el `orderLines` restante. El pedido vuelve a `Pending` si ya no queda planificado por completo.
+- **`POST /api/v1/route-plans/{id}/revert`:** vuelve a sumar lo que la revisión había descontado. La ruta restaurada conserva el tipo (`Pickup`/`Delivery`) y la bodega de cada parada.
+- **Planes sin `orderLines`** (confirmados antes de #264): `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`, porque no hay datos de cuánto sumó cada ruta. `orderLines` de la respuesta de `cancel` sale vacío.
+- **Panel (Rutas):** el detalle de una ruta `Proposed` o `Published` muestra «Cancelar ruta» a quien puede escribir. Pide confirmación, llama a `POST …/cancel` y muestra lo liberado y descontado, o el `detail` del 409.
+
 ## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
 
 Las tres consultas usan `LogisticsQueriesController`, `SourcingService` y
