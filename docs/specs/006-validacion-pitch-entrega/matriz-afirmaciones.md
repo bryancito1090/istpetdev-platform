@@ -2,7 +2,7 @@
 
 **Auditoría del 16-oct-2026, corte de `origin/develop`: `aae1d61b8b8c1ed1c248918eea64bcc683e3ecf0`.** Reemplaza la clasificación anterior. Se contrastaron los comentarios de [#200](https://github.com/bryancito1090/istpetdev-platform/issues/200), los estados y textos de #235–#249, el [tablero #253](https://github.com/bryancito1090/istpetdev-platform/issues/253), los PR fusionados desde el 16-oct y el árbol de ese commit. [Inventario y comprobaciones de la auditoría](evidencia/auditoria-pitch-16oct.md).
 
-La fuente de verdad es la [propuesta de planificación](../../boveda/02%20Producto/Planificacion%20potenciada%20-%20propuesta%20del%20evento.md): flota propia o contratada, costo total de servir y recomendación justificada. **Ese objetivo todavía no está integrado de punta a punta.** La pantalla comparativa contiene ejemplos; el backend no calcula la opción contratada ni el puntaje de #241.
+La fuente de verdad es la [propuesta de planificación](../../boveda/02%20Producto/Planificacion%20potenciada%20-%20propuesta%20del%20evento.md): flota propia o contratada, costo total de servir y recomendación justificada. **Actualización 17-oct:** el motor ya calcula la opción contratada, el puntaje y la recomendación (#241; PR #275, #283 y #288) y se ensayó en local con `demo-quito-planificacion` (#285, PR #295; ver P-02). Falta aplicarlo en producción (#198) y corregir el desglose por componente de esa corrida, que no suma el total de cada opción. La lámina 5 de `pitch-v3` muestra solo totales, críticos a tiempo, puntaje y recomendación.
 
 Pitch: 5 min, meta 4:40. Código congelado el sáb 17-oct a las 11:30; materiales a las 15:45; entrega 16:00–16:15. Fuente: #200, #253 y [Hechos canónicos](../../boveda/00%20Inicio/Hechos%20canonicos.md). El corte auditado no certifica el despliegue ni reemplaza la revisión del commit congelado.
 
@@ -98,17 +98,17 @@ Se conservan los identificadores A para los enlaces desde el guion, las respuest
 
 ## Resumen para el guion
 
-Mensaje disponible: **«Planificamos con datos del escenario y costos estimados; queremos ayudar a decidir cuándo usar flota propia o contratar. La comparación contratada sigue en integración».** Para mostrar el costo técnico, usar únicamente el reporte y JSON de P-01, con el rótulo «ensayo sintético del motor» y su dataset. Para A/B/C, usar diseño sin cifras atribuidas a una corrida.
+Mensaje disponible: **«Planificamos con datos del escenario y costos estimados; queremos ayudar a decidir cuándo usar flota propia o contratar. En un ensayo técnico, el motor ya compara ambas y recomienda con su justificación».** Para el desglose de costo, usar el reporte y JSON de P-01 con el rótulo «ensayo sintético del motor» y su dataset. Para A/B/C, usar solo totales, críticos a tiempo, puntaje y recomendación de P-02 (#285), rotulados «ensayo técnico» y «escenario sintético»; no su desglose por componente.
 
 Retirar del discurso y de capturas de resultados: los importes y recomendaciones del mock A/B/C, el ahorro atribuido al benchmark nacional, «ventanas reales», «flota real», incidentes actuales, tráfico en vivo y recepción final offline. El título «API en vivo» no sanea las constantes del comparador.
 
-La matriz no certifica el contenido de los PDF/PPTX ni del banco de respuestas. Hay textos que requieren conciliación: A-11 ya tiene ejecución técnica; #193 está fusionado; #241 sigue pendiente; el banco contiene una respuesta de cronología de construcción que debe omitirse por completo. No copiar las frases antiguas ni sus cronologías a los materiales congelados.
+La matriz no certifica el contenido de los PDF/PPTX ni del banco de respuestas. Hay textos que requieren conciliación: A-11 ya tiene ejecución técnica; #193 está fusionado; #241 está integrado y ensayado en local (P-02); el banco contiene una respuesta de cronología de construcción que debe omitirse por completo. No copiar las frases antiguas ni sus cronologías a los materiales congelados.
 
 ## Pendiente para cerrar CE-06
 
 1. Repetir la auditoría sobre el commit congelado; promover una fila solo con evidencia nueva y conservar su alcance exacto.
 2. Registrar el recorrido conectado de cada escena, dispositivo, dataset/configuración, resultado y responsable en [registro de ensayos](registro-ensayos.md). No completar ensayos en nombre de personas.
-3. Resolver la procedencia de las cifras A/B/C, la integridad/configuración de #243 y el alcance real del benchmark antes de habilitar esas afirmaciones.
+3. Cifras A/B/C: procedencia resuelta con #285 (P-02). Queda corregir el desglose por componente (#276), aplicar la configuración en producción (#198) y aclarar el alcance real del benchmark antes de habilitar esas afirmaciones.
 4. Dos revisores comparan las frases permitidas con guion, respuestas, capturas y materiales finales. Mantener sin firma hasta revisión humana.
 
 ## Hoja de segunda revisión (E2E-05)
@@ -118,7 +118,7 @@ La matriz no certifica el contenido de los PDF/PPTX ni del banco de respuestas. 
 | Revisor distinto del autor y responsable del pitch | [PENDIENTE] |
 | Fecha/hora y commit congelado revisado | [PENDIENTE] |
 | P-01: costo estimado, reporte técnico y dataset identificados | [PENDIENTE] |
-| P-02/P-03: no atribuir al motor los ejemplos A/B/C | [PENDIENTE] |
+| P-02/P-03: A/B/C solo con totales, críticos, puntaje y recomendación de #285; sin desglose ni cifras de la maqueta | [PENDIENTE] |
 | P-04/P-05: sintéticos y referencias públicas distinguidos; integridad comprobada | [PENDIENTE] |
 | A-11: ejecución del agente acotada, sin atribuir aprobación a la IA | [PENDIENTE] |
 | A-15/A-16: sin afirmar teléfono offline o QR del jurado sin ensayo | [PENDIENTE] |
