@@ -887,3 +887,14 @@ ejecución real y despliegue se registrarán por separado.
 - [x] Documentación de contratos en `docs/boveda/03 Arquitectura/Contratos API y eventos.md`.
 
 Estado: código y pruebas locales completados; sin ejecución real en n8n remoto ni despliegue a producción. La maquetación de la pantalla comparativa corresponde a Alexander (#242).
+
+## Issue #275 — activar ServiceCost y TrafficBands en la demo — 16-oct-2026
+
+- [x] Crear `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json` con secciones `ServiceCost` (diésel $3.11/gal, perfiles vehiculares `camioneta`, `camion_liviano`, `camion_pesado`, ayudante $4.13/h, merma), `TrafficBands` (3 bandas: 06:00-09:30 y 16:00-20:00 factor 0.64; 12:30-14:00 factor 0.80), `ContractedCarrier` y `Recommendation` para #241.
+- [x] Configurar carga opcional en `Program.cs` mediante `DEMO_QUITO_CONFIG_ENABLED=true` / `LOGISTICS_CONFIG_FILE` / producción, garantizando cero impacto en el entorno `Testing` de pruebas preexistentes.
+- [x] Actualizar `docker-compose.prod.yml` y sincronizar script de fixture `generate-demo-quito-planificacion.py`.
+- [x] Pruebas unitarias e integración en `DemoQuitoConfigurationTests.cs` y `DemoQuitoConfigurationIntegrationTests.cs`: verifican `/health/ready` 200 Healthy, deserialización de opciones, desglose de costos activo y variación por hora pico (07:30 tarda más que a las 11:00).
+- [x] Despliegue en producción coordinado con Jorge (#198).
+
+Estado: código, configuración y pruebas locales de integración completados; aplicación a producción a cargo de Jorge (#198) en el siguiente despliegue. Alexander queda habilitado para #276.
+

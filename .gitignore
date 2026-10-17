@@ -6,6 +6,7 @@
 **/appsettings.*.json
 !**/appsettings.example.json
 !src/Api/appsettings.Development.json
+!data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json
 *.pem
 *.key
 *.pfx
