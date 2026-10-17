@@ -3,7 +3,8 @@
 Uso:
     uv run --with python-pptx python docs/specs/006-validacion-pitch-entrega/materiales/generar_v2.py
 
-LibreOffice debe estar disponible como `soffice` para exportar el PDF.
+LibreOffice debe estar disponible como `soffice` para exportar el PDF y
+`pdftoppm` (poppler) para renderizar los PNG de `render-v2/`.
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ ASSETS = HERE / "entregable-2" / "img"
 ROUTE_CAPTURE = ASSETS / "captura-rutas.png"
 PPTX_PATH = HERE / "pitch-v2.pptx"
 PDF_PATH = HERE / "pitch-v2.pdf"
+RENDER_DIR = HERE / "render-v2"
 
 W, H = 13.333, 7.5
 CYAN = RGBColor(0x00, 0xA7, 0xC4)
@@ -181,52 +183,66 @@ def slide_demo_capture(prs):
          19, INK, True, align=PP_ALIGN.CENTER)
 
 
-def slide_abc(prs):
-    s = new_slide(prs, "Anexo 5.7 · Prototipo / demo", "Diseño del panel de comparación A / B / C",
-                  "Fuente: propuesta del evento y matriz P-02/P-03/P-05. Celdas sin dato: no atribuir cifras al motor.")
-    rect(s, 0.76, 1.58, 11.82, 0.55, PALE_ORANGE, ORANGE)
-    text(s, 0.96, 1.70, 11.40, 0.30,
-         "DISEÑO · comparación contratada y recomendación calculada siguen en integración",
-         16, INK, True, align=PP_ALIGN.CENTER)
+# Cifras de la columna A: selector de #240 (PR #254, merge 6adcf53), fixture demo-base,
+# BOD-UIO -> HOS-001 -> regreso. Fuente: 003-agente-logistico/evidencia/240-desglose-demo.json
+# (match.serviceCostBreakdown). B y C dependen de #241 y quedan en integración.
+ABC_ENGINE_COMMIT = "6adcf53"
+ABC_COLUMN_A = ["USD 2,26", "USD 2,15", "USD 7,22 + 4,81", "USD 3,50", "USD 19,94"]
+ABC_PENDING = "en integración"
 
-    x0, y0 = 0.82, 2.32
-    widths = [2.46, 2.52, 2.52, 2.52]
+
+def slide_abc(prs):
+    s = new_slide(prs, "Anexo 5.7 · Prototipo / demo", "Panel A / B / C: la columna A ya la calcula el motor",
+                  "Fuente: #240, PR #254 (6adcf53), 240-desglose-demo.json · demo-base: Bodega Quito → Hospital Norte → regreso, "
+                  "210 kg, 20 bultos, 1 ayudante · combustible sintético USD 3,785/gal · matriz P-01; P-02 en curso.")
+    rect(s, 0.76, 1.52, 11.82, 0.55, PALE_CYAN, CYAN)
+    text(s, 0.96, 1.62, 11.40, 0.34,
+         f"A: costo estimado del motor · escenario sintético demo-base · commit {ABC_ENGINE_COMMIT}",
+         17, INK, True, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
+
+    x0, y0 = 0.82, 2.20
+    widths = [2.86, 3.24, 2.86, 2.86]
     headings = ["Componente", "A · Flota propia", "B · Propia, críticos primero", "C · Contratada"]
     xx = x0
     for j, (w, title) in enumerate(zip(widths, headings)):
-        rect(s, xx, y0, w, 0.66, CYAN if j == 0 else INK,
-             CYAN if j == 0 else INK, radius=False)
-        text(s, xx + 0.07, y0 + 0.12, w - 0.14, 0.42, title, 15,
+        fill = CYAN if j <= 1 else INK
+        rect(s, xx, y0, w, 0.62, fill, fill, radius=False)
+        text(s, xx + 0.07, y0 + 0.10, w - 0.14, 0.42, title, 16,
              WHITE, True, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
         xx += w
 
     rows = ["Combustible", "Desgaste", "Conductor y ayudantes", "Merma esperada", "Costo total"]
-    rh = 0.48
+    rh = 0.47
     for i, label in enumerate(rows):
-        yy = y0 + 0.66 + i * rh
-        fill = WHITE if i % 2 == 0 else PALE_CYAN
+        yy = y0 + 0.62 + i * rh
+        total = i == len(rows) - 1
+        fill = PALE_LIME if total else (WHITE if i % 2 == 0 else PALE_CYAN)
         xx = x0
         for j, w in enumerate(widths):
             rect(s, xx, yy, w, rh, fill, LINE, radius=False, line_width=0.6)
-            value = label if j == 0 else "sin dato"
-            text(s, xx + 0.07, yy + 0.10, w - 0.14, 0.27, value,
-                 15 if j else 16, INK if j == 0 else MUTED,
-                 bold=(j == 0 or i == len(rows)), align=PP_ALIGN.CENTER,
-                 valign=MSO_ANCHOR.MIDDLE)
+            if j == 0:
+                value, size, color, bold = label, 17, INK, True
+            elif j == 1:
+                value, size, color, bold = ABC_COLUMN_A[i], 19 if total else 18, INK, True
+            else:
+                value, size, color, bold = ABC_PENDING, 15, MUTED, False
+            text(s, xx + 0.07, yy + 0.08, w - 0.14, 0.31, value, size, color,
+                 bold=bold, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
             xx += w
 
-    rect(s, 0.82, 5.50, 7.48, 0.66, PALE_LIME, LIME)
-    text(s, 1.00, 5.59, 7.12, 0.46,
-         "Recomendada: sin dato · el planificador decide",
-         17, INK, True, valign=MSO_ANCHOR.MIDDLE)
-    rect(s, 8.52, 5.50, 4.12, 0.66, PALE, LINE)
-    text(s, 8.68, 5.57, 3.80, 0.50,
-         "Justificación: pendiente de integrar el puntaje A/B/C.",
-         16, INK, False, valign=MSO_ANCHOR.MIDDLE)
-    rect(s, 0.82, 6.25, 11.82, 0.48, PALE_ORANGE, ORANGE)
-    text(s, 1.00, 6.30, 11.45, 0.34,
+    rect(s, 0.82, 5.30, 11.82, 0.72, PALE, LINE)
+    text(s, 1.00, 5.34, 11.45, 0.64,
+         "«El costo de una ruta no es solo kilómetros: sumamos combustible según carga, "
+         "personas que descargan y merma esperada».",
+         17, INK, False, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
+    rect(s, 0.82, 6.10, 7.62, 0.64, PALE_ORANGE, ORANGE)
+    text(s, 0.98, 6.14, 7.30, 0.56,
+         "La comparación con operador contratado y la recomendación calculada se integran en #241.",
+         15, INK, True, valign=MSO_ANCHOR.MIDDLE)
+    rect(s, 8.58, 6.10, 4.06, 0.64, WHITE, ORANGE)
+    text(s, 8.70, 6.14, 3.82, 0.56,
          "[CAPTURA PENDIENTE: pantalla A/B/C]",
-         17, INK, True, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
+         15, INK, True, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
 
 
 def slide_impact_indicators(prs):
@@ -362,8 +378,18 @@ def build_deck():
     )
     if not PDF_PATH.exists():
         raise RuntimeError(f"LibreOffice no produjo el PDF: {result.stdout} {result.stderr}")
+    pdftoppm = shutil.which("pdftoppm")
+    if not pdftoppm:
+        raise RuntimeError("No se encontró pdftoppm para renderizar los PNG")
+    RENDER_DIR.mkdir(exist_ok=True)
+    for old in RENDER_DIR.glob("diapositiva-*.png"):
+        old.unlink()
+    # 110 ppp equivale a 1467×825 px para 13,333×7,5 in, el tamaño de los PNG publicados.
+    subprocess.run([pdftoppm, "-png", "-r", "110", str(PDF_PATH),
+                    str(RENDER_DIR / "diapositiva")], check=True)
     print(f"PPTX: {PPTX_PATH}")
     print(f"PDF:  {PDF_PATH}")
+    print(f"PNG:  {RENDER_DIR}")
 
 
 if __name__ == "__main__":
