@@ -920,6 +920,7 @@ Estado: código, configuración y pruebas locales de integración completados; a
 
 Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y evidencia técnica local guardada; ejecución en producción pendiente del despliegue de #275 por Jorge (#198). Cifras de A/B/C listas para alimentar la lámina 4 del pitch (#200) y la corrida guardada de Alexander (#276).
 
+
 ## Issue #293 — arranque de n8n en volumen nuevo y Git Bash — 17-oct-2026
 
 - [x] `local-up.sh` tolera la exportación vacía de una instalación nueva y continúa con la importación.
@@ -951,3 +952,14 @@ Estado: código, pruebas locales y ensayo Linux completados; Windows Git Bash no
 
 Estado: código y pruebas locales completados; listo para integración vía Pull Request a develop.
 
+## Issue #287 — concurrencia y conciliación posterior al evento
+
+- [x] Base #286/#294 revisada; trabajo aislado en `chore/287-concurrencia-conciliacion`.
+- [ ] Operaciones reintentables persistentes y serialización con publicación/despacho/cancelación/reversión.
+- [ ] Ámbito del conductor y conciliación de retornos parciales por destino/motivo/saldo.
+- [ ] Caché de sugerencias y contratos compatibles.
+- [ ] Pruebas PostgreSQL, regresiones y comparación de AgentJourney bajo carga con la base.
+- [ ] PR a develop, CI del HEAD final, resolución de conflictos, merge y cierre de #287.
+- Coordinación con Joseph **pendiente**, confirmada por Bryan: preparar cambios, sin incorporarlos todavía.
+- Estado: implementación en curso; pruebas locales pendientes; ejecución real y despliegue no realizados.
+- Evidencia: [287-concurrencia](../../evidence/287-concurrencia/README.md).

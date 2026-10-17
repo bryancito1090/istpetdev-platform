@@ -34,7 +34,7 @@ public sealed class ReturnGuidesController : ControllerBase
     {
         try
         {
-            var actorAccountId = User.AccountId() ?? Guid.NewGuid();
+            if (User.AccountId() is not Guid actorAccountId) return Unauthorized();
             var guide = await _fieldService.GenerateReturnGuideAsync(request.RoutePlanId, actorAccountId, ct);
             return Ok(guide);
         }
@@ -55,7 +55,8 @@ public sealed class ReturnGuidesController : ControllerBase
     {
         try
         {
-            var guide = await _fieldService.GetReturnGuideAsync(guideNumber, ct);
+            if (User.AccountId() is not Guid actorAccountId) return Unauthorized();
+            var guide = await _fieldService.GetReturnGuideAsync(guideNumber, actorAccountId, ct);
             return Ok(guide);
         }
         catch (FieldException ex)
@@ -75,7 +76,7 @@ public sealed class ReturnGuidesController : ControllerBase
     {
         try
         {
-            var actorAccountId = User.AccountId() ?? Guid.NewGuid();
+            if (User.AccountId() is not Guid actorAccountId) return Unauthorized();
             var response = await _fieldService.ReceiveReturnGuideAsync(request, actorAccountId, ct);
             return Ok(response);
         }

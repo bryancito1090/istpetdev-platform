@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using IstpetDev.Application.Common.Interfaces;
+using IstpetDev.Application.Common;
 using IstpetDev.Application.Field.Dtos;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
@@ -1910,15 +1911,8 @@ public sealed class FieldService : IFieldService
     private static string ComputeRequestFingerprint(string actionCode, Guid resourceId, object payload) =>
         ComputeSha256($"{actionCode}|{resourceId:N}|{JsonSerializer.Serialize(payload, JsonOptions)}");
 
-    // ponytail: un lock global por organización serializa toda la custodia de la demo (bajo volumen);
-    // particionar por entrega solo si algún día se necesita concurrencia real dentro de la organización.
-    private async Task<IDbContextTransaction?> BeginSerializedTransactionAsync(CancellationToken ct)
-    {
-        if (_db.Database.CurrentTransaction is not null) return null;
-        var transaction = await _db.Database.BeginTransactionAsync(ct);
-        await _db.LockOrganizationAsync(ct);
-        return transaction;
-    }
+    private Task<IDbContextTransaction?> BeginSerializedTransactionAsync(CancellationToken ct) =>
+        OrganizationTransaction.BeginAsync(_db, ct);
 
     // Ubicación del vehículo y del punto de destino para eventos de custodia y movimientos.
     private async Task<(Guid? VehicleLocationId, Guid DestinationLocationId)> ResolveVehicleAndDestinationAsync(
@@ -1985,6 +1979,7 @@ public sealed class FieldService : IFieldService
         var plan = await _db.RoutePlans.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Plan de ruta {routePlanId} no encontrado.");
+        await EnsureReturnGuideAccessAsync(plan.Id, actorAccountId, generating: true, ct);
         var guide = await BuildReturnGuideAsync(await ResolveReturnGuidePlanAsync(ReturnGuideNumber(plan.Id), ct), ct);
         var huIds = guide.Lines.Select(l => l.HandlingUnitId).Distinct().ToList();
         var units = await _db.HandlingUnits
@@ -2032,8 +2027,30 @@ public sealed class FieldService : IFieldService
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Guía de retorno {guideNumber} no encontrada.");
     }
 
-    public async Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default) =>
-        await BuildReturnGuideAsync(await ResolveReturnGuidePlanAsync(guideNumber, ct), ct);
+    public async Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, Guid actorAccountId, CancellationToken ct = default)
+    {
+        var plan = await ResolveReturnGuidePlanAsync(guideNumber, ct);
+        await EnsureReturnGuideAccessAsync(plan.Id, actorAccountId, generating: false, ct);
+        return await BuildReturnGuideAsync(plan, ct);
+    }
+
+    private async Task EnsureReturnGuideAccessAsync(Guid routePlanId, Guid actorAccountId, bool generating, CancellationToken ct)
+    {
+        var account = await _db.Accounts.AsNoTracking().SingleOrDefaultAsync(a => a.Id == actorAccountId &&
+            a.OrganizationId == DemoOrganization.Id && a.IsActive, ct);
+        if (account is null)
+            throw new FieldForbiddenException("GUIDE_ACCESS_DENIED", "No tiene acceso a esta guía.");
+        if (account.Role == Roles.Conductor)
+        {
+            var assigned = await _db.Deliveries.AnyAsync(d => d.OrganizationId == DemoOrganization.Id &&
+                d.AssignedAccountId == actorAccountId && _db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id &&
+                    s.RoutePlanId == routePlanId && s.Id == d.RouteStopId), ct);
+            if (assigned) return;
+        }
+        else if (account.Role is Roles.Gerencia or Roles.Planificador or Roles.Bodega || (!generating && account.Role == Roles.Auditor))
+            return;
+        throw new FieldForbiddenException("GUIDE_ACCESS_DENIED", "No tiene acceso a esta guía.");
+    }
 
     // Proyección compartida de solo lectura: consultar nunca genera eventos ni cambia custodia.
     private async Task<ReturnGuideDto> BuildReturnGuideAsync(RoutePlan plan, CancellationToken ct)
@@ -2098,55 +2115,51 @@ public sealed class FieldService : IFieldService
             .Where(rl => receiptIds.Contains(rl.ReceiptId) && rl.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
-        // Bultos no entregados:
-        // 1) Handling units que están en NotDelivered, Returned
-        // 2) Handling units de entregas con estado NotDelivered o parcial
-        // 3) Handling units que quedaron en Dispatched o InTransit cuando la ruta se cierra (no alcanzaron a ser entregados)
         var returnLines = new List<ReturnGuideLineDto>();
-        var deliveryById = deliveries.ToDictionary(d => d.Id, d => d);
+        var deliveryById = deliveries.ToDictionary(d => d.Id);
+        var stopById = stops.ToDictionary(s => s.Id);
+        var receiptsByLine = receiptLines.GroupBy(r => r.DeliveryLineId).ToDictionary(g => g.Key, g => g.ToList());
+        var rejectedRemaining = receiptsByLine.ToDictionary(g => g.Key, g => g.Value.Sum(r => r.QuantityRejected));
 
-        foreach (var hu in handlingUnits)
+        // El recibo actual identifica la línea de entrega, no la caja rechazada. Distribuir su total
+        // una sola vez entre cajas en orden estable; nunca repetir el rechazo en cada caja del mismo lote.
+        foreach (var hu in handlingUnits.OrderBy(h => h.Code, StringComparer.Ordinal).ThenBy(h => h.Id))
         {
-            var del = hu.DeliveryId.HasValue && deliveryById.TryGetValue(hu.DeliveryId.Value, out var d) ? d : null;
-            bool isNotDelivered = hu.Status == HandlingUnitStates.NotDelivered
-                || hu.Status == HandlingUnitStates.Returned
-                || hu.Status == HandlingUnitStates.Dispatched
-                || hu.Status == HandlingUnitStates.InTransit
-                || (del != null && (del.Status == DeliveryStates.NotDelivered || del.Status == DeliveryStates.Dispatched || del.Status == DeliveryStates.InTransit));
-
-            // Si fue Partial, ver si este bulto tiene líneas rechazadas
-            var rLinesForHu = receiptLines.Where(rl => dLineMap.TryGetValue(rl.DeliveryLineId, out var dl) && dl.HandlingUnitId == hu.Id).ToList();
-            bool hasRejectionInHu = rLinesForHu.Any(rl => rl.QuantityRejected > 0);
-
-            if (isNotDelivered || hasRejectionInHu)
+            if (hu.DeliveryId is not Guid deliveryId || !deliveryById.TryGetValue(deliveryId, out var delivery)) continue;
+            var stop = delivery.RouteStopId is Guid stopId ? stopById.GetValueOrDefault(stopId) : null;
+            foreach (var hl in huLines.Where(l => l.HandlingUnitId == hu.Id).OrderBy(l => l.Id))
             {
-                var linesForHu = huLines.Where(hl => hl.HandlingUnitId == hu.Id).ToList();
-                foreach (var hl in linesForHu)
+                var dl = hl.DeliveryLineId is Guid lineId ? dLineMap.GetValueOrDefault(lineId)
+                    : deliveryLines.SingleOrDefault(l => l.DeliveryId == deliveryId && l.LotId == hl.LotId && l.HandlingUnitId == hu.Id);
+                if (dl is null || dl.DeliveryId != deliveryId || dl.LotId != hl.LotId)
+                    throw new FieldConflictException("RETURN_LINE_MISMATCH", "El bulto no tiene una línea de entrega y lote inequívocos.");
+                decimal quantity;
+                string reason;
+                if (receiptsByLine.TryGetValue(dl.Id, out var rejected))
                 {
-                    lots.TryGetValue(hl.LotId, out var lot);
-                    var prod = lot != null && products.TryGetValue(lot.ProductId, out var p) ? p : null;
-
-                    string reason = "No entregado en ruta";
-                    var matchReceiptLine = rLinesForHu.FirstOrDefault(rl => dLineMap.TryGetValue(rl.DeliveryLineId, out var dl) && dl.LotId == hl.LotId);
-                    if (matchReceiptLine != null && !string.IsNullOrEmpty(matchReceiptLine.RejectionReason))
-                    {
-                        reason = matchReceiptLine.RejectionReason;
-                    }
-
-                    returnLines.Add(new ReturnGuideLineDto(
-                        hu.Id,
-                        hu.Code,
-                        prod?.Id ?? Guid.Empty,
-                        prod?.Sku ?? "SKU",
-                        prod?.Name ?? "Producto",
-                        hl.LotId,
-                        lot?.Code ?? "LOTE",
-                        hl.Quantity,
-                        prod?.BaseUnit ?? "UN",
-                        reason));
+                    quantity = Math.Min(hl.Quantity, rejectedRemaining[dl.Id]);
+                    rejectedRemaining[dl.Id] -= quantity;
+                    reason = rejected.FirstOrDefault(r => r.QuantityRejected > 0)?.RejectionReason ?? "No entregado en ruta";
                 }
+                else
+                {
+                    var inVehicle = hu.Status is HandlingUnitStates.NotDelivered or HandlingUnitStates.Returned
+                        or HandlingUnitStates.Dispatched or HandlingUnitStates.InTransit;
+                    quantity = inVehicle && dl.DispatchedQuantity > 0 ? hl.Quantity : 0m;
+                    reason = "No entregado en ruta";
+                }
+                if (quantity <= 0) continue;
+                if (!lots.TryGetValue(hl.LotId, out var lot) || !products.TryGetValue(lot.ProductId, out var product))
+                    throw new FieldConflictException("RETURN_LINE_MISMATCH", "El lote del retorno no tiene un producto válido.");
+                returnLines.Add(new ReturnGuideLineDto(hu.Id, hu.Code, product.Id, product.Sku, product.Name,
+                    hl.LotId, lot.Code, quantity, product.BaseUnit, reason, delivery.Id, dl.Id,
+                    delivery.DestinationLocationId.HasValue || stop?.LocationId.HasValue == true ? null : delivery.ServicePointId,
+                    delivery.DestinationLocationId ?? stop?.LocationId,
+                    receiptsByLine.ContainsKey(dl.Id) ? "Quarantine" : "Available"));
             }
         }
+        if (rejectedRemaining.Values.Any(q => q > 0))
+            throw new FieldConflictException("RETURN_LINE_MISMATCH", "La cantidad rechazada excede lo identificado en los bultos despachados.");
 
         var returnedIds = handlingUnits.Where(h => h.Status == HandlingUnitStates.Returned).Select(h => h.Id).ToHashSet();
         var status = returnLines.Count == 0 ? "Empty"
@@ -2191,80 +2204,72 @@ public sealed class FieldService : IFieldService
         var warehouseLocationId = guide.DestinationWarehouseId;
         var now = DateTime.UtcNow;
 
-        // Conciliar inventario: transferir saldo del vehículo a la bodega de destino
-        var vehicle = await _db.Vehicles
-            .FirstOrDefaultAsync(v => v.Id == plan.VehicleId && v.OrganizationId == DemoOrganization.Id, ct);
-        var vehicleLocation = vehicle != null
-            ? await _db.Locations.FirstOrDefaultAsync(l => l.Code == vehicle.Code && l.OrganizationId == DemoOrganization.Id, ct)
-            : null;
-        var vehicleLocationId = vehicleLocation?.Id;
-
-        // Actualizar estados de bultos y crear movimientos de retorno
-        var groupedByProductAndLot = pendingLines
-            .GroupBy(l => (l.ProductId, l.LotId))
-            .Select(g => new
-            {
-                ProductId = g.Key.ProductId,
-                LotId = g.Key.LotId,
-                Quantity = g.Sum(x => x.Quantity),
-                Units = g.Select(x => x.HandlingUnitId).Distinct().ToList()
-            })
-            .ToList();
-
-        foreach (var group in groupedByProductAndLot)
+        var warehouse = await _db.Locations.SingleOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id &&
+            l.Id == warehouseLocationId && l.Kind == LocationKinds.Warehouse, ct)
+            ?? throw new FieldConflictException("RETURN_WAREHOUSE_MISSING", "La guía no tiene una bodega de recepción válida.");
+        var vehicleLocation = await _db.Locations.SingleOrDefaultAsync(l => l.VehicleId == plan.VehicleId &&
+            l.Kind == LocationKinds.Vehicle && l.OrganizationId == DemoOrganization.Id, ct)
+            ?? throw new FieldConflictException(FieldErrorCodes.InsufficientVehicleStock, "La ruta no tiene ubicación de vehículo.");
+        var vehicleLocationId = vehicleLocation.Id;
+        var vehicleBalances = await _db.StockBalances.Where(b => b.OrganizationId == DemoOrganization.Id &&
+            b.LocationId == vehicleLocationId).ToDictionaryAsync(b => b.LotId, ct);
+        foreach (var group in pendingLines.GroupBy(l => l.LotId))
         {
-            // Saldo en bodega
-            var whBalance = await _db.StockBalances
-                .FirstOrDefaultAsync(sb => sb.LocationId == warehouseLocationId && sb.LotId == group.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-            if (whBalance == null)
-            {
-                whBalance = new StockBalance
-                {
-                    OrganizationId = DemoOrganization.Id,
-                    LocationId = warehouseLocationId,
-                    LotId = group.LotId,
-                    QuantityOnHand = group.Quantity,
-                    QuantityReserved = 0m
-                };
-                _db.StockBalances.Add(whBalance);
-            }
-            else
-            {
-                whBalance.QuantityOnHand += group.Quantity;
-            }
+            if (!vehicleBalances.TryGetValue(group.Key, out var balance) ||
+                balance.QuantityOnHand - balance.QuantityReserved < group.Sum(l => l.Quantity))
+                throw new FieldConflictException(FieldErrorCodes.InsufficientVehicleStock,
+                    "La cantidad de retorno excede el saldo disponible del vehículo; no se recibió ninguna línea.");
+        }
 
-            // Descontar del vehículo si tiene saldo registrado
-            if (vehicleLocationId.HasValue)
+        // Un bulto con rechazo queda en cuarentena hasta conciliación física. No se bloquea el lote
+        // completo (que puede tener existencias sanas) ni se ofrece este saldo como stock de bodega.
+        var quarantineUnitIds = pendingLines.Where(l => l.StockDisposition == "Quarantine")
+            .Select(l => l.HandlingUnitId).ToHashSet();
+        Location? quarantine = null;
+        if (quarantineUnitIds.Count > 0)
+        {
+            var code = $"RET-Q-{warehouseLocationId:N}";
+            quarantine = await _db.Locations.SingleOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id &&
+                l.Kind == LocationKinds.Quarantine && l.Code == code, ct);
+            if (quarantine is null)
             {
-                var vBalance = await _db.StockBalances
-                    .FirstOrDefaultAsync(sb => sb.LocationId == vehicleLocationId.Value && sb.LotId == group.LotId && sb.OrganizationId == DemoOrganization.Id, ct);
-                if (vBalance != null)
-                {
-                    vBalance.QuantityOnHand = Math.Max(0m, vBalance.QuantityOnHand - group.Quantity);
-                }
+                quarantine = new Location { OrganizationId = DemoOrganization.Id, Code = code,
+                    Kind = LocationKinds.Quarantine, Name = $"Retornos por conciliar — {warehouse.Name}", IsActive = true };
+                _db.Locations.Add(quarantine);
             }
-
-            // Movimiento de inventario de retorno
-            _db.InventoryMovements.Add(new InventoryMovement
+        }
+        Guid Target(ReturnGuideLineDto line) => quarantineUnitIds.Contains(line.HandlingUnitId) ? quarantine!.Id : warehouseLocationId;
+        foreach (var group in pendingLines.GroupBy(l => (l.LotId, LocationId: Target(l))))
+        {
+            var quantity = group.Sum(l => l.Quantity);
+            vehicleBalances[group.Key.LotId].QuantityOnHand -= quantity;
+            var balance = await _db.StockBalances.SingleOrDefaultAsync(b => b.OrganizationId == DemoOrganization.Id &&
+                b.LocationId == group.Key.LocationId && b.LotId == group.Key.LotId, ct);
+            if (balance is null)
             {
-                OrganizationId = DemoOrganization.Id,
-                Kind = MovementKinds.Return,
-                LotId = group.LotId,
-                FromLocationId = vehicleLocationId,
-                ToLocationId = warehouseLocationId,
-                Quantity = group.Quantity,
-                ActorAccountId = actorAccountId,
-                OperationId = request.OperationId,
-                OccurredAtUtc = request.OccurredAtDevice ?? now,
-                Reason = $"Retorno a bodega según guía {request.GuideNumber}"
-            });
+                balance = new StockBalance { OrganizationId = DemoOrganization.Id,
+                    LocationId = group.Key.LocationId, LotId = group.Key.LotId };
+                _db.StockBalances.Add(balance);
+            }
+            balance.QuantityOnHand += quantity;
+            foreach (var line in group)
+            {
+                _db.InventoryMovements.Add(new InventoryMovement
+                {
+                    OrganizationId = DemoOrganization.Id, Kind = MovementKinds.Return,
+                    LotId = line.LotId, FromLocationId = vehicleLocationId, ToLocationId = group.Key.LocationId,
+                    Quantity = line.Quantity, ActorAccountId = actorAccountId, OperationId = request.OperationId,
+                    DeliveryLineId = line.DeliveryLineId, OccurredAtUtc = request.OccurredAtDevice ?? now,
+                    Reason = $"Guía {request.GuideNumber}; destino {line.DestinationServicePointId ?? line.DestinationLocationId}; motivo {line.Reason}"
+                });
+            }
         }
 
         // Actualizar solo los bultos pendientes y registrar su retorno.
         foreach (var hu in hus)
         {
             hu.Status = HandlingUnitStates.Returned;
-            hu.LocationId = warehouseLocationId;
+            hu.LocationId = quarantineUnitIds.Contains(hu.Id) ? quarantine!.Id : warehouseLocationId;
 
             _db.CustodyEvents.Add(new CustodyEvent
             {
@@ -2272,7 +2277,7 @@ public sealed class FieldService : IFieldService
                 HandlingUnitId = hu.Id,
                 DeliveryId = hu.DeliveryId,
                 FromLocationId = vehicleLocationId,
-                ToLocationId = warehouseLocationId,
+                ToLocationId = hu.LocationId,
                 ActorAccountId = actorAccountId,
                 EventKind = CustodyEventKinds.Returned,
                 OperationId = request.OperationId,
@@ -2281,49 +2286,33 @@ public sealed class FieldService : IFieldService
             });
         }
 
-        // Reinyección: generar DeliveryOrder pendiente con prioridad High (o Critical si el punto destino original es crítico)
-        // Detectar si alguna parada o punto tenía prioridad crítica
-        var stops = await _db.RouteStops
-            .Where(s => s.RoutePlanId == plan.Id && s.OrganizationId == DemoOrganization.Id)
-            .ToListAsync(ct);
-        var servicePointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
-        var criticalPoints = await _db.ServicePoints
-            .Where(sp => servicePointIds.Contains(sp.Id) && sp.OrganizationId == DemoOrganization.Id && sp.Criticality == "Critical")
-            .Select(sp => sp.Id)
-            .ToListAsync(ct);
-
-        bool hasCriticalPoint = criticalPoints.Count > 0;
-        string priority = hasCriticalPoint ? "Critical" : "High";
-
-        var rebalanceOrder = new DeliveryOrder
+        // Una demanda por destino original, conservando motivos; la prioridad se decide para cada punto.
+        var rebalanceOrderIds = new List<Guid>();
+        foreach (var destination in pendingLines.GroupBy(l => (l.DestinationServicePointId, l.DestinationLocationId))
+                     .OrderBy(g => g.Key.DestinationServicePointId).ThenBy(g => g.Key.DestinationLocationId))
         {
-            OrganizationId = DemoOrganization.Id,
-            OrderNumber = $"ORD-RET-{request.GuideNumber}-{request.OperationId.ToString()[..6]}",
-            DestinationLocationId = null,
-            DestinationServicePointId = servicePointIds.FirstOrDefault() != Guid.Empty ? servicePointIds.FirstOrDefault() : null,
-            RequiredDateUtc = now.AddDays(1),
-            Priority = priority,
-            Status = DeliveryOrderStatus.Pending,
-            SourceType = "ReturnGuide",
-            Notes = $"Pedido de reinyección prioritaria por guía de retorno {request.GuideNumber}. Prioridad: {priority}."
-        };
-        _db.DeliveryOrders.Add(rebalanceOrder);
-
-        var productQuantities = pendingLines
-            .GroupBy(l => l.ProductId)
-            .Select(g => new { ProductId = g.Key, Quantity = g.Sum(x => x.Quantity) });
-
-        foreach (var pq in productQuantities)
-        {
-            _db.DeliveryOrderLines.Add(new DeliveryOrderLine
+            if (destination.Key.DestinationServicePointId is null && destination.Key.DestinationLocationId is null)
+                throw new FieldConflictException("RETURN_DESTINATION_MISSING", "Una línea de retorno no tiene destino original.");
+            var critical = destination.Key.DestinationServicePointId is Guid pointId && await _db.ServicePoints.AnyAsync(p =>
+                p.OrganizationId == DemoOrganization.Id && p.Id == pointId && p.Criticality == "Critical", ct);
+            var order = new DeliveryOrder
             {
                 OrganizationId = DemoOrganization.Id,
-                DeliveryOrderId = rebalanceOrder.Id,
-                ProductId = pq.ProductId,
-                RequestedQuantity = pq.Quantity,
-                PlannedQuantity = 0m,
-                DeliveredQuantity = 0m
-            });
+                OrderNumber = $"ORD-RET-{request.OperationId:N}-{rebalanceOrderIds.Count + 1:D3}",
+                DestinationServicePointId = destination.Key.DestinationServicePointId,
+                DestinationLocationId = destination.Key.DestinationLocationId,
+                RequiredDateUtc = now.AddDays(1), Priority = critical ? "Critical" : "High",
+                Status = DeliveryOrderStatus.Pending, SourceType = "ReturnGuide",
+                Notes = $"Retorno {request.GuideNumber}; motivos: {string.Join(", ", destination.Select(l => l.Reason).Distinct())}"
+            };
+            _db.DeliveryOrders.Add(order);
+            rebalanceOrderIds.Add(order.Id);
+            foreach (var product in destination.GroupBy(l => l.ProductId))
+                _db.DeliveryOrderLines.Add(new DeliveryOrderLine
+                {
+                    OrganizationId = DemoOrganization.Id, DeliveryOrderId = order.Id,
+                    ProductId = product.Key, RequestedQuantity = product.Sum(l => l.Quantity)
+                });
         }
 
         var response = new ReceiveReturnGuideResponse(
@@ -2331,7 +2320,8 @@ public sealed class FieldService : IFieldService
             "ReceivedAtWarehouse",
             now,
             pendingLines.Count,
-            rebalanceOrder.Id);
+            rebalanceOrderIds[0],
+            rebalanceOrderIds);
         _db.IdempotencyRecords.Add(new IdempotencyRecord
         {
             OrganizationId = DemoOrganization.Id,

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using IstpetDev.Api.Authentication;
+using IstpetDev.Api.Operations;
 using IstpetDev.Application.Agent;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics.Incidents;
@@ -26,6 +27,7 @@ public sealed class IncidentsController(
 
     [HttpPost]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [RetryableOperation("CreateIncident")]
     public async Task<IActionResult> CreateIncident([FromBody] CreateIncidentRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Kind) || request.RadiusKm is < 0 ||
@@ -97,7 +99,7 @@ public sealed class IncidentsController(
             await db.SaveChangesAsync(ct);
             runId = run.Id;
 
-            _ = Task.Run(async () =>
+            Response.OnCompleted(async () =>
             {
                 try
                 {
@@ -169,4 +171,5 @@ public sealed record CreateIncidentRequest(
     string? Description = null,
     bool IsSynthetic = true,
     // #246: mismo dato que Factor con el nombre de incidentes.json; tiene prioridad si llegan los dos.
-    decimal? SlowdownFactor = null);
+    decimal? SlowdownFactor = null,
+    Guid? OperationId = null);

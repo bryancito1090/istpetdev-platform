@@ -5,7 +5,8 @@ public sealed record PlanRequest(
     IReadOnlyList<string>? VehicleCodes,
     bool IncludeConsolidation = true,
     // Hora local "HH:mm" antes de la cual deben atenderse los puntos críticos (#193). Null = sin límite.
-    string? CriticalDeadlineLocal = null);
+    string? CriticalDeadlineLocal = null,
+    Guid? OperationId = null);
 
 public sealed record PlannedStop(
     int Sequence,
