@@ -8,13 +8,23 @@ import {
   ServicePoint,
   RejectedCaptureDto,
   RejectedCaptureLineDto,
-  RejectedCapturesResponse
+  RejectedCapturesResponse,
+  ReturnGuideDto,
+  ReturnGuideLineDto,
+  GenerateReturnGuideRequest,
+  ReceiveReturnGuideRequest,
+  ReceiveReturnGuideResponse
 } from '@istpetdev/shared-core';
 export type {
   ServicePoint,
   RejectedCaptureDto,
   RejectedCaptureLineDto,
-  RejectedCapturesResponse
+  RejectedCapturesResponse,
+  ReturnGuideDto,
+  ReturnGuideLineDto,
+  GenerateReturnGuideRequest,
+  ReceiveReturnGuideRequest,
+  ReceiveReturnGuideResponse
 };
 
 export interface RiskItemDto {
@@ -642,6 +652,8 @@ export class ApiService {
     stops: RouteCandidateStop[];
     polyline?: string;
     coordinates?: [number, number][];
+    // #199: cantidad planificada por línea (parcial explícita); la API rechaza más de lo pendiente.
+    lines?: Array<{ deliveryOrderId: string; productId: string; plannedQuantity: number }>;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/route-plans/confirm`, req);
   }
@@ -934,4 +946,47 @@ export class ApiService {
       })
     );
   }
+
+  // ==========================================
+  // 12. GUÍA DE RETORNO (Issue #247: /api/v1/return-guides)
+  // ==========================================
+
+  getReturnGuide(guideNumber: string): Observable<ReturnGuideDto> {
+    return this.http.get<ReturnGuideDto>(`${this.baseUrl}/api/v1/return-guides/${encodeURIComponent(guideNumber)}`).pipe(
+      tap(() => this.clearLoadError(`guía de retorno ${guideNumber}`)),
+      catchError(err => {
+        this.reportLoadError(`guía de retorno ${guideNumber}`, err);
+        throw err;
+      })
+    );
+  }
+
+  generateReturnGuide(routePlanId: string, notes?: string): Observable<ReturnGuideDto> {
+    return this.http.post<ReturnGuideDto>(`${this.baseUrl}/api/v1/return-guides/generate`, {
+      routePlanId,
+      notes
+    }).pipe(
+      tap(() => this.clearLoadError('generación de guía de retorno')),
+      catchError(err => {
+        this.reportLoadError('generación de guía de retorno', err);
+        throw err;
+      })
+    );
+  }
+
+  receiveReturnGuide(guideNumber: string, operationId?: string): Observable<ReceiveReturnGuideResponse> {
+    const opId = operationId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-0000-0000-000000000000');
+    return this.http.post<ReceiveReturnGuideResponse>(`${this.baseUrl}/api/v1/return-guides/receive`, {
+      guideNumber,
+      operationId: opId,
+      occurredAtDevice: new Date().toISOString()
+    }).pipe(
+      tap(() => this.clearLoadError(`recepción de guía de retorno ${guideNumber}`)),
+      catchError(err => {
+        this.reportLoadError(`recepción de guía de retorno ${guideNumber}`, err);
+        throw err;
+      })
+    );
+  }
 }
+

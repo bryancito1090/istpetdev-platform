@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '@entities/session';
-import { FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
+import { EstimatedBacktrackDto, FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
 
 /** Mensaje legible de un error HTTP: el detalle de Problem Details si existe. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -58,6 +58,16 @@ export function summarizeRejections(receipts: ReceiptExceptionDto[]): RejectionR
     }
   }
   return [...byReason.values()].sort((a, b) => b.lines - a.lines || b.units - a.units || a.label.localeCompare(b.label));
+}
+
+/** Número con coma decimal, como se lee en Ecuador: 18,4 · 8,30. */
+function decimalEs(value: number, digits: number): string {
+  return value.toFixed(digits).replace('.', ',');
+}
+
+/** #237: «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h». Nunca se presenta como costo medido. */
+export function formatBacktrack(b: EstimatedBacktrackDto): string {
+  return `Reentrega estimada: ${decimalEs(b.km, 1)} km · USD ${decimalEs(b.costUsd, 2)} · ${decimalEs(b.hours, 1)} h`;
 }
 
 /**
@@ -157,6 +167,16 @@ export function summarizeRejections(receipts: ReceiptExceptionDto[]): RejectionR
                   }
                 </div>
               </div>
+
+              @if (r.estimatedBacktrack; as b) {
+                <p class="text-xs text-slate-700" data-backtrack
+                  title="Viaje de ida y vuelta bodega de origen → punto para reponer lo rechazado. No se suma al costo de la ruta original.">
+                  {{ backtrackLabel(b) }}
+                  @if (b.isApproximate) {
+                    <span class="text-amber-800">(aproximado: distancia en línea recta)</span>
+                  }
+                </p>
+              }
 
               <div class="overflow-x-auto">
                 <table class="w-full text-xs">
@@ -365,6 +385,10 @@ export class NovedadesPage implements OnInit {
         this.ordersLoading.set(false);
       },
     });
+  }
+
+  backtrackLabel(b: EstimatedBacktrackDto): string {
+    return formatBacktrack(b);
   }
 
   reasonLabel(reason: string | null | undefined): string {

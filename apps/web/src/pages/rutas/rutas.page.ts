@@ -104,7 +104,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 @Component({
   selector: 'page-rutas',
   standalone: true,
-  imports: [CommonModule, FormsModule, MapViewComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent],
   template: `
     <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <!-- Encabezado Principal -->
@@ -593,9 +593,22 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </span>
                     }
                   } @else {
-                    <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                      Ruta Publicada al Conductor
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+                        Ruta Publicada al Conductor
+                      </span>
+                      <a
+                        [routerLink]="['/guias-retorno']"
+                        [queryParams]="{ planId: selectedDetail()!.id }"
+                        class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-2xs transition"
+                        title="Ver o imprimir la guía de retorno de material no entregado"
+                      >
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Guía de Retorno
+                      </a>
+                    </div>
                   }
                 </div>
 
@@ -2078,6 +2091,31 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     }
                   </div>
 
+                  <!-- #199: cantidad por línea antes de confirmar (parcial explícita) -->
+                  @if (selectedOrderLines().length > 0) {
+                    <div class="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-2" data-testid="line-quantities">
+                      <span class="font-bold text-slate-700 uppercase">Cantidad a planificar por línea</span>
+                      <p class="text-[11px] text-slate-500">Por defecto se planifica todo lo pendiente. Si no cabe, reduce la cantidad; el resto queda pendiente en el pedido.</p>
+                      @for (l of selectedOrderLines(); track l.key) {
+                        <label class="flex items-center justify-between gap-2">
+                          <span class="font-mono text-slate-700">{{ l.orderNumber }} · {{ l.sku }} <span class="text-slate-400">(pendiente {{ l.pending | number:'1.0-3' }})</span></span>
+                          <input
+                            type="number"
+                            min="0"
+                            [max]="l.pending"
+                            step="any"
+                            [value]="l.quantity"
+                            (input)="setLineQuantity(l.key, $any($event.target).valueAsNumber)"
+                            [attr.aria-label]="'Cantidad de ' + l.sku + ' en ' + l.orderNumber"
+                            class="w-24 px-2 py-1 border border-slate-300 rounded text-right font-mono" />
+                        </label>
+                      }
+                      @if (lineQuantityError()) {
+                        <p class="text-[11px] text-rose-600 font-semibold">{{ lineQuantityError() }}</p>
+                      }
+                    </div>
+                  }
+
                   <!-- Advertencia de Capacidad y Remanentes -->
                   @if (selectedVehicleOverweight()) {
                     <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1">
@@ -2120,7 +2158,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="confirmAndSavePlan()"
-                    [disabled]="!selectedVehicleId() || actionLoading()"
+                    [disabled]="!selectedVehicleId() || actionLoading() || !!lineQuantityError()"
                     class="px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50">
                     {{ actionLoading() ? 'Creando Ruta...' : 'Confirmar y Crear Ruta' }}
                   </button>
@@ -2466,6 +2504,46 @@ export class RutasPage implements OnInit, OnDestroy {
     if (cap <= 0) return false;
     return this.selectedOrdersSummary().weightKg > cap;
   });
+
+  // #199: cantidad por línea antes de confirmar. Por defecto, lo pendiente; solo lo editado se envía en `lines`.
+  readonly lineQuantities = signal<Record<string, number>>({});
+
+  readonly selectedOrderLines = computed(() => {
+    const selectedIds = this.selectedOrderIds();
+    const edited = this.lineQuantities();
+    return this.pendingOrders()
+      .filter(o => selectedIds.has(o.id))
+      .flatMap(o => (o.lines || []).map(l => {
+        const pending = Math.max(0, (l.requestedQuantity || 0) - (l.plannedQuantity || 0) - (l.deliveredQuantity || 0));
+        const key = `${o.id}|${l.productId}`;
+        return {
+          key,
+          orderId: o.id,
+          orderNumber: o.orderNumber,
+          productId: l.productId,
+          sku: l.sku,
+          pending,
+          quantity: key in edited ? edited[key] : pending
+        };
+      }))
+      .filter(l => l.pending > 0);
+  });
+
+  readonly lineQuantityError = computed(() => {
+    const bad = this.selectedOrderLines().find(l => !Number.isFinite(l.quantity) || l.quantity <= 0 || l.quantity > l.pending);
+    if (!bad) return null;
+    return `${bad.orderNumber} · ${bad.sku}: la cantidad debe ser mayor que 0 y no superar lo pendiente (${bad.pending}).`;
+  });
+
+  setLineQuantity(key: string, value: number): void {
+    this.lineQuantities.set({ ...this.lineQuantities(), [key]: value });
+  }
+
+  editedConfirmLines(): Array<{ deliveryOrderId: string; productId: string; plannedQuantity: number }> {
+    return this.selectedOrderLines()
+      .filter(l => l.quantity !== l.pending)
+      .map(l => ({ deliveryOrderId: l.orderId, productId: l.productId, plannedQuantity: l.quantity }));
+  }
 
   // Opciones de Sourcing y Vehículos
   readonly routeOptions = signal<RouteSuggestionOptionDto[]>([]);
@@ -2956,6 +3034,7 @@ export class RutasPage implements OnInit, OnDestroy {
     this.isWizardOpen.set(true);
     this.wizardStep.set(1);
     this.selectedOrderIds.set(new Set());
+    this.lineQuantities.set({});
     this.loadPendingOrders();
     setTimeout(() => this.wizardMapView?.invalidateSize(), 200);
   }
@@ -3151,11 +3230,17 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   confirmAndSavePlan(): void {
+    const lineError = this.lineQuantityError();
+    if (lineError) {
+      this.feedbackMessage.set({ type: 'error', text: lineError });
+      return;
+    }
     this.actionLoading.set(true);
     const stops = this.editableStops();
     const evalData = this.currentEvaluation();
     const plannedOrderIds = Array.from(this.selectedOrderIds());
     const remainingPending = this.pendingOrders().filter(o => !this.selectedOrderIds().has(o.id));
+    const lines = this.editedConfirmLines();
 
     this.apiService.confirmRoutePlan({
       vehicleId: this.selectedVehicleId() || undefined,
@@ -3164,7 +3249,8 @@ export class RutasPage implements OnInit, OnDestroy {
       totalCost: evalData?.totalCost || 0,
       orderIds: plannedOrderIds,
       stops,
-      coordinates: evalData?.coordinates
+      coordinates: evalData?.coordinates,
+      ...(lines.length > 0 ? { lines } : {})
     }).subscribe({
       next: (res) => {
         this.actionLoading.set(false);

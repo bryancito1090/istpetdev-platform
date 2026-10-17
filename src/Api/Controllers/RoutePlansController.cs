@@ -810,6 +810,22 @@ public sealed class RoutePlansController(
         return Ok(res);
     }
 
+    // #199: cancelar una ruta antes del despacho libera sus reservas y descuenta lo planificado de los pedidos.
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Roles = Roles.Planning)]
+    public async Task<IActionResult> Cancel([FromRoute] Guid id, CancellationToken ct = default)
+    {
+        try
+        {
+            return Ok(await RoutePlanCancellation.CancelAsync(db, id, ct));
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: StatusCodes.Status409Conflict, title: "cancel_conflict", detail: ex.Message);
+        }
+    }
+
     [HttpPost("suggest")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> SuggestRoutes([FromBody] SuggestRoutesRequest req, CancellationToken ct = default)
@@ -1274,7 +1290,10 @@ public sealed class RoutePlansController(
 
                 decimal stopWeightFromOrders = 0m;
                 decimal stopVolumeFromOrders = 0m;
-                var stopLoads = s.Loads != null ? s.Loads.ToList() : new List<StopLoadDto>();
+                // #199: con pedidos, la carga guardada es la planificada por línea (lo que se publica y reserva);
+                // las cargas del panel solo se conservan para productos sin pedido en la parada.
+                var stopOrderProductIds = orderLines.Where(l => destOrderIds.Contains(l.DeliveryOrderId)).Select(l => l.ProductId).ToHashSet();
+                var stopLoads = s.Loads != null ? s.Loads.Where(ld => !stopOrderProductIds.Contains(ld.ProductId)).ToList() : new List<StopLoadDto>();
 
                 foreach (var line in orderLines.Where(l => destOrderIds.Contains(l.DeliveryOrderId)))
                 {
@@ -1317,16 +1336,20 @@ public sealed class RoutePlansController(
                         {
                             stopWeightFromOrders += plannedQty * prod.WeightPerBaseUnit;
                             stopVolumeFromOrders += plannedQty * prod.VolumePerBaseUnit;
-                            if (s.Loads == null && !stopLoads.Any(ld => ld.ProductId == prod.Id))
-                            {
+                            var existingLoad = stopLoads.FindIndex(ld => ld.ProductId == prod.Id);
+                            if (existingLoad >= 0)
+                                stopLoads[existingLoad] = stopLoads[existingLoad] with { Quantity = stopLoads[existingLoad].Quantity + plannedQty };
+                            else
                                 stopLoads.Add(new StopLoadDto(prod.Id, prod.Sku, plannedQty, prod.BaseUnit));
-                            }
                         }
                     }
                 }
 
-                decimal effectiveWeight = Math.Max(stopWeightFromOrders, Math.Abs(s.DeltaWeight));
-                decimal effectiveVolume = Math.Max(stopVolumeFromOrders, Math.Abs(s.DeltaVolume));
+                // #199: si la parada tiene pedidos, manda el peso calculado en el servidor (el panel puede enviar el total
+                // del pedido aunque se planifique una parte); sin pedidos se conserva el delta enviado.
+                bool stopHasOrders = stopOrderProductIds.Count > 0;
+                decimal effectiveWeight = stopHasOrders ? stopWeightFromOrders : Math.Max(stopWeightFromOrders, Math.Abs(s.DeltaWeight));
+                decimal effectiveVolume = stopHasOrders ? stopVolumeFromOrders : Math.Max(stopVolumeFromOrders, Math.Abs(s.DeltaVolume));
 
                 totalRecalculatedDeliveryWeight += effectiveWeight;
                 totalRecalculatedDeliveryVolume += effectiveVolume;
@@ -1350,13 +1373,14 @@ public sealed class RoutePlansController(
             return Conflict(new { message = "Los pedidos seleccionados no tienen cantidades pendientes de planificar en las paradas de la ruta." });
         }
 
-        // Si hay paradas de pickup, asignarles la carga total a recoger si supera lo enviado
+        // Si hay paradas de pickup, asignarles la carga total a recoger si supera lo enviado.
+        // #199: con pedidos, la recogida es exactamente lo planificado (no el total que envía el panel).
         for (int i = 0; i < stopsToEvaluate.Count; i++)
         {
             if (stopsToEvaluate[i].Kind == RouteStopKind.Pickup)
             {
-                decimal pickupWeight = Math.Max(totalRecalculatedDeliveryWeight, stopsToEvaluate[i].DeltaWeight);
-                decimal pickupVolume = Math.Max(totalRecalculatedDeliveryVolume, stopsToEvaluate[i].DeltaVolume);
+                decimal pickupWeight = orders.Count > 0 ? totalRecalculatedDeliveryWeight : Math.Max(totalRecalculatedDeliveryWeight, stopsToEvaluate[i].DeltaWeight);
+                decimal pickupVolume = orders.Count > 0 ? totalRecalculatedDeliveryVolume : Math.Max(totalRecalculatedDeliveryVolume, stopsToEvaluate[i].DeltaVolume);
 
                 stopsToEvaluate[i] = stopsToEvaluate[i] with
                 {
@@ -1409,6 +1433,9 @@ public sealed class RoutePlansController(
                 proposalId = req.ProposalId,
                 proposalRevision = req.Revision ?? 1,
                 orderIds = req.OrderIds,
+                // #199: lo que esta ruta suma a cada línea de pedido; cancelarla lo descuenta.
+                orderLines = confirmLines.Where(kv => kv.Value.PlannedQuantity > 0)
+                    .Select(kv => new { deliveryOrderLineId = kv.Key, plannedQuantity = kv.Value.PlannedQuantity }),
                 polyline = req.Polyline,
                 coordinates = eval.Coordinates.Count > 0 ? eval.Coordinates : req.Coordinates,
                 stops = stopsToEvaluate.Select(s => new

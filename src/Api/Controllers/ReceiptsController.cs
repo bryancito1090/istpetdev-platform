@@ -1,21 +1,28 @@
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Field.Dtos;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
+using IstpetDev.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Api.Controllers;
 
 /// <summary>
 /// Issue #116: recepciones con novedades para la web del Planificador, Gerencia y Auditor (solo lectura).
 /// Novedad = alguna línea con cantidad rechazada (ESC-06) o con ajuste por stock en percha (FieldAdjustment, ESC-09).
+/// #237: cada recepción con rechazo Faltante, Daño o ErrorRotulado lleva la reentrega estimada (ida y vuelta).
 /// </summary>
 [ApiController]
 [Route("api/v1/receipts")]
 [Authorize]
-public sealed class ReceiptsController(IApplicationDbContext db) : ControllerBase
+public sealed class ReceiptsController(
+    IApplicationDbContext db,
+    IDistanceProvider distanceProvider,
+    IOptions<LogisticsOptions> logisticsOptions) : ControllerBase
 {
     [HttpGet("exceptions")]
     [Authorize(Roles = $"{Roles.Gerencia},{Roles.Planificador},{Roles.Auditor}")]
@@ -66,6 +73,7 @@ public sealed class ReceiptsController(IApplicationDbContext db) : ControllerBas
         var points = await db.ServicePoints.Where(p => pointIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
         var actorIds = receipts.Select(r => r.ActorAccountId).Distinct().ToList();
         var actors = await db.Accounts.Where(a => actorIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.DisplayName, ct);
+        var backtracks = await EstimateBacktracksAsync(receipts, lines, deliveries, points, deliveryLines, lots, products, ct);
         var evidence = (await db.Evidences.Where(e => receiptIds.Contains(e.ReceiptId)).OrderBy(e => e.CreatedAtUtc).ToListAsync(ct))
             .ToLookup(e => e.ReceiptId);
 
@@ -111,9 +119,72 @@ public sealed class ReceiptsController(IApplicationDbContext db) : ControllerBas
                 lineDtos.Any(l => l.QuantityRejected > 0),
                 lineDtos.Any(l => l.AdjustmentQuantity.HasValue),
                 lineDtos,
-                evidenceDtos);
+                evidenceDtos,
+                backtracks.GetValueOrDefault(r.Id));
         }).ToList();
 
         return Ok(new ReceiptExceptionsResponse(items, total));
+    }
+
+    // #237: una reentrega por recepción, bodega de origen de la entrega → punto → bodega. Sin coordenadas
+    // de alguno de los dos extremos no se estima (no se inventa una distancia).
+    private async Task<Dictionary<Guid, EstimatedBacktrackDto>> EstimateBacktracksAsync(
+        IReadOnlyList<Receipt> receipts,
+        IReadOnlyList<ReceiptLine> lines,
+        IReadOnlyDictionary<Guid, Delivery> deliveries,
+        IReadOnlyDictionary<Guid, ServicePoint> points,
+        IReadOnlyDictionary<Guid, DeliveryLine> deliveryLines,
+        IReadOnlyDictionary<Guid, Lot> lots,
+        IReadOnlyDictionary<Guid, Product> products,
+        CancellationToken ct)
+    {
+        var result = new Dictionary<Guid, EstimatedBacktrackDto>();
+
+        // Peso a reentregar por recepción: solo líneas cuyo motivo obliga a volver con producto.
+        var weights = new Dictionary<Guid, decimal>();
+        foreach (var l in lines.Where(l => l.QuantityRejected > 0 && BacktrackCostEstimator.RequiresRedelivery(l.RejectionReason)))
+        {
+            var product = deliveryLines.TryGetValue(l.DeliveryLineId, out var dl) && lots.TryGetValue(dl.LotId, out var lot)
+                && products.TryGetValue(lot.ProductId, out var pr) ? pr : null;
+            weights[l.ReceiptId] = weights.GetValueOrDefault(l.ReceiptId) + l.QuantityRejected * (product?.WeightPerBaseUnit ?? 0m);
+        }
+        if (weights.Count == 0) return result;
+
+        var candidates = receipts.Where(r => weights.ContainsKey(r.Id) && deliveries.ContainsKey(r.DeliveryId)).ToList();
+        var originIds = candidates.Select(r => deliveries[r.DeliveryId].OriginLocationId).Distinct().ToList();
+        var origins = (await db.Locations.AsNoTracking().Where(l => originIds.Contains(l.Id) && l.Position != null).ToListAsync(ct))
+            .ToDictionary(l => l.Id, l => new GeoPoint((decimal)l.Position!.Y, (decimal)l.Position.X).Round());
+
+        // Vehículo de la ruta que llevó la entrega, para su tarifa o perfil de costo; sin ruta, DefaultCostPerKm.
+        var stopIds = candidates.Select(r => deliveries[r.DeliveryId].RouteStopId).OfType<Guid>().Distinct().ToList();
+        var planByStop = await db.RouteStops.AsNoTracking().Where(s => stopIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.RoutePlanId, ct);
+        var planIds = planByStop.Values.Distinct().ToList();
+        var vehicleByPlan = await db.RoutePlans.AsNoTracking().Where(p => planIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.VehicleId, ct);
+        var vehicleIds = vehicleByPlan.Values.Distinct().ToList();
+        var vehicles = await db.Vehicles.AsNoTracking().Where(v => vehicleIds.Contains(v.Id)).ToDictionaryAsync(v => v.Id, ct);
+
+        var trips = new List<(Guid ReceiptId, GeoPoint From, GeoPoint To, Vehicle? Vehicle)>();
+        foreach (var r in candidates)
+        {
+            var delivery = deliveries[r.DeliveryId];
+            if (!origins.TryGetValue(delivery.OriginLocationId, out var from)) continue;
+            if (!points.TryGetValue(delivery.ServicePointId, out var point) || point.Position is null) continue;
+            var to = new GeoPoint((decimal)point.Position.Y, (decimal)point.Position.X).Round();
+            Vehicle? vehicle = delivery.RouteStopId is Guid stopId && planByStop.TryGetValue(stopId, out var planId)
+                && vehicleByPlan.TryGetValue(planId, out var vehicleId) && vehicles.TryGetValue(vehicleId, out var v) ? v : null;
+            trips.Add((r.Id, from, to, vehicle));
+        }
+        if (trips.Count == 0) return result;
+
+        // Una sola consulta de matriz: tramos guardados, OSRM o aproximación en línea recta.
+        var matrix = await distanceProvider.MatrixAsync(trips.SelectMany(t => new[] { t.From, t.To }).Distinct().ToList(), ct);
+        var options = logisticsOptions.Value;
+        foreach (var t in trips)
+        {
+            if (!matrix.TryGetValue((t.From, t.To), out var outbound) || !matrix.TryGetValue((t.To, t.From), out var inbound)) continue;
+            var estimate = BacktrackCostEstimator.Estimate(outbound, inbound, t.Vehicle, weights[t.ReceiptId], options);
+            result[t.ReceiptId] = new EstimatedBacktrackDto(estimate.Km, estimate.CostUsd, estimate.Hours, estimate.IsApproximate);
+        }
+        return result;
     }
 }
