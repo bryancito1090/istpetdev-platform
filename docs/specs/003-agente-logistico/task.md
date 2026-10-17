@@ -1009,3 +1009,9 @@ Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` e
 - [x] Código: identificar lotes nuevos por `proposalBatchId` y lotes anteriores por recibos `CreateRoutePlans`; descartar revisiones competidoras del mismo código canónico dentro de la transacción de aceptación/publicación. Rechazar efectos operativos activos.
 - [x] Pruebas PostgreSQL/API afectadas 12/12; recarga repetida, rechazo de publicar descartada, compatibilidad anterior y rollback. Pruebas web 199/199; build/lint aprobados.
 - [x] Publicador real 3/3 tras ampliar su prueba de éxito. Reparación transaccional real de 8 borradores locales con respaldo; conservadas las dos rutas elegidas y el historial publicado (3 registros visibles, 8 descartados). API reiniciada desde este worktree: live/ready 200; web 200 y ruta sin token 401. Sin migración nueva, reset ni cambios cloud. Cognito manual y despliegue externo pendientes.
+
+
+### Integración solicitada a develop — 17-oct-2026
+
+- [x] Cambios guardados en commit `25aa1b3`; integrado `origin/develop` (`78c87a1`) mediante `cff427a`, sin conflictos textuales. Se conservan alertas automáticas de inventario y documentación del pitch.
+- [ ] Suites completas posteriores a la integración, CI del HEAD final y merge mediante PR a `develop`. Se reutiliza la evidencia previa donde no cambió el código; no se hace push directo a ramas permanentes ni se modifica el checkout de la otra sesión.
