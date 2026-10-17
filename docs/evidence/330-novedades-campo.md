@@ -85,5 +85,33 @@ Draft. Repetición: 31 casos aprobados y el caso de replanificación aprobado tr
 ese ajuste; pendiente CI completo. Build de CLI sobre develop sincronizado:
 cero errores y advertencias.
 
-Pendiente: integración del código, ensayo y aplicación productiva y recuentos finales. No se ha desplegado una aplicación
-ni aplicado la migración de metadatos de catálogo mediante esta tarea.
+Integrado a develop por PR #337, merge `9c2d385`; todos los checks SUCCESS sobre
+`c09e58d`: 375 integraciones + 361 unitarias + 25 E2E (761), frontend y ensayo de
+respaldo/restauración. Issue #330 cerrado después del merge.
+
+Producción aplicada después de ese merge y de un ensayo completo con rollback:
+
+| Entorno | Planes nuevos | Recepciones | Con rechazo | Con ajuste | Pedidos FieldRequest | Despachadas / aceptadas / rechazadas |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Desarrollo configurado (local) | 2 | 12 | 2 | 2 | 8 | 180 / 178 / 2 |
+| Producción RDS | 3 | 12 | 2 | 2 | 12 | 127 / 125 / 2 |
+
+La proporción de unidades rechazadas de estas muestras es 1,11% y 1,57%,
+respectivamente. No son estadísticas de operación real. Producción mantiene
+stock 38928,15 y reservas 383,34 antes/después, cero saldos negativos y los mismos
+hashes de rutas/entregas originales. Reejecución efectiva en ambos entornos:
+`AlreadyApplied=true`, sin nuevos registros. Recuentos mediante conexión nueva,
+conservación verificada también contra las capturas privadas anteriores.
+
+Incidencia operativa: el primer ensayo productivo agotó el tiempo de conexión.
+El túnel SSM dejó una transacción del propio ensayo abierta; se restableció el
+túnel y se terminó exclusivamente ese backend, identificado por PID, usuario y
+hora exacta de inicio. Los recuentos siguieron intactos. La repetición exitosa
+identificó la conexión como `IstpetDevFieldSeed330`, con tiempo de comando de 90s
+y timeout de transacción inactiva de 120s; revirtió antes de la aplicación final.
+No se terminaron conexiones de otros trabajos.
+
+No se ha desplegado una aplicación ni aplicado la migración de metadatos de
+catálogo mediante esta tarea. La comprobación HTTP autenticada productiva sigue
+pendiente de una sesión de usuario vigente; los recuentos SQL efectivos no se
+presentan como una prueba visual en el navegador.

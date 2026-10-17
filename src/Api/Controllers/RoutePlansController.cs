@@ -904,6 +904,24 @@ public sealed partial class RoutePlansController(
             .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, ct);
 
+        // La lista del cliente puede ser anterior a una aceptación en otra sesión.
+        // Revisar el saldo del pedido antes de calcular abastecimiento o crear propuestas.
+        var orderLines = await db.DeliveryOrderLines.AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(l.DeliveryOrderId))
+            .ToListAsync(ct);
+        var assigned = orders.Values.Where(o => o.Status is DeliveryOrderStatus.Planned or DeliveryOrderStatus.Dispatched or DeliveryOrderStatus.Delivered
+                || orderLines.Any(l => l.DeliveryOrderId == o.Id && (l.PlannedQuantity > 0 || l.DeliveredQuantity > 0)))
+            .Select(o => new { orderId = o.Id, orderNumber = o.OrderNumber,
+                hasPendingQuantity = o.Status != DeliveryOrderStatus.Delivered && o.Status != DeliveryOrderStatus.Cancelled
+                    && orderLines.Any(l => l.DeliveryOrderId == o.Id && l.RequestedQuantity > l.PlannedQuantity + l.DeliveredQuantity) })
+            .ToList();
+        if (assigned.Count > 0 && (!req.PlanRemainingOnly || assigned.Any(o => !o.hasPendingQuantity)))
+            return Conflict(new { code = "orders_already_assigned",
+                message = "Hay pedidos que ya tienen una ruta asignada o entregas realizadas. Revisa sus rutas antes de calcular otra propuesta. "
+                    + (assigned.Any(o => !o.hasPendingQuantity) ? "Retira los pedidos que ya están cubiertos de la selección."
+                        : "Si necesitas otra ruta, elige expresamente calcular solo las cantidades pendientes."),
+                assignedOrders = assigned });
+
         var sourcingOptions = await sourcingService.PlanSourcingAsync(req.OrderIds, ct);
         var today = req.PlannedDate ?? await clock.TodayAsync(ct);
         var plannedStartUtc = today.ToDateTime(new TimeOnly(8, 0), DateTimeKind.Utc);
@@ -2525,7 +2543,8 @@ public sealed record SuggestRoutesRequest(
     string? RequestId = null,
     string? CriticalDeadlineLocal = null,
     string? OptionId = null,
-    bool? IncludeAlternatives = null
+    bool? IncludeAlternatives = null,
+    bool PlanRemainingOnly = false
 );
 
 public sealed record EvaluateRouteRequest(

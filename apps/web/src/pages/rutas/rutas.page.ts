@@ -11,6 +11,7 @@ import {
   RouteProductSummaryDto,
   RouteDriverAssignmentDto,
   DeliveryOrderDto,
+  AssignedOrderWarning,
   RouteSuggestionOptionDto,
   SourcingComparisonDto,
   RouteCandidateStop,
@@ -1635,6 +1636,29 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
                 <div class="space-y-3.5">
+                  @if (assignedOrderWarnings().length) {
+                    <section class="assigned-orders-warning" role="alert" data-testid="assigned-orders-warning" aria-labelledby="assigned-orders-title">
+                      <svg lucideTriangleAlert [size]="20" aria-hidden="true"></svg>
+                      <div class="min-w-0">
+                        <h3 id="assigned-orders-title">Estas entregas ya tienen una ruta asignada</h3>
+                        <ul>@for (order of assignedOrderWarnings(); track order.orderId) {
+                          <li><strong>{{ order.orderNumber }}</strong> · {{ order.hasPendingQuantity ? 'Tiene cantidades pendientes' : 'Cantidades ya cubiertas' }}</li>
+                        }</ul>
+                        <p>@if (hasCoveredAssignedOrders()) {
+                          No se generará otra ruta para los pedidos ya cubiertos. Retíralos de la selección para continuar.
+                        } @else {
+                          El cálculo está detenido para evitar otra asignación automática. Puedes revisar tus rutas o calcular únicamente lo pendiente.
+                        }</p>
+                        <div class="assigned-orders-actions">
+                          <button type="button" (click)="closeWizard()" [disabled]="actionLoading()">Revisar rutas</button>
+                          <button type="button" (click)="excludeAssignedOrders()" [disabled]="actionLoading()">Quitar estos pedidos</button>
+                          @if (!hasCoveredAssignedOrders()) {
+                            <button type="button" class="remaining-action" data-testid="calculate-remaining" (click)="calculateRemainingOnly()" [disabled]="actionLoading()">Calcular solo lo pendiente <svg lucideArrowRight [size]="15" aria-hidden="true"></svg></button>
+                          }
+                        </div>
+                      </div>
+                    </section>
+                  }
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold text-[#1A2C44] uppercase tracking-wider">Pedidos Pendientes de Despacho</span>
                     <button
@@ -1773,6 +1797,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             </span>
                           </div>
                           <p class="text-[11px] font-medium text-[#635BFF] mt-0.5">Destino: {{ ord.destinationName }}</p>
+                          @if (orderHasAssignedQuantities(ord)) {
+                            <span class="assigned-order-badge"><svg lucideRoute [size]="12" aria-hidden="true"></svg> Ya tiene cantidades asignadas</span>
+                          }
                           @if (ord.requiredDateUtc) {
                             <p class="text-[10px] text-[#697386] font-mono">Requerido: {{ ord.requiredDateUtc | date:'shortDate' }}</p>
                           }
@@ -2293,7 +2320,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="advanceWizardFlow()"
-                    [disabled]="selectedOrderIds().size === 0 || actionLoading() || (wizardStep() > 1 && (comparisonMode() === 'saved' || !routeOptions().length || (wizardStep() === 3 && selectedComparisonOption()?.category === 'Contratada')))"
+                    [disabled]="selectedOrderIds().size === 0 || actionLoading() || (wizardStep() === 1 && assignmentBlocksCalculation()) || (wizardStep() > 1 && (comparisonMode() === 'saved' || !routeOptions().length || (wizardStep() === 3 && selectedComparisonOption()?.category === 'Contratada')))"
                     class="min-h-12 px-4 text-xs font-semibold rounded-xl bg-[#0066ff] text-white hover:bg-[#0052d9] transition-colors disabled:opacity-50 shadow-xs">
                     {{ wizardStep() === 1 ? (actionLoading() ? 'Calculando recorridos…' : 'Calcular recorridos') : wizardStep() === 2 ? 'Comparar y aprobar' : 'Siguiente' }} <svg lucideArrowRight [size]="16" class="inline ml-2"></svg>
                   </button>
@@ -2336,7 +2363,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       </div>
     }
     @if (isDecisionWorkbenchOpen()) {
-      <route-decision-workbench [orderIds]="decisionOrderIds()" [decisionId]="activeDecisionId()" [initialOptionId]="isWizardOpen() ? selectedOptionId() : ''" [initialAssignments]="vehicleDriverAssignments()" (assignmentsChanged)="onVehicleAssignmentsChanged($event)" (closed)="closeDecisionWorkbench()" (requestOrders)="startNewDecision()" (saved)="onDecisionSaved($event)"></route-decision-workbench>
+      <route-decision-workbench [orderIds]="decisionOrderIds()" [decisionId]="activeDecisionId()" [planRemainingOnly]="planRemainingOnly()" [initialOptionId]="isWizardOpen() ? selectedOptionId() : ''" [initialAssignments]="vehicleDriverAssignments()" (assignmentsChanged)="onVehicleAssignmentsChanged($event)" (closed)="closeDecisionWorkbench()" (requestOrders)="startNewDecision()" (saved)="onDecisionSaved($event)"></route-decision-workbench>
     }
   `
 })
@@ -2650,6 +2677,37 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly wizardStep = signal<1 | 2 | 3 | 4>(1);
   readonly pendingOrders = signal<DeliveryOrderDto[]>([]);
   readonly selectedOrderIds = signal<Set<string>>(new Set());
+  readonly planRemainingOnly = signal(false);
+  private readonly serverAssignedOrders = signal<AssignedOrderWarning[]>([]);
+  readonly assignedOrderWarnings = computed(() => {
+    const warnings = new Map<string, AssignedOrderWarning>();
+    for (const order of this.pendingOrders().filter(o => this.selectedOrderIds().has(o.id) && this.orderHasAssignedQuantities(o)))
+      warnings.set(order.id, { orderId: order.id, orderNumber: order.orderNumber,
+        hasPendingQuantity: order.status !== 'Delivered' && order.status !== 'Cancelled'
+          && order.lines.some(l => l.requestedQuantity > l.plannedQuantity + l.deliveredQuantity) });
+    for (const order of this.serverAssignedOrders().filter(o => this.selectedOrderIds().has(o.orderId))) warnings.set(order.orderId, order);
+    return [...warnings.values()];
+  });
+  readonly hasCoveredAssignedOrders = computed(() => this.assignedOrderWarnings().some(o => !o.hasPendingQuantity));
+  readonly assignmentBlocksCalculation = computed(() => this.hasCoveredAssignedOrders()
+    || (this.assignedOrderWarnings().length > 0 && !this.planRemainingOnly()));
+
+  orderHasAssignedQuantities(order: DeliveryOrderDto): boolean {
+    return ['Planned', 'Dispatched', 'Delivered'].includes(order.status)
+      || order.lines.some(l => l.plannedQuantity > 0 || l.deliveredQuantity > 0);
+  }
+
+  calculateRemainingOnly(): void {
+    if (!this.assignedOrderWarnings().length || this.hasCoveredAssignedOrders() || this.actionLoading()) return;
+    this.planRemainingOnly.set(true);
+    this.advanceWizardStep();
+  }
+
+  excludeAssignedOrders(): void {
+    const assigned = new Set(this.assignedOrderWarnings().map(o => o.orderId));
+    this.planRemainingOnly.set(false);
+    this.selectedOrderIds.update(ids => new Set([...ids].filter(id => !assigned.has(id))));
+  }
   readonly orderFilter = signal<'all' | 'critical_high' | 'today'>('all');
   readonly hasRemainingPendingOrders = signal(false);
 
@@ -3173,6 +3231,7 @@ export class RutasPage implements OnInit, OnDestroy {
   loadPendingOrders(): void {
     this.apiService.getDeliveryOrders('Pending').subscribe({
       next: (orders) => {
+        this.planRemainingOnly.set(false);
         const sorted = (orders || []).sort((a, b) => {
           const pA = this.priorityWeight[a.priority] ?? 3;
           const pB = this.priorityWeight[b.priority] ?? 3;
@@ -3315,6 +3374,8 @@ export class RutasPage implements OnInit, OnDestroy {
   // ========================================================
 
   openOrderRoutingModal(): void {
+    this.serverAssignedOrders.set([]);
+    this.planRemainingOnly.set(false);
     this.resetRouteSuggestion();
     this.isWizardOpen.set(true);
     this.wizardStep.set(1);
@@ -3331,6 +3392,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   selectAllCritical(): void {
+    this.planRemainingOnly.set(false);
     const criticals = this.pendingOrders().filter(o => o.priority === 'Critical' || o.priority === 'High');
     const set = new Set(this.selectedOrderIds());
     criticals.forEach(o => set.add(o.id));
@@ -3338,10 +3400,12 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   deselectAllOrders(): void {
+    this.planRemainingOnly.set(false);
     this.selectedOrderIds.set(new Set());
   }
 
   selectAllFiltered(): void {
+    this.planRemainingOnly.set(false);
     const set = new Set(this.selectedOrderIds());
     this.filteredPendingOrders().forEach(o => set.add(o.id));
     this.selectedOrderIds.set(set);
@@ -3359,6 +3423,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   toggleOrderSelection(id: string): void {
+    this.planRemainingOnly.set(false);
     const set = new Set(this.selectedOrderIds());
     if (set.has(id)) set.delete(id);
     else set.add(id);
@@ -3376,6 +3441,7 @@ export class RutasPage implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         this.showNewOrderForm.set(false);
+        this.planRemainingOnly.set(false);
         this.newOrderPriority = 'Normal';
         this.loadPendingOrders();
         if (res?.id) {
@@ -3453,11 +3519,12 @@ export class RutasPage implements OnInit, OnDestroy {
     if (this.actionLoading()) return;
     const current = this.wizardStep();
     if (current === 1) {
+      if (this.assignmentBlocksCalculation()) return;
       this.resetRouteSuggestion();
       this.actionLoading.set(true);
       const orderIds = Array.from(this.selectedOrderIds());
 
-      this.apiService.suggestRoutes(orderIds).subscribe({
+      this.apiService.suggestRoutes(orderIds, undefined, undefined, this.planRemainingOnly()).subscribe({
         next: (res) => {
           this.actionLoading.set(false);
           const opts = res?.options || [];
@@ -3477,6 +3544,13 @@ export class RutasPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.actionLoading.set(false);
+          if (err?.error?.code === 'orders_already_assigned') {
+            this.serverAssignedOrders.set(err.error.assignedOrders ?? []);
+            this.planRemainingOnly.set(false);
+            this.wizardStep.set(1);
+            this.feedbackMessage.set({ type: 'error', text: err.error.message });
+            return;
+          }
           this.routeOptionsMessage.set(err?.error?.message || 'No se pudo consultar la API. Revisa la conexión y vuelve a intentar.');
           this.wizardStep.set(3);
           this.feedbackMessage.set({
@@ -3528,7 +3602,7 @@ export class RutasPage implements OnInit, OnDestroy {
     if (!this.comparisonOptions().some(o => o.optionId === optionId)) return;
     this.routeOptions.set([]);
     this.actionLoading.set(true);
-    this.apiService.suggestRoutes(Array.from(this.selectedOrderIds()), undefined, optionId).subscribe({
+    this.apiService.suggestRoutes(Array.from(this.selectedOrderIds()), undefined, optionId, this.planRemainingOnly()).subscribe({
       next: res => {
         this.actionLoading.set(false);
         const selected = res.options.find(o => (o.sourcingOptionId ?? o.optionId) === optionId);

@@ -1,5 +1,16 @@
 # 003 — Agente logístico con n8n: tareas
 
+## Evitar generación automática con entregas asignadas — #345
+
+- [x] Código: aviso en selección, bloqueo predeterminado, elección explícita de remanentes y validación del servidor antes de suggest/prepare.
+- [x] Contrato: `planRemainingOnly=false` por defecto; 409 `orders_already_assigned` con pedidos afectados. Validación existente de cantidades/versiones al aceptar conservada.
+- [x] Pruebas locales: 7/7 API + una regresión adicional de abastecimiento mixto y 89/89 de Rutas, incluidas asignación total/parcial, datos obsoletos y reposición nueva en el mismo destino.
+- [x] Build web y lint; bóveda sin errores (cuatro avisos preexistentes).
+- [ ] CI y merge a develop.
+- [x] Reiniciar frontend/backend propios: frontend 200, readiness 200 y rutas sin sesión 401. Migración de metadatos ya publicada aplicada solo en desarrollo con respaldo; sin despliegue ni migración de producción.
+
+Plan y prelaunch: `docs/evidence/345-aviso-rutas-asignadas.md`.
+
 ## Novedades de campo — #330 (2026-10-17)
 
 - [x] Código: herramienta explícita y transaccional, muestra sintética derivada de consumo/stock, FEFO y servicios reales de custodia/recepción/reposición, sin reset ni migraciones.
@@ -8,9 +19,9 @@
 - [x] Regresión de campo: 98/98 aprobadas; ensayo sobre desarrollo (12 recepciones, rollback) y respaldo local verificado.
 - [x] Datos aplicados en desarrollo: 12 recepciones, 2 rechazos, 2 ajustes y 8 pedidos; repetición sin duplicados, reservas y registros preexistentes conservados.
 - [x] Revalidar regresiones de develop detectadas en CI: revocación de cuentas, simulación, replanificación y pruebas de migraciones (32 casos aprobados entre las repeticiones).
-- [ ] Integración por PR a develop antes de aplicar en producción.
-- [ ] Ejecución real: aplicar en desarrollo/producción y verificar novedades, saldo y repetición sin duplicados.
-- [ ] Registrar resultados finales en `docs/evidence/330-novedades-campo.md`.
+- [x] Integración por PR #337 a develop antes de aplicar en producción; 761 pruebas backend y todos los checks CI aprobados.
+- [x] Ejecución real: desarrollo y producción tienen 12 recepciones cada uno (2 rechazos, 2 ajustes), con 8 y 12 reposiciones respectivamente. Stock/reservas y rutas anteriores conservados; repetición sin duplicados.
+- [x] Resultados finales en `docs/evidence/330-novedades-campo.md`; consulta HTTP productiva autenticada pendiente, sin despliegue de aplicación en esta tarea.
 
 Esto prepara datos de demostración; no acredita estadísticas reales ni un despliegue de aplicación.
 
