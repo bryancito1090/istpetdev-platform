@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics.Incidents;
 using IstpetDev.Application.Logistics.Planning;
@@ -90,8 +91,27 @@ public sealed class Replanner(
         var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == plan.VehicleId, ct)
             ?? throw new InvalidOperationException($"Vehículo {plan.VehicleId} no encontrado.");
 
-        var completedStops = stops.Where(s => s.Status == "Completed").ToList();
-        var pendingStops = stops.Where(s => s.Status != "Completed").ToList();
+        // #300: las recogidas en bodega (y entregas a bodega) del asistente no son puntos de servicio y no se reoptimizan.
+        // Una recogida cuenta como hecha si se marcó o si ya se completó una parada posterior.
+        var locationIds = stops.Where(s => s.LocationId.HasValue).Select(s => s.LocationId!.Value).Distinct().ToList();
+        var locations = await db.Locations
+            .Where(l => l.OrganizationId == DemoOrganization.Id && locationIds.Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, ct);
+        var lastCompletedSequence = stops.Where(s => s.Status == RouteStopStatus.Completed)
+            .Select(s => s.SequenceNumber).DefaultIfEmpty(int.MinValue).Max();
+        bool IsDone(RouteStop s) => IsDoneStatus(s.Status) ||
+            (s.Kind == RouteStopKind.Pickup && s.SequenceNumber < lastCompletedSequence);
+        GeoPoint? LocationPosition(RouteStop s) =>
+            s.LocationId is { } id && locations.TryGetValue(id, out var l) && l.Position != null
+                ? new GeoPoint((decimal)l.Position.Y, (decimal)l.Position.X) : null;
+        string LocationCode(RouteStop s) =>
+            s.LocationId is { } id && locations.TryGetValue(id, out var l) ? l.Code : "BOD";
+
+        var completedStops = stops.Where(IsDone).ToList();
+        var pendingStops = stops.Where(s => !IsDone(s)).ToList();
+        var pendingPickups = pendingStops.Where(s => s.Kind == RouteStopKind.Pickup).ToList();
+        var pendingLocationDeliveries = pendingStops.Where(s => s.Kind != RouteStopKind.Pickup && IsLocationStop(s)).ToList();
+        var pendingServiceStops = pendingStops.Where(s => !IsLocationStop(s)).ToList();
 
         var depotLoc = await db.Locations
             .FirstOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse, ct);
@@ -102,7 +122,15 @@ public sealed class Replanner(
         GeoPoint lastPos = depotPos;
         DateTime readyAtUtc = await clock.WorkdayStartUtcAsync(ct);
 
-        if (completedStops.Count > 0)
+        if (completedStops.Count > 0 && IsLocationStop(completedStops.Last()))
+        {
+            // #300: la última parada hecha es una bodega: el vehículo parte desde ella.
+            var lastStop = completedStops.Last();
+            lastPos = LocationPosition(lastStop) ?? lastPos;
+            var arrival = lastStop.ActualArrivalUtc ?? lastStop.PlannedArrivalUtc ?? DateTime.UtcNow;
+            readyAtUtc = arrival.AddMinutes(ServiceMinutes(lastStop));
+        }
+        else if (completedStops.Count > 0)
         {
             var lastStop = completedStops.Last();
             var sp = spMap[lastStop.ServicePointId];
@@ -121,11 +149,17 @@ public sealed class Replanner(
 
         var prefix = new FixedPrefix(
             vehicle.Code,
-            completedStops.Select(s => spMap[s.ServicePointId].Code).ToList(),
+            completedStops.Where(s => !IsLocationStop(s)).Select(s => spMap[s.ServicePointId].Code).ToList(),
             lastPos,
             readyAtUtc,
-            pendingStops.Select(s => spMap[s.ServicePointId].Code).ToList(),
-            vehicleAvailable);
+            pendingServiceStops.Select(s => spMap[s.ServicePointId].Code).ToList(),
+            vehicleAvailable)
+        {
+            RoutePlanId = plan.Id,
+            LeadingStops = pendingPickups
+                .Select(s => new FixedStop(LocationCode(s), LocationPosition(s) ?? lastPos, ServiceMinutes(s))).ToList(),
+            CompletedStopCount = completedStops.Count
+        };
 
         // 2. Ejecutar ReplanAsync(Strict)
         var replanInput = new ReplanInput(new[] { prefix }, impact.Effect, ReplanMode.Strict);
@@ -136,7 +170,11 @@ public sealed class Replanner(
             ?? new VehicleRoute(vehicle.Code, vehicle.Id, Array.Empty<PlannedStop>(), 0m, 0m, 0m, 0m, 0m, false, Array.Empty<Leg>());
 
         // Reconstruir VehicleRoute previa para comparar
-        var prevRoute = ReconstructPreviousVehicleRoute(plan, stops, spMap);
+        var prevRoute = ReconstructPreviousVehicleRoute(plan, vehicle.Code, stops.Where(s => !IsLocationStop(s)).ToList(), spMap);
+
+        // #300: las recogidas pendientes se conservan si quedan entregas; las entregas a bodega, si el vehículo sigue disponible.
+        var keepPickups = proposedRoute.Stops.Count > 0;
+        var keptLocationDeliveries = vehicleAvailable ? pendingLocationDeliveries : [];
 
         // 3. Evaluar política de autonomía
         var mode = autonomyState.CurrentMode;
@@ -165,7 +203,8 @@ public sealed class Replanner(
             .Select(s => s.PointCode)
             .ToList();
 
-        var droppedStops = strictResult.Unserved.Select(u => u.PointCode).ToList();
+        var droppedStops = strictResult.Unserved.Select(u => u.PointCode)
+            .Concat(pendingLocationDeliveries.Except(keptLocationDeliveries).Select(LocationCode)).ToList();
         var diff = new ReplanDiff(movedStops, droppedStops, etaChanges, costDeltaPct);
 
         // 5. Opciones si escala
@@ -228,54 +267,90 @@ public sealed class Replanner(
             TotalKm = proposedRoute.Km,
             TotalMinutes = proposedRoute.Minutes,
             TotalCost = proposedRoute.Cost,
-            AlgorithmVersion = "2.0-deterministic",
-            InputJson = JsonSerializer.Serialize(new
-            {
-                stops = proposedRoute.Stops.Select(s => new
-                {
-                    sequence = s.Sequence,
-                    pointCode = s.PointCode,
-                    isConsolidation = s.IsConsolidation,
-                    loads = s.Loads,
-                    trafficFactorApplied = s.TrafficFactorApplied
-                }),
-                legs = proposedRoute.Legs
-            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+            AlgorithmVersion = "2.0-deterministic"
         };
         db.RoutePlans.Add(newPlan);
 
-        // Guardar paradas de la nueva revisión
+        // Guardar paradas de la nueva revisión. #300: cada parada conserva tipo, bodega y cargas; el InputJson
+        // guarda las pendientes con la misma secuencia que su RouteStop (la publicación busca las cargas por secuencia).
+        var originalStops = OriginalStopsBySequence(plan.InputJson);
         var newRouteStops = new List<RouteStop>();
-        foreach (var cs in completedStops)
+        var inputStops = new List<object>();
+        int nextSeq = 1;
+        RouteStop AddStop(RouteStop source, string status, DateTime? arrival, DateTime? departure)
         {
-            newRouteStops.Add(new RouteStop
+            var stop = new RouteStop
             {
                 OrganizationId = DemoOrganization.Id,
                 RoutePlanId = newPlan.Id,
-                ServicePointId = cs.ServicePointId,
-                SequenceNumber = cs.SequenceNumber,
-                PlannedArrivalUtc = cs.PlannedArrivalUtc,
-                PlannedDepartureUtc = cs.PlannedDepartureUtc,
-                ActualArrivalUtc = cs.ActualArrivalUtc,
-                Status = "Completed"
+                ServicePointId = source.ServicePointId,
+                LocationId = source.LocationId,
+                Kind = source.Kind,
+                SequenceNumber = nextSeq++,
+                PlannedArrivalUtc = arrival,
+                PlannedDepartureUtc = departure,
+                ActualArrivalUtc = status == RouteStopStatus.Pending ? null : source.ActualArrivalUtc,
+                Status = status
+            };
+            newRouteStops.Add(stop);
+            return stop;
+        }
+        void AddKeptInput(RouteStop source, RouteStop stop) => inputStops.Add(new
+        {
+            sequence = stop.SequenceNumber,
+            kind = stop.Kind,
+            pointCode = LocationCode(source),
+            code = LocationCode(source),
+            servicePointId = (Guid?)null,
+            locationId = stop.LocationId,
+            isConsolidation = false,
+            loads = originalStops.GetValueOrDefault(source.SequenceNumber)?["loads"]?.DeepClone()
+        });
+
+        foreach (var cs in completedStops)
+        {
+            AddStop(cs, IsDoneStatus(cs.Status) ? cs.Status : RouteStopStatus.Completed, cs.PlannedArrivalUtc, cs.PlannedDepartureUtc);
+        }
+
+        if (keepPickups)
+        {
+            for (var i = 0; i < pendingPickups.Count; i++)
+            {
+                var pickup = pendingPickups[i];
+                var times = i < proposedRoute.LeadingTimes.Count
+                    ? proposedRoute.LeadingTimes[i]
+                    : (ArrivalUtc: pickup.PlannedArrivalUtc ?? DateTime.UtcNow, DepartureUtc: pickup.PlannedDepartureUtc ?? DateTime.UtcNow);
+                AddKeptInput(pickup, AddStop(pickup, RouteStopStatus.Pending, times.ArrivalUtc, times.DepartureUtc));
+            }
+        }
+
+        var completedServicePointIds = completedStops.Where(c => !IsLocationStop(c)).Select(c => c.ServicePointId).ToHashSet();
+        foreach (var ps in proposedRoute.Stops.Where(s => !completedServicePointIds.Contains(s.ServicePointId)))
+        {
+            var stop = AddStop(new RouteStop { ServicePointId = ps.ServicePointId, Kind = RouteStopKind.Delivery },
+                RouteStopStatus.Pending, ps.ArrivalUtc, ps.DepartureUtc);
+            inputStops.Add(new
+            {
+                sequence = stop.SequenceNumber,
+                kind = stop.Kind,
+                pointCode = ps.PointCode,
+                code = ps.PointCode,
+                servicePointId = (Guid?)ps.ServicePointId,
+                locationId = (Guid?)null,
+                isConsolidation = ps.IsConsolidation,
+                loads = (object?)ps.Loads,
+                trafficFactorApplied = ps.TrafficFactorApplied
             });
         }
 
-        int nextSeq = completedStops.Count + 1;
-        foreach (var ps in proposedRoute.Stops.Where(s => !completedStops.Any(c => c.ServicePointId == s.ServicePointId)))
+        // Las entregas a bodega no pasan por el optimizador: se mantienen al final con sus cargas.
+        foreach (var delivery in keptLocationDeliveries)
         {
-            newRouteStops.Add(new RouteStop
-            {
-                OrganizationId = DemoOrganization.Id,
-                RoutePlanId = newPlan.Id,
-                ServicePointId = ps.ServicePointId,
-                SequenceNumber = nextSeq++,
-                PlannedArrivalUtc = ps.ArrivalUtc,
-                PlannedDepartureUtc = ps.DepartureUtc,
-                Status = "Pending"
-            });
+            AddKeptInput(delivery, AddStop(delivery, RouteStopStatus.Pending, delivery.PlannedArrivalUtc, delivery.PlannedDepartureUtc));
         }
         db.RouteStops.AddRange(newRouteStops);
+        newPlan.InputJson = JsonSerializer.Serialize(new { stops = inputStops, legs = proposedRoute.Legs },
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
         var replanFacts = decision.Facts.ToList();
         foreach (var missing in strictResult.Unserved)
@@ -546,11 +621,36 @@ public sealed class Replanner(
         return restoredPlan;
     }
 
+    // #300: recogida en bodega o entrega a bodega (rutas del asistente): no es un punto de servicio.
+    private static bool IsLocationStop(RouteStop s) => s.Kind == RouteStopKind.Pickup || s.LocationId.HasValue;
+
+    private static bool IsDoneStatus(string status) =>
+        status is RouteStopStatus.Completed or RouteStopStatus.PickedUp or RouteStopStatus.PartiallyPickedUp;
+
+    private int ServiceMinutes(RouteStop s) =>
+        s.PlannedArrivalUtc is { } arrival && s.PlannedDepartureUtc is { } departure && departure > arrival
+            ? (int)Math.Round((departure - arrival).TotalMinutes)
+            : _options.DefaultServiceMinutes;
+
+    // #300: paradas del InputJson original por secuencia, para copiar las cargas de las que no cambian.
+    private static Dictionary<int, JsonNode> OriginalStopsBySequence(string? inputJson)
+    {
+        var result = new Dictionary<int, JsonNode>();
+        if (string.IsNullOrWhiteSpace(inputJson) || JsonNode.Parse(inputJson)?["stops"] is not JsonArray stops) return result;
+        foreach (var stop in stops)
+        {
+            if (stop?["sequence"] is JsonValue value && value.TryGetValue<int>(out var sequence)) result.TryAdd(sequence, stop);
+        }
+        return result;
+    }
+
     private static VehicleRoute ReconstructPreviousVehicleRoute(
         RoutePlan plan,
+        string vehicleCode,
         List<RouteStop> stops,
         Dictionary<Guid, ServicePoint> spMap)
     {
+        // #300: solo puntos de servicio, una vez cada uno (las diferencias se indexan por código).
         var plannedStops = stops.Select(s =>
         {
             var code = spMap.TryGetValue(s.ServicePointId, out var sp) ? sp.Code : "";
@@ -564,10 +664,10 @@ public sealed class Replanner(
                 Array.Empty<StopLoad>(),
                 false,
                 null);
-        }).ToList();
+        }).Where(s => s.PointCode != "").DistinctBy(s => s.PointCode).ToList();
 
         return new VehicleRoute(
-            "VEH-01",
+            vehicleCode,
             plan.VehicleId,
             plannedStops,
             plan.TotalKm ?? 0m,

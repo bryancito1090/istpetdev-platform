@@ -331,7 +331,10 @@ public sealed class RoutePublisher(
         foreach (var delivery in deliveries.Where(d => oldStops[d.RouteStopId!.Value].Status != "Completed"))
         {
             var original = oldStops[delivery.RouteStopId!.Value];
-            var target = stops.SingleOrDefault(s => s.ServicePointId == original.ServicePointId && s.Status != "Completed");
+            // #300: se compara también tipo y bodega; en rutas del asistente la recogida y las entregas a bodega
+            // llevan un ServicePointId de relleno que puede coincidir con el de una entrega.
+            var target = stops.SingleOrDefault(s => s.ServicePointId == original.ServicePointId && s.Kind == original.Kind &&
+                s.LocationId == original.LocationId && s.Status != "Completed");
             if (target is null)
             {
                 if (delivery.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit or DeliveryStates.Delivered)
