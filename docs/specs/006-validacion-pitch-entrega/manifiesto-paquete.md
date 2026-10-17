@@ -25,7 +25,7 @@ Estado: `vivo`, `grabado`, `simulado` o `propuesto`, según lo que **realmente**
 | Elemento | Archivo | SHA-256 | Estado |
 |---|---|---|---|
 | Matriz de afirmaciones final | [matriz-afirmaciones.md](matriz-afirmaciones.md) | — (se calcula al congelar) | borrador; segunda revisión pendiente |
-| Guion T4 | [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md) | `a22a839baf3d7123a332a9c922d294103d4d11cc01a4c7cf0867f28e666df4cd` | fuente narrativa de pitch-v2 |
+| Guion T4 | [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md) | `de3d136396d6055a84655d3cbee1870729d2e02554e307d192829818ce03dec5` | fuente narrativa de pitch-v2 |
 | Generador v2 | [`materiales/generar_v2.py`](materiales/generar_v2.py) | `e422660bacdd80e43069f5cbca2467bfef7085da77d010b675b6358fc44dd609` | genera PPTX y PDF |
 | Render PNG 1 | [`materiales/render-v2/diapositiva-1.png`](materiales/render-v2/diapositiva-1.png) | `c45a83e5b12f337ee2586fbfa54b6d8abd3eb3f3f57b10cc9477913ebf02741c` | inspeccionado |
 | Render PNG 2 | [`materiales/render-v2/diapositiva-2.png`](materiales/render-v2/diapositiva-2.png) | `47dd35a5c1a2dc04d254f85b0a919aed728cbd43e1231d77ad83b14a7849c707` | inspeccionado |
