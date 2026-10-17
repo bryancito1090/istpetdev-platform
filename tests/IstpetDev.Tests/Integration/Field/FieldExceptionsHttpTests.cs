@@ -5,12 +5,15 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using IstpetDev.Application.Field;
 using IstpetDev.Application.Field.Dtos;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using NetTopologySuite.Geometries;
 using Xunit;
 
 namespace IstpetDev.Tests.Integration.Field;
@@ -99,6 +102,69 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
         var line = item.GetProperty("lines")[0];
         Assert.Equal(3m, line.GetProperty("quantityRejected").GetDecimal());
         Assert.Equal(ReceiptRejectionReasons.ErrorRotulado, line.GetProperty("rejectionReason").GetString());
+    }
+
+    // Ubica la bodega de origen y el punto de la entrega sembrada; opcionalmente guarda el tramo por calles en ambos sentidos.
+    private static async Task PlaceAsync(ApiFactory api, FieldSeed.Dispatched d, GeoPoint warehouse, GeoPoint point,
+        (decimal Km, decimal Minutes)? roadOut = null, (decimal Km, decimal Minutes)? roadBack = null)
+    {
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var delivery = await db.Deliveries.SingleAsync(x => x.Id == d.DeliveryId);
+        (await db.Locations.SingleAsync(l => l.Id == delivery.OriginLocationId)).Position =
+            new Point((double)warehouse.Lon, (double)warehouse.Lat) { SRID = 4326 };
+        (await db.ServicePoints.SingleAsync(p => p.Id == delivery.ServicePointId)).Position =
+            new Point((double)point.Lon, (double)point.Lat) { SRID = 4326 };
+        void Edge(GeoPoint from, GeoPoint to, (decimal Km, decimal Minutes) leg) => db.RoadMatrixEdges.Add(new RoadMatrixEdge
+        {
+            OrganizationId = DemoOrganization.Id, FromLat = from.Lat, FromLon = from.Lon, ToLat = to.Lat, ToLon = to.Lon,
+            DistanceKm = leg.Km, DurationMinutes = leg.Minutes, Source = "imported", RetrievedAtUtc = DateTime.UtcNow
+        });
+        if (roadOut is { } o) Edge(warehouse, point, o);
+        if (roadBack is { } b) Edge(point, warehouse, b);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Exceptions_include_estimated_backtrack_only_for_redelivery_reasons_with_coordinates()
+    {
+        // #237: ida y vuelta bodega → punto; «aproximado» si algún tramo sale de la línea recta.
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var road = await SeedDeliveredAsync(api, "BT-ROAD");
+        var approx = await SeedDeliveredAsync(api, "BT-APPROX");
+        var surplus = await SeedDeliveredAsync(api, "BT-SOBRANTE");
+        var noCoords = await SeedDeliveredAsync(api, "BT-SIN-GPS");
+
+        await PlaceAsync(api, road, new GeoPoint(-0.18000m, -78.48000m), new GeoPoint(-0.10000m, -78.45000m), (9.2m, 18m), (9.4m, 19m));
+        await PlaceAsync(api, approx, new GeoPoint(-0.25000m, -78.52000m), new GeoPoint(-0.30000m, -78.55000m));
+        await PlaceAsync(api, surplus, new GeoPoint(-0.26000m, -78.53000m), new GeoPoint(-0.31000m, -78.56000m));
+        await ReceiveAsync(api, road, 8m, 4m, reason: "Daño");
+        await ReceiveAsync(api, approx, 10m, 2m, reason: "mislabeled");
+        await ReceiveAsync(api, surplus, 10m, 2m, reason: "Sobrante");
+        await ReceiveAsync(api, noCoords, 9m, 3m, reason: "Faltante");
+
+        LogisticsOptions options;
+        using (var scope = api.Services.CreateScope())
+            options = scope.ServiceProvider.GetRequiredService<IOptions<LogisticsOptions>>().Value;
+
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var items = (await GetJsonAsync(planner, "/api/v1/receipts/exceptions")).GetProperty("items").EnumerateArray().ToList();
+        JsonElement Item(FieldSeed.Dispatched d) => items.Single(i => i.GetProperty("deliveryId").GetGuid() == d.DeliveryId);
+
+        var byRoad = Item(road).GetProperty("estimatedBacktrack");
+        Assert.Equal(18.6m, byRoad.GetProperty("km").GetDecimal());
+        Assert.Equal(0.62m, byRoad.GetProperty("hours").GetDecimal());
+        // Sin ruta ni perfil de costo: tarifa por defecto, con el mismo calculador que el resto del motor.
+        Assert.Equal(LogisticsCostCalculator.CalculateCost(18.6m, 37m, options.DefaultCostPerKm, options.CostPerHour),
+            byRoad.GetProperty("costUsd").GetDecimal());
+        Assert.False(byRoad.GetProperty("isApproximate").GetBoolean());
+
+        var byApprox = Item(approx).GetProperty("estimatedBacktrack");
+        Assert.True(byApprox.GetProperty("isApproximate").GetBoolean());
+        Assert.True(byApprox.GetProperty("km").GetDecimal() > 0m);
+
+        Assert.Equal(JsonValueKind.Null, Item(surplus).GetProperty("estimatedBacktrack").ValueKind);
+        Assert.Equal(JsonValueKind.Null, Item(noCoords).GetProperty("estimatedBacktrack").ValueKind);
     }
 
     [Fact]

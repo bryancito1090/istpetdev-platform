@@ -467,3 +467,29 @@ Bryan), el receptor no puede elegir `ErrorRotulado` desde el teléfono.
 La página web de Novedades muestra arriba de la lista las líneas y unidades
 rechazadas por motivo, calculadas en el cliente sobre las recepciones cargadas
 (máximo `limit`), no sobre el total histórico.
+
+## Costo de retroceso estimado en Novedades (#237 — 16 de octubre de 2026)
+
+Cada elemento de `GET /api/v1/receipts/exceptions` agrega `estimatedBacktrack`
+(nullable):
+
+| Campo | Unidad / significado |
+|---|---|
+| `km` | Km de ida y vuelta bodega de origen (`Delivery.OriginLocationId`) → punto → bodega; 2 decimales |
+| `costUsd` | USD estimados con `ServiceCostCalculator` de #240, sin paradas (sin ayudantes ni merma); sin perfil de costo, su respaldo `LogisticsCostCalculator` con `CostPerKm` del vehículo de la ruta o `DefaultCostPerKm` y `CostPerHour` |
+| `hours` | Horas de viaje de ida y vuelta (sin tiempo de descarga); 2 decimales |
+| `isApproximate` | `true` si algún tramo salió de la aproximación en línea recta (Haversine × factor de desvío) y no de un tramo guardado u OSRM |
+
+- Solo se calcula si alguna línea tiene rechazo `Faltante`, `Daño` o
+  `ErrorRotulado` (también sus sinónimos). `Sobrante`, `PrecintoViolado`,
+  `LoteNoCoincide` y `CadenaDeFrio` no implican reentrega por sí solos.
+- Una reentrega por recepción. El peso de lo rechazado alimenta la fracción de
+  carga del consumo de #240.
+- `null` si no aplica o faltan coordenadas de la bodega o del punto; no se
+  inventa una distancia.
+- Los tramos salen de `IDistanceProvider` en una sola consulta de matriz
+  (tramos guardados, OSRM o aproximación).
+- Es una **estimación** informativa: no se escribe en la base y **no se suma**
+  a `RoutePlan.TotalCost` ni a ningún costo de la ruta original. La web muestra
+  «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h» y agrega «aproximado» cuando
+  corresponde.

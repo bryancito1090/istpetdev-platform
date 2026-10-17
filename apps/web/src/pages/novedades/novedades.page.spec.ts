@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthSession } from '@entities/session';
 import { FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
-import { NovedadesPage, summarizeRejections } from './novedades.page';
+import { NovedadesPage, formatBacktrack, summarizeRejections } from './novedades.page';
 
 const receipt: ReceiptExceptionDto = {
   receiptId: 'r-1',
@@ -168,5 +168,44 @@ describe('Resumen de rechazos por motivo (#236)', () => {
       cancelOrder: vi.fn(),
     });
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-rejection-summary]')).toBeNull();
+  });
+});
+
+describe('Reentrega estimada en cada tarjeta (#237)', () => {
+  function renderWith(items: ReceiptExceptionDto[]) {
+    return render(false, {
+      listReceiptExceptions: vi.fn(() => of({ items, total: items.length })),
+      listFieldRequests: vi.fn(() => of([])),
+      cancelOrder: vi.fn(),
+    });
+  }
+
+  it('formatea km, USD y horas con coma decimal y dice «estimada»', () => {
+    expect(formatBacktrack({ km: 18.4, costUsd: 8.3, hours: 0.62, isApproximate: false }))
+      .toBe('Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h');
+  });
+
+  it('muestra la línea en la tarjeta y marca «aproximado» si la distancia es en línea recta', () => {
+    const fixture = renderWith([
+      { ...receipt, receiptId: 'r-road', estimatedBacktrack: { km: 18.6, costUsd: 12.09, hours: 0.62, isApproximate: false } },
+      { ...receipt, receiptId: 'r-approx', estimatedBacktrack: { km: 9.75, costUsd: 5.85, hours: 0.24, isApproximate: true } },
+    ]);
+    const el = fixture.nativeElement as HTMLElement;
+    const road = el.querySelector('[data-receipt="r-road"] [data-backtrack]')!;
+    const approx = el.querySelector('[data-receipt="r-approx"] [data-backtrack]')!;
+
+    expect(road.textContent).toContain('Reentrega estimada: 18,6 km · USD 12,09 · 0,6 h');
+    expect(road.textContent).not.toContain('aproximado');
+    expect(approx.textContent).toContain('Reentrega estimada: 9,8 km · USD 5,85 · 0,2 h');
+    expect(approx.textContent).toContain('aproximado');
+    expect(road.getAttribute('title')).toContain('No se suma al costo de la ruta original');
+  });
+
+  it('sin estimación (null o ausente) no muestra la línea ni inventa valores', () => {
+    const fixture = renderWith([
+      { ...receipt, receiptId: 'r-null', estimatedBacktrack: null },
+      { ...receipt, receiptId: 'r-none' },
+    ]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-backtrack]')).toBeNull();
   });
 });
