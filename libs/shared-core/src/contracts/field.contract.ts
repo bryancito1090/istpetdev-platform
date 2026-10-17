@@ -159,6 +159,8 @@ export interface MobileAssignmentRoute {
   downloadedAtUtc: string;
   driverMessage?: string;
   vehicleCode: string;
+  vehiclePlate?: string;
+  vehicleDescription?: string;
   stopsCount: number;
   totalDistanceKm?: number;
   estimatedDurationMinutes?: number;
@@ -321,7 +323,10 @@ export interface EvidenceConfirmResponse {
 
 export interface DemoAdvanceRequest {
   operationId: string;
-  stops: number;
+  stops?: number;
+  mode?: 'complete' | 'half' | 'next';
+  withIncidents?: boolean;
+  noveltyRate?: number;
 }
 
 export interface CompletedStopDto {
@@ -329,10 +334,42 @@ export interface CompletedStopDto {
   deliveryId: string;
   receiptId: string;
   acceptedAtUtc: string;
+  hadIncidents?: boolean;
+  quantityRejected?: number | null;
+  rejectionReason?: string | null;
 }
 
 export interface DemoAdvanceResponse {
   completedStops: CompletedStopDto[];
+  checkpointCompleted?: string;
+  nextCheckpoint?: string;
+  totalStops?: number;
+  completedStopsCount?: number;
+  status?: string;
+}
+
+export interface TodayRouteStopDto {
+  stopId: string;
+  sequenceNumber: number;
+  kind: string;
+  pointName: string;
+  status: string;
+  plannedArrivalUtc?: string;
+  actualArrivalUtc?: string;
+}
+
+export interface TodayRoutePlanDto {
+  routePlanId: string;
+  code: string;
+  vehicleCode: string;
+  driverName?: string;
+  driverAccountId?: string;
+  status: string;
+  totalStops: number;
+  completedStops: number;
+  nextCheckpoint: string;
+  plannedStartUtc: string;
+  stops: TodayRouteStopDto[];
 }
 
 // ==========================================

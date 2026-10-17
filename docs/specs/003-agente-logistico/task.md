@@ -1028,3 +1028,22 @@ Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` e
 - [x] Revisión visual de abastecimiento con componentes reales y datos sintéticos: mapa dominante a 1500 px, recorrido 5/5, móvil de 390 px sin desbordamiento ni superposición, y opción B conservada con dos vehículos al abrir comparador. Ajustada altura móvil tras detectar superposición en la primera captura. Sin ejecución Cognito real ni despliegue.
 
 - [x] Ampliación posterior: bodega de origen, vehículo y conductor en campos separados con iconos Lucide sobre el mapa; selector etiquetado por vehículo y botón «Asignar conductor» de 44 px en escritorio/móvil. Se conservan permisos y confirmación del servidor. Pruebas afectadas **40/40**, 7 archivos; revisión visual a 1500/390 px sin desbordamiento.
+
+## Issue #317 — endurecimiento de revisión de datasets ante formato .json y errores HTTP 400 — 17-oct-2026
+
+- [x] Endurecimiento en n8n (`Analizar viabilidad` y `Prepare Result` en plantilla y workflow exportado `revision-dataset`):
+  - Ante HTTP 400/500 Problem Details o reportes sin `feasibility`, se marca inmediatamente `valid: false`, `veredicto: "Formato no soportado"` (o `"Error en validación"`/`"Error interno del importador"`), y se extrae el mensaje exacto (`detail` o `title`).
+  - Se eliminan los valores por defecto que asumían `"Viable con limitaciones"` y `"0 errores"` ante fallas HTTP de la API.
+  - `Prepare Result` devuelve de forma determinista el mensaje y código de error exactos sin invocar o depender de alucinaciones del LLM ante fallas de validación.
+- [x] Tratamiento de payloads directos en `Check Token`:
+  - Reconoce tanto archivos multipart (`binary.file`) como payloads JSON directos en el cuerpo HTTP (`item.json.body`), empaquetándolos como binario sintético `dataset.json` para su evaluación por el pipeline de importación en seco en lugar de rechazar con 401 `missing_file`.
+- [x] Especificación de formatos admitidos:
+  - Se documenta en `docs/boveda/05 Automatizacion/n8n e IA.md` que el importador acepta exclusivamente formatos tabulares canónicos (`.csv`, `.tsv`, `.xlsx`) y rechaza archivos `.json`, devolviendo el mensaje descriptivo con indicación explícita de convertir a `.csv` o `.xlsx`.
+- [x] Pruebas unitarias en `tests/scripts/test_dataset_review_workflow.py`:
+  - `test_check_token_accepts_raw_json_body_payload`: valida normalización de payloads JSON crudos en el body a `dataset.json`.
+  - `test_api_problem_details_400_for_unsupported_json_reports_error_cleanly`: valida que el Problem Details 400 por `.json` no soportado reporte `Formato no soportado`, 1 error y el mensaje exacto sin enmascaramiento.
+  - `test_api_internal_error_500_does_not_generate_viable_verdict`: valida que errores 500 no produzcan veredicto viable.
+  - Cobertura completa: 10/10 pruebas pasando en verde.
+- [ ] PR a develop, validación CI, merge y cierre de #317.
+
+Estado: código y pruebas locales completados; listo para integración vía PR a develop.

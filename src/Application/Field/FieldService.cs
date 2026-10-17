@@ -32,16 +32,19 @@ public sealed class FieldService : IFieldService
     private readonly ILogger<FieldService> _logger;
     private readonly LogisticsOptions _logistics;
     private readonly IEvidenceStorage? _evidenceStorage;
+    private readonly IOperationalClock? _clock;
 
     public FieldService(
         IApplicationDbContext db,
         IConfiguration config,
         ILogger<FieldService> logger,
         IOptions<LogisticsOptions> logistics,
-        IEvidenceStorage? evidenceStorage = null)
+        IEvidenceStorage? evidenceStorage = null,
+        IOperationalClock? clock = null)
     {
         _db = db;
         _evidenceStorage = evidenceStorage;
+        _clock = clock;
         _config = config;
         _logger = logger;
         _logistics = logistics.Value;
@@ -1636,6 +1639,153 @@ public sealed class FieldService : IFieldService
         await _db.SaveChangesAsync(ct);
     }
 
+    private static Guid DeterministicGuid(Guid root, string key)
+    {
+        var input = $"{root:N}:{key}";
+        return new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(input)).AsSpan(0, 16));
+    }
+
+    public async Task<IReadOnlyList<TodayRoutePlanDto>> GetTodayRoutePlansAsync(CancellationToken ct = default)
+    {
+        var today = _clock != null ? await _clock.TodayAsync(ct) : DateOnly.FromDateTime(DateTime.UtcNow);
+        var startUtc = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var endUtc = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+        var query = _db.RoutePlans.AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id && p.Status == "Published");
+
+        var plans = await query
+            .Where(p => p.PlannedStartUtc >= startUtc && p.PlannedStartUtc <= endUtc)
+            .OrderBy(p => p.PlannedStartUtc)
+            .ThenBy(p => p.Code)
+            .ToListAsync(ct);
+
+        if (plans.Count == 0)
+        {
+            plans = await query
+                .OrderByDescending(p => p.PlannedStartUtc)
+                .ThenBy(p => p.Code)
+                .Take(25)
+                .ToListAsync(ct);
+        }
+
+        if (plans.Count == 0) return Array.Empty<TodayRoutePlanDto>();
+
+        var planIds = plans.Select(p => p.Id).ToList();
+        var vehicleIds = plans.Select(p => p.VehicleId).Distinct().ToList();
+        var vehicles = await _db.Vehicles.AsNoTracking()
+            .Where(v => vehicleIds.Contains(v.Id) && v.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+
+        var allStops = await _db.RouteStops.AsNoTracking()
+            .Where(s => planIds.Contains(s.RoutePlanId) && s.OrganizationId == DemoOrganization.Id)
+            .OrderBy(s => s.SequenceNumber)
+            .ToListAsync(ct);
+
+        var stopIds = allStops.Select(s => s.Id).ToList();
+        var servicePointIds = allStops.Select(s => s.ServicePointId).Distinct().ToList();
+        var servicePoints = await _db.ServicePoints.AsNoTracking()
+            .Where(sp => servicePointIds.Contains(sp.Id) && sp.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(sp => sp.Id, sp => sp.Name, ct);
+
+        var deliveries = await _db.Deliveries.AsNoTracking()
+            .Where(d => d.RouteStopId.HasValue && stopIds.Contains(d.RouteStopId.Value) && d.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var deliveryIds = deliveries.Select(d => d.Id).ToList();
+        var hus = await _db.HandlingUnits.AsNoTracking()
+            .Where(h => h.DeliveryId.HasValue && deliveryIds.Contains(h.DeliveryId.Value) && h.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var driverAccountIds = deliveries.Where(d => d.AssignedAccountId.HasValue).Select(d => d.AssignedAccountId!.Value).Distinct().ToList();
+        var drivers = await _db.Accounts.AsNoTracking()
+            .Where(a => driverAccountIds.Contains(a.Id) && a.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(a => a.Id, a => a.DisplayName, ct);
+
+        var deliveriesByStop = deliveries.GroupBy(d => d.RouteStopId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+        var husByDelivery = hus.GroupBy(h => h.DeliveryId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+        var stopsByPlan = allStops.GroupBy(s => s.RoutePlanId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var result = new List<TodayRoutePlanDto>();
+
+        foreach (var plan in plans)
+        {
+            var planStops = stopsByPlan.GetValueOrDefault(plan.Id, new List<RouteStop>());
+            var planDeliveries = planStops.SelectMany(s => deliveriesByStop.GetValueOrDefault(s.Id, new List<Delivery>())).ToList();
+
+            var driverId = planDeliveries.FirstOrDefault(d => d.AssignedAccountId.HasValue)?.AssignedAccountId;
+            var driverName = driverId.HasValue ? drivers.GetValueOrDefault(driverId.Value) : null;
+            var vehicleCode = vehicles.GetValueOrDefault(plan.VehicleId, "VEH-ASIG");
+
+            int totalStops = planStops.Count;
+            int completedStops = planStops.Count(s => s.Status == "Completed");
+
+            bool hasUnprepared = planDeliveries.Any(d => husByDelivery.GetValueOrDefault(d.Id)?.Count is null or 0);
+            bool hasDraft = planDeliveries.Any(d => d.Status == DeliveryStates.Draft);
+
+            string nextCheckpoint;
+            if (hasUnprepared)
+            {
+                nextCheckpoint = "Preparación en bodega";
+            }
+            else if (hasDraft)
+            {
+                nextCheckpoint = "Despacho a vehículo";
+            }
+            else
+            {
+                var firstPendingStop = planStops.FirstOrDefault(s => s.Status != "Completed");
+                if (firstPendingStop != null)
+                {
+                    var ptName = servicePoints.GetValueOrDefault(firstPendingStop.ServicePointId, "Punto de Entrega");
+                    nextCheckpoint = $"Parada {firstPendingStop.SequenceNumber}: {ptName}";
+                }
+                else
+                {
+                    nextCheckpoint = "Ruta finalizada";
+                }
+            }
+
+            string displayStatus;
+            if (completedStops == 0 && (hasUnprepared || hasDraft))
+            {
+                displayStatus = "Publicada";
+            }
+            else if (completedStops == totalStops && totalStops > 0)
+            {
+                displayStatus = "Completada";
+            }
+            else
+            {
+                displayStatus = "En curso";
+            }
+
+            var stopDtos = planStops.Select(s => new TodayRouteStopDto(
+                s.Id,
+                s.SequenceNumber,
+                s.Kind,
+                servicePoints.GetValueOrDefault(s.ServicePointId, "Punto de Entrega"),
+                s.Status,
+                s.PlannedArrivalUtc,
+                s.ActualArrivalUtc)).ToList();
+
+            result.Add(new TodayRoutePlanDto(
+                plan.Id,
+                plan.Code,
+                vehicleCode,
+                driverName,
+                driverId,
+                displayStatus,
+                totalStops,
+                completedStops,
+                nextCheckpoint,
+                plan.PlannedStartUtc,
+                stopDtos));
+        }
+
+        return result;
+    }
+
     public async Task<DemoAdvanceResponse> AdvanceDemoAsync(
         Guid routePlanId,
         DemoAdvanceRequest request,
@@ -1643,7 +1793,7 @@ public sealed class FieldService : IFieldService
         CancellationToken ct = default)
     {
         // Idempotencia de la operación de demo completa: repetir el mismo operationId devuelve el resultado previo.
-        var legacyAdvanceHash = ComputeSha256($"demo-advance:{routePlanId}:{request.Stops}");
+        var legacyAdvanceHash = ComputeSha256($"demo-advance:{routePlanId}:{request.Stops}:{request.Mode}:{request.WithIncidents}");
         var replay = await FindReplayAsync<DemoAdvanceResponse>(actorAccountId, request.OperationId, "DemoAdvance", routePlanId, request, request.OperationId.ToString(), ct, legacyAdvanceHash);
         if (replay is not null) return replay;
 
@@ -1656,101 +1806,286 @@ public sealed class FieldService : IFieldService
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Ruta {routePlanId} no encontrada.");
 
-        var pendingStops = await _db.RouteStops
-            .Where(s => s.RoutePlanId == plan.Id && s.OrganizationId == DemoOrganization.Id && s.Status != "Completed")
+        var allStops = await _db.RouteStops
+            .Where(s => s.RoutePlanId == plan.Id && s.OrganizationId == DemoOrganization.Id)
             .OrderBy(s => s.SequenceNumber)
-            .Take(Math.Max(1, request.Stops))
             .ToListAsync(ct);
 
-        var completedStops = new List<CompletedStopDto>();
+        var allStopIds = allStops.Select(s => s.Id).ToList();
 
-        foreach (var stop in pendingStops)
+        var deliveries = await _db.Deliveries
+            .Where(d => d.RouteStopId.HasValue && allStopIds.Contains(d.RouteStopId.Value) && d.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var delIds = deliveries.Select(d => d.Id).ToList();
+
+        var existingHus = await _db.HandlingUnits
+            .Where(hu => hu.DeliveryId.HasValue && delIds.Contains(hu.DeliveryId.Value) && hu.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var husByDelId = existingHus.GroupBy(hu => hu.DeliveryId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+
+        var servicePointIds = allStops.Select(s => s.ServicePointId).Distinct().ToList();
+        var servicePoints = await _db.ServicePoints
+            .Where(sp => servicePointIds.Contains(sp.Id) && sp.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(sp => sp.Id, sp => sp.Name, ct);
+
+        // Semilla determinista derivada de OperationId para garantizar reproducibilidad exacta
+        byte[] opBytes = request.OperationId.ToByteArray();
+        int seed = BitConverter.ToInt32(opBytes, 0) ^ BitConverter.ToInt32(opBytes, 4) ^ BitConverter.ToInt32(opBytes, 8) ^ BitConverter.ToInt32(opBytes, 12);
+        var rng = new Random(seed);
+
+        async Task PrepareDeliveriesCoreAsync(IEnumerable<Delivery> delsToPrepare)
         {
-            // Advance simulates progress on the operational date of the route.
-            // Server receipt/custody timestamps still record the real execution.
-            var occurredAt = stop.PlannedArrivalUtc ?? DateTime.UtcNow;
-            var deliveries = await _db.Deliveries
-                .Where(d => d.RouteStopId == stop.Id && d.OrganizationId == DemoOrganization.Id)
-                .ToListAsync(ct);
+            foreach (var del in delsToPrepare)
+            {
+                var delHus = husByDelId.GetValueOrDefault(del.Id);
+                if (delHus == null || delHus.Count == 0)
+                {
+                    var delLines = await _db.DeliveryLines
+                        .Where(dl => dl.DeliveryId == del.Id && dl.OrganizationId == DemoOrganization.Id)
+                        .ToListAsync(ct);
 
-            foreach (var del in deliveries)
+                    var prepOpId = DeterministicGuid(request.OperationId, $"prep:{del.Id}");
+                    var prepReq = new CreateHandlingUnitRequest(
+                        prepOpId,
+                        delLines.Select(dl => new CreateHandlingUnitLineRequest(dl.Id, dl.LotId, dl.PlannedQuantity)).ToList());
+
+                    var huResp = await CreateHandlingUnitAsync(del.Id, prepReq, actorAccountId, ct);
+                    var createdHu = await _db.HandlingUnits.FirstOrDefaultAsync(h => h.Id == huResp.HandlingUnitId, ct);
+                    if (createdHu != null)
+                    {
+                        if (!husByDelId.ContainsKey(del.Id)) husByDelId[del.Id] = new List<HandlingUnit>();
+                        husByDelId[del.Id].Add(createdHu);
+                    }
+                }
+            }
+        }
+
+        async Task DispatchDeliveriesCoreAsync(IEnumerable<Delivery> delsToDispatch, DateTime dispatchOccurredAt)
+        {
+            foreach (var del in delsToDispatch)
+            {
+                if (del.Status == DeliveryStates.Draft)
+                {
+                    var allUnitIds = husByDelId.GetValueOrDefault(del.Id)?.Select(hu => hu.Id).ToList()
+                        ?? await _db.HandlingUnits.Where(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id).Select(h => h.Id).ToListAsync(ct);
+
+                    var dispOpId = DeterministicGuid(request.OperationId, $"disp:{del.Id}");
+                    var dispReq = new DispatchRequest(dispOpId, allUnitIds, dispatchOccurredAt);
+                    await DispatchAsync(del.Id, dispReq, actorAccountId, $"adv-disp-{del.Id:N}", ct);
+                }
+            }
+        }
+
+        async Task<List<CompletedStopDto>> AdvanceStopCoreAsync(RouteStop stop, bool generateIncident)
+        {
+            var stopDels = deliveries.Where(d => d.RouteStopId == stop.Id).ToList();
+            var stopCompletedList = new List<CompletedStopDto>();
+            var occurredAt = stop.PlannedArrivalUtc ?? DateTime.UtcNow;
+
+            foreach (var del in stopDels)
             {
                 var delLines = await _db.DeliveryLines
                     .Where(dl => dl.DeliveryId == del.Id && dl.OrganizationId == DemoOrganization.Id)
                     .ToListAsync(ct);
 
-                // Es una simulación de recorrido, no una acción física: las transiciones reales se
-                // atribuyen a la cuenta que invoca el avance (Planificación/Gerencia), no al conductor.
-                var custodyActor = actorAccountId;
+                await PrepareDeliveriesCoreAsync(new[] { del });
+                await DispatchDeliveriesCoreAsync(new[] { del }, occurredAt);
 
-                // 1. Preparar HandlingUnit si no existe
-                var existingHus = await _db.HandlingUnits
-                    .Where(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id)
-                    .ToListAsync(ct);
-
-                Guid huId;
-                if (existingHus.Count == 0)
-                {
-                    var prepReq = new CreateHandlingUnitRequest(
-                        Guid.NewGuid(),
-                        delLines.Select(dl => new CreateHandlingUnitLineRequest(dl.Id, dl.LotId, dl.PlannedQuantity)).ToList());
-
-                    var huResp = await CreateHandlingUnitAsync(del.Id, prepReq, actorAccountId, ct);
-                    huId = huResp.HandlingUnitId;
-                }
-                else
-                {
-                    huId = existingHus[0].Id;
-                }
-
-                // 2. Despachar TODOS los bultos (solo desde Draft; una entrega ya avanzada no se re-despacha)
-                if (del.Status == DeliveryStates.Draft)
-                {
-                    var allUnitIds = await _db.HandlingUnits
-                        .Where(hu => hu.DeliveryId == del.Id && hu.OrganizationId == DemoOrganization.Id)
-                        .Select(hu => hu.Id)
-                        .ToListAsync(ct);
-                    if (allUnitIds.Count == 0) allUnitIds = new List<Guid> { huId };
-
-                    var dispReq = new DispatchRequest(Guid.NewGuid(), allUnitIds, occurredAt);
-                    await DispatchAsync(del.Id, dispReq, actorAccountId, $"adv-{Guid.NewGuid()}", ct);
-                }
-
-                // 3. Recoger y entregar: pickup (Dispatched → InTransit) y deliver (InTransit → Delivered)
                 if (del.Status == DeliveryStates.Dispatched)
                 {
-                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(Guid.NewGuid(), occurredAt),
-                        custodyActor, $"adv-{Guid.NewGuid()}", "Pickup",
+                    var pickOpId = DeterministicGuid(request.OperationId, $"pick:{del.Id}");
+                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(pickOpId, occurredAt),
+                        actorAccountId, $"adv-pick-{del.Id:N}", "Pickup",
                         DeliveryStates.Dispatched, DeliveryStates.InTransit, HandlingUnitStates.Dispatched,
                         HandlingUnitStates.InTransit, CustodyEventKinds.PickedUp, ct, requireAssignedDriver: false);
                 }
+
                 if (del.Status == DeliveryStates.InTransit)
                 {
-                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(Guid.NewGuid(), occurredAt),
-                        custodyActor, $"adv-{Guid.NewGuid()}", "Deliver",
+                    var delvOpId = DeterministicGuid(request.OperationId, $"delv:{del.Id}");
+                    await AdvanceCustodyAsync(del.Id, new CustodyTransitionRequest(delvOpId, occurredAt),
+                        actorAccountId, $"adv-delv-{del.Id:N}", "Deliver",
                         DeliveryStates.InTransit, DeliveryStates.Delivered, HandlingUnitStates.InTransit,
                         HandlingUnitStates.Delivered, CustodyEventKinds.Delivered, ct, requireAssignedDriver: false);
                 }
 
-                // 4. Recibir 100% aceptado cubriendo todas las líneas despachadas (el rol Receptor no participa en el avance de demo)
-                var receiptReq = new CreateReceiptRequest(
-                    Guid.NewGuid(),
-                    del.Version,
-                    occurredAt,
-                    delLines.Where(dl => dl.DispatchedQuantity > 0m)
-                        .Select(dl => new ReceiptLineRequest(dl.Id, dl.LotId, dl.DispatchedQuantity, 0m, "U")).ToList());
+                var receiptLinesReq = new List<ReceiptLineRequest>();
+                bool stopHadIncident = false;
+                decimal? totalRejected = null;
+                string? incidentReason = null;
 
-                var receiptResp = await CreateReceiptCoreAsync(del.Id, receiptReq, custodyActor, $"rec-{Guid.NewGuid()}", ct);
+                var dispatchedLines = delLines.Where(dl => dl.DispatchedQuantity > 0m).ToList();
+                for (int lineIdx = 0; lineIdx < dispatchedLines.Count; lineIdx++)
+                {
+                    var dl = dispatchedLines[lineIdx];
+                    if (generateIncident && lineIdx == 0)
+                    {
+                        stopHadIncident = true;
+                        decimal rejected = Math.Max(1m, Math.Floor(dl.DispatchedQuantity * 0.25m));
+                        if (rejected >= dl.DispatchedQuantity && dl.DispatchedQuantity > 1m) rejected = 1m;
+                        else if (rejected > dl.DispatchedQuantity) rejected = dl.DispatchedQuantity;
 
-                completedStops.Add(new CompletedStopDto(
+                        decimal accepted = dl.DispatchedQuantity - rejected;
+                        string reason = ReceiptRejectionReasons.All[rng.Next(ReceiptRejectionReasons.All.Count)];
+                        incidentReason = reason;
+                        totalRejected = rejected;
+
+                        var pLoc = await _db.Locations.FirstOrDefaultAsync(l => l.ServicePointId == stop.ServicePointId && l.OrganizationId == DemoOrganization.Id, ct);
+                        decimal? remainingQty = null;
+                        if (pLoc != null)
+                        {
+                            var curBal = await _db.StockBalances.FirstOrDefaultAsync(b => b.LocationId == pLoc.Id && b.LotId == dl.LotId && b.OrganizationId == DemoOrganization.Id, ct);
+                            decimal curOnHand = curBal?.QuantityOnHand ?? 10m;
+                            remainingQty = Math.Max(0m, curOnHand - 2m);
+                            if (remainingQty == curOnHand) remainingQty = curOnHand + 3m;
+                        }
+                        else
+                        {
+                            remainingQty = 3m;
+                        }
+
+                        decimal nextReq = Math.Max(5m, dl.PlannedQuantity);
+                        receiptLinesReq.Add(new ReceiptLineRequest(dl.Id, dl.LotId, accepted, rejected, "U", reason, remainingQty, nextReq));
+                    }
+                    else
+                    {
+                        receiptLinesReq.Add(new ReceiptLineRequest(dl.Id, dl.LotId, dl.DispatchedQuantity, 0m, "U"));
+                    }
+                }
+
+                var rcptOpId = DeterministicGuid(request.OperationId, $"rcpt:{del.Id}");
+                var receiptReq = new CreateReceiptRequest(rcptOpId, del.Version, occurredAt, receiptLinesReq);
+                var receiptResp = await CreateReceiptCoreAsync(del.Id, receiptReq, actorAccountId, $"adv-rcpt-{del.Id:N}", ct);
+
+                stopCompletedList.Add(new CompletedStopDto(
                     stop.SequenceNumber,
                     del.Id,
                     receiptResp.ReceiptId,
-                    occurredAt));
+                    occurredAt,
+                    stopHadIncident,
+                    totalRejected,
+                    incidentReason));
             }
+
+            return stopCompletedList;
         }
 
-        var response = new DemoAdvanceResponse(completedStops);
+        var mode = request.Mode?.Trim().ToLowerInvariant();
+        var completedStops = new List<CompletedStopDto>();
+        string? checkpointCompleted = null;
+        string nextCheckpoint = string.Empty;
+
+        bool uncreatedExist = deliveries.Any(d => husByDelId.GetValueOrDefault(d.Id)?.Count is null or 0);
+        bool draftExist = deliveries.Any(d => d.Status == DeliveryStates.Draft);
+        var pendingStops = allStops.Where(s => s.Status != "Completed").OrderBy(s => s.SequenceNumber).ToList();
+
+        if (mode == "next")
+        {
+            if (uncreatedExist)
+            {
+                await PrepareDeliveriesCoreAsync(deliveries.Where(d => husByDelId.GetValueOrDefault(d.Id)?.Count is null or 0));
+                checkpointCompleted = "Preparación en bodega";
+                nextCheckpoint = "Despacho a vehículo";
+            }
+            else if (draftExist)
+            {
+                var firstStop = allStops.FirstOrDefault();
+                var dispTime = firstStop?.PlannedArrivalUtc?.AddMinutes(-30) ?? DateTime.UtcNow;
+                await DispatchDeliveriesCoreAsync(deliveries.Where(d => d.Status == DeliveryStates.Draft), dispTime);
+                checkpointCompleted = "Despacho a vehículo";
+                var nextStop = pendingStops.FirstOrDefault();
+                nextCheckpoint = nextStop != null
+                    ? $"Parada {nextStop.SequenceNumber}: {servicePoints.GetValueOrDefault(nextStop.ServicePointId, "Punto de Entrega")}"
+                    : "Ruta finalizada";
+            }
+            else if (pendingStops.Count > 0)
+            {
+                var stopToRun = pendingStops[0];
+                var ptName = servicePoints.GetValueOrDefault(stopToRun.ServicePointId, "Punto de Entrega");
+                checkpointCompleted = $"Parada {stopToRun.SequenceNumber}: {ptName}";
+                var stopResults = await AdvanceStopCoreAsync(stopToRun, generateIncident: false);
+                completedStops.AddRange(stopResults);
+
+                var remainingAfter = pendingStops.Skip(1).ToList();
+                nextCheckpoint = remainingAfter.Count > 0
+                    ? $"Parada {remainingAfter[0].SequenceNumber}: {servicePoints.GetValueOrDefault(remainingAfter[0].ServicePointId, "Punto de Entrega")}"
+                    : "Ruta finalizada";
+            }
+            else
+            {
+                checkpointCompleted = "Ruta finalizada";
+                nextCheckpoint = "Ruta finalizada";
+            }
+        }
+        else if (mode == "half")
+        {
+            await PrepareDeliveriesCoreAsync(deliveries);
+            var firstStop = allStops.FirstOrDefault();
+            var dispTime = firstStop?.PlannedArrivalUtc?.AddMinutes(-30) ?? DateTime.UtcNow;
+            await DispatchDeliveriesCoreAsync(deliveries, dispTime);
+
+            int countToRun = (int)Math.Ceiling(pendingStops.Count / 2.0);
+            var stopsToRun = pendingStops.Take(countToRun).ToList();
+            double rate = request.NoveltyRate is > 0 and <= 1 ? request.NoveltyRate.Value : 0.35;
+
+            for (int i = 0; i < stopsToRun.Count; i++)
+            {
+                bool withInc = request.WithIncidents && ((rng.NextDouble() < rate) || (i == 0 && request.WithIncidents));
+                var stopResults = await AdvanceStopCoreAsync(stopsToRun[i], withInc);
+                completedStops.AddRange(stopResults);
+            }
+
+            checkpointCompleted = $"Media ruta ({stopsToRun.Count} paradas completadas)";
+            var remainingAfter = pendingStops.Skip(countToRun).ToList();
+            nextCheckpoint = remainingAfter.Count > 0
+                ? $"Parada {remainingAfter[0].SequenceNumber}: {servicePoints.GetValueOrDefault(remainingAfter[0].ServicePointId, "Punto de Entrega")}"
+                : "Ruta finalizada";
+        }
+        else // complete or legacy stops count
+        {
+            await PrepareDeliveriesCoreAsync(deliveries);
+            var firstStop = allStops.FirstOrDefault();
+            var dispTime = firstStop?.PlannedArrivalUtc?.AddMinutes(-30) ?? DateTime.UtcNow;
+            await DispatchDeliveriesCoreAsync(deliveries, dispTime);
+
+            List<RouteStop> stopsToRun;
+            if (mode == "complete" || (string.IsNullOrWhiteSpace(mode) && request.Stops == 0))
+            {
+                stopsToRun = pendingStops;
+            }
+            else
+            {
+                stopsToRun = pendingStops.Take(Math.Max(1, request.Stops)).ToList();
+            }
+
+            double rate = request.NoveltyRate is > 0 and <= 1 ? request.NoveltyRate.Value : 0.35;
+
+            for (int i = 0; i < stopsToRun.Count; i++)
+            {
+                bool withInc = request.WithIncidents && ((rng.NextDouble() < rate) || (i == 0 && request.WithIncidents));
+                var stopResults = await AdvanceStopCoreAsync(stopsToRun[i], withInc);
+                completedStops.AddRange(stopResults);
+            }
+
+            int remainingCount = allStops.Count - allStops.Count(s => s.Status == "Completed");
+            checkpointCompleted = remainingCount == 0 ? "Ruta completada" : $"Avance de {stopsToRun.Count} paradas";
+            nextCheckpoint = remainingCount == 0 ? "Ruta finalizada" : "Paradas pendientes restantes";
+        }
+
+        int completedCount = allStops.Count(s => s.Status == "Completed");
+        string finalStatus = completedCount == allStops.Count && allStops.Count > 0 ? "Completed"
+            : completedCount > 0 ? "InProgress" : "Published";
+
+        var response = new DemoAdvanceResponse(
+            completedStops,
+            checkpointCompleted,
+            nextCheckpoint,
+            allStops.Count,
+            completedCount,
+            finalStatus);
+
         _db.IdempotencyRecords.Add(new IdempotencyRecord
         {
             OrganizationId = DemoOrganization.Id,

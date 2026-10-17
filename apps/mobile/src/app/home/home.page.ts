@@ -147,6 +147,25 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
         </button>
       }
 
+      <!-- Botón Simulador Demo (visible solo si FieldSimulation:Enabled está activo) -->
+      @if (demoAvailable()) {
+        <div class="mb-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00A7C4] animate-pulse"></span>
+            <div>
+              <span class="font-bold text-xs text-[#04303B] block">Simulador de Campo (Demo)</span>
+              <span class="text-[10px] text-slate-600">Ejecutar rutas publicadas del día sin labor física</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="openDemoSimulation()"
+            class="px-3 py-1.5 bg-[#00A7C4] hover:bg-[#008CA5] text-white text-xs font-bold rounded-lg shadow-xs transition">
+            Abrir Demo →
+          </button>
+        </div>
+      }
+
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
@@ -416,7 +435,7 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
               <div class="space-y-3">
                 <div class="flex items-center justify-between text-xs text-slate-500 font-mono px-1">
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
-                  <span>Vehículo: {{ route.vehicleCode }}</span>
+                  <span>Vehículo: {{ $any(route).vehicleDescription || $any(route).vehiclePlate || route.vehicleCode }}</span>
                 </div>
 
                 @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
@@ -1096,6 +1115,7 @@ export class HomePage {
 
   readonly loadingRoute = signal<boolean>(false);
   readonly showAssignedRoute = signal(false);
+  readonly demoAvailable = signal<boolean>(false);
 
   // Estados visuales
   readonly searchOpen = signal<boolean>(false);
@@ -1239,16 +1259,34 @@ export class HomePage {
   }
 
   async ngOnInit(): Promise<void> {
+    this.checkDemoAvailability();
     // Si es conductor y no hay ruta en caché, intentar descargarla
     if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
   }
+
   ionViewWillEnter(): void {
+    this.checkDemoAvailability();
     const qr = history.state?.receiverQr;
     if (this.authService.currentRole() === 'Receptor' && qr?.unitId && qr?.token) {
       void this.loadReceiverUnit(qr.unitId, qr.token);
     }
+  }
+
+  checkDemoAvailability(): void {
+    if (typeof this.fieldApi?.getTodayRoutePlans !== 'function') {
+      this.demoAvailable.set(false);
+      return;
+    }
+    this.fieldApi.getTodayRoutePlans().subscribe({
+      next: () => this.demoAvailable.set(true),
+      error: () => this.demoAvailable.set(false)
+    });
+  }
+
+  openDemoSimulation(): void {
+    this.router.navigate(['/demo']);
   }
 
   // --- Métodos de Interacción del Nuevo Diseño ---
@@ -1285,15 +1323,27 @@ export class HomePage {
   }
 
   async openMenuAlert(): Promise<void> {
+    const buttons: any[] = [
+      { text: 'Escanear QR de Custodia', handler: () => this.openScan() },
+      { text: 'Cola de Sincronización', handler: () => this.openSyncQueue() }
+    ];
+
+    if (this.demoAvailable()) {
+      buttons.push({
+        text: '⚡ Simulador de Campo (Demo)',
+        handler: () => this.openDemoSimulation()
+      });
+    }
+
+    buttons.push(
+      { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
+      { text: 'Cancelar', role: 'cancel' }
+    );
+
     const alert = await this.alerts.create({
       header: this.authService.me()?.displayName || 'Alexander Martinez',
       subHeader: `Rol: ${this.roleSubtitle() || 'Operador de Campo'}`,
-      buttons: [
-        { text: 'Escanear QR de Custodia', handler: () => this.openScan() },
-        { text: 'Cola de Sincronización', handler: () => this.openSyncQueue() },
-        { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
-        { text: 'Cancelar', role: 'cancel' }
-      ]
+      buttons
     });
     await alert.present();
   }

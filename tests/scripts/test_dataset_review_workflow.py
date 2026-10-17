@@ -215,6 +215,65 @@ class DatasetReviewWorkflowTests(unittest.TestCase):
         self.assertEqual("La API no devolvio un reporte de importacion legible.", invalid["resumen"])
         self.assertEqual("invalid_report", invalid["agentError"])
 
+    def test_check_token_accepts_raw_json_body_payload(self):
+        item = {
+            "headers": {"x-istpetdev-review-token": "test-secret"},
+            "body": [{"code": "P-1", "name": "Punto de entrega"}]
+        }
+        authorized = run_node(self.workflow, "Check Token", item, full=True)
+        self.assertTrue(authorized["json"]["authorized"])
+        self.assertIsNone(authorized["json"]["reason"])
+        self.assertEqual("dataset.json", authorized["binary"]["file"]["fileName"])
+        self.assertEqual("application/json", authorized["binary"]["file"]["mimeType"])
+
+    def test_api_problem_details_400_for_unsupported_json_reports_error_cleanly(self):
+        problem_400 = {
+            "statusCode": 400,
+            "body": {
+                "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                "title": "No se pudo identificar el contenido de dataset.json.",
+                "status": 400,
+                "detail": "Formato '.json' no soportado. Guarde el archivo como .csv o .xlsx."
+            }
+        }
+        analysis = run_node(self.workflow, "Analizar viabilidad", problem_400)
+        self.assertFalse(analysis["valid"])
+        self.assertEqual("unsupported_file_format", analysis["error"])
+        self.assertEqual("Formato no soportado", analysis["veredicto"])
+        self.assertEqual("Formato no soportado", analysis["dictamen"]["veredicto"])
+        self.assertEqual(1, analysis["dictamen"]["importacion"]["errores"])
+        self.assertEqual("400", analysis["dictamen"]["importacion"]["estado"])
+        self.assertIn(".csv o .xlsx", analysis["dictamen"]["error"])
+
+        result = run_node(self.workflow, "Prepare Result", {"output": None}, nodes={"Analizar viabilidad": analysis})
+        self.assertEqual("Formato no soportado", result["veredicto"])
+        self.assertEqual("unsupported_file_format", result["agentError"])
+        self.assertIn("Formato no soportado", result["resumen"])
+        self.assertIn("Formato '.json' no soportado. Guarde el archivo como .csv o .xlsx.", result["resumen"])
+        self.assertNotIn("Viable con limitaciones", result["resumen"])
+        self.assertNotIn("sin errores", result["resumen"])
+
+    def test_api_internal_error_500_does_not_generate_viable_verdict(self):
+        error_500 = {
+            "statusCode": 500,
+            "body": {
+                "title": "Error interno al ejecutar el dry-run",
+                "status": 500,
+                "detail": "Fallo de conexión con el motor de base de datos"
+            }
+        }
+        analysis = run_node(self.workflow, "Analizar viabilidad", error_500)
+        self.assertFalse(analysis["valid"])
+        self.assertEqual("internal_api_error", analysis["error"])
+        self.assertEqual("Error interno del importador", analysis["veredicto"])
+        self.assertEqual(1, analysis["dictamen"]["importacion"]["errores"])
+
+        result = run_node(self.workflow, "Prepare Result", {"output": None}, nodes={"Analizar viabilidad": analysis})
+        self.assertEqual("Error interno del importador", result["veredicto"])
+        self.assertNotIn("Viable con limitaciones", result["resumen"])
+        self.assertNotIn("sin errores", result["resumen"])
+        self.assertIn("Fallo de conexión con el motor de base de datos", result["resumen"])
+
 
 if __name__ == "__main__":
     unittest.main()
