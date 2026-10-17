@@ -205,11 +205,11 @@ para(c1, "IstpetDev", 13, True, DARK, after=8)
 for name in ("Bryan Baño", "Jorge Doicela", "Joseph Baño", "Anthony Pilatasig", "Alexander Martínez"):
     para(c1, name, 10.5, False, DARK, after=1)
 para(c2, "FECHA", 9, True, GREY, after=2)
-para(c2, "16 de octubre de 2026", 11, False, DARK, after=8)
+para(c2, "17 de octubre de 2026", 11, False, DARK, after=8)
 para(c2, "LUGAR", 9, True, GREY, after=2)
 para(c2, "Quito, Ecuador", 11, False, DARK, after=8)
 para(c2, "VERSIÓN", 9, True, GREY, after=2)
-para(c2, "Borrador para el Checkpoint de avances", 11, False, DARK, after=8)
+para(c2, "Versión para la entrega del 17 de octubre de 2026", 11, False, DARK, after=8)
 for c in (c1, c2):
     c.paragraphs[0]._p.getparent().remove(c.paragraphs[0]._p)
 
