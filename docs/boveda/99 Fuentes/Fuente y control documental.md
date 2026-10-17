@@ -73,7 +73,7 @@ Estas fuentes verifican límites de plataforma y convenciones; no validan el aho
 | 2026-10-07 | Skills y archivos de IA fuera de la bóveda | Se dejan de versionar `.agents/`, `.claude/`, `AGENTS.md`, `CLAUDE.md` y `GEMINI.md` (quedan en [[Catalogo y plan de skills]] como documentación, con una nota por skill en `08 Skills/`); el verificador pasa a `.github/scripts/check_vault.py` |
 | 2026-10-08 | Skill istpetdev-dbflow incorporada a la bóveda | Flujo colaborativo de base de datos en RDS dev, aislamiento por integrante, túnel SSM y resolución de conflictos incorporado a `08 Skills/` y al catálogo |
 | 2026-10-11 | Formalización y cierre de decisiones Frontend (ADR-04, ADR-05, ADR-17, ADR-18) | Jefe de Frontend y Bryan: Leaflet para mapas en shared/ui/map-view, Arquetipo B Técnico/Minimalista con Lucide Icons y tokens Tailwind, PWA offline con signature_pad e idb, cliente OIDC PKCE para Cognito |
-| 2026-10-11 | Normativa cromática oficial Expo Clean Ecuador y tokens de diseño | Identidad gráfica canónica extraída del material oficial del evento (Clean Cyan `#00A7C4`, Expo Lime `#9EC200`, Energy Orange `#EA601F`) en [[Sistema de diseno y colores]] y configurada en Tailwind |
+| 2026-10-11 | Normativa cromática oficial Expo Clean Ecuador y tokens de diseño | Identidad gráfica canónica extraída del material oficial del evento (Clean Cyan `#00A7C4`, Expo Lime `#9EC200`, Energy Orange `#EA601F`) en [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]] y configurada en Tailwind |
 | Pendiente | Respuestas de capacitación | Actualizar reglas/alcance al recibirlas |
 
 ## Actualizar el manual
@@ -130,7 +130,7 @@ Fuente: acuerdo técnico liderado por el Jefe de Frontend junto a Bryan para hab
 
 ## Normativa cromática oficial Expo Clean Ecuador — 11 de octubre de 2026
 
-Fuente: flyer promocional oficial y material de difusión de la Feria Internacional de Limpieza e Higiene Profesional — Expo Clean Ecuador 2026 (Centro de Exposiciones Quito). Se define formalmente [[Sistema de diseno y colores]], estableciendo los tokens semánticos en Tailwind CSS (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`, Slate `#2D3748`) para `apps/web` y `apps/mobile`, armonizados con [[Requisitos y aceptacion|RNF-09]] (accesibilidad multicanal de estados) y el Arquetipo B.
+Fuente: flyer promocional oficial y material de difusión de la Feria Internacional de Limpieza e Higiene Profesional — Expo Clean Ecuador 2026 (Centro de Exposiciones Quito). Se define formalmente [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]], estableciendo los tokens semánticos en Tailwind CSS (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`, Slate `#2D3748`) para `apps/web` y `apps/mobile`, armonizados con [[Requisitos y aceptacion|RNF-09]] (accesibilidad multicanal de estados) y el Arquetipo B.
 
 Validación del 11 de octubre: **72 notas Markdown**, **585 enlaces internos resueltos**, frontmatter, enlaces e integridad de bóveda comprobados por el verificador.
 

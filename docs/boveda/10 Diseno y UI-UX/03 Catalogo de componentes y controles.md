@@ -18,6 +18,8 @@ flowchart TD
         Tabs["4. Pestañas Horizontales<br>(-mb-px subrayadas)"]
         Drawers["5. Drawers Laterales<br>(fixed inset-0 !m-0)"]
         Tablas["6. Tablas y Tarjetas<br>(Bordes #E3E8EE, Divisores #F1F3F5)"]
+        Buscador["7. Barra de Búsqueda y Filtros<br>(Input ancho completo + Botón embudo)"]
+        Empty["8. Estados de Vacío<br>(Círculo #F1F3F5 y Sin resultados)"]
     end
 ```
 
@@ -189,3 +191,124 @@ Las pestañas no utilizan fondos oscuros ni cajas rectangulares toscas. Siguen e
 * **Cabecera de Tabla (`thead`):** `bg-[#F8FAFC] border-b border-[#E3E8EE] text-[11px] font-semibold text-[#4F566B] uppercase tracking-wider`.
 * **Separador de Filas:** `divide-y divide-[#F1F3F5]`.
 * **Fila Interactiva:** `hover:bg-slate-50/60 transition-colors text-xs text-[#30313D]`.
+
+---
+
+## 7. Barra de Búsqueda de Ancho Completo con Filtros y Columnas
+
+Patrón extraído directamente de las capturas de la consola ejecutiva (Imágenes 4 y 5):
+
+* **Estructura:** Fila horizontal con selector segmentado de píldoras arriba (`Todo`, `Activo`, `En Observación`), seguido de un buscador de ancho completo con botón de filtros rápidos y botón de configuración de columnas.
+* **Clases Tailwind:**
+  * Contenedor de búsqueda: `relative flex-1 flex items-center`.
+  * Input de ancho completo: `w-full h-9 pl-9 pr-4 text-xs bg-white border border-[#E3E8EE] rounded-md text-[#30313D] placeholder-[#8792A2] focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] focus:outline-none transition-colors`.
+  * Icono de lupa: `absolute left-3 text-[#8792A2] pointer-events-none`.
+  * Botón Filtrar con embudo: `h-9 px-3 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs`.
+  * Botón de Columnas: `h-9 w-9 rounded-md border border-[#E3E8EE] bg-white text-[#4F566B] hover:text-[#1A2C44] hover:bg-slate-50 transition-colors flex items-center justify-center shadow-2xs`.
+
+```html
+<!-- Fila de Filtros en Píldora -->
+<div class="flex items-center gap-2 mb-3">
+  <button 
+    type="button"
+    class="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+    [ngClass]="activeFilter() === 'all' 
+      ? 'border-[#1A2C44] bg-white text-[#1A2C44] font-semibold' 
+      : 'border-transparent text-[#697386] hover:text-[#1A2C44]'">
+    Todo
+  </button>
+  <button 
+    type="button"
+    class="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+    [ngClass]="activeFilter() === 'critical' 
+      ? 'border-[#1A2C44] bg-white text-[#1A2C44] font-semibold' 
+      : 'border-transparent text-[#697386] hover:text-[#1A2C44]'">
+    Críticos
+  </button>
+</div>
+
+<!-- Barra de Búsqueda y Botones de Utilidad -->
+<div class="flex items-center gap-2">
+  <div class="relative flex-1 flex items-center">
+    <svg class="absolute left-3 w-4 h-4 text-[#8792A2]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <input 
+      type="text" 
+      placeholder="Busca por nombre, código o destino..." 
+      class="w-full h-9 pl-9 pr-4 text-xs bg-white border border-[#E3E8EE] rounded-md text-[#30313D] placeholder-[#8792A2] focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] focus:outline-none transition-colors" />
+  </div>
+
+  <button 
+    type="button" 
+    class="h-9 px-3 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs">
+    <svg class="w-3.5 h-3.5 text-[#697386]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+    </svg>
+    <span>Filtrar</span>
+  </button>
+
+  <button 
+    type="button" 
+    title="Configurar columnas"
+    class="h-9 w-9 rounded-md border border-[#E3E8EE] bg-white text-[#4F566B] hover:text-[#1A2C44] hover:bg-slate-50 transition-colors flex items-center justify-center shadow-2xs">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="4" y1="21" x2="4" y2="14"></line>
+      <line x1="4" y1="10" x2="4" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12" y2="3"></line>
+      <line x1="20" y1="21" x2="20" y2="16"></line>
+      <line x1="20" y1="12" x2="20" y2="3"></line>
+    </svg>
+  </button>
+</div>
+```
+
+---
+
+## 8. Estados de Vacío y Sin Resultados (Empty States)
+
+Patrones canónicos de Stripe Dashboard para listas sin datos (Imagen 4) y búsquedas sin coincidencias (Imagen 5):
+
+### 8.1 Estado de Vacío Canónico (Primer Uso o Sin Registros)
+Contenedor sobrio centrado verticalmente:
+
+```html
+<div class="p-12 text-center flex flex-col items-center justify-center bg-white border border-[#E3E8EE] rounded-xl">
+  <!-- Círculo de icono neutro -->
+  <div class="w-12 h-12 rounded-full bg-[#F1F3F5] text-[#4F566B] flex items-center justify-center mb-4">
+    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  </div>
+  <h4 class="text-sm font-bold text-[#1A2C44]">No hay rutas planificadas para hoy</h4>
+  <p class="text-xs text-[#697386] max-w-sm mt-1 mb-4 leading-relaxed">
+    Genere una nueva propuesta de distribución a partir de los pedidos hospitalarios pendientes.
+  </p>
+  <button 
+    type="button" 
+    class="h-9 px-4 bg-white border border-[#E3E8EE] hover:bg-slate-50 text-[#30313D] text-xs font-medium rounded-md shadow-2xs transition-colors inline-flex items-center gap-1.5">
+    + Iniciar planificación
+  </button>
+</div>
+```
+
+### 8.2 Estado Sin Coincidencias de Búsqueda (Filtro Activo)
+Barra horizontal limpia con botón de restablecimiento:
+
+```html
+<div class="p-4 rounded-xl border border-[#E3E8EE] bg-white flex items-center justify-between">
+  <div>
+    <h5 class="text-xs font-bold text-[#1A2C44]">Sin resultados</h5>
+    <p class="text-xs text-[#697386] mt-0.5">Ningún registro coincide con los criterios de búsqueda seleccionados.</p>
+  </div>
+  <button 
+    type="button"
+    (click)="resetFilters()"
+    class="h-8 px-3 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 transition-colors shadow-2xs">
+    Borrar todo
+  </button>
+</div>
+```

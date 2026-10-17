@@ -84,7 +84,7 @@ Referencia de la skill `istpetdev-frontend`. Nada de esto reemplaza una decisió
 Estado: **Aceptado y ratificado (Arquetipo B — Técnico/Minimalista con Identidad Expo Clean Ecuador).**
 
 - **Estilo:** Función antes que decoración, espacio en blanco generoso, tipografía sans neutral y tipografía monoespaciada para cifras, color disciplinado enfocado en acción y estado logístico.
-- **Paleta oficial:** Extraída del material oficial de Expo Clean Ecuador ([[Sistema de diseno y colores]]):
+- **Paleta oficial:** Extraída del material oficial de Expo Clean Ecuador ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]):
   - Primario (`primary`): Clean Cyan `#00A7C4` (higiene, agua, desinfección, navegación).
   - Secundario (`secondary`): Expo Lime `#9EC200` (sostenibilidad, insumos verdes, stock en regla).
   - Acento (`accent` / `cta`): Energy Orange `#EA601F` (botones de acción crítica, escaneo QR, alerta preventiva).
