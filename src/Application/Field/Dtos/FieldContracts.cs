@@ -32,6 +32,8 @@ public static class FieldErrorCodes
     public const string IncompleteHandlingUnits = "INCOMPLETE_HANDLING_UNITS";
     public const string InsufficientVehicleStock = "INSUFFICIENT_VEHICLE_STOCK";
     public const string ReceiptCoverageMismatch = "RECEIPT_COVERAGE_MISMATCH";
+    public const string InvalidGuideNumber = "INVALID_GUIDE_NUMBER";
+    public const string AmbiguousGuideNumber = "AMBIGUOUS_GUIDE_NUMBER";
     public const string InvalidOperationId = "INVALID_OPERATION_ID";
 }
 
