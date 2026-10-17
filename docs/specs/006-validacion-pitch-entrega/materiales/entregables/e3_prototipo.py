@@ -36,13 +36,13 @@ tabla(doc, ("Componente", "Estado", "Evidencia y límite"), [
 h1(doc, "3", "El sistema en funcionamiento")
 para(doc, "Capturas del prototipo desplegado en https://istpetdev.doicela.dev.", 9.5, False, GREY, after=6)
 figura(doc, IMG / "captura-rutas.png", ANCHO,
-       "Figura 1. Planificación de rutas: seis vehículos, paradas numeradas sobre calles reales, ventanas horarias y hora estimada de llegada.")
+       "Figura 1. Planificación de rutas en la escena de demostración (datos sintéticos): paradas numeradas sobre calles reales, ventanas horarias y hora estimada de llegada.")
 grid = doc.add_table(rows=1, cols=2)
 borders(grid, "FFFFFF", "0")
 a, b = grid.cell(0, 0), grid.cell(0, 1)
 a.paragraphs[0].add_run().add_picture(str(IMG / "captura-consola.png"), width=Cm(11.2))
 a.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-para(a, "Figura 2. Consola de control: red de 80 centros de salud, riesgo de stock, rutas y custodia digital.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
+para(a, "Figura 2. Consola de control con datos sintéticos: riesgo de stock, rutas y custodia digital.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
 pic = b.paragraphs[0].add_run().add_picture(str(IMG / "captura-qr.png"), height=Cm(6.6))
 src = OxmlElement("a:srcRect"); src.set("r", "18000")
 pic._inline.graphic.graphicData.pic.blipFill.insert(1, src)
@@ -62,10 +62,11 @@ tabla(doc, ("Opción", "Costo total", "Críticos a tiempo", "Costo frente a A", 
     ("B · Propia, críticos primero", "USD 69,89", "6 de 6 (100 %)", "+20,7 %", "89,1"),
     ("C · Operador contratado", "USD 66,90", "6 de 6 (100 %)", "+15,6 %", "90,8"),
 ], (Cm(4.6), Cm(2.8), Cm(3.4), Cm(3.0), Cm(2.8)))
-para(doc, "El motor recomienda C: pondera por igual costo y críticos a tiempo, más pedidos pendientes y riesgo. "
-          "La opción más barata no siempre es la mejor. C cuesta 4,3 % menos que B.", after=6)
+para(doc, "El motor recomienda C con un puntaje que pondera costo (35 %), críticos a tiempo (35 %), pedidos pendientes (20 %) y riesgo (10 %); "
+          "los pesos son configurables y no están calibrados con datos de una empresa. La opción más barata no siempre es la mejor. "
+          "C cuesta 4,3 % menos que B (USD 2,99).", after=6)
 aviso(doc, "Límite:", "es un ensayo técnico local sobre datos sintéticos; no representa clientes ni viajes medidos y todavía "
-                     "no corre en producción. El desglose por componente de esa corrida no suma el total y no se presenta.")
+                     "no corre en producción. Es una sola corrida: con otra semilla o con otros pesos el orden podría cambiar. El desglose por componente de esa corrida no suma el total y no se presenta.")
 
 h2(doc, "Recorrido de la demostración")
 for n, t in enumerate([

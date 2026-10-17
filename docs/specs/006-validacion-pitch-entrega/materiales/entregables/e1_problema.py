@@ -48,13 +48,13 @@ tabla(doc, ("Dolor", "Necesidad que expresa", "Relación con IstpetDev"), [
 
 h1(doc, "4", "Qué evidencia tenemos y qué no")
 para(doc, "Distinguimos lo que escuchamos de lo que medimos:", after=4)
-bullet(doc, [("Tenemos: ", True), ("testimonios del sector recogidos en la charla del 16-oct y el escenario de referencia de 80 puntos "
+bullet(doc, [("Tenemos: ", True), ("testimonios del sector recogidos en la charla del 16-oct y el escenario sintético de Quito de 40 puntos "
              "planteado por el equipo (un hospital sin desinfectante cuando llama).", False)])
 bullet(doc, [("No tenemos: ", True), ("una entrevista con el comprador, un número de días de anticipación que el sector considere "
-             "adecuado, ni cifras de pérdida por faltantes. El escenario de 80 puntos es una ilustración hasta que una empresa lo valide.", False)])
+             "adecuado, ni cifras de pérdida por faltantes. El escenario de 40 puntos es una ilustración hasta que una empresa lo valide.", False)])
 bullet(doc, [("Ejemplos del expositor, no datos nuestros: ", True), ("las casi 400 referencias de producto, las promociones 6+1 y 12+2 y el mínimo "
              "de 15 entregas por camión son ejemplos del expositor, no límites del escenario.", False)])
-aviso(doc, "Límite:", "no se validaron los 80 puntos, el caso concreto del hospital, el ahorro, la disposición de pago ni la "
+aviso(doc, "Límite:", "no se validaron los 40 puntos, el caso concreto del hospital, el ahorro, la disposición de pago ni la "
                       "aceptación del producto. Por eso tratamos el problema como hipótesis fundada en testimonio, no como cifra.")
 
 h1(doc, "5", "Hipótesis que queremos validar")

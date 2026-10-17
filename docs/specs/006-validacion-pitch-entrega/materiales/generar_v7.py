@@ -54,9 +54,8 @@ def slide_case(deck):
     sh = s.shapes
     tl = Timeline()
     head = chrome(deck, s, True, "El caso", "Los mismos pedidos, tres maneras de atenderlos",
-                  "Fuente: ensayo técnico #285 (demo-quito-planificacion): 4 pedidos, 6 entregas "
-                  "críticas; opciones A, B y C de 02-suggest-pitch-abc.json · matriz P-02, P-04, "
-                  "P-05. Escenario sintético: no son clientes ni operaciones medidas.", 0)
+                  "Fuente: ensayo técnico del motor sobre un escenario sintético de Quito: 4 pedidos, "
+                  "6 entregas críticas, opciones A, B y C. No son clientes ni operaciones medidas.", 0)
     tl.add(head, "fade", dur=400)
 
     top, oh, gap = 1.85, 1.0, 0.18           # alto de cada opción y separación
@@ -165,9 +164,8 @@ def slide_new(deck):
     sh = s.shapes
     tl = Timeline()
     head = chrome(deck, s, False, "Innovación", "A la entrega le ponemos costo completo",
-                  "Fuente: matriz A-02 (hipótesis del sector), A-06, A-08, A-10, A-11 y A-12 "
-                  "(run n8n 292, respaldo sin IA). Lo del sector es lo que escuchamos, no una "
-                  "medición.", 0)
+                  "Fuente: lo del sector es lo que escuchamos en la charla, no una medición. Una "
+                  "corrida registrada del agente incluyó su caída a la explicación de respaldo.", 0)
     tl.add(head, "fade", dur=400)
     gap = 0.4
     cw = (W - 2 * MARGIN - gap) / 2
@@ -208,9 +206,8 @@ def slide_impact_model(deck):
     sh = s.shapes
     tl = Timeline()
     head = chrome(deck, s, False, "Impacto y modelo", "Lo medimos en un piloto, contra una línea base",
-                  "Fuente: matriz A-21 (sin ahorro prometido), A-26 y A-30 (costo y precio por "
-                  "validar), A-31 (modelo), P-07 (indicadores en curso); pantalla Reportes "
-                  "(código en develop, sin ensayo de la escena). Sujeto a validación.", 0)
+                  "Fuente: sin ahorro prometido; costo y precio por validar en el piloto; modelo "
+                  "como hipótesis. La sección Reportes existe en el sistema, sin ensayo de la escena.", 0)
     tl.add(head, "fade", dur=400)
     lw = 7.2
     items = [
@@ -253,7 +250,7 @@ def slide_close(deck):
     tl = Timeline()
     right = CHILLO_RIGHT
     head = chrome(deck, s, True, "Próximo paso", "Un piloto con una empresa de limpieza",
-                  "Fuente: matriz A-21, A-32 y P-02. Propuesta sin contraparte confirmada; "
+                  "Fuente: propuesta sin contraparte confirmada ni cliente comprometido; "
                   "sujeta a validación.", 0, source_right=right)
     tl.add(head, "fade", dur=400)
     gallo = chillo_full(deck, s, 10.42, 6.72, 4.3)
@@ -317,8 +314,8 @@ def slide_cover(deck):
     gallo = chillo_full(deck, s, 9.95, 7.32, 5.05)
     tl.add(gallo, "zoom", dur=550)
     msg = bubble(s, 8.0, 0.55, 5.05, 1.2,
-                 [("¡Hola! Soy Chillo: usamos ", False),
-                  ("IA para planificar rutas", True), (" y llegar antes que la llamada.", False)],
+                 [("¡Hola! Soy Chillo: el motor ", False),
+                  ("calcula y la IA explica", True), (" para llegar antes que la llamada.", False)],
                  tail_x=11.2, tail_y=2.4, size=15)
     tl.add(msg, "fade", mode="click", dur=400)
     record(deck, s, tl, "Portada · gancho",
@@ -333,17 +330,18 @@ def slide_validation(deck):
     sh = s.shapes
     tl = Timeline()
     head = chrome(deck, s, True, "Validación", "Lo que hay, sin humo",
-                  "Fuente: matriz de afirmaciones P-02, P-04, P-05, A-03, A-11, A-12, A-13, A-15, "
-                  "A-21 y #198. Escenario sintético de Quito: 40 puntos, no son clientes.", 0)
+                  "Fuente: escenario sintético de Quito: 40 puntos, no son clientes. El recorrido sin "
+                  "señal está construido y aún no se ensayó en un teléfono real.", 0)
     tl.add(head, "fade", dur=400)
     cols = [
         ("Construido", [("Inventario con alertas", False), ("Motor de rutas y costo de servir", False),
                         ("Agente IA con n8n", False), ("Custodia con QR y captura sin señal", False)]),
-        ("Probado", [("Motor y comparación A/B/C en un ensayo técnico con escenario sintético "
+        ("Ensayado", [("Motor y comparación A/B/C en un ensayo técnico con escenario sintético "
                       "de Quito", False),
                      ("Corrida registrada del agente, incluida su caída al respaldo", False)]),
         ("Siguiente fase", [("Usarlo en una empresa real: cargar sus datos y medir contra su "
                              "línea base", True),
+                            ("Probar el recorrido sin señal en un teléfono real", True),
                             ("Llevar la comparación A/B/C a producción", False)]),
     ]
     gap = 0.3
@@ -366,7 +364,7 @@ def slide_validation(deck):
                  19, DORADO_CLARO, bold=True, italic=True, align=PP_ALIGN.CENTER, label="cita")
     tl.add(quote, "fade", mode="click", dur=450)
     record(deck, s, tl, "Validación · construido, probado, siguiente fase",
-           "Auto: título → Construido. Clic 1: Probado. Clic 2: Siguiente fase. Clic 3: frase final.")
+           "Auto: título → Construido. Clic 1: Ensayado. Clic 2: Siguiente fase. Clic 3: frase final.")
 
 
 def build(animated: bool, pptx: Path, export: bool):

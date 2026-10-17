@@ -308,13 +308,13 @@ h1(doc, "5", "El sistema en funcionamiento")
 para(doc, "Capturas del prototipo desplegado en https://istpetdev.doicela.dev, 16-oct-2026.", 9.5, False, GREY, after=6)
 doc.add_picture(str(IMG / "captura-rutas.png"), width=Cm(16.6))
 doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-para(doc, "Figura 2. Planificación de rutas: seis vehículos, paradas numeradas sobre calles reales, ventanas horarias y hora estimada de llegada.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=8)
+para(doc, "Figura 2. Planificación de rutas en la escena de demostración (datos sintéticos): paradas numeradas sobre calles reales, ventanas horarias y hora estimada de llegada.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=8)
 grid = doc.add_table(rows=1, cols=2)
 borders(grid, "FFFFFF", "0")
 a, b = grid.cell(0, 0), grid.cell(0, 1)
 a.paragraphs[0].add_run().add_picture(str(IMG / "captura-consola.png"), width=Cm(11.2))
 a.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-para(a, "Figura 3. Consola de control: red de 80 centros de salud, riesgo de stock, rutas y custodia digital.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
+para(a, "Figura 3. Consola de control con datos sintéticos: riesgo de stock, rutas y custodia digital.", 8.5, False, GREY, WD_ALIGN_PARAGRAPH.CENTER, after=4)
 pic = b.paragraphs[0].add_run().add_picture(str(IMG / "captura-qr.png"), height=Cm(6.6))
 blip = pic._inline.graphic.graphicData.pic.blipFill
 src = OxmlElement("a:srcRect"); src.set("r", "18000")
@@ -368,7 +368,7 @@ for u, hoy, con in [
 fix_widths(ut, (Cm(3.2), Cm(6.6), Cm(6.8)))
 
 h1(doc, "7", "Alcance actual y próximos pasos")
-bullet(doc, [("En vivo: ", True), ("una región con unos 15 puntos y 2 vehículos. La escala de 80 puntos y 90 días se presenta como simulación con datos sintéticos.", False)])
+bullet(doc, [("En vivo: ", True), ("una región con unos 15 puntos y 2 vehículos. La simulación de 90 días usa el escenario sintético de Quito (40 puntos) y no es una medición.", False)])
 bullet(doc, [("En construcción durante el evento: ", True), ("hora límite para puntos críticos, consulta de stock y vehículos por el agente, y comparación del costo de priorizar.", False)])
 bullet(doc, [("Próximos pasos: ", True), ("zonas de reparto habituales, conversión de cajas a unidades, consumo por superficie (litros por m²) y calibración del costo con viajes reales.", False)])
 bullet(doc, [("Validación: ", True), ("aún sin cifras de ahorro confirmadas por una empresa; los resultados de la simulación se muestran con su escenario y semilla.", False)])

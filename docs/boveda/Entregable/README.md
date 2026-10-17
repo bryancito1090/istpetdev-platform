@@ -26,4 +26,6 @@ Aquí van **solo PDF actualizados** de lo que se entrega al jurado, más el PPTX
 ## Pendiente
 
 - Grabar el video con el guion 9 y revisar el «255 min» del paso 2 de rutas.
+- Ensayar el recorrido sin señal en un teléfono real (modo avión, reinicio y sincronización) y grabarlo; hasta entonces el pitch lo dice como siguiente fase.
+- Simulación de 90 días: la corrida del 17-oct no muestra ahorro frente al calendario fijo; el 9,8 % se retiró de los entregables 4 y 6.
 - Esta carpeta solo guarda PDF, el PPTX del pitch y este índice; el guion en texto vive en `07 Demo/Guion del pitch.md`.
