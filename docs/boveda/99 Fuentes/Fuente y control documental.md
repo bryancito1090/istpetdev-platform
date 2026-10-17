@@ -752,6 +752,12 @@ Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y event
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
 
+## 16-oct-2026 — Consolidación parcial, revisiones con pedidos y botón de cancelar (issue #199, cierre)
+
+Fuente: issue #199 y los pendientes de T15 y T19 del spec 002. [[Contratos API y eventos]] registra la consolidación parcial en `POST /api/v1/route-plans`, el descuento de pedidos al publicar una revisión que retira una parada, la suma inversa en `revert`, el comportamiento de los planes sin `orderLines` y el botón «Cancelar ruta» del panel. El spec 002 añade FR-28 y la tarea T21. No hay endpoints ni campos nuevos, migración ni cambios de datos; no se despliega.
+
+Verificación documental: **117 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
 
 ## 16-oct-2026 — Restricciones de vehículo y aviso extraurbano (#244)
 

@@ -483,6 +483,20 @@ public sealed class Replanner(
             del.Status = nameof(Domain.Enums.DeliveryStatus.Cancelled);
         }
 
+        // #199 (FR-28): la revisión pudo descontar pedidos de paradas retiradas; restaurar la anterior los vuelve a sumar.
+        var restoredInput = previousPlan.InputJson;
+        var previousLines = await RoutePlanCancellation.EffectiveOrderLinesAsync(db, previousPlan, ct);
+        if (previousLines is not null)
+        {
+            var currentLines = await RoutePlanCancellation.EffectiveOrderLinesAsync(db, currentPlan, ct) ?? [];
+            var restore = previousLines
+                .Select(kv => (kv.Key, Quantity: kv.Value - currentLines.GetValueOrDefault(kv.Key)))
+                .Where(x => x.Quantity > 0)
+                .ToDictionary(x => x.Key, x => x.Quantity);
+            await RoutePlanCancellation.AdjustPlannedAsync(db, restore, ct);
+            restoredInput = RoutePlanCancellation.WithOrderLines(previousPlan.InputJson, previousLines);
+        }
+
         // 4. Crear tercera revisión restaurada
         var restoredPlan = new RoutePlan
         {
@@ -499,7 +513,7 @@ public sealed class Replanner(
             TotalMinutes = previousPlan.TotalMinutes,
             TotalCost = previousPlan.TotalCost,
             AlgorithmVersion = previousPlan.AlgorithmVersion,
-            InputJson = previousPlan.InputJson
+            InputJson = restoredInput
         };
         db.RoutePlans.Add(restoredPlan);
 
@@ -513,6 +527,9 @@ public sealed class Replanner(
             OrganizationId = DemoOrganization.Id,
             RoutePlanId = restoredPlan.Id,
             ServicePointId = s.ServicePointId,
+            // #199: la recogida en bodega sigue siendo recogida; sin esto se publicaba como entrega.
+            LocationId = s.LocationId,
+            Kind = s.Kind,
             SequenceNumber = s.SequenceNumber,
             PlannedArrivalUtc = s.PlannedArrivalUtc,
             PlannedDepartureUtc = s.PlannedDepartureUtc,

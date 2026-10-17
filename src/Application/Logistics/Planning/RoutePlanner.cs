@@ -224,16 +224,29 @@ public sealed class RoutePlanner(
                 _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
         }
 
-        // 9. Consolidación de candidatos Vigilar si desvío <= MaxDetourMinutes
+        // 9. Consolidación de candidatos Vigilar si desvío <= MaxDetourMinutes.
+        // Va después de todos los obligatorios: solo usa la capacidad que ellos dejaron libre.
+        var consolidationParts = new List<StopCandidate>();
         foreach (var candidate in consolidation)
         {
             bool inserted = TryInsertConsolidation(
                 vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix,
                 _options.MaxDetourMinutes, out var bestVehicleCode, out var bestPos);
 
+            // #199 (FR-28): si no cabe completa, se carga la parte que cabe en un solo vehículo.
+            var stop = candidate;
+            if (!inserted && TryInsertConsolidationPart(
+                    vehicles, vehicleRoutes, candidate, depots, workdayStartUtc, distanceMatrix, products,
+                    _options.MaxDetourMinutes, out bestVehicleCode, out bestPos, out var part))
+            {
+                inserted = true;
+                stop = part!;
+                consolidationParts.Add(part!);
+            }
+
             if (inserted && bestVehicleCode != null)
             {
-                vehicleRoutes[bestVehicleCode].Insert(bestPos, candidate);
+                vehicleRoutes[bestVehicleCode].Insert(bestPos, stop);
                 // 2-opt post inserción
                 var v = vehicles.First(veh => veh.Code == bestVehicleCode);
                 vehicleRoutes[bestVehicleCode] = RouteImprover.TwoOpt(
@@ -272,11 +285,14 @@ public sealed class RoutePlanner(
             }
         }
         // Hechos por línea pendiente para que la explicación (plantilla o agente) no invente cifras.
-        foreach (var u in unserved)
+        // La consolidación parcial no es un no atendido (FR-09), pero sus cifras también se explican (FR-28).
+        var pendingByPoint = unserved.Select(u => (u.PointCode, u.Lines))
+            .Concat(consolidationParts.Select(c => (c.PointCode, (IReadOnlyList<PendingLine>)PendingLines(c))));
+        foreach (var (pointCode, lines) in pendingByPoint)
         {
-            foreach (var line in u.Lines)
+            foreach (var line in lines)
             {
-                var subject = $"{u.PointCode}/{line.Sku}";
+                var subject = $"{pointCode}/{line.Sku}";
                 facts.Add(new Fact("required_quantity", subject, line.RequiredQuantity, line.BaseUnit));
                 facts.Add(new Fact("planned_quantity", subject, line.PlannedQuantity, line.BaseUnit));
                 facts.Add(new Fact("pending_quantity", subject, line.PendingQuantity, line.BaseUnit));
@@ -695,6 +711,72 @@ public sealed class RoutePlanner(
         }
 
         return bestVehicleCode != null;
+    }
+
+    /// <summary>
+    /// #199 (FR-28): parte de una parada de consolidación que cabe en la capacidad libre de un vehículo, con desvío
+    /// ≤ <paramref name="maxDetourMinutes"/>. Gana el vehículo que lleva más unidades, luego el de menor desvío y luego
+    /// el de menor código y menor posición. Se llama después de los obligatorios, así que no les quita capacidad.
+    /// </summary>
+    private bool TryInsertConsolidationPart(
+        List<Vehicle> vehicles,
+        Dictionary<string, List<StopCandidate>> currentRoutes,
+        StopCandidate candidate,
+        IReadOnlyDictionary<string, GeoPoint> depots,
+        DateTime workdayStartUtc,
+        IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg> distanceMatrix,
+        IReadOnlyDictionary<Guid, Product> products,
+        int maxDetourMinutes,
+        out string? bestVehicleCode,
+        out int bestPos,
+        out StopCandidate? bestPart)
+    {
+        bestVehicleCode = null;
+        bestPos = -1;
+        bestPart = null;
+        decimal bestUnits = 0m;
+        decimal bestDetour = decimal.MaxValue;
+        var totalUnits = candidate.Loads.Sum(l => l.Quantity);
+
+        // vehicles viene ordenado por código: con empate total gana el primero y la menor posición.
+        foreach (var v in vehicles)
+        {
+            var route = currentRoutes[v.Code];
+            decimal? freeWeight = v.MaxWeight > 0 ? v.MaxWeight - route.Sum(s => s.Weight) : null;
+            decimal? freeVolume = v.MaxVolume is > 0 ? v.MaxVolume.Value - route.Sum(s => s.Volume) : null;
+            var loads = FitLoads(candidate.Loads, freeWeight, freeVolume, products);
+            var units = loads.Sum(l => l.Quantity);
+            // Sin nada que cargar, o completa (ya se probó entera y no fue factible por otra restricción).
+            if (units <= 0 || units >= totalUnits) continue;
+
+            var part = candidate with { Loads = loads, Weight = WeightOf(loads, products), Volume = VolumeOf(loads, products) };
+            var currentEval = RouteFeasibility.EvaluateRoute(
+                v, depots[v.Code], route, workdayStartUtc, _options.WorkdayHours,
+                _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
+
+            for (int pos = 0; pos <= route.Count; pos++)
+            {
+                var proposal = new List<StopCandidate>(route);
+                proposal.Insert(pos, part);
+                var eval = RouteFeasibility.EvaluateRoute(
+                    v, depots[v.Code], proposal, workdayStartUtc, _options.WorkdayHours,
+                    _options.CostPerHour, _options.DefaultCostPerKm, distanceMatrix, trafficBands: _options.TrafficBands);
+                if (!eval.IsFeasible) continue;
+
+                var detour = eval.CumulativeMinutes - currentEval.CumulativeMinutes;
+                if (detour > maxDetourMinutes) continue;
+                if (bestPart is null || units > bestUnits || (units == bestUnits && detour < bestDetour))
+                {
+                    bestVehicleCode = v.Code;
+                    bestPos = pos;
+                    bestPart = part;
+                    bestUnits = units;
+                    bestDetour = detour;
+                }
+            }
+        }
+
+        return bestPart != null;
     }
 
     /// <summary>Convierte "HH:mm" (o "HH:mm:ss") en hora local; null o vacío = sin hora límite.</summary>
