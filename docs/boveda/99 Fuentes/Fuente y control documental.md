@@ -764,3 +764,13 @@ comportamiento anterior. Ejemplo y evidencia local en
 `docs/evidence/244-restricciones/`; valores sintéticos, sin migración ni
 activación/despliegue en producción. Las pruebas y capturas se registran por
 separado de las decisiones documentales.
+
+## 16-oct-2026 — Consulta sin efectos y recepción única de retornos (#280)
+
+Fuente: revisión de seguridad del issue #280 sobre #247. [[Contratos API y eventos]]
+registra los roles acotados del GET, el número completo y el rechazo de colisiones,
+la idempotencia de receive y la exclusión de bultos ya devueltos. La generación
+explícita conserva la escritura de custodia. Evidencia local y límites en
+`docs/evidence/280-retornos/`: 121 pruebas de campo, incluidas 24 nuevas por HTTP;
+los casos de consulta, permiso y replay fallan con el código previo. Sin migración,
+conexión a bases compartidas, despliegue ni afirmaciones nuevas para el pitch.

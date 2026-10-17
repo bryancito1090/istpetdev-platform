@@ -48,7 +48,7 @@ public sealed class ReturnGuidesController : ControllerBase
     /// Issue #247: Consulta la guía de retorno por su número (p. ej. GRT-B1C2D3E4).
     /// </summary>
     [HttpGet("{guideNumber}")]
-    [Authorize(Roles = Roles.Any)]
+    [Authorize(Roles = $"{Roles.Conductor},{Roles.Bodega},{Roles.Planificador},{Roles.Gerencia},{Roles.Auditor}")]
     public async Task<IActionResult> GetGuide(
         string guideNumber,
         CancellationToken ct)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using IstpetDev.Application.Common.Interfaces;
@@ -1980,66 +1981,120 @@ public sealed class FieldService : IFieldService
         Guid actorAccountId,
         CancellationToken ct = default)
     {
-        var plan = await _db.RoutePlans
+        await using var transaction = await BeginSerializedTransactionAsync(ct);
+        var plan = await _db.RoutePlans.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Plan de ruta {routePlanId} no encontrado.");
+        var guide = await BuildReturnGuideAsync(await ResolveReturnGuidePlanAsync(ReturnGuideNumber(plan.Id), ct), ct);
+        var huIds = guide.Lines.Select(l => l.HandlingUnitId).Distinct().ToList();
+        var units = await _db.HandlingUnits
+            .Where(h => huIds.Contains(h.Id) && h.OrganizationId == DemoOrganization.Id && h.Status != HandlingUnitStates.Returned)
+            .ToListAsync(ct);
+        var now = DateTime.UtcNow;
+        foreach (var unit in units)
+        {
+            unit.Status = HandlingUnitStates.NotDelivered;
+            if (!await _db.CustodyEvents.AnyAsync(e => e.OrganizationId == DemoOrganization.Id &&
+                e.HandlingUnitId == unit.Id && e.EventKind == CustodyEventKinds.NotDelivered, ct))
+            {
+                _db.CustodyEvents.Add(new CustodyEvent
+                {
+                    OrganizationId = DemoOrganization.Id,
+                    HandlingUnitId = unit.Id,
+                    DeliveryId = unit.DeliveryId,
+                    ActorAccountId = actorAccountId,
+                    EventKind = CustodyEventKinds.NotDelivered,
+                    OperationId = Guid.NewGuid(),
+                    ReceivedAtServer = now,
+                    OccurredAtDevice = now
+                });
+            }
+        }
+        await _db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return guide;
+    }
 
-        var vehicle = await _db.Vehicles
+    private static string ReturnGuideNumber(Guid planId) => $"GRT-{planId.ToString()[..8].ToUpperInvariant()}";
+
+    private async Task<RoutePlan> ResolveReturnGuidePlanAsync(string guideNumber, CancellationToken ct)
+    {
+        if (guideNumber is null || !Regex.IsMatch(guideNumber, @"\AGRT-[0-9A-F]{8}\z"))
+            throw new FieldUnprocessableException(FieldErrorCodes.InvalidGuideNumber, "El número de guía debe tener el formato GRT-1234ABCD.");
+
+        var prefix = guideNumber[4..].ToLowerInvariant();
+        var plans = await _db.RoutePlans.AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id && p.Id.ToString().StartsWith(prefix))
+            .Take(2).ToListAsync(ct);
+        if (plans.Count > 1)
+            throw new FieldConflictException(FieldErrorCodes.AmbiguousGuideNumber, "El número de guía coincide con más de un plan de ruta.");
+        return plans.SingleOrDefault()
+            ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Guía de retorno {guideNumber} no encontrada.");
+    }
+
+    public async Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default) =>
+        await BuildReturnGuideAsync(await ResolveReturnGuidePlanAsync(guideNumber, ct), ct);
+
+    // Proyección compartida de solo lectura: consultar nunca genera eventos ni cambia custodia.
+    private async Task<ReturnGuideDto> BuildReturnGuideAsync(RoutePlan plan, CancellationToken ct)
+    {
+        var routePlanId = plan.Id;
+        var vehicle = await _db.Vehicles.AsNoTracking()
             .FirstOrDefaultAsync(v => v.Id == plan.VehicleId && v.OrganizationId == DemoOrganization.Id, ct);
         var vehiclePlate = vehicle?.Code ?? "Vehículo Asignado";
 
         // Obtener entregas del plan
-        var stops = await _db.RouteStops
+        var stops = await _db.RouteStops.AsNoTracking()
             .Where(s => s.RoutePlanId == routePlanId && s.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var stopIds = stops.Select(s => s.Id).ToList();
 
-        var deliveries = await _db.Deliveries
+        var deliveries = await _db.Deliveries.AsNoTracking()
             .Where(d => d.RouteStopId.HasValue && stopIds.Contains(d.RouteStopId.Value) && d.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var deliveryIds = deliveries.Select(d => d.Id).ToList();
 
         var originLocationId = vehicle?.DepotLocationId ?? deliveries.FirstOrDefault()?.OriginLocationId ?? Guid.Empty;
-        var warehouse = await _db.Locations
+        var warehouse = await _db.Locations.AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == originLocationId && l.OrganizationId == DemoOrganization.Id, ct);
         var warehouseName = warehouse?.Name ?? "Bodega Principal";
 
         var assignedDriverId = deliveries.FirstOrDefault()?.AssignedAccountId ?? plan.PublishedByAccountId;
         var driver = assignedDriverId.HasValue
-            ? await _db.Accounts.FirstOrDefaultAsync(a => a.Id == assignedDriverId.Value && a.OrganizationId == DemoOrganization.Id, ct)
+            ? await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == assignedDriverId.Value && a.OrganizationId == DemoOrganization.Id, ct)
             : null;
         var driverName = driver?.DisplayName ?? "Conductor de Ruta";
 
-        var handlingUnits = await _db.HandlingUnits
+        var handlingUnits = await _db.HandlingUnits.AsNoTracking()
             .Where(hu => hu.DeliveryId.HasValue && deliveryIds.Contains(hu.DeliveryId.Value) && hu.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var huIds = handlingUnits.Select(h => h.Id).ToList();
 
-        var huLines = await _db.HandlingUnitLines
+        var huLines = await _db.HandlingUnitLines.AsNoTracking()
             .Where(hul => huIds.Contains(hul.HandlingUnitId) && hul.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
-        var deliveryLines = await _db.DeliveryLines
+        var deliveryLines = await _db.DeliveryLines.AsNoTracking()
             .Where(dl => deliveryIds.Contains(dl.DeliveryId) && dl.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var dLineMap = deliveryLines.ToDictionary(dl => dl.Id, dl => dl);
 
         var lotIds = huLines.Select(hl => hl.LotId).Distinct().ToList();
-        var lots = await _db.Lots
+        var lots = await _db.Lots.AsNoTracking()
             .Where(l => lotIds.Contains(l.Id) && l.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(l => l.Id, ct);
 
         var productIds = lots.Values.Select(l => l.ProductId).Distinct().ToList();
-        var products = await _db.Products
+        var products = await _db.Products.AsNoTracking()
             .Where(p => productIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
 
-        var receipts = await _db.Receipts
+        var receipts = await _db.Receipts.AsNoTracking()
             .Where(r => deliveryIds.Contains(r.DeliveryId) && r.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var receiptIds = receipts.Select(r => r.Id).ToList();
 
-        var receiptLines = await _db.ReceiptLines
+        var receiptLines = await _db.ReceiptLines.AsNoTracking()
             .Where(rl => receiptIds.Contains(rl.ReceiptId) && rl.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
 
@@ -2048,7 +2103,6 @@ public sealed class FieldService : IFieldService
         // 2) Handling units de entregas con estado NotDelivered o parcial
         // 3) Handling units que quedaron en Dispatched o InTransit cuando la ruta se cierra (no alcanzaron a ser entregados)
         var returnLines = new List<ReturnGuideLineDto>();
-        var huById = handlingUnits.ToDictionary(h => h.Id, h => h);
         var deliveryById = deliveries.ToDictionary(d => d.Id, d => d);
 
         foreach (var hu in handlingUnits)
@@ -2091,62 +2145,22 @@ public sealed class FieldService : IFieldService
                         prod?.BaseUnit ?? "UN",
                         reason));
                 }
-
-                // Asegurar estado del bulto y custodia
-                if (hu.Status != HandlingUnitStates.Returned)
-                {
-                    hu.Status = HandlingUnitStates.NotDelivered;
-                }
             }
         }
 
-        var guideNumber = $"GRT-{plan.Id.ToString()[..8].ToUpperInvariant()}";
-
-        // Registrar evento de custodia de generación de guía si no existe aún
-        var now = DateTime.UtcNow;
-        foreach (var rLine in returnLines)
-        {
-            var existingEvent = await _db.CustodyEvents
-                .AnyAsync(ce => ce.HandlingUnitId == rLine.HandlingUnitId && ce.EventKind == CustodyEventKinds.NotDelivered, ct);
-            if (!existingEvent)
-            {
-                _db.CustodyEvents.Add(new CustodyEvent
-                {
-                    OrganizationId = DemoOrganization.Id,
-                    HandlingUnitId = rLine.HandlingUnitId,
-                    DeliveryId = huById[rLine.HandlingUnitId].DeliveryId,
-                    ActorAccountId = actorAccountId,
-                    EventKind = CustodyEventKinds.NotDelivered,
-                    OperationId = Guid.NewGuid(),
-                    ReceivedAtServer = now,
-                    OccurredAtDevice = now
-                });
-            }
-        }
-
-        await _db.SaveChangesAsync(ct);
-
+        var returnedIds = handlingUnits.Where(h => h.Status == HandlingUnitStates.Returned).Select(h => h.Id).ToHashSet();
+        var status = returnLines.Count == 0 ? "Empty"
+            : returnLines.All(l => returnedIds.Contains(l.HandlingUnitId)) ? "ReceivedAtWarehouse" : "PendingWarehouse";
         return new ReturnGuideDto(
-            guideNumber,
+            ReturnGuideNumber(plan.Id),
             plan.Id,
             vehiclePlate,
             driverName,
             originLocationId,
             warehouseName,
-            now,
-            returnLines.Count > 0 ? "PendingWarehouse" : "Empty",
+            DateTime.UtcNow,
+            status,
             returnLines);
-    }
-
-    public async Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default)
-    {
-        // El número de guía codifica los primeros 8 chars del RoutePlanId
-        var prefix = guideNumber.Replace("GRT-", "").ToLowerInvariant();
-        var plan = await _db.RoutePlans
-            .FirstOrDefaultAsync(p => p.Id.ToString().StartsWith(prefix) && p.OrganizationId == DemoOrganization.Id, ct)
-            ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, $"Guía de retorno {guideNumber} no encontrada.");
-
-        return await GenerateReturnGuideAsync(plan.Id, plan.PublishedByAccountId ?? Guid.NewGuid(), ct);
     }
 
     public async Task<ReceiveReturnGuideResponse> ReceiveReturnGuideAsync(
@@ -2155,16 +2169,24 @@ public sealed class FieldService : IFieldService
         CancellationToken ct = default)
     {
         await using var transaction = await BeginSerializedTransactionAsync(ct);
+        const string actionCode = "ReceiveReturnGuide";
+        var plan = await ResolveReturnGuidePlanAsync(request.GuideNumber, ct);
+        var replay = await FindReplayAsync<ReceiveReturnGuideResponse>(actorAccountId, request.OperationId,
+            actionCode, plan.Id, request, request.OperationId.ToString(), ct);
+        if (replay is not null) return replay;
 
-        var guide = await GetReturnGuideAsync(request.GuideNumber, ct);
+        var guide = await BuildReturnGuideAsync(plan, ct);
         if (guide.Lines.Count == 0)
-        {
             throw new FieldConflictException(FieldErrorCodes.NoHandlingUnits, "La guía de retorno no contiene bultos.");
-        }
 
-        var plan = await _db.RoutePlans
-            .FirstOrDefaultAsync(p => p.Id == guide.RoutePlanId && p.OrganizationId == DemoOrganization.Id, ct)
-            ?? throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Plan de ruta asociado a la guía no encontrado.");
+        var huIds = guide.Lines.Select(l => l.HandlingUnitId).Distinct().ToList();
+        var hus = await _db.HandlingUnits
+            .Where(h => huIds.Contains(h.Id) && h.OrganizationId == DemoOrganization.Id && h.Status != HandlingUnitStates.Returned)
+            .ToListAsync(ct);
+        if (hus.Count == 0)
+            throw new FieldConflictException(FieldErrorCodes.AlreadyReceived, "La guía de retorno ya fue recibida en bodega.");
+        var pendingIds = hus.Select(h => h.Id).ToHashSet();
+        var pendingLines = guide.Lines.Where(l => pendingIds.Contains(l.HandlingUnitId)).ToList();
 
         var warehouseLocationId = guide.DestinationWarehouseId;
         var now = DateTime.UtcNow;
@@ -2178,7 +2200,7 @@ public sealed class FieldService : IFieldService
         var vehicleLocationId = vehicleLocation?.Id;
 
         // Actualizar estados de bultos y crear movimientos de retorno
-        var groupedByProductAndLot = guide.Lines
+        var groupedByProductAndLot = pendingLines
             .GroupBy(l => (l.ProductId, l.LotId))
             .Select(g => new
             {
@@ -2238,12 +2260,7 @@ public sealed class FieldService : IFieldService
             });
         }
 
-        // Actualizar handling units a Returned y registrar CustodyEvent
-        var huIds = guide.Lines.Select(l => l.HandlingUnitId).Distinct().ToList();
-        var hus = await _db.HandlingUnits
-            .Where(h => huIds.Contains(h.Id) && h.OrganizationId == DemoOrganization.Id)
-            .ToListAsync(ct);
-
+        // Actualizar solo los bultos pendientes y registrar su retorno.
         foreach (var hu in hus)
         {
             hu.Status = HandlingUnitStates.Returned;
@@ -2292,7 +2309,7 @@ public sealed class FieldService : IFieldService
         };
         _db.DeliveryOrders.Add(rebalanceOrder);
 
-        var productQuantities = guide.Lines
+        var productQuantities = pendingLines
             .GroupBy(l => l.ProductId)
             .Select(g => new { ProductId = g.Key, Quantity = g.Sum(x => x.Quantity) });
 
@@ -2309,15 +2326,26 @@ public sealed class FieldService : IFieldService
             });
         }
 
-        await _db.SaveChangesAsync(ct);
-        if (transaction != null) await transaction.CommitAsync(ct);
-
-        return new ReceiveReturnGuideResponse(
+        var response = new ReceiveReturnGuideResponse(
             request.GuideNumber,
             "ReceivedAtWarehouse",
             now,
-            guide.Lines.Count,
+            pendingLines.Count,
             rebalanceOrder.Id);
+        _db.IdempotencyRecords.Add(new IdempotencyRecord
+        {
+            OrganizationId = DemoOrganization.Id,
+            AccountId = actorAccountId,
+            OperationId = request.OperationId,
+            ActionCode = actionCode,
+            RequestHash = ComputeRequestFingerprint(actionCode, plan.Id, request),
+            ResponseStatus = 200,
+            ResponseJson = JsonSerializer.Serialize(response, JsonOptions),
+            CompletedAtUtc = now,
+            RetainUntilUtc = now.AddDays(7)
+        });
+        await _db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return response;
     }
 }
-
