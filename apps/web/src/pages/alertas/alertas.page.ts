@@ -19,7 +19,7 @@ type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
         <div>
           <div class="flex items-center gap-2.5">
             <h1 class="text-[22px] font-semibold text-[#1A2C44] tracking-tight">
-              Monitoreo y Alertas de Inventario
+              Monitoreo de Cobertura de Stock
             </h1>
             <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]">
               Auditoría y Supervisión

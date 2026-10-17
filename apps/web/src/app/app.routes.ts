@@ -45,7 +45,7 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/alertas').then(m => m.AlertasPage),
-    title: 'Alertas — IstpetDev'
+    title: 'Cobertura de Stock — IstpetDev'
   },
   {
     path: 'rutas',

@@ -500,12 +500,12 @@ interface ProcessStep {
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1 text-xs">
             <div class="space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE]">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#DF1B41]">Alerta de Stock</span>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#DF1B41]">Cobertura de Stock</span>
               <p class="text-[13px] leading-[18px] text-[#2D3748]">
                 {{ criticalRisksCount() > 0 ? 'Detectado ' + criticalRisksCount() + ' quiebre de stock crítico inminente en centros de salud.' : 'Todos los puntos de salud operan en niveles normales de cobertura.' }}
               </p>
               <a routerLink="/alertas" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
-                <span>Resolver alertas de stock</span>
+                <span>Monitorear cobertura de stock</span>
                 <span>&rarr;</span>
               </a>
             </div>
@@ -591,10 +591,10 @@ export class InicioPage implements OnInit {
     },
     {
       id: 2,
-      title: '2. Monitorear Alertas de Stock',
+      title: '2. Monitorear Cobertura de Stock',
       desc: 'Verificar qué hospitales tienen insumos con menos de 5 días de cobertura o quiebre de stock.',
       route: '/alertas',
-      actionText: 'Ver Alertas',
+      actionText: 'Ver Cobertura',
       badge: 'Riesgo y Demanda',
       badgeClass: 'bg-[#FFF4E5] text-[#B76E00] border-[#FFE2B5]',
       writeOnly: false
