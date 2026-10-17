@@ -1,19 +1,57 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthSession } from '@entities/session';
 import {
   LucideQrCode,
-  LucideArrowRight,
-  LucideChevronRight,
-  LucideMaximize2,
+  LucideArrowUpRight,
   LucidePlus,
-  LucideZap,
-  LucideBarChart3,
-  LucideLock
+  LucidePhone,
+  LucideMail,
+  LucideMapPin
 } from '@lucide/angular';
-import { ScrollWorldComponent } from './components/scroll-world/scroll-world.component';
+import { SCROLL_WORLD_ASSETS } from './components/scroll-world/scroll-world-assets';
+
+export interface LandingStation {
+  readonly id: string;
+  readonly code: string;
+  readonly badge: string;
+  readonly range: readonly [number, number];
+}
+
+interface InsumoDestacado {
+  readonly numero: string;
+  readonly nombre: string;
+  readonly detalle: string;
+  readonly categoria: string;
+}
+
+interface ExperienciaLogistica {
+  readonly nombre: string;
+  readonly descripcion: string;
+  readonly precio: string;
+  readonly periodo: string;
+  readonly cobertura: string;
+  readonly etiqueta?: string;
+}
+
+interface FaqItem {
+  readonly id: string;
+  readonly pregunta: string;
+  readonly respuesta: string;
+}
 
 @Component({
   selector: 'page-landing',
@@ -22,819 +60,851 @@ import { ScrollWorldComponent } from './components/scroll-world/scroll-world.com
     CommonModule,
     FormsModule,
     RouterLink,
-    ScrollWorldComponent,
     LucideQrCode,
-    LucideArrowRight,
-    LucideChevronRight,
-    LucideMaximize2,
+    LucideArrowUpRight,
     LucidePlus,
-    LucideZap,
-    LucideBarChart3,
-    LucideLock
+    LucidePhone,
+    LucideMail,
+    LucideMapPin
   ],
   template: `
-    <div class="relative overflow-x-clip bg-white text-slate-800 min-h-screen">
-      
-      <!-- Arte Fluido Curvado 3D Estilo Stripe con Colores Originales (Cinta de Seda Tridimensional en Azul Expo, Cyan y Menta) -->
-      <div aria-hidden="true" class="pointer-events-none absolute -top-12 -right-16 w-[620px] md:w-[780px] lg:w-[940px] xl:w-[1080px] h-[780px] md:h-[900px] overflow-hidden select-none z-0">
-        <svg class="w-full h-full" viewBox="0 0 1000 900" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <!-- Gradiente Cinta 1: Cyan Eléctrico a Menta Brillante -->
-            <linearGradient id="stripeFlowCyanMint" x1="15%" y1="0%" x2="85%" y2="100%">
-              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.95" />
-              <stop offset="45%" stop-color="#00DDA2" stop-opacity="0.92" />
-              <stop offset="80%" stop-color="#00E5A3" stop-opacity="0.90" />
-              <stop offset="100%" stop-color="#2DD4BF" stop-opacity="0.85" />
-            </linearGradient>
+    <div id="landing-root" class="bg-[#060D1A] text-[#F0F4F8] selection:bg-[#00C2FF] selection:text-[#060D1A] overflow-x-clip min-h-screen">
 
-            <!-- Gradiente Cinta 2: Azul Eléctrico a Cyan Profundo -->
-            <linearGradient id="stripeFlowBlueCyan" x1="10%" y1="10%" x2="90%" y2="90%">
-              <stop offset="0%" stop-color="#0052D9" stop-opacity="0.92" />
-              <stop offset="40%" stop-color="#0066FF" stop-opacity="0.88" />
-              <stop offset="75%" stop-color="#0099FF" stop-opacity="0.85" />
-              <stop offset="100%" stop-color="#00C2FF" stop-opacity="0.82" />
-            </linearGradient>
+      <!-- ========================================================================= -->
+      <!-- 1. HEADER FLOTANTE TIPO PÍLDORA (CALCA MIDUDEV)                           -->
+      <!-- ========================================================================= -->
+      <a
+        href="#recorrido"
+        class="fixed top-4 left-4 z-[60] -translate-y-24 focus-visible:translate-y-0 px-4 py-2 rounded-full bg-[#0066FF] text-white font-zen text-xs font-medium transition-transform shadow-lg">
+        Saltar al contenido
+      </a>
 
-            <!-- Gradiente Cinta Base 3: Azul Zafiro Profundo -->
-            <linearGradient id="stripeFlowDeepBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#0040B0" stop-opacity="0.95" />
-              <stop offset="50%" stop-color="#0066FF" stop-opacity="0.90" />
-              <stop offset="100%" stop-color="#0084FF" stop-opacity="0.85" />
-            </linearGradient>
+      <header class="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-6 lg:justify-start lg:px-8 xl:px-20">
+        <div class="pointer-events-auto flex w-max items-center gap-6 rounded-full bg-[#060D1A]/75 p-2 pl-6 ring-1 ring-[#F0F4F8]/15 backdrop-blur-xl lg:gap-5 shadow-2xl">
+          <a routerLink="/" class="flex items-center text-[#F0F4F8] font-display text-base font-normal tracking-widest hover:text-[#00C2FF] transition-colors" aria-label="IstpetDev, volver al inicio">
+            <span>ISTPET DEV</span>
+          </a>
 
-            <!-- Resplandor Atmosférico Difuso Ultra Suave -->
-            <radialGradient id="stripeAmbientGlow" cx="62%" cy="38%" r="55%">
-              <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.25" />
-              <stop offset="40%" stop-color="#0066FF" stop-opacity="0.15" />
-              <stop offset="75%" stop-color="#00E5A3" stop-opacity="0.08" />
-              <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-            </radialGradient>
+          <nav aria-label="Principal" class="relative hidden lg:block">
+            <ul class="relative flex items-center text-sm font-zen text-[#F0F4F8]/70">
+              <li>
+                <a href="#recorrido" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Recorrido
+                </a>
+              </li>
+              <li>
+                <a href="#filosofia" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Filosofía
+                </a>
+              </li>
+              <li>
+                <a href="#insumos" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Insumos
+                </a>
+              </li>
+              <li>
+                <a href="#prensa" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Prensa
+                </a>
+              </li>
+              <li>
+                <a href="#modalidades" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Modalidades
+                </a>
+              </li>
+              <li>
+                <a href="#preguntas" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Preguntas
+                </a>
+              </li>
+              <li>
+                <a href="#auditoria" class="flex h-9 items-center rounded-full px-3 transition-colors duration-300 hover:text-[#F0F4F8]">
+                  Auditoría
+                </a>
+              </li>
+            </ul>
+          </nav>
 
-            <!-- Filtro desenfoque sedoso Stripe -->
-            <filter id="stripeSilkBlur" x="-25%" y="-25%" width="150%" height="150%">
-              <feGaussianBlur stdDeviation="24" />
-            </filter>
+          <div class="flex items-center gap-2">
+            <a
+              routerLink="/public-trace"
+              class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-zen text-[#F0F4F8]/80 hover:text-white transition-all">
+              <svg lucideQrCode [size]="13" class="text-[#00C2FF]"></svg>
+              <span>Rastrear QR</span>
+            </a>
 
-            <!-- Filtro resplandor amplio -->
-            <filter id="stripeGlowBlur" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="60" />
-            </filter>
-          </defs>
+            <button
+              type="button"
+              (click)="session.login('/inicio')"
+              class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0066FF] hover:bg-[#0052D9] text-white text-xs font-zen font-medium tracking-wide shadow-md transition-all active:scale-95 cursor-pointer">
+              <span>Torre de Control</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-          <!-- 0. Resplandor difuso de fondo -->
-          <circle cx="660" cy="360" r="420" fill="url(#stripeAmbientGlow)" filter="url(#stripeGlowBlur)" />
 
-          <!-- 1. Cinta Inferior: Gran sábana Azul Zafiro -->
-          <path
-            d="M380 -80 C480 60, 620 220, 680 440 C740 660, 780 780, 840 980 L1080 980 L1080 -80 Z"
-            fill="url(#stripeFlowDeepBlue)"
-            filter="url(#stripeSilkBlur)"
-            opacity="0.78"
-          />
+      <!-- ========================================================================= -->
+      <!-- 2. SCROLL WORLD: EL PASEO POR LA CADENA LOGÍSTICA (CALCA MIDUDEV)         -->
+      <!-- ========================================================================= -->
+      <section
+        #worldSection
+        id="recorrido"
+        aria-label="Paseo por las instalaciones logísticas"
+        class="relative min-h-[500vh]">
 
-          <!-- 2. Cinta Central: Pliegue Azul a Cyan con torsión 3D -->
-          <path
-            d="M440 -60 C540 80, 660 250, 715 450 C765 630, 815 740, 885 920 C825 890, 755 780, 705 620 C645 430, 565 220, 485 -60 Z"
-            fill="url(#stripeFlowBlueCyan)"
-            filter="url(#stripeSilkBlur)"
-            opacity="0.84"
-          />
+        <!-- Escenario fijo (Stage): El video y las fotos ocupan toda la pantalla -->
+        <div class="sticky top-0 h-screen overflow-hidden bg-[#060D1A]">
+          
+          <div aria-hidden="true" class="absolute inset-0">
+            <!-- Escena 1 & Video Clip 2K MiniMax H3 -->
+            <div
+              class="frame absolute inset-0 transition-opacity duration-700 ease-out"
+              [style.opacity]="getSceneOpacity(0)">
+              <video
+                #clip1Video
+                muted
+                playsinline
+                preload="auto"
+                class="absolute inset-0 size-full object-cover will-change-transform"
+                [style.transform]="getSceneTransform(0)">
+              </video>
+              <img
+                [src]="assets.walkthrough.scene1Warehouse"
+                alt="Bodega Matriz Pallatanga"
+                class="absolute inset-0 size-full object-cover -z-10"
+                [style.transform]="getSceneTransform(0)" />
+            </div>
 
-          <!-- 3. Cinta Superior: Pliegue Cyan a Menta diagonal curvado -->
-          <path
-            d="M515 -40 C615 90, 725 270, 775 460 C815 610, 865 710, 935 860 C895 830, 835 720, 785 570 C725 380, 635 180, 565 -40 Z"
-            fill="url(#stripeFlowCyanMint)"
-            filter="url(#stripeSilkBlur)"
-            opacity="0.90"
-          />
+            <!-- Escena 2: Sala de Telemetría Satelital PostGIS -->
+            <div
+              class="frame absolute inset-0 transition-opacity duration-700 ease-out"
+              [style.opacity]="getSceneOpacity(1)">
+              <img
+                [src]="assets.walkthrough.scene2Telemetry"
+                alt="Centro de Telemetría PostGIS"
+                class="absolute inset-0 size-full object-cover will-change-transform"
+                [style.transform]="getSceneTransform(1)" />
+            </div>
 
-          <!-- 4. Reflejo de Seda Satinada Translúcida (Brillo de Luz 3D) -->
-          <path
-            d="M545 -30 C635 90, 735 250, 765 420 C795 560, 835 650, 885 780 C865 750, 815 660, 775 530 C725 370, 645 200, 575 -30 Z"
-            fill="white"
-            opacity="0.32"
-            filter="url(#stripeSilkBlur)"
-          />
-        </svg>
-      </div>
+            <!-- Escena 3: Planta Industrial y Silos de Reserva -->
+            <div
+              class="frame absolute inset-0 transition-opacity duration-700 ease-out"
+              [style.opacity]="getSceneOpacity(2)">
+              <img
+                [src]="assets.walkthrough.scene3Silos"
+                alt="Planta de Silos y Reserva"
+                class="absolute inset-0 size-full object-cover will-change-transform"
+                [style.transform]="getSceneTransform(2)" />
+            </div>
 
-      <!-- ===================================================================== -->
-      <!-- 1. HERO SECTION ESTILO STRIPE 1:1 (Ajustado al Primer Viewport)       -->
-      <!-- ===================================================================== -->
-      <section class="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 pt-8 sm:pt-12 pb-6 min-h-[calc(100vh-4rem)] flex flex-col justify-between border-x border-slate-100/90">
-        
-        <!-- Bloque Principal de Titular y Acciones -->
-        <div class="pt-2 sm:pt-4">
-          <!-- Micro-eyebrow tipo Stripe -->
-          <p class="text-[13px] sm:text-[14px] text-[#425466] font-normal tracking-tight mb-6 sm:mb-8">
-            Red logística que opera con IstpetDev: <span class="font-mono text-[#0A2540] font-medium">80 Puntos de Servicio · 100% Cobertura Activa</span>
+            <!-- Escena 4: Esclusa Hospitalaria y Muelle Clínico -->
+            <div
+              class="frame absolute inset-0 transition-opacity duration-700 ease-out"
+              [style.opacity]="getSceneOpacity(3)">
+              <img
+                [src]="assets.walkthrough.scene4Hospital"
+                alt="Esclusa Hospitalaria y Entrega"
+                class="absolute inset-0 size-full object-cover will-change-transform"
+                [style.transform]="getSceneTransform(3)" />
+            </div>
+          </div>
+
+          <!-- Velos exactos de Midudev: gradientes suaves para leer texto sin cuadros -->
+          <div aria-hidden="true" class="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#060D1A]/80 to-transparent pointer-events-none"></div>
+          <div aria-hidden="true" class="absolute inset-0 bg-gradient-to-t from-[#060D1A] from-15% via-[#060D1A]/50 via-50% to-transparent to-80% lg:bg-gradient-to-r lg:from-[#060D1A]/95 lg:via-[#060D1A]/50 lg:via-40% lg:to-transparent lg:to-70% pointer-events-none"></div>
+          <div aria-hidden="true" class="absolute inset-x-0 bottom-0 hidden h-1/2 bg-gradient-to-t from-[#060D1A]/80 to-transparent lg:block pointer-events-none"></div>
+
+          <!-- Raíl de paradas idéntico a Midudev -->
+          <nav aria-label="Paradas del paseo logístico" class="absolute top-1/2 right-6 hidden -translate-y-1/2 lg:block xl:right-8 z-30 pointer-events-auto select-none">
+            <ol class="relative flex flex-col items-end gap-4">
+              <span aria-hidden="true" class="absolute top-3 right-1 bottom-3 w-px translate-x-1/2 bg-[#F0F4F8]/20">
+                <span
+                  class="absolute inset-0 origin-top bg-[#00C2FF] transition-transform duration-100 ease-out"
+                  [style.transform]="'scaleY(' + (activeStationIndex() / (stations.length - 1)) + ')'">
+                </span>
+              </span>
+              @for (st of stations; track st.id; let i = $index) {
+                <li>
+                  <button
+                    type="button"
+                    (click)="jumpTo(i)"
+                    class="rail-link group flex h-6 items-center gap-3 cursor-pointer focus:outline-none"
+                    [attr.aria-current]="activeStationIndex() === i ? 'true' : 'false'">
+                    <span class="rail-label rounded-full bg-[#060D1A]/80 px-3 py-1 font-zen text-xs whitespace-nowrap text-[#F0F4F8] ring-1 ring-white/10 backdrop-blur-xl">
+                      {{ st.badge }}
+                    </span>
+                    <span class="relative grid size-2 place-items-center">
+                      <span class="rail-dot size-2 rounded-full bg-[#F0F4F8]/50"></span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ol>
+          </nav>
+
+          <!-- Indicador animado de scroll (Hint) -->
+          <p
+            aria-hidden="true"
+            class="absolute right-8 bottom-8 hidden items-center gap-3 font-zen text-xs tracking-widest text-[#F0F4F8]/70 uppercase lg:flex pointer-events-none transition-opacity duration-300"
+            [style.opacity]="progress() < 0.15 ? '1' : '0'">
+            Desliza para recorrer la cadena
+            <span class="hint-line relative block h-8 w-px overflow-hidden bg-[#F0F4F8]/20"></span>
           </p>
+        </div>
 
-          <!-- Titular Estilo Stripe 1:1 (Jerarquía Editorial Separada con Colores del Proyecto) -->
-          <div class="max-w-[720px]">
-            <!-- H1: Titular Principal Corto, Compacto y Contundente -->
-            <h1 class="text-[42px] sm:text-[52px] lg:text-[60px] xl:text-[64px] font-bold tracking-[-0.03em] text-[#0A2540] leading-[1.06]">
-              Infraestructura logística
-              <span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-blue via-[#0084FF] to-expo-cyan">
-                para predecir y asegurar
-              </span>
-              tus insumos.
-            </h1>
+        <!-- Paradas del recorrido: artículos que hacen scroll y dejan su texto abajo a la izquierda SIN CUADROS -->
+        <div class="relative z-10 -mt-[100vh]">
 
-            <!-- Párrafo Secundario (Body Copy) con Escala Editorial Stripe y Acento Original -->
-            <p class="text-[18px] sm:text-[20px] text-[#425466] font-normal leading-[1.45] mt-6 sm:mt-7 max-w-[650px]">
-              Detecta riesgos 5 días antes, optimiza rutas en PostGIS e implementa
-              <span class="text-transparent bg-clip-text bg-gradient-to-r from-expo-cyan to-expo-mint font-medium">
-                custodia digital
-              </span>
-              en el abastecimiento nacional de insumos de limpieza y desinfección.
-            </p>
+          <!-- Parada 0: Inicio / Presentación -->
+          <article id="inicio" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 0">
+            <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
+              <p class="font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">
+                IstpetDev · Reto 1 Expo Clean Ecuador 2026
+              </p>
+              <h1 class="mt-4 font-display text-4xl lg:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
+                Infraestructura logística<br />para abastecimiento hospitalario
+              </h1>
+              <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
+                Predicción determinista de consumo 5 días antes, optimización satelital de rutas en PostGIS y custodia digital en la red de salud nacional.
+              </p>
+              <div class="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  (click)="session.login('/inicio')"
+                  class="btn btn-primary px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#00C2FF] text-white font-zen text-sm font-medium shadow-lg transition-all cursor-pointer">
+                  <span>Ingresar a Torre de Control</span>
+                </button>
+                <a
+                  routerLink="/public-trace"
+                  class="btn btn-ghost px-5 py-3 rounded-full ring-1 ring-[#F0F4F8]/20 hover:bg-[#F0F4F8] hover:text-[#060D1A] text-[#F0F4F8] font-zen text-sm font-medium transition-all">
+                  <span>Rastrear Pasaporte QR</span>
+                </a>
+              </div>
+              <ul class="mt-6 flex flex-wrap gap-2 text-xs text-[#F0F4F8]/80 font-zen" aria-label="Capacidades operativas">
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">PostGIS OSRM VRP</li>
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Hash SHA-256 Inviolable</li>
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">PWA 100% Offline</li>
+              </ul>
+            </div>
+          </article>
 
-            <!-- Acciones Duales Estilo Stripe 1:1 con Botones Originales -->
-            <div class="flex flex-wrap items-center gap-4 pt-7 sm:pt-8">
+          <!-- Parada 1: Bodega Matriz Pallatanga -->
+          <article id="bodega" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 1">
+            <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
+              <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
+                <span class="tabular-nums font-mono text-[#00C2FF]">01 / 04</span>
+                <span class="size-1 rounded-full bg-[#00E5A3]"></span>
+                <span>Bodega Central Pallatanga</span>
+              </p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Sourcing & Sellado</p>
+              <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
+                Envasado de alta pureza y registro óptico
+              </h2>
+              <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
+                Inspección automatizada de bidones HDPE de 60L con escaneo láser de sellos inviolables antes de su transferencia a la flota de transporte pesado.
+              </p>
+              <ol class="mt-6 flex max-w-md flex-col gap-4 font-zen">
+                <li class="flex gap-4 items-start">
+                  <span class="font-display text-2xl text-[#00C2FF] tabular-nums">1</span>
+                  <div>
+                    <h3 class="text-base text-[#F0F4F8] font-medium">Sourcing Multialmacén</h3>
+                    <p class="text-sm text-[#F0F4F8]/70">Reserva y asignación de stock crítico en bodega central.</p>
+                  </div>
+                </li>
+                <li class="flex gap-4 items-start">
+                  <span class="font-display text-2xl text-[#00C2FF] tabular-nums">2</span>
+                  <div>
+                    <h3 class="text-base text-[#F0F4F8] font-medium">Sellado Láser Criptográfico</h3>
+                    <p class="text-sm text-[#F0F4F8]/70">Generación de hash SHA-256 inmutable por bulto sellado.</p>
+                  </div>
+                </li>
+                <li class="flex gap-4 items-start">
+                  <span class="font-display text-2xl text-[#00C2FF] tabular-nums">3</span>
+                  <div>
+                    <h3 class="text-base text-[#F0F4F8] font-medium">Despacho Telemático</h3>
+                    <p class="text-sm text-[#F0F4F8]/70">Emparejamiento vehicular determinista y salida a ruta.</p>
+                  </div>
+                </li>
+              </ol>
+              <a href="#insumos" class="link mt-6 font-zen text-sm text-[#00C2FF]">Ver insumos y presentaciones</a>
+            </div>
+          </article>
+
+          <!-- Parada 2: Sala de Telemetría -->
+          <article id="telemetria" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 2">
+            <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
+              <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
+                <span class="tabular-nums font-mono text-[#00C2FF]">02 / 04</span>
+                <span class="size-1 rounded-full bg-[#00E5A3]"></span>
+                <span>Sala de Telemetría PostGIS</span>
+              </p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Supervisión Satelital 24/7</p>
+              <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
+                Rutas seguras y geocercas dinámicas
+              </h2>
+              <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
+                Monitoreo satelital en tiempo real con recálculo dinámico ante incidencias o cortes de ruta en el corredor interprovincial Pichincha.
+              </p>
+              <dl class="mt-6 grid w-full max-w-md grid-cols-3 gap-4">
+                <div class="flex flex-col-reverse gap-1">
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Latencia</dt>
+                  <dd class="font-display text-2xl lg:text-4xl text-[#00C2FF]">&lt; 120ms</dd>
+                </div>
+                <div class="flex flex-col-reverse gap-1">
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Geocercas</dt>
+                  <dd class="font-display text-2xl lg:text-4xl text-[#00E5A3]">100%</dd>
+                </div>
+                <div class="flex flex-col-reverse gap-1">
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Desvíos</dt>
+                  <dd class="font-display text-2xl lg:text-4xl text-[#F0F4F8]">0.00%</dd>
+                </div>
+              </dl>
+              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Consultar monitoreo de rutas</a>
+            </div>
+          </article>
+
+          <!-- Parada 3: Planta de Silos y Reserva -->
+          <article id="reserva" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 3">
+            <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
+              <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
+                <span class="tabular-nums font-mono text-[#00C2FF]">03 / 04</span>
+                <span class="size-1 rounded-full bg-[#00E5A3]"></span>
+                <span>Planta Industrial y Silos</span>
+              </p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Stock Estratégico</p>
+              <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
+                Buffer determinista de 5 días
+              </h2>
+              <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
+                Algoritmo matemático que anticipa quiebres hospitalarios cruzando consumo diario reportado y tiempos de viaje con 3 días adicionales de reserva.
+              </p>
+              <div class="mt-6 flex items-end gap-4">
+                <span class="font-display text-5xl text-[#00E5A3] lg:text-7xl">90 d</span>
+                <span class="max-w-48 pb-1 font-zen text-sm text-[#F0F4F8]/70">Autonomía verificada en simulación estocástica continua</span>
+              </div>
+              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Ver cobertura hospitalaria</a>
+            </div>
+          </article>
+
+          <!-- Parada 4: Muelle Hospitalario Estéril -->
+          <article id="esclusa" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 4">
+            <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
+              <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
+                <span class="tabular-nums font-mono text-[#00C2FF]">04 / 04</span>
+                <span class="size-1 rounded-full bg-[#00E5A3]"></span>
+                <span>Muelle Hospitalario Estéril</span>
+              </p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Custodia Digital Inviolable</p>
+              <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
+                Entrega sin papel, firma offline
+              </h2>
+              <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
+                El personal clínico valida con firma táctil en la PWA incluso en subsuelos sin cobertura telefónica. La evidencia sincroniza de forma idempotente.
+              </p>
+              <ul class="mt-6 grid w-full max-w-md grid-cols-2 gap-4 font-zen">
+                <li class="flex flex-col gap-1 rounded-2xl bg-[#060D1A]/60 p-4 ring-1 ring-white/10 backdrop-blur-md">
+                  <span class="font-display text-2xl lg:text-3xl text-[#00E5A3]">100 %</span>
+                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">Trazabilidad SHA-256</span>
+                </li>
+                <li class="flex flex-col gap-1 rounded-2xl bg-[#060D1A]/60 p-4 ring-1 ring-white/10 backdrop-blur-md">
+                  <span class="font-display text-2xl lg:text-3xl text-[#00C2FF]">Offline</span>
+                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">PWA IndexedDB activa</span>
+                </li>
+              </ul>
               <button
                 type="button"
                 (click)="session.login('/inicio')"
-                class="inline-flex items-center gap-2 rounded-[8px] bg-expo-blue hover:bg-expo-blueDark px-5 py-3 font-medium text-white text-[15px] shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
-                <span>Primeros pasos</span>
-                <span class="text-white/80 text-xs font-bold">&gt;</span>
+                class="btn btn-primary mt-6 px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#00C2FF] text-white font-zen text-sm font-medium shadow-md transition-all cursor-pointer">
+                <span>Acceder a la Plataforma</span>
               </button>
-
-              <a
-                routerLink="/public-trace"
-                class="inline-flex items-center gap-2.5 rounded-[8px] border border-[#E3E8EE] bg-white hover:bg-slate-50 hover:border-slate-300 px-5 py-3 font-medium text-[#0A2540] text-[15px] shadow-2xs transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
-                <svg lucideQrCode [size]="16" class="text-expo-blue stroke-[2]"></svg>
-                <span>Consultar Pasaporte QR</span>
-              </a>
             </div>
-          </div>
+          </article>
         </div>
-
-        <!-- =================================================================== -->
-        <!-- CINTA DE MARCAS Y SOCIOS LOGÍSTICOS ESTILO STRIPE 1:1                -->
-        <!-- =================================================================== -->
-        <div class="w-full border-t border-slate-200/80 py-6 my-2 overflow-hidden relative tape-fade-mask select-none mt-auto">
-          <div class="animate-marquee-tape items-center gap-14 text-slate-500 hover:text-slate-700 text-xs sm:text-[13px] font-semibold tracking-wider">
-            
-            <!-- Grupo 1: Entidades Oficiales con Emblemas Vectoriales Corporativos -->
-            <div class="flex items-center gap-14 shrink-0">
-              <!-- Hospital Laura -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" fill-opacity="0.1" />
-                  <path d="M12 8v8M8 12h8" stroke-linecap="round" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL LAURA</span>
-              </div>
-
-              <!-- Clinica San Rafael -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v10M7 12h10" stroke-linecap="round" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-bold text-[12px] tracking-tight text-slate-800">CLÍNICA</span>
-                  <span class="text-[10px] text-slate-500 font-semibold tracking-wider">SAN RAFAEL</span>
-                </div>
-              </div>
-
-              <!-- Hospital del Sur -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL DEL SUR</span>
-              </div>
-
-              <!-- Laboratorios EC -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 2v6l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M8 14h8" />
-                </svg>
-                <div class="flex items-center gap-1">
-                  <span class="font-bold text-[12px] tracking-tight text-slate-800">LABORATORIOS</span>
-                  <span class="font-mono font-bold text-[11px] text-expo-blue bg-blue-50 px-1 rounded">EC</span>
-                </div>
-              </div>
-
-              <!-- Sercop Hospitalario -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
-                  <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-mono font-bold text-[12px] text-slate-800">SERCOP</span>
-                  <span class="text-[9px] text-slate-500 font-semibold tracking-wide">HOSPITALARIO</span>
-                </div>
-              </div>
-
-              <!-- Distribuidora Guayas -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" />
-                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">DISTRIBUIDORA GUAYAS</span>
-              </div>
-
-              <!-- Fedelimp Ecuador -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-bold text-[12px] text-slate-800">FEDELIMP</span>
-                  <span class="text-[9px] text-slate-500 font-semibold">ECUADOR</span>
-                </div>
-              </div>
-
-              <!-- Lacif Logistics -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="font-mono font-bold text-slate-800 text-[12px]">LACIF LOGISTICS</span>
-              </div>
-            </div>
-
-            <!-- Grupo 2: Duplicado para Marquee Infinito Fluido -->
-            <div class="flex items-center gap-14 shrink-0" aria-hidden="true">
-              <!-- Hospital Laura -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" fill-opacity="0.1" />
-                  <path d="M12 8v8M8 12h8" stroke-linecap="round" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL LAURA</span>
-              </div>
-
-              <!-- Clinica San Rafael -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7v10M7 12h10" stroke-linecap="round" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-bold text-[12px] tracking-tight text-slate-800">CLÍNICA</span>
-                  <span class="text-[10px] text-slate-500 font-semibold tracking-wider">SAN RAFAEL</span>
-                </div>
-              </div>
-
-              <!-- Hospital del Sur -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">HOSPITAL DEL SUR</span>
-              </div>
-
-              <!-- Laboratorios EC -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 2v6l-4 8a3 3 0 003 4h6a3 3 0 003-4l-4-8V2" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M8 14h8" />
-                </svg>
-                <div class="flex items-center gap-1">
-                  <span class="font-bold text-[12px] tracking-tight text-slate-800">LABORATORIOS</span>
-                  <span class="font-mono font-bold text-[11px] text-expo-blue bg-blue-50 px-1 rounded">EC</span>
-                </div>
-              </div>
-
-              <!-- Sercop Hospitalario -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
-                  <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-mono font-bold text-[12px] text-slate-800">SERCOP</span>
-                  <span class="text-[9px] text-slate-500 font-semibold tracking-wide">HOSPITALARIO</span>
-                </div>
-              </div>
-
-              <!-- Distribuidora Guayas -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" />
-                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
-                </svg>
-                <span class="font-bold tracking-tight text-slate-800 text-[13px]">DISTRIBUIDORA GUAYAS</span>
-              </div>
-
-              <!-- Fedelimp Ecuador -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                <div class="flex flex-col leading-none">
-                  <span class="font-bold text-[12px] text-slate-800">FEDELIMP</span>
-                  <span class="text-[9px] text-slate-500 font-semibold">ECUADOR</span>
-                </div>
-              </div>
-
-              <!-- Lacif Logistics -->
-              <div class="flex items-center gap-2 text-slate-700/80 hover:text-slate-900 transition-colors">
-                <svg class="w-5 h-5 text-expo-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="font-mono font-bold text-slate-800 text-[12px]">LACIF LOGISTICS</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </section>
 
-      <!-- ===================================================================== -->
-      <!-- 1.5 SCROLL WORLD: RECORRIDO INTERACTIVO 3D SINCRONIZADO CON SCROLL    -->
-      <!-- ===================================================================== -->
-      <landing-scroll-world></landing-scroll-world>
 
-      <!-- ===================================================================== -->
-      <!-- 2. BENTO GRID MODULAR (Estilo Stripe Showcase de Productos)           -->
-      <!-- ===================================================================== -->
-      <section id="soluciones" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-10">
-        
-        <!-- Encabezado de Sección Estilo Stripe -->
-        <div class="max-w-3xl space-y-3">
-          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-[-0.03em] text-slate-900 leading-tight">
-            Soluciones integrales para cada modelo operativo.
-            <span class="text-slate-500 font-normal">
-              Gestiona tu abastecimiento con herramientas diseñadas para actuar de forma proactiva, en oficina o en campo.
-            </span>
-          </h2>
+      <!-- ========================================================================= -->
+      <!-- 3. TAGLINE / FILOSOFÍA CON REVELADO PALABRA POR PALABRA (CALCA MIDUDEV)   -->
+      <!-- ========================================================================= -->
+      <section #filosofiaSection id="filosofia" aria-label="Nuestra filosofía" class="relative overflow-hidden px-4 py-32 md:px-12 xl:px-24">
+        <!-- Espiral geométrica concéntrica idéntica a Midudev -->
+        <svg
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          class="pointer-events-none absolute top-1/2 left-1/2 w-[min(140vw,960px)] -translate-x-1/2 -translate-y-1/2 text-[#F0F4F8]/10 stroke-[0.3]">
+          <circle cx="50" cy="50" r="10" />
+          <circle cx="50" cy="50" r="18" />
+          <circle cx="50" cy="50" r="26" />
+          <circle cx="50" cy="50" r="34" />
+          <circle cx="50" cy="50" r="42" />
+          <circle cx="50" cy="50" r="50" />
+        </svg>
+
+        <div class="relative mx-auto flex min-h-[60vh] max-w-[760px] items-center justify-center text-center">
+          <p class="font-display text-3xl sm:text-4xl lg:text-6xl [text-wrap:balance] leading-[1.3]">
+            @for (line of taglineLines; track $index; let lIdx = $index) {
+              <span class="block">
+                @for (word of line; track $index; let wIdx = $index) {
+                  <span
+                    class="tagline-word inline-block mx-1.5 my-1 transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] text-[#F0F4F8]/30"
+                    [class.text-[#F0F4F8]]="isWordLitIndex(lIdx, wIdx)">
+                    {{ word }}
+                  </span>
+                }
+              </span>
+            }
+          </p>
         </div>
+      </section>
 
-        <!-- Fila de Tarjetas Bento Grid -->
-        <div class="grid lg:grid-cols-12 gap-8 items-stretch">
-          
-          <!-- Tarjeta Izquierda (Ancha): Terminal Móvil + Despacho SaaS -->
-          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col justify-between space-y-6 hover:border-slate-300 transition-all">
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                  Acepta y optimiza entregas en todo el país, en ruta y en destino
-                </h3>
-                <span class="h-8 w-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-                  <svg lucideMaximize2 [size]="14" class="stroke-[2]"></svg>
-                </span>
-              </div>
-              <p class="text-sm text-slate-600 leading-relaxed">
-                El chofer navega su hoja de ruta y el receptor hospitalario dictamina la recepción en destino con firma táctil digital, incluso en zonas sin señal de telefonía.
-              </p>
+
+      <!-- ========================================================================= -->
+      <!-- 4. CATÁLOGO DE INSUMOS DESTACADOS (CALCA EXACTA DISHES.ASTRO MIDUDEV)    -->
+      <!-- ========================================================================= -->
+      <section id="insumos" aria-labelledby="insumos-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10">
+        <div class="mx-auto max-w-6xl">
+          <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div class="max-w-xl">
+              <p class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">Insumos críticos de higiene</p>
+              <h2 id="insumos-title" class="mt-4 font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal">
+                Lo que llega a los centros de salud
+              </h2>
             </div>
+            <button
+              type="button"
+              (click)="session.login('/datos')"
+              class="link inline-flex items-center gap-2 self-start font-zen text-sm text-[#00C2FF] hover:underline md:self-auto cursor-pointer">
+              <span>Ver catálogo completo</span>
+              <svg lucideArrowUpRight [size]="16"></svg>
+            </button>
+          </div>
 
-            <!-- Mockup Visual Compuesto: Dispositivo Móvil + Modal Web -->
-            <div class="bg-gradient-to-tr from-slate-50 to-blue-50/40 rounded-xl p-4 sm:p-6 border border-slate-100 flex flex-col sm:flex-row items-center gap-5 justify-center">
-              
-              <!-- Terminal Móvil PWA Simulada -->
-              <div class="w-52 bg-white rounded-2xl p-4 shadow-xl border border-slate-200/90 space-y-3 shrink-0">
-                <div class="h-1.5 w-10 bg-slate-200 rounded-full mx-auto"></div>
-                <div class="text-center space-y-1">
-                  <span class="text-[10px] text-slate-400 font-mono uppercase block">Entrega Asignada</span>
-                  <strong class="text-base font-extrabold text-slate-900 block font-mono">60 L Químico</strong>
-                  <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
-                    Modo Avión Activo
+          <ol class="mt-12 divide-y divide-[#F0F4F8]/10">
+            @for (item of insumos; track item.numero) {
+              <li class="grid grid-cols-[auto_1fr] items-baseline gap-x-6 gap-y-1 py-6 md:grid-cols-[auto_1fr_auto] md:items-center lg:py-8">
+                <span class="font-display text-base text-[#00C2FF] tabular-nums font-normal">
+                  {{ item.numero }}
+                </span>
+                <div>
+                  <h3 class="font-display text-2xl lg:text-3xl text-[#F0F4F8] font-normal">
+                    {{ item.nombre }}
+                  </h3>
+                  <p class="mt-2 font-zen text-base text-[#F0F4F8]/70">
+                    {{ item.detalle }}
+                  </p>
+                </div>
+                <div class="col-start-2 mt-4 flex items-center gap-2 md:col-start-3 md:mt-0">
+                  <span class="rounded-full bg-[#060D1A]/80 px-3 py-1 font-zen text-xs text-[#00E5A3] ring-1 ring-[#00E5A3]/30">
+                    {{ item.categoria }}
                   </span>
                 </div>
-                <div class="border-t border-slate-100 pt-2 text-[11px] space-y-1 text-slate-600 font-mono">
-                  <div class="flex justify-between">
-                    <span>Parada:</span>
-                    <strong>04 / 08</strong>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>Ventana:</span>
-                    <strong>08:00 - 10:00</strong>
-                  </div>
-                </div>
-                <button type="button" class="w-full py-2 bg-expo-blue text-white rounded-lg text-xs font-bold shadow-sm">
-                  Confirmar Recepción
-                </button>
-              </div>
-
-              <!-- Vista SaaS de Escritorio Simulada -->
-              <div class="flex-1 w-full bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span class="text-xs font-bold text-slate-800 font-mono">Despacho Central CEQ</span>
-                  <span class="text-[10px] font-mono text-slate-400">Ruta R-01</span>
-                </div>
-                <div class="space-y-2 text-xs">
-                  <div class="flex items-center justify-between p-2 rounded bg-slate-50">
-                    <span class="font-medium text-slate-700">Hospital Laura</span>
-                    <span class="text-emerald-600 font-semibold font-mono">Entregado</span>
-                  </div>
-                  <div class="flex items-center justify-between p-2 rounded bg-blue-50/50">
-                    <span class="font-medium text-slate-700">Clínica San Rafael</span>
-                    <span class="text-expo-blue font-semibold font-mono">En Tránsito</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Tarjeta Derecha (Facturación / Demanda con Gráfica): Medidor de Consumo y Barras -->
-          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col justify-between space-y-6 hover:border-slate-300 transition-all">
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                  Predicción y control de demanda crítica
-                </h3>
-                <span class="h-8 w-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-                  <svg lucideMaximize2 [size]="14" class="stroke-[2]"></svg>
-                </span>
-              </div>
-              <p class="text-sm text-slate-600 leading-relaxed">
-                Supervisa el nivel de cobertura determinista en cada punto hospitalario con advertencias automáticas antes del quiebre.
-              </p>
-            </div>
-
-            <!-- Gráfica de Barras y Barra de Uso Estilo Stripe -->
-            <div class="bg-gradient-to-b from-slate-50 to-white rounded-xl p-5 border border-slate-100 space-y-4">
-              
-              <!-- Medidor de Consumo con Gradiente -->
-              <div class="bg-white p-3.5 rounded-xl border border-slate-200/70 shadow-sm space-y-2">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="font-bold text-slate-900 font-mono">Hospital Laura · Cobertura</span>
-                  <span class="font-mono text-expo-blue font-bold">5 Días Restantes</span>
-                </div>
-                <!-- Barra con Gradiente Azul -> Cyan -> Menta -->
-                <div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div class="h-full w-2/5 bg-gradient-to-r from-expo-blue via-expo-cyan to-expo-mint rounded-full"></div>
-                </div>
-                <div class="flex justify-between text-[10px] text-slate-400 font-mono">
-                  <span>Stock: 60L</span>
-                  <span>Lead Time: 2d + Margen 3d</span>
-                </div>
-              </div>
-
-              <!-- Gráfica de Barras Diarias Simuladas -->
-              <div class="bg-white p-3.5 rounded-xl border border-slate-200/70 shadow-sm space-y-2">
-                <span class="text-[11px] font-bold text-slate-700 block font-mono">Demanda Diaria Observada (L/día)</span>
-                
-                <div class="h-28 flex items-end justify-between gap-1 pt-4 px-1">
-                  <div class="w-full bg-blue-100 rounded-t h-[40%]"></div>
-                  <div class="w-full bg-blue-200 rounded-t h-[65%]"></div>
-                  <div class="w-full bg-blue-300 rounded-t h-[50%]"></div>
-                  <div class="w-full bg-blue-400 rounded-t h-[80%]"></div>
-                  <div class="w-full bg-expo-blue rounded-t h-[95%]"></div>
-                  <div class="w-full bg-blue-500 rounded-t h-[60%]"></div>
-                  <div class="w-full bg-blue-400 rounded-t h-[75%]"></div>
-                  <div class="w-full bg-blue-300 rounded-t h-[85%]"></div>
-                  <div class="w-full bg-expo-cyanDeep rounded-t h-[100%]"></div>
-                  <div class="w-full bg-blue-200 rounded-t h-[45%]"></div>
-                  <div class="w-full bg-blue-100 rounded-t h-[30%]"></div>
-                </div>
-                
-                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
-                  <span>Día 01</span>
-                  <span>Disparo de Alerta (Día 15)</span>
-                  <span>Día 30</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
+              </li>
+            }
+          </ol>
         </div>
       </section>
 
-      <!-- ===================================================================== -->
-      <!-- 3. LA COLUMNA VERTEBRAL: MÉTRICAS Y BURST RADIAL (Estilo Stripe)      -->
-      <!-- ===================================================================== -->
-      <section id="metricas" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center space-y-12">
-        
-        <div class="max-w-3xl mx-auto space-y-3">
-          <h2 class="text-3xl sm:text-5xl font-extrabold tracking-[-0.035em] text-slate-900 leading-tight">
-            La columna vertebral del abastecimiento institucional
+
+      <!-- ========================================================================= -->
+      <!-- 5. PRENSA Y RECONOCIMIENTOS (CALCA EXACTA PRESS.ASTRO MIDUDEV)            -->
+      <!-- ========================================================================= -->
+      <section id="prensa" aria-labelledby="prensa-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10 bg-[#060D1A]">
+        <figure class="mx-auto flex max-w-4xl flex-col items-center text-center">
+          <p id="prensa-title" class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">
+            Auditoría de Impacto Clínico
+          </p>
+          <blockquote class="mt-6">
+            <p class="font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal leading-snug">
+              “Con IstpetDev dejamos de apagar incendios. Sabemos con 5 días de anticipación qué abastecer y conservamos la evidencia física de cada entrega sin depender de la red móvil.”
+            </p>
+            <p class="mx-auto mt-6 max-w-2xl font-zen text-base text-[#F0F4F8]/70 lg:text-lg">
+              Operación continua en el corredor logístico Quito-Pichincha con cero roturas de stock reportadas durante 90 días evaluados.
+            </p>
+          </blockquote>
+          <figcaption class="mt-8 flex flex-col items-center gap-2 font-zen text-sm text-[#F0F4F8]/60">
+            <span>Dra. Andrea Morales · Dirección de Operaciones Sanitarias · 2026</span>
+            <a routerLink="/public-trace/HU-2026-EC-089" class="link inline-flex items-center gap-1.5 text-[#00C2FF] hover:underline">
+              <span>Auditar muestra de trazabilidad</span>
+              <svg lucideArrowUpRight [size]="14"></svg>
+            </a>
+          </figcaption>
+        </figure>
+      </section>
+
+
+      <!-- ========================================================================= -->
+      <!-- 6. MODALIDADES / EXPERIENCIAS (CALCA EXPERIENCES.ASTRO MIDUDEV)           -->
+      <!-- ========================================================================= -->
+      <section id="modalidades" aria-labelledby="exp-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10">
+        <div class="mx-auto max-w-6xl">
+          <div class="max-w-xl">
+            <p class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">Modalidades Operativas</p>
+            <h2 id="exp-title" class="mt-4 font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal">
+              Dos redes, cobertura garantizada
+            </h2>
+            <p class="mt-6 font-zen text-base text-[#F0F4F8]/70 lg:text-lg">
+              Solución determinista adaptable a hospitales públicos de alta complejidad o clínicas privadas con abastecimiento diario.
+            </p>
+          </div>
+
+          <div class="mt-12 grid gap-6 lg:grid-cols-[1fr_1fr_0.9fr]">
+            @for (exp of modalidades; track exp.nombre) {
+              <article
+                class="relative flex flex-col rounded-3xl p-6 ring-1 lg:p-8 bg-[#060D1A]"
+                [class.ring-[#00C2FF]/60]="exp.etiqueta"
+                [class.ring-[#F0F4F8]/15]="!exp.etiqueta">
+                @if (exp.etiqueta) {
+                  <p class="absolute -top-3 left-6 rounded-full bg-[#00C2FF] px-3 py-1 font-zen text-xs font-bold text-[#060D1A] lg:left-8">
+                    {{ exp.etiqueta }}
+                  </p>
+                }
+                <h3 class="font-display text-2xl text-[#F0F4F8] font-normal">{{ exp.nombre }}</h3>
+                <p class="mt-2 font-zen text-base text-[#F0F4F8]/70">{{ exp.descripcion }}</p>
+                <p class="mt-8 flex items-baseline gap-2">
+                  <span class="font-display text-5xl text-white">{{ exp.precio }}</span>
+                  <span class="font-zen text-sm text-[#F0F4F8]/50">{{ exp.periodo }}</span>
+                </p>
+                <p class="mt-1 font-zen text-sm text-[#F0F4F8]/50">{{ exp.cobertura }}</p>
+                <div class="mt-8 flex flex-1 items-end">
+                  <button
+                    type="button"
+                    (click)="session.login('/inicio')"
+                    class="btn btn-primary w-full py-3 rounded-full bg-[#0066FF] hover:bg-[#00C2FF] text-white font-zen text-sm font-medium transition-all cursor-pointer">
+                    <span>Activar en Torre de Control</span>
+                  </button>
+                </div>
+              </article>
+            }
+
+            <!-- Tarjeta lateral con máscara oval idéntica a Midudev (Vinos / Silos) -->
+            <article class="flex flex-col items-center gap-6 rounded-3xl p-6 text-center ring-1 ring-[#F0F4F8]/15 lg:p-8 bg-[#060D1A]">
+              <div class="mirror-frame mask-oval w-40 lg:w-48">
+                <img
+                  [src]="assets.walkthrough.scene3Silos"
+                  alt="Silos de Reserva"
+                  class="aspect-[3/4] w-full mask-oval object-cover" />
+              </div>
+              <div>
+                <h3 class="font-display text-2xl text-[#F0F4F8] font-normal">Buffer de Contingencia</h3>
+                <p class="mt-2 font-zen text-base text-[#F0F4F8]/70">
+                  Reserva estratégica física para absorber bloqueos de ruta o emergencias sanitarias sin quiebre.
+                </p>
+              </div>
+              <p class="font-display text-4xl text-[#00E5A3]">+5 Días</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ========================================================================= -->
+      <!-- 7. PREGUNTAS FRECUENTES (CALCA EXACTA FAQ.ASTRO MIDUDEV)                  -->
+      <!-- ========================================================================= -->
+      <section id="preguntas" aria-labelledby="faq-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10">
+        <div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_1.6fr]">
+          <div>
+            <p class="font-zen text-sm text-[#00C2FF] uppercase tracking-widest">Preguntas frecuentes</p>
+            <h2 id="faq-title" class="mt-4 font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal">
+              Antes de operar
+            </h2>
+            <p class="mt-6 max-w-sm font-zen text-base text-[#F0F4F8]/70">
+              ¿Tienes dudas técnicas sobre la auditoría o la API? Contáctanos directamente al equipo de ingeniería.
+            </p>
+          </div>
+
+          <div class="divide-y divide-[#F0F4F8]/10">
+            @for (faq of faqs; track faq.id) {
+              <details class="faq group">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-6 rounded-xl py-6 text-left text-lg font-zen text-[#F0F4F8] hover:text-[#00C2FF] transition-colors">
+                  <h3 class="text-lg font-normal">{{ faq.pregunta }}</h3>
+                  <svg lucidePlus [size]="20" class="faq-icon text-[#00C2FF] shrink-0 transition-transform"></svg>
+                </summary>
+                <div class="pb-6">
+                  <p class="max-w-2xl font-zen text-base text-[#F0F4F8]/70 leading-relaxed">
+                    {{ faq.respuesta }}
+                  </p>
+                </div>
+              </details>
+            }
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ========================================================================= -->
+      <!-- 8. AUDITORÍA Y CERTIFICACIÓN (CALCA EXACTA GIFT.ASTRO MIDUDEV)            -->
+      <!-- ========================================================================= -->
+      <section id="auditoria" aria-labelledby="auditoria-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10">
+        <div class="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
+          <div class="mirror-frame mask-mirror mx-auto w-full max-w-sm">
+            <img
+              [src]="assets.walkthrough.scene1Warehouse"
+              alt="Bodega Matriz Pallatanga e inspección óptica"
+              class="aspect-[4/5] w-full mask-mirror object-cover" />
+          </div>
+          <div>
+            <p class="font-zen text-sm text-[#00C2FF] uppercase tracking-widest">Auditoría Sanitaria Pública</p>
+            <h2 id="auditoria-title" class="mt-4 font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal leading-tight">
+              La mayor certeza es un lote inmutable
+            </h2>
+            <p class="mt-6 max-w-md font-zen text-base text-[#F0F4F8]/70 lg:text-lg leading-relaxed">
+              Un pasaporte digital con hash criptográfico SHA-256 por cada entrega hospitalaria. Verificable al instante desde cualquier teléfono móvil con código QR público, sin credenciales previas ni barreras de acceso.
+            </p>
+            <div class="mt-8 flex flex-wrap items-center gap-4">
+              <a
+                routerLink="/public-trace"
+                class="btn btn-ghost inline-flex items-center gap-2 px-6 py-3 rounded-full ring-1 ring-[#F0F4F8]/20 hover:bg-[#F0F4F8] hover:text-[#060D1A] text-[#F0F4F8] font-zen text-sm font-medium transition-all">
+                <svg lucideQrCode [size]="16" class="text-[#00C2FF]"></svg>
+                <span>Verificar Pasaporte QR</span>
+              </a>
+              <button
+                type="button"
+                (click)="session.login('/datos')"
+                class="link font-zen text-sm text-[#00C2FF] hover:underline cursor-pointer">
+                <span>Auditar catálogo de bultos</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ========================================================================= -->
+      <!-- 9. CIERRE FINAL / RESERVA (CALCA EXACTA FINALCTA.ASTRO MIDUDEV)           -->
+      <!-- ========================================================================= -->
+      <section id="final-cta" aria-labelledby="final-title" class="relative overflow-hidden px-4 py-32 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10 bg-[#060D1A]">
+        <svg
+          viewBox="0 0 100 100"
+          fill="none"
+          stroke="currentColor"
+          class="pointer-events-none absolute right-0 bottom-0 w-[640px] translate-x-1/3 translate-y-1/3 text-[#F0F4F8]/10 stroke-[0.3]">
+          <circle cx="50" cy="50" r="15" />
+          <circle cx="50" cy="50" r="30" />
+          <circle cx="50" cy="50" r="45" />
+        </svg>
+
+        <div class="relative mx-auto flex max-w-[680px] flex-col items-center text-center">
+          <!-- Marco en arco (mask-arch) idéntico a Midudev -->
+          <div class="w-48 lg:w-56 mirror-frame mask-arch">
+            <img
+              [src]="assets.walkthrough.scene4Hospital"
+              alt="Muelle Hospitalario"
+              class="aspect-[3/4] w-full mask-arch object-cover" />
+          </div>
+
+          <h2 id="final-title" class="mt-12 font-display text-4xl lg:text-6xl text-[#F0F4F8] font-normal leading-tight">
+            Te esperamos en la<br />Torre de Control
           </h2>
-        </div>
-
-        <!-- Matriz de 4 Cifras Clave Estilo Stripe -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-left border-y border-slate-200 py-10">
-          <div class="space-y-2">
-            <strong class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-mono block">
-              80 o más
-            </strong>
-            <p class="text-xs text-slate-600 leading-relaxed font-sans">
-              puntos de servicio y hospitales monitoreados a nivel nacional en la red de higiene.
-            </p>
-          </div>
-
-          <div class="space-y-2">
-            <strong class="text-3xl sm:text-4xl font-extrabold text-expo-blue tracking-tight font-mono block">
-              5 Días Antes
-            </strong>
-            <p class="text-xs text-slate-600 leading-relaxed font-sans">
-              anticipación predictiva de riesgo antes de que ocurra la rotura de stock.
-            </p>
-          </div>
-
-          <div class="space-y-2">
-            <strong class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-mono block">
-              100% Offline
-            </strong>
-            <p class="text-xs text-slate-600 leading-relaxed font-sans">
-              continuidad operativa en carretera y zonas hospitalarias sin señal celular.
-            </p>
-          </div>
-
-          <div class="space-y-2">
-            <strong class="text-3xl sm:text-4xl font-extrabold text-emerald-600 tracking-tight font-mono block">
-              90 Días Run
-            </strong>
-            <p class="text-xs text-slate-600 leading-relaxed font-sans">
-              simulación verificable con doble baseline y manifiesto exportable.
+          <p class="mt-6 font-zen text-base text-[#F0F4F8]/70 lg:text-lg max-w-md">
+            Monitoreo telemático continuo, 24 horas al día, 7 días a la semana en toda la red nacional.
+          </p>
+          <div class="mt-8 flex flex-col items-center gap-4">
+            <button
+              type="button"
+              (click)="session.login('/inicio')"
+              class="btn btn-primary px-8 py-3.5 rounded-full bg-[#0066FF] hover:bg-[#00C2FF] text-white font-zen text-sm font-medium shadow-xl transition-all cursor-pointer">
+              <span>Ingresar a la Plataforma</span>
+            </button>
+            <p class="font-zen text-sm text-[#F0F4F8]/70">
+              O consulta un pasaporte con código QR en <a routerLink="/public-trace" class="link text-[#00C2FF] hover:underline">Rastreo Público</a>
             </p>
           </div>
         </div>
-
-        <!-- Gráfico Burst Radial de Rutas (Simulando el Burst de Stripe) -->
-        <div class="relative max-w-2xl mx-auto h-48 flex items-center justify-center overflow-hidden">
-          <svg class="w-full h-full text-slate-300" viewBox="0 0 600 200" fill="none">
-            <circle cx="300" cy="200" r="40" stroke="#0066FF" stroke-width="2" stroke-dasharray="4 4" />
-            <circle cx="300" cy="200" r="90" stroke="#00C2FF" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6" />
-            <circle cx="300" cy="200" r="150" stroke="#00E5A3" stroke-width="1" stroke-dasharray="2 2" opacity="0.4" />
-            
-            <!-- Rayos / Rutas Vectoriales que irradian desde el centro -->
-            <line x1="300" y1="200" x2="100" y2="40" stroke="#0066FF" stroke-width="1.5" opacity="0.4" />
-            <line x1="300" y1="200" x2="160" y2="20" stroke="#00C2FF" stroke-width="1.5" opacity="0.6" />
-            <line x1="300" y1="200" x2="240" y2="10" stroke="#00E5A3" stroke-width="2" />
-            <line x1="300" y1="200" x2="300" y2="5" stroke="#0066FF" stroke-width="2" />
-            <line x1="300" y1="200" x2="360" y2="10" stroke="#00C2FF" stroke-width="2" />
-            <line x1="300" y1="200" x2="440" y2="20" stroke="#00E5A3" stroke-width="1.5" opacity="0.6" />
-            <line x1="300" y1="200" x2="500" y2="40" stroke="#0066FF" stroke-width="1.5" opacity="0.4" />
-
-            <!-- Nodos Hospitalarios Destacados -->
-            <circle cx="240" cy="10" r="4" fill="#00E5A3" />
-            <circle cx="300" cy="5" r="5" fill="#0066FF" />
-            <circle cx="360" cy="10" r="4" fill="#00C2FF" />
-            <circle cx="160" cy="20" r="3" fill="#0066FF" />
-            <circle cx="440" cy="20" r="3" fill="#00E5A3" />
-          </svg>
-        </div>
-
       </section>
 
-      <!-- ===================================================================== -->
-      <!-- 4. CASO DE ESTUDIO Y PROTOCOLOS (Estilo Hertz / Aerial View Stripe)   -->
-      <!-- ===================================================================== -->
-      <section id="flujo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-10">
-        
-        <!-- Banner Superior con Logo de Cliente -->
-        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-          <div class="flex items-center gap-3">
-            <span class="h-8 w-8 rounded-lg bg-blue-600 text-white font-black text-sm flex items-center justify-center font-mono">
-              HL
-            </span>
-            <span class="text-sm font-bold text-slate-900">
-              Hospital Laura optimiza su abastecimiento de limpieza y desinfección con IstpetDev.
-            </span>
-          </div>
-          <a routerLink="/public-trace/HU-2026-EC-089" class="text-xs font-bold text-expo-blue hover:underline hidden sm:inline-block">
-            Ver pasaporte de muestra &gt;
-          </a>
-        </div>
 
-        <!-- Tarjeta Visual Panorámica con Vista de Carretera / Corredor Logístico -->
-        <div class="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-slate-900 text-white relative">
+      <!-- ========================================================================= -->
+      <!-- 9. FOOTER SEMÁNTICO (CALCA EXACTA FOOTER.ASTRO MIDUDEV)                   -->
+      <!-- ========================================================================= -->
+      <footer class="px-4 pt-24 pb-12 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10 bg-[#060D1A]">
+        <div class="grid gap-12 md:grid-cols-2 xl:grid-cols-4">
           
-          <div class="h-72 sm:h-96 w-full relative flex items-center justify-center p-8 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950">
-            <!-- Representación gráfica de la red logística en carretera -->
-            <div class="max-w-xl text-center space-y-4 relative z-10">
-              <span class="text-xs font-mono font-bold uppercase tracking-wider text-expo-cyanLight bg-white/10 px-3 py-1 rounded-full border border-white/10">
-                Corredor Logístico Quito - Pichincha
-              </span>
-              <h3 class="text-2xl sm:text-4xl font-extrabold tracking-tight">
-                Control ininterrumpido en carretera y bodegas
-              </h3>
-              <p class="text-sm text-slate-300">
-                Resiliencia ante bloqueos viales: el sistema replanifica la ruta conservando las paradas ejecutadas y recalculando los tiempos para las entregas pendientes.
-              </p>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center text-[#F0F4F8] font-display text-lg tracking-widest">
+              <span>ISTPET DEV</span>
             </div>
-          </div>
-
-          <!-- Métricas del Caso al Pie de la Imagen -->
-          <div class="bg-white text-slate-800 p-6 sm:p-8 grid sm:grid-cols-3 gap-6 border-t border-slate-200 text-xs font-mono">
-            <div>
-              <span class="text-slate-400 block uppercase text-[10px]">Puntos Conectados</span>
-              <strong class="text-sm text-slate-900 font-bold block mt-0.5">80 Hospitales & Sedes</strong>
-            </div>
-            <div>
-              <span class="text-slate-400 block uppercase text-[10px]">Rutas Optimizadas</span>
-              <strong class="text-sm text-slate-900 font-bold block mt-0.5">+1,200 km / ciclo</strong>
-            </div>
-            <div>
-              <span class="text-slate-400 block uppercase text-[10px]">Protocolos Integrados</span>
-              <strong class="text-sm text-expo-blue font-bold block mt-0.5">VRP, QR, Offline PWA, 90d</strong>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Lista Acordeón de Protocolos Operativos Estilo Stripe -->
-        <div class="divide-y divide-slate-200 border-y border-slate-200">
-          
-          <div class="py-5">
-            <button
-              type="button"
-              (click)="toggleAccordion('p1')"
-              class="w-full flex items-center justify-between text-left group">
-              <div class="flex items-center gap-3">
-                <span class="h-6 w-6 rounded bg-blue-50 text-expo-blue flex items-center justify-center font-mono text-xs font-bold">1</span>
-                <span class="text-base font-bold text-slate-900 group-hover:text-expo-blue transition-colors">
-                  Contingencia vial y replanificación en ruta ante bloqueos
-                </span>
-              </div>
-              <svg lucidePlus [size]="18" class="text-slate-400 group-hover:text-slate-900 transition-transform" [class.rotate-45]="accordions['p1']"></svg>
-            </button>
-            @if (accordions['p1']) {
-              <p class="text-sm text-slate-600 pt-3 pl-9 max-w-3xl leading-relaxed">
-                Cuando una vía es cerrada por mantenimiento o emergencia, el motor de rutas recalcula de forma determinista la secuencia de paradas pendientes, actualiza la hora estimada de llegada y avisa al chofer sin alterar las entregas ya asentadas.
-              </p>
-            }
-          </div>
-
-          <div class="py-5">
-            <button
-              type="button"
-              (click)="toggleAccordion('p2')"
-              class="w-full flex items-center justify-between text-left group">
-              <div class="flex items-center gap-3">
-                <span class="h-6 w-6 rounded bg-cyan-50 text-expo-cyanDeep flex items-center justify-center font-mono text-xs font-bold">2</span>
-                <span class="text-base font-bold text-slate-900 group-hover:text-expo-cyanDeep transition-colors">
-                  Custodia inmutable con tokens criptográficos SHA-256
-                </span>
-              </div>
-              <svg lucidePlus [size]="18" class="text-slate-400 group-hover:text-slate-900 transition-transform" [class.rotate-45]="accordions['p2']"></svg>
-            </button>
-            @if (accordions['p2']) {
-              <p class="text-sm text-slate-600 pt-3 pl-9 max-w-3xl leading-relaxed">
-                Cada bulto físico generado en bodega lleva una etiqueta QR respaldada por un hash criptográfico. La consulta pública es segura y permite a cualquier auditor o cliente verificar su origen sin exponer datos internos.
-              </p>
-            }
-          </div>
-
-          <div class="py-5">
-            <button
-              type="button"
-              (click)="toggleAccordion('p3')"
-              class="w-full flex items-center justify-between text-left group">
-              <div class="flex items-center gap-3">
-                <span class="h-6 w-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center font-mono text-xs font-bold">3</span>
-                <span class="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                  Recepción hospitalaria con firma digital en modo avión
-                </span>
-              </div>
-              <svg lucidePlus [size]="18" class="text-slate-400 group-hover:text-slate-900 transition-transform" [class.rotate-45]="accordions['p3']"></svg>
-            </button>
-            @if (accordions['p3']) {
-              <p class="text-sm text-slate-600 pt-3 pl-9 max-w-3xl leading-relaxed">
-                En subsuelos hospitalarios sin red móvil, el receptor escanea el bulto y asienta su conformidad con firma digital táctil. Los datos se resguardan en IndexedDB y se sincronizan de forma idempotente con la API al recuperar la conexión.
-              </p>
-            }
-          </div>
-
-        </div>
-
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- 5. TRES PILARES CON ICONOS Y TESTIMONIO (Estilo Stripe Bottom)        -->
-      <!-- ===================================================================== -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-16">
-        
-        <!-- 3 Columnas con Iconos de Línea en Cajas Cuadradas -->
-        <div class="grid md:grid-cols-3 gap-8">
-          
-          <div class="space-y-4">
-            <div class="h-10 w-10 rounded-lg border border-blue-200 bg-blue-50/50 flex items-center justify-center text-expo-blue">
-              <svg lucideZap [size]="18" class="stroke-[2.2]"></svg>
-            </div>
-            <h3 class="text-base font-bold text-slate-900">
-              Detección sin falsos positivos
-            </h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Cruza existencias físicas, consumo diario y lead time de transporte con fórmulas deterministas verificables.
+            <p class="max-w-xs font-zen text-sm text-[#F0F4F8]/70">
+              Plataforma determinista de optimización y custodia logística hospitalaria para el Reto 1 de Expo Clean Ecuador 2026.
             </p>
-            <button type="button" (click)="session.login('/inicio')" class="inline-flex items-center gap-1 text-xs font-bold text-expo-blue hover:underline cursor-pointer">
-              <span>Ver panel operativo</span>
-              <svg lucideChevronRight [size]="14"></svg>
-            </button>
+            <nav aria-label="Secciones del sitio">
+              <ul class="flex flex-wrap gap-x-4 gap-y-2 font-zen text-sm text-[#F0F4F8]/70">
+                <li><a href="#recorrido" class="hover:text-white transition-colors">Recorrido</a></li>
+                <li><a href="#filosofia" class="hover:text-white transition-colors">Filosofía</a></li>
+                <li><a href="#insumos" class="hover:text-white transition-colors">Insumos</a></li>
+                <li><a href="#modalidades" class="hover:text-white transition-colors">Modalidades</a></li>
+                <li><a href="#preguntas" class="hover:text-white transition-colors">Preguntas</a></li>
+                <li><a href="#auditoria" class="hover:text-white transition-colors">Auditoría</a></li>
+              </ul>
+            </nav>
           </div>
 
-          <div class="space-y-4">
-            <div class="h-10 w-10 rounded-lg border border-cyan-200 bg-cyan-50/50 flex items-center justify-center text-expo-cyanDeep">
-              <svg lucideBarChart3 [size]="18" class="stroke-[2.2]"></svg>
-            </div>
-            <h3 class="text-base font-bold text-slate-900">
-              Rutas factibles con PostGIS
-            </h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Calcula secuencias óptimas considerando ventanas de recepción y capacidades vehiculares mediante OSRM.
-            </p>
-            <button type="button" (click)="session.login('/rutas')" class="inline-flex items-center gap-1 text-xs font-bold text-expo-blue hover:underline cursor-pointer">
-              <span>Explorar mapa</span>
-              <svg lucideChevronRight [size]="14"></svg>
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <div class="h-10 w-10 rounded-lg border border-emerald-200 bg-emerald-50/50 flex items-center justify-center text-emerald-600">
-              <svg lucideLock [size]="18" class="stroke-[2.2]"></svg>
-            </div>
-            <h3 class="text-base font-bold text-slate-900">
-              Custodia física inviolable
-            </h3>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              El receptor en destino dictamina la entrega conforme y sella el pasaporte con firma táctil digital.
-            </p>
-            <a routerLink="/public-trace" class="inline-flex items-center gap-1 text-xs font-bold text-expo-blue hover:underline">
-              <span>Consultar pasaporte</span>
-              <svg lucideChevronRight [size]="14"></svg>
+          <div class="flex flex-col gap-2 font-zen text-sm">
+            <h3 class="text-xs tracking-widest text-[#F0F4F8]/50 uppercase">Instalaciones</h3>
+            <address class="not-italic text-[#F0F4F8]/80 leading-relaxed">
+              Bodega Matriz Pallatanga<br />
+              Corredor Logístico Pichincha, Ecuador
+            </address>
+            <a routerLink="/public-trace" class="inline-flex items-center gap-2 text-[#00C2FF] hover:underline pt-2">
+              <svg lucideMapPin [size]="14"></svg>
+              <span>Ver centros monitoreados</span>
             </a>
           </div>
 
-        </div>
-
-        <!-- Cita Testimonial Estilo Stripe -->
-        <div class="max-w-4xl mx-auto text-center space-y-6 pt-10">
-          <div class="h-14 w-14 rounded-full bg-gradient-to-tr from-expo-blue to-expo-cyan text-white font-bold text-lg flex items-center justify-center mx-auto shadow-md">
-            AM
+          <div class="flex flex-col gap-2 font-zen text-sm">
+            <h3 class="text-xs tracking-widest text-[#F0F4F8]/50 uppercase">Operación</h3>
+            <p class="text-[#F0F4F8]/80">24 horas al día, 7 días a la semana</p>
+            <p class="text-[#F0F4F8]/60 text-xs">Telemetría satelital activa cada 500ms</p>
           </div>
 
-          <blockquote class="text-xl sm:text-2xl font-medium text-slate-800 leading-relaxed max-w-3xl mx-auto">
-            « Con IstpetDev dejamos de apagar incendios. Ya no esperamos la llamada desesperada de un hospital sin desinfectante: sabemos con 5 días de anticipación qué abastecer y conservamos la evidencia física de cada entrega sin depender de la señal móvil. »
-          </blockquote>
-
-          <div class="space-y-1">
-            <p class="text-sm font-bold text-slate-900">Dra. Andrea Morales</p>
-            <p class="text-xs text-slate-500 font-mono">Dirección de Operaciones y Abastecimiento de Higiene Hospitalaria</p>
-          </div>
-
-          <div>
-            <button type="button" (click)="session.login('/inicio')" class="text-xs font-bold text-expo-blue hover:underline inline-flex items-center gap-1 cursor-pointer">
-              <span>Ver caso de estudio completo</span>
-              <svg lucideChevronRight [size]="14"></svg>
-            </button>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- 6. CIERRE INFERIOR Y LLAMADO A LA ACCIÓN (Estilo Stripe Dark Banner)  -->
-      <!-- ===================================================================== -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div class="rounded-3xl bg-expo-dark text-white p-8 sm:p-14 relative overflow-hidden shadow-2xl">
-          <div aria-hidden="true" class="absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-gradient-to-br from-expo-blue via-expo-cyan to-expo-mint blur-3xl opacity-25 pointer-events-none"></div>
-
-          <div class="relative z-10 max-w-2xl space-y-6">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-white/10 text-expo-cyanLight border border-white/10">
-              Expo Clean Ecuador 2026 · Reto 1
+          <div class="flex flex-col gap-2 font-zen text-sm">
+            <h3 class="text-xs tracking-widest text-[#F0F4F8]/50 uppercase">Contacto</h3>
+            <a href="mailto:soporte@istpetdev.doicela.dev" class="inline-flex items-center gap-2 text-[#F0F4F8]/80 hover:text-white">
+              <svg lucideMail [size]="14"></svg>
+              <span>soporte&#64;istpetdev.doicela.dev</span>
+            </a>
+            <a href="tel:+593999999999" class="inline-flex items-center gap-2 text-[#F0F4F8]/80 hover:text-white">
+              <svg lucidePhone [size]="14"></svg>
+              <span>+593 (02) 299-9000</span>
+            </a>
+            <span class="inline-flex items-center gap-2 text-[#00E5A3] pt-1 text-xs">
+              <span class="size-1.5 rounded-full bg-[#00E5A3] animate-pulse"></span>
+              <span>PostGIS OSRM Activo</span>
             </span>
-            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-              La plataforma lista para la evaluación en vivo.
-            </h2>
-            <p class="text-slate-300 text-base sm:text-lg leading-relaxed">
-              Inicia sesión con tu rol asignado en la Torre de Control o escanea el código QR de un bulto con tu propio teléfono móvil para auditar la custodia.
-            </p>
-            <div class="flex flex-wrap items-center gap-4 pt-2">
-              <button
-                type="button"
-                (click)="session.login('/inicio')"
-                class="inline-flex items-center gap-2 rounded-full bg-expo-blue hover:bg-expo-blueDark px-7 py-3.5 font-bold text-white shadow-lg shadow-blue-900/40 transition-colors text-sm cursor-pointer">
-                <span>Ingresar a Torre de Control</span>
-                <svg lucideArrowRight [size]="16" class="stroke-[2.5]"></svg>
-              </button>
-              <a
-                routerLink="/public-trace"
-                class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 hover:bg-white/10 px-6 py-3.5 font-semibold text-white transition-colors text-sm">
-                <svg lucideQrCode [size]="16" class="stroke-[2] text-expo-cyan"></svg>
-                <span>Consultar Pasaporte QR</span>
-              </a>
-            </div>
           </div>
+
         </div>
-      </section>
+
+        <div class="mt-16 flex flex-col gap-4 pt-8 border-t border-[#F0F4F8]/10 font-zen text-xs text-[#F0F4F8]/50 md:flex-row md:items-center md:justify-between">
+          <p>© 2026 IstpetDev Platform · Expo Clean Ecuador 2026</p>
+          <ul class="flex flex-wrap gap-x-6 gap-y-2">
+            <li><a routerLink="/public-trace" class="hover:text-white transition-colors">Trazabilidad Pública</a></li>
+            <li><a routerLink="/simulation" class="hover:text-white transition-colors">Simulación 90d</a></li>
+            <li><a routerLink="/inicio" class="hover:text-white transition-colors">Acceso Operativo</a></li>
+          </ul>
+        </div>
+      </footer>
 
     </div>
   `
 })
-export class LandingPage implements OnInit {
+export class LandingPage implements OnInit, AfterViewInit, OnDestroy {
   readonly session = inject(AuthSession);
   private readonly router = inject(Router);
 
-  accordions: Record<string, boolean> = {
-    p1: true,
-    p2: false,
-    p3: false
-  };
+  @ViewChild('worldSection') worldSectionRef?: ElementRef<HTMLElement>;
+  @ViewChild('clip1Video') clip1VideoRef?: ElementRef<HTMLVideoElement>;
+  @ViewChild('filosofiaSection') filosofiaSectionRef?: ElementRef<HTMLElement>;
+
+  readonly assets = SCROLL_WORLD_ASSETS;
+
+  readonly stations: readonly LandingStation[] = [
+    { id: 'inicio', code: '00', badge: '00 INICIO', range: [0.0, 0.22] },
+    { id: 'bodega', code: '01', badge: '01 BODEGA', range: [0.22, 0.46] },
+    { id: 'telemetria', code: '02', badge: '02 POSTGIS', range: [0.46, 0.70] },
+    { id: 'reserva', code: '03', badge: '03 RESERVA', range: [0.70, 0.88] },
+    { id: 'esclusa', code: '04', badge: '04 CUSTODIA', range: [0.88, 1.0] }
+  ];
+
+  readonly taglineLines = [
+    ['Sin', 'margen', 'de', 'error:'],
+    ['abastecimiento', 'hospitalario', 'continuo,'],
+    ['trazabilidad', 'criptográfica', 'SHA-256,'],
+    ['cero', 'quiebres', 'en', 'sala', 'de', 'emergencias.']
+  ];
+
+  readonly insumos: readonly InsumoDestacado[] = [
+    {
+      numero: '01',
+      nombre: 'Amonio Cuaternario 5ta Generación',
+      detalle: 'Bidón 60L HDPE con precinto RFID y pureza verificada al 99.8% para desinfección de quirófanos.',
+      categoria: 'Alta Pureza'
+    },
+    {
+      numero: '02',
+      nombre: 'Hipoclorito de Sodio Grado Quirúrgico',
+      detalle: 'Garrafa 20L certificada con pH neutro estabilizado para desinfección de superficies críticas.',
+      categoria: 'Desinfección Crítica'
+    },
+    {
+      numero: '03',
+      nombre: 'Gel Antibacterial Hospitalario 70%',
+      detalle: 'Dispensador 1L con recarga rápida y válvula estéril para muelle y áreas de atención de emergencia.',
+      categoria: 'Asepsia Clínica'
+    },
+    {
+      numero: '04',
+      nombre: 'Detergente Tri-Enzimático Instrumental',
+      detalle: 'Concentrado 5L para limpieza profunda y eliminación de biocarga en instrumental quirúrgico.',
+      categoria: 'Enzimático'
+    },
+    {
+      numero: '05',
+      nombre: 'Alcohol Isopropílico Desnaturalizado 99.9%',
+      detalle: 'Envase 4L para desinfección de equipos médicos de alta sensibilidad y consolas telemáticas.',
+      categoria: 'Grado Médico'
+    }
+  ];
+
+  readonly modalidades: readonly ExperienciaLogistica[] = [
+    {
+      nombre: 'Red Hospitalaria Pública',
+      descripcion: 'Abastecimiento programado con asignación multialmacén para hospitales provinciales y centros MSP.',
+      precio: '80 Puntos',
+      periodo: 'en red activa',
+      cobertura: 'Previsión de 5 días con replanificación OSRM',
+      etiqueta: 'Recomendado'
+    },
+    {
+      nombre: 'Red Clínica Privada',
+      descripcion: 'Entrega prioritaria para salas de cirugía y muelles clínicos con ventana estricta de 2 horas.',
+      precio: '24/7',
+      periodo: 'despacho continuo',
+      cobertura: 'Telemetría térmica en tiempo real y geocerca activa'
+    }
+  ];
+
+  readonly faqs: readonly FaqItem[] = [
+    {
+      id: 'faq1',
+      pregunta: '¿Cómo funciona el escaneo y firma sin internet en subsuelos?',
+      respuesta: 'La aplicación PWA almacena firmas y registros en IndexedDB local. Al recuperar conectividad en el exterior, sincroniza automáticamente mediante transacciones idempotentes hacia la base de datos central de IstpetDev sin duplicidad.'
+    },
+    {
+      id: 'faq2',
+      pregunta: '¿Cómo se calcula el umbral de 5 días de anticipación?',
+      respuesta: 'El algoritmo cruza el consumo histórico diario reportado por cada hospital con el stock actual y la distancia en ruta. Si el inventario desciende por debajo de Lead Time + 3 días de reserva, el sistema genera de inmediato la orden de reposición.'
+    },
+    {
+      id: 'faq3',
+      pregunta: '¿Qué ocurre si surge un bloqueo de carretera o emergencia vial?',
+      respuesta: 'PostGIS y el motor de ruteo OSRM recalculan en tiempo real la ruta sobre corredores habilitados, preservando las entregas ya realizadas y notificando la nueva hora estimada de arribo a los muelles receptores.'
+    },
+    {
+      id: 'faq4',
+      pregunta: '¿Cómo se audita la autenticidad de un lote sin estar registrado?',
+      respuesta: 'Cualquier persona o inspector sanitario puede escanear el código QR público del bulto o ingresar su código alfanumérico en el Rastreo Público para verificar su firma criptográfica SHA-256 generada al momento del sellado en bodega matriz.'
+    }
+  ];
+
+  readonly progress = signal<number>(0);
+  readonly litWordsCount = signal<number>(0);
+  private videoBlobUrl: string | null = null;
+  private targetProgress = 0;
+  private currentProgress = 0;
+  private rafId: number | null = null;
+
+  readonly activeStationIndex = computed(() => {
+    const p = this.progress();
+    for (let i = 0; i < this.stations.length; i++) {
+      const [start, end] = this.stations[i].range;
+      if (p >= start && p < end) return i;
+    }
+    return this.stations.length - 1;
+  });
+
+  readonly activeStation = computed(() => this.stations[this.activeStationIndex()]);
 
   ngOnInit(): void {
     if (this.session.status() === 'authenticated') {
@@ -842,7 +912,189 @@ export class LandingPage implements OnInit {
     }
   }
 
-  toggleAccordion(id: string): void {
-    this.accordions[id] = !this.accordions[id];
+  ngAfterViewInit(): void {
+    if (typeof window === 'undefined') return;
+    void this.initVideoBlob(this.assets.walkthrough.clip1Video);
+    this.updateScroll();
+    this.updateTaglineReveal();
+    this.startLoop();
+  }
+
+  ngOnDestroy(): void {
+    if (this.rafId !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.videoBlobUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(this.videoBlobUrl);
+      this.videoBlobUrl = null;
+    }
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    this.updateScroll();
+    this.updateTaglineReveal();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateScroll();
+    this.updateTaglineReveal();
+  }
+
+  jumpTo(index: number): void {
+    if (typeof window === 'undefined') return;
+    const world = this.worldSectionRef?.nativeElement;
+    if (!world) return;
+
+    const [start, end] = this.stations[index].range;
+    const targetP = (start + end) / 2;
+    const rect = world.getBoundingClientRect();
+    const scrollTop = window.scrollY || window.pageYOffset;
+    const worldTop = rect.top + scrollTop;
+    const worldHeight = world.offsetHeight - window.innerHeight;
+    const targetY = worldTop + targetP * worldHeight;
+
+    window.scrollTo({ top: targetY, behavior: 'smooth' });
+  }
+
+  getSceneOpacity(index: number): number {
+    const p = this.progress();
+    if (index === 0) {
+      if (p <= 0.25) return 1;
+      if (p >= 0.38) return 0;
+      return 1 - (p - 0.25) / 0.13;
+    }
+    if (index === 1) {
+      if (p < 0.22 || p > 0.65) return 0;
+      if (p <= 0.35) return (p - 0.22) / 0.13;
+      if (p >= 0.52) return 1 - (p - 0.52) / 0.13;
+      return 1;
+    }
+    if (index === 2) {
+      if (p < 0.48 || p > 0.85) return 0;
+      if (p <= 0.62) return (p - 0.48) / 0.14;
+      if (p >= 0.74) return 1 - (p - 0.74) / 0.11;
+      return 1;
+    }
+    if (index === 3) {
+      if (p <= 0.72) return 0;
+      if (p >= 0.86) return 1;
+      return (p - 0.72) / 0.14;
+    }
+    return 0;
+  }
+
+  getSceneTransform(index: number): string {
+    const p = this.progress();
+    const local = Math.max(0, Math.min(1, p * 4 - index));
+    const scale = 1.0 + local * 0.06;
+    return `scale(${scale.toFixed(3)})`;
+  }
+
+  isWordLitIndex(lIdx: number, wIdx: number): boolean {
+    const offsets = [0, 4, 7, 10];
+    const index = (offsets[lIdx] ?? 0) + wIdx;
+    return index < this.litWordsCount();
+  }
+
+  private updateTaglineReveal(): void {
+    if (typeof window === 'undefined') return;
+    const el = this.filosofiaSectionRef?.nativeElement;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const windowH = window.innerHeight;
+    const startY = windowH * 0.85;
+    const endY = windowH * 0.35;
+    const totalDist = rect.height + (startY - endY);
+    if (totalDist <= 0) return;
+    const currentDist = startY - rect.top;
+    const p = Math.max(0, Math.min(1, currentDist / totalDist));
+    this.litWordsCount.set(Math.round(p * 16));
+  }
+
+  private updateScroll(): void {
+    if (typeof window === 'undefined') return;
+    const world = this.worldSectionRef?.nativeElement;
+    if (!world) return;
+
+    const rect = world.getBoundingClientRect();
+    const worldHeight = world.offsetHeight - window.innerHeight;
+    if (worldHeight <= 0) return;
+
+    const scrolled = -rect.top;
+    this.targetProgress = Math.max(0, Math.min(1, scrolled / worldHeight));
+  }
+
+  private startLoop(): void {
+    const tick = () => {
+      const diff = this.targetProgress - this.currentProgress;
+      if (Math.abs(diff) > 0.0004) {
+        this.currentProgress += diff * 0.15;
+        this.progress.set(this.currentProgress);
+        this.syncVideoScrub(this.currentProgress);
+      } else if (this.currentProgress !== this.targetProgress) {
+        this.currentProgress = this.targetProgress;
+        this.progress.set(this.currentProgress);
+        this.syncVideoScrub(this.currentProgress);
+      }
+
+      this.rafId = requestAnimationFrame(tick);
+    };
+
+    this.rafId = requestAnimationFrame(tick);
+  }
+
+  private async initVideoBlob(src: string): Promise<void> {
+    const video = this.clip1VideoRef?.nativeElement;
+    if (!video) return;
+
+    video.muted = true;
+    video.playsInline = true;
+
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(res.statusText);
+      const blob = await res.blob();
+      this.videoBlobUrl = URL.createObjectURL(blob);
+      video.src = this.videoBlobUrl;
+    } catch {
+      video.src = src;
+    }
+
+    video.load();
+
+    const loaded = await new Promise<boolean>((resolve) => {
+      video.addEventListener('loadeddata', () => resolve(true), { once: true });
+      video.addEventListener('error', () => resolve(false), { once: true });
+    });
+
+    if (loaded) {
+      await video.play().catch(() => {});
+      video.pause();
+      try {
+        video.currentTime = 0.01;
+      } catch {
+        // Ignored on locked decode
+      }
+    }
+  }
+
+  private syncVideoScrub(p: number): void {
+    const video = this.clip1VideoRef?.nativeElement;
+    if (!video || !video.duration || Number.isNaN(video.duration)) return;
+    if (video.seeking) return;
+
+    // Clip 1 covers scroll progress from 0.0 to 0.40
+    const local = Math.max(0, Math.min(1, p / 0.40));
+    const targetTime = local * Math.max(0, video.duration - 0.05);
+    if (Math.abs(video.currentTime - targetTime) > 0.02) {
+      try {
+        video.currentTime = targetTime;
+      } catch {
+        // Ignored on locked decode
+      }
+    }
   }
 }

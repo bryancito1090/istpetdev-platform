@@ -16,7 +16,7 @@ tags: [arquitectura, contratos]
 | ADR-01 | Versión .NET | .NET 8 | **Aceptada por Bryan, 2026-10-07** (be0b127): .NET 8; actualización planificada antes del fin de soporte. Ver complemento |
 | ADR-02 | Topología | Clean Architecture + CQRS | API modular, una base; separación lógica de lectura/escritura |
 | ADR-03 | Motor/IDs | PostgreSQL/PostGIS + UUID v7 | **Diseño concretado, 2026-10-07** (be0b127): PostgreSQL 16 + PostGIS compatible; UUID v7 generado en aplicación. Ver complemento |
-| ADR-04 | Stack Web/Móvil | Angular 22, Ionic 8, Signals y Shared Core | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Angular 22 Standalone, Ionic 8, Signals para UI, RxJS para flujos asíncronos, monorepo `@istpetdev/shared-core`, Arquetipo B Técnico/Minimalista, Lucide Icons (`lucide-angular`) y tokens oficiales de Expo Clean Ecuador en `tailwind.config.js` ([[Sistema de diseno y colores]]). |
+| ADR-04 | Stack Web/Móvil | Angular 22, Ionic 8, Signals y Shared Core | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Angular 22 Standalone, Ionic 8, Signals para UI, RxJS para flujos asíncronos, monorepo `@istpetdev/shared-core`, Arquetipo B Técnico/Minimalista, Lucide Icons (`lucide-angular`) y tokens oficiales de Expo Clean Ecuador en `tailwind.config.js` ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]). |
 | ADR-05 | Mapas | Leaflet + OpenStreetMap | **Aceptada por Jefe de Frontend y Bryan, 2026-10-11**: Leaflet (`leaflet` + `@types/leaflet`) con OpenStreetMap en componente desacoplado `shared/ui/map-view` y orquestación en `widgets/route-map`. Código abierto, sin costo ni cuotas de API keys que arriesguen la demo. |
 | ADR-06 | Offline | SQLite/IndexedDB | **Diseño concretado, 2026-10-07** (be0b127): PWA con IndexedDB primero; Capacitor 8 después. Ver complemento |
 | ADR-07 | Tiempo real | SignalR + autoscaling | Redis backplane al permitir varias réplicas; afinidad probada |
@@ -55,14 +55,14 @@ No tomar orden UUID como orden de recepción offline; conservar fechas y secuenc
 **Aceptada, 2026-10-06.** Deciders: PENDIENTE (registrada por JorgeDoicela, commit 4c3a9ef). Contexto: se requiere coherencia estricta entre la web de gestión y la app móvil, evitando reescribir contratos o lidiar con suscripciones descontroladas de RxJS en componentes.
 
 **Elección:**
-1. **Versiones fijadas y diseño:** Node.js 22, Angular 22 (Standalone Components), Ionic 8, Capacitor 6, Tailwind CSS 3.4+, Arquetipo B (Técnico/Minimalista) y paleta oficial de Expo Clean Ecuador ([[Sistema de diseno y colores]]).
+1. **Versiones fijadas y diseño:** Node.js 22, Angular 22 (Standalone Components), Ionic 8, Capacitor 6, Tailwind CSS 3.4+, Arquetipo B (Técnico/Minimalista) y paleta oficial de Expo Clean Ecuador ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]).
 2. **Modelo reactivo:** Angular Signals (`signal()`, `computed()`, `input()`, `output()`) para todo el estado síncrono de UI y componentes. RxJS exclusivamente para flujos asíncronos complejos, debounce de inputs y canales WebSockets de SignalR, integrados con `toSignal()`.
 3. **Monorepo Shared Core (`libs/shared-core`):** Librería compartida para tipos TypeScript de dominio, DTOs de API, validadores de esquemas y utilidades de conversión de unidades logísticas (litros, kilos, cajas), consumida por `apps/web` y `apps/mobile`.
 4. **Desacoplamiento de mapas:** Componente `shared/ui/map-view` puramente visual y agnóstico a lógica de negocio, orquestado desde `widgets/route-map`.
 5. **Carga ultraligera de QR:** Ruta `/trace/:id` aislada en lazy loading (< 150 KB gzip) para una carga rápida en el teléfono del jurado (objetivo sin medir).
 6. **Iconos y dependencias de UI:** Se adopta `@lucide/angular` como el único paquete oficial de iconos técnicos. Se prohíbe el uso de `lucide-angular` (deprecado/duplicado) y `@angular/animations` (innecesario al usar utilidades CSS de Tailwind). Política de control de dependencias auditada bajo [[Verificacion de seguridad antes del lanzamiento]].
 
-Detalles en [[Frontend y componentes]], [[Sistema de diseno y colores]] y [[Frontend con Feature-Sliced Design]].
+Detalles en [[Frontend y componentes]], [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]] y [[Frontend con Feature-Sliced Design]].
 
 ## ADR-05 — mapas y cartografía interactiva
 

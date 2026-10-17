@@ -103,6 +103,9 @@ module.exports = {
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'Inter', '"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        display: ['"Hina Mincho"', 'serif'],
+        hina: ['"Hina Mincho"', 'serif'],
+        zen: ['"Zen Kaku Gothic New"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'monospace'],
       },
       boxShadow: {

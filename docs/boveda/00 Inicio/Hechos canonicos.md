@@ -75,7 +75,7 @@ Decisiones del 7 de octubre registradas por bryancito1090 (be0b127) en [[Reposit
 | Móvil | PWA con Ionic 8 e IndexedDB primero; Capacitor 8 para el empaquetado nativo posterior | ADR-06 concretada | — | ✅ diseño |
 | Tailwind | 3.4 | ADR-04 | — | ✅ |
 | Mapas | Leaflet + OpenStreetMap en componente desacoplado `shared/ui/map-view`; sin costo ni cuotas | ADR-05 aceptada | — | ✅ |
-| Arquetipo visual y UI | Arquetipo B — Técnico/Minimalista; Lucide Icons (`lucide-angular`), paleta oficial Expo Clean (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`) y tokens semánticos en `tailwind.config.js` ([[Sistema de diseno y colores]]) | ADR-04 ratificada | — | ✅ |
+| Arquetipo visual y UI | Arquetipo B — Técnico/Minimalista; Lucide Icons (`lucide-angular`), paleta oficial Expo Clean (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`) y tokens semánticos en `tailwind.config.js` ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]) | ADR-04 ratificada | — | ✅ |
 | Móvil offline y firma | PWA con IndexedDB (`idb`), `signature_pad` para firma táctil y UUID v7 | ADR-06, ADR-17 aceptadas | — | ✅ |
 | Tiempo real | SignalR; Redis solo con varias réplicas | ADR-07 propuesta | — | ⚠️ |
 | IA | Cálculo determinista; LLM (DeepSeek) solo explica; n8n en el servidor existente de Bryan. Diseño del 12-oct aceptado por Bryan el 14-oct: agente con herramientas y autonomía limitada, DeepSeek con prueba de aceptación (ADR-22) | ADR-08, ADR-22 | Papel del LLM resuelto por aprobación de ADR-22; ejecución remota en #39 | ✅ diseño confirmado |
