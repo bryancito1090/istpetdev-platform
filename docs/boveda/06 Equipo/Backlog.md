@@ -1,7 +1,7 @@
 ---
 tipo: ejecucion
 estado: propuesta
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 tags: [hackathon, istpetdev]
 ---
 
@@ -125,3 +125,20 @@ Propuesta de la sesión de definición registrada en [[Definiciones de producto 
 | B-47 | Campo: QR, despacho, custodia, recepción offline, evidencia y consulta pública (spec 004) | B-41, B-42; avisos de B-44 | Criterios CE-01 a CE-10 del [spec 004](../../specs/004-campo-qr-custodia-offline/spec.md) (incluye login PKCE, PWA por HTTPS y `advance`); teléfono real en modo avión, reinicio y reintento | Pendiente |
 | B-48 | Panel web conectado a riesgos, rutas, decisiones y entregas (spec 005) | B-41, B-42, B-44, B-47; lecturas de 002/004 | CE-01 a CE-03 del [spec 005](../../specs/005-panel-simulador/spec.md); sin cifras/puntos fijos y acciones confirmadas por API antes de H4 | Pendiente |
 | B-49 | Simulador nacional de 90 días y comparación reproducible (spec 005) | B-41, B-42; importador y matriz homogénea | CE-04 a CE-08 del spec 005: tres seeds base, una adversa, dos baselines, exportación/hash y benchmark regional completo ≤60 min antes de H4 | Pendiente |
+
+## Planificación potenciada — 16-oct-2026
+
+Fuente: [[Planificacion potenciada - propuesta del evento]]. Colas y orden de fusión en el issue fijado #253.
+
+| Issue | Pieza | Persona | Prioridad |
+|---|---|---|---|
+| #243 | Dataset `demo-quito-planificacion` y configuración de la demo | Bryan | 🔴 |
+| #240 | Costo total de servir (🗄️ migración) | Bryan | 🔴 |
+| #241 | Operador contratado y recomendación con justificación | Bryan | 🟡 |
+| #242 | Pantalla A/B/C en el asistente de Rutas | Alexander | 🟡 |
+| #235 | Tarjeta con los 6 indicadores de la charla | Jorge | 🔴 |
+| #236 / #237 | Error de rotulado, mermas por motivo y costo de reentrega | Anthony | 🟡 |
+| #244 | Restricción horaria por tipo de vehículo | Jorge | 🟢 |
+| #245 / #246 | Horas pico; congestión y manifestación con retraso parcial | Anthony | 🟢 |
+| #247 | Guía de retorno de lo no entregado | Alexander | 🟢 |
+| #248 / #249 | Error del pronóstico; capacitación e indicadores sencillos | Joseph | 🟢 |

@@ -24,6 +24,23 @@ import {
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
+import {
+  RouteOptionComparisonData,
+  FuelReferencePrice,
+  ComparisonRowDefinition,
+  COMPARISON_ROWS,
+  DEMO_QUITO_PITCH_OPTIONS,
+  DEMO_QUITO_FUEL_REFERENCE
+} from './route-comparison.model';
+import {
+  computeRouteTrackingSummary,
+  computeStopProgressList,
+  getDeliveryStatusBadgeClass,
+  getHuStatusBadgeClass,
+  translateDeliveryStatus,
+  translateHuStatus,
+  translateStopStatus
+} from './route-tracking.model';
 
 /** Un color por vehículo, en el orden de sus códigos; distinguibles entre sí sobre el mapa. */
 export const ROUTE_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2',
@@ -153,7 +170,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       <div class="flex items-center gap-6 border-b border-slate-200">
         <button
           type="button"
-          (click)="activeTab.set('rutas')"
+          (click)="activeTab.set('rutas'); startTrackingTimer()"
           class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
           [ngClass]="activeTab() === 'rutas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
           <span>Rutas Planificadas</span>
@@ -162,7 +179,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
         <button
           type="button"
-          (click)="activeTab.set('rechazos'); loadRejectedCaptures()"
+          (click)="activeTab.set('rechazos'); stopTrackingTimer(); loadRejectedCaptures()"
           class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
           [ngClass]="activeTab() === 'rechazos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
           <span>Bandeja de Capturas Rechazadas</span>
@@ -182,7 +199,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
             <span>{{ feedbackMessage()!.text }}</span>
           </div>
-          <button (click)="feedbackMessage.set(null)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
+          <div class="flex items-center gap-2">
+            @if (hasRemainingPendingOrders()) {
+              <button
+                type="button"
+                (click)="openWizardForRemainingOrders()"
+                class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-bold hover:bg-emerald-800 transition-colors shadow-xs">
+                + Crear siguiente ruta con los pedidos pendientes restantes
+              </button>
+            }
+            <button (click)="feedbackMessage.set(null); hasRemainingPendingOrders.set(false)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
+          </div>
         </div>
       }
 
@@ -602,6 +629,107 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
+                <!-- #231: SEGUIMIENTO EN VIVO: LÍNEA DE AVANCE, RESUMEN Y ESTADOS EN ESPAÑOL -->
+                @if (selectedDetail()!.stops.length > 0) {
+                  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-primary-950 text-white rounded-xl p-4 shadow-sm space-y-3" data-testid="tracking-card">
+                    <!-- Resumen superior y botón de actualización -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+                      <div class="flex items-center gap-2.5">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold tracking-tight text-white">
+                              Seguimiento de Ruta en Vivo
+                            </h4>
+                            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Autorefresco 25s
+                            </span>
+                          </div>
+                          <p class="text-xs text-slate-300 font-mono mt-0.5" data-testid="tracking-summary-text">
+                            {{ trackingSummary().summaryText }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Controles de actualización -->
+                      <div class="flex items-center gap-2 text-xs">
+                        <span class="text-[11px] text-slate-400 font-mono" data-testid="last-tracking-update">
+                          {{ lastTrackingUpdateText() }}
+                        </span>
+                        <button
+                          type="button"
+                          (click)="manualRefreshTracking()"
+                          [disabled]="trackingRefreshing()"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-white font-medium text-xs transition-colors border border-slate-600 disabled:opacity-50"
+                          data-testid="btn-refresh-tracking">
+                          <span [class.animate-spin]="trackingRefreshing()">🔄</span>
+                          <span>Actualizar</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Línea de avance por parada (Línea de tiempo / Stepper) -->
+                    <div class="pt-2 overflow-x-auto pb-2">
+                      <div class="flex items-start min-w-[640px] gap-2">
+                        @for (stop of stopProgressList(); track stop.sequence; let idx = $index; let last = $last) {
+                          <div class="flex-1 flex flex-col items-center text-center relative group">
+                            <!-- Conector entre paradas -->
+                            @if (!last) {
+                              <div class="absolute top-4 left-1/2 w-full h-0.5 -z-0"
+                                   [ngClass]="stop.isCompleted ? 'bg-emerald-500' : (stop.isCurrent ? 'bg-gradient-to-r from-amber-400 to-slate-700' : 'bg-slate-700')">
+                              </div>
+                            }
+
+                            <!-- Círculo / Icono de estado -->
+                            <div class="relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs font-mono transition-transform group-hover:scale-105"
+                                 [ngClass]="{
+                                   'bg-emerald-500 text-white shadow-md shadow-emerald-900/50 ring-2 ring-emerald-300': stop.isCompleted,
+                                   'bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-900/40 ring-4 ring-amber-400/30': stop.isCurrent,
+                                   'bg-slate-700 text-slate-400 border border-slate-600': stop.isPending
+                                 }">
+                              @if (stop.isCompleted) {
+                                <span>✓</span>
+                              } @else if (stop.isCurrent) {
+                                <span>📍</span>
+                              } @else {
+                                <span>{{ stop.sequence }}</span>
+                              }
+                            </div>
+
+                            <!-- Indicador de Parada Actual -->
+                            @if (stop.isCurrent) {
+                              <span class="mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs" data-testid="badge-current-stop">
+                                Parada actual
+                              </span>
+                            }
+
+                            <!-- Info de la parada -->
+                            <span class="mt-1 text-xs font-bold text-slate-200 truncate max-w-[130px]" [title]="stop.name">
+                              {{ stop.name }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono">
+                              {{ stop.kind === 'Pickup' ? 'Bodega' : 'Parada ' + stop.sequence }} · {{ stop.etaOrWindow }}
+                            </span>
+
+                            <!-- Estado en español -->
+                            <span class="mt-1 px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  [ngClass]="{
+                                    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': stop.isCompleted,
+                                    'bg-amber-500/20 text-amber-300 border border-amber-500/30': stop.isCurrent,
+                                    'bg-slate-800 text-slate-400 border border-slate-700': stop.isPending
+                                  }">
+                              {{ stop.statusLabel }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
                   <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
@@ -759,14 +887,14 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 </span>
                               }
                               @if (stop.deliveryStatus) {
-                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
-                                  [ngClass]="stop.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : (stop.deliveryStatus === 'Proposed' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700')">
-                                  Entrega: {{ stop.deliveryStatus }}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border"
+                                  [ngClass]="getDeliveryStatusBadgeClass(stop.deliveryStatus)">
+                                  Entrega: {{ translateDeliveryStatus(stop.deliveryStatus) }}
                                 </span>
                               }
-                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
-                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                                Parada: {{ stop.status }}
+                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border"
+                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'">
+                                Parada: {{ translateStopStatus(stop.status) }}
                               </span>
                               <span class="text-xs text-slate-400 font-mono">
                                 {{ expandedStopSeqs().has(stop.sequence) ? '▲' : '▼' }}
@@ -783,8 +911,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                   <div class="flex items-center gap-2">
                                     <span class="text-slate-500 font-mono">Entrega:</span>
                                     <strong class="font-mono text-slate-800">{{ stop.deliveryCode || 'DEL-...' }}</strong>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200">
-                                      {{ stop.deliveryStatus || 'Planificada' }}
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border"
+                                      [ngClass]="getDeliveryStatusBadgeClass(stop.deliveryStatus)">
+                                      {{ translateDeliveryStatus(stop.deliveryStatus) }}
                                     </span>
                                   </div>
 
@@ -794,7 +923,10 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                       @for (hu of stop.handlingUnits; track hu.id) {
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-300 font-mono text-[10px]">
                                           <span>📦 {{ hu.code }}</span>
-                                          <span class="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-bold uppercase">{{ hu.status }}</span>
+                                          <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border"
+                                            [ngClass]="getHuStatusBadgeClass(hu.status)">
+                                            {{ translateHuStatus(hu.status) }}
+                                          </span>
                                         </span>
                                       }
                                     </div>
@@ -853,9 +985,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                             }
                                           </td>
                                           <td class="p-2 text-right">
-                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                                              [ngClass]="line.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                                              {{ line.deliveryStatus || stop.deliveryStatus || 'Planificada' }}
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border"
+                                              [ngClass]="getDeliveryStatusBadgeClass(line.deliveryStatus || stop.deliveryStatus)">
+                                              {{ translateDeliveryStatus(line.deliveryStatus || stop.deliveryStatus) }}
                                             </span>
                                           </td>
                                         </tr>
@@ -1432,7 +1564,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <p class="text-xs text-slate-300 mt-0.5">
                 @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
                 @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
-                @if (wizardStep() === 3) { Evalúa las opciones de viaje (A: Consolidado vs B: Escalonado) y valida el orden de paradas. }
+                @if (wizardStep() === 3) { Compara opciones A/B/C (propia vs contratada), desglose de costos, riesgos y justificación. }
                 @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
               </p>
             </div>
@@ -1443,8 +1575,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Cuerpo Asistente -->
           <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
             
-            <!-- Columna Izquierda: Formulario y Pasos (5 Cols) -->
-            <div class="lg:col-span-5 p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto">
+            <!-- Columna Izquierda: Formulario y Pasos -->
+            <div class="p-4 border-r border-slate-200 flex flex-col gap-3 bg-slate-50/60 overflow-y-auto transition-all"
+              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
               
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
@@ -1459,7 +1592,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </button>
                   </div>
 
-                  <!-- Formulario Nuevo Pedido Rápido -->
+                  <!-- Formulario Nuevo Pedido Rápido con Prioridad -->
                   @if (showNewOrderForm()) {
                     <div class="p-3 bg-white rounded-xl border border-primary-200 shadow-sm space-y-2 text-xs">
                       <span class="font-bold text-slate-800 block text-[11px] uppercase">Nuevo Pedido</span>
@@ -1474,7 +1607,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         </select>
                       </div>
 
-                      <div class="grid grid-cols-2 gap-2">
+                      <div class="grid grid-cols-3 gap-2">
                         <div>
                           <label class="text-[10px] text-slate-500 block">Producto</label>
                           <select [(ngModel)]="newOrderProdId" class="w-full text-xs p-1.5 border rounded">
@@ -1485,8 +1618,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </select>
                         </div>
                         <div>
-                          <label class="text-[10px] text-slate-500 block">Cantidad Requerida</label>
+                          <label class="text-[10px] text-slate-500 block">Cantidad</label>
                           <input type="number" [(ngModel)]="newOrderQty" min="1" class="w-full text-xs p-1.5 border rounded font-mono" />
+                        </div>
+                        <div>
+                          <label class="text-[10px] text-slate-500 block">Prioridad</label>
+                          <select [(ngModel)]="newOrderPriority" class="w-full text-xs p-1.5 border rounded font-semibold text-slate-700">
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Low">Low</option>
+                          </select>
                         </div>
                       </div>
 
@@ -1500,27 +1642,87 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </div>
                   }
 
-                  <!-- Lista de Pedidos Disponibles con Checkbox -->
-                  <div class="space-y-2">
-                    @for (ord of pendingOrders(); track ord.id) {
-                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2 text-xs cursor-pointer"
-                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200'"
+                  <!-- Filtros rápidos y acciones por lote -->
+                  <div class="space-y-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase mr-1">Filtros:</span>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('all')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'all' ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Todos ({{ pendingOrders().length }})
+                      </button>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('critical_high')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'critical_high' ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Críticos y Altos
+                      </button>
+                      <button
+                        type="button"
+                        (click)="orderFilter.set('today')"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors"
+                        [ngClass]="orderFilter() === 'today' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                        Pendientes para Hoy
+                      </button>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        (click)="selectAllCritical()"
+                        class="font-semibold text-rose-700 hover:underline">
+                        ★ Seleccionar todos los críticos
+                      </button>
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          (click)="selectAllFiltered()"
+                          class="font-semibold text-primary-700 hover:underline text-[10px]">
+                          Seleccionar visibles
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button
+                          type="button"
+                          (click)="deselectAllOrders()"
+                          class="font-semibold text-slate-500 hover:underline text-[10px]">
+                          Deseleccionar todos
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Lista de Pedidos Disponibles con Checkbox y Jerarquía Visual -->
+                  <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    @for (ord of filteredPendingOrders(); track ord.id) {
+                      <div class="p-3 rounded-xl border bg-white shadow-xs flex items-start gap-2.5 text-xs cursor-pointer transition-all"
+                        [ngClass]="selectedOrderIds().has(ord.id) ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200 hover:border-slate-300'"
                         (click)="toggleOrderSelection(ord.id)">
                         <input
                           type="checkbox"
                           [checked]="selectedOrderIds().has(ord.id)"
                           (click)="$event.stopPropagation()"
                           (change)="toggleOrderSelection(ord.id)"
-                          class="mt-0.5 rounded text-primary-600" />
+                          class="mt-1 rounded text-primary-600" />
                         <div class="flex-1 min-w-0">
-                          <div class="flex items-center justify-between">
-                            <span class="font-bold text-slate-900">{{ ord.orderNumber }}</span>
-                            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold"
-                              [ngClass]="ord.priority === 'Critical' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'">
-                              {{ ord.priority }}
+                          <div class="flex items-center justify-between gap-1">
+                            <span class="font-bold text-slate-900 font-mono">{{ ord.orderNumber }}</span>
+                            <span class="text-[9px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border"
+                              [ngClass]="{
+                                'bg-rose-100 text-rose-800 border-rose-300 font-bold': ord.priority === 'Critical',
+                                'bg-amber-100 text-amber-800 border-amber-300 font-bold': ord.priority === 'High',
+                                'bg-blue-50 text-blue-700 border-blue-200 font-medium': ord.priority === 'Normal',
+                                'bg-slate-100 text-slate-600 border-slate-200 font-normal': ord.priority === 'Low' || !ord.priority
+                              }">
+                              {{ ord.priority || 'Normal' }}
                             </span>
                           </div>
                           <p class="text-[11px] font-semibold text-primary-700 mt-0.5">Destino: {{ ord.destinationName }}</p>
+                          @if (ord.requiredDateUtc) {
+                            <p class="text-[10px] text-slate-400 font-mono">Requerido: {{ ord.requiredDateUtc | date:'shortDate' }}</p>
+                          }
                           <div class="mt-1 space-y-0.5 text-[10px] text-slate-500 font-mono">
                             @for (l of ord.lines; track l.id) {
                               <div>• {{ l.productName }}: <strong>{{ l.requestedQuantity }} u</strong></div>
@@ -1528,7 +1730,38 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           </div>
                         </div>
                       </div>
+                    } @empty {
+                      <div class="p-4 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-xl">
+                        No hay pedidos que coincidan con el filtro seleccionado.
+                      </div>
                     }
+                  </div>
+
+                  <!-- Medidor de Carga Acumulada en Tiempo Real -->
+                  <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-slate-800 text-[11px] uppercase">Carga Acumulada</span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded font-bold"
+                        [ngClass]="selectedOrdersSummary().weightKg > 1000 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'">
+                        {{ selectedOrdersSummary().count }} pedidos seleccionados
+                      </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 text-slate-600">
+                      <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400">Peso Estimado:</span>
+                        <strong class="text-slate-800">{{ selectedOrdersSummary().weightKg }} kg</strong>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-400">Volumen Estimado:</span>
+                        <strong class="text-slate-800">{{ selectedOrdersSummary().volumeM3 }} m³</strong>
+                      </div>
+                    </div>
+
+                    <div class="pt-1 text-[10px] text-slate-500 flex items-center justify-between border-t border-slate-100">
+                      <span>Prioritarios: <strong>{{ selectedOrdersSummary().criticalCount }} Críticos</strong>, <strong>{{ selectedOrdersSummary().highCount }} Altos</strong></span>
+                      <span class="font-mono text-[9px] text-slate-400">Capacidad flota ref: ~1,000 kg</span>
+                    </div>
                   </div>
                 </div>
               }
@@ -1564,77 +1797,241 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 </div>
               }
 
-              <!-- PASO 3: OPCIONES A/B & REORDENAR PARADAS -->
+              <!-- PASO 3: COMPARACIÓN A/B/C & SECUENCIA DE PARADAS (#242) -->
               @if (wizardStep() === 3) {
-                <div class="space-y-3">
-                  <span class="text-xs font-bold text-slate-700 uppercase">Opciones de Ruta & Secuencia de Paradas</span>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    @for (opt of routeOptions(); track opt.optionId) {
-                      <div
-                        (click)="selectedOptionId.set(opt.optionId); onOptionSelected(opt)"
-                        class="p-2.5 rounded-xl border cursor-pointer text-xs transition-all"
-                        [ngClass]="selectedOptionId() === opt.optionId ? 'border-primary-600 ring-2 ring-primary-100 bg-white' : 'border-slate-200 bg-white/70'">
-                        <div class="flex items-center justify-between">
-                          <span class="font-bold text-slate-800">Opción {{ opt.optionId }}</span>
-                          @if (opt.isRecommended) {
-                            <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">RECOMENDADO</span>
-                          }
-                        </div>
-                        <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">{{ opt.title }}</p>
-                        <div class="text-[10px] font-mono font-bold mt-2 text-slate-700">
-                          {{ opt.evaluation.totalDistanceKm }} km | {{ opt.evaluation.totalDurationMinutes }} min
-                        </div>
+                <div class="space-y-4">
+                  <!-- Barra superior del panel comparativo -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                          Comparativa de Alternativas A/B/C
+                        </h3>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 border border-primary-200">
+                          Panel Pitch #200
+                        </span>
                       </div>
+                      <p class="text-xs text-slate-500 mt-0.5">
+                        Planificación · viernes 17-oct · Bodega Sur · Opciones de flota propia frente a operador contratado
+                      </p>
+                    </div>
+
+                    <!-- Controles de Modo: Proyector y Toggle Flag Demo -->
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="isProjectorMode.set(!isProjectorMode())"
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+                        [ngClass]="isProjectorMode() ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'"
+                        title="Modo Proyector: expande a pantalla completa y aumenta tamaño de fuente para proyección a 3 metros">
+                        <span>{{ isProjectorMode() ? '⛶ Modo Normal' : '⛶ Modo Proyector (3 m)' }}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="useMockABC.set(!useMockABC())"
+                        class="px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer"
+                        [ngClass]="useMockABC() ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'"
+                        title="Alternar entre datos de demostración para el Pitch (demo-quito-planificacion) y datos en vivo de la API">
+                        {{ useMockABC() ? '⚡ Demo Pitch: ON' : 'API en vivo' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Línea con el precio del combustible usado: valor, fecha y fuente (#242) -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200/90 text-amber-950 px-3.5 py-2.5 rounded-xl shadow-xs">
+                    <div class="flex items-center gap-2 font-medium flex-wrap">
+                      <span class="text-base">⛽</span>
+                      <span>
+                        <strong>Combustible de referencia:</strong>
+                        USD {{ fuelReference().pricePerGallon.toFixed(2) }}/galón
+                        <span class="text-slate-400 mx-1">|</span>
+                        <span class="text-amber-800">Vigencia: {{ fuelReference().date }}</span>
+                        <span class="text-slate-400 mx-1">|</span>
+                        <span class="text-amber-800">Fuente: {{ fuelReference().source }}</span>
+                      </span>
+                    </div>
+                    @if (selectedOrdersSummary().criticalCount > 0) {
+                      <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 self-start sm:self-center">
+                        {{ selectedOrdersSummary().criticalCount }} pedido(s) críticos
+                      </span>
                     }
                   </div>
 
-                  <!-- Lista interactiva de paradas con reordenamiento -->
-                  <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-bold text-slate-700 uppercase">Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
-                      <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
-                        Restaurar orden óptimo
+                  <!-- TABLA COMPARATIVA A/B/C (#242) -->
+                  <div class="border border-slate-200 rounded-xl overflow-x-auto shadow-xs bg-white">
+                    <table class="w-full border-collapse text-left" [ngClass]="isProjectorMode() ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'">
+                      <thead class="bg-slate-100 border-b border-slate-200">
+                        <tr>
+                          <th class="p-3 font-extrabold text-slate-700 uppercase tracking-wider text-[11px] sm:text-xs w-1/4">
+                            Concepto
+                          </th>
+                          @for (opt of comparisonOptions(); track opt.optionId) {
+                            <th
+                              (click)="selectComparisonOption(opt.optionId)"
+                              class="p-3 text-center border-l border-slate-200 transition cursor-pointer select-none"
+                              [ngClass]="selectedOptionId() === opt.optionId ? 'bg-primary-50/70 ring-2 ring-primary-500 ring-inset' : 'hover:bg-slate-200/50'">
+                              <div class="flex flex-col items-center gap-1">
+                                <div class="flex items-center gap-1.5">
+                                  <span class="font-extrabold text-slate-900" [ngClass]="isProjectorMode() ? 'text-base sm:text-lg' : 'text-sm sm:text-base'">
+                                    Opción {{ opt.optionId }}
+                                  </span>
+                                  @if (opt.isRecommended) {
+                                    <span class="text-amber-500 text-base font-black" title="Recomendada por el sistema">★</span>
+                                  }
+                                </div>
+                                <span
+                                  class="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full"
+                                  [ngClass]="opt.category === 'Propia' ? 'bg-blue-100 text-blue-900' : 'bg-purple-100 text-purple-900'">
+                                  {{ opt.category }} · {{ opt.tagline }}
+                                </span>
+                                @if (opt.isRecommended) {
+                                  <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 border border-amber-500 shadow-xs">
+                                    ★ RECOMENDADA
+                                  </span>
+                                }
+                              </div>
+                            </th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-200 bg-white">
+                        @for (row of comparisonRows; track row.key) {
+                          <tr [ngClass]="row.isHighlight ? 'bg-emerald-50/60 font-bold' : 'hover:bg-slate-50/80'">
+                            <td class="p-2.5 sm:p-3 font-semibold text-slate-700">
+                              {{ row.label }}
+                            </td>
+                            @for (opt of comparisonOptions(); track opt.optionId) {
+                              <td
+                                class="p-2.5 sm:p-3 text-center border-l border-slate-200"
+                                [ngClass]="[
+                                  selectedOptionId() === opt.optionId ? 'bg-primary-50/20' : '',
+                                  row.isHighlight ? 'text-emerald-700 font-extrabold ' + (isProjectorMode() ? 'text-lg sm:text-xl' : 'text-sm sm:text-base') : 'text-slate-800'
+                                ]">
+                                @if (row.key === 'criticos') {
+                                  <span class="inline-block px-2 py-0.5 rounded-md font-bold text-xs"
+                                    [ngClass]="opt.criticalOnTime === opt.criticalTotal ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'">
+                                    {{ row.format(opt) }}
+                                  </span>
+                                } @else if (row.key === 'pendientes') {
+                                  <span class="inline-block px-2 py-0.5 rounded-md font-bold text-xs"
+                                    [ngClass]="opt.pendingOrdersCount === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'">
+                                    {{ row.format(opt) }}
+                                  </span>
+                                } @else {
+                                  <span>{{ row.format(opt) }}</span>
+                                }
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- TARJETA DE JUSTIFICACIÓN DE LA RECOMENDADA (#242) -->
+                  @if (recommendedOption(); as rec) {
+                    <div class="p-3.5 sm:p-4 bg-emerald-50/90 border-2 border-emerald-400 rounded-xl space-y-1.5 shadow-xs">
+                      <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm">
+                          <span class="text-amber-500 text-base">★</span>
+                          <span>Recomendación: Opción {{ rec.optionId }} ({{ rec.category }})</span>
+                        </div>
+                        <span class="text-[10px] sm:text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-200/80 px-2 py-0.5 rounded-md">
+                          Decisión del asistente
+                        </span>
+                      </div>
+                      <p class="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">
+                        «{{ rec.justification || 'Opción con el balance óptimo entre costo operativo y garantía de entrega a tiempo para clientes críticos.' }}»
+                      </p>
+                    </div>
+                  }
+
+                  <!-- BARRA DE ACCIONES: Publicar recomendada, Elegir otra, Ver en mapa (#242) -->
+                  <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="publishRecommended()"
+                        class="px-4 py-2.5 text-xs sm:text-sm font-black rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
+                        <span>★ Publicar {{ recommendedOption()?.optionId ? 'Opción ' + recommendedOption()?.optionId : 'Recomendada' }}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="selectOtherOption()"
+                        class="px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                        Elegir otra
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="viewOnMap(selectedOptionId())"
+                        class="px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl border border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        <span>Ver en mapa</span>
                       </button>
                     </div>
 
-                    <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                      @for (s of editableStops(); track s.sequence; let idx = $index) {
-                        <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
-                          [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
-                          <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
-                              [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
-                              {{ idx + 1 }}
-                            </span>
-                            <div class="min-w-0">
-                              <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
-                              <p class="text-[9px] font-mono text-slate-500">
-                                {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
-                              </p>
+                    <div class="text-[11px] text-slate-500 font-mono">
+                      Seleccionada: <strong>Opción {{ selectedOptionId() }}</strong>
+                    </div>
+                  </div>
+
+                  <!-- Secuencia Reordenable de Paradas (Colapsable) -->
+                  <details class="bg-white p-3 rounded-xl border border-slate-200 text-xs">
+                    <summary class="font-bold text-slate-700 cursor-pointer uppercase select-none flex items-center justify-between">
+                      <span>Secuencia Reordenable ({{ editableStops().length }} paradas)</span>
+                      <span class="text-[10px] text-primary-600 font-normal hover:underline">Ver / Reordenar</span>
+                    </summary>
+
+                    <div class="mt-3 space-y-2">
+                      <div class="flex items-center justify-end">
+                        <button (click)="restoreOptimalOrder()" class="text-[10px] text-primary-600 hover:underline font-semibold">
+                          Restaurar orden óptimo
+                        </button>
+                      </div>
+
+                      <div class="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                        @for (s of editableStops(); track s.sequence; let idx = $index) {
+                          <div class="p-2 rounded-lg border flex items-center justify-between text-xs"
+                            [ngClass]="s.kind === 'Pickup' ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-white"
+                                [ngClass]="s.kind === 'Pickup' ? 'bg-amber-600' : 'bg-primary-600'">
+                                {{ idx + 1 }}
+                              </span>
+                              <div class="min-w-0">
+                                <p class="font-bold text-slate-800 truncate">{{ s.name }}</p>
+                                <p class="text-[9px] font-mono text-slate-500">
+                                  {{ s.kind === 'Pickup' ? 'Recoger en bodega' : 'Entrega' }}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-1">
+                              @if (idx > 0) {
+                                <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
+                              }
+                              @if (idx < editableStops().length - 1) {
+                                <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
+                              }
                             </div>
                           </div>
+                        }
+                      </div>
 
-                          <div class="flex items-center gap-1">
-                            @if (idx > 0) {
-                              <button (click)="moveStop(idx, -1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Subir parada">▲</button>
-                            }
-                            @if (idx < editableStops().length - 1) {
-                              <button (click)="moveStop(idx, 1)" class="p-1 hover:bg-slate-200 rounded font-semibold text-slate-600 text-[10px]" title="Bajar parada">▼</button>
-                            }
-                          </div>
+                      @if (currentEvaluation()?.validationErrors?.length) {
+                        <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
+                          @for (err of currentEvaluation()!.validationErrors; track err) {
+                            <div>[Aviso] {{ err }}</div>
+                          }
                         </div>
                       }
                     </div>
-
-                    @if (currentEvaluation()?.validationErrors?.length) {
-                      <div class="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-700">
-                        @for (err of currentEvaluation()!.validationErrors; track err) {
-                          <div>[Aviso] {{ err }}</div>
-                        }
-                      </div>
-                    }
-                  </div>
+                  </details>
                 </div>
               }
 
@@ -1680,6 +2077,21 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </div>
                     }
                   </div>
+
+                  <!-- Advertencia de Capacidad y Remanentes -->
+                  @if (selectedVehicleOverweight()) {
+                    <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1">
+                      <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                        <span>⚠️ Advertencia de Capacidad y Remanentes</span>
+                      </div>
+                      <p class="text-[11px]">
+                        El peso total seleccionado (<strong>{{ selectedOrdersSummary().weightKg }} kg</strong>) supera la capacidad del vehículo seleccionado (<strong>{{ selectedVehicleCapacity() }} kg</strong>).
+                      </p>
+                      <p class="text-[10px] text-amber-700">
+                        Los pedidos que no alcancen cupo o stock permanecerán en estado <span class="font-bold font-mono">Pending</span> para ser planificados en la siguiente ruta.
+                      </p>
+                    </div>
+                  }
                 </div>
               }
 
@@ -1716,8 +2128,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               </div>
             </div>
 
-            <!-- Columna Derecha: Mapa (7 Cols) -->
-            <div class="lg:col-span-7 relative h-full min-h-[450px]">
+            <!-- Columna Derecha: Mapa -->
+            <div class="relative h-full min-h-[450px] transition-all"
+              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
               <ui-map-view
                 #wizardMapView
                 [markers]="wizardMarkers()"
@@ -1797,6 +2210,71 @@ export class RutasPage implements OnInit, OnDestroy {
     }
     return list;
   });
+
+  // #231: Seguimiento de ruta en tiempo real
+  private trackingInterval: ReturnType<typeof setInterval> | undefined;
+  readonly trackingRefreshing = signal<boolean>(false);
+  readonly lastTrackingUpdate = signal<Date | null>(null);
+  readonly lastTrackingUpdateText = computed<string>(() => {
+    const d = this.lastTrackingUpdate();
+    if (!d) return 'Sin lecturas';
+    return `Última lectura: ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  });
+
+  readonly trackingSummary = computed(() => {
+    return computeRouteTrackingSummary(this.selectedDetail()?.stops);
+  });
+
+  readonly stopProgressList = computed(() => {
+    return computeStopProgressList(this.selectedDetail()?.stops);
+  });
+
+  readonly translateHuStatus = translateHuStatus;
+  readonly getHuStatusBadgeClass = getHuStatusBadgeClass;
+  readonly translateDeliveryStatus = translateDeliveryStatus;
+  readonly getDeliveryStatusBadgeClass = getDeliveryStatusBadgeClass;
+  readonly translateStopStatus = translateStopStatus;
+
+  startTrackingTimer(): void {
+    this.stopTrackingTimer();
+    this.lastTrackingUpdate.set(new Date());
+    // Autoactualización cada 25 s mientras el detalle está abierto (#231)
+    this.trackingInterval = setInterval(() => {
+      this.refreshSelectedDetail(false);
+    }, 25000);
+  }
+
+  stopTrackingTimer(): void {
+    if (this.trackingInterval) {
+      clearInterval(this.trackingInterval);
+      this.trackingInterval = undefined;
+    }
+  }
+
+  manualRefreshTracking(): void {
+    this.refreshSelectedDetail(true);
+  }
+
+  refreshSelectedDetail(isManual = false): void {
+    const planId = this.selectedPlanId();
+    if (!planId) {
+      this.stopTrackingTimer();
+      return;
+    }
+    if (isManual) {
+      this.trackingRefreshing.set(true);
+    }
+    this.apiService.getRoutePlanById(planId).subscribe({
+      next: (detail) => {
+        if (isManual) this.trackingRefreshing.set(false);
+        this.selectedDetail.set(detail);
+        this.lastTrackingUpdate.set(new Date());
+      },
+      error: () => {
+        if (isManual) this.trackingRefreshing.set(false);
+      }
+    });
+  }
 
   toggleStopExpansion(seq: number): void {
     const current = new Set(this.expandedStopSeqs());
@@ -1902,14 +2380,92 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly wizardStep = signal<1 | 2 | 3 | 4>(1);
   readonly pendingOrders = signal<DeliveryOrderDto[]>([]);
   readonly selectedOrderIds = signal<Set<string>>(new Set());
+  readonly orderFilter = signal<'all' | 'critical_high' | 'today'>('all');
+  readonly hasRemainingPendingOrders = signal(false);
 
   // Formulario rápido nuevo pedido
   readonly showNewOrderForm = signal(false);
   newOrderDestId = '';
   newOrderProdId = '';
   newOrderQty = 10;
+  newOrderPriority = 'Normal';
   readonly availableLocations = signal<ServicePoint[]>([]);
   readonly availableProducts = signal<any[]>([]);
+
+  readonly priorityWeight: Record<string, number> = {
+    'Critical': 1,
+    'High': 2,
+    'Normal': 3,
+    'Low': 4
+  };
+
+  readonly filteredPendingOrders = computed(() => {
+    let list = [...this.pendingOrders()];
+    const filter = this.orderFilter();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    if (filter === 'critical_high') {
+      list = list.filter(o => o.priority === 'Critical' || o.priority === 'High');
+    } else if (filter === 'today') {
+      list = list.filter(o => o.requiredDateUtc && o.requiredDateUtc.slice(0, 10) <= todayStr);
+    }
+
+    return list.sort((a, b) => {
+      const pA = this.priorityWeight[a.priority] ?? 3;
+      const pB = this.priorityWeight[b.priority] ?? 3;
+      if (pA !== pB) return pA - pB;
+      const dateA = a.requiredDateUtc ? new Date(a.requiredDateUtc).getTime() : 0;
+      const dateB = b.requiredDateUtc ? new Date(b.requiredDateUtc).getTime() : 0;
+      if (dateA !== dateB) return dateA - dateB;
+      return new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime();
+    });
+  });
+
+  readonly selectedOrdersSummary = computed(() => {
+    const selectedIds = this.selectedOrderIds();
+    const allOrders = this.pendingOrders();
+    const selected = allOrders.filter(o => selectedIds.has(o.id));
+    const productsMap = new Map<string, any>(this.availableProducts().map(p => [p.id, p]));
+
+    let totalWeight = 0;
+    let totalVolume = 0;
+    let criticalCount = 0;
+    let highCount = 0;
+
+    for (const ord of selected) {
+      if (ord.priority === 'Critical') criticalCount++;
+      else if (ord.priority === 'High') highCount++;
+
+      for (const line of ord.lines || []) {
+        const prod = productsMap.get(line.productId);
+        const unitWeight = prod?.weight_per_unit ?? prod?.weightKg ?? 0.5;
+        const unitVolume = prod?.volume_per_unit ?? prod?.volumeM3 ?? 0.002;
+        totalWeight += (line.requestedQuantity || 0) * unitWeight;
+        totalVolume += (line.requestedQuantity || 0) * unitVolume;
+      }
+    }
+
+    return {
+      count: selected.length,
+      weightKg: Math.round(totalWeight * 10) / 10,
+      volumeM3: Math.round(totalVolume * 100) / 100,
+      criticalCount,
+      highCount
+    };
+  });
+
+  readonly selectedVehicleCapacity = computed(() => {
+    const vehId = this.selectedVehicleId();
+    if (!vehId) return 0;
+    const match = this.availableVehicleMatches().find(v => v.vehicleId === vehId);
+    return match?.maxWeight ?? 1000;
+  });
+
+  readonly selectedVehicleOverweight = computed(() => {
+    const cap = this.selectedVehicleCapacity();
+    if (cap <= 0) return false;
+    return this.selectedOrdersSummary().weightKg > cap;
+  });
 
   // Opciones de Sourcing y Vehículos
   readonly routeOptions = signal<RouteSuggestionOptionDto[]>([]);
@@ -1918,6 +2474,63 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly currentEvaluation = signal<any>(null);
   readonly availableVehicleMatches = signal<any[]>([]);
   readonly selectedVehicleId = signal<string | null>(null);
+
+  // Comparación A/B/C (#242)
+  readonly useMockABC = signal<boolean>(true);
+  readonly isProjectorMode = signal<boolean>(false);
+  readonly fuelReference = signal<FuelReferencePrice>(DEMO_QUITO_FUEL_REFERENCE);
+  readonly comparisonRows: ComparisonRowDefinition[] = COMPARISON_ROWS;
+
+  readonly comparisonOptions = computed<RouteOptionComparisonData[]>(() => {
+    const apiOptions = this.routeOptions();
+    if (this.useMockABC() || apiOptions.length === 0) {
+      return DEMO_QUITO_PITCH_OPTIONS;
+    }
+
+    return apiOptions.map((opt, index) => {
+      const optionLetter = opt.optionId || (index === 0 ? 'A' : index === 1 ? 'B' : 'C');
+      const isC = optionLetter === 'C' || opt.title?.toLowerCase().includes('contratad') || opt.description?.toLowerCase().includes('operador externo');
+      const isB = optionLetter === 'B' || opt.title?.toLowerCase().includes('crítico') || opt.title?.toLowerCase().includes('escalonad');
+      const evalData = opt.evaluation;
+      const bd = (opt as any).costBreakdown;
+
+      return {
+        optionId: optionLetter,
+        title: opt.title || `Opción ${optionLetter}`,
+        category: isC ? 'Contratada' : 'Propia',
+        tagline: isC ? 'operador externo' : (isB ? 'críticos 1ro' : 'más barata'),
+        isRecommended: opt.isRecommended ?? (optionLetter === 'B'),
+        justification: (opt as any).justification || (opt as any).recommendationJustification || (opt.isRecommended ? 'Opción recomendada por optimización de costos y cumplimiento de ventanas horarias.' : undefined),
+        totalDistanceKm: evalData?.totalDistanceKm,
+        fuelCost: isC ? null : (bd?.fuelCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.30 * 100) / 100 : null)),
+        fuelCostIncluded: isC,
+        wearCost: isC ? null : (bd?.wearCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.17 * 100) / 100 : null)),
+        wearCostIncluded: isC,
+        driverCost: isC ? null : (bd?.driverCost ?? (evalData?.totalDurationMinutes ? Math.round((evalData.totalDurationMinutes / 60) * 6 * 100) / 100 : null)),
+        driverCostIncluded: isC,
+        helpersCount: isC ? null : (bd?.helpersCount ?? 1),
+        helpersCost: isC ? null : (bd?.helpersCost ?? 12.0),
+        helpersIncluded: isC,
+        expectedShrinkageCost: bd?.expectedShrinkageCost ?? 3.50,
+        totalCost: evalData?.totalCost ?? bd?.totalCost,
+        criticalTotal: (opt as any).criticalTotal ?? 3,
+        criticalOnTime: (opt as any).criticalOnTime ?? (optionLetter === 'A' ? 2 : 3),
+        pendingOrdersCount: (opt as any).pendingOrdersCount ?? (optionLetter === 'A' ? 1 : 0),
+        risks: (opt as any).risks ?? (isC ? 'respuesta en 4 h' : (optionLetter === 'A' ? 'hora pico' : '—')),
+        operatorResponseTime: isC ? '4 h' : null
+      };
+    });
+  });
+
+  readonly recommendedOption = computed<RouteOptionComparisonData | undefined>(() => {
+    const list = this.comparisonOptions();
+    return list.find(o => o.isRecommended) || list[0];
+  });
+
+  readonly selectedComparisonOption = computed<RouteOptionComparisonData | undefined>(() => {
+    const id = this.selectedOptionId();
+    return this.comparisonOptions().find(o => o.optionId === id);
+  });
 
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
@@ -1980,6 +2593,7 @@ export class RutasPage implements OnInit, OnDestroy {
         } else {
           this.selectedPlanId.set(null);
           this.selectedDetail.set(null);
+          this.stopTrackingTimer();
         }
       },
       error: () => this.loading.set(false)
@@ -1997,6 +2611,7 @@ export class RutasPage implements OnInit, OnDestroy {
         }
         if (this.geometries.size > 0) this.renderAllRoutes();
         else this.buildMap(detail);
+        this.startTrackingTimer();
       },
       error: () => {}
     });
@@ -2026,7 +2641,7 @@ export class RutasPage implements OnInit, OnDestroy {
         const pendingText = describePendingLines(pendingLines);
         this.feedbackMessage.set({
           type: 'success',
-          text: (count > 0 
+          text: (count > 0
             ? `¡Se generaron ${count} ruta(s) de distribución exitosamente!${deadline ? ' (Hora límite para críticos: ' + deadline + ')' : ''}`
             : 'Planificación completada: no hay pedidos de reabastecimiento pendientes.')
             + (pendingText ? ` Carga parcial — ${pendingText}.` : '')
@@ -2240,10 +2855,28 @@ export class RutasPage implements OnInit, OnDestroy {
   loadPendingOrders(): void {
     this.apiService.getDeliveryOrders('Pending').subscribe({
       next: (orders) => {
-        this.pendingOrders.set(orders || []);
-        // Seleccionar automáticamente los primeros para comodidad
-        if (orders && orders.length > 0 && this.selectedOrderIds().size === 0) {
-          this.selectedOrderIds.set(new Set([orders[0].id]));
+        const sorted = (orders || []).sort((a, b) => {
+          const pA = this.priorityWeight[a.priority] ?? 3;
+          const pB = this.priorityWeight[b.priority] ?? 3;
+          if (pA !== pB) return pA - pB;
+          const dateA = a.requiredDateUtc ? new Date(a.requiredDateUtc).getTime() : 0;
+          const dateB = b.requiredDateUtc ? new Date(b.requiredDateUtc).getTime() : 0;
+          if (dateA !== dateB) return dateA - dateB;
+          return new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime();
+        });
+        this.pendingOrders.set(sorted);
+
+        // Preselección basada en valor: pedidos Critical y High pendientes
+        if (sorted.length > 0 && this.selectedOrderIds().size === 0) {
+          const highValueIds = sorted
+            .filter(o => o.priority === 'Critical' || o.priority === 'High')
+            .map(o => o.id);
+
+          if (highValueIds.length > 0) {
+            this.selectedOrderIds.set(new Set(highValueIds));
+          } else {
+            this.selectedOrderIds.set(new Set([sorted[0].id]));
+          }
         }
       },
       error: () => {}
@@ -2322,8 +2955,32 @@ export class RutasPage implements OnInit, OnDestroy {
   openOrderRoutingModal(): void {
     this.isWizardOpen.set(true);
     this.wizardStep.set(1);
+    this.selectedOrderIds.set(new Set());
     this.loadPendingOrders();
     setTimeout(() => this.wizardMapView?.invalidateSize(), 200);
+  }
+
+  openWizardForRemainingOrders(): void {
+    this.feedbackMessage.set(null);
+    this.hasRemainingPendingOrders.set(false);
+    this.openOrderRoutingModal();
+  }
+
+  selectAllCritical(): void {
+    const criticals = this.pendingOrders().filter(o => o.priority === 'Critical' || o.priority === 'High');
+    const set = new Set(this.selectedOrderIds());
+    criticals.forEach(o => set.add(o.id));
+    this.selectedOrderIds.set(set);
+  }
+
+  deselectAllOrders(): void {
+    this.selectedOrderIds.set(new Set());
+  }
+
+  selectAllFiltered(): void {
+    const set = new Set(this.selectedOrderIds());
+    this.filteredPendingOrders().forEach(o => set.add(o.id));
+    this.selectedOrderIds.set(set);
   }
 
   closeWizard(): void {
@@ -2350,10 +3007,12 @@ export class RutasPage implements OnInit, OnDestroy {
     this.apiService.createDeliveryOrder({
       destinationServicePointId: !isWh ? this.newOrderDestId : undefined,
       destinationLocationId: isWh ? this.newOrderDestId : undefined,
+      priority: this.newOrderPriority,
       lines: [{ productId: this.newOrderProdId, quantity: this.newOrderQty }]
     }).subscribe({
       next: (res) => {
         this.showNewOrderForm.set(false);
+        this.newOrderPriority = 'Normal';
         this.loadPendingOrders();
         if (res?.id) {
           const set = new Set(this.selectedOrderIds());
@@ -2393,6 +3052,12 @@ export class RutasPage implements OnInit, OnDestroy {
       });
     } else if (current === 2) {
       this.wizardStep.set(3);
+      const rec = this.recommendedOption();
+      if (rec) {
+        this.selectedOptionId.set(rec.optionId);
+        const match = this.routeOptions().find(o => o.optionId === rec.optionId);
+        if (match) this.onOptionSelected(match);
+      }
     } else if (current === 3) {
       this.wizardStep.set(4);
     }
@@ -2409,6 +3074,53 @@ export class RutasPage implements OnInit, OnDestroy {
     }
 
     this.updateWizardMap(opt.stops, opt.evaluation.coordinates, opt.evaluation.coordinatesSource);
+  }
+
+  selectComparisonOption(optionId: string): void {
+    this.selectedOptionId.set(optionId);
+    const match = this.routeOptions().find(o => o.optionId === optionId);
+    if (match) {
+      this.onOptionSelected(match);
+    }
+  }
+
+  publishRecommended(): void {
+    const rec = this.recommendedOption();
+    if (!rec) return;
+    this.selectedOptionId.set(rec.optionId);
+    const match = this.routeOptions().find(o => o.optionId === rec.optionId);
+    if (match) {
+      this.onOptionSelected(match);
+    }
+    if (!this.selectedVehicleId() && this.availableVehicleMatches().length > 0) {
+      const best = this.availableVehicleMatches().find(m => m.isMatch) || this.availableVehicleMatches()[0];
+      if (best) this.selectedVehicleId.set(best.vehicleId);
+    }
+    this.wizardStep.set(4);
+    this.feedbackMessage.set({
+      type: 'success',
+      text: `★ Opción ${rec.optionId} (${rec.category}) seleccionada. Verifica el vehículo asignado o confirma directamente.`
+    });
+  }
+
+  selectOtherOption(): void {
+    const opts = this.comparisonOptions();
+    if (opts.length <= 1) return;
+    const currentId = this.selectedOptionId();
+    const currIdx = opts.findIndex(o => o.optionId === currentId);
+    const nextIdx = (currIdx + 1) % opts.length;
+    this.selectComparisonOption(opts[nextIdx].optionId);
+  }
+
+  viewOnMap(optionId?: string): void {
+    const id = optionId || this.selectedOptionId();
+    this.selectComparisonOption(id);
+    if (this.isProjectorMode()) {
+      this.isProjectorMode.set(false);
+    }
+    setTimeout(() => {
+      this.wizardMapView?.invalidateSize();
+    }, 150);
   }
 
   moveStop(index: number, direction: -1 | 1): void {
@@ -2442,13 +3154,15 @@ export class RutasPage implements OnInit, OnDestroy {
     this.actionLoading.set(true);
     const stops = this.editableStops();
     const evalData = this.currentEvaluation();
+    const plannedOrderIds = Array.from(this.selectedOrderIds());
+    const remainingPending = this.pendingOrders().filter(o => !this.selectedOrderIds().has(o.id));
 
     this.apiService.confirmRoutePlan({
       vehicleId: this.selectedVehicleId() || undefined,
       totalDistanceKm: evalData?.totalDistanceKm || 0,
       totalDurationMinutes: evalData?.totalDurationMinutes || 0,
       totalCost: evalData?.totalCost || 0,
-      orderIds: Array.from(this.selectedOrderIds()),
+      orderIds: plannedOrderIds,
       stops,
       coordinates: evalData?.coordinates
     }).subscribe({
@@ -2456,14 +3170,26 @@ export class RutasPage implements OnInit, OnDestroy {
         this.actionLoading.set(false);
         this.closeWizard();
         // #199: el servidor recalcula la carga y devuelve por línea lo planificado y lo que queda pendiente.
+        const remainingCount = remainingPending.length;
         const pendingText = describePendingLines(res?.lines);
-        this.feedbackMessage.set({
-          type: 'success',
-          text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
-            + (pendingText ? ` Carga parcial — ${pendingText}. El remanente queda pendiente en el pedido.` : '')
-        });
+        const hasRemanente = remainingCount > 0 || !!pendingText;
+        if (hasRemanente) {
+          this.hasRemainingPendingOrders.set(true);
+          this.feedbackMessage.set({
+            type: 'success',
+            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+              + (pendingText ? ` Carga parcial — ${pendingText}. El remanente queda pendiente en el pedido.` : (remainingCount > 0 ? ` Quedan ${remainingCount} pedido(s) pendientes en el sistema.` : ''))
+          });
+        } else {
+          this.hasRemainingPendingOrders.set(false);
+          this.feedbackMessage.set({
+            type: 'success',
+            text: `¡Ruta guardada y asignada exitosamente con ${stops.length} paradas!`
+          });
+        }
         if (res?.id) this.selectedPlanId.set(res.id);
         this.loadPlans();
+        this.loadPendingOrders();
       },
       error: (err) => {
         this.actionLoading.set(false);
@@ -2600,6 +3326,7 @@ export class RutasPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.geometryRetryTimer);
+    this.stopTrackingTimer();
   }
 
   /** Todas las rutas vigentes a la vez: un color por vehículo, la seleccionada resaltada y las bodegas marcadas. */

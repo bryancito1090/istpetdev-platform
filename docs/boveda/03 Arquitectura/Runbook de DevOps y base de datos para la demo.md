@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: aceptado
-actualizado: 2026-10-14
+actualizado: 2026-10-16
 deciders: [Jorge Doicela, Bryan Doicela, Joseph Bano]
 tags: [arquitectura, devops, base-de-datos, migraciones, despliegue, runbook]
 ---
@@ -52,6 +52,9 @@ Regla estricta: **una migración por spec, en serie sobre `develop`**. Cada migr
 
 > [!important] Congelamiento total de base de datos (H5)
 > **A partir de H5 (15 de octubre a las 14:00) queda terminantemente prohibido generar, fusionar o aplicar cualquier nueva migración DDL.** Toda la persistencia quedará congelada para la sesión de demostración y pitch.
+
+> [!warning] Reemplazado el 16-oct-2026
+> Joseph autorizó **una sola migración** la noche del 16-oct: la de #240 (`Product.UnitValue`, `UnitsPerPackage`, `Vehicle.VehicleType`, `UsageScope`). Como `/health/ready` responde *Unhealthy* con migraciones pendientes, se aplica en RDS en el mismo despliegue (#198) y con respaldo previo, antes del congelamiento del código (sáb 11:30). Si no se puede aplicar a tiempo, no se fusiona. Cualquier otra migración se coordina con Bryan. Ver el tablero #253.
 
 ## 4. Procedimiento de Respaldo y Restauración (Issue #15)
 

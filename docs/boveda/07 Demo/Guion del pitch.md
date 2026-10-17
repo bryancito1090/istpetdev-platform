@@ -14,11 +14,22 @@ tags: [demo, validacion, istpetdev]
 > 
 > **Reglas de veracidad y restricciones técnicas:**
 > 1. Cada frase y cifra se deriva estrictamente de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md).
-> 2. **CRÍTICO:** La «prioridad de entrega con hora límite para clientes críticos» (issues #193 y #196) se presenta **exclusivamente como en construcción**, ya que aún no está fusionada en `develop`. No debe anunciarse como operativa en vivo.
+> 2. **CRÍTICO:** La «prioridad de entrega con hora límite para clientes críticos» (issues #193 y #196) **ya está en `develop`** (PR #205, issues cerrados el 16-oct). Se anuncia como operativa en vivo **solo si pasa el ensayo de la ronda E2E (#118)**; si no, se presenta como en construcción.
 > 3. Las capacidades sin ensayo conectado o evidencia en hardware real (como recepción offline sin red en teléfono) llevan explícitamente la etiqueta `[PENDIENTE: evidencia]`.
 > 4. Se distribuye la presentación entre los **cinco papeles visibles**: Narración, Web, Móvil, Técnica y Negocio.
 
 Protagonista: una empresa de servicios de limpieza hospitalaria y comercial; objeto conductor: una caja de desinfectante destinada a un hospital norte. El caso de la demo en vivo es sintético (`demo-region`, 15 puntos, 1 bodega, 2 vehículos) hasta contar con validación empresarial en terreno.
+
+> [!important] Norte del pitch desde el 16-oct, 17:30
+> **Dolor elegido: el módulo de planificación.** Concepto de la charla de logística: una empresa contrata logística cuando su flota propia no alcanza o no conviene. Frase central: «Para cada día de entregas, el sistema compara rutas con flota propia y contratada, suma todo lo que cuesta servir (kilómetros, combustible, personas que descargan y mermas), revisa horarios, tráfico y restricciones de Quito, y recomienda una opción con su justificación. La IA explica; el planificador decide.» Diseño en [[Planificacion potenciada - propuesta del evento]].
+>
+> **Cuatro capas que deben aparecer** (insumos por issue en el comentario de #200):
+> 1. **Lo que ya funciona**, solo lo verificado en el ensayo.
+> 2. **Lo implementable a futuro**: guía de retorno, tráfico en vivo y normativa municipal, pronóstico con estacionalidad, tipos de vehículo en el catálogo, marketplace de operadores contratados y calibración con viajes reales.
+> 3. **Riesgos y estrategias de mitigación, con énfasis**: la charla lo valoró especialmente. Usar las tres tablas de la nota de planificación.
+> 4. **Cómo lo implementamos**: dataset propio sintético, cálculo determinista con IA que explica, control humano y PR con pruebas.
+>
+> Cada issue de la noche (#235–#249) trae una sección «Para el pitch» con la frase si se hace y qué decir si no llega. El caso de la demo pasa a `demo-quito-planificacion` (#243) solo si se ensaya antes del sábado 11:30.
 
 **Estructura oficial del pitch (Anexo 5.7):**
 1. Problema (30 s) → 2. Solución (35 s) → 3. Prototipo / demo (145 s) → 4. Impacto (25 s) → 5. Viabilidad (15 s) → 6. Modelo de negocio (17 s) → 7. Próximo paso (13 s). Total: 280 s (4:40).

@@ -43,7 +43,9 @@ public sealed class DeliveryOrdersController(
         }
 
         var orders = await query
-            .OrderByDescending(o => o.CreatedAtUtc)
+            .OrderBy(o => o.Priority == "Critical" ? 1 : o.Priority == "High" ? 2 : o.Priority == "Normal" ? 3 : 4)
+            .ThenBy(o => o.RequiredDateUtc)
+            .ThenByDescending(o => o.CreatedAtUtc)
             .Take(Math.Clamp(limit, 1, 200))
             .ToListAsync(ct);
 

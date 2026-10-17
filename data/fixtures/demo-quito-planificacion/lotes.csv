@@ -1,0 +1,25 @@
+sku,lot_code,expires_on,origin
+PRD-0001,L-0001-2609,2026-11-04,Proveedor sintético A
+PRD-0001,L-0001-2610,2027-04-13,Proveedor sintético B
+PRD-0002,L-0002-2609,2027-04-13,Proveedor sintético A
+PRD-0002,L-0002-2610,2028-04-07,Proveedor sintético B
+PRD-0003,L-0003-2609,2027-06-12,Proveedor sintético A
+PRD-0003,L-0003-2610,2028-10-14,Proveedor sintético B
+PRD-0004,L-0004-2609,2027-04-13,Proveedor sintético A
+PRD-0004,L-0004-2610,2028-04-07,Proveedor sintético B
+PRD-0005,L-0005-2609,2027-06-12,Proveedor sintético A
+PRD-0005,L-0005-2610,2028-10-04,Proveedor sintético B
+PRD-0006,L-0006-2609,2027-06-12,Proveedor sintético A
+PRD-0006,L-0006-2610,2029-10-14,Proveedor sintético B
+PRD-0007,L-0007-2609,2027-06-12,Proveedor sintético A
+PRD-0007,L-0007-2610,2029-10-14,Proveedor sintético B
+PRD-0008,L-0008-2609,2027-06-12,Proveedor sintético A
+PRD-0008,L-0008-2610,2029-10-14,Proveedor sintético B
+PRD-0009,L-0009-2609,2027-06-12,Proveedor sintético A
+PRD-0009,L-0009-2610,2029-10-14,Proveedor sintético B
+PRD-0010,L-0010-2609,2027-06-12,Proveedor sintético A
+PRD-0010,L-0010-2610,2029-10-14,Proveedor sintético B
+PRD-0011,L-0011-2609,2027-06-12,Proveedor sintético A
+PRD-0011,L-0011-2610,2028-10-04,Proveedor sintético B
+PRD-0012,L-0012-2609,2027-06-12,Proveedor sintético A
+PRD-0012,L-0012-2610,2031-10-14,Proveedor sintético B

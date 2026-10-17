@@ -14,7 +14,9 @@ tags: [producto, reto-1, evento, brainstorm, rutas, alcance]
 
 ## Cómo filtramos
 
-Una idea entra antes del congelamiento (17-oct, 15:45) solo si cumple las cuatro condiciones:
+> **Actualización 16-oct, 17:30:** las ideas de planificación del evento se consolidaron en [[Planificacion potenciada - propuesta del evento]] y en los issues #240–#249. Coordinación en #253.
+
+Una idea entra antes del congelamiento del código (sáb 17-oct, 11:30; materiales a las 15:45) solo si cumple las cuatro condiciones:
 
 1. Responde a algo que dijo el sector o la organización.
 2. Se puede mostrar en menos de 30 s dentro del pitch de 5 min.

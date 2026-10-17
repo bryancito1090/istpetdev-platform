@@ -17,4 +17,9 @@ describe('configuración OIDC pública (FR-02)', () => {
     expect(env.oidc.postLogoutRedirectUri).toBe(logout);
     expect(JSON.stringify(env)).not.toMatch(/secret|password|istpetdev\.local|«/i);
   });
+
+  it('configura mobileAppUrl correctamente por entorno', () => {
+    expect(environment.mobileAppUrl).toBe('http://localhost:8100');
+    expect(production.mobileAppUrl).toBe('/campo/');
+  });
 });

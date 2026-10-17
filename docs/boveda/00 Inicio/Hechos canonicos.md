@@ -53,9 +53,13 @@ Estas cifras son propuesta del equipo, no datos de una empresa ni exigencias del
 | Caso hospital | 60 L disponibles, 12 L/día, lead time 2 días, margen 3 días → cobertura 5 días | [[Inventario y prediccion]] | ⚠️ ilustrativo |
 | Fixture inicial | 6 puntos y 2 SKU | [[Dataset y escenarios]] | ⚠️ propuesta |
 | Resultados medidos | Ninguno todavía | [[Plan de validacion]] | ✅ |
-| Recorrido en vivo de la demo | ≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos (fixture `demo-region`) | D6 en [[Definiciones de producto y plan hasta el pitch]] | ⚠️ propuesta |
+| Recorrido en vivo de la demo | ≈15 puntos sintéticos de Quito, 1 bodega, 2 vehículos (fixture `demo-region`). Desde el 16-oct se propone `demo-quito-planificacion` (#243), basado en `demo-region-caos`; mientras no esté ensayado, se usa `demo-region` | D6 en [[Definiciones de producto y plan hasta el pitch]]; [[Planificacion potenciada - propuesta del evento]] | ⚠️ propuesta |
 | Fixture de pruebas del importador | `demo-base`: 6 puntos, 2 SKU, 1 bodega, 1 vehículo | Spec 001 (`docs/specs/`) | ⚠️ propuesta |
-| Congelamiento de funcionalidades | 15-oct-2026 14:00 | D8 en [[Definiciones de producto y plan hasta el pitch]] | ⚠️ propuesta |
+| Congelamiento | **Código: sáb 17-oct 11:30. Materiales: 15:45.** Reemplaza el D8 original (15-oct 14:00) | «Días del evento» en [[Definiciones de producto y plan hasta el pitch]]; tablero #253 | ✅ decisión del equipo |
+| Migraciones de base de datos | Permitidas la noche del 16-oct, **solo la de #240**; se aplican en RDS en su despliegue antes de las 11:30. Reemplaza la prohibición desde H5 del runbook | Decisión de Joseph, 16-oct; [[Runbook de DevOps y base de datos para la demo]] | ✅ decisión del equipo |
+| Dolor que resuelve el pitch | **Módulo de planificación:** flota propia o contratada, costo total de servir y recomendación con justificación | [[Planificacion potenciada - propuesta del evento]] | ✅ decisión de Joseph, 16-oct |
+| Origen del dataset | La organización no entrega dataset; el equipo genera y alimenta el suyo, todo sintético. Fixture propuesto `demo-quito-planificacion` (#243) | Joseph, 16-oct; [[Dataset y escenarios]] | ✅ decisión del equipo |
+| Coordinación de la noche | Colas por persona, archivos compartidos y orden de fusión en el issue fijado #253 | GitHub | ✅ |
 | Simulador del spec 005 | API .NET asíncrona, base aislada, tres semillas base y una adversa; baselines reactivo y calendario fijo de 7 días con cantidad histórica fija | [[Simulador y metricas]]; [spec 005](../../specs/005-panel-simulador/spec.md) | ⚠️ propuesta; sin resultados medidos |
 
 ## Stack y versiones

@@ -4,6 +4,7 @@ import { Router, RouterLink, NavigationEnd, RouterLinkActive } from '@angular/ro
 import { filter } from 'rxjs/operators';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
+import { getMobileAppUrl } from '@shared/config';
 
 interface NavItem {
   path: string;
@@ -76,7 +77,7 @@ const AUDITOR_NAV: NavItem[] = [
               </a>
               <a href="#metricas" class="hover:text-[#0A2540] transition-colors">Métricas 90d</a>
               <a routerLink="/public-trace" class="hover:text-[#0A2540] transition-colors">Trazabilidad QR</a>
-              <a href="http://localhost:8100" target="_blank" class="hover:text-[#0A2540] transition-colors">App Móvil PWA</a>
+              <a [href]="mobileAppUrl" target="_blank" rel="noopener noreferrer" class="hover:text-[#0A2540] transition-colors">App Móvil PWA</a>
             </nav>
           }
         </div>
@@ -119,19 +120,12 @@ const AUDITOR_NAV: NavItem[] = [
               Salir
             </button>
           } @else {
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 (click)="login()"
-                class="inline-flex items-center justify-center rounded-[6px] border border-expo-blue/30 bg-white hover:border-expo-blue hover:bg-blue-50/40 px-3.5 py-1.5 text-[13px] font-medium text-expo-blue transition-all cursor-pointer">
+                class="inline-flex items-center justify-center rounded-[6px] bg-expo-blue hover:bg-expo-blueDark px-4 py-1.5 text-white font-medium text-[13px] shadow-xs transition-all hover:shadow hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
                 Iniciar sesión
-              </button>
-              <button
-                type="button"
-                (click)="login()"
-                class="inline-flex items-center justify-center gap-1.5 rounded-[6px] bg-expo-blue hover:bg-expo-blueDark px-4 py-1.5 text-white font-medium text-[13px] shadow-xs transition-all hover:shadow hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
-                <span>Comunícate con ventas</span>
-                <span class="text-white/80 text-xs font-semibold">&gt;</span>
               </button>
             </div>
           }
@@ -144,6 +138,7 @@ export class HeaderWidget implements OnInit {
   readonly session = inject(AuthSession);
   private readonly router = inject(Router);
   private readonly apiService = inject(ApiService);
+  readonly mobileAppUrl = getMobileAppUrl();
 
   readonly currentUrl = signal(this.router.url);
   readonly alertCount = signal(0);

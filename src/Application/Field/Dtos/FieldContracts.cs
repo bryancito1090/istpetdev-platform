@@ -180,6 +180,15 @@ public sealed record MobileAssignmentDelivery(
     string Status,
     IReadOnlyList<HandlingUnitResponse> HandlingUnits);
 
+public sealed record MobileAssignmentPickupStop(
+    Guid StopId,
+    int Sequence,
+    Guid? LocationId,
+    string PointCode,
+    string PointName,
+    string Address,
+    DateTime DueAtUtc);
+
 public sealed record MobileAssignmentRoute(
     Guid RoutePlanId,
     int Revision,
@@ -188,7 +197,8 @@ public sealed record MobileAssignmentRoute(
     string VehicleCode,
     int StopsCount,
     IReadOnlyList<MobileAssignmentDelivery> Deliveries,
-    string? OriginWarehouseName = null);
+    string? OriginWarehouseName = null,
+    IReadOnlyList<MobileAssignmentPickupStop>? PickupStops = null);
 
 public sealed record MobileAssignmentResponse(
     DateTime ServerTimeUtc,

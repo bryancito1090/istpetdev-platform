@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:5000',
+  mobileAppUrl: 'http://localhost:8100',
   appName: 'IstpetDev Web',
   version: '1.0.0',
   // Fuente: docs/deployment-status.md (8-oct); confirmar con terraform output -json cognito

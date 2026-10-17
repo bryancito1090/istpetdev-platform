@@ -396,3 +396,65 @@ Amplía el reporte del importador del spec 001 sin cambiar su validación estric
   de viabilidad, balance, puntos sin GPS, stock vs demanda y acciones separadas
   en seguras/humanas, y usa plantilla determinista si el LLM falla o inventa
   cifras. Nunca envía `allowPartial=true`.
+
+## Costo estimado de servir una ruta (#240 — 16 de octubre de 2026)
+
+`RouteEvaluationResult` (`POST /api/v1/route-plans/evaluate`, y `evaluation` de
+`/suggest`) y `VehicleMatchResult` agregan `serviceCostBreakdown`:
+
+| Campo | Unidad / significado |
+|---|---|
+| `fuel`, `wear`, `driver`, `helpers`, `shrink` | USD estimados por componente; `helpers` es costo |
+| `total` | USD; coincide con `totalCost`/`estimatedTotalCost` del resultado |
+| `loadPct` | Peso máximo simultáneo / capacidad × 100; no se limita al 100 |
+| `helperCount` | Número de ayudantes de la ruta, además del conductor |
+| `fuelPrice` | `{value, date, source, unit: "USD/gal"}`; fecha ISO y fuente de servidor |
+| `notes` | Supuestos, datos faltantes y fallback; siempre aclara que son estimaciones sintéticas |
+| `legacyTransport` | USD por km del cálculo anterior, solo en fallback; no se presenta como combustible |
+| `label`, `currency` | `"estimado"`, `"USD"` |
+
+La configuración se enlaza desde `Logistics:ServiceCost` a `ServiceCostOptions`.
+El consumo usa la fracción de carga (`loadPct / 100`) y galón = 3,785 litros.
+Los componentes se redondean a centavos y luego se suman. La tasa de merma cambia
+solo **por encima** del umbral (90% por defecto); el valor se cuenta en recogidas,
+sin sumarlo otra vez en entregas. Las reglas de operarios se evalúan en orden
+sobre cada parada (peso y máximo peso de un bulto); la ruta lleva el máximo de
+ayudantes, y el tiempo de cada descarga usa esa cuadrilla completa.
+Sin tiempo definido en el punto, se usa `ceil(10 + bultos / (1 + ayudantes))`
+minutos; un tiempo explícito de cero se conserva. Sin bultos conocidos se conserva
+el tiempo anterior y se indica una cuadrilla conservadora. Sin valor unitario,
+la merma se marca parcial. El conteo de bultos redondea hacia arriba por SKU.
+
+Sin ServiceCost, sin perfil del tipo de vehículo o con configuración incompleta
+(fecha/fuente ausente, tasas negativas o reglas inválidas), se conservan el costo
+**y los tiempos anteriores**. El desglose indica «perfil no configurado» y el
+precio no informado o sin fecha/fuente viaja con los tres campos nulos; no se
+inventa una cotización vigente.
+Los defaults numéricos de ServiceCost son sintéticos, no precios medidos.
+
+Importación: `products` admite `unit_value` (USD/unidad base, no negativo) y
+`units_per_package` (positivo); `vehicles` admite `vehicle_type`
+(`camioneta`, `camion_liviano`, `camion_pesado`) y `usage_scope`
+(`urbano`, `extraurbano`). Campos ausentes/vacíos conservan valores anteriores;
+se registra `*_preserved` en supuestos. La migración `ServiceCostCatalog` agrega
+las cuatro columnas nullable, con escala decimal (18,3) del DemoCore actual.
+No altera históricos ni significa que haya sido aplicada en producción.
+
+Coordinación: `RoutePlansController` se conserva por #237/#245. Anthony debe
+alinear su `costBreakdown` anterior y `/confirm` con este nuevo calculador si se
+requiere presentar/persistir el desglose completo allí. `serviceCostBreakdown`
+en los DTO es la fuente del costo de servir; el desglose legado de `/suggest`
+sigue describiendo km/hora. La pantalla es #242; la calibración de Quito es #243.
+La planificación general del motor y la calibración histórica (#204) mantienen
+su contrato actual. #244/#245 rebasan después de #240.
+
+## Hora pico por franja (#245 — 16 de octubre de 2026)
+
+Una ruta que sale a las 07:00 no tarda lo mismo que una que sale a las 11:00. OSRM y la aproximación (`ApproxSpeedKmh`) no consideran el tráfico, así que el motor corrige la duración de cada tramo con un factor de velocidad por franja horaria.
+
+- **Configuración:** `Logistics:TrafficBands`, lista de `{ "Start": "HH:mm", "End": "HH:mm", "SpeedFactor": 0.64 }` en hora local (`TrafficBandOptions`). `SpeedFactor` es la fracción de la velocidad normal: 0,5 = el tramo dura el doble. La franja incluye `Start` y excluye `End`. Una franja mal formada, con `End <= Start` o con factor fuera de (0, 1] se ignora; si dos se solapan, gana la más lenta. **Sin franjas (valor por defecto) las duraciones no cambian.** Los valores de la demo están en `appsettings.demo-quito.json` (#243) y son supuestos documentados en el README del fixture.
+- **Regla:** la duración del tramo se divide entre el factor de la franja que contiene la **hora local de inicio del tramo** (no se reparte entre franjas). Se aplica en `RouteFeasibility` (propuesta, inserción, 2-opt y replanificación), en el cálculo de llegadas de `RoutePlanner` y en `RouteEvaluator` (`/evaluate` y `evaluation` de `/suggest`). Las ventanas, la espera, la jornada y el costo por hora usan la ETA corregida. Si además hay un incidente que ralentiza el tramo, ambos factores se multiplican.
+- **`POST /api/v1/route-plans`:** cada `routes[].stops[]` agrega `trafficFactorApplied` (número o `null`): el factor aplicado al tramo que llega a esa parada; `null` fuera de hora pico. Se guarda en `InputJson.stops[]` del plan (también en las revisiones por incidente).
+- **`GET /api/v1/route-plans/{id}`:** cada parada agrega `trafficFactorApplied` leído del plan guardado; `null` en planes anteriores, en rutas del asistente o fuera de hora pico.
+- **`RouteEvaluationResult.stops[]`:** agrega `trafficFactorApplied` con la misma regla; `legDurationMinutes` ya viene corregido (redondeado a 0,1 min solo cuando hay factor).
+- **Fuera de alcance:** `VehicleMatcher` estima la duración total para descartar por jornada sin horas por tramo; no aplica el factor (lo toca #244 en paralelo). `DeliveryStopSequencer` ordena por prioridad y distancia, sin duraciones, y no cambia.

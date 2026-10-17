@@ -236,7 +236,8 @@ public sealed class Replanner(
                     sequence = s.Sequence,
                     pointCode = s.PointCode,
                     isConsolidation = s.IsConsolidation,
-                    loads = s.Loads
+                    loads = s.Loads,
+                    trafficFactorApplied = s.TrafficFactorApplied
                 }),
                 legs = proposedRoute.Legs
             }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })

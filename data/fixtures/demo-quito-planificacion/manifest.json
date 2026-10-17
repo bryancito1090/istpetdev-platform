@@ -1,0 +1,204 @@
+{
+  "dataset": "demo-quito-planificacion",
+  "version": 1,
+  "seed": 20261016,
+  "endDate": "2026-10-15",
+  "historyDays": 60,
+  "warehouses": 3,
+  "servicePoints": 40,
+  "realPublicLocations": 12,
+  "products": 12,
+  "vehicles": 10,
+  "lots": 24,
+  "stockRows": 397,
+  "consumptionRows": 18103,
+  "roadSegments": 1806,
+  "incidents": 6,
+  "roadSource": "OSRM público (router.project-osrm.org), red vial OpenStreetMap",
+  "snapToRoad": {
+    "BOD-0001": {
+      "distanceM": 0.2,
+      "street": "Avenida Pedro Vicente Maldonado"
+    },
+    "BOD-0002": {
+      "distanceM": 15.6,
+      "street": "Vicente Duque"
+    },
+    "BOD-0003": {
+      "distanceM": 35.5,
+      "street": "N2B"
+    },
+    "PTO-0001": {
+      "distanceM": 30.8,
+      "street": ""
+    },
+    "PTO-0002": {
+      "distanceM": 26.1,
+      "street": ""
+    },
+    "PTO-0003": {
+      "distanceM": 69.4,
+      "street": ""
+    },
+    "PTO-0004": {
+      "distanceM": 17.5,
+      "street": ""
+    },
+    "PTO-0005": {
+      "distanceM": 7.8,
+      "street": ""
+    },
+    "PTO-0006": {
+      "distanceM": 32.0,
+      "street": ""
+    },
+    "PTO-0007": {
+      "distanceM": 69.2,
+      "street": ""
+    },
+    "PTO-0008": {
+      "distanceM": 82.7,
+      "street": ""
+    },
+    "PTO-0009": {
+      "distanceM": 44.2,
+      "street": ""
+    },
+    "PTO-0010": {
+      "distanceM": 45.5,
+      "street": ""
+    },
+    "PTO-0011": {
+      "distanceM": 0.7,
+      "street": "Rio Dorado"
+    },
+    "PTO-0012": {
+      "distanceM": 18.9,
+      "street": "Juan Montalvo"
+    },
+    "PTO-0013": {
+      "distanceM": 52.9,
+      "street": ""
+    },
+    "PTO-0014": {
+      "distanceM": 20.0,
+      "street": "Avenida General Eloy Alfaro"
+    },
+    "PTO-0015": {
+      "distanceM": 9.2,
+      "street": "Baquedano"
+    },
+    "PTO-0016": {
+      "distanceM": 0.7,
+      "street": "Diego Noboa"
+    },
+    "PTO-0017": {
+      "distanceM": 14.9,
+      "street": "El Morlán"
+    },
+    "PTO-0018": {
+      "distanceM": 14.9,
+      "street": "Cesar Davila Andrade"
+    },
+    "PTO-0019": {
+      "distanceM": 21.3,
+      "street": "Avenida Diego Vasquez de Cepeda"
+    },
+    "PTO-0020": {
+      "distanceM": 26.6,
+      "street": ""
+    },
+    "PTO-0021": {
+      "distanceM": 20.8,
+      "street": ""
+    },
+    "PTO-0022": {
+      "distanceM": 4.8,
+      "street": "Francisco Chávez"
+    },
+    "PTO-0023": {
+      "distanceM": 181.9,
+      "street": "Mariano Calvache"
+    },
+    "PTO-0024": {
+      "distanceM": 38.0,
+      "street": "De Las Dalias"
+    },
+    "PTO-0025": {
+      "distanceM": 9.4,
+      "street": "Pontevedra"
+    },
+    "PTO-0026": {
+      "distanceM": 25.6,
+      "street": "García Moreno"
+    },
+    "PTO-0027": {
+      "distanceM": 12.6,
+      "street": "José Mejía"
+    },
+    "PTO-0028": {
+      "distanceM": 8.5,
+      "street": "Venezuela"
+    },
+    "PTO-0029": {
+      "distanceM": 27.5,
+      "street": "Cañaris"
+    },
+    "PTO-0030": {
+      "distanceM": 0,
+      "street": "Hernando Gamarra"
+    },
+    "PTO-0031": {
+      "distanceM": 13.7,
+      "street": "Antonio Játiva"
+    },
+    "PTO-0032": {
+      "distanceM": 28.1,
+      "street": "Malvas"
+    },
+    "PTO-0033": {
+      "distanceM": 20.1,
+      "street": "Rafael Garcia"
+    },
+    "PTO-0034": {
+      "distanceM": 35.4,
+      "street": "Pachamama"
+    },
+    "PTO-0035": {
+      "distanceM": 17.9,
+      "street": "Avenida Teniente Hugo Ortiz"
+    },
+    "PTO-0036": {
+      "distanceM": 20.1,
+      "street": ""
+    },
+    "PTO-0037": {
+      "distanceM": 43.4,
+      "street": "Simón Bolívar"
+    },
+    "PTO-0038": {
+      "distanceM": 6.9,
+      "street": ""
+    },
+    "PTO-0039": {
+      "distanceM": 27.7,
+      "street": "Simón Bolívar"
+    },
+    "PTO-0040": {
+      "distanceM": 2.6,
+      "street": ""
+    }
+  },
+  "sha256": {
+    "bodegas.csv": "3f9eb3f6f70f42e268a91665bb1fae86782dba82f32a80c719e1fc4d3c3a980a",
+    "puntos.csv": "1453e6a29344db1e23e3200ee753a425c0c61239ef96f512584d2ced4a1ab711",
+    "productos.csv": "110f7a6a8993b46526e2cf4293eb1b0dc9fe01cef99a9e50c3140fceba3738e6",
+    "lotes.csv": "bc18a5f320e7f98778140424266eb15cad18d9980cd6cb55a34488cc23fc5484",
+    "vehiculos.csv": "f56918cd13f04bc76ce5c5fc11ffc5eb57a446f5e664674840ab18b09e127cdb",
+    "consumos.csv": "89ebebf22ec703391666651ca90967f565c770ded12bf76f14f94d137b32a1ce",
+    "inventario.csv": "76f8f827b9ee178759abd84abad014f9901a9be26ebc6ea7a7a17dc83c76c98d",
+    "tramos.csv": "006e688449e38e3457bb0efea830b267a92851aabecd2e86037711ceb8c4e777",
+    "incidentes.json": "f1e55c426bf7b700c7c4ad4ba595f80d958f605a6c26e502aca61f8b56aa2b0b",
+    "mapping.json": "3f8fba950b5cf529c8b71a5948e55d0530683ecedd80c9c616356595111d21a2"
+  }
+}

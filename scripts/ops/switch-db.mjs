@@ -67,8 +67,8 @@ function getLocalConfig() {
   return {
     host: process.env.LOCAL_DATABASE_HOST || env.LOCAL_DATABASE_HOST || 'localhost',
     port: parseInt(process.env.LOCAL_DATABASE_PORT || env.LOCAL_DATABASE_PORT || '15432', 10),
-    database: process.env.LOCAL_DATABASE_NAME || env.LOCAL_DATABASE_NAME || 'postgres',
-    user: process.env.LOCAL_DATABASE_USER || env.LOCAL_DATABASE_USER || 'postgres',
+    database: process.env.LOCAL_DATABASE_NAME || env.LOCAL_DATABASE_NAME || 'istpetdev_dev_01',
+    user: process.env.LOCAL_DATABASE_USER || env.LOCAL_DATABASE_USER || 'migrator_dev_01',
     password: process.env.LOCAL_DATABASE_PASSWORD || env.LOCAL_DATABASE_PASSWORD || process.env.POSTGRES_PASSWORD || 'postgres_dev_password_local'
   };
 }

@@ -48,6 +48,18 @@ public sealed class IncidentsController(
             OccurredAtUtc = DateTime.UtcNow
         };
 
+        // Una avería se informa con el vehículo: sin su ruta publicada, el evaluador no encuentra paradas afectadas.
+        if (!string.IsNullOrWhiteSpace(request.VehicleCode))
+        {
+            var vehicleId = await db.Vehicles
+                .Where(v => v.OrganizationId == DemoOrganization.Id && v.Code == request.VehicleCode)
+                .Select(v => (Guid?)v.Id).FirstOrDefaultAsync(ct);
+            if (vehicleId is null) return Problem(statusCode: 404, title: "vehicle_not_found", detail: $"No existe el vehículo {request.VehicleCode}.");
+            incident.RoutePlanId = await db.RoutePlans
+                .Where(p => p.OrganizationId == DemoOrganization.Id && p.VehicleId == vehicleId && p.Status == "Published")
+                .OrderByDescending(p => p.Revision).Select(p => (Guid?)p.Id).FirstOrDefaultAsync(ct);
+        }
+
         db.Incidents.Add(incident);
         await db.SaveChangesAsync(ct);
 

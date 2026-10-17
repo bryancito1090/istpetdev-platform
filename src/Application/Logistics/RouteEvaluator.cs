@@ -23,7 +23,11 @@ public sealed record EvaluatedStopDto(
     bool ViolatesPrecedence,
     bool ViolatesWindow,
     string? WarningMessage
-);
+)
+{
+    // #245: factor de hora pico aplicado al tramo que llega a esta parada; null fuera de hora pico.
+    public decimal? TrafficFactorApplied { get; init; }
+}
 
 public sealed record RouteEvaluationResult(
     bool IsValid,
@@ -37,7 +41,8 @@ public sealed record RouteEvaluationResult(
     IReadOnlyList<string> Warnings,
     IReadOnlyList<double[]> Coordinates,
     // "osrm": recorrido por calles; "approximate": rectas entre paradas (sin servicio de rutas).
-    string CoordinatesSource = "approximate"
+    string CoordinatesSource = "approximate",
+    ServiceCostBreakdown? ServiceCostBreakdown = null
 );
 
 public interface IRouteEvaluator
@@ -54,15 +59,18 @@ public sealed class RouteEvaluator : IRouteEvaluator
     private readonly IDistanceProvider _distanceProvider;
     private readonly LogisticsOptions _options;
     private readonly IRouteGeometryService? _geometry;
+    private readonly IApplicationDbContext? _db;
 
     public RouteEvaluator(
         IDistanceProvider distanceProvider,
         IOptions<LogisticsOptions> options,
-        IRouteGeometryService? geometry = null)
+        IRouteGeometryService? geometry = null,
+        IApplicationDbContext? db = null)
     {
         _distanceProvider = distanceProvider;
         _options = options.Value;
         _geometry = geometry;
+        _db = db;
     }
 
     public async Task<RouteEvaluationResult> EvaluateSequenceAsync(
@@ -78,6 +86,10 @@ public sealed class RouteEvaluator : IRouteEvaluator
         {
             return new RouteEvaluationResult(false, 0, 0, 0, 0, 0, Array.Empty<EvaluatedStopDto>(), new[] { "La ruta no contiene paradas." }, Array.Empty<string>(), Array.Empty<double[]>());
         }
+
+        var serviceCost = await ServiceCostCalculator.LoadAsync(_options, sequence, _db, ct);
+        var routeHelperCount = serviceCost.HelperCount(sequence);
+        sequence = sequence.Select(s => s with { ServiceMinutes = serviceCost.ServiceMinutes(s, vehicle, routeHelperCount) }).ToArray();
 
         // 1. Validar precedencia: Ninguna entrega puede ocurrir antes de que se recoja en la bodega correspondiente
         // Se asegura que la primera parada sea una Recogida (Pickup)
@@ -107,6 +119,7 @@ public sealed class RouteEvaluator : IRouteEvaluator
             var stop = sequence[i];
             decimal legKm = 0m;
             decimal legMin = 0m;
+            decimal speedFactor = 1m;
 
             if (i > 0)
             {
@@ -122,6 +135,11 @@ public sealed class RouteEvaluator : IRouteEvaluator
                     legKm = DistanceProvider.HaversineDistanceKm(prevStop.Position, stop.Position) * _options.ApproxDetourFactor;
                     legMin = Math.Round((legKm / _options.ApproxSpeedKmh) * 60m, 1);
                 }
+
+                // #245: hora pico según la hora local de salida del tramo
+                speedFactor = TrafficBands.SpeedFactorAt(_options.TrafficBands,
+                    TimeOnly.FromDateTime(currentTime.AddHours(_options.FallbackUtcOffsetHours)));
+                if (speedFactor != 1m) legMin = Math.Round(TrafficBands.Apply(legMin, speedFactor), 1);
 
                 currentTime = currentTime.AddMinutes((double)legMin);
                 totalKm += legKm;
@@ -187,7 +205,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
                 currentWeight < 0,
                 violatesWindow,
                 warning
-            ));
+            )
+            { TrafficFactorApplied = TrafficBands.Reported(speedFactor) });
         }
 
         // 4. Validar capacidades de vehículo si está asignado
@@ -209,8 +228,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
             errors.Add($"La duración total de la ruta ({totalMinutes:F0} min) excede la jornada máxima permitida ({_options.WorkdayHours * 60} min).");
         }
 
-        decimal costPerKm = vehicle?.CostPerKm ?? _options.DefaultCostPerKm;
-        decimal totalCost = LogisticsCostCalculator.CalculateCost(totalKm, totalMinutes, costPerKm, _options.CostPerHour, tollsCost: 0m);
+        var breakdown = serviceCost.Calculate(totalKm, totalMinutes, vehicle, maxWeight, sequence);
+        decimal totalCost = breakdown.Total;
 
         bool isValid = errors.Count == 0;
 
@@ -234,7 +253,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
             errors,
             warnings,
             coordinates,
-            coordinatesSource
+            coordinatesSource,
+            breakdown
         );
     }
 }

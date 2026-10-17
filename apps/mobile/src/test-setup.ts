@@ -25,11 +25,15 @@ mockIonicStandalone('@ionic/angular/standalone', async () => {
     IonBadge: IonDummyComponent,
     IonButtons: IonDummyComponent,
     IonBackButton: IonDummyComponent,
+    IonIcon: IonDummyComponent,
     IonItem: IonDummyComponent,
     IonLabel: IonDummyComponent,
     IonInput: IonDummyComponent,
     IonSpinner: IonDummyComponent,
-    AlertController: MockAlertController
+    AlertController: MockAlertController,
+    ToastController: class MockToastController {
+      create = vi.fn().mockResolvedValue({ present: vi.fn() });
+    }
   };
 });
 

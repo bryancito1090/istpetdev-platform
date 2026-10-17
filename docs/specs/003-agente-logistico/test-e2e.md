@@ -201,3 +201,12 @@ Intentos conservados: matriz `20261015-081914-646750` (403 de Cloudflare al
 User-Agent por defecto de Python; corregido en #94) y Watch `01a13faf-3974…`
 (fallback `agent_error` con base sin fixture). Detalle en
 [evidencia/2026-10-15-cierre-39.md](evidencia/2026-10-15-cierre-39.md).
+
+### Actualización productiva — 16-oct-2026
+
+| Fecha | Commit | Entorno | Escenario | Resultado | Evidencia | Quién |
+|---|---|---|---|---|---|---|
+| 2026-10-16 | Desplegado `438c2d6` (release #251) | API productiva + n8n de Bryan 2.39.5 | E2E-01 (Watch real con 8 herramientas y prompt v2) | pasó | Completed 7091 ms; `/logistics/stock`, `/logistics/sourcing` y `/logistics/vehicles/available` 2xx; 6/6 decisiones LLM; firma/token inválidos 401 | OpenCode (encargo de Bryan) |
+
+Detalle y límites en
+[evidencia/2026-10-16-sincronizacion-productiva.md](evidencia/2026-10-16-sincronizacion-productiva.md).

@@ -1,0 +1,41 @@
+code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days,fuente_ubicacion,referencia_osm_o_barrio
+PTO-0001,Hospital de Especialidades Eugenio Espejo,-0.21527,-78.49875,Centro,hospital,alta,07:00,11:00,30,1,OpenStreetMap (ODbL); relación comercial ficticia,w1429059854
+PTO-0002,Hospital Gineco-Obstétrico Isidro Ayora,-0.21481,-78.5001,Centro,hospital,alta,07:00,11:00,25,1,OpenStreetMap (ODbL); relación comercial ficticia,w717440311
+PTO-0003,Hospital Pediátrico Baca Ortiz,-0.20337,-78.48688,Centro-Norte,hospital,alta,07:00,11:00,25,1,OpenStreetMap (ODbL); relación comercial ficticia,w31135580
+PTO-0004,Hospital Carlos Andrade Marín (IESS),-0.20497,-78.50484,Centro,hospital,alta,06:30,10:30,35,1,OpenStreetMap (ODbL); relación comercial ficticia,w1101691224
+PTO-0005,Hospital General Enrique Garcés,-0.24439,-78.54124,Sur,hospital,alta,07:00,11:00,30,1,OpenStreetMap (ODbL); relación comercial ficticia,w31134989
+PTO-0006,Hospital General IESS Quito Sur,-0.25731,-78.5255,Sur,hospital,alta,07:00,11:00,30,1,OpenStreetMap (ODbL); relación comercial ficticia,w107938379
+PTO-0007,Hospital General Docente de Calderón,-0.09259,-78.43619,Norte,hospital,alta,07:00,11:00,30,2,OpenStreetMap (ODbL); relación comercial ficticia,w242102876
+PTO-0008,Hospital Pablo Arturo Suárez,-0.12724,-78.49782,Norte,hospital,alta,07:00,11:00,25,1,OpenStreetMap (ODbL); relación comercial ficticia,w31135949
+PTO-0009,Hospital IESS San Francisco de Quito,-0.09004,-78.47666,Norte,hospital,alta,07:00,11:00,25,1,OpenStreetMap (ODbL); relación comercial ficticia,w1357560803
+PTO-0010,Hospital Quito N.º 1 de la Policía,-0.18326,-78.50464,Centro-Norte,hospital,alta,07:00,11:00,25,1,OpenStreetMap (ODbL); relación comercial ficticia,w31152385
+PTO-0011,Centro de Salud Guamaní,-0.32421,-78.54937,Sur,centro_salud,media,08:00,15:00,15,2,OpenStreetMap (ODbL); relación comercial ficticia,n992302533
+PTO-0012,Centro de Salud Tumbaco,-0.2128,-78.40529,Valle Tumbaco,centro_salud,media,08:00,15:00,15,2,OpenStreetMap (ODbL); relación comercial ficticia,w425163215
+PTO-0013,Centro comercial Quicentro Norte (sintético),-0.17777,-78.48542,Centro-Norte,centro_comercial,media,07:00,09:30,20,2,sintética,Iñaquito
+PTO-0014,Oficinas corporativas La Carolina (sintéticas),-0.19052,-78.4854,Centro-Norte,oficina,normal,08:00,17:00,10,3,sintética,La Carolina
+PTO-0015,Restaurante La Mariscal (sintético),-0.20335,-78.49307,Centro,local_comida,media,06:30,10:30,15,2,sintética,La Mariscal
+PTO-0016,Patio de comidas El Batán (sintético),-0.17999,-78.472,Centro-Norte,local_comida,media,06:30,10:30,15,2,sintética,El Batán
+PTO-0017,Sucursal bancaria El Inca (sintética),-0.14987,-78.47654,Norte,banco,normal,08:00,09:00,10,3,sintética,El Inca
+PTO-0018,Clínica privada Kennedy (sintética),-0.14097,-78.48149,Norte,clinica,media,07:00,12:00,20,2,sintética,Kennedy
+PTO-0019,Unidad educativa Ponceano (sintética),-0.1084,-78.48784,Norte,colegio,normal,13:30,16:00,15,3,sintética,Ponceano
+PTO-0020,Supermercado Cotocollao (sintético),-0.11573,-78.50004,Norte,comercio,normal,06:00,09:00,20,2,sintética,Cotocollao
+PTO-0021,Oficinas El Condado (sintéticas),-0.10397,-78.52734,Norte,oficina,normal,08:00,17:00,10,3,sintética,El Condado
+PTO-0022,Planta de alimentos Carcelén (sintética),-0.08996,-78.473,Norte,industria,media,06:00,14:00,25,2,sintética,Carcelén
+PTO-0023,Local de comida Pomasqui (sintético),-0.04941,-78.46108,Norte extraurbano,local_comida,normal,07:00,11:00,10,3,sintética,Pomasqui
+PTO-0024,Clínica privada Calderón (sintética),-0.09578,-78.42226,Norte,clinica,media,07:00,12:00,20,2,sintética,Calderón
+PTO-0025,Hotel La Floresta (sintético),-0.20939,-78.48485,Centro,hotel,media,09:00,12:00,15,2,sintética,La Floresta
+PTO-0026,Oficinas Centro Histórico - Plaza Grande (sintéticas),-0.21995,-78.51258,Centro Histórico,oficina,normal,06:00,08:30,15,3,sintética,Centro Histórico
+PTO-0027,Sucursal bancaria Centro Histórico (sintética),-0.2195,-78.51074,Centro Histórico,banco,normal,06:00,08:30,10,3,sintética,Centro Histórico
+PTO-0028,Restaurante San Juan (sintético),-0.22088,-78.51217,Centro Histórico,local_comida,media,06:00,08:30,15,2,sintética,San Juan
+PTO-0029,Unidad educativa La Magdalena (sintética),-0.24359,-78.52578,Sur,colegio,normal,13:30,16:00,15,3,sintética,La Magdalena
+PTO-0030,Centro comercial Villaflora (sintético),-0.24569,-78.5214,Sur,centro_comercial,media,07:00,09:30,20,2,sintética,Villaflora
+PTO-0031,Sucursal bancaria Chimbacalle (sintética),-0.24333,-78.51214,Sur,banco,normal,08:00,09:00,10,3,sintética,Chimbacalle
+PTO-0032,Clínica privada Solanda (sintética),-0.27486,-78.54142,Sur,clinica,media,07:00,12:00,20,2,sintética,Solanda
+PTO-0033,Local de comida Chillogallo (sintético),-0.2791,-78.55485,Sur,local_comida,normal,07:00,11:00,10,3,sintética,Chillogallo
+PTO-0034,Oficinas Quitumbe (sintéticas),-0.29631,-78.54409,Sur,oficina,normal,08:00,17:00,10,3,sintética,Quitumbe
+PTO-0035,Mercado Mayorista - local de abastos (sintético),-0.27274,-78.53803,Sur,comercio,normal,05:30,08:00,20,2,sintética,Mercado Mayorista
+PTO-0036,Unidad educativa La Ecuatoriana (sintética),-0.30849,-78.56515,Sur,colegio,normal,13:30,16:00,15,3,sintética,La Ecuatoriana
+PTO-0037,Oficinas Conocoto (sintéticas),-0.28966,-78.47981,Valle Chillos,oficina,normal,08:00,17:00,10,3,sintética,Conocoto
+PTO-0038,Clínica privada Cumbayá (sintética),-0.19998,-78.43406,Valle Tumbaco,clinica,media,07:00,12:00,20,2,sintética,Cumbayá
+PTO-0039,Hotel Tumbaco (sintético),-0.21203,-78.40438,Valle Tumbaco,hotel,media,09:00,12:00,15,2,sintética,Tumbaco
+PTO-0040,Restaurante Guamaní (sintético),-0.33,-78.55002,Sur,local_comida,normal,07:00,11:00,10,3,sintética,Guamaní

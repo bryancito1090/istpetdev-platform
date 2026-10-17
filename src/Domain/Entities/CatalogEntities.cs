@@ -38,6 +38,8 @@ public sealed class Vehicle : OrganizationEntity
     public decimal MaxWeight { get; set; }
     public decimal? MaxVolume { get; set; }
     public decimal? CostPerKm { get; set; }
+    public string? VehicleType { get; set; }
+    public string? UsageScope { get; set; }
     public bool IsActive { get; set; }
 }
 
@@ -48,6 +50,8 @@ public sealed class Product : OrganizationEntity
     public string BaseUnit { get; set; } = string.Empty;
     public decimal WeightPerBaseUnit { get; set; }
     public decimal VolumePerBaseUnit { get; set; }
+    public decimal? UnitValue { get; set; }
+    public decimal? UnitsPerPackage { get; set; }
     public bool IsActive { get; set; }
 }
 

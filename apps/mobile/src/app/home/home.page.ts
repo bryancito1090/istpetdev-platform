@@ -1,14 +1,15 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   IonContent,
-  IonButton,
-  IonInput,
-  AlertController
+  AlertController,
+  ToastController
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logOutOutline, mapOutline, syncOutline } from 'ionicons/icons';
 import { RECEIPT_REJECTION_REASONS, MobileAssignmentDelivery } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
@@ -24,8 +25,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     CommonModule,
     FormsModule,
     IonContent,
-    IonButton,
-    IonInput,
     WarehouseComponent
   ],
   template: `
@@ -93,40 +92,6 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </div>
       }
 
-      <!-- Barra de Filtros en Píldoras -->
-      <div class="stripe-pills-bar">
-        <div class="stripe-pills-scroll">
-          <button type="button" class="stripe-pill-item" (click)="cycleDateRange()">
-            <span>{{ selectedDateRange() }}</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-
-          <button type="button" class="stripe-pill-item" (click)="cycleFrequency()">
-            <span>{{ selectedFrequency() }}</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-
-          <button type="button" class="stripe-pill-item" [class.is-active]="comparePrevious()" (click)="toggleComparePrevious()">
-            <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-            </svg>
-            <span>Período anterior</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-        </div>
-
-        <button type="button" class="stripe-plus-btn" aria-label="Agregar acción" (click)="openQuickAction()">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
-      </div>
     </div>
 
     <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
@@ -161,119 +126,182 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         </button>
       }
 
-      <!-- TARJETA 1: VOLUMEN BRUTO (Idéntica al screenshot de Stripe con colores oficiales) -->
-      <div class="stripe-card mb-4">
-        <div class="stripe-card-header">
-          <div class="stripe-card-title-group">
-            <span class="card-title-text">Volumen bruto</span>
-            <span class="info-icon-badge" title="Volumen logístico acumulado en el período">ⓘ</span>
-          </div>
-
-          <button type="button" class="stripe-card-action-btn" aria-label="Inspeccionar volumen" (click)="inspectVolumeDetails()">
-            <svg class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10 10h4" />
-              <path d="M19 7V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3" />
-              <path d="M8 7V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v3" />
-              <circle cx="7" cy="15" r="5" />
-              <circle cx="17" cy="15" r="5" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="stripe-card-main-val">
-          0,00 US$
-        </div>
-
-        <div class="stripe-card-sub-val">
-          0,00 US$ período anterior
-        </div>
-      </div>
-
       <!-- ======================================================== -->
       <!-- CASO 1: RECEPTOR HOSPITALARIO (Solo Escanear QR y Novedades) -->
       <!-- ======================================================== -->
       @if (authService.currentRole() === 'Receptor') {
-        <div class="stripe-card mb-4">
-          <div class="stripe-card-header pb-2">
-            <span class="card-title-text">Recibir insumos</span>
+        <div class="driver-stop-card mb-4">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="stop-tag">Recepción de Insumos</span>
+            <span class="status-badge">Punto de distribución</span>
           </div>
-          <div class="space-y-4 pt-1">
-            <ion-button expand="block" (click)="openReceiverScan()" class="stripe-action-btn">
+          <h2 class="stop-title">Recepción y Validación</h2>
+          <p class="stop-address">Escanea el código QR del bulto o ingresa el enlace de custodia recibido.</p>
+
+          <div class="space-y-3 pt-2">
+            <button type="button" class="stop-action-btn" (click)="openReceiverScan()">
               Escanear QR con cámara
-            </ion-button>
-            <label class="block text-xs font-semibold text-slate-700">Enlace completo del QR
-              <ion-input [(ngModel)]="qrInputText" placeholder="Pega el enlace del bulto"></ion-input>
-            </label>
-            <ion-button (click)="searchReceiverUnit()" [disabled]="receiverLoading()" class="stripe-action-btn-secondary">
-              Buscar bulto
-            </ion-button>
-            @if (receiverError()) { <p role="alert" class="text-xs text-rose-700 font-semibold">{{ receiverError() }}</p> }
-            @if (receiverCached()) {
-              <p class="text-xs text-amber-800">Última consulta guardada. La recepción se validará al recuperar señal.</p>
-            }
-            @if (receiverActiveBox(); as box) {
-              <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <h2 class="font-bold text-sm text-slate-900">{{ box.code }} · {{ box.destinationName }}</h2>
-                <p class="text-xs text-slate-600">
-                  Recepción por <strong>entrega completa</strong>: {{ box.boxes.length }} bulto(s)
-                  ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma todas las líneas enviadas.
-                </p>
-                @for (line of receiverLines; track line.deliveryLineId) {
-                  <div class="space-y-2.5 rounded-lg border border-slate-200 bg-white p-3">
-                    <h3 class="font-bold text-xs text-slate-900">{{ line.productName }}</h3>
-                    <p class="text-[11px] text-slate-500">Lote {{ line.lotCode }} · Enviadas {{ line.quantity }} {{ line.unit }}</p>
-                    <label class="block text-xs font-medium text-slate-700">Cantidad aceptada
-                      <input class="w-full border border-slate-200 rounded p-2 text-xs" type="number" min="0" [max]="line.quantity" step="0.001"
-                        [(ngModel)]="line.quantityAccepted" />
-                    </label>
-                    <p class="text-[11px] text-slate-500">Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
-                    @if (line.quantityAccepted < line.quantity) {
-                      <label class="block text-xs font-medium text-slate-700">Motivo del rechazo *
-                        <select class="w-full border border-slate-200 rounded p-2 text-xs" [(ngModel)]="line.rejectionReason">
-                          <option value="">Selecciona un motivo</option>
-                          @for (reason of receiverReasons; track reason.code) {
-                            <option [value]="reason.code">{{ reason.label }}</option>
-                          }
-                        </select>
-                      </label>
-                    }
-                    <label class="block text-xs font-medium text-slate-700">Stock en percha antes de recibir ({{ line.unit }})
-                      <input class="w-full border border-slate-200 rounded p-2 text-xs" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
-                    </label>
-                    <label class="block text-xs font-medium text-slate-700">Cantidad solicitada para reabastecimiento ({{ line.unit }})
-                      <input class="w-full border border-slate-200 rounded p-2 text-xs" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
-                    </label>
-                  </div>
-                }
-                <label class="block text-xs font-medium text-slate-700">Foto de la novedad (obligatoria si rechazas unidades)
-                  <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" (change)="onReceiverPhoto($event)" class="mt-1" />
-                </label>
-                @if (receiverPhoto(); as photo) { <p class="text-xs text-emerald-700 font-medium">Foto adjunta: {{ photo.name }}</p> }
-                <ion-button expand="block" color="success" (click)="confirmReceiverAction()"
-                  [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
-                  Guardar recepción de la entrega completa
-                </ion-button>
+            </button>
+
+            <div class="space-y-1.5 pt-2 border-t border-slate-100">
+              <label class="block text-xs font-semibold text-slate-700">Enlace o código de bulto:
+                <input
+                  type="text"
+                  [(ngModel)]="qrInputText"
+                  placeholder="Pega el enlace del bulto o UUID"
+                  class="w-full mt-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-[#00A7C4]" />
+              </label>
+              <button
+                type="button"
+                (click)="searchReceiverUnit()"
+                [disabled]="receiverLoading() || !qrInputText.trim()"
+                class="w-full py-2 px-3 text-xs font-bold text-[#0A2540] bg-slate-100 hover:bg-slate-200 rounded-lg transition disabled:opacity-50">
+                {{ receiverLoading() ? 'Buscando...' : 'Buscar bulto' }}
+              </button>
+            </div>
+
+            @if (receiverError()) {
+              <div role="alert" class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 font-medium">
+                {{ receiverError() }}
               </div>
             }
-            @if (receiverConfirmedMessage()) {
-              <div class="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-950 text-xs space-y-2" role="status">
-                <div class="flex items-center gap-1.5 font-bold">
-                  <span class="text-emerald-700 font-bold text-sm">✓</span>
-                  <span>Recepción guardada</span>
-                </div>
-                <p class="leading-relaxed">{{ receiverConfirmedMessage() }}</p>
-                <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                  <ion-button size="small" color="primary" class="flex-1 font-bold" (click)="resetReceiverScreen()">
-                    Registrar otro bulto / Limpiar
-                  </ion-button>
-                  <ion-button size="small" fill="outline" color="primary" class="flex-1 font-bold" (click)="openSyncQueue()">
-                    Ver cola de sincronización
-                  </ion-button>
-                </div>
+            @if (receiverCached()) {
+              <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                Última consulta guardada. La recepción se validará al recuperar señal.
               </div>
             }
           </div>
         </div>
+
+        @if (receiverActiveBox(); as box) {
+          <div class="driver-stop-card mb-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="stop-tag">Bulto: {{ box.code }}</span>
+              <span class="status-badge is-done">
+                {{ box.boxes.length }} bulto(s) en entrega
+              </span>
+            </div>
+            <h2 class="stop-title">{{ box.destinationName }}</h2>
+            <p class="stop-address">
+              Recepción por entrega completa ({{ box.boxes.map(b => b.code).join(', ') }}). Confirma las líneas recibidas.
+            </p>
+
+            <div class="stop-products-section">
+              <div class="flex items-center justify-between mb-2">
+                <span class="stop-products-title">Líneas a Recibir (Doble Validación)</span>
+                <button type="button" class="text-xs font-bold text-[#00A7C4] hover:underline"
+                        (click)="markAllReceiverLinesConform(true)">
+                  Marcar todos conformes
+                </button>
+              </div>
+
+              <div class="space-y-2">
+                @for (line of receiverLines; track line.deliveryLineId) {
+                  <div class="p-3 rounded-lg border transition select-none"
+                       [class.bg-emerald-50]="line.isConform !== false"
+                       [class.border-emerald-200]="line.isConform !== false"
+                       [class.bg-slate-50]="line.isConform === false"
+                       [class.border-slate-200]="line.isConform === false">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex items-start gap-2.5">
+                        <input type="checkbox"
+                               class="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                               [checked]="line.isConform !== false"
+                               (change)="line.isConform = !line.isConform; onConformToggle(line)" />
+                        <div>
+                          <span class="font-bold text-sm text-slate-900 block">{{ line.productName }}</span>
+                          <span class="text-xs text-slate-600 font-mono">
+                            Lote: <strong class="text-slate-800">{{ line.lotCode }}</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <span class="product-qty block mb-1">{{ line.quantity }} {{ line.unit }}</span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                              [class.bg-emerald-200]="line.isConform !== false"
+                              [class.text-emerald-900]="line.isConform !== false"
+                              [class.bg-amber-200]="line.isConform === false"
+                              [class.text-amber-900]="line.isConform === false">
+                          {{ line.isConform !== false ? 'Conforme' : 'Con Novedad' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    @if (line.isConform === false) {
+                      <div class="pt-2 mt-2 border-t border-slate-200 space-y-2 text-xs">
+                        <label class="block font-semibold text-slate-700">Cantidad aceptada
+                          <input class="w-full border border-slate-300 rounded p-1.5 text-xs mt-1" type="number" min="0" [max]="line.quantity" step="0.001"
+                            [(ngModel)]="line.quantityAccepted" />
+                        </label>
+                        <p class="text-rose-700 font-semibold">Rechazadas: {{ line.quantity - line.quantityAccepted }} {{ line.unit }}</p>
+                        @if (line.quantityAccepted < line.quantity) {
+                          <label class="block font-semibold text-slate-700">Motivo del rechazo *
+                            <select class="w-full border border-slate-300 rounded p-1.5 text-xs mt-1" [(ngModel)]="line.rejectionReason">
+                              <option value="">Selecciona un motivo</option>
+                              @for (reason of receiverReasons; track reason.code) {
+                                <option [value]="reason.code">{{ reason.label }}</option>
+                              }
+                            </select>
+                          </label>
+                        }
+                      </div>
+                    }
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 mt-2 border-t border-slate-200/60 text-xs">
+                      <label class="block text-slate-600">Stock en percha antes de recibir ({{ line.unit }})
+                        <input class="w-full border border-slate-300 rounded p-1 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.remainingQuantity" />
+                      </label>
+                      <label class="block text-slate-600">Solicitado para reabastecimiento ({{ line.unit }})
+                        <input class="w-full border border-slate-300 rounded p-1 text-xs mt-0.5" type="number" min="0" step="0.001" [(ngModel)]="line.nextRequestedQuantity" />
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <label class="block text-xs font-semibold text-slate-700">
+                Foto de la novedad (obligatoria si rechazas unidades)
+                <input class="w-full mt-1 text-xs" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" (change)="onReceiverPhoto($event)" />
+              </label>
+              @if (receiverPhoto(); as photo) {
+                <p class="text-xs text-slate-600 font-medium">Foto adjunta: {{ photo.name }}</p>
+              }
+
+              <button
+                type="button"
+                class="stop-action-btn"
+                (click)="confirmReceiverAction()"
+                [disabled]="receiverLoading() || receiverSaved() || box.status !== 'Delivered'">
+                {{ receiverLoading() ? 'Guardando...' : 'Guardar recepción de la entrega completa' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (receiverConfirmedMessage()) {
+          <div class="driver-stop-card mb-4 bg-emerald-50 border-emerald-200 text-xs space-y-2" role="status">
+            <div class="flex items-center gap-1.5 font-bold text-emerald-900 text-sm">
+              <span>Recepción guardada</span>
+            </div>
+            <p class="text-emerald-800 leading-relaxed">{{ receiverConfirmedMessage() }}</p>
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                class="flex-1 py-2 px-3 text-xs font-bold text-white bg-[#00A7C4] hover:bg-[#008CA5] rounded-lg transition"
+                (click)="resetReceiverScreen()">
+                Registrar otro bulto / Limpiar
+              </button>
+              <button
+                type="button"
+                class="flex-1 py-2 px-3 text-xs font-bold text-[#0A2540] bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition"
+                (click)="openSyncQueue()">
+                Ver cola de sincronización
+              </button>
+            </div>
+          </div>
+        }
       }
 
       <!-- ======================================================== -->
@@ -288,7 +316,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       <!-- ======================================================== -->
       @else {
         <!-- Banner de Aviso de Revisión de Ruta (PA-02 / FR-12 / F5) -->
-        @if (outboxService.activeDriverNotice(); as notice) {
+        @if (shouldShowDriverNotice(); as notice) {
           <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-950 rounded-xl shadow-xs flex items-start gap-3">
             <svg class="w-6 h-6 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -315,18 +343,26 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
           </div>
         }
 
-        <!-- Acciones del Conductor con estilo Stripe Tile -->
+        <!-- Acciones del Conductor: Únicos botones requeridos -->
         <div class="stripe-actions-grid mb-4">
-          <button type="button" class="stripe-action-tile" (click)="openScan()">
-            <div class="tile-icon">
-              <svg class="w-5 h-5 text-[#00A7C4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 15h.008v.008H15V15zm0 3h.008v.008H15V18zm3-3h.008v.008H18V15zm0 3h.008v.008H18V18zm-3-6h.008v.008H15V12z" />
-              </svg>
+          @if (!isRouteCompleted()) {
+            <button type="button" class="stripe-action-tile" (click)="openScan()">
+              <div class="tile-icon">
+                <svg class="w-5 h-5 text-[#00A7C4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 15h.008v.008H15V15zm0 3h.008v.008H15V18zm3-3h.008v.008H18V15zm0 3h.008v.008H18V18zm-3-6h.008v.008H15V12z" />
+                </svg>
+              </div>
+              <span class="tile-title">Escanear QR</span>
+              <span class="tile-subtitle">Custodia y entrega</span>
+            </button>
+          } @else {
+            <div class="stripe-action-tile opacity-75 bg-slate-50 border-slate-200">
+              <div class="tile-icon text-emerald-600 font-bold">✓</div>
+              <span class="tile-title text-slate-800">Ruta Cerrada</span>
+              <span class="tile-subtitle">Entregas completadas</span>
             </div>
-            <span class="tile-title">Escanear QR</span>
-            <span class="tile-subtitle">Custodia y entrega</span>
-          </button>
+          }
 
           <button type="button" class="stripe-action-tile" [disabled]="loadingRoute()" (click)="downloadRoute()">
             <div class="tile-icon">
@@ -334,29 +370,26 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
             </div>
-            <span class="tile-title">{{ loadingRoute() ? 'Cargando...' : 'Descargar Ruta' }}</span>
-            <span class="tile-subtitle">Asignación local</span>
+            <span class="tile-title">
+              {{ loadingRoute() ? (hasDownloadedRoute() ? 'Actualizando...' : 'Cargando...') : (hasDownloadedRoute() ? 'Actualizar Ruta' : 'Descargar Ruta') }}
+            </span>
+            <span class="tile-subtitle">
+              {{ hasDownloadedRoute() ? 'Sincronizar cambios' : 'Asignación local' }}
+            </span>
           </button>
         </div>
 
-        <!-- Mensaje si se descarga la ruta -->
-        @if (downloadMessage()) {
-          <div class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-            {{ downloadMessage() }}
-          </div>
-        }
-
-        <!-- Lista de Paradas Asignadas -->
-        <div class="mb-2.5 flex items-center justify-between px-1">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Paradas de la Ruta Activa
-          </span>
-          <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
-            {{ totalDeliveries() }} entregas
-          </span>
-        </div>
-
         @if (outboxService.activeAssignment(); as assignment) {
+          <!-- Lista de Puntos de Distribución Asignados -->
+          <div class="mb-2.5 flex items-center justify-between px-1">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Puntos de distribución de la ruta activa
+            </span>
+            <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
+              {{ totalDeliveries() }} entregas
+            </span>
+          </div>
+
           <div class="space-y-3">
             @for (route of filteredRoutes(); track route.routePlanId) {
               <div class="space-y-3">
@@ -364,54 +397,97 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
                   <span>Vehículo: {{ route.vehicleCode }}</span>
                 </div>
-                @if (route.originWarehouseName) {
-                  <div class="text-xs text-slate-600 px-1" data-origin-warehouse>
-                    Sale de: <strong>{{ route.originWarehouseName }}</strong>
+
+                @for (pickup of route.pickupStops ?? []; track pickup.stopId) {
+                  <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="stop-tag">Parada #{{ pickup.sequence }} · Recogida en Bodega</span>
+                      <span class="text-xs font-bold text-[#00A7C4] underline">Escanear y cargar caja →</span>
+                    </div>
+                    <h2 class="stop-title">{{ pickup.pointName }}</h2>
+                    @if (pickup.address) {
+                      <p class="stop-address">{{ pickup.address }}</p>
+                    }
+                    <div class="text-xs text-slate-600 font-medium">
+                      Toca aquí para escanear y certificar las cajas que subes al vehículo.
+                    </div>
                   </div>
                 }
 
                 @for (del of route.deliveries; track del.deliveryId) {
-                  <div class="stripe-card" [class.border-amber-300]="del.kind === 'Pickup'">
-                    <div class="stripe-card-header pb-2">
-                      <div class="flex items-center gap-1.5">
-                        <span class="stripe-tag" [class.is-warning]="del.kind === 'Pickup'">
-                          #{{ del.sequence }} {{ del.kind === 'Pickup' ? '📦 Recogida' : '🏥 Entrega' }}
+                  @if (del.kind === 'Pickup') {
+                    <div class="driver-stop-card cursor-pointer" (click)="openScan('pickup')">
+                      <div class="flex items-center justify-between mb-1.5">
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Recogida en Bodega</span>
+                        <span class="text-xs font-bold text-[#00A7C4] underline">Escanear y cargar caja →</span>
+                      </div>
+                      <h2 class="stop-title">{{ del.pointName }}</h2>
+                      @if (del.address) {
+                        <p class="stop-address">{{ del.address }}</p>
+                      }
+                      @if (getDeliveryProducts(del).length > 0) {
+                        <div class="stop-products-section">
+                          <span class="stop-products-title">Cajas y productos a cargar:</span>
+                          <div class="space-y-1.5">
+                            @for (prod of getDeliveryProducts(del); track prod.name) {
+                              <div class="product-row">
+                                <span class="product-name">{{ prod.name }}</span>
+                                <span class="product-qty">{{ prod.quantity }} {{ prod.unit }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                      <div class="text-xs text-slate-600 font-medium">
+                        Toca aquí para escanear y certificar las cajas que subes al vehículo.
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="driver-stop-card">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="stop-tag">Parada #{{ del.sequence }} · Entrega en Punto de Distribución</span>
+                        <span class="status-badge" [class.is-done]="driverStage(del) === 'Received' || driverStage(del) === 'Partial'">
+                          {{ driverStageLabel(del) }}
                         </span>
-                        @if (del.kind === 'Pickup') {
-                          <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">Bodega</span>
+                      </div>
+
+                      <!-- Nombre del lugar (Prominente, limpio, sin iconos) -->
+                      <h2 class="stop-title">{{ del.pointName }}</h2>
+                      @if (del.address) {
+                        <p class="stop-address">{{ del.address }}</p>
+                      }
+
+                      <!-- Productos a entregar con cantidad y nombre -->
+                      <div class="stop-products-section">
+                        <span class="stop-products-title">Productos a entregar:</span>
+                        @if (getDeliveryProducts(del).length > 0) {
+                          <div class="space-y-1.5">
+                            @for (prod of getDeliveryProducts(del); track prod.name) {
+                              <div class="product-row">
+                                <span class="product-name">{{ prod.name }}</span>
+                                <span class="product-qty">{{ prod.quantity }} {{ prod.unit }}</span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <p class="text-xs text-slate-500 italic">
+                            {{ del.handlingUnits.length > 0 ? (del.handlingUnits.length + ' bulto(s) asignados') : 'Sin bultos asignados' }}
+                          </p>
                         }
                       </div>
-                      <span class="text-xs font-semibold text-slate-500">ID: {{ del.pointCode }}</span>
-                    </div>
 
-                    <h3 class="font-bold text-sm text-slate-900 px-4 mb-1">{{ del.pointName }}</h3>
-                    <p class="text-xs text-slate-500 px-4 mb-3">{{ del.address }}</p>
-
-                    <div class="px-4 pb-3">
-                      <div class="p-2.5 rounded-lg border flex items-center justify-between"
-                           [class.bg-amber-50]="del.kind === 'Pickup'"
-                           [class.border-amber-200]="del.kind === 'Pickup'"
-                           [class.bg-slate-50]="del.kind !== 'Pickup'"
-                           [class.border-slate-200]="del.kind !== 'Pickup'">
-                        <div>
-                          <span class="text-xs font-bold block" [class.text-amber-950]="del.kind === 'Pickup'" [class.text-slate-800]="del.kind !== 'Pickup'">
-                            {{ del.kind === 'Pickup' ? 'Carga / Retiro' : 'Entrega' }} {{ del.deliveryId }}
-                          </span>
-                          <span class="text-[11px] text-slate-500">
-                            Bultos HU: {{ del.handlingUnits.length }} • {{ driverStageLabel(del) }}
-                          </span>
-                        </div>
-
-                        <ion-button
-                          size="small"
-                          [color]="driverActionColor(del)"
+                      <!-- Botón de acción al pie de la tarjeta sin cajas anidadas -->
+                      <div class="stop-card-footer">
+                        <button
+                          type="button"
+                          class="stop-action-btn"
                           [disabled]="!driverActionable(del)"
                           (click)="goToDelivery(del.deliveryId)">
                           {{ driverActionLabel(del) }}
-                        </ion-button>
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  }
                 }
               </div>
             }
@@ -426,67 +502,9 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
         }
       }
 
-      <!-- Espaciador para no quedar oculto por la Guía de Configuración -->
-      <div class="h-28"></div>
+      <!-- Espacio inferior normal -->
+      <div class="h-6"></div>
     </ion-content>
-
-    <!-- GUÍA DE CONFIGURACIÓN (Dock Flotante Inferior Estilo Stripe) -->
-    <div class="stripe-setup-dock" [class.is-expanded]="setupExpanded()">
-      <div class="setup-dock-header" (click)="toggleSetupGuide()">
-        <span class="setup-dock-title">Guía de configuración</span>
-        <button type="button" class="setup-dock-chevron" aria-label="Desplegar guía de configuración">
-          <svg class="w-4 h-4 transform transition-transform" [class.rotate-180]="setupExpanded()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Barra de progreso con color oficial Clean Cyan (#00A7C4) -->
-      <div class="setup-dock-progress-bar">
-        <div class="setup-dock-progress-fill" [style.width.%]="setupProgress()"></div>
-      </div>
-
-      <div class="setup-dock-subtitle">
-        Verifica tu empresa...
-      </div>
-
-      <!-- Pasos desplegables de la guía -->
-      @if (setupExpanded()) {
-        <div class="setup-dock-steps mt-3 pt-3 border-t border-slate-100 space-y-2.5">
-          <div class="setup-step-item done">
-            <span class="step-icon done">✓</span>
-            <div class="step-text">
-              <strong>1. Registro en la plataforma</strong>
-              <small>Credenciales y rol vinculados exitosamente</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item current cursor-pointer" (click)="openVerifyModal()">
-            <span class="step-icon current">◉</span>
-            <div class="step-text">
-              <strong>2. Verifica tu empresa</strong>
-              <small>Razón social y certificación de custodia digital</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item pending cursor-pointer" (click)="downloadRoute()">
-            <span class="step-icon pending">○</span>
-            <div class="step-text">
-              <strong>3. Descarga tu ruta de campo</strong>
-              <small>Sincroniza paradas y bultos logísticos en memoria</small>
-            </div>
-          </div>
-
-          <div class="setup-step-item pending cursor-pointer" (click)="openScan()">
-            <span class="step-icon pending">○</span>
-            <div class="step-text">
-              <strong>4. Escaneo de custodia QR offline</strong>
-              <small>Verifica transferencias de bulto con firma digital</small>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
   `,
   styles: [`
     :host {
@@ -857,127 +875,192 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     }
 
     /* --- Guía de Configuración Inferior Flotante (Stripe Setup Guide) --- */
-    .stripe-setup-dock {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
+    /* --- Tarjetas de Parada y Entrega para el Conductor (Sin cajas dentro de cajas) --- */
+    .driver-stop-card {
       background: #ffffff;
-      border-top: 1px solid #E3E8EF;
-      border-top-left-radius: 18px;
-      border-top-right-radius: 18px;
-      box-shadow: 0 -4px 18px rgba(10, 37, 64, 0.08);
-      padding: 14px 18px max(14px, env(safe-area-inset-bottom));
-      transition: all 0.25s ease-in-out;
+      border: 1px solid #E3E8EF;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05);
+      transition: all 0.15s ease-in-out;
     }
 
-    .setup-dock-header {
+    .driver-stop-card.is-pickup {
+      border-left: 4px solid #EA601F;
+      background: #FFFDFB;
+    }
+
+    .stop-tag {
+      font-size: 11px;
+      font-weight: 750;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .stop-tag.is-pickup {
+      color: #C2410C;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .status-badge.is-done {
+      background: #DCFCE7;
+      color: #166534;
+    }
+
+    .stop-title {
+      font-size: 16px;
+      font-weight: 750;
+      color: #0A2540;
+      margin: 0 0 4px;
+      line-height: 1.25;
+    }
+
+    .stop-address {
+      font-size: 12px;
+      color: #64748B;
+      margin: 0 0 12px;
+      line-height: 1.35;
+    }
+
+    .stop-products-section {
+      padding: 10px 0;
+      border-top: 1px solid #F1F5F9;
+      border-bottom: 1px solid #F1F5F9;
+      margin-bottom: 12px;
+    }
+
+    .stop-products-title {
+      display: block;
+      font-size: 11px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .product-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      cursor: pointer;
+      gap: 8px;
+      font-size: 13px;
+      padding: 3px 0;
     }
 
-    .setup-dock-title {
-      font-size: 14px;
+    .product-name {
+      color: #1E293B;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .product-qty {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-weight: 750;
       color: #0A2540;
-      letter-spacing: -0.01em;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
     }
 
-    .setup-dock-chevron {
-      background: transparent;
-      border: none;
-      color: #64748B;
-      cursor: pointer;
+    .stop-card-footer {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 4px;
+      justify-content: flex-end;
     }
 
-    .setup-dock-progress-bar {
+    .stop-action-btn {
       width: 100%;
-      height: 4px;
-      background: #E3E8EF;
-      border-radius: 9999px;
-      overflow: hidden;
-      margin: 10px 0 8px;
-    }
-
-    .setup-dock-progress-fill {
-      height: 100%;
-      background: #00A7C4; /* Clean Cyan Oficial */
-      border-radius: 9999px;
-      transition: width 0.3s ease;
-    }
-
-    .setup-dock-subtitle {
-      font-size: 12px;
-      color: #64748B;
-      font-weight: 500;
-    }
-
-    .setup-step-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 6px 0;
-    }
-
-    .setup-step-item .step-icon {
+      padding: 10px 16px;
+      background: #00A7C4;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
       font-size: 13px;
-      font-weight: 700;
-      width: 20px;
-      display: flex;
-      justify-content: center;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background-color 0.15s;
     }
 
-    .setup-step-item .step-icon.done {
-      color: #00A7C4;
+    .stop-action-btn:hover {
+      background: #008CA5;
     }
 
-    .setup-step-item .step-icon.current {
-      color: #EA601F;
-    }
-
-    .setup-step-item .step-icon.pending {
-      color: #CBD5E1;
-    }
-
-    .setup-step-item .step-text strong {
-      display: block;
-      font-size: 12px;
-      color: #0A2540;
-    }
-
-    .setup-step-item .step-text small {
-      display: block;
-      font-size: 11px;
-      color: #64748B;
+    .stop-action-btn:disabled {
+      background: #E2E8F0;
+      color: #94A3B8;
+      cursor: not-allowed;
     }
   `]
 })
-export class HomePage implements OnInit {
+export class HomePage {
   readonly authService = inject(MobileAuthService);
   readonly outboxService = inject(FieldOutboxService);
   private readonly fieldApi = inject<IFieldApi>(FIELD_API);
   readonly isMockApi = computed(() => this.fieldApi instanceof MockFieldApiService);
   private readonly router = inject(Router);
   private readonly alerts = inject(AlertController);
+  private readonly toastController = inject(ToastController);
 
   readonly loadingRoute = signal<boolean>(false);
-  readonly downloadMessage = signal<string | null>(null);
+  readonly showAssignedRoute = signal(false);
 
-  // Estados visuales del nuevo diseño Stripe-style
+  // Estados visuales
   readonly searchOpen = signal<boolean>(false);
   searchQuery = '';
-  readonly selectedDateRange = signal<string>('Últimos 7 días');
-  readonly selectedFrequency = signal<string>('Diario');
-  readonly comparePrevious = signal<boolean>(true);
-  readonly setupExpanded = signal<boolean>(false);
-  readonly setupProgress = signal<number>(45);
+
+  readonly hasDownloadedRoute = computed(() => {
+    const a = this.outboxService.activeAssignment();
+    return !!(a && a.routes && a.routes.length > 0);
+  });
+
+  readonly isRouteCompleted = computed(() => {
+    const a = this.outboxService.activeAssignment();
+    if (!a || !a.routes || a.routes.length === 0) return false;
+    const allDeliveries = a.routes.flatMap((r) => r.deliveries || []);
+    if (allDeliveries.length === 0) return false;
+    return allDeliveries.every((d) => {
+      const stage = this.driverStage(d);
+      return stage === 'Received' || stage === 'Partial';
+    });
+  });
+
+  readonly shouldShowDriverNotice = computed(() => {
+    const notice = this.outboxService.activeDriverNotice();
+    if (!notice) return null;
+
+    const lastDownload = this.outboxService.lastDownloadTimestamp ? this.outboxService.lastDownloadTimestamp() : 0;
+    if (!lastDownload) {
+      return notice;
+    }
+
+    const now = new Date();
+    const downloadDate = new Date(lastDownload);
+
+    // Más de 12 horas sin actualizar (12 * 60 * 60 * 1000 = 43,200,000 ms)
+    const isMoreThan12Hours = (now.getTime() - lastDownload) >= (12 * 60 * 60 * 1000);
+
+    // Descargado el día de ayer o antes (fechas calendario distintas)
+    const isPreviousDay = now.toDateString() !== downloadDate.toDateString();
+
+    if (isMoreThan12Hours || isPreviousDay) {
+      return notice;
+    }
+
+    return null;
+  });
 
   // --- Estado para el Receptor Hospitalario ---
   qrInputText = '';
@@ -995,7 +1078,27 @@ export class HomePage implements OnInit {
     rejectionReason: string;
     remainingQuantity: number | null;
     nextRequestedQuantity: number | null;
+    isConform?: boolean;
   })[] = [];
+
+  onConformToggle(line: (typeof this.receiverLines)[number]): void {
+    if (line.isConform) {
+      line.quantityAccepted = line.quantity;
+      line.rejectionReason = '';
+    } else {
+      line.quantityAccepted = 0;
+    }
+  }
+
+  markAllReceiverLinesConform(conform: boolean): void {
+    for (const line of this.receiverLines) {
+      line.isConform = conform;
+      if (conform) {
+        line.quantityAccepted = line.quantity;
+        line.rejectionReason = '';
+      }
+    }
+  }
 
   readonly pendingCount = this.outboxService.pendingCount;
 
@@ -1036,6 +1139,7 @@ export class HomePage implements OnInit {
   });
 
   constructor() {
+    addIcons({ logOutOutline, mapOutline, syncOutline });
     let accountId = this.authService.me?.()?.accountId ?? null;
     effect(() => {
       const nextAccountId = this.authService.me?.()?.accountId ?? null;
@@ -1059,7 +1163,6 @@ export class HomePage implements OnInit {
       await this.downloadRoute();
     }
   }
-
   ionViewWillEnter(): void {
     const qr = history.state?.receiverQr;
     if (this.authService.currentRole() === 'Receptor' && qr?.unitId && qr?.token) {
@@ -1070,26 +1173,6 @@ export class HomePage implements OnInit {
   // --- Métodos de Interacción del Nuevo Diseño ---
   toggleSearch(): void {
     this.searchOpen.set(!this.searchOpen());
-  }
-
-  cycleDateRange(): void {
-    const ranges = ['Últimos 7 días', 'Últimos 30 días', 'Hoy', 'Este mes'];
-    const idx = ranges.indexOf(this.selectedDateRange());
-    this.selectedDateRange.set(ranges[(idx + 1) % ranges.length]);
-  }
-
-  cycleFrequency(): void {
-    const freqs = ['Diario', 'Semanal', 'Mensual'];
-    const idx = freqs.indexOf(this.selectedFrequency());
-    this.selectedFrequency.set(freqs[(idx + 1) % freqs.length]);
-  }
-
-  toggleComparePrevious(): void {
-    this.comparePrevious.set(!this.comparePrevious());
-  }
-
-  toggleSetupGuide(): void {
-    this.setupExpanded.set(!this.setupExpanded());
   }
 
   async openTestEnvInfo(): Promise<void> {
@@ -1106,7 +1189,7 @@ export class HomePage implements OnInit {
     const alert = await this.alerts.create({
       header: 'Verificación de Empresa',
       subHeader: 'Certificación de Custodia Digital',
-      message: 'Empresa: IstpetDev Operaciones Nacionales\\nRUC: 1793148291001\\nEstado: Validación en proceso (45%)\\nProtocolo de custodia digital activo con claves M2M.',
+      message: 'Empresa: IstpetDev Operaciones Nacionales\nRUC: 1793148291001\nEstado: Validación en proceso (45%)\nProtocolo de custodia digital activo con claves M2M.',
       buttons: ['Aceptar']
     });
     await alert.present();
@@ -1122,29 +1205,6 @@ export class HomePage implements OnInit {
         { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
         { text: 'Cancelar', role: 'cancel' }
       ]
-    });
-    await alert.present();
-  }
-
-  async openQuickAction(): Promise<void> {
-    const alert = await this.alerts.create({
-      header: 'Acción Rápida',
-      buttons: [
-        { text: 'Escanear QR', handler: () => this.openScan() },
-        { text: 'Descargar / Actualizar Ruta', handler: () => this.downloadRoute() },
-        { text: 'Ver Cola Pendientes', handler: () => this.openSyncQueue() },
-        { text: 'Cancelar', role: 'cancel' }
-      ]
-    });
-    await alert.present();
-  }
-
-  async inspectVolumeDetails(): Promise<void> {
-    const alert = await this.alerts.create({
-      header: 'Detalle de Volumen Bruto',
-      subHeader: this.selectedDateRange(),
-      message: `Volumen actual: 0,00 US$\\nPeríodo anterior: 0,00 US$\\nEntregas activas: ${this.totalDeliveries()}\\nEstado del inventario: En regla`,
-      buttons: ['Cerrar']
     });
     await alert.present();
   }
@@ -1187,7 +1247,8 @@ export class HomePage implements OnInit {
         quantityAccepted: line.quantity,
         rejectionReason: '',
         remainingQuantity: null,
-        nextRequestedQuantity: null
+        nextRequestedQuantity: null,
+        isConform: true
       }));
       const stateMessage = this.receiverStateMessage(unit.status);
       if (stateMessage) {
@@ -1300,13 +1361,15 @@ export class HomePage implements OnInit {
 
   // --- Métodos de Conductor ---
   private driverStage(del: MobileAssignmentDelivery): string {
-    const status = this.outboxService.effectiveDeliveryStatus(
-      del.deliveryId,
-      del.status,
-      del.handlingUnits.map((hu) => hu.status),
-    );
+    const status = typeof this.outboxService.effectiveDeliveryStatus === 'function'
+      ? this.outboxService.effectiveDeliveryStatus(
+          del.deliveryId,
+          del.status,
+          del.handlingUnits ? del.handlingUnits.map((hu) => hu.status) : [],
+        )
+      : del.status;
     if (status === 'Dispatched') {
-      const unitsReady = del.handlingUnits.length > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
+      const unitsReady = (del.handlingUnits?.length || 0) > 0 && del.handlingUnits.every((hu) => hu.status === 'Dispatched');
       return unitsReady ? 'Dispatched' : 'WaitingWarehouse';
     }
     return status;
@@ -1355,22 +1418,68 @@ export class HomePage implements OnInit {
 
   async downloadRoute(): Promise<void> {
     this.loadingRoute.set(true);
-    this.downloadMessage.set(null);
     try {
       const assignment = await this.outboxService.downloadRouteAssignment();
       const total = assignment.routes ? assignment.routes.reduce((sum: number, r) => sum + r.deliveries.length, 0) : 0;
-      this.downloadMessage.set(
-        `Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`
-      );
+      this.showAssignedRoute.set(false);
+      await this.showToast(`Ruta cargada con éxito: ${total} entrega(s) asignada(s) para el vehículo.`, 'success');
     } catch {
-      this.downloadMessage.set('Aviso: Utilizando asignación almacenada localmente.');
+      await this.showToast('Aviso: Utilizando asignación almacenada localmente.', 'warning');
     } finally {
       this.loadingRoute.set(false);
     }
   }
 
-  openScan(): void {
+  openScan(mode?: string): void {
+    if (mode) {
+      this.router.navigate(['/scan'], { queryParams: { mode } });
+    } else {
+      this.router.navigate(['/scan']);
+    }
+  }
+
+  getDeliveryProducts(del: MobileAssignmentDelivery): Array<{ name: string; quantity: number; unit: string }> {
+    if (!del || !del.handlingUnits) return [];
+    const productMap = new Map<string, { name: string; quantity: number; unit: string }>();
+
+    for (const hu of del.handlingUnits) {
+      if (!hu.lines) continue;
+      for (const line of hu.lines) {
+        const rawName = (line as any).productName || line.sku || 'Producto';
+        const displayName = this.formatProductName(rawName);
+        const key = `${displayName}__${line.unit}`;
+        const existing = productMap.get(key);
+        if (existing) {
+          existing.quantity += line.quantity;
+        } else {
+          productMap.set(key, {
+            name: displayName,
+            quantity: line.quantity,
+            unit: line.unit
+          });
+        }
+      }
+    }
+    return Array.from(productMap.values());
+  }
+
+  formatProductName(codeOrName: string): string {
+    if (!codeOrName) return 'Producto';
+    const upper = codeOrName.toUpperCase();
+    if (upper.includes('PINOK') || upper.includes('DESINF')) return 'Pinoklin Desinfectante 5L';
+    if (upper.includes('AMOX')) return 'Amoxicilina 500mg';
+    if (upper.includes('ALCOHOL') || upper.includes('ALC')) return 'Alcohol 70% 1L';
+    if (upper.includes('SUERO') || upper.includes('FISIO')) return 'Suero Fisiológico 500ml';
+    return codeOrName;
+  }
+
+  openIncident(): void {
     this.router.navigate(['/scan']);
+  }
+
+  private async showToast(message: string, color: 'success' | 'warning'): Promise<void> {
+    const toast = await this.toastController.create({ message, duration: 3000, position: 'top', color });
+    await toast.present();
   }
 
   openSyncQueue(): void {

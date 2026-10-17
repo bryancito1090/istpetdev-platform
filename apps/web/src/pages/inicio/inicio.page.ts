@@ -161,76 +161,120 @@ interface ProcessStep {
             </p>
           </div>
 
-          <!-- KPI 4: Conectividad y Base de Datos -->
+          <!-- KPI 4: Conectividad y Trazabilidad Segura -->
           <div class="space-y-0.5 pt-4 border-t border-[#F1F3F5]">
             <div class="flex items-center justify-between text-[14px] leading-[20px]">
-              <span class="text-[#30313D] font-medium">Infraestructura</span>
+              <span class="text-[#30313D] font-medium">Estado del Sistema</span>
               <a routerLink="/public-trace" class="text-[#635BFF] hover:underline font-medium text-[13px]">Traza QR</a>
             </div>
             <div class="flex items-center gap-2 pt-0.5">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span class="text-[14px] font-semibold text-[#1A2C44]">
-                AWS EC2
+                Servicios en Línea
               </span>
               <span class="text-[11px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200/50">
-                Conectado
+                Operativo
               </span>
             </div>
-            <p class="text-[12px] text-[#8792A2] font-mono">
-              34.234.100.56:5432
+            <p class="text-[12px] text-[#3C4F69]">
+              Sincronización en la nube &bull; Alta disponibilidad
             </p>
           </div>
 
         </div>
       </div>
 
-      <!-- SECCIÓN: Tu resumen (Idéntica a Stripe Imagen 3 con Tarjetas de Métricas) -->
-      <div class="pt-6 space-y-5 border-t border-slate-100">
-        <!-- Encabezado de Tu Resumen -->
-        <div class="flex items-center justify-between">
-          <div class="space-y-0.5">
-            <h2 class="text-xl font-bold text-slate-900 tracking-tight font-sans">
+      <!-- SECCIÓN: Tu resumen (Exacto a Captura 3 de Stripe con Píldoras de Filtro y Tarjetas) -->
+      <div class="pt-6 space-y-4 border-t border-[#E3E8EE]">
+        <!-- Encabezado de Tu Resumen y Barra de Filtros en Píldora -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-[22px] font-bold text-[#1A2C44] tracking-tight font-sans">
               Tu resumen
             </h2>
-            <p class="text-xs text-[#697386]">
-              Estado del flujo logístico de abastecimiento hospitalario en tiempo real.
-            </p>
+            <!-- Acciones secundarias derecha estilo Stripe -->
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="h-7 px-2.5 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <span>Añadir</span>
+              </button>
+              <button
+                type="button"
+                class="h-7 px-2.5 rounded-md border border-[#E3E8EE] bg-white text-xs font-medium text-[#30313D] hover:bg-slate-50 transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-[#697386]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
+                <span>Editar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros en Píldora Estilo Stripe (Captura 3) -->
+          <div class="flex items-center gap-2 flex-wrap text-xs text-[#30313D]">
+            <button
+              type="button"
+              class="h-7 px-3 rounded-full border border-[#E3E8EE] bg-white hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer">
+              <span class="text-[#697386]">Intervalo de fechas</span>
+              <span class="font-medium text-[#635BFF]">Últimos 7 días</span>
+              <svg class="w-3 h-3 text-[#697386]" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+
+            <button
+              type="button"
+              class="h-7 px-3 rounded-full border border-[#E3E8EE] bg-white hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer">
+              <span class="font-medium">Diario</span>
+              <svg class="w-3 h-3 text-[#697386]" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+
+            <button
+              type="button"
+              class="h-7 px-3 rounded-full border border-[#E3E8EE] bg-white hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer">
+              <svg class="w-3.5 h-3.5 text-[#8792A2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              <span class="text-[#697386]">Compara</span>
+              <span class="font-medium text-[#635BFF]">Período anterior</span>
+              <svg class="w-3 h-3 text-[#697386]" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
           </div>
         </div>
 
-        <!-- Tarjetas de Resumen en Cuadrícula Estilo Stripe (Imagen 3) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Tarjetas de Resumen en Cuadrícula Estilo Stripe (Captura 3) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
           @for (step of steps(); track step.id) {
-            <div class="bg-white border border-[#E3E8EE] rounded-lg p-5 hover:border-slate-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all flex flex-col justify-between group">
+            <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between group shadow-2xs">
               <div>
-                <!-- Encabezado de la Tarjeta con ⓘ (Exacto a DevTools Stripe: h3, 14px, #30313D) -->
+                <!-- Encabezado de la Tarjeta con ⓘ y Micro-icono de cuadrícula -->
                 <div class="flex items-center justify-between">
-                  <h3 class="text-[14px] leading-[20px] font-medium text-[#30313D] truncate">
-                    {{ step.title }}
-                  </h3>
-                  <span class="text-[#8792A2] group-hover:text-[#3C4F69] transition-colors cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <h3 class="text-[14px] leading-[20px] font-medium text-[#30313D] truncate">
+                      {{ step.title }}
+                    </h3>
+                    <span class="text-[#8792A2] group-hover:text-[#3C4F69] transition-colors cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-[#8792A2] shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
                 </div>
 
                 <!-- Métrica Principal de la Tarjeta (24px, #1A2C44) -->
-                <div class="mt-2.5">
+                <div class="mt-3">
                   <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight">
                     @if (step.id === 1) {
-                      {{ servicePointsCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">puntos</span>
+                      {{ servicePointsCount() }} <span class="text-[13px] font-normal text-[#697386]">puntos activos</span>
                     } @else if (step.id === 2) {
                       <span [ngClass]="criticalRisksCount() > 0 ? 'text-rose-600' : 'text-[#1A2C44]'">
                         {{ criticalRisksCount() }}
                       </span>
-                      <span class="text-[14px] font-normal text-[#3C4F69]"> quiebres</span>
+                      <span class="text-[13px] font-normal text-[#697386]"> quiebres críticos</span>
                     } @else if (step.id === 3) {
-                      {{ publishedRoutesCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">/ {{ routePlansCount() }} rutas</span>
+                      {{ publishedRoutesCount() }} <span class="text-[13px] font-normal text-[#697386]">/ {{ routePlansCount() }} rutas</span>
                     } @else {
-                      {{ warehousesCount() }} <span class="text-[14px] font-normal text-[#3C4F69]">bodega</span>
+                      {{ warehousesCount() }} <span class="text-[13px] font-normal text-[#697386]">bodega base</span>
                     }
                   </div>
 
-                  <!-- Subtexto comparativo (Exacto a DevTools Stripe: 14px, #3C4F69, mb-0.5) -->
-                  <div class="text-[13px] leading-[18px] text-[#3C4F69] mt-0.5 mb-[2px] line-clamp-2">
-                    {{ step.desc }}
+                  <!-- Subtexto comparativo exacto a período anterior de Stripe -->
+                  <div class="text-[12px] leading-[18px] text-[#697386] mt-0.5">
+                    0 en período anterior
                   </div>
                 </div>
               </div>
@@ -238,7 +282,7 @@ interface ProcessStep {
               <!-- Acción Inferior estilo Stripe Link -->
               <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
                 <span 
-                  class="text-[11px] px-2 py-0.5 rounded-full font-medium border"
+                  class="text-[11px] px-2 py-0.5 rounded font-medium border"
                   [ngClass]="step.badgeClass">
                   {{ step.badge }}
                 </span>

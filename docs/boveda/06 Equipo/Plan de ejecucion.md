@@ -53,6 +53,8 @@ Revisar ficha final y datos reales del reto. Ajustar supuestos, prioridad, algor
 
 El objetivo es llegar preparados y usar la jornada para adaptación y validación, dentro de las reglas confirmadas. No inventar que el código previo se creó durante el evento.
 
+**Noche del 16-oct:** foco en el módulo de planificación ([[Planificacion potenciada - propuesta del evento]]); colas y orden de fusión en el issue fijado #253.
+
 ## Día 2 — 17 de octubre
 
 Finalizar cambios esenciales temprano. Ejecutar pruebas con usuario/mentor y capturar evidencia en la «Validación integral» de 11:30 a 13:15 (agenda oficial; antes 11:00–12:30). Congelar el código a las 11:30. Cerrar negocio y viabilidad, ensayar con tiempo confirmado y congelar materiales a las 15:45 como meta interna.
