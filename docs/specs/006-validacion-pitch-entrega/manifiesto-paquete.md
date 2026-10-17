@@ -1,60 +1,60 @@
-# 006 — Manifiesto del paquete de entrega (T6, fase final del issue #46)
+# Manifiesto del paquete de entrega — v2
 
-**Estado:** paquete provisional, aún no congelado ni entregado. Las celdas «—» son datos que todavía no existen. Coordina y mantiene el manifiesto: Joseph Baño (issue #46). [Spec](spec.md) · [Tareas](task.md) · [E2E-07](test-e2e.md#e2e-07--paquete-que-se-entrega) · [Matriz](matriz-afirmaciones.md) · [Evaluacion y entregables](../../boveda/01%20Oficial/Evaluacion%20y%20entregables.md).
+**Estado:** paquete en preparación. Ningún archivo está congelado ni consta como entregado. La lista oficial contiene siete entregables; los nombres y formatos finales dependen de la respuesta completa a O-06. El canal comunicado es la carpeta de Drive del capitán, pero faltan URL y formatos confirmados.
 
-**Formato y canal:** O-06 sigue **pendiente** ([Consultas](../../boveda/01%20Oficial/Consultas%20para%20la%20organizacion.md)). Ningún archivo de esta tabla es formato oficial. Si O-06 pide otro formato, se cambia la columna «Formato» y se recalculan los hashes.
+Los archivos existentes son propuestas editables/exportadas, no validación de que cada entregable oficial esté completo. “Listo” significa archivo provisional disponible y revisable; no significa congelado ni recibido. Las propuestas de responsable deben confirmarse por el equipo. Los SHA-256 se recalculan en cada modificación y al congelar.
 
-## Siete entregables oficiales (manual, §9, p. 8)
+## Estado frente a los siete entregables oficiales
 
-Estado: `vivo`, `grabado`, `simulado` o `propuesto`, según lo que **realmente** respalde el archivo hoy.
+| # | Entregable | Archivo editable / PDF actualmente disponible | Responsable propuesto | SHA-256 | Estado y faltante concreto |
+|---:|---|---|---|---|---|---|
+| 1 | Problema | PPTX: `materiales/pitch-v2.pptx` (lámina 1); PDF: `materiales/pitch-v2.pdf` | Joseph (contenido/pitch), revisión de Bryan | Ver tabla de hashes, PPTX/PDF | **Listo como lámina provisional**. Falta revisión final de contenido/evidencia contra matriz y formato según O-06. |
+| 2 | Solución | DOCX/PDF: `materiales/entregable-2/IstpetDev-Entregable-2-Solucion.docx/.pdf`; también lámina 2 en pitch PPTX/PDF | Bryan (contenido técnico), Joseph (edición) | Ver tabla de hashes | **Listo como propuesta provisional**. Falta validar/adjuntar diagrama final si lo requiere la organización y confirmar formato O-06. |
+| 3 | Prototipo / demo | PPTX/PDF: láminas 3–4; PNG existentes en `materiales/entregable-2/img/`; video: `guion-video-respaldo.md` (guion, no video) | Alexander (Web/captura); Bryan (#241); Anthony (grabación propuesta) | Ver tabla; no hay hash de captura A/B/C ni video | **Bloqueado por #241 para captura conectada A/B/C; video falta grabar.** La pantalla #242 existe en develop como maqueta. Alexander la captura con `demo-quito-planificacion` cuando Bryan integre #241; sin cifras o recomendación no respaldadas. |
+| 4 | Validación | DOCX/PDF de checkpoint e informe disponibles; `hojas-feria.md` y evidencia de suites son apoyos, no resultados sectoriales | Anthony (registro de pruebas), Joseph (consolidación) | Ver tabla; no hay resultados de entrevistas ni corrida oficial | **Falta evidencia de validación**: completar registros de pruebas/entrevistas y revisión humana. La ronda E2E #118 está cerrada y no equivale a validación sectorial. |
+| 5 | Viabilidad | PPTX/PDF: lámina 6; no hay ficha editable/PDF independiente final | Jorge (recursos/despliegue), Bryan (costos/riesgos) | Hashes del pitch en tabla; ficha independiente: — | **Falta ficha completa** de tecnología, recursos, implementación y riesgos; costs need calibrated verification. Lámina provisional disponible. |
+| 6 | Modelo de negocio | PPTX/PDF: lámina 7; la nota de modelo/piloto es fuente de contenido, no archivo final exportado | Jorge (propuesta comercial), Joseph (edición) | Hashes del pitch en tabla; ficha independiente: — | **Falta ficha final** de cliente, sostenibilidad, costos y validación de precio; no inventar cliente confirmado ni tarifa. Lámina provisional disponible. |
+| 7 | Pitch | Editable `materiales/pitch-v2.pptx`; PDF `materiales/pitch-v2.pdf`; nueve PNG de render | Joseph (coordinación y pitch), revisión de todos | Ver tabla de hashes | **Listo como v2 provisional.** Faltan ensayos reales, revisión final, congelamiento y entrega. |
 
-| # | Entregable | Archivo | Formato | Versión / commit | SHA-256 | Responsable | Estado | Evidencia |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Problema | Diapositiva 1 de [`pitch-v2.pptx`](materiales/pitch-v2.pptx) / [`pitch-v2.pdf`](materiales/pitch-v2.pdf) | pptx + pdf provisional | v2, no congelado | ver fila 7 | [PENDIENTE] | propuesto; hipótesis de problema | matriz A-02 |
-| 2 | Solución | Diapositiva 2; [`materiales/entregable-2/IstpetDev-Entregable-2-Solucion.pdf`](materiales/entregable-2/IstpetDev-Entregable-2-Solucion.pdf) y `.docx` editable | pptx + docx + pdf | v2, no congelado | ver fila 7 y hashes de Entregable 2 | [PENDIENTE] | propuesto; comparación A/B/C en integración | [Nota de la bóveda](../../boveda/07%20Demo/Entregable%20Solucion%20y%20propuesta%20de%20valor.md) |
-| 3 | Prototipo / demo | Diapositivas 3–4 de `pitch-v2`; captura de rutas sintética y diseño A/B/C con marcador de captura pendiente | pptx + pdf + PNG | v2, sin ensayo conectado | ver fila 7 | [PENDIENTE] | propuesto (A/B/C sin datos ni recomendación atribuida al motor) | [Registro de ensayos funcionales](registro-ensayos.md#ensayos-funcionales-de-la-demo): vacío |
-| 4 | Validación | Hojas de feria completadas —; corrida oficial de 005 — | — | — | — | [PENDIENTE] | — (sin entrevistas ni corrida) | [Hojas de feria](hojas-feria.md): sin filas; [evidencia de suites](evidencia/2026-10-14-suites-fase2.md) (pruebas automatizadas, no validación sectorial) |
-| 5 | Viabilidad | Diapositiva 6; ficha de recursos y riesgos — | pptx/pdf provisional | v2, no congelado | ver fila 7 | [PENDIENTE] | propuesto; costo estimado separado de A/B/C | matriz P-01/P-04/P-11, A-22 |
-| 6 | Modelo de negocio | Diapositiva 7; ficha de piloto — | pptx/pdf provisional | v2, no congelado | ver fila 7 | [PENDIENTE] | propuesto (hipótesis; sin precio) | matriz A-26/A-30/A-31 |
-| 7 | Pitch | [`materiales/pitch-v2.pptx`](materiales/pitch-v2.pptx), [`pitch-v2.pdf`](materiales/pitch-v2.pdf) y nueve PNG en [`materiales/render-v2/`](materiales/render-v2/) | pptx editable + PDF provisional + PNG | v2, rama `docs/006-pitch-v2`; no congelado | PPTX `52706080cebea4b4cb63c7d6f9f761085fefed7555dce79ad34aebc7e3ddbeec`; PDF `808033ae26dc26a3ce3e2a5bc7fa4984d4d5e41557ff8de255d37fec7454c91f` | [PENDIENTE] | propuesto, revisión visual local; no ensayado ni entregado | Anexo 5.7, guion T4 y matriz de afirmaciones |
+## SHA-256 de archivos presentes
 
-**Sobre el editable y el PDF provisionales:** nueve diapositivas alineadas con Anexo 5.7 y el guion T4. Incluyen el panel A/B/C como diseño con celdas «sin dato», indicadores en lenguaje sencillo, riesgos y mitigaciones, y hoja de ruta. El panel no presenta resultados del motor. La captura real de rutas se rotula como otro escenario sintético; el marcador visible indica que falta la captura A/B/C. El PDF se convirtió a nueve PNG con `pdftoppm` y se inspeccionó cada página. Los archivos siguen siendo provisionales, no ensayados, no congelados y no entregados.
+Los hashes corresponden a los archivos listados, en el estado actual del repositorio. Los espacios “—” indican que el artefacto todavía no existe.
 
-## Apoyos del paquete
+| Archivo | SHA-256 |
+|---|---|
+| `materiales/pitch-v2.pptx` | `52706080cebea4b4cb63c7d6f9f761085fefed7555dce79ad34aebc7e3ddbeec` |
+| `materiales/pitch-v2.pdf` | `808033ae26dc26a3ce3e2a5bc7fa4984d4d5e41557ff8de255d37fec7454c91f` |
+| `materiales/generar_v2.py` | `e422660bacdd80e43069f5cbca2467bfef7085da77d010b675b6358fc44dd609` |
+| `materiales/entregable-2/IstpetDev-Entregable-2-Solucion.docx` | `407fa5f5862fafbf9e6f427f220ac56a3a630528224edeff897aff303333e75e` |
+| `materiales/entregable-2/IstpetDev-Entregable-2-Solucion.pdf` | `fc5f7bda2804e2b0535a2c185c22d020b4595a54676e151ca1cc690ff153585f` |
+| `materiales/informe-checkpoint/IstpetDev-Informe-Checkpoint-16oct.docx` | `9263464134311d26f2aa5db5e2ad757db7e9c80e5aa0570f17690594443222f5` |
+| `materiales/informe-checkpoint/IstpetDev-Informe-Checkpoint-16oct.pdf` | `e9de41b7fe3a5e08a3ee494e1b309ba9ae907c9ec47451ce56625f4b7362920a` |
+| `materiales/capacitacion/IstpetDev-Hojas-Capacitacion-e-Indicadores.docx` | `3bea0777d7b7d6cf456713b842469d89793b0c1d69436d723ce1a9620cf95e92` |
+| `materiales/capacitacion/IstpetDev-Hojas-Capacitacion-e-Indicadores.pdf` | `43002cc916b560df28480b34a10b8ffddc14a4d885cc65d3d73af74d213b0f62` |
+| `guion-video-respaldo.md` | `a9bf06aaeb1ef89507132cca0eb228707f0012658d46757b142c7fe86c5f66f5` |
+| `registro-ensayos.md` | `9c31d35ee5ac01fe6d71edacdad9bc5210ccdb7fe50b959a0779779a3b8968aa` |
+| `checklist-entrega.md` | `6057e2fcc4d377954b3d2881db37bd92bcd710349accbbdeb836c67391bc42f5` |
+| `materiales/render-v2/diapositiva-1.png` | `c45a83e5b12f337ee2586fbfa54b6d8abd3eb3f3f57b10cc9477913ebf02741c` |
+| `materiales/render-v2/diapositiva-2.png` | `47dd35a5c1a2dc04d254f85b0a919aed728cbd43e1231d77ad83b14a7849c707` |
+| `materiales/render-v2/diapositiva-3.png` | `e13f6a97a02e6656e5d4fc9f61a894d1f3d1e3a6e7716e1684d294cf65177da8` |
+| `materiales/render-v2/diapositiva-4.png` | `d35edcbd6f12c00494eed186329f22d47d5c6f3853501d757d6f953f62c6b751` |
+| `materiales/render-v2/diapositiva-5.png` | `58976af1530177150988faa728d439a4a7c789de7fccd42da4724620e88ffe3b` |
+| `materiales/render-v2/diapositiva-6.png` | `11b659f5251d0708c042faa0b96a9ba6cbb62b013ef601f42bdf6d7ef02209bd` |
+| `materiales/render-v2/diapositiva-7.png` | `ab2366cf6dc137261f2ef8b8f99ba67bc17274cb1788e9bc8091c6fb88345782` |
+| `materiales/render-v2/diapositiva-8.png` | `a5591839413e6de59d982e120f39d1c52348d936929deb2b905398a1157c247a` |
+| `materiales/render-v2/diapositiva-9.png` | `88c38723222ff71d76c7b371052c84f2cdcea5df4f8083fa018a13c07bd0ebdb` |
 
-| Elemento | Archivo | SHA-256 | Estado |
-|---|---|---|---|
-| Matriz de afirmaciones final | [matriz-afirmaciones.md](matriz-afirmaciones.md) | — (se calcula al congelar) | borrador; segunda revisión pendiente |
-| Guion T4 | [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md) | `de3d136396d6055a84655d3cbee1870729d2e02554e307d192829818ce03dec5` | fuente narrativa de pitch-v2 |
-| Generador v2 | [`materiales/generar_v2.py`](materiales/generar_v2.py) | `e422660bacdd80e43069f5cbca2467bfef7085da77d010b675b6358fc44dd609` | genera PPTX y PDF |
-| Render PNG 1 | [`materiales/render-v2/diapositiva-1.png`](materiales/render-v2/diapositiva-1.png) | `c45a83e5b12f337ee2586fbfa54b6d8abd3eb3f3f57b10cc9477913ebf02741c` | inspeccionado |
-| Render PNG 2 | [`materiales/render-v2/diapositiva-2.png`](materiales/render-v2/diapositiva-2.png) | `47dd35a5c1a2dc04d254f85b0a919aed728cbd43e1231d77ad83b14a7849c707` | inspeccionado |
-| Render PNG 3 | [`materiales/render-v2/diapositiva-3.png`](materiales/render-v2/diapositiva-3.png) | `e13f6a97a02e6656e5d4fc9f61a894d1f3d1e3a6e7716e1684d294cf65177da8` | inspeccionado |
-| Render PNG 4 | [`materiales/render-v2/diapositiva-4.png`](materiales/render-v2/diapositiva-4.png) | `d35edcbd6f12c00494eed186329f22d47d5c6f3853501d757d6f953f62c6b751` | inspeccionado |
-| Render PNG 5 | [`materiales/render-v2/diapositiva-5.png`](materiales/render-v2/diapositiva-5.png) | `58976af1530177150988faa728d439a4a7c789de7fccd42da4724620e88ffe3b` | inspeccionado |
-| Render PNG 6 | [`materiales/render-v2/diapositiva-6.png`](materiales/render-v2/diapositiva-6.png) | `11b659f5251d0708c042faa0b96a9ba6cbb62b013ef601f42bdf6d7ef02209bd` | inspeccionado |
-| Render PNG 7 | [`materiales/render-v2/diapositiva-7.png`](materiales/render-v2/diapositiva-7.png) | `ab2366cf6dc137261f2ef8b8f99ba67bc17274cb1788e9bc8091c6fb88345782` | inspeccionado |
-| Render PNG 8 | [`materiales/render-v2/diapositiva-8.png`](materiales/render-v2/diapositiva-8.png) | `a5591839413e6de59d982e120f39d1c52348d936929deb2b905398a1157c247a` | inspeccionado |
-| Render PNG 9 | [`materiales/render-v2/diapositiva-9.png`](materiales/render-v2/diapositiva-9.png) | `88c38723222ff71d76c7b371052c84f2cdcea5df4f8083fa018a13c07bd0ebdb` | inspeccionado |
-| ZIP de 005 y `manifest.json` | — | — | no existe corrida oficial |
-| Video de respaldo | — | — | no grabado |
+## Capturas pendientes
 
-## Congelamiento (17-oct, 15:45)
-
-| Hora real | Commit congelado | Archivos y SHA-256 | Abierto sin red (quién, dispositivo) | Comparación con la matriz final (quién) | Retirado antes de congelar |
-|---|---|---|---|---|---|
-| — | — | — | — | — | — |
-
-## Entrega (17-oct, 16:00–16:15)
-
-Solo por el canal que la organización confirme en O-06.
-
-| Hora real | Canal confirmado (fuente O-06) | Archivos entregados (SHA-256) | Quién entregó | Acuse o nota fiel de recepción |
-|---|---|---|---|---|
-| — | — | — | — | — |
-
-## Capturas pendientes para pitch-v2
-
-| Captura | Responsable sugerido | Condición para tomarla |
+| Captura | Quién | Condición / estado |
 |---|---|---|
-| `[CAPTURA PENDIENTE: pantalla A/B/C]` | Equipo Web que integre #241/#242; Técnica registra la corrida y el Planificador valida las cifras y la justificación. | Capturar solo cuando la comparación esté conectada al escenario `demo-quito-planificacion`, las cifras tengan fuente/configuración y se haya ensayado la pantalla. |
+| Pantalla A/B/C conectada | Alexander Martínez (Web), con apoyo técnico de Bryan Baño | Pendiente: #242 está en develop; el contrato real depende de #241. Tomar con `demo-quito-planificacion` después de integrar y comprobar el recorrido. Mostrar valores solo si la matriz y la fuente de datos los respaldan. |
+| Video de respaldo | Anthony Pilatasig (grabación propuesta), equipo en pantalla | El guion está listo; falta grabar y revisar duración, audio y evidencia. |
+| Acuse de entrega | Joseph Baño (registro), capitán entrega | Pendiente hasta completar la entrega; anotar hora, receptor, canal y archivos realmente recibidos en `checklist-entrega.md`. |
+
+## Fuentes de estado
+
+- Lista oficial: [Evaluación y entregables](../../boveda/01%20Oficial/Evaluacion%20y%20entregables.md).
+- Alcance demostrable: [matriz de afirmaciones](matriz-afirmaciones.md).
+- Horario/canal: [Cronograma oficial](../../boveda/01%20Oficial/Cronograma%20oficial.md) y O-06 en [Consultas para la organización](../../boveda/01%20Oficial/Consultas%20para%20la%20organizacion.md).
+- Los materiales son candidatos para la carpeta de Drive; hasta recibir el acuse no se reportarán como entregados.
