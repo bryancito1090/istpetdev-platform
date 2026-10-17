@@ -1096,7 +1096,10 @@ export class FieldOutboxService {
       .filter((i) => i.deliveryId === deliveryId && i.commandKind && i.status !== 'Complete' && i.status !== 'RequiresReview' && i.status !== 'SessionRequired')
       .sort((a, b) => {
         const timeDiff = new Date(a.capturedAtUtc).getTime() - new Date(b.capturedAtUtc).getTime();
-        return timeDiff !== 0 ? timeDiff : a.operationId.localeCompare(b.operationId);
+        if (timeDiff !== 0) return timeDiff;
+        const rank = (kind?: string) => (kind === 'Deliver' ? 3 : kind === 'Pickup' ? 2 : kind === 'Dispatch' ? 1 : 0);
+        const rankDiff = rank(a.commandKind) - rank(b.commandKind);
+        return rankDiff !== 0 ? rankDiff : a.operationId.localeCompare(b.operationId);
       })
       .pop();
     if (!pending) return null;
