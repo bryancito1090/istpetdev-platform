@@ -175,7 +175,6 @@ interface NavItem {
         <div class="flex items-center justify-between px-2 py-1 text-xs">
           <div class="flex items-center gap-2 text-slate-600 font-mono text-[11px]">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>AWS EC2</span>
           </div>
           <span class="text-[10px] font-mono text-slate-400 font-semibold">
             {{ session.role() ?? 'Gerencia' }}
