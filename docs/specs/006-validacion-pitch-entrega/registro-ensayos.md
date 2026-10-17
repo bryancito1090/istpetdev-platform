@@ -1,42 +1,42 @@
-# 006 — Registro de ensayos y respuestas (T5, fase 3 del issue #46)
+# 006 — Registro de ensayos y respuestas (T6)
 
-**Preparado:** 14-oct-2026 por Claude Code (Opus 5.5) a pedido de Joseph Baño. **Sin pasadas registradas:** Joseph informó el 14-oct que todavía no hubo ensayos. Los segundos del [Guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md) son reparto planificado y **no** se copian aquí como tiempos medidos. [Tareas](task.md) · [E2E-03/04/06](test-e2e.md) · [Escena y contingencias](escena-y-contingencias.md).
+**Banco actualizado para T4. No se registran pasadas nuevas: las tablas de ensayo siguen vacías y los tiempos del [guion T4](../../boveda/07%20Demo/Guion%20del%20pitch.md) son metas planificadas, no mediciones. [Tareas](task.md) · [E2E-03/04/06](test-e2e.md) · [Escena y contingencias](escena-y-contingencias.md).
 
 ## Reglas
 
 - Una fila por pasada real, escrita por quien cronometra, incluso si falla. Esta IA no completa filas.
-- **Duración medida:** de la primera palabra al cierre, con cronómetro. Meta: tiempo oficial −20 s; mientras O-04 siga pendiente, 160/280/400 s son metas internas y la pasada cuenta como preparación.
-- **Pasada completa sin fallo:** siete bloques en orden, cinco papeles hablan, ninguna frase fuera de la columna «Frase vigente» de la [escena](escena-y-contingencias.md#2-escena-del-guion-maestro-de-5-min-acción-visible-relevo-y-sustitución), duración ≤ meta, y ninguna contingencia que exceda su bloque.
-- **Racha:** suma 1 por pasada completa sin fallo; **cualquier fallo la deja en 0**. Cambiar de versión (guion, diapositivas o commit) en una escena obliga a repetir al menos una pasada de esa versión.
-- CE-04 se cierra solo con **diez pasadas consecutivas** del corte oficial y las **dos últimas sin la wifi del recinto** (conexión de respaldo elegida para la escena).
-- Papeles: anotar quién ocupó cada uno en esa pasada (N/W/M/T/G = narración, web, móvil, técnica, negocio). Si un suplente reemplazó al titular, anotarlo.
+- **Duración medida:** de la primera palabra al cierre, con cronómetro. Meta: tiempo oficial menos 20 s; las metas internas actuales son 160, 280 y 400 s.
+- **Pasada completa sin fallo:** siete bloques en orden, cinco papeles hablan, ninguna frase fuera del guion y duración dentro de la meta.
+- **Racha:** suma 1 por pasada completa sin fallo; cualquier fallo la deja en 0. Un cambio de versión obliga a ensayar de nuevo esa versión.
+- CE-04 se cierra solo con diez pasadas consecutivas del corte oficial y las dos últimas sin wifi del recinto.
+- Papeles: anotar quién ocupó cada uno (N/W/M/T/G = narración, web, móvil, técnica, negocio).
 
 ## Pasadas del pitch
 
 | # | Fecha/hora | Corte | Duración medida (s) | Meta (s) | N / W / M / T / G | Versión guion/diapositivas | Commit | Conexión | Fallos / contingencias usadas | Enlace (video interno o nota) | Racha |
-|---:|---|---|---|---:|---|---|---|---|---|---|---|---:|
-| — | — | — | — | — | — | — | — | — | — | — | — | 0 |
+|---:|---|---|---:|---:|---|---|---|---|---|---|---:|
+| — | — | — | — | — | — | — | — | — | — | — | 0 |
 
 **Racha actual: 0 / 10.** Pasadas sin wifi del recinto al final de la racha: 0 / 2.
 
 ## Ensayos funcionales de la demo
 
-Pasadas técnicas del protocolo de la [sección 4 de escena](escena-y-contingencias.md#4-ensayo-funcional-y-video-de-respaldo-del-15-oct). Una pasada funcional exitosa habilita la columna «Si E2E-04 pasa conectado» solo para las partes que recorrió y en ese commit.
-
-| Fecha/hora | Commit | Entorno (nube/local) | Dispositivos | Partes recorridas conectadas (3a–3e) | Contingencias provocadas (C-01–C-05) y resultado | Resultado | Enlace | Quién |
+| Fecha/hora | Commit | Entorno (nube/local) | Dispositivos | Partes recorridas conectadas | Contingencias y resultado | Resultado | Enlace | Quién |
 |---|---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — | — |
 
-## Ronda de 24 respuestas (ensayos de preguntas)
+No hay ensayo de escena registrado. Las cifras A/B/C de la lámina 5 salen del ensayo técnico local de #285 (`demo-quito-planificacion`); no anotarlas como recorrido en pantalla ni como producción.
 
-Se cronometra **aparte** del pitch. Una persona lee la pregunta del [banco](../../boveda/07%20Demo/Guion%20del%20pitch.md); quien responde no la conoce de antemano. Límite: 30 s por respuesta (40–70 palabras); sin precio ni cifra improvisada; si la respuesta exige evidencia que no existe, se marca.
+## Ronda de preguntas
+
+Se cronometra aparte del pitch. Una persona lee la pregunta y quien responde no la conoce de antemano. Límite: 30 s por respuesta. La preparación escrita no cuenta como pasada de ensayo; no se agregan resultados ni tiempos sin una sesión real.
 
 | Ronda | Fecha/hora | Versión del banco (commit) |
 |---|---|---|
 | — | — | — |
 
-| # | Pregunta (banco) | Quién respondió | Tiempo medido (s) | ≤30 s | Afirmó algo sin evidencia (ID de matriz) | Ajuste al borrador |
-|---:|---|---|---|---:|---|---|---|
+| # | Pregunta | Quién respondió | Tiempo medido (s) | ≤30 s | Afirmó algo sin evidencia (ID) | Ajuste |
+|---:|---|---|---:|---:|---|---|
 | 1 | ¿La IA predice el consumo? | — | — | — | — | — |
 | 2 | ¿La IA aprueba rutas sola? | — | — | — | — | — |
 | 3 | ¿Qué ocurre si DeepSeek cae? | — | — | — | — | — |
@@ -56,41 +56,118 @@ Se cronometra **aparte** del pitch. Una persona lee la pregunta del [banco](../.
 | 17 | ¿Cuánto cuesta y cuál es el precio? | — | — | — | — | — |
 | 18 | ¿Evita multas hospitalarias? | — | — | — | — | — |
 | 19 | ¿Qué validaron con el sector? | — | — | — | — | — |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | — | — | — | — | — |
+| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | — | — | — | — | — |
 | 21 | ¿A quién atienden primero si no alcanza el camión? | — | — | — | — | — |
 | 22 | ¿Qué pasa ante un cierre vial? | — | — | — | — | — |
 | 23 | ¿Por qué no Dijkstra? | — | — | — | — | — |
 | 24 | ¿Qué pasa si nos dan otro Excel? | — | — | — | — | — |
+| 25 | ¿La flota es propia o contratada? | — | — | — | — | — |
+| 26 | ¿Cómo se calcula el costo total de servir? | — | — | — | — | — |
+| 27 | ¿Por qué la IA no decide? | — | — | — | — | — |
+| 28 | ¿De dónde salen los datos del escenario? | — | — | — | — | — |
+| 29 | ¿Cómo considera las horas pico y restricciones de Quito? | — | — | — | — | — |
+| 30 | ¿Qué pasa con lo que no se entrega? | — | — | — | — | — |
 
-CE-05 se cumple con una ronda en la que las 24 respuestas quedan ≤30 s sin afirmaciones fuera de la [matriz](matriz-afirmaciones.md). Las respuestas 3, 8, 9 y 10 dependen de evidencia que hoy falta (A-12, A-15, A-14, A-16): se responden con su sustitución.
+## Banco de respuestas de hasta 30 segundos
 
-## Banco de respuestas ensayadas de 30 s (24 preguntas)
+Las respuestas se revisaron contra la [matriz de afirmaciones](matriz-afirmaciones.md). Ninguna respuesta autoriza afirmar que la escena fue ensayada. Los límites técnicos se expresan como tales. El guion no presenta cronologías de construcción del prototipo.
 
-Respuestas preparadas para la ronda de preguntas del jurado. Cada respuesta está diseñada para pronunciarse en **30 segundos o menos** (40–70 palabras a ritmo natural de ~130 palabras/minuto). Cumplen la regla estricta de **cero cifras ni precios inventados**, distinguiendo capacidades demostradas, métodos matemáticos/algorítmicos y elementos en preparación o propuesta.
-
-| # | Pregunta | Soporte / Matriz | Palabras | Respuesta ensayada (≤ 30 s) |
+| # | Pregunta | Soporte / matriz | Palabras | Respuesta ensayada |
 |---:|---|---|---:|---|
-| 1 | ¿La IA predice el consumo? | A-06, A-11 | 44 | No; la regla usa consumo histórico conocido y media móvil de demanda. El agente o asistente con IA no inventa números ni aprueba operaciones; su función en preparación es contextualizar y estructurar explicaciones comprensibles basadas en los hechos ya calculados por el motor. |
-| 2 | ¿La IA aprueba rutas sola? | A-10, A-11, A-33 | 48 | No; la IA no tiene permisos para aprobar rutas. El motor determinista aplica decisiones automáticas solo si se mantienen estrictamente dentro de umbrales operativos configurados. Cualquier desvío significativo, sobrecosto o retraso que supere los límites se escala de forma obligatoria para la decisión de una persona. |
-| 3 | ¿Qué ocurre si DeepSeek cae? | A-12 | 47 | El cálculo no depende de la IA. Si DeepSeek o n8n no están disponibles, el motor logístico determinista en backend continúa planificando rutas y evaluando restricciones con total normalidad. Como respaldo de explicación, el sistema activa plantillas deterministas estructuradas con los datos del cálculo. |
-| 4 | ¿Es la ruta óptima? | A-07, A-33 | 46 | No prometemos un óptimo matemático global. El motor resuelve el problema de ruteo con ventanas de tiempo y capacidad mediante una heurística constructiva factible mejorada con 2-opt. Su objetivo es entregar un plan operativo viable y eficiente en pocos segundos, respetando restricciones físicas reales. |
-| 5 | ¿Qué datos requiere? | A-22 | 49 | Requiere cinco fuentes de datos: puntos de servicio con coordenadas y ventanas horarias, catálogo de productos con peso y volumen, saldos de inventario inicial, historial o proyección de demanda, y vehículos con capacidad y jornada. Si falta algún dato no crítico, el importador lo declara como supuesto. |
-| 6 | ¿Qué pasa si nos dan otro Excel? | A-22, A-23 | 48 | El importador canónico desacopla el archivo del modelo interno mediante perfiles declarativos. Adaptar un formato nuevo consiste en mapear nombres de columnas y unidades sin modificar código. No prometemos plazos menores a una hora sin medirlo con archivos ajenos, pero el mecanismo está estructurado y probado. |
-| 7 | ¿Cómo conoce el stock? | A-04, A-06 | 49 | Por saldos iniciales importados y movimientos de despacho y recepción registrados. La plataforma calcula la cobertura dividiendo el stock entre el consumo proyectado y muestra en pantalla la fecha y hora de frescura de cada dato. No asumimos sincronización en tiempo real sin una integración activa. |
-| 8 | ¿Qué pasa si no hay señal? | A-13, A-15 | 47 | La PWA de campo está diseñada para operar sin conexión: almacena la recepción en IndexedDB local. Cuando el dispositivo recupera señal de red, sincroniza las capturas pendientes con el backend. En el pitch lo presentamos con prudencia técnica según lo verificado en pruebas de integración. |
-| 9 | ¿Se duplica una recepción? | A-14 | 49 | No se duplica. La operación de recepción utiliza una clave idempotente única por entrega y control estricto de bultos y cantidades recibidas. Si el conductor reintenta el envío o la red retransmite la petición, el backend detecta la clave existente y no crea registros duplicados. |
-| 10 | ¿Puede cualquiera escanear la caja? | A-16 | 49 | El código QR público dirige a una vista web protegida con token limitado y revocable. Solo muestra hitos generales de trazabilidad y estado logístico del paquete; no expone firmas, montos, nombres privados ni inventarios de bodega. Un token alterado o inválido recibe respuesta 404 por la API. |
-| 11 | ¿Funciona con 80 puntos o a escala nacional? | A-03, A-24, A-25 | 48 | En vivo mostramos el escenario regional con 15 puntos sintéticos, una bodega y dos vehículos. La escala de 80 puntos se ha evaluado en simulación y pruebas locales de rendimiento donde el motor planifica en menos de cinco segundos. El despliegue nacional requerirá pruebas de carga dedicadas. |
-| 12 | ¿Qué prueba la simulación? | A-19, A-21 | 47 | Compara de forma controlada dos políticas operativas bajo 90 días de demanda sintética común: reposición preventiva contra baselines de reposición reactiva y calendario fijo. Evalúa el comportamiento del algoritmo ante variaciones de consumo, pero no constituye una medición de ahorro financiero observado en una empresa. |
-| 13 | ¿Por qué esos baselines? | A-19 | 47 | Representan las prácticas estándar de la industria: la reposición reactiva espera el reclamo por falta de stock y el calendario fijo visita puntos en días preestablecidos sin mirar consumo. Fijamos estas reglas antes de evaluar resultados para asegurar una comparación metodológicamente neutral y auditable. |
-| 14 | ¿Qué significan quiebres evitados y nuevos? | A-20 | 51 | Un quiebre evitado ocurre cuando el motor abastece a tiempo un punto que en el baseline se quedaba sin stock. Un quiebre nuevo ocurre si por capacidad o desvío se desatiende un punto que el baseline sí cubría. Mostramos ambas métricas por separado, sin esconder perjuicios bajo restas netas. |
-| 15 | ¿Por qué tres seeds y una adversa? | A-19 | 50 | Usamos tres semillas aleatorias para verificar que los resultados no dependan de una combinación afortunada de demanda. Añadimos una semilla adversa con picos abruptos y dispersión para estresar el motor y mostrar con honestidad cómo responde el sistema bajo condiciones difíciles, sin seleccionar solo el mejor caso. |
-| 16 | ¿Cuánto ahorra una empresa real? | A-21, A-26, A-33 | 51 | No prometemos cifras de ahorro en porcentaje ni dinero porque no tenemos mediciones operativas en una empresa real. Los resultados mostrados provienen de simulaciones sintéticas comparadas. El ahorro real dependerá de la flota, dispersión y costos del cliente, lo cual mediremos formalmente en el piloto de cuatro semanas. |
-| 17 | ¿Cuánto cuesta y cuál es el precio? | A-26, A-30, A-31 | 51 | No fijamos un precio de suscripción arbitrario. El modelo contempla una tarifa de implementación técnica y una suscripción mensual según volumen de puntos y operaciones activas. El importe exacto se definirá tras medir los costos reales de infraestructura y la disposición de pago durante el piloto de cuatro semanas. |
-| 18 | ¿Evita multas hospitalarias? | A-01, A-33 | 49 | No afirmamos que evite multas. Las fichas técnicas del SERCOP demuestran que los contratos públicos de limpieza imponen sanciones severas por desabastecimiento de desinfectantes. Nuestra plataforma ayuda a reducir el riesgo de faltantes al anticipar la reposición, pero no podemos certificar la eliminación legal de penalizaciones contractuales. |
-| 19 | ¿Qué validaron con el sector? | A-02, A-29 | 47 | Contrastamos con expositores de la feria y personas del sector la problemática operativa: confirmaron que reponer tras la queja genera urgencias costosas y riesgo en contratos públicos. Mantenemos estas conclusiones como hipótesis en validación cualitativa hasta documentar entrevistas formales con consentimiento en el informe final. |
-| 20 | ¿Qué es trabajo previo y qué se hizo aquí? | A-28, O-01 | 49 | La estructura base del proyecto y dependencias iniciales estaban identificadas con la etiqueta pre-evento según las reglas de transparencia. Durante la hackathon se desarrollaron e integraron la lógica del motor logístico, los algoritmos de replanificación, los modelos de riesgo, la PWA de campo y las suites de pruebas automatizadas. |
-| 21 | ¿A quién atienden primero si no alcanza el camión? | AMP-01, Spec 002 | 66 | El motor prioriza mediante un orden determinista y transparente: primero evalúa el nivel de riesgo (Crítico antes que Alto), luego la menor holgura de tiempo (cobertura menos lead time), después la criticidad del punto de servicio, y finalmente el código. Si no alcanza la capacidad, los puntos menos urgentes quedan formalmente clasificados como no atendidos con su motivo explícito (`ReplenishmentAllocator` y `RoutePlanner`). |
-| 22 | ¿Qué pasa ante un cierre vial? | AMP-03, Spec 002 | 66 | Se ejecuta una replanificación determinista que conserva las paradas ya realizadas y genera una nueva versión de ruta. El motor dispone de modos configurables: `Strict`, `LateService` si admite demoras, o `PrioritizeCritical`, que descarta paradas de consolidación para proteger las entregas críticas. Si el plan resultante supera los límites de costo o jornada, no se auto-ejecuta y escala a aprobación humana. |
-| 23 | ¿Por qué no Dijkstra? | AMP-10, OSRM | 66 | Dijkstra halla el camino mínimo entre nodos aislados en un grafo estático. En nuestro sistema, el servicio OSRM ya calcula distancias y tiempos mínimos sobre la red vial real de OpenStreetMap, respetando sentidos de giro y velocidades reales. Sobre esa matriz real, el algoritmo del motor resuelve el problema complejo de ruteo vehicular con ventanas horarias, jornadas y capacidades físicas. |
-| 24 | ¿Qué pasa si nos dan otro Excel? | Spec 001, ADR-22 | 57 | El sistema dispone de un importador canónico con perfiles de mapeo declarativos. Permite homologar archivos con distintas columnas, orden o unidades hacia el esquema interno sin modificar una sola línea de código fuente. Su funcionamiento está probado y validado con datasets externos, permitiendo incorporar nuevos datos estructurados con reglas de validación previas. |
+| 1 | ¿La IA predice el consumo? | A-11, P-14 | 32 | No presentamos a la IA como pronosticador. El agente explica una propuesta con base en datos calculados. Incorporar estacionalidad y medir el error del pronóstico es parte de la hoja de ruta. |
+| 2 | ¿La IA aprueba rutas sola? | A-10, A-11 | 29 | La IA explica; el planificador decide. Las reglas de autonomía pueden dejar una decisión pendiente para aprobación humana. La matriz no acredita una escena concreta de aprobación en pantalla. |
+| 3 | ¿Qué ocurre si DeepSeek cae? | A-12 | 25 | Hay un fallo técnico registrado con explicación determinista de respaldo. Esa evidencia acredita el caso ensayado, no disponibilidad absoluta ni un tiempo de respuesta garantizado. |
+| 4 | ¿Es la ruta óptima? | A-07, A-33 | 22 | No afirmamos que sea óptima globalmente. El motor propone rutas sujetas a capacidad, ventanas y jornada; su alcance es una propuesta factible. |
+| 5 | ¿Qué datos requiere? | A-04, A-07, A-22 | 32 | Para este escenario usamos inventario, consumo, puntos y datos de planificación. El importador permite mapear formatos y revisar errores antes de aplicar. La integración concreta depende de los datos de cada empresa. |
+| 6 | ¿Qué pasa si nos dan otro Excel? | A-22, A-23 | 30 | El importador admite perfiles para mapear formatos y revisar errores antes de aplicar. El tiempo de adaptación con archivos de una empresa aún debe medirse; no prometemos un plazo fijo. |
+| 7 | ¿Cómo conoce el stock? | A-04, A-06 | 32 | En el escenario, el motor calcula cobertura y riesgo a partir del inventario y el consumo. La frescura y calidad de los datos de una operación real deben validarse con la empresa. |
+| 8 | ¿Qué pasa si no hay señal? | A-15 | 30 | Bodega y conductor tienen captura y cola local; falta ensayar el recorrido en un teléfono sin señal. La recepción final hospitalaria requiere conexión, así que no la ofrecemos como offline. |
+| 9 | ¿Se duplica una recepción? | A-13, A-14 | 30 | Las pruebas de API cubren la cadena de custodia y evitan duplicar el recibo al repetir una operación. Esto es evidencia de pruebas, no de un ensayo físico en teléfono. |
+| 10 | ¿Puede cualquiera escanear la caja? | A-16 | 28 | La API de consulta pública limita la información visible y rechaza tokens inválidos. No invitamos a escanear desde teléfonos externos sin haber ensayado el acceso en el recinto. |
+| 11 | ¿Funciona con 80 puntos o a escala nacional? | A-03, A-24, A-25 | 30 | El escenario de Quito contiene 40 puntos sintéticos, 12 con referencias geográficas públicas. Eso describe el dataset, no demuestra rendimiento nacional; la escala debe validarse en el despliegue del piloto. |
+| 12 | ¿Qué prueba la simulación? | A-19, A-21 | 33 | Hay un simulador sintético, pero la corrida disponible no valida una cifra de ahorro nacional ni ahorro real. Para hablar del impacto de una empresa necesitamos una comparación trazable y luego un piloto. |
+| 13 | ¿Por qué esos baselines? | A-19, A-21 | 32 | Son políticas definidas para una comparación sintética. La auditoría detectó límites en la generación de resultados, por eso no las usamos para afirmar ahorro observado ni para generalizar sobre todas las empresas. |
+| 14 | ¿Qué significan quiebres evitados y nuevos? | A-20, A-21 | 31 | Se reportan por separado los quiebres evitados y los nuevos para no ocultar diferencias en una resta neta. La corrida existente tiene límites documentados y no la presentamos como ahorro real. |
+| 15 | ¿Por qué tres seeds y una adversa? | A-19, A-21 | 29 | El diseño contempla semillas base y una condición adversa para explorar variación. La auditoría encontró límites en la corrida; no usamos ese diseño como prueba de un resultado empresarial. |
+| 16 | ¿Cuánto ahorra una empresa real? | A-21, A-26, A-33 | 27 | No tenemos una medición de ahorro en una empresa. El impacto se medirá con una comparación trazable y un piloto; no damos un porcentaje ni un monto. |
+| 17 | ¿Cuánto cuesta y cuál es el precio? | A-26, A-30, A-31 | 28 | Proponemos implementación e integración más suscripción. El costo de operación y el precio siguen por validar con costos reales y disposición de pago; no presentamos una tarifa fija. |
+| 18 | ¿Evita multas hospitalarias? | A-01, A-33 | 21 | No afirmamos que evite multas. La propuesta busca reducir el riesgo de faltantes; cualquier afirmación contractual requiere contrastar la cláusula aplicable. |
+| 19 | ¿Qué validaron con el sector? | A-02, A-29 | 22 | La propuesta se está contrastando con el sector. No atribuimos entrevistas, acuerdos ni confirmación general del problema sin registros que lo acrediten. |
+| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | P-02, P-03, P-11 | 27 | El motor ya compara flota propia y operador contratado y recomienda con puntaje en un ensayo técnico local sobre el escenario sintético de Quito (#285). Falta llevarlo a producción, conciliar el desglose por componente y validarlo con una operación real. |
+| 21 | ¿A quién atienden primero si no alcanza el camión? | A-34 | 27 | El motor prioriza entregas y puede conservar una parte pendiente cuando la capacidad no alcanza. No afirmamos que la comparación con operador contratado ya decida esa asignación. |
+| 22 | ¿Qué pasa ante un cierre vial? | A-09, A-12 | 28 | Ante incidentes compatibles, el motor conserva lo ya ejecutado y evalúa una nueva versión para lo pendiente. Eso no incluye ralentizaciones parciales ni reasignación a un operador contratado. |
+| 23 | ¿Por qué no Dijkstra? | A-07, A-33 | 29 | Para el pitch importa el plan completo: el motor propone rutas con ventanas, capacidad y jornada. No prometemos óptimo global; la matriz no compara algoritmos como afirmación de producto. |
+| 24 | ¿Qué pasa si nos dan otro Excel? | A-22, A-23 | 28 | El importador permite mapear formatos con perfiles y revisar errores antes de aplicar. Aún falta medir el esfuerzo con archivos de una empresa; no prometemos adaptación sin trabajo. |
+| 25 | ¿La flota es propia o contratada? | P-02 | 30 | La pantalla propone comparar ambas opciones, pero la alternativa contratada y la recomendación calculada siguen en integración. La mostramos como diseño, no como una decisión ya tomada por el motor. |
+| 26 | ¿Cómo se calcula el costo total de servir? | P-01 | 32 | En un ensayo sintético del motor se desglosó combustible según carga, desgaste, conductor, ayudantes y merma esperada. Es un costo estimado. El ensayo usa `demo-base`, no los valores de la pantalla A/B/C. |
+| 27 | ¿Por qué la IA no decide? | A-10, A-11 | 28 | El cálculo se apoya en datos y reglas verificables; la IA ayuda a explicarlos. El planificador conserva la decisión y algunas decisiones pueden quedar pendientes de aprobación humana. |
+| 28 | ¿De dónde salen los datos del escenario? | P-04, A-03 | 27 | El escenario es sintético y generado por el equipo; algunas ubicaciones usan referencias geográficas públicas. Ventanas, demanda, costos e incidentes son supuestos, no clientes ni operaciones medidas. |
+| 29 | ¿Cómo considera las horas pico y restricciones de Quito? | P-10, P-11 | 28 | Hay pruebas del motor con franjas horarias configuradas; son supuestos, no tráfico en vivo. Las restricciones de circulación verificadas para cada vehículo siguen en la hoja de ruta. |
+| 30 | ¿Qué pasa con lo que no se entrega? | P-13, A-34 | 30 | El motor puede conservar demanda pendiente cuando la capacidad no alcanza. La guía de retorno y la prioridad automática al planificar el día siguiente son propuestas de hoja de ruta. |
+
+## Registro de ensayos del equipo
+
+Completar una fila por sesión real; los horarios siguientes son una propuesta compatible con la agenda, no ensayos ya realizados. En la sesión final, congelar materiales a las 15:45.
+
+| Fecha/hora | Versión guion / slides | Duración real | Papeles (N/W/M/T/G) | Fallos observados | Cambio decidido |
+|---|---|---:|---|---|---|
+| — | — | — | — | — | — |
+| — | — | — | — | — | — |
+| — | — | — | — | — | — |
+
+## Reparto propuesto de papeles
+
+Propuesta basada en áreas de contribución registradas en los PR y documentos del equipo; cada integrante confirma su disponibilidad antes de ensayar. La autoría de código orienta la asignación técnica, no acredita práctica escénica.
+
+| Papel | Integrante propuesto | Base de contribución |
+|---|---|---|
+| Narración | Joseph Baño | Coordinación, documentación y pitch; mantenerlo en el rol no crítico de presentación. |
+| Web | Alexander Martínez | Interfaz de rutas, planificador web y campo; responsable de tomar la captura A/B/C con `demo-quito-planificacion`. |
+| Móvil | Anthony Pilatasig | Motor de rutas y flujos operativos; coordinar la demostración del recorrido móvil si se incluye. |
+| Técnica | Bryan Baño | Motor/agente, datos y costos; responsable de #241 y de explicar límites de integración. |
+| Negocio | Jorge Doicela | Infraestructura, despliegue y panel; presentar viabilidad, riesgos y piloto propuesto. |
+
+## Tres ensayos propuestos
+
+La ronda E2E #118 está cerrada y no sustituye estos ensayos del pitch.
+
+| Sesión | Bloque libre | Enfoque | Responsable de cronómetro/registro |
+|---|---|---|---|
+| 1 | Sábado 11:00–11:30 | Recorrido de papeles, transiciones y riesgos; registrar fallos de la demo y asignar cambios. | Joseph (propuesto; confirmar) |
+| 2 | Sábado 15:00–15:20 | Pasada completa de 280 s con cronómetro; verificar legibilidad, demo y corte si falla la conexión. | Anthony (propuesto; confirmar) |
+| 3 | Sábado 15:20–15:45 | Pasada final, preguntas breves y revisión de archivos; congelar materiales exactamente a las 15:45. | Jorge (propuesto; confirmar) |
+
+Los cinco integrantes cubren su papel en cada pasada. Registrar duración real y fallos solo después de ejecutarlos.
+
+## Diapositivas v3: clics y animaciones
+
+Guía para quien presenta con `materiales/pitch-v3.pptx`. Todas las láminas entran con un fundido de 0,75 s. «Auto» significa que la entrada ocurre sola al abrir la lámina, sin clic; si se hace clic antes de que termine, PowerPoint completa la entrada. Los clics indicados son **adicionales** al que pasa a la lámina siguiente. En v3, la tabla A/B/C es la **lámina 5**, porque se agregó una portada (en v2 era la 4). El PDF es estático y muestra cada lámina completa.
+
+| # | Lámina | Clics | Orden de aparición | Chillo |
+|---:|---|---:|---|---|
+| 1 | Portada | 1 | Auto: logo → título (barrido) → subtítulo y equipo → Chillo (zoom). Clic 1: globo. | Entra solo; globo en el clic 1 |
+| 2 | Problema | 2 | Auto: título → «Mirar solo kilómetros» (barrido) → Chillo (zoom). Clic 1: «Comparar el servicio completo» → hipótesis. Clic 2: globo. | Entra solo; globo en el clic 2 |
+| 3 | Solución | 4 | Auto: título → línea dorada. Clics 1 a 4: Comparar, Desglosar, Explicar, Decidir; tras el 4 aparecen solos el rótulo PROPUESTA y «La IA explica; el planificador decide». | — |
+| 4 | Captura de rutas | 0 | Auto: título → captura (barrido) → tarjeta → rótulo «datos sintéticos». | — |
+| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Flota, Críticos a tiempo, Puntaje (en cascada). Clic 2: Costo total → marco dorado en C y recomendación del motor. Clic 3: globo. | Entra solo; globo en el clic 3 |
+| 6 | Impacto | 0 | Auto: título → seis indicadores en cascada. | — |
+| 7 | Viabilidad | 0 | Auto: título → tarjeta 01 → tarjeta 02 → banda «Límite» (barrido). | — |
+| 8 | Modelo de negocio | 0 | Auto: título → tarjeta 01 → tarjeta 02 → frase del piloto. | — |
+| 9 | Riesgos y mitigación | 1 | Auto: título → Chillo (zoom) → cinco riesgos en cascada → nota de la charla. Clic 1: globo. | Entra solo; globo en el clic 1 |
+| 10 | Hoja de ruta y cierre | 2 | Auto: título → Chillo de cuerpo entero (zoom) → cuatro pasos. Clic 1: banda «Próximo paso» (barrido). Clic 2: globo. | Entra solo; globo en el clic 2 |
+
+**Total: 13 clics de animación + 9 avances de lámina.**
+
+### Frases de Chillo (aprobadas por Joseph, 16-oct)
+
+Solo visuales: nadie las lee ni las dice en el pitch. No agregan hechos ni cifras: solo reformulan lo que ya dice cada lámina.
+
+| Lámina | Frase |
+|---|---|
+| 1 · Portada | «¡Hola! Soy Chillo y hoy les cuento cómo **decidir mejor** cada ruta.» |
+| 2 · Problema | «Si solo miramos kilómetros, la cuenta sale **incompleta**.» |
+| 5 · A / B / C | «Una ruta no es solo kilómetros: también es **quien descarga**.» |
+| 9 · Riesgos | «Todo plan tiene riesgos; lo clave es saber **mitigarlos**.» |
+| 10 · Cierre | «¿Lo validamos juntos en un **piloto**? ¡Kikirikí!» |
+
+Las frases están en `slide_cover`, `slide_problem`, `slide_abc`, `slide_risks` y `slide_roadmap` de `materiales/generar_v3.py`. Para cambiar una, se edita allí y se vuelve a generar.

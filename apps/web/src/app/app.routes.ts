@@ -95,6 +95,22 @@ export const routes: Routes = [
     title: 'Trazabilidad QR — IstpetDev'
   },
   {
+    // Issue #247: Guía de retorno de lo no entregado
+    path: 'guias-retorno',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: [...WEB_READ_ROLES, 'Bodega'] },
+    loadComponent: () => import('@pages/guias-retorno').then(m => m.GuiaRetornoPage),
+    title: 'Guía de Retorno — IstpetDev'
+  },
+  {
+    path: 'guias-retorno/:guideNumber',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: [...WEB_READ_ROLES, 'Bodega'] },
+    loadComponent: () => import('@pages/guias-retorno').then(m => m.GuiaRetornoPage),
+    title: 'Guía de Retorno — IstpetDev'
+  },
+
+  {
     // Compatibilidad con enlaces antiguos: una sesión va a Inicio; una visita anónima va al login.
     path: 'dashboard',
     canActivate: [homeRedirectGuard],

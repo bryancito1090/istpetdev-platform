@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
@@ -197,6 +197,11 @@ describe('RutasPage (FR-21)', () => {
       component.wizardStep.set(3);
       fixture.detectChanges();
 
+      expect(component.comparisonMode()).toBe('live');
+      expect(fixture.nativeElement.textContent).toContain('Sin opciones calculadas para esta selección');
+      expect(fixture.nativeElement.textContent).not.toContain('USD 2.40');
+      expect(fixture.nativeElement.textContent).not.toContain('$ 65.10');
+
       const el = fixture.nativeElement;
       const text = el.textContent;
 
@@ -204,52 +209,11 @@ describe('RutasPage (FR-21)', () => {
       expect(text).toContain('Comparativa de Alternativas A/B/C');
       expect(text).toContain('Panel Pitch #200');
 
-      // Verifica línea de precio de combustible con valor, fecha y fuente
-      expect(text).toContain('Combustible de referencia:');
-      expect(text).toContain('USD 2.40/galón');
-      expect(text).toContain('16-oct-2026');
-      expect(text).toContain('Petroecuador');
-
-      // Verifica presencia de columnas A, B, C
-      expect(text).toContain('Opción A');
-      expect(text).toContain('Opción B');
-      expect(text).toContain('Opción C');
-
-      // Verifica insignia ★ RECOMENDADA
-      expect(text).toContain('★ RECOMENDADA');
-
-      // Verifica justificación de recomendación
-      expect(text).toContain('Recomendación: Opción B');
-      expect(text).toContain('cumple los 3 hospitales críticos');
-
-      // Verifica los 3 botones de acción requeridos
-      const buttons = Array.from(el.querySelectorAll('button')) as HTMLButtonElement[];
-      const btnPublicar = buttons.find(b => b.textContent?.includes('Publicar'));
-      const btnElegirOtra = buttons.find(b => b.textContent?.includes('Elegir otra'));
-      const btnVerMapa = buttons.find(b => b.textContent?.includes('Ver en mapa'));
-
-      expect(btnPublicar).toBeDefined();
-      expect(btnElegirOtra).toBeDefined();
-      expect(btnVerMapa).toBeDefined();
-
-      // Verifica filas de la tabla
-      expect(text).toContain('Kilómetros');
-      expect(text).toContain('Combustible');
-      expect(text).toContain('Desgaste vehículo');
-      expect(text).toContain('Conductor');
-      expect(text).toContain('Ayudantes (n.º y costo)');
-      expect(text).toContain('Merma esperada');
-      expect(text).toContain('Costo total');
-      expect(text).toContain('Críticos a tiempo');
-      expect(text).toContain('Pedidos pendientes');
-      expect(text).toContain('Riesgos');
-
-      // Celdas de Opción C reflejan inclusión en tarifa
-      expect(text).toContain('incluido en la tarifa');
-      expect(text).toContain('del operador');
+      expect(text).toContain('Sin opciones calculadas para esta selección');
+      expect(fixture.nativeElement.querySelector('table')).toBeNull();
     });
 
-    it('al hacer clic en «Publicar recomendada» selecciona la opción B y avanza al paso 4', () => {
+    it('no permite publicar opciones ilustrativas ni avanzar sin opciones reales', () => {
       TestBed.configureTestingModule({
         imports: [RutasPage],
         providers: [
@@ -278,14 +242,106 @@ describe('RutasPage (FR-21)', () => {
       component.isWizardOpen.set(true);
       component.wizardStep.set(3);
       component.selectedOptionId.set('A');
+      component.comparisonMode.set('saved');
       fixture.detectChanges();
 
       component.publishRecommended();
       fixture.detectChanges();
 
-      expect(component.selectedOptionId()).toBe('B');
-      expect(component.wizardStep()).toBe(4);
-      expect(component.feedbackMessage()?.text).toContain('Opción B');
+      expect(component.wizardStep()).toBe(3);
+      component.advanceWizardStep();
+      expect(component.wizardStep()).toBe(3);
+
+      const api = TestBed.inject(ApiService);
+      api.suggestRoutes = vi.fn(() => of({ options: [], message: 'Sin abastecimiento disponible.' }));
+      component.wizardStep.set(1);
+      component.selectedVehicleId.set('vehiculo-anterior');
+      component.advanceWizardStep();
+      fixture.detectChanges();
+      expect(component.routeOptions()).toEqual([]);
+      expect(component.selectedOptionId()).toBe('');
+      expect(component.selectedVehicleId()).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Sin abastecimiento disponible.');
+      expect(fixture.nativeElement.textContent).not.toContain('$ 65.10');
+
+      api.suggestRoutes = vi.fn(() => throwError(() => ({ error: { message: 'API no disponible' } })));
+      component.wizardStep.set(1);
+      component.advanceWizardStep();
+      fixture.detectChanges();
+      expect(component.comparisonMode()).toBe('live');
+      expect(component.comparisonOptions()).toEqual([]);
+      expect(component.actionLoading()).toBe(false);
+      expect(fixture.nativeElement.textContent).toContain('API no disponible');
+    });
+
+    it('carga la corrida solo al elegirla, rotula su origen y la mantiene de solo lectura', () => {
+      const run = {
+        metadata: { commit: 'abc123', capturedAtUtc: '2026-10-16T15:00:00Z', fixture: 'demo-quito-planificacion', configSha256: 'a'.repeat(64) },
+        response: {
+          options: [{ optionId: 'C', sourcingOptionId: 'carrier-1', title: 'Operador', description: 'Contrato', isRecommended: true, evaluation: { totalCost: 30 }, stops: [], sourcingLines: [], vehicleMatches: [] }],
+          comparison: {
+            recommendedOptionId: 'C', justification: 'Motivo del motor',
+            fuelPrice: { value: 3.11, date: '2026-10-16', source: 'Fuente fechada', unit: 'USD/gal' },
+            options: [{ optionId: 'A', title: 'Propia', carrierType: 'Propia' }, { optionId: 'C', title: 'Operador', carrierType: 'Contratada', totalCost: 30 }]
+          }
+        }
+      };
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [
+          provideRouter([]),
+          { provide: AuthSession, useValue: { canWrite: () => true } },
+          { provide: ApiService, useValue: {
+            getRoutePlans: vi.fn(() => of([])), getRoutePlanById: vi.fn(() => of(null)), getRoutePlanGeometry: vi.fn(() => of(null)),
+            getDrivers: vi.fn(() => of([])), getServicePoints: vi.fn(() => of([])), getDeliveryOrders: vi.fn(() => of([])),
+            getWarehouses: vi.fn(() => of([])), getEntityData: vi.fn(() => of([])), getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+            getSavedRouteComparisonRun: vi.fn(() => of(run))
+          } }
+        ]
+      });
+      const fixture = TestBed.createComponent(RutasPage);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+      component.isWizardOpen.set(true);
+      component.wizardStep.set(3);
+      expect(component.comparisonMode()).toBe('live');
+      component.loadSavedComparison();
+      fixture.detectChanges();
+
+      expect(component.comparisonMode()).toBe('saved');
+      expect(component.comparisonOptions().map(option => option.optionId)).toEqual(['A', 'C']);
+      expect(fixture.nativeElement.textContent).toContain('Corrida guardada · demo-quito-planificacion · commit abc123 · 2026-10-16T15:00:00Z');
+      expect(fixture.nativeElement.textContent).toContain('3.11 USD/gal');
+      expect(fixture.nativeElement.textContent).toContain('Fuente fechada');
+      component.publishRecommended();
+      component.selectComparisonOption('A');
+      expect(component.wizardStep()).toBe(3);
+      expect(component.selectedOptionId()).toBe('A');
+      expect(component.routeOptions()).toEqual([]);
+    });
+
+    it('informa cuando no existe la corrida y no abandona el modo vivo automáticamente', () => {
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [provideRouter([]), { provide: AuthSession, useValue: { canWrite: () => true } }, { provide: ApiService, useValue: {
+          getRoutePlans: vi.fn(() => of([])), getRoutePlanById: vi.fn(() => of(null)), getRoutePlanGeometry: vi.fn(() => of(null)),
+          getDrivers: vi.fn(() => of([])), getServicePoints: vi.fn(() => of([])), getDeliveryOrders: vi.fn(() => of([])),
+          getWarehouses: vi.fn(() => of([])), getEntityData: vi.fn(() => of([])), getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+          getSavedRouteComparisonRun: vi.fn(() => throwError(() => new Error('404')))
+        } }]
+      });
+      const fixture = TestBed.createComponent(RutasPage);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+      component.isWizardOpen.set(true);
+      component.wizardStep.set(3);
+      fixture.detectChanges();
+      component.loadSavedComparison();
+      fixture.detectChanges();
+      expect(component.comparisonMode()).toBe('saved');
+      expect(component.comparisonOptions()).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain('No hay una corrida guardada disponible');
+      expect(fixture.nativeElement.textContent).not.toContain('DISEÑO');
     });
 
     it('si la API no trae la opción C, la tabla muestra solo A y B sin romperse (#242)', () => {
@@ -315,7 +371,7 @@ describe('RutasPage (FR-21)', () => {
       fixture.detectChanges();
 
       // Configurar modo API en vivo con solo 2 opciones (A y B)
-      component.useMockABC.set(false);
+      component.comparisonMode.set('live');
       component.routeOptions.set([
         {
           optionId: 'A',
@@ -374,6 +430,51 @@ describe('RutasPage (FR-21)', () => {
       expect(text).toContain('$ 55.40');
       expect(text).toContain('$ 62.10');
       expect(component.comparisonOptions().length).toBe(2);
+
+      const canonical = { ...component.routeOptions()[0], optionId: '1', sourcingOptionId: 'A' };
+      const api = TestBed.inject(ApiService);
+      api.suggestRoutes = vi.fn(() => of({
+        options: [canonical],
+        comparison: {
+          recommendedOptionId: 'C', justification: 'Recomendación recibida',
+          fuelPrice: { value: 3.11, date: '2026-10-16', source: 'Fuente de prueba', unit: 'USD/gal' },
+          options: [
+            { optionId: 'A', title: 'Propia', carrierType: 'Propia', costBreakdown: { fuel: 0, total: 22 } },
+            { optionId: 'C', title: 'Operador', carrierType: 'Contratada', costBreakdown: { carrierTariff: 27, total: 29, notes: ['Nota del motor'] } }
+          ]
+        }
+      }));
+      component.wizardStep.set(1);
+      component.advanceWizardStep();
+      component.advanceWizardStep();
+      fixture.detectChanges();
+      expect(component.selectedOptionId()).toBe('A'); // entrar no sustituye la elección por C
+      expect(component.recommendedOption()?.optionId).toBe('C');
+      expect(fixture.nativeElement.textContent).toContain('3.11 USD/gal');
+      expect(fixture.nativeElement.textContent).toContain('Fuente de prueba');
+      expect(fixture.nativeElement.textContent).toContain('Recomendación recibida');
+      expect(fixture.nativeElement.textContent).toContain('Nota del motor');
+      expect(fixture.nativeElement.textContent).toContain('$ 0.00');
+      expect(fixture.nativeElement.textContent).toContain('$ 27.00');
+      component.selectComparisonOption('C');
+      component.publishRecommended();
+      component.advanceWizardStep();
+      expect(component.wizardStep()).toBe(3);
+      expect(component.currentEvaluation()).toBeNull();
+      expect(component.editableStops()).toEqual([]);
+
+      component.sourcingComparison.set({ options: [{ optionId: 'B', title: 'Sin datos' }] });
+      fixture.detectChanges();
+      expect(component.recommendedOption()).toBeUndefined();
+      expect(fixture.nativeElement.textContent).not.toContain('3.11 USD/gal');
+      expect(fixture.nativeElement.textContent).toContain('sin dato');
+
+      // Al preparar otra alternativa, enviar el ID del contrato y no publicar la propuesta anterior.
+      api.suggestRoutes = vi.fn(() => of({ options: [] }));
+      component.selectComparisonOption('B');
+      expect(api.suggestRoutes).toHaveBeenCalledWith([], undefined, 'B');
+      expect(component.routeOptions()).toEqual([]);
+      expect(component.currentEvaluation()).toBeNull();
     });
   });
 

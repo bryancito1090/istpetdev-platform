@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "timestampUtc": "2026-10-17T04:20:31.443Z",
+    "productionUrl": "https://istpetdev.doicela.dev",
+    "gitCommit": "ed7dc21b87f27770ae781c082c465f2a51a88768",
+    "status": "pending_deployment_198_275",
+    "note": "El despliegue de #275 (Jorge, #198) hacia producción aún no ha sido promovido desde develop a main."
+  },
+  "probeResults": {
+    "healthReady": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "status": "Healthy",
+        "timestamp": "2026-10-17T04:20:31.2074213Z",
+        "entries": [
+          {
+            "name": "database_ready",
+            "status": "Healthy",
+            "description": "PostgreSQL database is available.",
+            "durationMs": 38.815
+          }
+        ]
+      }
+    },
+    "demoReset": {
+      "status": 401,
+      "ok": false,
+      "body": ""
+    }
+  }
+}

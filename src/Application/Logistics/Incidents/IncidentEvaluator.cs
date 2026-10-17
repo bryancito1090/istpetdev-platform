@@ -63,22 +63,31 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
             {
                 unavailableVehicles.Add(breakdownVehicle.Code);
 
-                var affectedPlan = publishedPlans.First(p => p.VehicleId == breakdownVehicle.Id);
+                // #300: la ruta afectada es la del incidente (el vehículo puede tener otra ruta publicada).
+                var affectedPlan = publishedPlans.First(p => p.Id == incident.RoutePlanId!.Value);
                 var pendingStops = await db.RouteStops
-                    .Where(s => s.RoutePlanId == affectedPlan.Id && s.Status != "Completed")
+                    .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == affectedPlan.Id && s.Status != "Completed")
                     .OrderBy(s => s.SequenceNumber)
                     .ToListAsync(ct);
 
                 var spIds = pendingStops.Select(s => s.ServicePointId).ToHashSet();
-                var spMap = await db.ServicePoints
-                    .Where(s => spIds.Contains(s.Id))
+                var pointCodes = await db.ServicePoints
+                    .Where(s => s.OrganizationId == DemoOrganization.Id && spIds.Contains(s.Id))
                     .ToDictionaryAsync(s => s.Id, s => s.Code, ct);
+                var stopLocationIds = pendingStops.Where(s => s.LocationId.HasValue).Select(s => s.LocationId!.Value).ToHashSet();
+                var locationCodes = await db.Locations
+                    .Where(l => l.OrganizationId == DemoOrganization.Id && stopLocationIds.Contains(l.Id))
+                    .ToDictionaryAsync(l => l.Id, l => l.Code, ct);
 
                 affectedRoutes.Add(new AffectedRoute(
                     affectedPlan.Id,
                     breakdownVehicle.Code,
                     Array.Empty<(GeoPoint, GeoPoint)>(),
-                    pendingStops.Select(s => new AffectedStop(spMap.GetValueOrDefault(s.ServicePointId, ""), s.SequenceNumber)).ToList()));
+                    pendingStops.Select(s => new AffectedStop(
+                        // #300: las paradas en bodega del asistente se nombran por la bodega.
+                        s.LocationId is { } locationId && locationCodes.TryGetValue(locationId, out var locationCode)
+                            ? locationCode : pointCodes.GetValueOrDefault(s.ServicePointId, ""),
+                        s.SequenceNumber)).ToList()));
             }
 
             return new IncidentImpact(
@@ -98,38 +107,54 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
         bool isClosure = string.Equals(incident.Kind, "ROAD_CLOSURE", StringComparison.OrdinalIgnoreCase)
             || string.Equals(incident.Kind, "BloqueoVial", StringComparison.OrdinalIgnoreCase);
         decimal delayFactor = 2.0m; // Factor por defecto para demoras
+        // #246: Congestion, Manifestacion y Accidente ralentizan según su SlowdownFactor guardado.
+        // Sin factor guardado se conserva el comportamiento anterior (demora × 2).
+        var slowdown = !isClosure && IncidentSlowdown.IsSlowdownKind(incident.Kind)
+            ? IncidentSlowdown.ReadFactor(incident.Description) : null;
+        if (slowdown is { } speedFactor) delayFactor = IncidentSlowdown.MinutesMultiplier(speedFactor);
 
         // Also exclude affected cached legs from alternative orders, rather than
         // permitting a new leg through the same closure simply because it was
         // absent from the previous route.
-        if (isClosure)
+        // #246: lo mismo para un retraso parcial, para que otro orden por la misma zona también sea lento.
+        var edges = isClosure || slowdown.HasValue
+            ? await db.RoadMatrixEdges.Where(e => e.OrganizationId == DemoOrganization.Id).ToListAsync(ct)
+            : new List<RoadMatrixEdge>();
+        if (isClosure || slowdown.HasValue)
         {
-            var edges = await db.RoadMatrixEdges.Where(e => e.OrganizationId == DemoOrganization.Id).ToListAsync(ct);
             foreach (var edge in edges)
             {
                 var leg = new Leg(new GeoPoint(edge.FromLat, edge.FromLon), new GeoPoint(edge.ToLat, edge.ToLon),
                     edge.DistanceKm, edge.DurationMinutes, DistanceSource.Road, edge.EncodedPolyline);
-                if (IsLegAffected(leg, incidentCenter, radiusKm)) blockedLegs.Add((leg.From, leg.To));
+                if (!IsLegAffected(leg, incidentCenter, radiusKm)) continue;
+                if (isClosure) blockedLegs.Add((leg.From, leg.To));
+                else slowFactors[(leg.From, leg.To)] = delayFactor;
             }
         }
+
+        var spMap = await db.ServicePoints
+            .Where(s => s.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(s => s.Id, s => s, ct);
+        var locations = await db.Locations
+            .Where(l => l.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(l => l.Id, l => l, ct);
 
         foreach (var plan in publishedPlans)
         {
             if (!vehicles.TryGetValue(plan.VehicleId, out var vehicle)) continue;
 
-            // Deserializar legs almacenados en plan.InputJson o reconstruir de paradas
-            var legsInRoute = ExtractLegsFromPlan(plan);
             var routeAffectedLegs = new List<(GeoPoint, GeoPoint)>();
             var routeAffectedStops = new List<AffectedStop>();
 
             var stops = await db.RouteStops
-                .Where(s => s.RoutePlanId == plan.Id)
+                .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id)
                 .OrderBy(s => s.SequenceNumber)
                 .ToListAsync(ct);
 
-            var spMap = await db.ServicePoints
-                .Where(s => s.OrganizationId == DemoOrganization.Id)
-                .ToDictionaryAsync(s => s.Id, s => s, ct);
+            // Deserializar legs almacenados en plan.InputJson o reconstruir de paradas
+            var legsInRoute = ExtractLegsFromPlan(plan);
+            // #300: las rutas del asistente no guardan tramos: se arman desde la bodega del vehículo por sus paradas.
+            if (legsInRoute.Count == 0) legsInRoute = LegsFromStops(vehicle, stops, spMap, locations, edges);
 
             var completedPrefixLength = stops.TakeWhile(s => s.Status == "Completed").Count();
             foreach (var leg in legsInRoute.Skip(completedPrefixLength))
@@ -236,6 +261,35 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
         decimal diffY = py - projY;
 
         return (decimal)Math.Sqrt((double)(diffX * diffX + diffY * diffY));
+    }
+
+    // #300: tramo i = llegada a la parada i (como los tramos guardados). Usa la polilínea cacheada si existe;
+    // si no, el segmento recto. Una parada sin posición repite la anterior para no desalinear los tramos.
+    private static List<Leg> LegsFromStops(Vehicle vehicle, IReadOnlyList<RouteStop> stops,
+        IReadOnlyDictionary<Guid, ServicePoint> servicePoints, IReadOnlyDictionary<Guid, Location> locations,
+        IReadOnlyList<RoadMatrixEdge> edges)
+    {
+        static GeoPoint? PositionOf(NetTopologySuite.Geometries.Point? point) =>
+            point is null ? null : new GeoPoint((decimal)point.Y, (decimal)point.X).Round();
+
+        var legs = new List<Leg>();
+        if (!locations.TryGetValue(vehicle.DepotLocationId, out var depot) || PositionOf(depot.Position) is not { } current)
+            return legs;
+        var cached = edges
+            .GroupBy(e => (new GeoPoint(e.FromLat, e.FromLon).Round(), new GeoPoint(e.ToLat, e.ToLon).Round()))
+            .ToDictionary(g => g.Key, g => g.First());
+        foreach (var stop in stops)
+        {
+            GeoPoint? next = stop.Kind == RouteStopKind.Pickup || stop.LocationId.HasValue
+                ? stop.LocationId is { } id && locations.TryGetValue(id, out var location) ? PositionOf(location.Position) : null
+                : servicePoints.TryGetValue(stop.ServicePointId, out var point) ? PositionOf(point.Position) : null;
+            var to = next ?? current;
+            legs.Add(cached.TryGetValue((current, to), out var edge)
+                ? new Leg(current, to, edge.DistanceKm, edge.DurationMinutes, DistanceSource.Road, edge.EncodedPolyline)
+                : new Leg(current, to, 0m, 0m, DistanceSource.Approximation, null));
+            current = to;
+        }
+        return legs;
     }
 
     private static List<Leg> ExtractLegsFromPlan(RoutePlan plan)

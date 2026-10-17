@@ -2,13 +2,20 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { MobileAuthService } from '../../auth.service';
+import { FieldPageHeaderComponent } from '../../../shared/field-page-header/field-page-header.component';
 
 /** Vuelta de Cognito: el inicializador ya canjeó el código; aquí solo se decide el destino. */
 @Component({
   selector: 'app-auth-callback',
   standalone: true,
-  imports: [IonContent],
-  template: `<ion-content class="ion-padding"><p class="text-center text-sm text-slate-500 pt-10">Verificando tu cuenta…</p></ion-content>`
+  imports: [IonContent, FieldPageHeaderComponent],
+  template: `
+    <app-field-page-header [brandOnly]="true" [showHelp]="false" />
+    <ion-content class="ion-padding">
+      <p class="text-center text-sm text-slate-500 pt-10">Verificando tu cuenta…</p>
+    </ion-content>
+  `,
+  styles: [`:host { display: flex; flex-direction: column; height: 100%; } ion-content { flex: 1; }`]
 })
 export class CallbackPage implements OnInit {
   private readonly auth = inject(MobileAuthService);

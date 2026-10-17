@@ -36,11 +36,20 @@ tags: [hackathon, equipo]
 
 - [[Arquitectura del sistema]], [[Decisiones de arquitectura]].
 - [[Backend y tiempo real]], [[Contratos API y eventos]].
-- [[Frontend y componentes]], [[Frontend con Feature-Sliced Design]], [[Movil offline y sincronizacion]], [[Sistema de diseno y colores]].
+- [[Frontend y componentes]], [[Frontend con Feature-Sliced Design]], [[Movil offline y sincronizacion]].
 - [[AWS y Terraform]], [[Perfil A Reforzado - Despliegue Stateless y Amazon RDS]], [[CI-CD y automatizacion de despliegue]], [[Runbook de DevOps y base de datos para la demo]], [[Hardening y seguridad de servidores]], [[Seguridad y evidencias]].
 - [[RBAC y configuracion del sistema]] — roles, permisos, campos, procesos y plantillas administrables desde DB.
 - [[Conexion PostgreSQL en DBeaver]] — conexiones de esquema/datos con los usuarios ya existentes.
 - [[Verificacion de seguridad antes del lanzamiento]] — controles complementarios con evidencia previa a exposición.
+
+## Diseño y UI-UX
+
+- [[00 Indice y principios de diseno]] — mapa maestro y principios innegociables del área visual.
+- [[01 Guia de maquetacion y arquetipos UI-UX]] — pila tipográfica nativa, Shell global y arquetipos A, B y C (Stripe Dashboard).
+- [[02 Sistema de diseno colores y tokens]] — identidad oficial Expo Clean 2026, escalas Tailwind y accesibilidad WCAG 2.2 AA.
+- [[03 Catalogo de componentes y controles]] — especificación de botones, inputs de 36px, badges, tabs y drawers.
+- [[04 Guia de redaccion UX Writing]] — normas de lenguaje humano, directo y accesible sin jerga de backend.
+- [[05 Estandar visual de rutas y operaciones]] — arquitectura visual del planificador de rutas, asistente y rechazos.
 
 ## Datos y algoritmos
 
@@ -83,7 +92,7 @@ tags: [hackathon, equipo]
 |---|---|
 | Todo el equipo | Contexto → reto oficial → alcance → backlog → pitch |
 | Backend y datos | Arquitectura → modelo de datos → contratos → inventario → rutas |
-| Web y UX | Usuarios → requisitos → frontend → contratos → métricas |
+| Web y UX | Usuarios → diseño y UI-UX ([[00 Indice y principios de diseno]]) → frontend → contratos → métricas |
 | Móvil | Usuarios → offline → contratos → seguridad → validación |
 | Nube y automatización | AWS/Terraform → backend/SignalR → n8n/IA → riesgos |
 | Producto y presentación | Evaluación → negocio/piloto → validación → plus → guion |

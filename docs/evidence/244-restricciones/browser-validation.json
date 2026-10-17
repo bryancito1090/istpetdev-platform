@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "origin": "VehicleMatcher + PostGIS descartable, componente RutasPage real con sesión de prueba",
+  "cases": [
+    "07:00: pesado descartado con motivo visible",
+    "Aviso extraurbano permite selección",
+    "10:00: pesado aceptado y seleccionable"
+  ],
+  "consoleErrors": [],
+  "screenshots": [
+    "salida-0700.png",
+    "salida-1000.png"
+  ]
+}

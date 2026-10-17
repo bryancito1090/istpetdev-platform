@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-16
+actualizado: 2026-10-17
 tags: [arquitectura, contratos]
 ---
 
@@ -39,6 +39,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
 | PUT /api/v1/route-plans/{id}/driver          | Reasignar conductor de entregas pendientes (#160) |
+| POST /api/v1/route-plans/{id}/cancel         | Cancelar ruta antes del despacho; libera reservas y descuenta lo planificado del pedido (#199) |
 | POST /api/v1/deliveries/{id}/dispatch        | Registrar salida y custodia             |
 | POST /api/v1/deliveries/{id}/receipts        | Recepción por líneas, idempotente       |
 | POST /api/v1/receipts/{id}/evidence-uploads  | Obtener autorización de carga           |
@@ -206,6 +207,34 @@ Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factib
   - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
 - **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
 - **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).
+
+### Reserva, cancelación y cantidad por línea (#199, fase 2 — 16 de octubre de 2026)
+
+- **Riesgo (`GET /api/v1/risks` y `POST /api/v1/route-plans`):** `inTransit` y el hecho `in_transit_qty` incluyen ahora lo publicado y reservado que aún no sale: entregas `Draft` sin despacho, por su `PlannedQuantity`. Al despacharse cuentan por `DispatchedQuantity − AcceptedQuantity`, como antes; una entrega nunca cuenta por las dos vías. Solo se suma lo que va al mismo punto. Así, planificar de nuevo antes del despacho propone solo el remanente.
+- **`POST /api/v1/route-plans/confirm`:** en una parada con pedidos, la carga guardada (lo que se publica y reserva) y el peso evaluado salen de lo planificado por línea; el `deltaWeight`, `deltaVolume` y `loads` que envía el panel ya no lo amplían. Con pedidos, la recogida pesa exactamente lo planificado. El plan guarda en `InputJson.orderLines[]` (`deliveryOrderLineId`, `plannedQuantity`) lo que sumó a cada línea.
+- **`POST /api/v1/route-plans/{id}/cancel`** (nuevo; `Roles.Planning`, sin cuerpo): cancela una ruta `Proposed` o `Published` sin entregas despachadas. Libera sus reservas activas, pasa sus entregas `Draft` a `Cancelled` y deja el plan en `Cancelled`. Descuenta de `DeliveryOrderLine.PlannedQuantity` lo guardado en `orderLines`; si la ruta es una revisión, toma el de la revisión más cercana que lo tenga. El pedido vuelve a `Pending` si ya no queda planificado por completo.
+  - **`200`:** `{ routePlanId, status: "Cancelled", alreadyCancelled, cancelledDeliveries, releasedReservedQuantity, orderLines: [{ orderId, orderNumber, sku, releasedQuantity, plannedQuantity, pendingQuantity, orderStatus }] }`. Repetir la llamada no descuenta otra vez: devuelve `alreadyCancelled: true`.
+  - **`409 cancel_conflict`:** hay una entrega despachada, entregada o recibida; o el plan está `Superseded`; o tiene una revisión posterior publicada.
+  - **`404`:** el plan no existe.
+- **Panel del asistente (paso 4):** permite editar la cantidad de cada línea pendiente. Por defecto propone todo lo pendiente; solo las líneas editadas se envían en `lines`. No deja confirmar una cantidad ≤ 0 o mayor que lo pendiente.
+
+### Consolidación parcial, revisiones y botón de cancelar (#199, cierre — 16 de octubre de 2026)
+
+Detalle en el FR-28 del spec 002. No hay endpoints nuevos ni campos nuevos; cambian estos comportamientos:
+
+- **`POST /api/v1/route-plans`:** una parada de consolidación (`isConsolidation: true`) que no cabe completa lleva la parte que cabe, con `loads[].quantity` < `requiredQuantity` y `pendingQuantity` > 0. Solo entra después de todos los obligatorios y con desvío ≤ `MaxDetourMinutes`. No aparece en `unserved`, pero emite los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`), así que la regla 8 del prompt de n8n la explica sin cambios.
+- **`POST /api/v1/route-plans/{id}/publish` de una revisión por incidente** (también al aprobar su decisión): si retira una parada con pedidos, resta de `DeliveryOrderLine.PlannedQuantity` lo que el plan sumó a los pedidos de ese destino y guarda en la revisión el `orderLines` restante. El pedido vuelve a `Pending` si ya no queda planificado por completo.
+- **`POST /api/v1/route-plans/{id}/revert`:** vuelve a sumar lo que la revisión había descontado. La ruta restaurada conserva el tipo (`Pickup`/`Delivery`) y la bodega de cada parada.
+- **Planes sin `orderLines`** (confirmados antes de #264): `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`, porque no hay datos de cuánto sumó cada ruta. `orderLines` de la respuesta de `cancel` sale vacío.
+- **Panel (Rutas):** el detalle de una ruta `Proposed` o `Published` muestra «Cancelar ruta» a quien puede escribir. Pide confirmación, llama a `POST …/cancel` y muestra lo liberado y descontado, o el `detail` del 409.
+
+### Replanificar rutas del asistente de pedidos (#300 — 17 de octubre de 2026)
+
+Detalle en el FR-29 del spec 002. No hay endpoints ni campos nuevos; cambian estos comportamientos:
+
+- **`POST /api/v1/route-plans/{id}/replan`** sobre una ruta confirmada con `/route-plans/confirm` (recogida en bodega + entregas) responde 201 como cualquier otra; antes fallaba con `KeyNotFoundException` (500). Solo se reoptimizan las entregas a puntos de servicio. Una recogida pendiente se conserva al inicio de la revisión, con su `kind`, `locationId` y cargas, y las entregas parten desde esa bodega. Si ya se hizo (marcada o con una parada posterior completada), queda como hecha y el vehículo parte desde la última parada hecha. Si no queda ninguna entrega (p. ej., avería), la revisión tampoco conserva la recogida. Las entregas a bodega no se reordenan: se conservan al final si el vehículo sigue disponible y, si no, salen en `diff.droppedStops` con el código de la bodega.
+- **`POST /api/v1/incidents` y `GET /api/v1/incidents/{id}`:** una ruta del asistente, que no guarda tramos, se evalúa con tramos armados desde la bodega del vehículo por sus paradas (polilínea de la caché de tramos si existe; si no, segmento recto). Así un `BloqueoVial` sobre sus paradas la incluye en `affectedRoutes` y el agente la replanifica. En `affectedStops` y en las paradas de la decisión del agente, una parada en bodega se nombra por el código de la bodega.
+- **Publicar o revertir la revisión:** la entrega pendiente se reasigna a la parada de la revisión con el mismo tipo, punto y bodega. El descuento de pedidos de FR-28 sigue igual.
 
 ## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
 
@@ -458,3 +487,161 @@ Una ruta que sale a las 07:00 no tarda lo mismo que una que sale a las 11:00. OS
 - **`GET /api/v1/route-plans/{id}`:** cada parada agrega `trafficFactorApplied` leído del plan guardado; `null` en planes anteriores, en rutas del asistente o fuera de hora pico.
 - **`RouteEvaluationResult.stops[]`:** agrega `trafficFactorApplied` con la misma regla; `legDurationMinutes` ya viene corregido (redondeado a 0,1 min solo cuando hay factor).
 - **Fuera de alcance:** `VehicleMatcher` estima la duración total para descartar por jornada sin horas por tramo; no aplica el factor (lo toca #244 en paralelo). `DeliveryStopSequencer` ordena por prioridad y distancia, sin duraciones, y no cambia.
+
+## Motivo de rechazo «error de rotulado» (#236 — 16 de octubre de 2026)
+
+`GET /api/v1/deliveries/rejection-reasons` responde `version: "V2"`. El catálogo
+agrega `ErrorRotulado` («El rótulo o la identificación del empaque no coincide
+con el producto o el despacho») al final de la lista; los seis códigos de V1 y
+sus sinónimos no cambian. El servidor normaliza `error_rotulado`,
+`error-rotulado`, `mislabeled` y `wrong_label` a `ErrorRotulado` al registrar la
+recepción, y `GET /api/v1/receipts/exceptions` devuelve el código canónico en
+`rejectionReason`. La forma de las respuestas no cambia y no hay migración: el
+motivo ya se guarda como texto.
+
+La PWA no lee este endpoint: usa la lista fija `RECEIPT_REJECTION_REASONS`
+(versión `V1`) de `libs/shared-core/src/contracts/field.contract.ts`, y el
+outbox valida el motivo contra esa lista. Hasta que se actualice (PWA de #230,
+Bryan), el receptor no puede elegir `ErrorRotulado` desde el teléfono.
+
+La página web de Novedades muestra arriba de la lista las líneas y unidades
+rechazadas por motivo, calculadas en el cliente sobre las recepciones cargadas
+(máximo `limit`), no sobre el total histórico.
+
+## Costo de retroceso estimado en Novedades (#237 — 16 de octubre de 2026)
+
+Cada elemento de `GET /api/v1/receipts/exceptions` agrega `estimatedBacktrack`
+(nullable):
+
+| Campo | Unidad / significado |
+|---|---|
+| `km` | Km de ida y vuelta bodega de origen (`Delivery.OriginLocationId`) → punto → bodega; 2 decimales |
+| `costUsd` | USD estimados con `ServiceCostCalculator` de #240, sin paradas (sin ayudantes ni merma); sin perfil de costo, su respaldo `LogisticsCostCalculator` con `CostPerKm` del vehículo de la ruta o `DefaultCostPerKm` y `CostPerHour` |
+| `hours` | Horas de viaje de ida y vuelta según la matriz (sin tiempo de descarga ni factor de hora pico de #245); 2 decimales |
+| `isApproximate` | `true` si algún tramo salió de la aproximación en línea recta (Haversine × factor de desvío) y no de un tramo guardado u OSRM |
+
+- Solo se calcula si alguna línea tiene rechazo `Faltante`, `Daño` o
+  `ErrorRotulado` (también sus sinónimos). `Sobrante`, `PrecintoViolado`,
+  `LoteNoCoincide` y `CadenaDeFrio` no implican reentrega por sí solos.
+- Una reentrega por recepción. El peso de lo rechazado alimenta la fracción de
+  carga del consumo de #240.
+- `null` si no aplica o faltan coordenadas de la bodega o del punto; no se
+  inventa una distancia.
+- Los tramos salen de `IDistanceProvider` en una sola consulta de matriz
+  (tramos guardados, OSRM o aproximación).
+- Es una **estimación** informativa: no se escribe en la base y **no se suma**
+  a `RoutePlan.TotalCost` ni a ningún costo de la ruta original. La web muestra
+  «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h» y agrega «aproximado» cuando
+  corresponde.
+
+## Incidentes con retraso parcial (#246 — 16 de octubre de 2026)
+
+Un accidente, una congestión o una manifestación casi nunca cierran del todo la vía: la vuelven lenta. Antes un incidente solo podía bloquear un tramo (`BloqueoVial`/`ROAD_CLOSURE`) o demorarlo con un factor fijo (`DELAY`, minutos × 2).
+
+- **Tipos nuevos de `POST /api/v1/incidents`:** `Congestion`, `Manifestacion` y `Accidente` (sin distinguir mayúsculas). Exigen el factor de velocidad en `slowdownFactor` (nombre de `incidentes.json`) o en `factor` (campo que ya existía); si llegan los dos, manda `slowdownFactor`. Debe estar en (0, 1]: 0,3 = la velocidad cae al 30 % y el tramo dura 1 / 0,3 veces más. Sin factor o fuera de rango responde 400 `invalid_slowdown_factor`. Los demás tipos ignoran el factor y se comportan como antes.
+- **Respuesta:** `POST` y `GET /api/v1/incidents/{id}` agregan `slowdownFactor` (`null` en los demás tipos).
+- **Dónde se guarda (sin migración):** la única migración de la noche era #240, así que el factor se agrega al final de `Incident.Description` como texto legible, p. ej. «Marcha desde la Av. 10 de Agosto… (velocidad al 30 %)», y se vuelve a leer de ahí (`IncidentSlowdown`). Es provisional: cuando se coordine una migración, pasa a una columna `SlowdownFactor` y la marca deja de escribirse.
+- **Efecto:** `IncidentEvaluator` marca en `IncidentEffect.SlowFactors` los tramos dentro del radio, tanto de las rutas publicadas como de la caché de tramos, con el multiplicador de minutos 1 / factor. `IncidentEffect` ya tenía `SlowFactors` y `RouteFeasibility` ya lo aplicaba; se reutiliza en lugar de crear un `SlowedLegs` paralelo con la misma información. Las rutas afectadas se informan en `affectedRoutes` como antes.
+- **Replanificación:** sin cambios en `Replanner`. Si la ETA corregida respeta las ventanas, la revisión se acepta según la política; si un obligatorio sale de su ventana, la revisión estricta lo deja como no atendido (`time_window`) y se escala con `late_service` y `prioritize_critical`.
+- **Sin cambios:** `BloqueoVial`/`ROAD_CLOSURE` siguen bloqueando, `DELAY` sigue con minutos × 2 y `VEHICLE_BREAKDOWN` deja el vehículo no disponible. Un incidente de tipo nuevo guardado sin marca (por ejemplo, insertado a mano) se trata como `DELAY`.
+
+## Opciones de abastecimiento A/B/C y recomendación calculada (#241 — 16 de octubre de 2026)
+
+`POST /api/v1/logistics/sourcing` y las opciones evaluadas en `SourcingService` exponen un conjunto estructurado y auditable de opciones de abastecimiento (`options`), con pesos explícitos y recomendación calculada:
+
+| Campo en `DemandSourcingResult` | Significado / Tipo |
+|---|---|
+| `options` | Lista de propuestas evaluadas (`DemandSourcingOptionDto`), con `optionId`: `"A"`, `"B"`, `"C"` |
+| `recommendationWeights` | Pesos auditables (`weightCost`, `weightCriticalOnTime`, `weightPendingDemand`, `weightRisk`) |
+| `contractedCarrierConfigured` | `true` si el operador contratado virtual está habilitado y configurado en `Logistics:ContractedCarrier` |
+
+### Estructura de cada opción (`DemandSourcingOptionDto`)
+
+| Campo | Unidad / significado |
+|---|---|
+| `optionId` | Identificador de la opción: `"A"` (Consolidada propia), `"B"` (Críticos primero propia), `"C"` (Operador contratado) |
+| `label` | Nombre descriptivo de la propuesta |
+| `carrierType` | `"Propia"` (flota propia de la organización) o `"Contratada"` (tercerizada / virtual) |
+| `carrierName` | Nombre comercial o descriptivo del transportista (ej. `"Flota Propia ISTPET"`, `"Servientrega Express (Sintético)"`) |
+| `isRecommended` | `true` si obtuvo el mayor puntaje ponderado multicriterio; no es fijo |
+| `score` | Puntaje final calculado (0 a 100) según la función de puntuación y pesos |
+| `scoreBreakdown` | Desglose auditado del puntaje: `costScore`, `criticalScore`, `pendingScore`, `riskScore`, `weights` |
+| `costBreakdown` | Desglose de costos: `baseFee`, `distanceCost`, `weightCost`, `carrierFee`, `expectedShrink`, `pendingDemandCost`, `totalEstimatedCost` |
+| `totalEstimatedCost` | USD total estimado para servir la demanda evaluada bajo esta opción |
+| `criticalOnTimeCount` | Entregas críticas que llegan dentro de su ventana de tiempo |
+| `criticalTotalCount` | Total de paradas críticas consideradas en la demanda |
+| `pendingDemandKg` | Demanda que no pudo ser cubierta por la flota bajo esta opción (0 si se cubre completa) |
+| `responseHours` | Horas de respuesta operativa (0 para flota propia inmediata, valor configurado para contratado) |
+| `justification` | Explicación determinista basada estrictamente en hechos y cifras comparadas con las demás opciones |
+
+### Control humano del planificador (`POST /api/v1/route-plans/suggest`)
+
+El payload `SuggestRoutesRequest` admite la propiedad opcional `optionId` (`"A"`, `"B"`, `"C"`):
+- Si el planificador omite `optionId` o envía `null`/vacío, el backend toma automáticamente la opción marcada con `isRecommended: true`.
+- Si el planificador especifica un `optionId` explícito (ej. `"A"` o `"C"`), el backend respeta la decisión humana y construye las rutas y reservas asociadas a dicha opción, preservando el principio de control humano.
+
+
+## Restricción horaria y uso extraurbano (#244 — 16-oct-2026)
+
+Configuración opcional `Logistics:VehicleRestrictions`: lista de
+`{ VehicleType?, UsageScope?, Start, End, Zone? }`. Debe existir al menos un
+selector de vehículo; si aparecen ambos, ambos deben coincidir. `Start` y `End`
+usan `HH:mm` local, con intervalos `[Start, End)` y soporte de medianoche.
+Valores inválidos, horas iguales y reglas sin selector se ignoran. Las
+comparaciones de tipo, uso y región ignoran mayúsculas y espacios extremos.
+`Zone`, cuando está presente, compara exactamente `ServicePoint.Region` de
+los puntos consultados de la organización; no geocodifica calles ni determina
+por dónde pasa un tramo. Una región ausente no se inventa.
+
+`VehicleMatcher` devuelve `isMatch: false` y `discardReason` que comienza por
+`restriccion_horaria` si el intervalo de la ruta se cruza con la franja. Conserva
+la precedencia de descartes anteriores de peso, volumen, ocupación y jornada.
+La ventana temporal usa las estimaciones de viaje del matcher, salida del
+depósito, regreso, servicio, espera de apertura y factores de #245; no acredita
+tráfico real ni cartografía de restricciones. `RouteEvaluator` aplica la misma
+regla al itinerario evaluado; `/evaluate` devuelve el error y `/confirm` lo
+rechaza con 409 antes de crear el plan, sin confiar en el cliente.
+
+La nueva lista opcional `Logistics:UrbanRegions` declara qué valores de
+`ServicePoint.Region` se consideran urbanos; evita asumir una clasificación
+geográfica. Si está vacía, no se infiere el ámbito. Cuando `UsageScope=urbano`
+y algún punto tiene región conocida fuera de esa lista, se agrega un aviso
+`uso_extraurbano` y se conserva `isMatch`. Sin estas configuraciones no cambian
+la elegibilidad ni los costos existentes.
+
+`POST /api/v1/route-plans/suggest` agrega `warnings: string[]` a cada elemento
+de `vehicleMatches` y al vehículo elegido (`selectedVehicle`/`chosenVehicle`).
+El asistente muestra esos avisos sin deshabilitar la selección; los descartes
+siguen apareciendo mediante `discardReason`. `RouteEvaluationResult.warnings`
+reutiliza el contrato existente para el mismo aviso. No hay endpoint nuevo ni
+migración. El ejemplo reproducible vive en
+`docs/evidence/244-restricciones/appsettings.RestriccionesSinteticas.json`;
+no se activa automáticamente en la aplicación ni es ordenanza vigente.
+
+## Consulta y recepción de guías de retorno (#280 — 16-oct-2026)
+
+- `GET /api/v1/return-guides/{guideNumber}` es de solo lectura: no genera la guía,
+  no cambia `HandlingUnit` ni agrega `CustodyEvent`. Roles: Conductor, Bodega,
+  Planificador, Gerencia y Auditor. Receptor recibe 403.
+- El número completo exige `GRT-` seguido de ocho dígitos hexadecimales mayúsculos;
+  formato inválido responde 422 `INVALID_GUIDE_NUMBER`, sin plan responde 404
+  `UNIT_NOT_FOUND` y una colisión entre planes responde 409
+  `AMBIGUOUS_GUIDE_NUMBER`. No se admiten prefijos abreviados ni se elige el primer
+  plan cuando hay ambigüedad. También se comprueba al generar y recibir.
+- `POST /api/v1/return-guides/generate` conserva sus roles Conductor, Bodega,
+  Planificador y Gerencia. Persiste la custodia de generación bajo bloqueo de
+  organización; no altera bultos que ya estén `Returned`.
+- `POST /api/v1/return-guides/receive` conserva Bodega/Gerencia y el cuerpo
+  `{ guideNumber, operationId, occurredAtDevice? }`. La idempotencia usa el UUID
+  del cuerpo, sin exigir una cabecera nueva. Dentro de la transacción serializada,
+  la misma cuenta, UUID y cuerpo devuelve la respuesta 200 original; otro cuerpo
+  o acción con ese UUID responde 409 `IDEMPOTENCY_CONFLICT`. UUID vacío: 422
+  `INVALID_OPERATION_ID`.
+- Solo se concilian bultos pendientes: los `Returned` no suman stock, movimientos,
+  eventos ni demanda de reposición. Una guía totalmente recibida responde 409
+  `ALREADY_RECEIVED` para una operación nueva; una guía sin bultos de retorno,
+  409 `NO_HANDLING_UNITS`. La respuesta idempotente y todos los efectos se guardan
+  en el mismo commit.
+- Los bultos devueltos siguen visibles en la consulta; cuando todos lo están,
+  `status` es `ReceivedAtWarehouse`. Auditor no puede generar ni recibir. No hay
+  migración ni endpoint nuevo; evidencia local en `docs/evidence/280-retornos/`.

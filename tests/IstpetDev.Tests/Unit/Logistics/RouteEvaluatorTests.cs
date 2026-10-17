@@ -10,7 +10,7 @@ public sealed class RouteEvaluatorTests
 {
     private sealed class FakeDistanceProvider : IDistanceProvider
     {
-        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default)
+        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default, bool persistCache = true)
         {
             var dict = new Dictionary<(GeoPoint From, GeoPoint To), Leg>();
             for (int i = 0; i < points.Count; i++)

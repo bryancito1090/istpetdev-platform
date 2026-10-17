@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
+import { buildExplorationSpurs, downsampleRoute, indexAtFraction } from './route-animation';
 
 export interface MapMarker {
   id: string;
@@ -95,13 +96,20 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
   @Input() markers: MapMarker[] = [];
   @Input() polylines: MapPolyline[] = [];
   @Input() showLegend = true;
+  /** Ruta que se anima al dibujarse; las demás se muestran de inmediato. */
+  @Input() animatedPolylineId: string | null = null;
 
   @Output() markerClick = new EventEmitter<MapMarker>();
   @Output() mapClick = new EventEmitter<[number, number]>();
 
+  private static readonly ROUTE_ANIMATION_MS = 2400;
+
   private map?: L.Map;
   private markersLayer?: L.LayerGroup;
   private polylinesLayer?: L.LayerGroup;
+  private animationLayer?: L.LayerGroup;
+  private animationFrameId?: number;
+  private lastAnimatedKey: string | null = null;
 
   ngOnInit(): void {
     this.initMap();
@@ -114,11 +122,14 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
       }
       if (changes['polylines']) {
         this.renderPolylines();
+      } else if (changes['animatedPolylineId']) {
+        this.renderPolylines();
       }
     }
   }
 
   ngOnDestroy(): void {
+    this.cancelRouteAnimation();
     if (this.map) {
       this.map.remove();
     }
@@ -158,6 +169,7 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
 
     this.markersLayer = L.layerGroup().addTo(this.map);
     this.polylinesLayer = L.layerGroup().addTo(this.map);
+    this.animationLayer = L.layerGroup().addTo(this.map);
 
     this.renderMarkers();
     this.renderPolylines();
@@ -224,17 +236,138 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
 
   private renderPolylines(): void {
     if (!this.map || !this.polylinesLayer) return;
+    this.cancelRouteAnimation();
     this.polylinesLayer.clearLayers();
 
+    const animated = this.animatedPolylineId
+      ? this.polylines.find(line => line.id === this.animatedPolylineId)
+      : undefined;
+    const canAnimate = !!animated
+      && !animated.dashArray
+      && animated.coordinates.length > 1
+      && !this.prefersReducedMotion();
+    const animationKey = canAnimate ? this.animationKey(animated!) : null;
+    const animateNow = canAnimate && animationKey !== this.lastAnimatedKey;
+
+    if (!canAnimate) this.lastAnimatedKey = null;
+
     this.polylines.forEach((line) => {
-      const polyline = L.polyline(line.coordinates, {
-        color: line.color || '#00A7C4',
-        weight: line.weight || 4,
-        dashArray: line.dashArray || undefined,
-        opacity: line.opacity ?? 0.85
-      });
-      if (line.tooltip) polyline.bindTooltip(escapeHtml(line.tooltip), { sticky: true });
-      this.polylinesLayer?.addLayer(polyline);
+      if (animateNow && line === animated) return;
+      this.polylinesLayer?.addLayer(this.buildPolyline(line));
     });
+
+    if (animateNow) {
+      this.lastAnimatedKey = animationKey;
+      this.animateRoute(animated!);
+    }
+  }
+
+  private buildPolyline(line: MapPolyline): L.Polyline {
+    const polyline = L.polyline(line.coordinates, {
+      color: line.color || '#00A7C4',
+      weight: line.weight || 4,
+      dashArray: line.dashArray || undefined,
+      opacity: line.opacity ?? 0.85
+    });
+    if (line.tooltip) polyline.bindTooltip(escapeHtml(line.tooltip), { sticky: true });
+    return polyline;
+  }
+
+  private animateRoute(line: MapPolyline): void {
+    if (!this.map || !this.animationLayer || !this.polylinesLayer) return;
+
+    const canRequestFrames = typeof requestAnimationFrame === 'function';
+    const coordinates = downsampleRoute(line.coordinates);
+    if (!canRequestFrames || coordinates.length < 2) {
+      this.polylinesLayer.addLayer(this.buildPolyline(line));
+      return;
+    }
+
+    const reversed = [...coordinates].reverse();
+    const spurs = buildExplorationSpurs(coordinates, line.id);
+    const spurLayers = spurs.map(spur => {
+      const layer = L.polyline(spur.coordinates, {
+        color: '#3b82f6',
+        weight: 2,
+        opacity: 0,
+        interactive: false
+      }).addTo(this.animationLayer!);
+      return { layer, revealAt: Math.min(0.75, Math.min(spur.at, 1 - spur.at) * 1.5) };
+    });
+
+    const forwardLine = L.polyline([], {
+      color: '#06b6d4',
+      weight: 4,
+      opacity: 0.95,
+      interactive: false
+    }).addTo(this.animationLayer);
+    const backwardLine = L.polyline([], {
+      color: '#06b6d4',
+      weight: 4,
+      opacity: 0.95,
+      interactive: false
+    }).addTo(this.animationLayer);
+    const headOptions: L.CircleMarkerOptions = {
+      radius: 5,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#06b6d4',
+      fillOpacity: 1,
+      interactive: false
+    };
+    const forwardHead = L.circleMarker(coordinates[0], headOptions).addTo(this.animationLayer);
+    const backwardHead = L.circleMarker(coordinates[coordinates.length - 1], headOptions).addTo(this.animationLayer);
+    const startedAt = performance.now();
+
+    const tick = (now: number): void => {
+      const progress = Math.min(1, (now - startedAt) / MapViewComponent.ROUTE_ANIMATION_MS);
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      const reveal = Math.round(indexAtFraction(coordinates, eased * 0.5));
+
+      forwardLine.setLatLngs(coordinates.slice(0, reveal + 1));
+      backwardLine.setLatLngs(reversed.slice(0, reveal + 1));
+      forwardHead.setLatLng(coordinates[reveal]);
+      backwardHead.setLatLng(reversed[reveal]);
+
+      for (const spur of spurLayers) {
+        const opacity = eased < spur.revealAt
+          ? 0
+          : eased <= 0.85 ? 1 : Math.max(0, (1 - eased) / 0.15);
+        spur.layer.setStyle({ opacity: 0.34 * opacity });
+      }
+
+      if (progress < 1) {
+        this.animationFrameId = requestAnimationFrame(tick);
+        return;
+      }
+
+      this.animationFrameId = undefined;
+      this.animationLayer?.clearLayers();
+      this.polylinesLayer?.addLayer(this.buildPolyline(line));
+    };
+
+    this.animationFrameId = requestAnimationFrame(tick);
+  }
+
+  private cancelRouteAnimation(): void {
+    if (this.animationFrameId !== undefined && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    this.animationFrameId = undefined;
+    this.animationLayer?.clearLayers();
+  }
+
+  private animationKey(line: MapPolyline): string {
+    const first = line.coordinates[0];
+    const last = line.coordinates[line.coordinates.length - 1];
+    return `${line.id}|${line.coordinates.length}|${first[0]},${first[1]}|${last[0]},${last[1]}`;
+  }
+
+  private prefersReducedMotion(): boolean {
+    return typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 }

@@ -117,8 +117,20 @@ import { AuthSession } from '@entities/session';
           </main>
         </div>
       </div>
+    } @else if (isLandingPage()) {
+      <!-- Layout Inmersivo de Landing Page: 100% fiel al repo de referencia (sin cabecera ni pie blancos) -->
+      <main class="min-h-screen w-full bg-[#060D1A] text-[#F0F4F8] overflow-x-clip">
+        @if (apiErrorMessages().length) {
+          <div role="alert" aria-live="assertive" class="mx-4 my-3 rounded-lg border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900">
+            @for (message of apiErrorMessages(); track message) {
+              <p>{{ message }}</p>
+            }
+          </div>
+        }
+        <router-outlet></router-outlet>
+      </main>
     } @else {
-      <!-- Layout Público con Cabecera y Pie Estándar -->
+      <!-- Layout Público con Cabecera y Pie Estándar para otras páginas públicas (ej. login) -->
       <div class="min-h-screen flex flex-col bg-slate-50 text-charcoal-800 overflow-x-clip">
         <widget-header></widget-header>
         @if (apiErrorMessages().length) {
@@ -150,6 +162,12 @@ export class AppComponent {
       this.currentUrl.set(e.urlAfterRedirects);
     });
   }
+
+  readonly isLandingPage = computed(() => {
+    const url = this.currentUrl();
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    return cleanUrl === '/' || cleanUrl === '';
+  });
 
   readonly isSystemArea = computed(() => {
     const url = this.currentUrl();

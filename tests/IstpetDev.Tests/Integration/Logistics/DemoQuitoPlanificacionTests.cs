@@ -82,5 +82,40 @@ public class DemoQuitoPlanificacionTests(PostgisContainer postgres) : IClassFixt
         // Un vehículo que no existe no crea un incidente huérfano.
         var unknown = await planner.PostAsJsonAsync("/api/v1/incidents", new { kind = "VEHICLE_BREAKDOWN", vehicleCode = "VEH-9999" });
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+
+        // El reset del fixture debe eliminar pedidos y líneas de una corrida anterior para poder regenerarla.
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var point = await db.ServicePoints.SingleAsync(p => p.OrganizationId == DemoOrganization.Id && p.Code == "PTO-0005");
+            var product = await db.Products.SingleAsync(p => p.OrganizationId == DemoOrganization.Id && p.Sku == "PRD-0001");
+            var order = new DeliveryOrder
+            {
+                OrganizationId = DemoOrganization.Id,
+                OrderNumber = "ORD-REGENERATION-TEST",
+                DestinationServicePointId = point.Id,
+                RequiredDateUtc = DateTime.UtcNow.AddDays(1),
+                Priority = "Critical",
+                Notes = "Prueba de repetición del fixture"
+            };
+            db.DeliveryOrders.Add(order);
+            db.DeliveryOrderLines.Add(new DeliveryOrderLine
+            {
+                OrganizationId = DemoOrganization.Id,
+                DeliveryOrderId = order.Id,
+                ProductId = product.Id,
+                RequestedQuantity = 1m
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var repeatedReset = await planner.PostAsync("/api/v1/demo/reset?fixture=demo-quito-planificacion", null);
+        Assert.True(repeatedReset.IsSuccessStatusCode, await repeatedReset.Content.ReadAsStringAsync());
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.Empty(await db.DeliveryOrders.Where(o => o.OrganizationId == DemoOrganization.Id).ToListAsync());
+            Assert.Empty(await db.DeliveryOrderLines.Where(l => l.OrganizationId == DemoOrganization.Id).ToListAsync());
+        }
     }
 }

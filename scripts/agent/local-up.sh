@@ -15,11 +15,24 @@ if [[ ! -f "$env_file" ]]; then
   exit 1
 fi
 
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
+  python_cmd=(python3)
+elif command -v py >/dev/null 2>&1 && py -3 -c 'import sys' >/dev/null 2>&1; then
+  python_cmd=(py -3)
+else
+  printf 'Falta Python 3; instala python3 o el lanzador py.\n' >&2
+  exit 1
+fi
+
+container_docker() {
+  MSYS_NO_PATHCONV=1 docker "$@"
+}
+
 umask 077
 credential_file="$(mktemp "${TMPDIR:-/tmp}/istpetdev-n8n-credentials.XXXXXX")"
 workflow_export="$(mktemp "${TMPDIR:-/tmp}/istpetdev-n8n-workflows.XXXXXX")"
 workflow_stage_dir="$(mktemp -d "${TMPDIR:-/tmp}/istpetdev-n8n-import.XXXXXX")"
-python3 - "$env_file" "$credential_file" <<'PY'
+"${python_cmd[@]}" - "$env_file" "$credential_file" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -88,7 +101,7 @@ output_path.chmod(0o600)
 PY
 
 find_error_workflow_id() {
-  python3 - "$workflow_export" <<'PY'
+  "${python_cmd[@]}" - "$workflow_export" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -105,7 +118,7 @@ print(workflow_id)
 PY
 }
 
-python3 -I "$repo_root/scripts/agent/build-workflows.py"
+"${python_cmd[@]}" -I "$repo_root/scripts/agent/build-workflows.py"
 docker compose --env-file "$env_file" -f "$compose_file" config --quiet
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent config --quiet
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent up -d n8n
@@ -119,20 +132,20 @@ if ! curl --fail --silent http://127.0.0.1:5678/healthz >/dev/null; then
   exit 1
 fi
 
-docker exec -i "$container" n8n import:credentials --input=/dev/stdin < "$credential_file"
-docker exec "$container" n8n export:workflow --all > "$workflow_export"
+container_docker exec -i "$container" n8n import:credentials --input=/dev/stdin < "$credential_file"
+container_docker exec "$container" n8n export:workflow --all > "$workflow_export" 2>/dev/null || : > "$workflow_export"
 error_workflow_id="$(find_error_workflow_id)"
 
 if [[ -z "$error_workflow_id" ]]; then
   # CLI import requires an ID. Generate it on the target instance, never in Git.
-  error_workflow_id="$(docker exec "$container" node -e 'process.stdout.write(require("crypto").randomUUID())')"
+  error_workflow_id="$(container_docker exec "$container" node -e 'process.stdout.write(require("crypto").randomUUID())')"
   if [[ -z "$error_workflow_id" ]]; then
     printf 'No se pudo generar el ID del workflow de error en n8n.\n' >&2
     exit 1
   fi
 fi
 
-python3 - "$repo_root/automation/n8n/workflows" "$workflow_stage_dir" "$error_workflow_id" <<'PY'
+"${python_cmd[@]}" - "$repo_root/automation/n8n/workflows" "$workflow_stage_dir" "$error_workflow_id" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -151,13 +164,21 @@ for path in source.glob("*.json"):
     )
 PY
 
-docker exec "$container" rm -rf /tmp/istpetdev-agent-workflows
-docker exec "$container" mkdir -p /tmp/istpetdev-agent-workflows
-docker cp "$workflow_stage_dir/." "$container:/tmp/istpetdev-agent-workflows"
-docker exec "$container" n8n import:workflow --separate --input=/tmp/istpetdev-agent-workflows
+container_docker exec "$container" rm -rf /tmp/istpetdev-agent-workflows
+container_docker exec "$container" mkdir -p /tmp/istpetdev-agent-workflows
+workflow_stage_source="$workflow_stage_dir/."
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    if command -v cygpath >/dev/null 2>&1; then
+      workflow_stage_source="$(cygpath -w "$workflow_stage_dir/.")"
+    fi
+    ;;
+esac
+container_docker cp "$workflow_stage_source" "$container:/tmp/istpetdev-agent-workflows"
+container_docker exec "$container" n8n import:workflow --separate --input=/tmp/istpetdev-agent-workflows
 while IFS= read -r workflow_id; do
-  [[ -z "$workflow_id" ]] || docker exec "$container" n8n publish:workflow --id="$workflow_id"
-done < <(python3 - "$workflow_stage_dir" <<'PY'
+  [[ -z "$workflow_id" ]] || container_docker exec "$container" n8n publish:workflow --id="$workflow_id"
+done < <("${python_cmd[@]}" - "$workflow_stage_dir" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -169,7 +190,7 @@ PY
 )
 docker compose --env-file "$env_file" -f "$compose_file" --profile agent restart n8n
 
-python3 - <<'PY'
+"${python_cmd[@]}" - <<'PY'
 import json
 import time
 from urllib.error import HTTPError, URLError

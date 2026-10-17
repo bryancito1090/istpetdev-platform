@@ -45,7 +45,7 @@ No son versiones oficiales del evento: son la propuesta registrada en ADR-04. Co
 | **Node.js** | `22 LTS` | Entorno de ejecución de herramientas de build y scripts. |
 | **Angular** | `18+` (Standalone) según ADR-04; Angular 18 ya no tiene soporte (solo v20+), revisar | Framework web base; componentes standalone sin NgModules (*Zoneless-ready*). |
 | **Ionic / Capacitor** | `Ionic 8` / `Capacitor 6` | Framework para experiencia móvil y empaquetado PWA/nativo offline. ADR-06 propone PWA primero: contradicción abierta. |
-| **Tailwind CSS** | `3.4+` | Sistema de diseño estandarizado con la paleta oficial de Expo Clean Ecuador ([[Sistema de diseno y colores]]). |
+| **Tailwind CSS** | `3.4+` | Sistema de diseño estandarizado con la paleta oficial de Expo Clean Ecuador ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]). |
 | **TypeScript** | `5.4+` | Tipado estricto (`strict: true`) en todo el frontend. |
 | **Librería de Mapas** | `Leaflet` (ADR-05) | Renderizado cartográfico vectorial de código abierto con OpenStreetMap. |
 
@@ -184,7 +184,7 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 | **Simulador y Métricas** | `pages/simulation` | Ejecución de escenarios de 90 días, comparación de KPIs y exportación reproducible. |
 | **Consulta Pública QR** | `pages/public-trace` | Página ultra-ligera y pública para lectura del pasaporte logístico por el jurado. |
 
-Referencias internas: [[Frontend con Feature-Sliced Design]], [[Movil offline y sincronizacion]], [[Contratos API y eventos]], [[Seguridad y evidencias]], [[Sistema de diseno y colores]].
+Referencias internas: [[Frontend con Feature-Sliced Design]], [[Movil offline y sincronizacion]], [[Contratos API y eventos]], [[Seguridad y evidencias]], [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]].
 
 ## Versiones y entornos concretados — 7 de octubre de 2026
 

@@ -20,6 +20,9 @@
 | T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
 | T12 | Rutas por calles (mapa y distancias del motor con OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo; demo-region sin cambios) |
 | T13 | Las rutas publicadas llegan al conductor (asignación, entregas del asistente y bodega de origen) | T5 | — | completada (15-oct; 6 pruebas nuevas) |
+| T19 | Reserva antes del despacho, cancelación y cantidad por línea | T15 | — | completada (#199) |
+| T20 | Activar ServiceCost y TrafficBands en la demo | T4, T12 | — | completada (#275) |
+| T22 | Replanificar rutas del asistente de pedidos (recogida en bodega) | T7, T21 | — | completada (#300) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -141,6 +144,8 @@
 | FR-21–FR-22 | T9, T8 | `DemoRegionTests`, `LogisticsApiTests`, E2E-01/03 |
 | FR-25 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
 | FR-26 | T17 | `TrafficBandTests`, `TrafficBandsQuitoTests` |
+| FR-27 | T18 | `IncidentSlowdownTests`, `SlowdownIncidentQuitoTests`, `DemoRegionTests` |
+| FR-29 | T22 | `ReplanAssistantRouteTests`, `AgentJourneyTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -377,6 +382,28 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 - Backend: 518 de 519. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 77 de 77.
 
+#### T12e — Exploración visual bidireccional sobre la ruta (#296, 16-oct)
+
+**Pedido:** que el mapa muestre la ruta trazarse desde ambos extremos, con ramas que aparecen y se desvanecen, como una búsqueda bidireccional, sin perder la Leyenda, los colores por vehículo ni el comportamiento de las rutas aproximadas.
+
+**Decisión:** es una **capa decorativa**. OSRM sigue calculando el camino (Contraction Hierarchies, ver T12c); la web no ejecuta Dijkstra, no cambia distancias, ni toca backend, API o base de datos. Las ramas se generan de forma determinista a partir de la geometría real y solo son un efecto visual; al terminar se dibuja el trazado OSRM completo con su color, grosor, tooltip y popups actuales.
+
+**Alcance:**
+- Solo se anima la ruta seleccionada en el mapa principal y la previsualización del asistente.
+- Solo se animan trazados sólidos (`osrm`); las aproximadas punteadas se dibujan de inmediato.
+- Se usa una versión reducida del trazado (~320 puntos) para animar y la geometría completa para el resultado final.
+- `prefers-reduced-motion: reduce` muestra la ruta final sin animación.
+- Sin dependencias nuevas: Leaflet 1.9.4 + `requestAnimationFrame`.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `route-animation.ts` | Web | Muestreo, fracción por distancia y ramas deterministas | Base testeable de la animación | Mapa de Rutas | Hecho |
+| `map-view.component.ts` | Web | Dos frentes, ramas y trazado final; cancelación y movimiento reducido | Efecto visual sin cambiar datos | Ruta seleccionada | Hecho |
+| `rutas.page.ts` | Web | Activa la animación en el mapa principal y el asistente | Ambas vistas | — | Hecho |
+| `route-animation.spec.ts`, `map-view.component.spec.ts` | Pruebas | Determinismo, extremos, fracciones, segmentos acotados y ruta final tras la animación | Regresión | — | Hecho |
+
+**Verificación:** `lint:web`, `test:web` (168 pruebas) y `build:web` en verde; comprobación visual en navegador pendiente de registrar en el PR.
+
 #### T13c — «Sin productos registrados para esta parada» en el detalle de la ruta (16-oct)
 
 **Síntoma:** en Planificación → Rutas, las paradas no mostraban qué productos se llevan, y la recogida en bodega no decía qué cargar.
@@ -485,10 +512,10 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | `confirm` con pedido sin parada de entrega, o con una unidad de 200 kg | 409, pedido sin cambios | Pasa |
 
 **Pendiente:**
-- El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado. Es comportamiento previo; queda para decidir.
-- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente.
-- El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía. Un pedido que no cabe en ningún vehículo compatible no se puede confirmar desde el panel.
-- Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.
+- ~~El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado.~~ Resuelto en T19: lo publicado en `Draft` cuenta como en camino.
+- ~~Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente.~~ Resuelto en T21 (FR-28): cargan la parte que cabe después de los obligatorios.
+- ~~El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía.~~ Resuelto en T19.
+- ~~Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.~~ Resuelto en T19 con `POST /route-plans/{id}/cancel`. Revertir restaura los mismos pedidos, así que no descuenta.
 - ~~Cuando se integre #193 (hora límite de críticos) habrá que revisar que `SplitByCapacity` evalúe con las mismas reglas de ventana que la inserción.~~ Revisado al integrar #193 (ver T16): la parte hereda la ventana recortada.
 
 ### T16 — Hora límite para puntos críticos (#193, 16-oct)
@@ -561,3 +588,208 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 
 **Pendiente:** el factor se toma al inicio del tramo; un tramo que cruza el borde de una franja no se reparte. `VehicleMatcher` no aplica el factor a su estimación de jornada.
 
+### T18 — Incidentes con retraso parcial (#246, 16-oct)
+
+**Por qué:** un incidente solo podía bloquear un tramo; el sistema decía «no puedes pasar» pero no «llegarás tarde». Va después de T17 (#245) porque toca el mismo `RouteFeasibility` y se combina con el factor de hora pico.
+
+**Regla (FR-27):** `Congestion`, `Manifestacion` y `Accidente` con `slowdownFactor` (o `factor`) en (0, 1]. Los tramos dentro del radio duran 1 / factor veces más; `BloqueoVial` sigue igual. Contrato en [Contratos API y eventos](../../boveda/03%20Arquitectura/Contratos%20API%20y%20eventos.md#incidentes-con-retraso-parcial-246--16-de-octubre-de-2026).
+
+**Decisiones:**
+- **Factor sin migración:** el tablero #253 dejó #240 como única migración de la noche. El factor se guarda al final de `Incident.Description` como «(velocidad al 30 %)» y se lee con `IncidentSlowdown.ReadFactor`. Se descartó derivarlo del tipo porque el dataset trae dos accidentes con factores distintos (0,5 y 0,4). Cuando haya una migración coordinada, pasa a una columna propia.
+- **Sin `SlowedLegs`:** `IncidentEffect.SlowFactors` (multiplicador de minutos) ya existía, y `RouteFeasibility` y `RoutePlanner.ReplanAsync` ya lo aplicaban; se llena con 1 / factor. `PlanModels.cs` (compartido con #199) no cambia en este issue.
+- **Caché de tramos:** como en el cierre, también se ralentizan los tramos de la caché dentro del radio, para que un orden alternativo por la misma zona no parezca rápido.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `IncidentSlowdown.cs` (nuevo) | Application | Tipos de retraso parcial, validación del factor, multiplicador y marca en la descripción | Una sola regla para la API y el evaluador | Presets de `incidentes.json` | Hecho |
+| `IncidentEvaluator.cs` | Application | Lee el factor; tramos de rutas publicadas y de la caché dentro del radio con 1 / factor | Llenar los tramos lentos | Manifestación 0,3 | Hecho |
+| `IncidentsController.cs` | Api | Acepta `slowdownFactor`/`factor`, 400 `invalid_slowdown_factor`, guarda la marca y devuelve `slowdownFactor` en `POST` y `GET` | El request tenía `Factor` sin usar y el preset usa `slowdownFactor` | Preset enviado tal cual | Hecho |
+| `RouteFeasibility.cs`, `Replanner.cs` | Application | Sin cambios | Ya aplicaban `SlowFactors` y ya ofrecían `late_service`/`prioritize_critical` | — | No aplica |
+| `IncidentSlowdownTests.cs` | Pruebas unitarias | Escenarios de abajo | Criterios de #246 | — | Pasan |
+| `SlowdownIncidentQuitoTests.cs` | Pruebas de integración | Preset `manifestacion-centro-historico` sobre `demo-quito-planificacion` | Regla con base real (PostGIS) | Plan publicado de Quito | Pasa |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Tramo de 15 min con manifestación 0,3 | Dura 50 min; la ruta sigue siendo factible | Pasa |
+| Crítico con ventana hasta 07:30, salida 07:00 | Sin incidente llega 07:15; con 0,3 llega 07:50: `time_window` en estricto y factible en servicio tardío | Pasa |
+| Factor guardado y leído | «(velocidad al 30 %)», 64 % y 42,5 %; guardar otra vez reemplaza la marca | Pasa |
+| Tipos | Solo `Congestion`, `Manifestacion` y `Accidente` usan el factor | Pasa |
+| Preset `manifestacion-centro-historico` enviado tal cual a `POST /incidents` | 201 con `slowdownFactor = 0.3`; `GET` lo devuelve; tramos afectados con multiplicador 1 / 0,3 y ninguno bloqueado | Pasa |
+| Replanificación de las rutas afectadas | Al menos una ruta sube su ETA sin descartar paradas; al menos un crítico (`alta`) sale de su ventana y se escala con `late_service` factible y `prioritize_critical` | Pasa |
+| `BloqueoVial` (`cierre-norte` de `demo-region`) | Mismo resultado de siempre | Pasa (`DemoRegionTests`) |
+| `slowdownFactor` ausente, o `factor` 1,5, en un tipo nuevo | 400 `invalid_slowdown_factor` | Pasa |
+
+**Pendiente:**
+- Error previo encontrado al probar: `RoutePlanner.ReplanAsync` arma un diccionario por código de punto y falla (500, clave repetida) cuando una ruta publicada tiene el mismo punto como parada obligatoria y como consolidación. La prueba de integración planifica sin consolidación para no depender de él. No se corrige aquí porque el archivo es compartido con #199.
+- El README del fixture todavía dice que los tipos nuevos esperan #246; lo actualiza su dueño (#243).
+- La pantalla de incidentes del web no envía `slowdownFactor`.
+
+### T19 — Reserva antes del despacho, cancelación y cantidad por línea (#199 fase 2, 16-oct)
+
+**Síntoma** (pendientes de T15):
+1. Planificar, publicar y volver a planificar antes del despacho proponía otra vez la misma cantidad: el riesgo no veía lo reservado en `Draft`.
+2. No había forma de cancelar una ruta confirmada; el pedido quedaba con `PlannedQuantity` aunque la ruta no saliera.
+3. El panel no dejaba editar la cantidad por línea.
+
+**Causa** (por lectura del código; las pruebas nuevas de riesgo fallan sin la corrección de `RiskCalculator`):
+1. `RiskCalculator` contaba en camino solo `Dispatched`, `InTransit` y `Delivered` sin recibo. Además, sumaba las líneas de **todos** los puntos para cada producto y solo veía lotes con saldo en el punto.
+2. `confirm` no guardaba cuánto sumó a cada línea de pedido y no había endpoint de cancelación. `revert` solo existe para revisiones y restaura los mismos pedidos.
+3. Aunque el panel enviara `lines`, `confirm` guardaba las `loads` del panel (pedido completo) y tomaba el mayor entre su peso y el enviado (`deltaWeight`). Una parcial editada daba 409 por capacidad o publicaba y reservaba más de lo planificado.
+
+**Decisión:**
+- **En camino:** una entrega `Draft` sin despacho cuenta por `PlannedQuantity`. Al despacharse deja de ser `Draft` y cuenta por `DispatchedQuantity − AcceptedQuantity`, así que no se cuenta dos veces. Una cancelada no cuenta. Solo se suma lo que va a su punto.
+- **Cancelar:** nuevo `POST /route-plans/{id}/cancel`. Solo se cancela una ruta `Proposed` o `Published` sin entregas despachadas. Es idempotente, y solo la revisión vigente descuenta. El descuento sale de `InputJson.orderLines`, que ahora guarda `confirm`.
+- **Panel:** el paso 4 muestra cada línea pendiente con su cantidad, por defecto todo lo pendiente. Solo se envían en `lines` las editadas. El servidor sigue validando: 409 si se pide más de lo pendiente.
+
+**Fuera de alcance:**
+- ~~**Consolidación:** repartir parcialmente las paradas `VIGILAR` cambia la política de FR-08 y el orden entre puntos; queda para otro issue.~~ Resuelto en T21 sin cambiar el orden de los obligatorios.
+- ~~**Revisión que retira una parada:** una revisión por incidente puede retirar una parada de pedidos. Cancela la entrega, pero no descuenta `PlannedQuantity`; para eso habría que repartir `orderLines` por punto.~~ Resuelto en T21: al publicar la revisión se descuenta lo de los pedidos de ese destino, y `revert` lo vuelve a sumar.
+- **Datos anteriores a este cambio:** los planes confirmados antes no tienen `orderLines`; cancelarlos libera reservas, pero no descuenta. Queda documentado como comportamiento esperado en FR-28 y T21: no hay datos de cuánto sumó cada ruta y no se inventan.
+- ~~**Botón de cancelar:** el endpoint aún no tiene botón en el panel.~~ Resuelto en T21.
+- **Un solo SKU en varios pedidos:** si dos pedidos de la misma parada llevan el mismo SKU y el panel envía `loads` sin `lines`, cada línea toma la carga total del SKU. Es comportamiento previo, sin cambios.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `Contratos API y eventos.md`, `plan.md` | Contrato | `cancel`, `orderLines`, en camino con `Draft`, carga de `confirm` desde lo planificado | Contrato antes de implementar | — | Hecho |
+| `RiskCalculator.cs` | Aplicación | `Draft` sin despacho cuenta por `PlannedQuantity`; filtro por punto; lotes de la entrega aunque no tengan saldo en el punto | No repetir lo reservado | Planificar, publicar y replanificar | Hecho |
+| `RoutePlanCancellation.cs` (nuevo) | Aplicación | Libera reservas, cancela `Draft`, descuenta `orderLines` y recalcula el estado del pedido | Cancelar sin perder el saldo del pedido | Cancelar publicada y propuesta | Hecho |
+| `RoutePlansController.ConfirmRoutePlan` | API | Con pedidos: carga y peso desde lo planificado por línea; recogida = lo planificado; guarda `orderLines` | Lo publicado y reservado coincide con lo planificado | Panel con totales completos y `lines` = 100 | Hecho |
+| `RoutePlansController.Cancel` | API | `POST /{id}/cancel`: 200, 404 o 409 `cancel_conflict` | Exponer la cancelación | — | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Cantidad por línea en el paso 4, validación y envío de `lines` | Confirmar una parcial desde el panel | Pedido que no cabe completo | Hecho |
+| `RiskPendingDeliveriesTests.cs`, `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `rutas-cantidad-por-linea.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Punto con entrega `Draft` de 100, `Dispatched` de 20 y `Cancelled` de 40; otro punto con `Draft` de 70 | En camino: 120 en el primero y 70 en el otro | Pasa (falla sin la corrección) |
+| 150 u de 1 kg, vehículo de 100 kg: planificar, publicar y volver a planificar | Primera: 100. Segunda: requerida 50, planificada 50, nada pendiente | Pasa (falla sin la corrección) |
+| `confirm` con las paradas del panel (150 kg y `loads` de 150) y `lines` = 100 | 201, `loadWeight` 100, pedido `Pending` con 100; la publicación reserva 100 | Pasa |
+| Pedido de 150: ruta de 100 publicada y ruta de 50 propuesta; cancelar la publicada | 200; libera 100 reservadas; entrega `Cancelled`; pedido `Pending` con 50 planificadas y 100 pendientes | Pasa |
+| Cancelar otra vez | 200 sin descontar de nuevo | Pasa |
+| Cancelar la propuesta de 50 y volver a confirmar 100 | Pedido `Pending` con 0; el nuevo `confirm` responde 201 | Pasa |
+| Cancelar con la entrega ya despachada, o un plan inexistente | 409 y pedido sin cambios; 404 | Pasa |
+| Panel: línea con 150 pedidas y 30 planificadas; otra ya completa | Ofrece 120; omite la completa; sin editar no envía `lines` | Pasa (vitest) |
+| Panel: cantidad 121 de 120, 0 o vacía | Mensaje de error y no llama a la API | Pasa (vitest) |
+| Panel en pantalla | Campo visible en el paso 4 | No verificado en pantalla |
+
+**Verificación:** `dotnet test --filter` con Risk, PartialCapacity, PartialLoad, ConfirmCapacity, PublishToDriver, Replan, RoutePlanning, RoutePublisher, SingleProposal, OrderBasedRouting, RouteSuggestPriority, ReplenishmentAllocator, LogisticsApi y CustodyGuardsHttp: 105 de 107. Fallaron 2 casos de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entran por el filtro «Replan». Corrida sola, esa clase pasa 9 de 9. Web: `ng test --include` de `rutas-cantidad-por-linea`, `rutas-priorizacion-pedidos`, `rutas.page` y `api.service`: 28 de 28. Después de integrar `develop` (#245), con Risk, PartialCapacity, PartialLoad, ConfirmCapacity, PublishToDriver, RoutePlanning, RoutePublisher, SingleProposal, OrderBasedRouting, ReplanningTests y TrafficBand: 73 de 73. No se corrió la suite completa.
+
+### T20 — Activar ServiceCost y TrafficBands en la demo (#275, 16-oct)
+
+**Problema:**
+#240 (costo total de servir) y #245 (horas pico) estaban integrados pero sin configuración en ningún entorno (`ServiceCost` y `TrafficBands` vacíos). Sin `ServiceCost`, `IsValid` era falso y el motor caía a la fórmula clásica (sin combustible por carga, ayudantes ni merma). Sin `TrafficBands`, el factor de hora pico era 1.0 (sin efecto en velocidad/duración).
+
+**Solución implementada:**
+- Crear `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json` con las secciones documentadas en su README:
+  - `ServiceCost`: diésel $3.11/gal (fuente Primicias, 2026-10-12), `HelperCostPerHour`: $4.13/h, `LoadFuelFactor`: 0.3, perfiles por tipo de vehículo (`camioneta`, `camion_liviano`, `camion_pesado`), reglas laborales de 3 tramos y porcentajes de merma por tipo de producto.
+  - `TrafficBands`: 3 bandas horarias (06:00–09:30 con factor 0.64, 12:30–14:00 con factor 0.80, 16:00–20:00 con factor 0.64; fuente Secretaría de Movilidad DMQ).
+  - `ContractedCarrier` y `Recommendation`: parámetros del operador sintético y ponderación multicriterio para #241.
+  - `VehicleRestrictions`: restricciones para camión pesado.
+- Cargar `appsettings.demo-quito.json` en `Program.cs` para el entorno de producción o cuando `LOGISTICS_CONFIG_FILE` / `DEMO_CONFIG_FILE` / `DEMO_QUITO_CONFIG_ENABLED=true` estén configurados, sin alterar el comportamiento de las pruebas existentes (ambiente `Testing`).
+- Actualizar `.gitignore` para no ignorar `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json`.
+- Actualizar `docker-compose.prod.yml` con `DEMO_QUITO_CONFIG_ENABLED: "true"`.
+- Actualizar generador `generate-demo-quito-planificacion.py` para sincronizar `appsettings.demo-quito.json`.
+- Pruebas unitarias e integración en `DemoQuitoConfigurationTests.cs` y `DemoQuitoConfigurationIntegrationTests.cs`: validan binding completo, `/health/ready` Healthy, desglose real no nulo en evaluación y variación de duración de ruta en hora pico (07:30 vs 11:00).
+
+### T21 — Consolidación parcial, revisiones con pedidos y botón de cancelar (#199 cierre, 16-oct)
+
+**Síntoma** (lo que quedaba fuera de alcance en T15 y T19):
+1. Una parada de consolidación (`VIGILAR`) entraba entera o no entraba. Si no cabía completa, el vehículo salía con capacidad libre aunque una parte sí cabía.
+2. Una revisión por incidente que retiraba una parada con pedidos cancelaba la entrega y liberaba la reserva, pero el pedido seguía con su `PlannedQuantity`. Ese saldo no se podía volver a planificar.
+3. `POST /route-plans/{id}/cancel` no tenía botón en el panel.
+4. No estaba escrito qué pasa con los planes confirmados antes de #264, que no tienen `orderLines`.
+
+**Causa** (por lectura del código; las pruebas nuevas fallan sin la corrección donde se indica):
+1. `RoutePlanner` solo probaba la parada de consolidación completa (`TryInsertConsolidation`).
+2. `RoutePublisher.PublishRevisionAsync` cancelaba la entrega de la parada retirada sin mirar los pedidos. Además, `RevertPlanAsync` copiaba las paradas sin `Kind` ni `LocationId`, así que la recogida de una ruta por pedidos se restauraba como entrega.
+
+**Decisión:**
+- **Consolidación (FR-28):** si la parada no cabe completa, se toma con `FitLoads` (orden de FR-24 y unidades base enteras) lo que cabe en la capacidad libre de cada vehículo, y se inserta en un solo vehículo con desvío ≤ `MaxDetourMinutes`. Gana el que lleva más unidades, luego el de menor desvío y luego el de menor código y menor posición. Va después de insertar y repartir todos los obligatorios, así que nunca les quita capacidad ni cambia su orden. No se agrega a `unserved` (FR-09 solo lista obligatorios), pero emite `required_quantity`, `planned_quantity` y `pending_quantity`; la regla 8 del prompt de n8n ya los explica.
+- **Revisión:** al publicarla, se descuenta de `PlannedQuantity` lo que el plan sumó (según `orderLines`) a los pedidos cuyo destino es la parada retirada, y la revisión guarda el `orderLines` restante. `revert` vuelve a sumar la diferencia y restaura el tipo y la bodega de cada parada. La lógica común (`EffectiveOrderLinesAsync`, `AdjustPlannedAsync` y `WithOrderLines`) vive en `RoutePlanCancellation`.
+- **Planes sin `orderLines`:** no hay datos para descontar y no se inventan. `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`; `orderLines` de la respuesta sale vacío.
+- **Panel:** «Cancelar ruta» en el detalle de una ruta `Proposed` o `Published` sin entregas despachadas, solo para quien puede escribir. Pide confirmación con `window.confirm`, llama a `POST …/cancel` y muestra entregas canceladas, unidades liberadas y lo devuelto por pedido, o el `detail` del 409. Es un cambio acotado en `rutas.page.ts`: un botón en la cabecera del detalle y dos métodos, sin tocar el asistente ni el rediseño (#253).
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `plan.md`, `Contratos API y eventos.md` | Contrato | FR-28; consolidación parcial, revisión, `revert` y planes sin `orderLines` | Contrato antes de implementar | — | Hecho |
+| `RoutePlanner.cs` | Aplicación | `TryInsertConsolidationPart` después de los obligatorios; hechos de la parte | Cargar la consolidación que cabe | Obligatorio de 150 kg y consolidación de 60 kg en 180 kg | Hecho |
+| `RoutePlanCancellation.cs` | Aplicación | `EffectiveOrderLinesAsync`, `AdjustPlannedAsync` y `WithOrderLines`; `CancelAsync` los usa | Mismo mecanismo para cancelar, revisar y revertir | — | Hecho |
+| `RoutePublisher.PublishRevisionAsync` | Aplicación | Descuenta los pedidos de las paradas retiradas y guarda el `orderLines` restante | El saldo vuelve a estar pendiente | Revisión sin una de dos paradas | Hecho |
+| `Replanner.RevertPlanAsync` | Aplicación | Vuelve a sumar lo descontado; copia `Kind` y `LocationId` | Revertir no pierde el saldo ni convierte la recogida en entrega | Revertir esa revisión | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Botón «Cancelar ruta», `canCancelPlan`, `cancelPlan`, `cancelRoutePlan` y `RoutePlanCancellationDto` | Cancelar desde el panel | Ruta publicada sin despacho | Hecho |
+| `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `rutas-cancelar-ruta.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Obligatorio de 150 u de 1 kg y consolidación de 60 u en un vehículo de 180 kg | Obligatorio 150 completo; consolidación 30 planificadas, 60 requeridas y 30 pendientes; sin no atendidos; hechos de `VIG-01/SKU-A`; mismo resultado en dos corridas | Pasa |
+| El mismo obligatorio y la misma consolidación en un vehículo de 120 kg | Obligatorio 120 (30 pendientes, `capacity`); la consolidación no entra ni emite hechos | Pasa |
+| Ruta por pedidos con dos entregas (30 y 40), publicada; revisión que retira la de 30 | Pedido de 30 en `Pending` con 0; pedido de 40 sigue `Planned`; reserva activa 40 | Pasa (falla sin la corrección) |
+| Revertir esa revisión | Pedido de 30 vuelve a `Planned` con 30; la ruta restaurada tiene 2 entregas `Draft` y 70 reservadas | Pasa |
+| Cancelar la ruta restaurada | Los dos pedidos quedan en `Pending` con 0 (sin descontar dos veces) | Pasa |
+| Cancelar un plan sin `orderLines` (como los anteriores a #264) | 200; libera 50; `orderLines` vacío; el pedido sigue `Planned` con 50 | Pasa |
+| Panel: ruta `Proposed`, o `Published` con entrega `Draft` | Muestra «Cancelar ruta»; no aparece con entrega despachada, en rutas `Cancelled`/`Superseded` ni sin permiso de escritura | Pasa (vitest) |
+| Panel: confirmar, no confirmar y 409 | Llama a la API y muestra lo liberado; no llama; muestra el `detail` del 409 | Pasa (vitest) |
+| Panel en pantalla | Botón visible en el detalle | No verificado en pantalla |
+
+**Hallazgo (corregido en T22, #300):** ~~`POST /route-plans/{id}/replan` sobre una ruta del asistente por pedidos falla con `KeyNotFoundException` antes de crear la revisión. Se comprobó con una prueba exploratoria local, que no quedó en el repositorio. Causa probable, por lectura del código: `RoutePlanner.ReplanAsync` lee las paradas guardadas por `pointCode`, y las del asistente guardan `code` e incluyen la recogida. Hoy esa revisión no llega a crearse desde un incidente. La corrección de T21 actúa al publicar cualquier revisión que retire una parada con pedidos, y la prueba arma la revisión como la guarda `Replanner`. Que la replanificación acepte rutas por pedidos queda para otro issue.~~ La causa se confirmó en T22: `JsonElement.GetProperty("pointCode")` en `RoutePlanner.ReplanAsync`.
+
+**Verificación:** `dotnet test --filter` con RoutePlanner, RoutePlanning, PartialCapacity, PartialLoad, ConfirmCapacity, Replan, RoutePlanCancellation, Risk, PublishToDriver, DemoQuito y RoutePublisher: 81 de 82. Falló un caso de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entra por «Replan» y ya fallaba así en T19; corrida sola, esa clase pasa 9 de 9. Por separado, `PartialCapacityPlanningTests` pasa 7 de 7 y `ConfirmCapacityTests` 8 de 8. Web: `npm run test:web`, 29 archivos y 166 pruebas en verde; eslint sin errores en los archivos cambiados. Después de integrar `develop` (#294 y #298), con el mismo filtro (`ReplanningTests` en lugar de «Replan») más `MergedEndpointsSecurity`: 97 de 97; web, specs de `pages/rutas` y `map-view`: 64 de 64. No se corrió la suite completa.
+
+### T22 — Replanificar rutas del asistente de pedidos (#300, 17-oct)
+
+**Síntoma:** `POST /route-plans/{id}/replan` sobre una ruta confirmada con el asistente de pedidos (`/route-plans/suggest` → `/confirm`) respondía 500 antes de crear la revisión. Además, un `BloqueoVial` sobre sus paradas no la marcaba como afectada, así que el agente de incidente nunca la replanificaba.
+
+**Error reproducido en develop `e06d4f7`** (prueba nueva, antes de la corrección):
+
+```
+System.Collections.Generic.KeyNotFoundException : The given key was not present in the dictionary.
+   at System.Text.Json.JsonElement.GetProperty(String propertyName)
+   at IstpetDev.Application.Logistics.Planning.RoutePlanner.<>c.<ReplanAsync>b__8_9(JsonElement s) in …/RoutePlanner.cs:line 397
+   at IstpetDev.Application.Logistics.Planning.RoutePlanner.ReplanAsync(ReplanInput input, CancellationToken ct) in …/RoutePlanner.cs:line 396
+   at IstpetDev.Application.Logistics.Replanner.ReplanAsync(Guid routePlanId, Guid incidentId, CancellationToken ct) in …/Replanner.cs:line 132
+```
+
+**Causa** (confirmada con las pruebas):
+1. `RoutePlanner.ReplanAsync` leía las paradas guardadas con `GetProperty("pointCode")`; el asistente guarda `code` e incluye la recogida en bodega. Además tomaba las cargas de la última ruta publicada del vehículo, no del plan que se replanifica.
+2. `Replanner` trataba todas las paradas como puntos de servicio. La recogida del asistente no da `KeyNotFoundException` en `spMap` (como suponía el issue), porque `confirm` le pone como relleno el primer punto de servicio. Por eso entraba al prefijo como si fuera una entrega más y podía repetir el código de una entrega real. La revisión perdía la recogida y su `LocationId`, y la ruta previa reconstruida usaba siempre `"VEH-01"`.
+3. `PublishRevisionAsync` buscaba la parada nueva de cada entrega solo por `ServicePointId`, y ese relleno puede coincidir con el de una entrega.
+4. `IncidentEvaluator` solo usaba los tramos guardados (`legs`), y las rutas del asistente no los tienen. Para una avería tomaba la primera ruta publicada del vehículo, no la del incidente.
+
+**Decisión (FR-29):**
+- `FixedPrefix` lleva el `RoutePlanId`, las recogidas pendientes (`LeadingStops`) y el número de paradas hechas. El planificador recorre primero las recogidas (tramo, hora pico y servicio) y reoptimiza las entregas desde la última bodega. Si no queda ninguna entrega, descarta las recogidas y no las suma al costo. Lee `pointCode` o `code` y omite las paradas en bodega.
+- La revisión guarda, en orden: paradas hechas (con su tipo y bodega), recogidas pendientes con las horas calculadas, entregas reoptimizadas y entregas a bodega. Su `InputJson` usa la misma secuencia que cada `RouteStop`, y copia del plan original las cargas de las paradas que no se reoptimizan.
+- Una recogida cuenta como hecha si su estado es `Completed`, `PickedUp` o `PartiallyPickedUp`, o si ya se completó una parada posterior. Hoy el avance de demo y la PWA no marcan las recogidas.
+- El evaluador arma los tramos de una ruta sin `legs` desde la bodega del vehículo por sus paradas. Usa la polilínea de la caché de tramos si existe y, si no, el segmento recto.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `Contratos API y eventos.md` | Contrato | FR-29; comportamiento de `replan`, `incidents` y publicación de la revisión (sin endpoints ni campos nuevos) | Contrato antes de implementar | — | Hecho |
+| `PlanModels.cs` | Aplicación | `FixedPrefix.RoutePlanId`, `LeadingStops`, `CompletedStopCount`; `FixedStop`; `VehicleRoute.LeadingTimes` (no se serializa) | Pasar la recogida al planificador sin romper los constructores | — | Hecho |
+| `RoutePlanner.ReplanAsync` | Aplicación | Plan indicado; `pointCode` o `code`; omite paradas en bodega; recorre las recogidas antes de reoptimizar; rellena tramos de paradas hechas sin `legs` | Origen del `KeyNotFoundException` y entregas desde la bodega | Cierre sobre una entrega | Hecho |
+| `Replanner.ReplanAsync` | Aplicación | Separa recogidas y entregas a bodega; parte de la última parada hecha; conserva tipo, `LocationId` y cargas; código real del vehículo en la ruta previa | La revisión no pierde la recogida | Los cuatro de abajo | Hecho |
+| `RoutePublisher.PublishRevisionAsync` | Aplicación | La parada nueva de una entrega se busca por tipo, punto y bodega | El punto de relleno puede coincidir con una entrega | Publicar la revisión | Hecho |
+| `IncidentEvaluator` | Aplicación | Tramos desde las paradas si no hay `legs`; avería sobre la ruta del incidente; paradas en bodega nombradas por la bodega | El agente detecta la ruta del asistente | Agente con cierre | Hecho |
+| `AgentRunService.BuildViewAsync` | Aplicación | `orderedStops` nombra la parada en bodega por la bodega | La decisión no muestra un punto de relleno | Agente con cierre | Hecho |
+| `ReplanAssistantRouteTests.cs`, `AgentJourneyTests.cs` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios** (demo-region; los cuatro fallan en develop sin la corrección):
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Ruta del asistente VEH-01 (BOD-SUR → CLI-S09 → IND-S13) publicada; `BloqueoVial` sobre CLI-S09 (preset cierre-norte); `replan` | 201; CLI-S09 en `droppedStops`; revisión `[1 Pickup BOD-SUR Pending, 2 Delivery IND-S13]`; `InputJson` con `kind`, `locationId` y la carga de 20 | Pasa (en develop: `KeyNotFoundException`) |
+| Publicar esa revisión y luego revertirla | El pedido de CLI-S09 vuelve a `Pending` con 0; IND-S13 sigue `Planned` con 20 y 20 reservadas en una sola entrega; revertir vuelve a sumar 10 | Pasa |
+| VEH-02 con la recogida hecha (inferida) y IND-S13 entregada por el avance de demo; cierre lejano; `replan` y publicar | 201 sin no atendidos; `[Pickup Completed, IND-S13 Completed, EDU-S10 Pending]`; la entrega de EDU-S10 es la misma, sigue `Draft` y apunta a la parada nueva; su llegada es posterior a la entrega en IND-S13 | Pasa (en develop: `KeyNotFoundException`) |
+| Avería `VEHICLE_BREAKDOWN` de VEH-01 con la ruta del asistente | `affectedStops` = `BOD-SUR`, `IND-S13`; `replan` 201 `Escalated` con IND-S13 en `droppedStops`; la revisión no conserva la recogida | Pasa (en develop: `affectedStops` con el punto de relleno) |
+| Agente automático (n8n simulado de `AgentJourneyTests`) con cierre-norte y la ruta del asistente | La ruta aparece en `affectedRoutes`; la corrida termina `Completed` con una decisión de VEH-01 y paradas `BOD-SUR`, `IND-S13` | Pasa (en develop: la ruta no aparece como afectada) |
+
+**Limitaciones:**
+- Las entregas a bodega (transferencias) no se reordenan; se mantienen al final con sus horas originales.
+- Si un tramo hacia la bodega de recogida está bloqueado, se recorre igual: la recogida no se puede omitir.
+- La ruta previa del asistente guarda horas aproximadas de `confirm` (inicio + 20 min por parada). Las diferencias de ETA y de costo contra la revisión son orientativas.
+
+**Verificación:** `dotnet test --filter` con Replan, DemoRegion, AgentJourney, ConfirmCapacity, PartialCapacity, RoutePlanCancellation, IncidentEvaluator, RoutePlanning, SlowdownIncident, RoutePublisher, AgentRunService, AgentRunTrace, IncidentSlowdown y MergedEndpointsIsolation: 68 de 68. Incluye las 4 pruebas nuevas, que fallan las 4 con el código de develop. No se corrió la suite completa. `check_vault.py`: 0 errores.

@@ -1,9 +1,12 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthSession } from '@entities/session';
 import { ApiService, ServicePoint, RiskItemDto, RoutePlanSummaryDto, AutonomyModeDto } from '@shared/api';
+import { FieldExceptionsApiService, SimulationsApiService } from '@shared/api';
+import { operationIndicators } from './operation-indicators';
 
 interface ProcessStep {
   id: number;
@@ -184,6 +187,45 @@ interface ProcessStep {
         </div>
       </div>
 
+      @if (isGerencia()) {
+        <section aria-labelledby="operation-indicators-title" class="bg-surface-card border border-surface-border rounded-lg p-5 shadow-stripe-xs space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="operation-indicators-title" class="text-lg font-semibold text-stripe-heading">Indicadores de la operación</h2>
+              <p class="text-sm text-charcoal-600">Evidencia disponible y origen de cada indicador.</p>
+            </div>
+            <button type="button" (click)="refreshIndicators()" [disabled]="loadingIndicators()"
+              class="text-sm font-medium text-primary-700 min-h-6 rounded focus-visible:outline focus-visible:outline-2 disabled:opacity-50">
+              Actualizar indicadores
+            </button>
+          </div>
+          @if (indicatorError()) {
+            <p role="status" class="text-sm text-charcoal-700">{{ indicatorError() }} Usa «Actualizar indicadores» para reintentar.</p>
+          }
+          <dl class="divide-y divide-surface-border" [attr.aria-busy]="loadingIndicators()">
+            @for (indicator of indicators(); track indicator.name) {
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3" data-operation-indicator>
+                <dt class="text-sm font-medium text-stripe-heading">{{ indicator.name }}</dt>
+                <dd class="text-sm font-semibold text-stripe-heading tabular-nums">
+                  @if (loadingIndicators()) {
+                    <span class="block h-5 w-24 rounded bg-surface-ground motion-safe:animate-pulse" aria-label="Consultando indicador"></span>
+                  } @else if (indicator.value !== null) {
+                    {{ indicator.value | number:'1.0-2' }} <span class="font-normal">{{ indicator.unit }}</span>
+                  } @else {
+                    sin dato
+                  }
+                </dd>
+                <dd class="text-xs text-charcoal-600 space-y-1 min-w-0">
+                  <span class="inline-block rounded border border-surface-border bg-surface-ground px-2 py-0.5 font-medium">{{ indicator.source }}</span>
+                  <p class="break-words">{{ indicator.detail }}</p>
+                </dd>
+              </div>
+            }
+          </dl>
+          <a routerLink="/simulation" class="inline-block min-h-6 text-sm font-medium text-primary-700 hover:underline">Consultar comparaciones de simulación</a>
+        </section>
+      }
+
       <!-- SECCIÓN: Tu resumen (Exacto a Captura 3 de Stripe con Píldoras de Filtro y Tarjetas) -->
       <div class="pt-6 space-y-4 border-t border-[#E3E8EE]">
         <!-- Encabezado de Tu Resumen y Barra de Filtros en Píldora -->
@@ -359,7 +401,14 @@ interface ProcessStep {
 })
 export class InicioPage implements OnInit {
   private readonly apiService = inject(ApiService);
+  private readonly simulations = inject(SimulationsApiService);
+  private readonly exceptions = inject(FieldExceptionsApiService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly session = inject(AuthSession);
+
+  readonly loadingIndicators = signal(false);
+  readonly indicatorError = signal('');
+  readonly indicators = signal(operationIndicators(null, null, null));
 
   readonly loadingPulse = signal(true);
   readonly servicePointsCount = signal(0);
@@ -432,6 +481,38 @@ export class InicioPage implements OnInit {
 
   ngOnInit(): void {
     this.refreshPulse();
+    if (this.isGerencia()) this.refreshIndicators();
+  }
+
+  refreshIndicators(): void {
+    if (!this.isGerencia() || this.loadingIndicators()) return;
+    this.loadingIndicators.set(true);
+    this.indicatorError.set('');
+    this.indicators.set(operationIndicators(null, null, null));
+    const unavailable = (source: string) => {
+      this.indicatorError.update(message => `${message}${message ? ' ' : ''}No se pudo consultar ${source}.`);
+      return of(null);
+    };
+    forkJoin({
+      comparison: this.simulations.listComparisons().pipe(
+        map(items => items.filter(item => item.status === 'Completed').sort((a, b) => b.createdAtUtc.localeCompare(a.createdAtUtc))[0]),
+        switchMap(item => item ? this.simulations.getComparison(item.comparisonId) : of(null)),
+        catchError(() => unavailable('la simulación')),
+      ),
+      receipts: this.exceptions.listReceiptExceptions(undefined, 100).pipe(catchError(() => unavailable('las recepciones'))),
+      plans: this.apiService.getRoutePlans(undefined, 'Published').pipe(
+        map(plans => {
+          if (this.apiService.loadErrors?.()['rutas']) throw new Error('No se pudo consultar las rutas.');
+          return plans;
+        }),
+        catchError(() => unavailable('las rutas')),
+      ),
+    }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.loadingIndicators.set(false)),
+    ).subscribe(({ comparison, receipts, plans }) => {
+      this.indicators.set(operationIndicators(comparison, receipts, plans));
+    });
   }
 
   refreshPulse(): void {

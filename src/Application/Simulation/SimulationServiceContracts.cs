@@ -4,7 +4,8 @@ public sealed record SimulationComparisonRequest(
     string? DatasetVersion = "national-v1",
     int[]? Seeds = null,
     bool IncludeAdverse = true,
-    Dictionary<string, string>? PolicyVersions = null);
+    Dictionary<string, string>? PolicyVersions = null,
+    IReadOnlyList<DisruptionEvent>? CustomDisruptions = null);
 
 public sealed record SimulationComparisonResponse(
     Guid ComparisonId,
