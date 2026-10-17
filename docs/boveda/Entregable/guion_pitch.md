@@ -1,3 +1,10 @@
+---
+tipo: demo
+estado: propuesta
+actualizado: 2026-10-17
+tags: [demo, pitch, guion]
+---
+
 # Guion del pitch v5 — 4 minutos 40 segundos
 
 ## 00:00–00:15 · Joseph · Diapositiva 1
