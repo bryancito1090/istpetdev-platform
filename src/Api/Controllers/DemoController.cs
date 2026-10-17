@@ -104,7 +104,8 @@ public sealed class DemoController(
         [FromBody] IstpetDev.Application.Field.Dtos.DemoAdvanceRequest request,
         CancellationToken cancellationToken)
     {
-        if (!fieldSimulationOptions.Value.Enabled) return NotFound();
+        if (!fieldSimulationOptions.Value.Enabled && (!options.Value.Enabled || !string.IsNullOrWhiteSpace(request.Mode)))
+            return NotFound();
 
         try
         {
