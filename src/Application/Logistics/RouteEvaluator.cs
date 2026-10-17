@@ -23,7 +23,11 @@ public sealed record EvaluatedStopDto(
     bool ViolatesPrecedence,
     bool ViolatesWindow,
     string? WarningMessage
-);
+)
+{
+    // #245: factor de hora pico aplicado al tramo que llega a esta parada; null fuera de hora pico.
+    public decimal? TrafficFactorApplied { get; init; }
+}
 
 public sealed record RouteEvaluationResult(
     bool IsValid,
@@ -115,6 +119,7 @@ public sealed class RouteEvaluator : IRouteEvaluator
             var stop = sequence[i];
             decimal legKm = 0m;
             decimal legMin = 0m;
+            decimal speedFactor = 1m;
 
             if (i > 0)
             {
@@ -130,6 +135,11 @@ public sealed class RouteEvaluator : IRouteEvaluator
                     legKm = DistanceProvider.HaversineDistanceKm(prevStop.Position, stop.Position) * _options.ApproxDetourFactor;
                     legMin = Math.Round((legKm / _options.ApproxSpeedKmh) * 60m, 1);
                 }
+
+                // #245: hora pico según la hora local de salida del tramo
+                speedFactor = TrafficBands.SpeedFactorAt(_options.TrafficBands,
+                    TimeOnly.FromDateTime(currentTime.AddHours(_options.FallbackUtcOffsetHours)));
+                if (speedFactor != 1m) legMin = Math.Round(TrafficBands.Apply(legMin, speedFactor), 1);
 
                 currentTime = currentTime.AddMinutes((double)legMin);
                 totalKm += legKm;
@@ -195,7 +205,8 @@ public sealed class RouteEvaluator : IRouteEvaluator
                 currentWeight < 0,
                 violatesWindow,
                 warning
-            ));
+            )
+            { TrafficFactorApplied = TrafficBands.Reported(speedFactor) });
         }
 
         // 4. Validar capacidades de vehículo si está asignado

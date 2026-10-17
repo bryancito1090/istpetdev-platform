@@ -190,6 +190,7 @@ public sealed class RoutePlansController(
         var plannedLoadsBySeq = new Dictionary<int, List<(Guid ProductId, string Sku, decimal Quantity, string BaseUnit)>>();
         // #199: cantidades requerida, planificada y pendiente por línea, tal como las guardó el motor o el asistente.
         var loadQuantitiesBySeq = new Dictionary<int, List<object>>();
+        var trafficFactorBySeq = new Dictionary<int, decimal>();
         string? polyline = null;
         List<double[]>? coordinates = null;
         IReadOnlyList<Guid> orderIds = [];
@@ -213,6 +214,9 @@ public sealed class RoutePlansController(
                         if (sElem.TryGetProperty("sequence", out var seqElem))
                         {
                             int seq = seqElem.GetInt32();
+                            // #245: factor de hora pico guardado al proponer la ruta
+                            if (sElem.TryGetProperty("trafficFactorApplied", out var tf) && tf.ValueKind == JsonValueKind.Number)
+                                trafficFactorBySeq[seq] = tf.GetDecimal();
                             var loadsList = new List<(Guid, string, decimal, string)>();
                             if (sElem.TryGetProperty("loads", out var loadsElem) && loadsElem.ValueKind == JsonValueKind.Array)
                             {
@@ -411,7 +415,8 @@ public sealed class RoutePlansController(
                     sealedAtUtc = hu.SealedAtUtc
                 }),
                 lines = stopLines,
-                loadQuantities = loadQuantitiesBySeq.GetValueOrDefault(s.SequenceNumber) ?? []
+                loadQuantities = loadQuantitiesBySeq.GetValueOrDefault(s.SequenceNumber) ?? [],
+                trafficFactorApplied = trafficFactorBySeq.TryGetValue(s.SequenceNumber, out var trafficFactor) ? trafficFactor : (decimal?)null
             };
         }).ToList();
 
@@ -585,7 +590,8 @@ public sealed class RoutePlansController(
                         sequence = s.Sequence,
                         pointCode = s.PointCode,
                         isConsolidation = s.IsConsolidation,
-                        loads = s.Loads
+                        loads = s.Loads,
+                        trafficFactorApplied = s.TrafficFactorApplied
                     }),
                     legs = r.Legs
                 }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
@@ -685,7 +691,7 @@ public sealed class RoutePlansController(
                     loadVolume = r.LoadVolume,
                     maxWeight = capacity?.MaxWeight,
                     maxVolume = capacity?.MaxVolume,
-                    stops = r.Stops.Select(s => new { sequence = s.Sequence, pointCode = s.PointCode, isConsolidation = s.IsConsolidation, loads = s.Loads })
+                    stops = r.Stops.Select(s => new { sequence = s.Sequence, pointCode = s.PointCode, isConsolidation = s.IsConsolidation, loads = s.Loads, trafficFactorApplied = s.TrafficFactorApplied })
                 };
             }),
             unserved = result.Unserved,
