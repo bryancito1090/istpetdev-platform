@@ -1,3 +1,4 @@
+using IstpetDev.Application.Common;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
@@ -34,6 +35,14 @@ public static class RoutePlanCancellation
     public const string CancelledStatus = "Cancelled";
 
     public static async Task<RoutePlanCancellationResult> CancelAsync(IApplicationDbContext db, Guid routePlanId, CancellationToken ct = default)
+    {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await CancelAsyncCore(db, routePlanId, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private static async Task<RoutePlanCancellationResult> CancelAsyncCore(IApplicationDbContext db, Guid routePlanId, CancellationToken ct)
     {
         var plan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)

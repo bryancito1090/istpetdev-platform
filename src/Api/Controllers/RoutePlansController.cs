@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IstpetDev.Api.Authentication;
+using IstpetDev.Api.Operations;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Logistics.Planning;
@@ -30,7 +30,6 @@ public sealed class RoutePlansController(
     IOptions<LogisticsOptions>? logisticsOptions = null) : ControllerBase
 {
     private readonly LogisticsOptions opts = logisticsOptions?.Value ?? new LogisticsOptions();
-    private static readonly ConcurrentDictionary<string, object> ProposalCache = new();
     // FR-23: Lectura para el panel 005 (no crea propuestas)
     [HttpGet]
     [Authorize(Roles = Roles.Any)]
@@ -567,6 +566,7 @@ public sealed class RoutePlansController(
 
     [HttpPost]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [RetryableOperation("CreateRoutePlans")]
     public async Task<IActionResult> CreatePlan([FromBody] PlanRequest? request = null, CancellationToken ct = default)
     {
         var req = request ?? new PlanRequest(null, null, true);
@@ -734,6 +734,7 @@ public sealed class RoutePlansController(
 
     [HttpPost("{id:guid}/publish")]
     [Authorize(Roles = Roles.Planning)]
+    [RetryableOperation("PublishRoutePlan")]
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
@@ -836,15 +837,24 @@ public sealed class RoutePlansController(
 
     [HttpPost("{id:guid}/revert")]
     [Authorize(Roles = Roles.Planning)]
+    [RetryableOperation("RevertRoutePlan")]
     public async Task<IActionResult> Revert([FromRoute] Guid id, CancellationToken ct = default)
     {
-        var res = await replanner.RevertPlanAsync(new RevertPlanRequest(id, User.AccountId()), ct);
-        return Ok(res);
+        try
+        {
+            return Ok(await replanner.RevertPlanAsync(new RevertPlanRequest(id, User.AccountId()), ct));
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(statusCode: 409, title: "revert_conflict", detail: ex.Message);
+        }
     }
 
     // #199: cancelar una ruta antes del despacho libera sus reservas y descuenta lo planificado de los pedidos.
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Roles = Roles.Planning)]
+    [RetryableOperation("CancelRoutePlan")]
     public async Task<IActionResult> Cancel([FromRoute] Guid id, CancellationToken ct = default)
     {
         try
@@ -868,11 +878,6 @@ public sealed class RoutePlansController(
         }
 
         // Idempotencia: si ya se procesó el requestId en esta sesión, retornar la propuesta vigente
-        if (!string.IsNullOrWhiteSpace(req.RequestId) && ProposalCache.TryGetValue(req.RequestId, out var cachedProposal))
-        {
-            return Ok(cachedProposal);
-        }
-
         var orders = await db.DeliveryOrders
             .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, ct);
@@ -1287,11 +1292,6 @@ public sealed class RoutePlansController(
             options = optionsArray
         };
 
-        if (!string.IsNullOrWhiteSpace(req.RequestId))
-        {
-            ProposalCache.TryAdd(req.RequestId, responsePayload);
-        }
-
         return Ok(responsePayload);
     }
 
@@ -1384,6 +1384,7 @@ public sealed class RoutePlansController(
 
     [HttpPost("confirm")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [RetryableOperation("ConfirmRoutePlan")]
     public async Task<IActionResult> ConfirmRoutePlan([FromBody] ConfirmRoutePlanRequest req, CancellationToken ct = default)
     {
         if (req == null || req.Stops == null || req.Stops.Count == 0)
@@ -1407,33 +1408,6 @@ public sealed class RoutePlansController(
         if (vehicle == null)
         {
             return Conflict(new { message = $"El vehículo con ID '{req.VehicleId.Value}' no existe o no se encuentra activo." });
-        }
-
-        // Idempotencia: si ya se confirmó esta propuesta, retornar el plan existente sin duplicar reservas
-        if (req.ProposalId.HasValue)
-        {
-            var propIdStr = req.ProposalId.Value.ToString();
-            var candidates = await db.RoutePlans
-                .Where(p => p.OrganizationId == DemoOrganization.Id && (p.Code == req.Code || p.VehicleId == vehicle.Id))
-                .OrderByDescending(p => p.Revision)
-                .ToListAsync(ct);
-
-            var existingByProposal = candidates.FirstOrDefault(p => p.InputJson != null && p.InputJson.Contains(propIdStr));
-            if (existingByProposal != null)
-            {
-                return Ok(new
-                {
-                    id = existingByProposal.Id,
-                    routePlanId = existingByProposal.Id,
-                    code = existingByProposal.Code,
-                    revision = existingByProposal.Revision,
-                    status = existingByProposal.Status,
-                    vehicleCode = vehicle.Code,
-                    proposalId = req.ProposalId.Value,
-                    totalCost = existingByProposal.TotalCost,
-                    message = "Propuesta ya confirmada previamente."
-                });
-            }
         }
 
         var today = await clock.TodayAsync(ct);
@@ -1799,6 +1773,7 @@ public sealed class RoutePlansController(
 
     [HttpPost("emergency")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [RetryableOperation("EmergencyRoutes")]
     public async Task<IActionResult> EmergencyRoutes(CancellationToken ct = default)
     {
         // 1. Detectar demandas críticas en puntos de servicio y bodegas
@@ -1832,6 +1807,7 @@ public sealed class RoutePlansController(
 
     [HttpPost("manual")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [RetryableOperation("CreateManualRoutePlan")]
     public async Task<IActionResult> CreateManualPlan([FromBody] CreateManualPlanRequest req, CancellationToken ct = default)
     {
         if (req == null || req.Stops == null || req.Stops.Count == 0)
@@ -2460,7 +2436,8 @@ public sealed record ConfirmRoutePlanRequest(
     IReadOnlyList<double[]>? Coordinates,
     IReadOnlyList<ConfirmLineDto>? Lines = null,
     Guid? ProposalId = null,
-    int? Revision = null
+    int? Revision = null,
+    Guid? OperationId = null
 );
 
 public sealed record ConfirmLineDto(
@@ -2489,7 +2466,8 @@ public sealed record CreateManualPlanRequest(
     DateTime? PlannedStartUtc,
     IReadOnlyList<ManualStopDto> Stops,
     string? Polyline,
-    IReadOnlyList<double[]>? Coordinates
+    IReadOnlyList<double[]>? Coordinates,
+    Guid? OperationId = null
 );
 
 public sealed record ManualStopDto(

@@ -85,8 +85,9 @@ public sealed class ReturnGuideHttpTests(PostgisContainer postgres) : IClassFixt
     {
         var connection = postgres.NewDatabase();
         using var api = new ApiFactory(connection);
-        using var client = api.ClientFor(TestTokens.Planner);
-        await TestAccounts.SetRoleAsync(connection, TestTokens.Planner, role);
+        using var client = role == Roles.Conductor ? api.ClientFor(TestTokens.Driver) : api.ClientFor(TestTokens.Planner);
+        if (role != Roles.Conductor)
+            await TestAccounts.SetRoleAsync(connection, TestTokens.Planner, role);
         await SeedAsync(api);
         var before = await SnapshotAsync(api);
 
@@ -99,6 +100,26 @@ public sealed class ReturnGuideHttpTests(PostgisContainer postgres) : IClassFixt
             Assert.Equal("PendingWarehouse", guide.Status);
             Assert.Equal(10m, Assert.Single(guide.Lines).Quantity);
         }
+        Assert.Equal(before, await SnapshotAsync(api));
+    }
+
+    [Fact]
+    public async Task Driver_cannot_get_or_generate_a_guide_from_another_route()
+    {
+        var connection = postgres.NewDatabase();
+        using var api = new ApiFactory(connection);
+        await SeedAsync(api);
+        await TestAccounts.SetRoleAsync(connection, TestTokens.Planner, Roles.Conductor);
+        using var otherDriver = api.ClientFor(TestTokens.Planner);
+        using var assignedDriver = api.ClientFor(TestTokens.Driver);
+        var before = await SnapshotAsync(api);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await otherDriver.GetAsync($"{Endpoint}/{GuideNumber}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await otherDriver.PostAsJsonAsync($"{Endpoint}/generate", new GenerateReturnGuideRequest(PlanId))).StatusCode);
+        Assert.Equal(before, await SnapshotAsync(api));
+
+        Assert.Equal(HttpStatusCode.OK, (await assignedDriver.GetAsync($"{Endpoint}/{GuideNumber}")).StatusCode);
         Assert.Equal(before, await SnapshotAsync(api));
     }
 

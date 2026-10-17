@@ -71,7 +71,7 @@ public sealed class ReturnGuideUnitTests
             ));
         }
 
-        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default)
+        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, Guid actorAccountId, CancellationToken ct = default)
         {
             if (guideNumber == "GRT-NOTFOUND")
             {

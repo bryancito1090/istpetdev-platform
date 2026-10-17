@@ -920,6 +920,7 @@ Estado: código, configuración y pruebas locales de integración completados; a
 
 Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y evidencia técnica local guardada; ejecución en producción pendiente del despliegue de #275 por Jorge (#198). Cifras de A/B/C listas para alimentar la lámina 4 del pitch (#200) y la corrida guardada de Alexander (#276).
 
+
 ## Issue #293 — arranque de n8n en volumen nuevo y Git Bash — 17-oct-2026
 
 - [x] `local-up.sh` tolera la exportación vacía de una instalación nueva y continúa con la importación.
@@ -951,3 +952,15 @@ Estado: código, pruebas locales y ensayo Linux completados; Windows Git Bash no
 
 Estado: código y pruebas locales completados; listo para integración vía Pull Request a develop.
 
+## Issue #287 — concurrencia y conciliación posterior al evento — 17-oct-2026
+
+- [x] Base #286/#294 revisada; trabajo aislado en `chore/287-concurrencia-conciliacion`.
+- [x] Operaciones reintentables persistentes (`IdempotencyRecord`) y serialización por organización para publicación, cancelación, reversión, confirmación, rutas manuales/emergencia e incidentes; `operationId`/`Idempotency-Key` con replay y 409 al cambiar el contenido.
+- [x] Se elimina la caché estática de `route-plans/suggest`; `RequestId` se conserva por compatibilidad sin reutilizar propuestas obsoletas.
+- [x] Ámbito del conductor: solo el conductor asignado puede consultar o generar la guía de su ruta; un conductor ajeno recibe 403.
+- [x] Conciliación de retornos parciales: rechazo distribuido una vez entre bultos, cuarentena para lo rechazado, una demanda por destino/motivo y rechazo 409 si el saldo del vehículo no alcanza.
+- [x] Pruebas PostgreSQL y regresión: `Category=Integration` 365/365; `Category=Unit|Category=E2E` 371/371; nuevas pruebas de concurrencia, idempotencia y retorno parcial.
+- [ ] PR a develop, CI del HEAD final, resolución de conflictos, merge y cierre de #287.
+- Coordinación con Joseph: cambios visibles documentados y revisión solicitada en el PR; no se declara coordinación de producto cerrada.
+- Estado: código y pruebas locales completados; Windows/cloud y despliegue no ejecutados.
+- Evidencia: [287-concurrencia](../../evidence/287-concurrencia/README.md).

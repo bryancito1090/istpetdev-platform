@@ -147,7 +147,7 @@ public sealed class FieldUnitTests
                 Array.Empty<ReturnGuideLineDto>()));
         }
 
-        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default)
+        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, Guid actorAccountId, CancellationToken ct = default)
         {
             return Task.FromResult(new ReturnGuideDto(
                 guideNumber,

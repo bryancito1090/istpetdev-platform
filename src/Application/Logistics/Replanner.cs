@@ -1,3 +1,4 @@
+using IstpetDev.Application.Common;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
@@ -64,10 +65,7 @@ public sealed class Replanner(
 
     public async Task<ReplanResult> ReplanAsync(Guid routePlanId, Guid incidentId, CancellationToken ct = default)
     {
-        await using var transaction = db.Database.CurrentTransaction is null
-            ? await db.Database.BeginTransactionAsync(ct) : null;
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT \"Id\" FROM \"RoutePlan\" WHERE \"Id\" = {routePlanId} AND \"OrganizationId\" = {DemoOrganization.Id} FOR UPDATE", ct);
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
         var plan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == routePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"RoutePlan {routePlanId} no encontrado.");
@@ -456,6 +454,14 @@ public sealed class Replanner(
 
     public async Task<RoutePlan> ApproveDecisionOptionAsync(ApproveOptionRequest request, CancellationToken ct = default)
     {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await ApproveDecisionOptionAsyncCore(request, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private async Task<RoutePlan> ApproveDecisionOptionAsyncCore(ApproveOptionRequest request, CancellationToken ct)
+    {
         var decision = await db.AgentDecisions
             .FirstOrDefaultAsync(d => d.Id == request.AgentDecisionId && d.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"AgentDecision {request.AgentDecisionId} no encontrada.");
@@ -502,6 +508,14 @@ public sealed class Replanner(
 
     public async Task<RoutePlan> RevertPlanAsync(RevertPlanRequest request, CancellationToken ct = default)
     {
+        await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
+        var result = await RevertPlanAsyncCore(request, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    private async Task<RoutePlan> RevertPlanAsyncCore(RevertPlanRequest request, CancellationToken ct)
+    {
         var currentPlan = await db.RoutePlans
             .FirstOrDefaultAsync(p => p.Id == request.RoutePlanId && p.OrganizationId == DemoOrganization.Id, ct)
             ?? throw new KeyNotFoundException($"RoutePlan {request.RoutePlanId} no encontrado.");
@@ -523,12 +537,15 @@ public sealed class Replanner(
             return existingRestored;
         }
 
+        if (currentPlan.Status != "Published")
+            throw new InvalidOperationException("Solo se revierte la revisión publicada vigente.");
+
         // 1. Validar que ninguna entrega pendiente esté despachada (incluye la entregada sin recibir)
         var currentDeliveries = await db.Deliveries
             .Where(d => d.OrganizationId == DemoOrganization.Id && db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == currentPlan.Id && s.Id == d.RouteStopId))
             .ToListAsync(ct);
 
-        if (currentDeliveries.Any(d => d.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit or DeliveryStates.Delivered))
+        if (currentDeliveries.Any(d => d.Status is not (DeliveryStates.Draft or DeliveryStates.Cancelled)))
         {
             throw new InvalidOperationException("409: Conflicto. No se puede revertir: existen entregas ya despachadas o en tránsito.");
         }

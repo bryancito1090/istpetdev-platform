@@ -386,7 +386,12 @@ public sealed record ReturnGuideLineDto(
     string LotCode,
     decimal Quantity,
     string Unit,
-    string Reason);
+    string Reason,
+    Guid? DeliveryId = null,
+    Guid? DeliveryLineId = null,
+    Guid? DestinationServicePointId = null,
+    Guid? DestinationLocationId = null,
+    string StockDisposition = "Available");
 
 public sealed record ReturnGuideDto(
     string GuideNumber,
@@ -413,5 +418,6 @@ public sealed record ReceiveReturnGuideResponse(
     string Status,
     DateTime ReceivedAtUtc,
     int ItemsReconciled,
-    Guid RebalanceOrderId);
+    Guid RebalanceOrderId,
+    IReadOnlyList<Guid>? RebalanceOrderIds = null);
 
