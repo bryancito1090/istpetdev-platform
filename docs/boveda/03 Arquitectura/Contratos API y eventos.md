@@ -527,3 +527,38 @@ Un accidente, una congestión o una manifestación casi nunca cierran del todo l
 - **Replanificación:** sin cambios en `Replanner`. Si la ETA corregida respeta las ventanas, la revisión se acepta según la política; si un obligatorio sale de su ventana, la revisión estricta lo deja como no atendido (`time_window`) y se escala con `late_service` y `prioritize_critical`.
 - **Sin cambios:** `BloqueoVial`/`ROAD_CLOSURE` siguen bloqueando, `DELAY` sigue con minutos × 2 y `VEHICLE_BREAKDOWN` deja el vehículo no disponible. Un incidente de tipo nuevo guardado sin marca (por ejemplo, insertado a mano) se trata como `DELAY`.
 
+## Opciones de abastecimiento A/B/C y recomendación calculada (#241 — 16 de octubre de 2026)
+
+`POST /api/v1/logistics/sourcing` y las opciones evaluadas en `SourcingService` exponen un conjunto estructurado y auditable de opciones de abastecimiento (`options`), con pesos explícitos y recomendación calculada:
+
+| Campo en `DemandSourcingResult` | Significado / Tipo |
+|---|---|
+| `options` | Lista de propuestas evaluadas (`DemandSourcingOptionDto`), con `optionId`: `"A"`, `"B"`, `"C"` |
+| `recommendationWeights` | Pesos auditables (`weightCost`, `weightCriticalOnTime`, `weightPendingDemand`, `weightRisk`) |
+| `contractedCarrierConfigured` | `true` si el operador contratado virtual está habilitado y configurado en `Logistics:ContractedCarrier` |
+
+### Estructura de cada opción (`DemandSourcingOptionDto`)
+
+| Campo | Unidad / significado |
+|---|---|
+| `optionId` | Identificador de la opción: `"A"` (Consolidada propia), `"B"` (Críticos primero propia), `"C"` (Operador contratado) |
+| `label` | Nombre descriptivo de la propuesta |
+| `carrierType` | `"Propia"` (flota propia de la organización) o `"Contratada"` (tercerizada / virtual) |
+| `carrierName` | Nombre comercial o descriptivo del transportista (ej. `"Flota Propia ISTPET"`, `"Servientrega Express (Sintético)"`) |
+| `isRecommended` | `true` si obtuvo el mayor puntaje ponderado multicriterio; no es fijo |
+| `score` | Puntaje final calculado (0 a 100) según la función de puntuación y pesos |
+| `scoreBreakdown` | Desglose auditado del puntaje: `costScore`, `criticalScore`, `pendingScore`, `riskScore`, `weights` |
+| `costBreakdown` | Desglose de costos: `baseFee`, `distanceCost`, `weightCost`, `carrierFee`, `expectedShrink`, `pendingDemandCost`, `totalEstimatedCost` |
+| `totalEstimatedCost` | USD total estimado para servir la demanda evaluada bajo esta opción |
+| `criticalOnTimeCount` | Entregas críticas que llegan dentro de su ventana de tiempo |
+| `criticalTotalCount` | Total de paradas críticas consideradas en la demanda |
+| `pendingDemandKg` | Demanda que no pudo ser cubierta por la flota bajo esta opción (0 si se cubre completa) |
+| `responseHours` | Horas de respuesta operativa (0 para flota propia inmediata, valor configurado para contratado) |
+| `justification` | Explicación determinista basada estrictamente en hechos y cifras comparadas con las demás opciones |
+
+### Control humano del planificador (`POST /api/v1/route-plans/suggest`)
+
+El payload `SuggestRoutesRequest` admite la propiedad opcional `optionId` (`"A"`, `"B"`, `"C"`):
+- Si el planificador omite `optionId` o envía `null`/vacío, el backend toma automáticamente la opción marcada con `isRecommended: true`.
+- Si el planificador especifica un `optionId` explícito (ej. `"A"` o `"C"`), el backend respeta la decisión humana y construye las rutas y reservas asociadas a dicha opción, preservando el principio de control humano.
+

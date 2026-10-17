@@ -855,3 +855,35 @@ ejecución n8n `297`). El primer Watch (ejecución `292`) cayó en `agent_error`
 por credenciales locales dentro de los sub-workflows embebidos; se corrigió el
 remapeo y se reaplicó antes de acreditar. Evidencia:
 [2026-10-16-sincronizacion-productiva](evidencia/2026-10-16-sincronizacion-productiva.md).
+
+## Issue #240 — costo total estimado de servir — 16-oct-2026
+
+- [x] Revisar issue, coordinación #253 y propuesta #239; #230 cerrado.
+- [x] [Plan de implementación](plan-240-costo-servicio.md), rama propia desde develop.
+- [x] Migración aditiva e importador compatible.
+- [x] Cálculo y desglose en evaluación/selección; sin editar RoutePlansController.
+- [x] 40/40 pruebas dirigidas finales; historial desde cero, fixture demo y copia real de base local (37 tablas/387 filas) sin pérdida.
+- [x] [Evidencia, prelaunch local y captura](evidencia/2026-10-16-240-costo-servicio.md): API real/PostGIS, readiness 200 y Receptor 403.
+- Revisión técnica local completada; 559/559 en la suite completa y 40/40
+  dirigidas tras los últimos ajustes. CI del HEAD final, aprobación permitida,
+  merge a develop y cierre se acreditan en el PR vinculado a
+  [#240](https://github.com/bryancito1090/istpetdev-platform/issues/240).
+
+Estado del código, pruebas locales y ensayo API: completos; no desplegado. La integración de /confirm es
+responsabilidad de Anthony y la pantalla de #242. Los estados de código, prueba,
+ejecución real y despliegue se registrarán por separado.
+
+## Issue #241 — opción con operador contratado y recomendación calculada con justificación — 16-oct-2026
+
+- [x] Revisar issue, concepto de contratación logística y coordinación #253 (Bryan dueño único de `SourcingService.cs`).
+- [x] Opciones en archivos propios: `ContractedCarrierOptions.cs` y `RecommendationOptions.cs`, expuestas en `LogisticsOptions.cs`.
+- [x] Modelo virtual del operador contratado: `BaseFeeUsd`, `PerKmUsd`, `PerKgUsd`, `ResponseHours`, `Name`, sin límite de capacidad física ni afección a la flota propia, sin migración de base de datos.
+- [x] Opción C «Contratada»: evalúa la misma demanda que la mejor opción propia, calcula costo tarifario ($C = \text{base} + \text{km} \times \text{tarifa/km} + \text{kg} \times \text{tarifa/kg}$) más merma esperada. Si la flota propia deja demanda insatisfecha, C cubre el 100% y expone el costo del faltante frente a dejarlo desatendido.
+- [x] Puntaje calculado multicriterio: evaluación de costo total, entregas críticas dentro de ventana, demanda pendiente y factores de riesgo (tiempo de respuesta, sobrecarga > 90%). Recomendación dinámica (`IsRecommended`) asignada a la opción de mayor puntaje.
+- [x] Desglose auditado y justificación determinista con cifras exactas (`ExplanationTemplates.cs` / `SourcingService.cs`), respetando la plantilla («Se recomienda B: cuesta USD X más que A, pero entrega a tiempo los Y hospitales; A deja Z fuera de su ventana»).
+- [x] Control humano del planificador en `RoutePlansController.SuggestRoutes`: soporte del parámetro opcional `OptionId` para publicar una opción distinta de la recomendada si así lo decide el operador humano.
+- [x] Retrocompatibilidad: sin configuración de operador contratado, la opción C no se genera y el comportamiento opera idéntico a las opciones propias A y B.
+- [x] Pruebas unitarias dirigidas: 6/6 casos cubiertos en `ContractedCarrierAndRecommendationTests.cs` (ganador por costo, ganador por ventana de críticos, ganador C por capacidad insuficiente, exclusión sin configuración, pesos auditables y control humano en suggest).
+- [x] Documentación de contratos en `docs/boveda/03 Arquitectura/Contratos API y eventos.md`.
+
+Estado: código y pruebas locales completados; sin ejecución real en n8n remoto ni despliegue a producción. La maquetación de la pantalla comparativa corresponde a Alexander (#242).

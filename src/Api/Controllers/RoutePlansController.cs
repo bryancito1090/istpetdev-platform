@@ -882,8 +882,10 @@ public sealed class RoutePlansController(
             return Ok(blockedResult);
         }
 
-        // Seleccionar la propuesta canónica de abastecimiento (salida única, sin menú A/B)
-        var opt = sourcingOptions.FirstOrDefault(o => o.IsRecommended) ?? sourcingOptions.First();
+        // Seleccionar la propuesta de abastecimiento (recomendada por defecto, o la seleccionada por el planificador)
+        var opt = (!string.IsNullOrWhiteSpace(req.OptionId)
+            ? sourcingOptions.FirstOrDefault(o => o.OptionId.Equals(req.OptionId, StringComparison.OrdinalIgnoreCase))
+            : null) ?? sourcingOptions.FirstOrDefault(o => o.IsRecommended) ?? sourcingOptions.First();
 
         var candidates = new List<RouteStopCandidate>();
         int seq = 1;
@@ -1711,7 +1713,8 @@ public sealed record SuggestRoutesRequest(
     IReadOnlyList<Guid> OrderIds,
     DateOnly? PlannedDate = null,
     string? RequestId = null,
-    string? CriticalDeadlineLocal = null
+    string? CriticalDeadlineLocal = null,
+    string? OptionId = null
 );
 
 public sealed record EvaluateRouteRequest(

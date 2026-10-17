@@ -32,6 +32,8 @@ public sealed class LogisticsOptions
     public PolicyOptions Policy { get; set; } = new();
     // #245: franjas de hora pico; vacío = las duraciones no cambian.
     public List<TrafficBandOptions> TrafficBands { get; set; } = [];
+    public ContractedCarrierOptions? ContractedCarrier { get; set; }
+    public RecommendationOptions? Recommendation { get; set; }
 }
 
 public sealed class RebalancingOptions
