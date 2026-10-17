@@ -740,14 +740,16 @@ def slide_capture(deck):
 # El desglose por componente no se muestra: en esa corrida no suma el total (revisión pedida en #276).
 ABC_ENGINE_COMMIT = "1585ab7"
 ABC_ROWS = [
-    ("Flota", ["Propia", "Propia", "Contratada"]),
-    ("Críticos a tiempo", ["5 de 6", "6 de 6", "6 de 6"]),
+    ("Críticos a tiempo", ["83 % (5 de 6)", "100 % (6 de 6)", "100 % (6 de 6)"]),
+    ("Costo frente a A", ["base", "+20,7 %", "+15,6 %"]),
     ("Puntaje del motor", ["81,7", "89,1", "90,8"]),
     ("Costo total estimado", ["USD 57,89", "USD 69,89", "USD 66,90"]),
 ]
 ABC_RECOMMENDED = 3  # columna C (índice 3 en la tabla, 0 = rótulos)
-ABC_JUSTIFICATION = ("Recomendación del motor: C. El operador contratado cubre el 100 % de los pedidos, "
-                     "con los 6 críticos a tiempo y respuesta de 4 h.")
+ABC_JUSTIFICATION = ("Recomendación del motor: C. Por un 15,6 % más que A, cumple el 100 % de los "
+                     "críticos; frente a B, que también cumple, cuesta un 4,3 % menos.")
+# Porcentajes derivados de los totales del motor: B/A − 1 = 20,7 %; C/A − 1 = 15,6 %;
+# 1 − C/B = 4,3 %; 5/6 = 83 %.
 
 
 def slide_abc(deck):
@@ -829,16 +831,15 @@ def slide_abc(deck):
     rect(notes.shapes, MARGIN, ny, 0.06, 0.72, DORADO)
     text(notes.shapes, MARGIN + 0.22, ny, right - MARGIN - 0.35, 0.72,
          [[(ABC_JUSTIFICATION + " ", {"bold": True}),
-           ("La más barata no siempre es la mejor: A deja un crítico fuera de ventana. "
-            "El planificador decide.", {})]],
+           ("La más barata no siempre es la mejor. El planificador decide.", {})]],
          12.5, AZUL, valign=MSO_ANCHOR.MIDDLE)
     tl.add(notes, "fade", mode="after", dur=400)
     msg = peek_bubble(s, [("Una ruta no es solo kilómetros: también es ", False),
                           ("quien descarga", True), (".", False)])
     tl.add(msg, "fade", mode="click", dur=400)
     record(deck, s, tl, "Panel A / B / C",
-           "Auto: título y rótulo → encabezado de tabla → Chillo (zoom). Clic 1: filas Flota, "
-           "Críticos a tiempo, Puntaje (en cascada). Clic 2: Costo total → (auto) marco dorado en C "
+           "Auto: título y rótulo → encabezado de tabla → Chillo (zoom). Clic 1: filas Críticos a "
+           "tiempo, Costo frente a A, Puntaje (en cascada). Clic 2: Costo total → (auto) marco dorado en C "
            "y recomendación del motor. Clic 3: globo de Chillo.",
            chillo="Chillo entra solo (zoom). Globo: clic 3.")
 
