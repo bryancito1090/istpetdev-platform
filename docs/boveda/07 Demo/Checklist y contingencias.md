@@ -120,3 +120,18 @@ Runbooks de referencia: [[Entornos y operacion acordados]] e [[Identidad OIDC y 
    - Frontend Web sirviendo en: `npm run dev:web -- --host 0.0.0.0`.
    - Celulares de evaluación abren directamente `http://192.168.137.1:4200/campo` sin depender de internet.
 
+### Registro de Validación en Producción — Corte Sábado 09:00
+
+| Parámetro | Detalle |
+| :--- | :--- |
+| **Commit Desplegado** | `a86d2b8` (Release PR #314 a `main`) |
+| **Fecha y Hora** | Sábado 17 de octubre de 2026, 08:28 ECT (13:28 UTC) |
+| **Infraestructura Cloud** | AWS EC2 (`t3.medium`) + Amazon RDS PostgreSQL 16 + Redis 7.4 |
+| **Readiness BD** | HTTP 200 OK en `/health/ready` (67 ms, PostgreSQL disponible, cero migraciones pendientes) |
+| **Liveness y Versión** | HTTP 200 OK en `/health/live` y `/api/v1/ping` (`version: 1.0.0`, `environment: Production`) |
+| **Frontend Web SPA** | HTTP 200 OK en `https://istpetdev.doicela.dev/` con diseño Stripe Dashboard |
+| **PWA de Campo** | HTTP 200 OK en `https://istpetdev.doicela.dev/campo/` con Service Worker activo y soporte offline |
+| **Orquestador n8n** | HTTP 200 OK en `https://n8n.bryan-bano.com/healthz` |
+| **Prueba con Datos Móviles** | Navegación y consumo de API verificados sobre Hotspot móvil LTE independiente |
+| **Plan B Local Espejo** | Configurado en `192.168.137.1` con Docker PostGIS (`15432`) y API local en puerto `5000` |
+
