@@ -1,6 +1,6 @@
 namespace IstpetDev.Application.Simulation;
 
-public sealed record SeedPolicyMetric(int Seed, string Scenario, string Policy, string MetricCode, decimal? Value);
+public sealed record SeedPolicyMetric(int Seed, string Scenario, string Policy, string MetricCode, decimal? Value, string? Sku = null);
 
 public sealed record AggregatedMetricSummary(
     string Policy,
@@ -8,16 +8,18 @@ public sealed record AggregatedMetricSummary(
     decimal? Min,
     decimal? Median,
     decimal? Max,
-    decimal? AdverseValue);
+    decimal? AdverseValue,
+    string? Sku = null);
 
 public static class ComparisonAggregator
 {
     public static AggregatedMetricSummary AggregateMetric(
         IEnumerable<SeedPolicyMetric> runs,
         string policy,
-        string metricCode)
+        string metricCode,
+        string? sku = null)
     {
-        var relevant = runs.Where(r => r.Policy == policy && r.MetricCode == metricCode).ToList();
+        var relevant = runs.Where(r => r.Policy == policy && r.MetricCode == metricCode && r.Sku == sku).ToList();
 
         var baseValues = relevant
             .Where(r => r.Scenario == "base" && r.Value.HasValue)
@@ -30,7 +32,7 @@ public static class ComparisonAggregator
 
         if (baseValues.Count == 0)
         {
-            return new AggregatedMetricSummary(policy, metricCode, null, null, null, adverseValue);
+            return new AggregatedMetricSummary(policy, metricCode, null, null, null, adverseValue, sku);
         }
 
         var min = baseValues.First();
@@ -47,6 +49,6 @@ public static class ComparisonAggregator
             median = Math.Round((baseValues[mid - 1] + baseValues[mid]) / 2m, 3, MidpointRounding.AwayFromZero);
         }
 
-        return new AggregatedMetricSummary(policy, metricCode, min, median, max, adverseValue);
+        return new AggregatedMetricSummary(policy, metricCode, min, median, max, adverseValue, sku);
     }
 }

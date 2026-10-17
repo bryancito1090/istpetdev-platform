@@ -5,6 +5,7 @@ using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Infrastructure.Simulation;
+using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ public sealed class GenerateBenchmarkArtifactsTest(ITestOutputHelper output)
 
         var provider = services.BuildServiceProvider();
         var db = provider.GetRequiredService<ApplicationDbContext>();
+        await SimulationSeed.SeedAsync(db, pointCount: 6, pointStock: 100m);
 
         var worker = new SimulationWorker(provider, NullLogger<SimulationWorker>.Instance);
 

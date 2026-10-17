@@ -21,11 +21,18 @@ public static class AccountSeeder
             {
                 if (string.IsNullOrWhiteSpace(demo.Subject) || demo.Kind is not ("human" or "technical") || (demo.Kind == "technical") != (demo.Role == Roles.Automatizacion))
                     throw new InvalidOperationException("Identidad/tipo/rol de cuenta demo inválidos.");
-                db.Accounts.Add(account = new Account { Issuer = issuer, Subject = demo.Subject, Kind = demo.Kind });
+                db.Accounts.Add(new Account
+                {
+                    Issuer = issuer,
+                    Subject = demo.Subject,
+                    Kind = demo.Kind,
+                    DisplayName = demo.DisplayName,
+                    Role = demo.Role,
+                    IsActive = true
+                });
             }
-            account.DisplayName = demo.DisplayName;
-            account.Role = demo.Role;
-            account.IsActive = true;
+            // Una cuenta existente no se reactiva ni se reescribe: una revocación o un cambio
+            // de rol hechos por Gerencia deben sobrevivir al arranque del seeder de demo.
         }
         await db.SaveChangesAsync(cancellationToken);
     }

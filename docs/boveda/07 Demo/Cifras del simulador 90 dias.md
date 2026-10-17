@@ -1,67 +1,100 @@
 ---
 tipo: demo
 estado: validado
-actualizado: 2026-10-15
-tags: [demo, simulador, benchmark, 90-dias, metricas]
+actualizado: 2026-10-17
+tags: [demo, simulador, benchmark, 90-dias, metricas, issue-319]
 ---
 
 # Cifras canónicas del simulador de 90 días
 
 ## Resumen del experimento
 
-Este documento registra los resultados medidos y reproducibles del simulador de 90 días (`/simulation`) para el pitch y la documentación técnica de la demo (issue #165, spec 005).
+Corrida comparativa ejecutada sobre el dataset **demo-quito-planificacion importado en la base**,
+sin `Demo:Enabled` y sin leer archivos del disco. El simulador toma puntos, productos, stock, consumos,
+vehículos y matriz vial desde las tablas de la organización.
 
-La comparación se ejecutó sobre el fixture nacional canónico **national-v1** (80 puntos de servicio, 6 bodegas, 12 vehículos, 2 SKU: desinfectante y papel toalla, horizonte de 90 días desde el 2026-10-12).
+- **Dataset:** `demo-quito-planificacion` · hash `D2FBFD3CD3B768EA6212E947ED9BB37F4F3BE0D906BD8FB799802133582BFA3A`
+- **Comparación:** `2987aaea-f068-4906-b5a4-96ef41c600a1`
+- **Semillas base:** 42, 101, 2024 · **Adversa:** 9999
+- **Corridas:** 12 (3 políticas × 4 escenarios), todas completadas
+- **Horizonte:** 90 días desde el día siguiente al último consumo importado
+- **Etiqueta:** cifras simuladas y medidas en esta corrida; no son ahorro observado
 
-Se fijaron **tres semillas base** (`42`, `101`, `2024`) y **un escenario adverso** (`9999`, con incremento del 20% en la demanda y el vehículo `VEH-UN-02` retirado), generando un total de **12 corridas** comparativas (3 políticas × 4 escenarios).
+## Resultados por política
 
-Las políticas evaluadas son:
-1. `reactive-v1`: Dispara reposición de emergencia únicamente cuando el saldo disponible cae por debajo de la cobertura de lead time.
-2. `fixed7-v1`: Calendario fijo semanal que visita cada punto cada 7 días en su día laborable asignado.
-3. `istpetdev-v1`: Algoritmo preventivo que calcula el riesgo de rotura antes de la llamada, consolidando rutas con inserción y optimización local.
+Rango mínimo–mediana–máximo de las tres semillas base. El adverso se informa aparte.
 
----
+| Política | Costo transporte | Kilometraje | Entregas | Puntualidad | Quiebres | Lead time mín. |
+|---|---:|---:|---:|---:|---:|---:|
+| IstpetDev | $6,077.22 | 6,571.2 km | 939 | 38.6 % | 16,589 | 1 días |
+| Reactiva | $8,507.86 | 9,699.4 km | 1,966 | 38.6 % | 16,608 | 1 días |
+| Semanal fija | $4,889.23 | 5,589.1 km | 1,611 | 40.4 % | 16,117 | 1 días |
 
-## Tabla de resultados canónicos
+### Detalle de rangos
 
-| Política | Métrica | Mínimo | Mediana | Máximo | Adverso (Seed 9999) |
-|---|---|---|---|---|---|
-| **reactive-v1** | Kilómetros totales | 4 550,0 km | 4 562,5 km | 4 625,0 km | 4 550,0 km |
-| | Costo transporte | $7 962,50 | $7 984,38 | $8 093,75 | $7 962,50 |
-| | Entregas completadas | 364 | 365 | 370 | 364 |
-| | Km por entrega | 12,5 km | 12,5 km | 12,5 km | 12,5 km |
-| | Costo por entrega | $21,88 | $21,88 | $21,88 | $21,88 |
-| **fixed7-v1** | Kilómetros totales | 7 800,0 km | 7 800,0 km | 7 800,0 km | 7 800,0 km |
-| | Costo transporte | $13 650,00 | $13 650,00 | $13 650,00 | $13 650,00 |
-| | Entregas completadas | 624 | 624 | 624 | 624 |
-| | Km por entrega | 12,5 km | 12,5 km | 12,5 km | 12,5 km |
-| | Costo por entrega | $21,88 | $21,88 | $21,88 | $21,88 |
-| **istpetdev-v1** | Kilómetros totales | 6 987,5 km | 7 037,5 km | 7 062,5 km | 6 962,5 km |
-| | Costo transporte | $12 228,13 | $12 315,63 | $12 359,38 | $12 184,38 |
-| | Entregas completadas | 559 | 563 | 565 | 557 |
-| | Km por entrega | 12,5 km | 12,5 km | 12,5 km | 12,5 km |
-| | Costo por entrega | $21,88 | $21,88 | $21,88 | $21,88 |
+| Política | Métrica | Mínimo | Mediana | Máximo | Adverso (9999) |
+|---|---|---:|---:|---:|---:|
+| IstpetDev | Costo transporte | 5,956.47 | 6,077.22 | 6,112.42 | 6,676.75 |
+| IstpetDev | Kilometraje | 6,442.1 | 6,571.2 | 6,596.2 | 7,107.4 |
+| IstpetDev | Entregas | 934 | 939 | 941 | 1,037 |
+| IstpetDev | Puntualidad % | 38.4 | 38.6 | 38.7 | 32.4 |
+| IstpetDev | Quiebres | 16,576 | 16,589 | 16,660 | 18,287 |
+| IstpetDev | Lead time mínimo (días) | 1 | 1 | 1 | 2 |
+| Reactiva | Costo transporte | 8,484.86 | 8,507.86 | 8,623.84 | 7,990.22 |
+| Reactiva | Kilometraje | 9,645.5 | 9,699.4 | 9,977.7 | 9,006.8 |
+| Reactiva | Entregas | 1,964 | 1,966 | 1,973 | 2,398 |
+| Reactiva | Puntualidad % | 38.5 | 38.6 | 38.7 | 32.8 |
+| Reactiva | Quiebres | 16,561 | 16,608 | 16,640 | 18,171 |
+| Reactiva | Lead time mínimo (días) | 1 | 1 | 1 | 2 |
+| Semanal fija | Costo transporte | 4,889.23 | 4,889.23 | 4,889.23 | 4,792.82 |
+| Semanal fija | Kilometraje | 5,589.1 | 5,589.1 | 5,589.1 | 5,445.9 |
+| Semanal fija | Entregas | 1,611 | 1,611 | 1,611 | 1,599 |
+| Semanal fija | Puntualidad % | 40.1 | 40.4 | 40.6 | 31.7 |
+| Semanal fija | Quiebres | 16,068 | 16,117 | 16,205 | 18,455 |
+| Semanal fija | Lead time mínimo (días) | 1 | 1 | 1 | 2 |
 
----
+## Quiebres frente a las baselines
 
-## Mensajes clave para el pitch
+Clave de quiebre: `punto|SKU|día`. Evitados y nuevos se presentan por separado; la diferencia neta no se etiqueta como “evitados”.
 
-1. **Eficiencia frente a calendario fijo (`fixed7-v1`):**
-   - IstpetDev reduce el recorrido total de 7 800 km a 7 037,5 km (mediana), logrando un **ahorro de ~9,8% en costo de transporte** ($12 315,63 frente a $13 650,00) al eliminar visitas innecesarias en puntos con stock suficiente.
-2. **Prevención frente a modelo reactivo (`reactive-v1`):**
-   - El modelo reactivo realiza menos entregas (365 frente a 563), pero lo hace tarde cuando el hospital ya enfrenta desabastecimiento. IstpetDev adelanta la reposición manteniendo los niveles de servicio y evitando situaciones de urgencia.
-3. **Resiliencia ante disrupción adversa:**
-   - En el escenario adverso (demanda +20% y vehículo retirado), IstpetDev completa 557 entregas recorriendo 6 962,5 km sin colapsar el sistema.
-4. **Reproducibilidad:**
-   - Todas las corridas son reproducibles a partir de las semillas fijadas y del fixture canónico disponible en `docs/dataset/test/national-v1-seed-11/`.
+| Baseline | Evitados (mediana) | Nuevos (mediana) | Diferencia neta (mediana) | Adverso evitados / nuevos / neto |
+|---|---:|---:|---:|---:|
+| Reactiva | 1,733 | 1,714 | -20 | 1,985 / 2,101 / -116 |
+| Semanal fija | 1,375 | 1,854 | -459 | 2,277 / 2,109 / 168 |
 
----
+## Demanda no atendida por SKU y unidad
 
-## Artefactos y verificación
+Litros y kilogramos (u otras unidades base) nunca se suman entre sí.
 
-- **Resumen JSON del run:** `docs/evidence/simulation-benchmark/comparison-e4c7394c-023c-4bec-9ad3-8af6deb74a56.json`
-- **Paquete exportado (.zip):** `docs/evidence/simulation-benchmark/simulation-e4c7394c-023c-4bec-9ad3-8af6deb74a56.zip`
-- **Prueba automatizada de generación y verificación:** `tests/IstpetDev.Tests/Performance/GenerateBenchmarkArtifactsTest.cs`
-- **Prueba de importación desde /datos:** `tests/IstpetDev.Tests/Integration/Imports/NationalDatasetImportTests.cs`
+| SKU | Unidad | Mediana base | Adverso |
+|---|---:|---:|---:|
+| PRD-0001 | GALON | 9,533.442 | 12,082.597 |
+| PRD-0002 | GALON | 3,932.191 | 5,249.063 |
+| PRD-0003 | SACO | 89.735 | 197.504 |
+| PRD-0004 | GALON | 3,316.701 | 4,390.781 |
+| PRD-0005 | FRASCO | 15,588.107 | 19,331.071 |
+| PRD-0006 | PAQUETE | 26,178.057 | 31,961.058 |
+| PRD-0007 | CAJA | 3,023.695 | 3,959.074 |
+| PRD-0008 | PAQUETE | 5,800.804 | 7,418.646 |
+| PRD-0009 | PAQUETE | 6,553.825 | 8,509.631 |
+| PRD-0010 | CAJA | 10,991.267 | 13,546.487 |
+| PRD-0011 | CANECA | 38.793 | 83.249 |
+| PRD-0012 | UNIDAD | 806.783 | 1,306.182 |
+
+## Lectura honesta de la corrida
+
+- IstpetDev recorrió **menos kilómetros y tuvo menor costo de transporte que Reactiva**, pero también completó menos entregas y su diferencia neta de quiebres fue desfavorable (-20 en la mediana base).
+- Frente a Semanal fija, IstpetDev tuvo **mayor costo, mayor kilometraje y más quiebres netos en el rango base**; en el adverso la diferencia neta de quiebres se invierte (+168).
+- La puntualidad se calcula por líneas de demanda atendidas, no sumando cantidades de unidades incompatibles.
+- El resultado no se presenta como ahorro empresarial. Es una comparación reproducible sobre datos sintéticos.
+
+## Reproducibilidad y evidencia
+
+- **Resumen JSON:** `docs/evidence/simulation-quito/comparison-2987aaea-f068-4906-b5a4-96ef41c600a1.json`
+- **Dataset:** `demo-quito-planificacion`, manifiesto en `data/fixtures/demo-quito-planificacion/manifest.json`.
+- **Historia enriquecida:** reglas en el README del fixture y en `historyRules` del manifiesto; la ventana de decisión de 14 días se conserva.
+- **Vehículo adverso retirado:** `VEH-0001`.
+- **A/B/C del pitch:** verificado sin cambios: A 57,89; B 69,89; C 66,90 (recomendada), en `EnsayoPlanificacionIntegrationTests`.
+- **Commit de implementación:** pendiente de registrar en el PR de #319.
 
 Notas relacionadas: [[Dataset y escenarios]], [[Simulador y metricas]], [[Guion del pitch]].

@@ -28,4 +28,27 @@ public sealed class SimulationClock
 
     public DateTime WorkdayEndUtc(DateOnly date) =>
         date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc);
+
+    public static int WorkdaysBetween(DateOnly from, DateOnly to)
+    {
+        var count = 0;
+        var current = from;
+        while (current < to)
+        {
+            current = current.AddDays(1);
+            if (current.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)) count++;
+        }
+        return count;
+    }
+
+    public static DateOnly AddWorkdays(DateOnly date, int workdays)
+    {
+        var result = date;
+        while (workdays > 0)
+        {
+            result = result.AddDays(1);
+            if (result.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)) workdays--;
+        }
+        return result;
+    }
 }
