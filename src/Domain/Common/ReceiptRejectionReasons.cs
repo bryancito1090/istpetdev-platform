@@ -5,10 +5,11 @@ namespace IstpetDev.Domain.Common;
 /// <summary>
 /// Catálogo versionado de motivos de rechazo en recepción de campo (Issue #117 / ISS-08).
 /// Reemplaza el texto libre no estructurado con constantes verificadas.
+/// V2 (#236): agrega ErrorRotulado; los códigos de V1 no cambian.
 /// </summary>
 public static class ReceiptRejectionReasons
 {
-    public const string Version = "V1";
+    public const string Version = "V2";
 
     public const string Faltante = "Faltante";
     public const string Sobrante = "Sobrante";
@@ -16,6 +17,7 @@ public static class ReceiptRejectionReasons
     public const string PrecintoViolado = "PrecintoViolado";
     public const string LoteNoCoincide = "LoteNoCoincide";
     public const string CadenaDeFrio = "CadenaDeFrio";
+    public const string ErrorRotulado = "ErrorRotulado";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -24,7 +26,8 @@ public static class ReceiptRejectionReasons
         Daño,
         PrecintoViolado,
         LoteNoCoincide,
-        CadenaDeFrio
+        CadenaDeFrio,
+        ErrorRotulado
     ];
 
     private static readonly FrozenDictionary<string, string> NormalizationMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -60,7 +63,13 @@ public static class ReceiptRejectionReasons
         ["cadenafrio"] = CadenaDeFrio,
         ["cold_chain_breach"] = CadenaDeFrio,
         ["coldchainbreach"] = CadenaDeFrio,
-        ["temperatura"] = CadenaDeFrio
+        ["temperatura"] = CadenaDeFrio,
+
+        ["errorrotulado"] = ErrorRotulado,
+        ["error_rotulado"] = ErrorRotulado,
+        ["error-rotulado"] = ErrorRotulado,
+        ["mislabeled"] = ErrorRotulado,
+        ["wrong_label"] = ErrorRotulado
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     private static readonly FrozenDictionary<string, string> Descriptions = new Dictionary<string, string>
@@ -70,7 +79,8 @@ public static class ReceiptRejectionReasons
         [Daño] = "Bulto o producto con daño físico visible, rotura o derrame",
         [PrecintoViolado] = "Precinto de seguridad roto, adulterado o ausente",
         [LoteNoCoincide] = "El código de lote físico no coincide con el lote asignado en el despacho",
-        [CadenaDeFrio] = "Ruptura o excursión de temperatura de cadena de frío comprobada"
+        [CadenaDeFrio] = "Ruptura o excursión de temperatura de cadena de frío comprobada",
+        [ErrorRotulado] = "El rótulo o la identificación del empaque no coincide con el producto o el despacho"
     }.ToFrozenDictionary();
 
     public static bool IsValid(string? reason) =>

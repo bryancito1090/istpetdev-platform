@@ -1549,7 +1549,7 @@ public sealed class FieldService : IFieldService
         if (hu.DeliveryId is not Guid deliveryId) throw new FieldNotFoundException(FieldErrorCodes.UnitNotFound, "Unit not found.");
         foreach (var line in request.Lines.Where(l => l.QuantityRejected > 0))
             if (!ReceiptRejectionReasons.IsValid(line.RejectionReason))
-                throw new FieldUnprocessableException("INVALID_REJECTION_REASON", "Selecciona un motivo del catálogo V1.");
+                throw new FieldUnprocessableException("INVALID_REJECTION_REASON", $"Selecciona un motivo del catálogo {ReceiptRejectionReasons.Version}.");
         // El QR prueba que el Receptor tiene el bulto en la mano; el estado de la entrega y de TODOS
         // sus bultos lo valida la máquina de estados del recibo compartido.
         return await CreateReceiptCoreAsync(deliveryId, request, actorAccountId, idempotencyKey, ct);

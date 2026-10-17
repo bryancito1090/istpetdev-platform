@@ -644,3 +644,23 @@ Para avanzar de forma desacoplada y validar la experiencia de usuario, diseño i
 - [x] **Pruebas en verde**: 129/129 pruebas móviles y suite completa de frontend (`test:frontend`) pasando.
 
 
+
+### T16 — Motivo de rechazo «error de rotulado» y resumen por motivo (#236)
+
+Fuente: charla de logística integral del 16-oct (#234), lámina «Puntos de servicio».
+
+| Archivo | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `src/Domain/Common/ReceiptRejectionReasons.cs` | Dominio | `ErrorRotulado` (constante, `All`, descripción); sinónimos `errorrotulado`, `error_rotulado`, `error-rotulado`, `mislabeled`, `wrong_label`; `Version` → `V2` | Sin el motivo no se puede contar el error que la trazabilidad con QR debería atrapar | Simple | Hecho y probado |
+| `src/Application/Field/FieldService.cs` | Backend | El mensaje de `INVALID_REJECTION_REASON` cita la versión vigente del catálogo, no «V1» fijo | El texto quedaba desactualizado con V2 | Borde | Hecho |
+| `tests/.../Unit/Field/ReceiptRejectionReasonsTests.cs` | Backend (pruebas) | `TryNormalize("mislabeled")` → `ErrorRotulado`; los sinónimos de V1 no cambian; orden de `All` y versión | Criterio de aceptación del issue | Simple, Borde | 14/14 en verde |
+| `tests/.../Integration/Field/FieldExceptionsHttpTests.cs` | Backend (pruebas) | Rechazo con `mislabeled` → `rejectionReason = "ErrorRotulado"` en `GET /receipts/exceptions` | La recepción con el motivo nuevo aparece en Novedades, sin migración | Simple | En verde (PostGIS) |
+| `tests/.../Integration/Imports/ChaosAndBenchmarkImportTests.cs` | Backend (pruebas) | El catálogo HTTP devuelve 7 motivos, incluido `ErrorRotulado` | La prueba contaba 6 | Simple | En verde (PostGIS) |
+| `apps/web/src/pages/novedades/novedades.page.ts` | Frontend | Resumen «Líneas rechazadas por motivo» arriba de la lista (líneas y unidades); etiquetas legibles del catálogo en la columna Motivo | Alimenta «Mermas» y «Exactitud» del tablero de indicadores | Simple, Borde | Hecho y probado |
+| `apps/web/src/pages/novedades/novedades.page.spec.ts` | Frontend (pruebas) | 3 casos: conteo por motivo, recepción con `ErrorRotulado` en lista y resumen, sin resumen si solo hay ajustes | Cubre el criterio en la web | Simple, Borde | 7/7 en verde |
+| PWA (`libs/shared-core/.../field.contract.ts`, `home.page.ts`, `field-outbox.service.ts`) | Frontend móvil | Sin cambios | La PWA usa una lista fija V1 y no lee el endpoint; esos archivos son de #230 (Bryan) según #253 | Borde | Pendiente (aviso a Bryan) |
+| Base de datos | DB | Sin cambios | El motivo ya se guarda como texto | — | No requerido |
+
+**Decisiones:**
+- El resumen se calcula en el cliente sobre las recepciones cargadas (hasta `limit`) y lo dice en pantalla; no es un total histórico.
+- Un motivo fuera del catálogo (texto libre legado) se agrupa con su texto tal cual; una línea rechazada sin motivo se agrupa como «Sin motivo registrado». No se reasigna ningún dato.

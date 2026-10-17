@@ -84,6 +84,24 @@ public class FieldExceptionsHttpTests(PostgisContainer postgres) : IClassFixture
     }
 
     [Fact]
+    public async Task Mislabeled_rejection_is_stored_as_ErrorRotulado_and_listed_in_exceptions()
+    {
+        // #236: el sinónimo del receptor se guarda con el código canónico, sin migración (columna de texto).
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var mislabeled = await SeedDeliveredAsync(api, "EXC-ROT");
+        await ReceiveAsync(api, mislabeled, 9m, 3m, reason: "mislabeled");
+
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var body = await GetJsonAsync(planner, "/api/v1/receipts/exceptions");
+
+        var item = body.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("deliveryId").GetGuid() == mislabeled.DeliveryId);
+        Assert.True(item.GetProperty("hasRejections").GetBoolean());
+        var line = item.GetProperty("lines")[0];
+        Assert.Equal(3m, line.GetProperty("quantityRejected").GetDecimal());
+        Assert.Equal(ReceiptRejectionReasons.ErrorRotulado, line.GetProperty("rejectionReason").GetString());
+    }
+
+    [Fact]
     public async Task Field_roles_cannot_read_receipt_exceptions()
     {
         await using var api = new ApiFactory(postgres.NewDatabase());

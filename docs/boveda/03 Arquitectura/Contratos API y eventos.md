@@ -447,3 +447,23 @@ en los DTO es la fuente del costo de servir; el desglose legado de `/suggest`
 sigue describiendo km/hora. La pantalla es #242; la calibración de Quito es #243.
 La planificación general del motor y la calibración histórica (#204) mantienen
 su contrato actual. #244/#245 rebasan después de #240.
+
+## Motivo de rechazo «error de rotulado» (#236 — 16 de octubre de 2026)
+
+`GET /api/v1/deliveries/rejection-reasons` responde `version: "V2"`. El catálogo
+agrega `ErrorRotulado` («El rótulo o la identificación del empaque no coincide
+con el producto o el despacho») al final de la lista; los seis códigos de V1 y
+sus sinónimos no cambian. El servidor normaliza `error_rotulado`,
+`error-rotulado`, `mislabeled` y `wrong_label` a `ErrorRotulado` al registrar la
+recepción, y `GET /api/v1/receipts/exceptions` devuelve el código canónico en
+`rejectionReason`. La forma de las respuestas no cambia y no hay migración: el
+motivo ya se guarda como texto.
+
+La PWA no lee este endpoint: usa la lista fija `RECEIPT_REJECTION_REASONS`
+(versión `V1`) de `libs/shared-core/src/contracts/field.contract.ts`, y el
+outbox valida el motivo contra esa lista. Hasta que se actualice (PWA de #230,
+Bryan), el receptor no puede elegir `ErrorRotulado` desde el teléfono.
+
+La página web de Novedades muestra arriba de la lista las líneas y unidades
+rechazadas por motivo, calculadas en el cliente sobre las recepciones cargadas
+(máximo `limit`), no sobre el total histórico.
