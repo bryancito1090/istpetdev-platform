@@ -159,3 +159,20 @@ Integrado `origin/develop` hasta `78c87a1`, sin conflictos textuales; se conserv
 ### Prelaunch de la ampliación del paso de abastecimiento
 
 Se reutiliza la revisión local de prelaunch para el mismo worktree/entorno. El cambio del paso 2 reutiliza `RouteJourneyPlayer`, geometría y abastecimiento de API; no cambia permisos, identidad, dependencias ni configuración cloud. Compilación/lint aprobados, revisión de aceptación/replanificación/reversión **28/28**. Se verificará el componente real en un harness sintético temporal fuera de `apps`, enlazado solo a loopback; no sustituye ni omite el login de la aplicación. Se conservan los pendientes de Cognito manual, scans nuevos y despliegue ya documentados. No se acredita un óptimo global: la elección inicial es una recomendación viable proporcionada por el motor.
+
+
+### Revisión visual del abastecimiento implementado
+
+Componentes reales con datos sintéticos en harness temporal fuera de la aplicación; skill `emil-design-eng` aplicada y reutilización mínima con `ponytail`.
+
+| Before | After | Why |
+| --- | --- | --- |
+| Encabezado oscuro y texto extenso de abastecimiento | Encabezado claro «Planifica tus entregas» y acción «Comparar y aprobar» | Hacer evidente la siguiente decisión |
+| Todos los detalles de abastecimiento apilados | Solo propuesta activa, producto, recogida y destino | Reducir lectura repetida |
+| Mapa sin explicación por tramos en paso 2 | Reproductor compartido desde recogida hasta última entrega | Explicar el recorrido antes de comparar |
+| Entrada seleccionaba la primera opción | Entrada elige recomendación viable del motor; selección conservada al comparar | Mantener contexto y no atribuir óptimo global |
+| Altura porcentual causaba superposición en móvil durante la revisión | Altura automática del reproductor y paneles sin contracción | Mantener mapa y resumen separados |
+
+Chromium a 1500 × 1100: mapa/reproductor de 930.7 × 915 px, secuencia llega a **5/5** y `finished=true`. A 390 × 844: documento de 390 px, mapa de 348 px, mapa antes del resumen y comprobación geométrica `noOverlap=true`. Elegir B en abastecimiento abre B en el comparador y muestra sus dos vehículos. Capturas temporales `/tmp/istpetdev-rutas-abastecimiento-{desktop,mobile}.png`, resultado `/tmp/istpetdev-rutas-step2-review.json`. Son datos sintéticos; Cognito operativo sigue pendiente.
+
+Web **209/209**, 36 archivos, incluidas recomendación inicial, fallback aproximado, reinicio y selección conservada. Build/lint finales aprobados, incluido el ajuste de altura; avisos CSS 5.88/7.82 kB bajo límite de 8 kB y aviso CommonJS de Leaflet. Regresión PostgreSQL de aceptación/replanificación/reversión **28/28**. Los resultados finales del CI están vinculados al HEAD del [PR #324](https://github.com/bryancito1090/istpetdev-platform/pull/324); no se publican comentarios adicionales en GitHub.

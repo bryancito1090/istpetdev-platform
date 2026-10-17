@@ -1629,7 +1629,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <div class="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
 
             <!-- Columna Izquierda: Formulario y Pasos -->
-            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col gap-3.5 bg-[#F8FAFC] lg:overflow-y-auto min-w-0"
+            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col shrink-0 gap-3.5 bg-[#F8FAFC] lg:overflow-y-auto min-w-0"
               [ngClass]="wizardStep() === 2 ? 'order-2 lg:order-1 lg:col-span-4' : wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
 
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
@@ -2259,11 +2259,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             </div>
 
             <!-- Columna Derecha: Mapa -->
-            <div class="relative min-w-0 min-h-[450px] lg:h-full bg-[#F8FAFC]"
+            <div class="relative shrink-0 min-w-0 min-h-[450px] lg:h-full bg-[#F8FAFC]"
               [ngClass]="wizardStep() === 2 ? 'order-1 lg:order-2 lg:col-span-8 p-3 sm:p-5' : wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
               @if (wizardStep() === 2) {
                 @if (wizardJourney(); as route) {
-                  <route-journey-player [routes]="[route]" [focusedRouteId]="route.id" [replayKey]="wizardReplayKey()"></route-journey-player>
+                  <route-journey-player class="wizard-journey" [routes]="[route]" [focusedRouteId]="route.id" [replayKey]="wizardReplayKey()"></route-journey-player>
                 } @else { <div class="p-8 text-sm text-[#53647b]">No hay un recorrido disponible para esta propuesta. Compara las alternativas para revisar su viabilidad.</div> }
               } @else {
               <ui-map-view
