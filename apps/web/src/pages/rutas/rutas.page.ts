@@ -32,6 +32,15 @@ import {
   DEMO_QUITO_PITCH_OPTIONS,
   DEMO_QUITO_FUEL_REFERENCE
 } from './route-comparison.model';
+import {
+  computeRouteTrackingSummary,
+  computeStopProgressList,
+  getDeliveryStatusBadgeClass,
+  getHuStatusBadgeClass,
+  translateDeliveryStatus,
+  translateHuStatus,
+  translateStopStatus
+} from './route-tracking.model';
 
 /** Un color por vehículo, en el orden de sus códigos; distinguibles entre sí sobre el mapa. */
 export const ROUTE_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2',
@@ -161,7 +170,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       <div class="flex items-center gap-6 border-b border-slate-200">
         <button
           type="button"
-          (click)="activeTab.set('rutas')"
+          (click)="activeTab.set('rutas'); startTrackingTimer()"
           class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
           [ngClass]="activeTab() === 'rutas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
           <span>Rutas Planificadas</span>
@@ -170,7 +179,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
         <button
           type="button"
-          (click)="activeTab.set('rechazos'); loadRejectedCaptures()"
+          (click)="activeTab.set('rechazos'); stopTrackingTimer(); loadRejectedCaptures()"
           class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
           [ngClass]="activeTab() === 'rechazos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
           <span>Bandeja de Capturas Rechazadas</span>
@@ -620,6 +629,107 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
+                <!-- #231: SEGUIMIENTO EN VIVO: LÍNEA DE AVANCE, RESUMEN Y ESTADOS EN ESPAÑOL -->
+                @if (selectedDetail()!.stops.length > 0) {
+                  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-primary-950 text-white rounded-xl p-4 shadow-sm space-y-3" data-testid="tracking-card">
+                    <!-- Resumen superior y botón de actualización -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+                      <div class="flex items-center gap-2.5">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold tracking-tight text-white">
+                              Seguimiento de Ruta en Vivo
+                            </h4>
+                            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Autorefresco 25s
+                            </span>
+                          </div>
+                          <p class="text-xs text-slate-300 font-mono mt-0.5" data-testid="tracking-summary-text">
+                            {{ trackingSummary().summaryText }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Controles de actualización -->
+                      <div class="flex items-center gap-2 text-xs">
+                        <span class="text-[11px] text-slate-400 font-mono" data-testid="last-tracking-update">
+                          {{ lastTrackingUpdateText() }}
+                        </span>
+                        <button
+                          type="button"
+                          (click)="manualRefreshTracking()"
+                          [disabled]="trackingRefreshing()"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-white font-medium text-xs transition-colors border border-slate-600 disabled:opacity-50"
+                          data-testid="btn-refresh-tracking">
+                          <span [class.animate-spin]="trackingRefreshing()">🔄</span>
+                          <span>Actualizar</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Línea de avance por parada (Línea de tiempo / Stepper) -->
+                    <div class="pt-2 overflow-x-auto pb-2">
+                      <div class="flex items-start min-w-[640px] gap-2">
+                        @for (stop of stopProgressList(); track stop.sequence; let idx = $index; let last = $last) {
+                          <div class="flex-1 flex flex-col items-center text-center relative group">
+                            <!-- Conector entre paradas -->
+                            @if (!last) {
+                              <div class="absolute top-4 left-1/2 w-full h-0.5 -z-0"
+                                   [ngClass]="stop.isCompleted ? 'bg-emerald-500' : (stop.isCurrent ? 'bg-gradient-to-r from-amber-400 to-slate-700' : 'bg-slate-700')">
+                              </div>
+                            }
+
+                            <!-- Círculo / Icono de estado -->
+                            <div class="relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs font-mono transition-transform group-hover:scale-105"
+                                 [ngClass]="{
+                                   'bg-emerald-500 text-white shadow-md shadow-emerald-900/50 ring-2 ring-emerald-300': stop.isCompleted,
+                                   'bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-900/40 ring-4 ring-amber-400/30': stop.isCurrent,
+                                   'bg-slate-700 text-slate-400 border border-slate-600': stop.isPending
+                                 }">
+                              @if (stop.isCompleted) {
+                                <span>✓</span>
+                              } @else if (stop.isCurrent) {
+                                <span>📍</span>
+                              } @else {
+                                <span>{{ stop.sequence }}</span>
+                              }
+                            </div>
+
+                            <!-- Indicador de Parada Actual -->
+                            @if (stop.isCurrent) {
+                              <span class="mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs" data-testid="badge-current-stop">
+                                Parada actual
+                              </span>
+                            }
+
+                            <!-- Info de la parada -->
+                            <span class="mt-1 text-xs font-bold text-slate-200 truncate max-w-[130px]" [title]="stop.name">
+                              {{ stop.name }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono">
+                              {{ stop.kind === 'Pickup' ? 'Bodega' : 'Parada ' + stop.sequence }} · {{ stop.etaOrWindow }}
+                            </span>
+
+                            <!-- Estado en español -->
+                            <span class="mt-1 px-2 py-0.5 rounded text-[10px] font-semibold"
+                                  [ngClass]="{
+                                    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30': stop.isCompleted,
+                                    'bg-amber-500/20 text-amber-300 border border-amber-500/30': stop.isCurrent,
+                                    'bg-slate-800 text-slate-400 border border-slate-700': stop.isPending
+                                  }">
+                              {{ stop.statusLabel }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
                   <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
@@ -777,14 +887,14 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                 </span>
                               }
                               @if (stop.deliveryStatus) {
-                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
-                                  [ngClass]="stop.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : (stop.deliveryStatus === 'Proposed' ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700')">
-                                  Entrega: {{ stop.deliveryStatus }}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border"
+                                  [ngClass]="getDeliveryStatusBadgeClass(stop.deliveryStatus)">
+                                  Entrega: {{ translateDeliveryStatus(stop.deliveryStatus) }}
                                 </span>
                               }
-                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold"
-                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                                Parada: {{ stop.status }}
+                              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border"
+                                [ngClass]="stop.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'">
+                                Parada: {{ translateStopStatus(stop.status) }}
                               </span>
                               <span class="text-xs text-slate-400 font-mono">
                                 {{ expandedStopSeqs().has(stop.sequence) ? '▲' : '▼' }}
@@ -801,8 +911,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                   <div class="flex items-center gap-2">
                                     <span class="text-slate-500 font-mono">Entrega:</span>
                                     <strong class="font-mono text-slate-800">{{ stop.deliveryCode || 'DEL-...' }}</strong>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200">
-                                      {{ stop.deliveryStatus || 'Planificada' }}
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border"
+                                      [ngClass]="getDeliveryStatusBadgeClass(stop.deliveryStatus)">
+                                      {{ translateDeliveryStatus(stop.deliveryStatus) }}
                                     </span>
                                   </div>
 
@@ -812,7 +923,10 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                       @for (hu of stop.handlingUnits; track hu.id) {
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-300 font-mono text-[10px]">
                                           <span>📦 {{ hu.code }}</span>
-                                          <span class="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-bold uppercase">{{ hu.status }}</span>
+                                          <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border"
+                                            [ngClass]="getHuStatusBadgeClass(hu.status)">
+                                            {{ translateHuStatus(hu.status) }}
+                                          </span>
                                         </span>
                                       }
                                     </div>
@@ -871,9 +985,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                                             }
                                           </td>
                                           <td class="p-2 text-right">
-                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                                              [ngClass]="line.deliveryStatus === 'Delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                                              {{ line.deliveryStatus || stop.deliveryStatus || 'Planificada' }}
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border"
+                                              [ngClass]="getDeliveryStatusBadgeClass(line.deliveryStatus || stop.deliveryStatus)">
+                                              {{ translateDeliveryStatus(line.deliveryStatus || stop.deliveryStatus) }}
                                             </span>
                                           </td>
                                         </tr>
@@ -2097,6 +2211,71 @@ export class RutasPage implements OnInit, OnDestroy {
     return list;
   });
 
+  // #231: Seguimiento de ruta en tiempo real
+  private trackingInterval: ReturnType<typeof setInterval> | undefined;
+  readonly trackingRefreshing = signal<boolean>(false);
+  readonly lastTrackingUpdate = signal<Date | null>(null);
+  readonly lastTrackingUpdateText = computed<string>(() => {
+    const d = this.lastTrackingUpdate();
+    if (!d) return 'Sin lecturas';
+    return `Última lectura: ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  });
+
+  readonly trackingSummary = computed(() => {
+    return computeRouteTrackingSummary(this.selectedDetail()?.stops);
+  });
+
+  readonly stopProgressList = computed(() => {
+    return computeStopProgressList(this.selectedDetail()?.stops);
+  });
+
+  readonly translateHuStatus = translateHuStatus;
+  readonly getHuStatusBadgeClass = getHuStatusBadgeClass;
+  readonly translateDeliveryStatus = translateDeliveryStatus;
+  readonly getDeliveryStatusBadgeClass = getDeliveryStatusBadgeClass;
+  readonly translateStopStatus = translateStopStatus;
+
+  startTrackingTimer(): void {
+    this.stopTrackingTimer();
+    this.lastTrackingUpdate.set(new Date());
+    // Autoactualización cada 25 s mientras el detalle está abierto (#231)
+    this.trackingInterval = setInterval(() => {
+      this.refreshSelectedDetail(false);
+    }, 25000);
+  }
+
+  stopTrackingTimer(): void {
+    if (this.trackingInterval) {
+      clearInterval(this.trackingInterval);
+      this.trackingInterval = undefined;
+    }
+  }
+
+  manualRefreshTracking(): void {
+    this.refreshSelectedDetail(true);
+  }
+
+  refreshSelectedDetail(isManual = false): void {
+    const planId = this.selectedPlanId();
+    if (!planId) {
+      this.stopTrackingTimer();
+      return;
+    }
+    if (isManual) {
+      this.trackingRefreshing.set(true);
+    }
+    this.apiService.getRoutePlanById(planId).subscribe({
+      next: (detail) => {
+        if (isManual) this.trackingRefreshing.set(false);
+        this.selectedDetail.set(detail);
+        this.lastTrackingUpdate.set(new Date());
+      },
+      error: () => {
+        if (isManual) this.trackingRefreshing.set(false);
+      }
+    });
+  }
+
   toggleStopExpansion(seq: number): void {
     const current = new Set(this.expandedStopSeqs());
     if (current.has(seq)) current.delete(seq);
@@ -2414,6 +2593,7 @@ export class RutasPage implements OnInit, OnDestroy {
         } else {
           this.selectedPlanId.set(null);
           this.selectedDetail.set(null);
+          this.stopTrackingTimer();
         }
       },
       error: () => this.loading.set(false)
@@ -2431,6 +2611,7 @@ export class RutasPage implements OnInit, OnDestroy {
         }
         if (this.geometries.size > 0) this.renderAllRoutes();
         else this.buildMap(detail);
+        this.startTrackingTimer();
       },
       error: () => {}
     });
@@ -3145,6 +3326,7 @@ export class RutasPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.geometryRetryTimer);
+    this.stopTrackingTimer();
   }
 
   /** Todas las rutas vigentes a la vez: un color por vehículo, la seleccionada resaltada y las bodegas marcadas. */
