@@ -21,6 +21,7 @@ Aquí van **solo PDF actualizados** de lo que se entrega al jurado, más el PPTX
 | `7-Pitch.pptx` | Las mismas 12 láminas con animaciones y el GIF de rutas (lámina 6); es el que se presenta | `materiales/generar_v5.py` |
 | `8-Guion-del-pitch.pdf` | Guion hablado v5, 4:40 | nota «Guion del pitch» (07 Demo), sección «Versión vigente v5» |
 | `9-Guion-del-video.pdf` | Guion del video de la demo, 2:30, plano por plano | nota «Guion del video» (07 Demo) |
+| `04-flujo-concurrente-campo-3-roles.gif` | Demostración animada del flujo móvil concurrente en campo (3 roles: bodega, conductor y receptor) | `docs/specs/004-campo-qr-custodia-offline/evidencia/` |
 
 ## Pendiente
 
