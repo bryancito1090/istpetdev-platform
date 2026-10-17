@@ -95,8 +95,8 @@ public sealed class WarehousesController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> GenerateRebalancing(CancellationToken ct = default)
     {
-        var suggestions = await rebalancingAdvisor.GenerateSuggestionsAsync(ct);
-        return Ok(suggestions);
+        await rebalancingAdvisor.GenerateSuggestionsAsync(ct);
+        return await GetSuggestions(TransferSuggestionStatus.Suggested, ct);
     }
 
     [HttpGet("rebalancing/suggestions")]
