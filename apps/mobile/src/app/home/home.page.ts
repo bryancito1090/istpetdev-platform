@@ -416,7 +416,7 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
               <div class="space-y-3">
                 <div class="flex items-center justify-between text-xs text-slate-500 font-mono px-1">
                   <span>Ruta: {{ route.routePlanId }} (Rev {{ route.revision }})</span>
-                  <span>Vehículo: {{ route.vehicleCode }}</span>
+                  <span>Vehículo: {{ $any(route).vehicleDescription || $any(route).vehiclePlate || route.vehicleCode }}</span>
                 </div>
 
                 @for (pickup of route.pickupStops ?? []; track pickup.stopId) {

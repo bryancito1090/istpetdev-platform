@@ -188,6 +188,22 @@ if (provisionAt >= 0)
     return;
 }
 
+var resetAt = Array.IndexOf(args, "--reset-demo");
+if (resetAt >= 0)
+{
+    var fixture = resetAt + 1 < args.Length ? args[resetAt + 1] : null;
+    using var scope = app.Services.CreateScope();
+    var reset = scope.ServiceProvider.GetRequiredService<IstpetDev.Application.Demo.IDemoResetService>();
+    var report = await reset.ResetAsync(fixture);
+    Console.WriteLine($"Reset result: Applied={report.Applied}, Errors={report.ErrorCount}, Status={report.Status}");
+    if (report.HasErrors)
+    {
+        foreach (var err in report.Issues)
+            Console.WriteLine($"  [{err.Entity}] Row {err.Row}: {err.Field} - {err.Message}");
+    }
+    return;
+}
+
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", false))
 {
     app.UseSwagger();

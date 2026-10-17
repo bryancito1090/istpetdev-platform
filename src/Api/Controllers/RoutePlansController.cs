@@ -58,7 +58,9 @@ public sealed class RoutePlansController(
             query = query.Where(p => p.PlannedStartUtc >= startUtc && p.PlannedStartUtc <= endUtc);
         }
 
-        var vehicles = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id).ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+        var vehiclesList = await db.Vehicles.AsNoTracking().Where(v => v.OrganizationId == DemoOrganization.Id).ToListAsync(ct);
+        var vehicles = vehiclesList.ToDictionary(v => v.Id, v => v.Code);
+        var vehicleDetails = vehiclesList.ToDictionary(v => v.Id, v => ExtractVehicleDetails(v));
 
         if (!string.IsNullOrWhiteSpace(vehicleCode))
         {
@@ -122,6 +124,10 @@ public sealed class RoutePlansController(
                 status = p.Status,
                 vehicleId = p.VehicleId,
                 vehicleCode = vehicles.GetValueOrDefault(p.VehicleId, ""),
+                vehiclePlate = vehicleDetails.TryGetValue(p.VehicleId, out var vd) ? vd.Plate : "",
+                vehicleModel = vd.Model,
+                vehicleDescription = vd.Description,
+                vehicleMechanicalStatus = vd.Status,
                 driverAccountId = planDrivers.Count == 1 ? planDrivers[0].Id : (Guid?)null,
                 driverName = string.Join(", ", planDrivers.Select(d => d.Name)),
                 km = p.TotalKm ?? 0m,
@@ -536,6 +542,10 @@ public sealed class RoutePlansController(
             status = plan.Status,
             vehicleId = plan.VehicleId,
             vehicleCode = vehicle?.Code ?? "",
+            vehiclePlate = ExtractVehicleDetails(vehicle).Plate,
+            vehicleModel = ExtractVehicleDetails(vehicle).Model,
+            vehicleDescription = ExtractVehicleDetails(vehicle).Description,
+            vehicleMechanicalStatus = ExtractVehicleDetails(vehicle).Status,
             originWarehouseCode = origin?.Code ?? "",
             originWarehouseName = origin?.Name ?? "",
             driverAccountId = drivers.Count == 1 ? drivers[0].Id : (Guid?)null,
@@ -1208,19 +1218,70 @@ public sealed class RoutePlansController(
                     distanceToFirstPickupKm = bestVehicleMatch.DistanceToFirstPickupKm
                 } : null;
 
-                var vehicleMatchesDto = vehicleMatches.Select(m => new
+                var sortedMatches = vehicleMatches
+                    .OrderByDescending(m => m.IsMatch)
+                    .ThenByDescending(m => {
+                        if (!string.IsNullOrWhiteSpace(m.Vehicle.MetadataJson) && m.Vehicle.MetadataJson.Contains("electrico", StringComparison.OrdinalIgnoreCase)) return 2;
+                        return 1;
+                    })
+                    .ThenBy(m => m.DistanceToFirstPickupKm)
+                    .ThenBy(m => m.EstimatedTotalCost)
+                    .ToList();
+
+                var bestMatchId = sortedMatches.FirstOrDefault(m => m.IsMatch)?.Vehicle.Id;
+
+                var vehicleMatchesDto = sortedMatches.Select(m =>
                 {
-                    vehicleId = m.Vehicle.Id,
-                    vehicleCode = m.Vehicle.Code,
-                    maxWeight = m.Vehicle.MaxWeight,
-                    maxVolume = m.Vehicle.MaxVolume,
-                    isMatch = m.IsMatch,
-                    discardReason = m.DiscardReason,
-                    warnings = m.Warnings,
-                    weightUtilizationPct = m.WeightUtilizationPct,
-                    volumeUtilizationPct = m.VolumeUtilizationPct,
-                    estimatedCost = m.EstimatedTotalCost,
-                    distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+                    var vDetails = ExtractVehicleDetails(m.Vehicle);
+                    string fuel = "";
+                    string vType = "";
+                    string usageScope = "";
+                    string picoYPlaca = "";
+                    int autonomyKm = 0;
+
+                    if (!string.IsNullOrWhiteSpace(m.Vehicle.MetadataJson))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(m.Vehicle.MetadataJson);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("combustible", out var c)) fuel = c.GetString() ?? "";
+                            if (root.TryGetProperty("vehicle_type", out var vt)) vType = vt.GetString() ?? "";
+                            if (root.TryGetProperty("usage_scope", out var us)) usageScope = us.GetString() ?? "";
+                            if (root.TryGetProperty("pico_y_placa_dia", out var pyp)) picoYPlaca = pyp.GetString() ?? "";
+                            if (root.TryGetProperty("autonomia_km", out var a) && int.TryParse(a.GetString(), out var aVal)) autonomyKm = aVal;
+                        }
+                        catch { }
+                    }
+
+                    bool isElectric = fuel.Equals("electrico", StringComparison.OrdinalIgnoreCase);
+                    bool isRecommended = m.IsMatch && m.Vehicle.Id == bestMatchId;
+
+                    return new
+                    {
+                        vehicleId = m.Vehicle.Id,
+                        vehicleCode = m.Vehicle.Code,
+                        vehiclePlate = vDetails.Plate,
+                        vehicleModel = vDetails.Model,
+                        vehicleDescription = vDetails.Description,
+                        vehicleMechanicalStatus = vDetails.Status,
+                        fuelType = fuel,
+                        isElectric,
+                        vehicleType = vType,
+                        usageScope,
+                        autonomyKm,
+                        picoYPlacaDia = picoYPlaca,
+                        maxWeight = m.Vehicle.MaxWeight,
+                        maxVolume = m.Vehicle.MaxVolume,
+                        isMatch = m.IsMatch,
+                        isRecommended,
+                        discardReason = m.DiscardReason,
+                        warnings = m.Warnings,
+                        weightUtilizationPct = m.WeightUtilizationPct,
+                        volumeUtilizationPct = m.VolumeUtilizationPct,
+                        estimatedCost = m.EstimatedTotalCost,
+                        distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+                    };
                 }).ToList();
 
                 evaluatedOptions.Add(new EvaluatedOptionDto(
@@ -2401,6 +2462,36 @@ public sealed class RoutePlansController(
         {
             // Ignore JSON parse errors
         }
+    }
+
+    private static (string Plate, string Model, string Description, string Status) ExtractVehicleDetails(Vehicle? vehicle)
+    {
+        if (vehicle == null) return ("", "", "", "");
+        string plate = "";
+        string model = "";
+        string status = "";
+        if (!string.IsNullOrWhiteSpace(vehicle.MetadataJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(vehicle.MetadataJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("matricula", out var p)) plate = p.GetString() ?? "";
+                if (root.TryGetProperty("modelo", out var m)) model = m.GetString() ?? "";
+                if (root.TryGetProperty("marca", out var b))
+                {
+                    var brand = b.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(brand))
+                        model = string.IsNullOrWhiteSpace(model) ? brand : $"{brand} {model}";
+                }
+                if (root.TryGetProperty("estado_mecanico", out var s)) status = s.GetString() ?? "";
+            }
+            catch { }
+        }
+        string desc = !string.IsNullOrWhiteSpace(model)
+            ? (!string.IsNullOrWhiteSpace(plate) ? $"{model} ({plate})" : model)
+            : (!string.IsNullOrWhiteSpace(plate) ? $"{vehicle.Code} ({plate})" : vehicle.Code);
+        return (plate, model, desc, status);
     }
 }
 

@@ -41,6 +41,7 @@ public sealed class Vehicle : OrganizationEntity
     public string? VehicleType { get; set; }
     public string? UsageScope { get; set; }
     public bool IsActive { get; set; }
+    public string? MetadataJson { get; set; }
 }
 
 public sealed class Product : OrganizationEntity
@@ -53,6 +54,7 @@ public sealed class Product : OrganizationEntity
     public decimal? UnitValue { get; set; }
     public decimal? UnitsPerPackage { get; set; }
     public bool IsActive { get; set; }
+    public string? MetadataJson { get; set; }
 }
 
 public sealed class Lot : OrganizationEntity

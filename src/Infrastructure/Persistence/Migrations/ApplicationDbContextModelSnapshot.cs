@@ -1217,6 +1217,9 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -2314,6 +2317,9 @@ namespace IstpetDev.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("MaxWeight")
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("jsonb");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid");

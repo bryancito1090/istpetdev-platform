@@ -86,6 +86,10 @@ export interface RoutePlanSummaryDto {
   status: string;
   vehicleId: string;
   vehicleCode?: string;
+  vehiclePlate?: string;
+  vehicleModel?: string;
+  vehicleDescription?: string;
+  vehicleMechanicalStatus?: string;
   plannedStartUtc: string;
   totalDistanceKm: number;
   totalDurationMinutes: number;
@@ -197,6 +201,10 @@ export interface RoutePlanDetailDto {
   status: string;
   vehicleId: string;
   vehicleCode: string;
+  vehiclePlate?: string;
+  vehicleModel?: string;
+  vehicleDescription?: string;
+  vehicleMechanicalStatus?: string;
   plannedStartUtc: string;
   plannedEndUtc?: string;
   totalDistanceKm: number;

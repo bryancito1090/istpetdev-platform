@@ -159,6 +159,8 @@ export interface MobileAssignmentRoute {
   downloadedAtUtc: string;
   driverMessage?: string;
   vehicleCode: string;
+  vehiclePlate?: string;
+  vehicleDescription?: string;
   stopsCount: number;
   totalDistanceKm?: number;
   estimatedDurationMinutes?: number;
