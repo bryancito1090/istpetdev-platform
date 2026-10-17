@@ -334,6 +334,83 @@ process.stdout.write(JSON.stringify(output.json));
                 self.assertIn("deadlineUtc", http["parameters"]["options"]["timeout"], tool_name)
                 self.assertNotEqual(15000, http["parameters"]["options"]["timeout"], tool_name)
 
+    def test_watch_context_sourcing_and_proposals_compact_large_datasets(self):
+        code_runner = """
+const fs = require('fs'), vm = require('vm');
+const x = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(vm.runInNewContext('(function(){' + x.code + '})()', {$json: x.data}).json));
+"""
+        expr_runner = """
+const fs = require('fs'), vm = require('vm');
+const x = JSON.parse(fs.readFileSync(0, 'utf8'));
+const ctx = {$json: x.data, $: () => ({first: () => ({json: {payload: x.signed}})})};
+process.stdout.write(vm.runInNewContext(x.expression.slice(3,-2), ctx));
+"""
+        risks = [
+            {"servicePointId": POINT_ID, "servicePointCode": f"PTO-{i:04d}", "servicePointName": "Punto extenso",
+             "productId": PRODUCT_ID, "sku": f"PRD-{i:04d}", "productName": "Producto extenso",
+             "level": "Critico", "suggestedQuantity": 10 + i, "reason": "x" * 120}
+            for i in range(40)
+        ]
+        demands = [
+            {"destinationId": POINT_ID, "destinationCode": f"PTO-{i:04d}", "productId": PRODUCT_ID,
+             "sku": f"PRD-{i:04d}", "baseUnit": "UND", "riskLevel": "Critico", "coverageDays": 1.2,
+             "requestedQuantity": 10, "allocatedQuantity": 5 if i == 25 else 10,
+             "shortageQuantity": 5 if i == 25 else 0, "fullySourced": i != 25,
+             "allocations": [{"warehouseId": WAREHOUSE_ID, "warehouseCode": "BOD-0001", "quantity": 10, "distanceKm": 4.2}]}
+            for i in range(30)
+        ]
+        sourcing_data = {
+            "operationalDate": "2026-10-17", "sourceKind": "service_points", "safetyStockPct": 20,
+            "fullySourced": False, "demands": demands,
+            "options": [{"optionId": "A", "title": "Opción A", "isRecommended": True, "fullySourced": False,
+                         "involvedWarehouseIds": [WAREHOUSE_ID], "lines": demands}]
+        }
+        proposals_data = {
+            "routes": [{
+                "routePlanId": ROUTE_PLAN_ID, "agentDecisionId": ORDER_ID, "vehicleCode": "VEH-0001",
+                "stops": [
+                    {"sequence": 1, "pointCode": "PTO-0001", "isConsolidation": False,
+                     "loads": [{"sku": "PRD-0001", "quantity": 10, "requiredQuantity": 10, "pendingQuantity": 0, "baseUnit": "UND"}]},
+                    {"sequence": 2, "pointCode": "PTO-0002", "isConsolidation": False,
+                     "loads": [{"sku": "PRD-0002", "quantity": 6, "requiredQuantity": 10, "pendingQuantity": 4, "baseUnit": "UND"}]}
+                ]
+            }],
+            "unserved": [],
+            "facts": [
+                {"code": "route_km", "subject": "VEH-0001", "value": 12.5, "unit": "km"},
+                {"code": "unserved_count", "subject": "global", "value": 0, "unit": "count"}
+            ],
+            "explanation": "Propuesta base"
+        }
+        for name in ("vigia.json", "incidente.json"):
+            wf = load_workflow(name)
+            agent_expr = next(n for n in wf["nodes"] if n["name"] == "AI Agent")["parameters"]["text"]
+            agent_payload = json.loads(subprocess.check_output(["node", "-e", expr_runner], text=True,
+                input=json.dumps({"expression": agent_expr, "signed": {"runId": "r1", "kind": "Watch"}, "data": {"items": risks}})))
+            self.assertEqual(40, agent_payload["initialContext"]["totalItems"])
+            self.assertEqual(15, len(agent_payload["initialContext"]["items"]))
+            self.assertNotIn("reason", agent_payload["initialContext"]["items"][0])
+
+            sourcing_sub = subworkflow_of(tools_of(wf)["plan_sourcing"])
+            sourcing_code = next(n for n in sourcing_sub["nodes"] if n["name"] == "Return Sourcing")["parameters"]["jsCode"]
+            sourcing_out = json.loads(subprocess.check_output(["node", "-e", code_runner], text=True,
+                input=json.dumps({"code": sourcing_code, "data": sourcing_data})))
+            self.assertEqual(30, sourcing_out["totalDemands"])
+            self.assertEqual(12, len(sourcing_out["demands"]))
+            self.assertFalse(sourcing_out["demands"][0]["fullySourced"])
+            self.assertNotIn("lines", sourcing_out["options"][0])
+
+            proposals_sub = subworkflow_of(tools_of(wf)["propose_routes"])
+            proposals_code = next(n for n in proposals_sub["nodes"] if n["name"] == "Return Proposals")["parameters"]["jsCode"]
+            proposals_out = json.loads(subprocess.check_output(["node", "-e", code_runner], text=True,
+                input=json.dumps({"code": proposals_code, "data": proposals_data})))
+            self.assertNotIn("loads", proposals_out["routes"][0]["stops"][0])
+            self.assertEqual(1, len(proposals_out["routes"][0]["stops"][1]["loads"]))
+            self.assertEqual(1, len(proposals_out["routes"][0]["facts"]))
+            self.assertEqual([{"code": "unserved_count", "subject": "global", "value": 0, "unit": "count"}], proposals_out["facts"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
