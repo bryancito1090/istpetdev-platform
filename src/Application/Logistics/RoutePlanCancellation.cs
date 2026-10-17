@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
@@ -74,35 +75,13 @@ public static class RoutePlanCancellation
         foreach (var delivery in drafts) delivery.Status = DeliveryStates.Cancelled;
 
         // 3. Descontar lo que la ruta sumó a cada línea de pedido (guardado en confirm; las revisiones lo heredan).
+        // Un plan confirmado antes de #264 no tiene orderLines: no hay datos para descontar (FR-28).
         var planned = await PlannedOrderLinesAsync(db, plan, ct);
-        var orderLineIds = planned.Keys.ToList();
-        var lines = await db.DeliveryOrderLines
-            .Where(l => l.OrganizationId == DemoOrganization.Id && orderLineIds.Contains(l.Id))
-            .ToListAsync(ct);
-        var orderIds = lines.Select(l => l.DeliveryOrderId).Distinct().ToList();
-        var orders = await db.DeliveryOrders
-            .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id))
-            .ToDictionaryAsync(o => o.Id, ct);
-        var allOrderLines = await db.DeliveryOrderLines
-            .Where(l => l.OrganizationId == DemoOrganization.Id && orderIds.Contains(l.DeliveryOrderId))
-            .ToListAsync(ct);
-        var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
+        var adjusted = await AdjustPlannedAsync(db, planned.ToDictionary(kv => kv.Key, kv => -kv.Value), ct);
+        var orders = adjusted.Orders;
+        var productIds = adjusted.Lines.Select(l => l.Line.ProductId).Distinct().ToList();
         var skus = await db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Sku, ct);
-
-        var released = new List<(DeliveryOrderLine Line, decimal Quantity)>();
-        foreach (var line in lines)
-        {
-            var quantity = Math.Min(planned[line.Id], line.PlannedQuantity);
-            line.PlannedQuantity -= quantity;
-            released.Add((line, quantity));
-        }
-
-        foreach (var order in orders.Values.Where(o => o.Status is DeliveryOrderStatus.Planned or DeliveryOrderStatus.Pending))
-        {
-            var ordLines = allOrderLines.Where(l => l.DeliveryOrderId == order.Id).ToList();
-            var fullyPlanned = ordLines.Count > 0 && ordLines.All(l => l.PlannedQuantity + l.DeliveredQuantity >= l.RequestedQuantity);
-            order.Status = fullyPlanned ? DeliveryOrderStatus.Planned : DeliveryOrderStatus.Pending;
-        }
+        var released = adjusted.Lines.Select(l => (l.Line, Quantity: -l.Applied)).ToList();
 
         plan.Status = CancelledStatus;
         await db.SaveChangesAsync(ct);
@@ -120,7 +99,14 @@ public static class RoutePlanCancellation
     }
 
     // Las revisiones por incidente no copian los pedidos: se buscan en la revisión más cercana que los tenga.
-    private static async Task<Dictionary<Guid, decimal>> PlannedOrderLinesAsync(IApplicationDbContext db, RoutePlan plan, CancellationToken ct)
+    private static async Task<Dictionary<Guid, decimal>> PlannedOrderLinesAsync(IApplicationDbContext db, RoutePlan plan, CancellationToken ct) =>
+        await EffectiveOrderLinesAsync(db, plan, ct) ?? [];
+
+    /// <summary>
+    /// #199: lo que el plan sumó a cada línea de pedido (<c>orderLines</c> del plan o de la revisión más cercana que lo
+    /// tenga). Null si ninguno lo guardó: planes confirmados antes de #264 o rutas sin pedidos.
+    /// </summary>
+    public static async Task<Dictionary<Guid, decimal>?> EffectiveOrderLinesAsync(IApplicationDbContext db, RoutePlan plan, CancellationToken ct)
     {
         var current = plan;
         for (var depth = 0; current is not null && depth < 20; depth++)
@@ -132,7 +118,63 @@ public static class RoutePlanCancellation
             current = await db.RoutePlans.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == previousId && p.OrganizationId == DemoOrganization.Id, ct);
         }
-        return [];
+        return null;
+    }
+
+    public sealed record PlannedAdjustment(
+        IReadOnlyList<(DeliveryOrderLine Line, decimal Applied)> Lines,
+        IReadOnlyDictionary<Guid, DeliveryOrder> Orders);
+
+    /// <summary>
+    /// #199: suma (positivo) o resta (negativo) cantidades a <c>DeliveryOrderLine.PlannedQuantity</c> sin bajar de 0 ni pasar
+    /// de lo pendiente, y recalcula el estado de los pedidos afectados (Planned si no queda remanente; si no, Pending).
+    /// No guarda: lo hace quien llama.
+    /// </summary>
+    public static async Task<PlannedAdjustment> AdjustPlannedAsync(IApplicationDbContext db, IReadOnlyDictionary<Guid, decimal> deltas, CancellationToken ct)
+    {
+        var lineIds = deltas.Where(kv => kv.Value != 0).Select(kv => kv.Key).ToList();
+        if (lineIds.Count == 0) return new PlannedAdjustment([], new Dictionary<Guid, DeliveryOrder>());
+        var lines = await db.DeliveryOrderLines
+            .Where(l => l.OrganizationId == DemoOrganization.Id && lineIds.Contains(l.Id))
+            .ToListAsync(ct);
+        var orderIds = lines.Select(l => l.DeliveryOrderId).Distinct().ToList();
+        var orders = await db.DeliveryOrders
+            .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id))
+            .ToDictionaryAsync(o => o.Id, ct);
+        var allOrderLines = await db.DeliveryOrderLines
+            .Where(l => l.OrganizationId == DemoOrganization.Id && orderIds.Contains(l.DeliveryOrderId))
+            .ToListAsync(ct);
+
+        var applied = new List<(DeliveryOrderLine Line, decimal Applied)>();
+        foreach (var line in lines)
+        {
+            var delta = deltas[line.Id];
+            var quantity = delta < 0
+                ? -Math.Min(-delta, line.PlannedQuantity)
+                : Math.Min(delta, Math.Max(0m, line.RequestedQuantity - line.PlannedQuantity - line.DeliveredQuantity));
+            line.PlannedQuantity += quantity;
+            applied.Add((line, quantity));
+        }
+
+        foreach (var order in orders.Values.Where(o => o.Status is DeliveryOrderStatus.Planned or DeliveryOrderStatus.Pending))
+        {
+            var ordLines = allOrderLines.Where(l => l.DeliveryOrderId == order.Id).ToList();
+            var fullyPlanned = ordLines.Count > 0 && ordLines.All(l => l.PlannedQuantity + l.DeliveredQuantity >= l.RequestedQuantity);
+            order.Status = fullyPlanned ? DeliveryOrderStatus.Planned : DeliveryOrderStatus.Pending;
+        }
+        return new PlannedAdjustment(applied, orders);
+    }
+
+    /// <summary>#199: devuelve el InputJson con <c>orderLines</c> reemplazado (lo que el plan suma a cada línea de pedido).</summary>
+    public static string WithOrderLines(string? inputJson, IReadOnlyDictionary<Guid, decimal> orderLines)
+    {
+        var root = string.IsNullOrWhiteSpace(inputJson) ? null : JsonNode.Parse(inputJson) as JsonObject;
+        root ??= new JsonObject();
+        var array = new JsonArray();
+        foreach (var (id, quantity) in orderLines.Where(kv => kv.Value > 0).OrderBy(kv => kv.Key))
+            array.Add(new JsonObject { ["deliveryOrderLineId"] = id, ["plannedQuantity"] = quantity });
+        root["orderLines"] = array;
+        return root.ToJsonString();
     }
 
     public static Dictionary<Guid, decimal>? ParseOrderLines(string? inputJson)

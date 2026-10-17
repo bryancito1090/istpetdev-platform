@@ -301,4 +301,116 @@ public class ConfirmCapacityTests(PostgisContainer postgres) : IClassFixture<Pos
         Assert.Equal((DeliveryOrderStatus.Planned, 50m), await OrderStateAsync(api, orderId));
         Assert.Equal(HttpStatusCode.NotFound, (await planner.PostAsync($"/api/v1/route-plans/{Guid.NewGuid()}/cancel", null)).StatusCode);
     }
+
+    // #199 (FR-28): una revisión por incidente que retira una parada con pedidos descuenta lo planificado de ese pedido.
+    [Fact]
+    public async Task A_revision_that_removes_an_order_stop_returns_its_planned_quantity_and_revert_adds_it_back()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        Guid otherPointId;
+        string otherPointCode;
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var other = await db.ServicePoints.Where(p => p.Id != s.PointId).OrderBy(p => p.Code).FirstAsync();
+            (otherPointId, otherPointCode) = (other.Id, other.Code);
+        }
+        var removedOrder = await OrderAsync(api, s, 30m);
+        var keptOrder = await OrderAsync(api, s with { PointId = otherPointId, PointCode = otherPointCode }, 40m);
+
+        // Ruta confirmada con dos entregas (30 y 40) y publicada.
+        var stop = (int seq, string kind, Guid? point, Guid? location, string code) => new
+        {
+            sequence = seq, kind, servicePointId = point, locationId = location, code, name = code,
+            position = new { lat = -0.2m, lon = -78.5m }, deltaWeight = 0m, deltaVolume = 0m,
+            windowStart = "07:00:00", windowEnd = "19:00:00", serviceMinutes = 15
+        };
+        var planId = await PlanIdAsync(await planner.PostAsJsonAsync("/api/v1/route-plans/confirm", new
+        {
+            code = $"WIZ-{Guid.NewGuid():N}"[..12], vehicleId = s.VehicleId, totalDistanceKm = 1m, totalDurationMinutes = 1m, totalCost = 0.01m,
+            orderIds = new[] { removedOrder, keptOrder },
+            stops = new object[] { stop(1, "Pickup", null, s.WarehouseId, "BOD"), stop(2, "Delivery", s.PointId, null, s.PointCode), stop(3, "Delivery", otherPointId, null, otherPointCode) }
+        }));
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, s, planId)).StatusCode);
+        Assert.Equal((DeliveryOrderStatus.Planned, 30m), await OrderStateAsync(api, removedOrder));
+        Assert.Equal((DeliveryOrderStatus.Planned, 40m), await OrderStateAsync(api, keptOrder));
+
+        // Revisión como la guarda Replanner: solo queda la entrega del otro punto, con la misma carga.
+        Guid revisionId;
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var plan = await db.RoutePlans.SingleAsync(p => p.Id == planId);
+            var revision = new RoutePlan
+            {
+                Code = plan.Code, Revision = plan.Revision + 1, SupersedesRoutePlanId = plan.Id, VehicleId = plan.VehicleId,
+                Status = "Proposed", ProposedBy = "System:IncidentReplanner", AlgorithmVersion = "2.0-deterministic",
+                PlannedStartUtc = plan.PlannedStartUtc,
+                InputJson = JsonSerializer.Serialize(new
+                {
+                    stops = new[] { new { sequence = 1, pointCode = otherPointCode, isConsolidation = false,
+                                          loads = new[] { new { productId = s.ProductId, sku = "X", quantity = 40m, baseUnit = "u" } } } }
+                })
+            };
+            db.RoutePlans.Add(revision);
+            db.RouteStops.Add(new RouteStop { RoutePlanId = revision.Id, ServicePointId = otherPointId, SequenceNumber = 1,
+                                              PlannedArrivalUtc = plan.PlannedStartUtc, Status = RouteStopStatus.Pending });
+            await db.SaveChangesAsync();
+            revisionId = revision.Id;
+        }
+
+        var publish = await planner.PostAsJsonAsync($"/api/v1/route-plans/{revisionId}/publish", new { });
+        Assert.True(publish.StatusCode == HttpStatusCode.OK, await publish.Content.ReadAsStringAsync());
+        // La entrega retirada se cancela, su reserva se libera y su pedido vuelve a Pending sin nada planificado.
+        Assert.Equal((DeliveryOrderStatus.Pending, 0m), await OrderStateAsync(api, removedOrder));
+        Assert.Equal((DeliveryOrderStatus.Planned, 40m), await OrderStateAsync(api, keptOrder));
+        Assert.Equal(40m, (await PlanStockAsync(api, revisionId)).ActiveReserved);
+
+        // Revertir restaura la parada y vuelve a sumar lo descontado.
+        var revert = await planner.PostAsync($"/api/v1/route-plans/{revisionId}/revert", null);
+        Assert.True(revert.StatusCode == HttpStatusCode.OK, await revert.Content.ReadAsStringAsync());
+        Guid restoredId;
+        using (var json = JsonDocument.Parse(await revert.Content.ReadAsStringAsync()))
+            restoredId = json.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal((DeliveryOrderStatus.Planned, 30m), await OrderStateAsync(api, removedOrder));
+        Assert.Equal((DeliveryOrderStatus.Planned, 40m), await OrderStateAsync(api, keptOrder));
+        var restored = await PlanStockAsync(api, restoredId);
+        Assert.Equal((2, 70m), (restored.Draft, restored.ActiveReserved));
+
+        // Cancelar la ruta restaurada descuenta todo una sola vez.
+        Assert.Equal(HttpStatusCode.OK, (await planner.PostAsync($"/api/v1/route-plans/{restoredId}/cancel", null)).StatusCode);
+        Assert.Equal((DeliveryOrderStatus.Pending, 0m), await OrderStateAsync(api, removedOrder));
+        Assert.Equal((DeliveryOrderStatus.Pending, 0m), await OrderStateAsync(api, keptOrder));
+    }
+
+    // #199 (FR-28): un plan confirmado antes de #264 no guarda orderLines; cancelarlo no inventa un descuento.
+    [Fact]
+    public async Task Cancel_of_a_plan_without_order_lines_releases_stock_but_does_not_change_planned_quantity()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        using var planner = api.ClientFor(TestTokens.Planner);
+        var s = await ResetAsync(api, planner);
+        var orderId = await OrderAsync(api, s, 50m);
+        var planId = await PlanIdAsync(await ConfirmAsync(planner, s, [orderId], s.VehicleId));
+        Assert.Equal(HttpStatusCode.OK, (await PublishAsync(planner, s, planId)).StatusCode);
+        using (var scope = api.Services.CreateScope())
+        {
+            // Como un plan anterior a #264: sin orderLines en InputJson.
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var plan = await db.RoutePlans.SingleAsync(p => p.Id == planId);
+            var input = System.Text.Json.Nodes.JsonNode.Parse(plan.InputJson)!.AsObject();
+            input.Remove("orderLines");
+            plan.InputJson = input.ToJsonString();
+            await db.SaveChangesAsync();
+        }
+
+        var cancel = await planner.PostAsync($"/api/v1/route-plans/{planId}/cancel", null);
+        Assert.Equal(HttpStatusCode.OK, cancel.StatusCode);
+        using var json = JsonDocument.Parse(await cancel.Content.ReadAsStringAsync());
+        Assert.Equal(50m, json.RootElement.GetProperty("releasedReservedQuantity").GetDecimal());
+        Assert.Empty(json.RootElement.GetProperty("orderLines").EnumerateArray());
+        Assert.Equal((DeliveryOrderStatus.Planned, 50m), await OrderStateAsync(api, orderId));
+    }
 }

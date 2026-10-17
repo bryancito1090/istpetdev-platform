@@ -327,6 +327,7 @@ public sealed class RoutePublisher(
             deliveries.Select(d => d.Id).Contains(l.DeliveryId))
             .ToListAsync(ct);
         var lots = await db.Lots.Where(l => l.OrganizationId == DemoOrganization.Id).ToDictionaryAsync(l => l.Id, ct);
+        var removedStops = new List<RouteStop>();
         foreach (var delivery in deliveries.Where(d => oldStops[d.RouteStopId!.Value].Status != "Completed"))
         {
             var original = oldStops[delivery.RouteStopId!.Value];
@@ -343,6 +344,7 @@ public sealed class RoutePublisher(
                     reservation.ClosedAtUtc = DateTime.UtcNow;
                 }
                 delivery.Status = "Cancelled";
+                removedStops.Add(original);
                 continue;
             }
             var existing = lines.Where(l => l.DeliveryId == delivery.Id)
@@ -355,6 +357,7 @@ public sealed class RoutePublisher(
             foreach (var reservation in reservations.Where(r => r.DeliveryId == delivery.Id))
                 reservation.RoutePlanId = plan.Id;
         }
+        await ReleaseRemovedOrderLinesAsync(plan, previous, removedStops, ct);
         previous.Status = "Superseded";
         plan.Status = "Published";
         plan.PublishedAtUtc = DateTime.UtcNow;
@@ -363,6 +366,41 @@ public sealed class RoutePublisher(
         return new PublishResult(plan.Id, plan.Status,
             deliveries.Where(d => stops.Any(s => s.Id == d.RouteStopId)).ToList(),
             reservations.Where(r => r.RoutePlanId == plan.Id).ToList());
+    }
+
+    /// <summary>
+    /// #199 (FR-28): la revisión retira paradas con pedidos. Se resta de <c>PlannedQuantity</c> lo que el plan sumó a los
+    /// pedidos de esos destinos y la revisión guarda el <c>orderLines</c> restante, para que cancelarla no descuente dos
+    /// veces. Sin <c>orderLines</c> (planes confirmados antes de #264) no hay datos para descontar.
+    /// </summary>
+    private async Task ReleaseRemovedOrderLinesAsync(RoutePlan plan, RoutePlan previous, IReadOnlyList<RouteStop> removed, CancellationToken ct)
+    {
+        var removedStops = removed.Where(s => s.Kind != RouteStopKind.Pickup).ToList();
+        if (removedStops.Count == 0) return;
+        var planned = await RoutePlanCancellation.EffectiveOrderLinesAsync(db, previous, ct);
+        if (planned is null || planned.Count == 0) return;
+
+        var lineIds = planned.Keys.ToList();
+        var lineOrders = await db.DeliveryOrderLines
+            .Where(l => l.OrganizationId == DemoOrganization.Id && lineIds.Contains(l.Id))
+            .Select(l => new { l.Id, l.DeliveryOrderId })
+            .ToListAsync(ct);
+        var orderIds = lineOrders.Select(l => l.DeliveryOrderId).Distinct().ToList();
+        var destinations = await db.DeliveryOrders
+            .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id))
+            .Select(o => new { o.Id, o.DestinationServicePointId, o.DestinationLocationId })
+            .ToDictionaryAsync(o => o.Id, ct);
+        // Mismo criterio que OrderStopLoads: el pedido va a la parada de su punto o de su bodega de destino.
+        bool GoesToRemovedStop(Guid orderId) => destinations.TryGetValue(orderId, out var d) && removedStops.Any(s =>
+            (d.DestinationServicePointId.HasValue && d.DestinationServicePointId == s.ServicePointId) ||
+            (d.DestinationLocationId.HasValue && d.DestinationLocationId == s.LocationId));
+
+        var release = lineOrders.Where(l => GoesToRemovedStop(l.DeliveryOrderId))
+            .ToDictionary(l => l.Id, l => -planned[l.Id]);
+        if (release.Count == 0) return;
+        await RoutePlanCancellation.AdjustPlannedAsync(db, release, ct);
+        plan.InputJson = RoutePlanCancellation.WithOrderLines(plan.InputJson,
+            planned.Where(kv => !release.ContainsKey(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value));
     }
 
     public async Task<RouteStop> CompleteStopAsync(CompleteStopRequest request, CancellationToken ct = default)
