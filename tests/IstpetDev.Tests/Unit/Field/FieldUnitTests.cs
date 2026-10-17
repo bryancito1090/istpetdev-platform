@@ -132,6 +132,44 @@ public sealed class FieldUnitTests
                 .ToList();
             return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
         }
+
+        public Task<ReturnGuideDto> GenerateReturnGuideAsync(Guid routePlanId, Guid actorAccountId, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReturnGuideDto(
+                $"GRT-{routePlanId.ToString()[..8].ToUpperInvariant()}",
+                routePlanId,
+                "VEH-01",
+                "Conductor Demo",
+                Guid.NewGuid(),
+                "Bodega Central",
+                DateTime.UtcNow,
+                "PendingWarehouse",
+                Array.Empty<ReturnGuideLineDto>()));
+        }
+
+        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReturnGuideDto(
+                guideNumber,
+                Guid.NewGuid(),
+                "VEH-01",
+                "Conductor Demo",
+                Guid.NewGuid(),
+                "Bodega Central",
+                DateTime.UtcNow,
+                "PendingWarehouse",
+                Array.Empty<ReturnGuideLineDto>()));
+        }
+
+        public Task<ReceiveReturnGuideResponse> ReceiveReturnGuideAsync(ReceiveReturnGuideRequest request, Guid actorAccountId, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReceiveReturnGuideResponse(
+                request.GuideNumber,
+                "ReceivedAtWarehouse",
+                DateTime.UtcNow,
+                1,
+                Guid.NewGuid()));
+        }
     }
 
     [Fact]

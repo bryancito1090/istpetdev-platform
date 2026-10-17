@@ -363,3 +363,47 @@ public sealed record ReceiptExceptionDto(
     IReadOnlyList<ReceiptEvidenceDto> Evidence);
 
 public sealed record ReceiptExceptionsResponse(IReadOnlyList<ReceiptExceptionDto> Items, int Total);
+
+// ==========================================
+// Issue #247: Guía de Retorno de lo No Entregado
+// ==========================================
+
+public sealed record ReturnGuideLineDto(
+    Guid HandlingUnitId,
+    string HandlingUnitCode,
+    Guid ProductId,
+    string Sku,
+    string ProductName,
+    Guid LotId,
+    string LotCode,
+    decimal Quantity,
+    string Unit,
+    string Reason);
+
+public sealed record ReturnGuideDto(
+    string GuideNumber,
+    Guid RoutePlanId,
+    string VehiclePlate,
+    string DriverName,
+    Guid DestinationWarehouseId,
+    string DestinationWarehouseName,
+    DateTime GeneratedAtUtc,
+    string Status,
+    IReadOnlyList<ReturnGuideLineDto> Lines);
+
+public sealed record GenerateReturnGuideRequest(
+    Guid RoutePlanId,
+    string? Notes = null);
+
+public sealed record ReceiveReturnGuideRequest(
+    string GuideNumber,
+    Guid OperationId,
+    DateTime? OccurredAtDevice = null);
+
+public sealed record ReceiveReturnGuideResponse(
+    string GuideNumber,
+    string Status,
+    DateTime ReceivedAtUtc,
+    int ItemsReconciled,
+    Guid RebalanceOrderId);
+
