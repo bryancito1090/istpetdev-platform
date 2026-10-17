@@ -274,26 +274,26 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Panel de Planificación y Prioridad de Entrega (AMP-01 / AMP-02 / Issue #196) -->
       @if (session.canWrite()) {
-        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3" data-testid="planning-control-panel">
+        <div class="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-2xs space-y-3" data-testid="planning-control-panel">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                <h3 class="text-xs font-bold text-[#1A2C44] uppercase tracking-wide">
                   Planificación Automática & Prioridad de Entrega
                 </h3>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#E8F7F0] text-[#00875A] border border-[#B3E6CD]">
                   Motor VRP Determinista
                 </span>
               </div>
-              <p class="text-xs text-slate-500">
+              <p class="text-xs text-[#697386]">
                 Calcula el plan óptimo desde bodegas centrales. Puedes fijar una hora límite para que los puntos críticos (hospitales/quirófanos) reciban antes de ese horario.
               </p>
             </div>
 
             <!-- Selector de Hora Límite y Botones -->
             <div class="flex flex-wrap items-center gap-2">
-              <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
-                <label for="critical-deadline-select" class="text-xs font-semibold text-slate-700 whitespace-nowrap">
+              <div class="flex items-center gap-2 bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg px-2.5 py-1">
+                <label for="critical-deadline-select" class="text-xs font-medium text-[#4F5B66] whitespace-nowrap">
                   Hora límite para críticos:
                 </label>
                 <select
@@ -301,7 +301,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   [ngModel]="criticalDeadline()"
                   (ngModelChange)="criticalDeadline.set($event)"
                   data-testid="critical-deadline-select"
-                  class="text-xs font-medium bg-white border border-slate-300 rounded px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary-500">
+                  class="h-8 text-xs font-medium bg-white border border-[#E3E8EE] rounded-md px-2 py-0.5 text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#00A7C4]">
                   <option value="">Sin hora límite (estándar)</option>
                   <option value="09:00">09:00</option>
                   <option value="10:00">10:00</option>
@@ -317,9 +317,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 (click)="generatePlan()"
                 [disabled]="actionLoading() || comparisonLoading()"
                 data-testid="generate-plan-button"
-                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-xs disabled:opacity-50">
+                class="h-9 inline-flex items-center gap-1.5 text-xs font-medium px-3.5 rounded-lg bg-[#00A7C4] text-white hover:bg-[#0093AD] transition-colors shadow-2xs disabled:opacity-50">
                 @if (actionLoading()) {
-                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Calculando...</span>
                 } @else {
                   <span>⚡ Calcular Plan</span>
@@ -331,9 +331,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 (click)="comparePrioritization()"
                 [disabled]="actionLoading() || comparisonLoading()"
                 data-testid="compare-cost-button"
-                class="inline-flex items-center gap-1 text-xs font-semibold px-3.5 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition-colors shadow-xs disabled:opacity-50">
+                class="h-9 inline-flex items-center gap-1.5 text-xs font-medium px-3.5 rounded-lg bg-[#1A2C44] text-white hover:bg-[#132238] transition-colors shadow-2xs disabled:opacity-50">
                 @if (comparisonLoading()) {
-                  <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                  <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                   <span>Comparando...</span>
                 } @else {
                   <span>⚖ Costo de Priorizar</span>
@@ -346,16 +346,16 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Tarjeta de Comparación: Costo de Priorizar (AMP-02) -->
       @if (prioritizationComparison()) {
-        <div class="bg-white border-2 border-indigo-200 rounded-xl p-5 shadow-sm space-y-4" data-testid="prioritization-comparison-card">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+        <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-2xs space-y-4" data-testid="prioritization-comparison-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F3F5] pb-3">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-base font-bold text-slate-900">Análisis Comparativo: Costo de Priorizar Entregas Críticas</span>
-                <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <span class="text-sm font-bold text-[#1A2C44]">Análisis Comparativo: Costo de Priorizar Entregas Críticas</span>
+                <span class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-[#F1F3F5] text-[#1A2C44] border border-[#E3E8EE]">
                   Hora Límite: {{ prioritizationComparison()!.prioritized.deadline }}
                 </span>
               </div>
-              <p class="text-xs text-slate-500 mt-0.5">
+              <p class="text-xs text-[#697386] mt-0.5">
                 Comparativa de viabilidad económica y cumplimiento horario: Plan Estándar (por costo) vs. Plan Priorizado (con ventana crítica).
               </p>
             </div>
@@ -363,7 +363,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <button
               type="button"
               (click)="prioritizationComparison.set(null)"
-              class="text-xs font-semibold text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-100">
+              class="text-xs font-medium text-[#697386] hover:text-[#1A2C44] px-2.5 py-1 rounded-md hover:bg-[#F8FAFC]">
               ✕ Cerrar comparación
             </button>
           </div>
@@ -371,59 +371,59 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Grilla de Métricas Comparativas -->
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <!-- Kilómetros -->
-            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span class="text-[11px] font-bold text-slate-500 uppercase">Recorrido Total</span>
+            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
+              <span class="text-[11px] font-semibold text-[#697386] uppercase tracking-wide">Recorrido Total</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-lg font-bold text-slate-800 font-mono">
+                <span class="text-base font-bold text-[#1A2C44] font-mono">
                   {{ prioritizationComparison()!.prioritized.totalKm | number:'1.1-2' }} km
                 </span>
                 <span class="text-xs font-semibold font-mono"
-                  [ngClass]="prioritizationComparison()!.diffKm > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                  [ngClass]="prioritizationComparison()!.diffKm > 0 ? 'text-[#B76E00]' : 'text-[#00875A]'">
                   {{ prioritizationComparison()!.diffKm >= 0 ? '+' : '' }}{{ prioritizationComparison()!.diffKm | number:'1.1-2' }} km
                 </span>
               </div>
-              <span class="text-[10px] text-slate-400">Sin hora límite: {{ prioritizationComparison()!.baseline.totalKm | number:'1.1-2' }} km</span>
+              <span class="text-[10px] text-[#697386]">Sin hora límite: {{ prioritizationComparison()!.baseline.totalKm | number:'1.1-2' }} km</span>
             </div>
 
             <!-- Costo USD -->
-            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span class="text-[11px] font-bold text-slate-500 uppercase">Costo Operativo (USD)</span>
+            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
+              <span class="text-[11px] font-semibold text-[#697386] uppercase tracking-wide">Costo Operativo (USD)</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-lg font-bold text-slate-800 font-mono">
+                <span class="text-base font-bold text-[#1A2C44] font-mono">
                   USD {{ prioritizationComparison()!.prioritized.totalCost | number:'1.2-2' }}
                 </span>
                 <span class="text-xs font-semibold font-mono"
-                  [ngClass]="prioritizationComparison()!.diffCost > 0 ? 'text-rose-600' : 'text-emerald-600'">
+                  [ngClass]="prioritizationComparison()!.diffCost > 0 ? 'text-[#DF1B41]' : 'text-[#00875A]'">
                   {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
                 </span>
               </div>
-              <span class="text-[10px] text-slate-400">Sin hora límite: USD {{ prioritizationComparison()!.baseline.totalCost | number:'1.2-2' }}</span>
+              <span class="text-[10px] text-[#697386]">Sin hora límite: USD {{ prioritizationComparison()!.baseline.totalCost | number:'1.2-2' }}</span>
             </div>
 
             <!-- Paradas No Atendidas -->
-            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span class="text-[11px] font-bold text-slate-500 uppercase">Paradas No Atendidas</span>
+            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
+              <span class="text-[11px] font-semibold text-[#697386] uppercase tracking-wide">Paradas No Atendidas</span>
               <div class="flex items-baseline justify-between mt-1">
-                <span class="text-lg font-bold font-mono"
-                  [ngClass]="prioritizationComparison()!.prioritized.unservedCount > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                <span class="text-base font-bold font-mono"
+                  [ngClass]="prioritizationComparison()!.prioritized.unservedCount > 0 ? 'text-[#B76E00]' : 'text-[#00875A]'">
                   {{ prioritizationComparison()!.prioritized.unservedCount }}
                 </span>
-                <span class="text-xs font-semibold font-mono text-slate-500">
+                <span class="text-xs font-semibold font-mono text-[#697386]">
                   Base: {{ prioritizationComparison()!.baseline.unservedCount }}
                 </span>
               </div>
-              <span class="text-[10px] text-slate-400">
+              <span class="text-[10px] text-[#697386]">
                 {{ prioritizationComparison()!.diffUnserved > 0 ? 'Afectadas por ventana' : '100% de cobertura' }}
               </span>
             </div>
 
             <!-- Resumen Pitch -->
-            <div class="p-3 bg-indigo-50/70 rounded-lg border border-indigo-200 flex flex-col justify-between">
-              <span class="text-[11px] font-bold text-indigo-900 uppercase">Sobrecosto de Decisión</span>
-              <p class="text-xs font-bold text-indigo-900 mt-1">
+            <div class="p-3.5 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE] flex flex-col justify-between">
+              <span class="text-[11px] font-semibold text-[#1A2C44] uppercase tracking-wide">Sobrecosto de Decisión</span>
+              <p class="text-xs font-bold text-[#1A2C44] mt-1">
                 {{ prioritizationComparison()!.diffCost >= 0 ? '+' : '' }}USD {{ prioritizationComparison()!.diffCost | number:'1.2-2' }}
               </p>
-              <span class="text-[10px] text-indigo-700">
+              <span class="text-[10px] text-[#4F5B66]">
                 {{ prioritizationComparison()!.criticalPoints.length }} punto(s) crítico(s) adelantados a tiempo
               </span>
             </div>
@@ -431,18 +431,18 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
           <!-- Tabla de Hora de Llegada de los Críticos -->
           <div class="space-y-2">
-            <span class="text-xs font-bold text-slate-700 uppercase">
+            <span class="text-xs font-bold text-[#1A2C44] uppercase tracking-wide">
               Hora de Llegada de Puntos Críticos (Hospitales / Quirófanos)
             </span>
 
             @if (prioritizationComparison()!.criticalPoints.length === 0) {
-              <p class="text-xs text-slate-500 italic p-3 bg-slate-50 rounded">
+              <p class="text-xs text-[#697386] italic p-3 bg-[#F8FAFC] rounded-lg border border-[#E3E8EE]">
                 No se detectaron paradas con criticidad alta en las órdenes del plan actual.
               </p>
             } @else {
-              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+              <div class="overflow-x-auto border border-[#E3E8EE] rounded-lg">
                 <table class="w-full text-xs text-left" data-testid="critical-points-table">
-                  <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
+                  <thead class="bg-[#F8FAFC] border-b border-[#E3E8EE] text-[#697386] uppercase font-semibold text-[10px]">
                     <tr>
                       <th class="p-2.5">Punto de Entrega</th>
                       <th class="p-2.5">Criticidad</th>
@@ -452,30 +452,30 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       <th class="p-2.5">Cumplimiento</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
+                  <tbody class="divide-y divide-[#F1F3F5] font-mono text-[#2D3748]">
                     @for (pt of prioritizationComparison()!.criticalPoints; track pt.pointCode) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-2.5 font-sans font-bold text-slate-900">
-                          {{ pt.pointName }} <span class="text-xs text-slate-400 font-mono">({{ pt.pointCode }})</span>
+                      <tr class="hover:bg-[#F8FAFC]/60">
+                        <td class="p-2.5 font-sans font-bold text-[#1A2C44]">
+                          {{ pt.pointName }} <span class="text-xs text-[#697386] font-mono">({{ pt.pointCode }})</span>
                         </td>
                         <td class="p-2.5">
-                          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                             {{ pt.criticality }}
                           </span>
                         </td>
-                        <td class="p-2.5 text-slate-500">{{ pt.baselineArrival }}</td>
-                        <td class="p-2.5 font-bold text-primary-700">{{ pt.prioritizedArrival }}</td>
+                        <td class="p-2.5 text-[#697386]">{{ pt.baselineArrival }}</td>
+                        <td class="p-2.5 font-bold text-[#00A7C4]">{{ pt.prioritizedArrival }}</td>
                         <td class="p-2.5 font-semibold"
-                          [ngClass]="pt.differenceMinutes < 0 ? 'text-emerald-600' : 'text-slate-500'">
+                          [ngClass]="pt.differenceMinutes < 0 ? 'text-[#00875A]' : 'text-[#697386]'">
                           {{ pt.differenceMinutes < 0 ? (pt.differenceMinutes * -1) + ' min antes' : (pt.differenceMinutes === 0 ? 'Sin cambio' : pt.differenceMinutes + ' min después') }}
                         </td>
                         <td class="p-2.5">
                           @if (pt.meetsDeadline) {
-                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#00875A] bg-[#E8F7F0] border border-[#B3E6CD] px-2 py-0.5 rounded-full">
                               ✓ Llega antes de {{ pt.deadline }}
                             </span>
                           } @else {
-                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                            <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#DF1B41] bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
                               ⚠ Excede límite
                             </span>
                           }
@@ -492,33 +492,33 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Estado cargando -->
       @if (loading()) {
-        <div class="p-8 text-center text-slate-500 text-sm bg-white border border-slate-200 rounded-xl">
+        <div class="p-8 text-center text-[#697386] text-sm bg-white border border-[#E3E8EE] rounded-xl shadow-2xs">
           Cargando rutas de distribución...
         </div>
       }
 
       <!-- Estado vacío -->
       @if (!loading() && routePlans().length === 0) {
-        <div class="p-8 text-center bg-white border border-slate-200 rounded-xl space-y-3">
-          <p class="text-slate-600 text-sm">No hay rutas planificadas todavía.</p>
+        <div class="p-8 text-center bg-white border border-[#E3E8EE] rounded-xl space-y-3 shadow-2xs">
+          <p class="text-[#2D3748] text-sm font-medium">No hay rutas planificadas todavía.</p>
           <div class="flex justify-center gap-3">
             @if (session.canWrite()) {
               <button
                 type="button"
                 (click)="openOrderRoutingModal()"
-                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
+                class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#00A7C4] text-white hover:bg-[#0093AD] shadow-2xs">
                 Crear primera ruta por pedidos
               </button>
               <button
                 type="button"
                 (click)="triggerEmergencyFlow()"
-                class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+                class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#DF1B41] text-white hover:bg-[#CD163A] shadow-2xs">
                 Evaluar requerimientos de emergencia
               </button>
             }
             <a 
               routerLink="/alertas" 
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+              class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] text-[#2D3748] hover:bg-[#F1F3F5] transition-colors shadow-2xs">
               Ver alertas pendientes
             </a>
           </div>
@@ -530,28 +530,28 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Columna izquierda: Lista de rutas -->
           <div class="space-y-3">
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <h2 class="text-xs font-semibold text-[#697386] uppercase tracking-wider">
               Rutas registradas ({{ routePlans().length }})
             </h2>
             <div class="space-y-2">
               @for (plan of routePlans(); track plan.id) {
                 <div 
                   (click)="selectPlan(plan.id)"
-                  class="p-4 rounded-xl border cursor-pointer transition-all bg-white"
-                  [ngClass]="selectedPlanId() === plan.id ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200 hover:border-slate-300'">
+                  class="p-3.5 rounded-xl border cursor-pointer transition-all bg-white shadow-2xs"
+                  [ngClass]="selectedPlanId() === plan.id ? 'border-[#635BFF] ring-1 ring-[#635BFF] bg-[#F8FAFC]/50' : 'border-[#E3E8EE] hover:border-[#CBD5E1]'">
                   <div class="flex items-center justify-between">
-                    <span class="font-bold text-sm text-slate-900">{{ plan.code }}</span>
+                    <span class="font-bold text-sm text-[#1A2C44]">{{ plan.code }}</span>
                     <span
-                      class="text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold"
+                      class="text-[10px] font-mono px-2 py-0.5 rounded font-semibold"
                       [ngClass]="{
-                        'bg-emerald-50 text-emerald-700 border border-emerald-200': plan.status === 'Published',
-                        'bg-amber-50 text-amber-700 border border-amber-200': plan.status === 'Proposed',
-                        'bg-slate-50 text-slate-600 border border-slate-200': plan.status !== 'Published' && plan.status !== 'Proposed'
+                        'bg-[#E8F7F0] text-[#00875A] border border-[#B3E6CD]': plan.status === 'Published',
+                        'bg-[#FFF4E5] text-[#B76E00] border border-[#FFE2B5]': plan.status === 'Proposed',
+                        'bg-[#F1F3F5] text-[#4F5B66] border border-[#E3E8EE]': plan.status !== 'Published' && plan.status !== 'Proposed'
                       }">
                       {{ plan.status }}
                     </span>
                   </div>
-                  <div class="text-xs text-slate-500 mt-2 flex justify-between font-mono">
+                  <div class="text-xs text-[#697386] mt-2 flex justify-between font-mono">
                     <span>Vehículo: {{ plan.vehicleCode || 'C-01' }}</span>
                     <span>{{ plan.totalDistanceKm }} km</span>
                   </div>
@@ -563,11 +563,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
           <!-- Columna derecha: Detalle y Paradas -->
           <div class="lg:col-span-2 space-y-4">
             @if (selectedDetail()) {
-              <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 space-y-4 shadow-2xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F1F3F5] pb-4">
                   <div>
-                    <h3 class="font-bold text-slate-900 text-base">{{ selectedDetail()!.code }}</h3>
-                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 font-mono mt-1">
+                    <h3 class="font-bold text-[#1A2C44] text-base">{{ selectedDetail()!.code }}</h3>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386] font-mono mt-1">
                       <span><strong>Distancia:</strong> {{ selectedDetail()!.totalDistanceKm }} km</span>
                       <span><strong>Duración:</strong> {{ selectedDetail()!.totalDurationMinutes }} min</span>
                       <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleCode || 'C-01' }}</span>
@@ -580,44 +580,46 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                   @if (selectedDetail()!.status !== 'Published') {
                     @if (session.canWrite()) {
-                      <label class="text-xs text-slate-600 flex items-center gap-2">
-                        Conductor
-                        <select class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs" aria-label="Conductor de la ruta"
-                          [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
-                          <option value="">Elegir conductor…</option>
-                          @for (driver of drivers(); track driver.accountId) {
-                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
-                          }
-                        </select>
-                      </label>
-                      <button
-                        type="button"
-                        (click)="publishPlan(selectedDetail()!.id)"
-                        [disabled]="actionLoading() || !selectedDriverId()"
-                        [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
-                        class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                        {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
-                      </button>
+                      <div class="flex items-center gap-2">
+                        <label class="text-xs text-[#4F5B66] flex items-center gap-2">
+                          <span>Conductor</span>
+                          <select class="h-9 border border-[#E3E8EE] rounded-lg px-2.5 text-xs text-[#2D3748] bg-white focus:outline-none focus:ring-1 focus:ring-[#00A7C4]" aria-label="Conductor de la ruta"
+                            [ngModel]="selectedDriverId()" (ngModelChange)="selectedDriverId.set($event)">
+                            <option value="">Elegir conductor…</option>
+                            @for (driver of drivers(); track driver.accountId) {
+                              <option [value]="driver.accountId">{{ driver.displayName }}</option>
+                            }
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          (click)="publishPlan(selectedDetail()!.id)"
+                          [disabled]="actionLoading() || !selectedDriverId()"
+                          [title]="selectedDriverId() ? '' : 'Elige el conductor: sin conductor, la ruta no aparece en su teléfono'"
+                          class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#00A7C4] text-white hover:bg-[#0093AD] transition-colors shadow-2xs disabled:opacity-50">
+                          {{ actionLoading() ? 'Publicando...' : 'Publicar a Conductor' }}
+                        </button>
+                      </div>
                       @if (drivers().length === 0) {
-                        <span class="text-[11px] text-amber-700">No hay conductores activos: Gerencia debe crear una cuenta de Conductor.</span>
+                        <span class="text-[11px] text-[#B76E00]">No hay conductores activos: Gerencia debe crear una cuenta de Conductor.</span>
                       }
                     } @else {
-                      <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                      <span class="text-xs font-medium text-[#B76E00] bg-[#FFF4E5] border border-[#FFE2B5] px-3 py-1 rounded-lg">
                         Pendiente de publicación
                       </span>
                     }
                   } @else {
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+                      <span class="text-xs font-medium text-[#00875A] bg-[#E8F7F0] border border-[#B3E6CD] px-3 py-1 rounded-lg">
                         Ruta Publicada al Conductor
                       </span>
                       <a
                         [routerLink]="['/guias-retorno']"
                         [queryParams]="{ planId: selectedDetail()!.id }"
-                        class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-2xs transition"
+                        class="h-9 inline-flex items-center gap-1.5 text-xs font-medium px-3 rounded-lg bg-white border border-[#E3E8EE] text-[#2D3748] hover:bg-[#F8FAFC] shadow-2xs transition"
                         title="Ver o imprimir la guía de retorno de material no entregado"
                       >
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 text-[#697386]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         Guía de Retorno
@@ -631,34 +633,34 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       data-testid="btn-cancel-plan"
                       (click)="cancelPlan(selectedDetail()!.id)"
                       [disabled]="actionLoading()"
-                      class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50">
+                      class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-white border border-[#E3E8EE] text-[#DF1B41] hover:bg-rose-50 transition-colors shadow-2xs disabled:opacity-50">
                       Cancelar ruta
                     </button>
                   }
                 </div>
 
                 <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600" data-route-assignment>
-                  <span><span class="text-slate-400">Bodega:</span> <strong>{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
-                  <span><span class="text-slate-400">Vehículo:</span> <strong>{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#697386]" data-route-assignment>
+                  <span><span class="text-[#697386]">Bodega:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
+                  <span><span class="text-[#697386]">Vehículo:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
                   @if (selectedDetail()!.status === 'Published') {
                     <span>
-                      <span class="text-slate-400">Conductor:</span>
-                      <strong [class.text-rose-700]="!selectedDetail()!.driverName">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
+                      <span class="text-[#697386]">Conductor:</span>
+                      <strong [class.text-[#DF1B41]]="!selectedDetail()!.driverName" class="text-[#1A2C44]">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
                     </span>
                     @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
-                      <span class="text-rose-700">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
+                      <span class="text-[#DF1B41]">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
                     }
                     @if (session.canWrite()) {
                       <span class="flex items-center gap-2">
-                        <select class="border border-slate-300 rounded-lg px-2 py-1 text-xs" aria-label="Reasignar conductor"
+                        <select class="h-8 border border-[#E3E8EE] rounded-md px-2 py-0.5 text-xs text-[#2D3748] bg-white" aria-label="Reasignar conductor"
                           [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
                           <option value="">Cambiar conductor…</option>
                           @for (driver of drivers(); track driver.accountId) {
                             <option [value]="driver.accountId">{{ driver.displayName }}</option>
                           }
                         </select>
-                        <button type="button" class="text-xs font-semibold text-slate-700 underline disabled:opacity-50"
+                        <button type="button" class="text-xs font-semibold text-[#00A7C4] hover:text-[#0093AD] underline disabled:opacity-50"
                           [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
                           Asignar
                         </button>
@@ -669,9 +671,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                 <!-- #231: SEGUIMIENTO EN VIVO: LÍNEA DE AVANCE, RESUMEN Y ESTADOS EN ESPAÑOL -->
                 @if (selectedDetail()!.stops.length > 0) {
-                  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-primary-950 text-white rounded-xl p-4 shadow-sm space-y-3" data-testid="tracking-card">
+                  <div class="bg-[#1A2C44] text-white rounded-xl p-4 shadow-2xs space-y-3 border border-[#2D3E53]" data-testid="tracking-card">
                     <!-- Resumen superior y botón de actualización -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2D3E53] pb-3">
                       <div class="flex items-center gap-2.5">
                         <span class="relative flex h-3 w-3">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -701,7 +703,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                           type="button"
                           (click)="manualRefreshTracking()"
                           [disabled]="trackingRefreshing()"
-                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-white font-medium text-xs transition-colors border border-slate-600 disabled:opacity-50"
+                          class="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg bg-[#2D3E53] hover:bg-[#3B4E66] text-white font-medium text-xs transition-colors border border-[#3B4E66]/80 disabled:opacity-50"
                           data-testid="btn-refresh-tracking">
                           <span [class.animate-spin]="trackingRefreshing()">🔄</span>
                           <span>Actualizar</span>
@@ -770,7 +772,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
                 <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
-                  <div class="h-72 rounded-lg overflow-hidden border border-slate-200">
+                  <div class="h-72 rounded-xl overflow-hidden border border-[#E3E8EE]">
                     <ui-map-view 
                       [markers]="mapMarkers()" 
                       [polylines]="mapPolylines()"
@@ -783,30 +785,30 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <div class="flex flex-wrap gap-2" aria-label="Leyenda de rutas">
                     @for (item of routeLegend(); track item.planId) {
                       <button type="button" (click)="selectPlan(item.planId)" [attr.data-legend]="item.vehicleCode"
-                        class="inline-flex items-center gap-2 text-[11px] px-2 py-1 rounded-lg border bg-white hover:bg-slate-50"
-                        [class.border-slate-900]="item.selected" [class.border-slate-200]="!item.selected">
+                        class="inline-flex items-center gap-2 text-[11px] px-2.5 py-1 rounded-lg border bg-white hover:bg-[#F8FAFC] transition-colors"
+                        [class.border-[#1A2C44]]="item.selected" [class.border-[#E3E8EE]]="!item.selected">
                         <span class="inline-block w-3 h-3 rounded-full" [style.background-color]="item.color"></span>
-                        <span class="font-semibold text-slate-800">{{ item.vehicleCode }}</span>
-                        <span class="text-slate-500">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
+                        <span class="font-semibold text-[#1A2C44]">{{ item.vehicleCode }}</span>
+                        <span class="text-[#697386]">{{ item.km | number:'1.0-1' }} km {{ item.source === 'osrm' ? 'por calles' : 'aprox.' }} · {{ item.stops }} paradas</span>
                       </button>
                     }
                   </div>
                   @if (routeLegendHasApproximate()) {
-                    <p class="text-[11px] text-amber-700">
+                    <p class="text-[11px] text-[#B76E00]">
                       Las líneas punteadas son aproximadas (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
                     </p>
                   }
                 }
 
                 <!-- Pestañas de Detalle de la Planificación (#164) -->
-                <div class="border-b border-slate-200 flex flex-wrap gap-2 pt-2">
+                <div class="border-b border-[#E3E8EE] flex flex-wrap gap-6 pt-2">
                   <button
                     type="button"
                     (click)="detailTab.set('paradas')"
-                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'paradas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+                    [ngClass]="detailTab() === 'paradas' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
                     <span>📍 Itinerario y Paradas</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F1F3F5] text-[#4F5B66] font-mono">
                       {{ selectedDetail()!.stops.length }}
                     </span>
                   </button>
@@ -814,11 +816,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="detailTab.set('productos')"
-                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'productos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+                    [ngClass]="detailTab() === 'productos' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
                     <span>📦 Por Producto (SKUs)</span>
                     @if (aggregatedProducts().length > 0) {
-                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 font-bold font-mono">
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8F7F0] text-[#00875A] font-bold font-mono border border-[#B3E6CD]">
                         {{ aggregatedProducts().length }}
                       </span>
                     }
@@ -827,11 +829,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="detailTab.set('conductor')"
-                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'conductor' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+                    [ngClass]="detailTab() === 'conductor' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
                     <span>🚚 Por Conductor</span>
                     <span class="text-[10px] px-1.5 py-0.5 rounded-full font-mono"
-                      [ngClass]="selectedDetail()!.driverName ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-amber-50 text-amber-700'">
+                      [ngClass]="selectedDetail()!.driverName ? 'bg-[#E8F7F0] text-[#00875A] font-bold border border-[#B3E6CD]' : 'bg-[#FFF4E5] text-[#B76E00] border border-[#FFE2B5]'">
                       {{ selectedDetail()!.driverName ? 'Asignado' : 'Pendiente' }}
                     </span>
                   </button>
@@ -840,11 +842,11 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="detailTab.set('stock-bodegas'); loadWarehouseStockForSelected()"
                     data-testid="tab-stock-bodegas"
-                    class="pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5"
-                    [ngClass]="detailTab() === 'stock-bodegas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                    class="relative pb-2.5 px-0.5 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+                    [ngClass]="detailTab() === 'stock-bodegas' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
                     <span>🏬 Stock por Bodega</span>
                     @if (warehouseStock().length > 0) {
-                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                      <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F1F3F5] text-[#4F5B66] font-mono">
                         {{ filteredWarehouseStock().length }}
                       </span>
                     }
