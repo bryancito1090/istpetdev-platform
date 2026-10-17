@@ -86,7 +86,7 @@ public sealed class DemoController(
     [Authorize(Roles = $"{Roles.Planning},{Roles.Bodega},{Roles.Conductor}")]
     public async Task<IActionResult> GetTodayRoutePlans(CancellationToken ct = default)
     {
-        if (!options.Value.Enabled && !fieldSimulationOptions.Value.Enabled) return NotFound();
+        if (!fieldSimulationOptions.Value.Enabled) return NotFound();
 
         var routes = await fieldService.GetTodayRoutePlansAsync(ct);
         return Ok(routes);
@@ -104,7 +104,8 @@ public sealed class DemoController(
         [FromBody] IstpetDev.Application.Field.Dtos.DemoAdvanceRequest request,
         CancellationToken cancellationToken)
     {
-        if (!options.Value.Enabled && !fieldSimulationOptions.Value.Enabled) return NotFound();
+        if (!fieldSimulationOptions.Value.Enabled && (!options.Value.Enabled || !string.IsNullOrWhiteSpace(request.Mode)))
+            return NotFound();
 
         try
         {
