@@ -661,7 +661,6 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       <div class="flex items-start gap-3 min-w-0"><svg lucideUserRound [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Conductor asignado</dt><dd class="text-sm font-semibold break-words" [class]="selectedDetail()!.driverName ? 'text-[#152a42]' : 'text-amber-800'">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</dd></div></div>
                     }
                   </dl>
-                </section>
                   @if (selectedDetail()!.status === 'Published') {
                     @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
                       <p role="status" class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">{{ selectedDetail()!.unassignedDeliveries }} entregas pendientes de asignar a un conductor.</p>
