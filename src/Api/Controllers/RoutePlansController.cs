@@ -113,10 +113,21 @@ public sealed partial class RoutePlansController(
                       .ToList()
             );
 
+        int totalActiveVehicles = vehiclesList.Count(v => v.IsActive);
+        var activeItems = items.Where(p => p.Status is "Proposed" or "Published").ToList();
+
         var responseItems = items.Select(p =>
         {
             var planDrivers = driversByPlan.GetValueOrDefault(p.Id, new());
             ExtractReconciledInfo(p.InputJson, out var recCost, out var recExec, out var recStatus);
+            var vEntity = vehiclesList.FirstOrDefault(v => v.Id == p.VehicleId);
+            var siblings = activeItems
+                .Where(x => x.PlannedStartUtc.Date == p.PlannedStartUtc.Date && x.Status == p.Status)
+                .OrderBy(x => x.Code)
+                .ToList();
+            var fleetMeta = ExtractFleetMeta(p.InputJson, vEntity, totalActiveVehicles, siblings.Count,
+                stopsCountDict.GetValueOrDefault(p.Id, 0),
+                siblings.Select(s => vehicles.GetValueOrDefault(s.VehicleId, s.Code)).ToList());
             return new
             {
                 routePlanId = p.Id,
@@ -139,6 +150,16 @@ public sealed partial class RoutePlansController(
                 cost = p.TotalCost,
                 totalCost = p.TotalCost,
                 planningDecisionId = ReadPlanningDecisionId(p.InputJson),
+                proposalBatchId = fleetMeta.ProposalBatchId,
+                totalAvailableVehicles = fleetMeta.TotalAvailableVehicles,
+                usedVehiclesCount = fleetMeta.UsedVehiclesCount,
+                splitExplanation = fleetMeta.SplitExplanation,
+                assignmentReason = fleetMeta.AssignmentReason,
+                cutReason = fleetMeta.CutReason,
+                prioritySummary = fleetMeta.PrioritySummary,
+                loadWeight = fleetMeta.LoadWeight,
+                maxWeight = fleetMeta.MaxWeight,
+                weightUtilizationPct = fleetMeta.WeightUtilizationPct,
                 costStatus = recStatus ?? (p.TotalCost.HasValue ? "estimated" : "unknown"),
                 reconciledCost = recCost,
                 reconciledExecution = recExec,
@@ -535,12 +556,40 @@ public sealed partial class RoutePlansController(
         ExtractReconciledInfo(plan.InputJson, out var recCost, out var recExec, out var recStatus);
         var historicalTrips = await LoadHistoricalReconciledTripsAsync(ct);
         var uncertainty = CostUncertaintyService.EvaluateTemporalValidation(plan.TotalCost ?? 0m, historicalTrips);
+        var activeVehiclesCount = await db.Vehicles.CountAsync(v => v.OrganizationId == DemoOrganization.Id && v.IsActive, ct);
+        var siblingPlans = await db.RoutePlans.AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id
+                && p.Status == plan.Status
+                && p.PlannedStartUtc.Date == plan.PlannedStartUtc.Date)
+            .OrderBy(p => p.Code)
+            .ToListAsync(ct);
+        var siblingVehicleIds = siblingPlans.Select(p => p.VehicleId).Distinct().ToList();
+        var siblingVehicleCodes = await db.Vehicles.AsNoTracking()
+            .Where(v => v.OrganizationId == DemoOrganization.Id && siblingVehicleIds.Contains(v.Id))
+            .ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+        var detailFleetMeta = ExtractFleetMeta(
+            plan.InputJson,
+            vehicle,
+            activeVehiclesCount,
+            siblingPlans.Count,
+            stops.Count,
+            siblingPlans.Select(s => siblingVehicleCodes.GetValueOrDefault(s.VehicleId, s.Code)).ToList());
 
         return Ok(new
         {
             routePlanId = plan.Id,
             id = plan.Id,
             planningDecisionId = ReadPlanningDecisionId(plan.InputJson),
+            proposalBatchId = detailFleetMeta.ProposalBatchId,
+            totalAvailableVehicles = detailFleetMeta.TotalAvailableVehicles,
+            usedVehiclesCount = detailFleetMeta.UsedVehiclesCount,
+            splitExplanation = detailFleetMeta.SplitExplanation,
+            assignmentReason = detailFleetMeta.AssignmentReason,
+            cutReason = detailFleetMeta.CutReason,
+            prioritySummary = detailFleetMeta.PrioritySummary,
+            loadWeight = detailFleetMeta.LoadWeight,
+            maxWeight = detailFleetMeta.MaxWeight,
+            weightUtilizationPct = detailFleetMeta.WeightUtilizationPct,
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
@@ -598,12 +647,54 @@ public sealed partial class RoutePlansController(
         var planDate = req.Date ?? await clock.TodayAsync(ct);
         var agentRunId = await GetAgentRunIdAsync("Watch", ct);
 
+        var allActiveVehicles = await db.Vehicles.AsNoTracking()
+            .Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive)
+            .ToListAsync(ct);
+        var capacities = allActiveVehicles.ToDictionary(v => v.Id, v => new { v.MaxWeight, v.MaxVolume });
+        int totalAvailableVehicles = Math.Max(allActiveVehicles.Count, result.Routes.Count);
+        int usedVehiclesCount = result.Routes.Count;
+        decimal batchTotalWeight = Math.Round(result.Routes.Sum(x => x.LoadWeight), 2);
+        int batchTotalStops = result.Routes.Sum(x => x.Stops.Count);
+        int reserveVehicles = Math.Max(0, totalAvailableVehicles - usedVehiclesCount);
+        string vehiclesDistributionSummary = string.Join("; ", result.Routes.Select(x =>
+        {
+            var cap = capacities.GetValueOrDefault(x.VehicleId)?.MaxWeight ?? 0m;
+            var pct = cap > 0 ? Math.Round(x.LoadWeight / cap * 100m, 1) : 0m;
+            return $"{x.VehicleCode} ({cap:0.#} kg, uso {pct:0.#}%, {x.Stops.Count} parada(s))";
+        }));
+        string batchSplitExplanation = usedVehiclesCount > 1
+            ? $"Plan conjunto que involucra {usedVehiclesCount} de {totalAvailableVehicles} vehículos disponibles trabajando en equipo para cubrir {batchTotalStops} entrega(s) ({batchTotalWeight:0.#} kg totales) según tamaño de vehículo y prioridad: {vehiclesDistributionSummary}. Corta entre vehículos al alcanzar el límite de capacidad o ventana de atención; {reserveVehicles} vehículo(s) quedan en reserva."
+            : usedVehiclesCount == 1
+                ? $"Plan concentrado en 1 de {totalAvailableVehicles} vehículos disponibles ({vehiclesDistributionSummary}) para cubrir {batchTotalStops} entrega(s) ({batchTotalWeight:0.#} kg); {reserveVehicles} vehículo(s) quedan en reserva."
+                : "Sin entregas pendientes para planificar.";
+
         // Guardar cada ruta como un RoutePlan con estado Proposed
         var proposalBatchId = Guid.NewGuid();
         var createdPlans = new List<RoutePlan>();
         var agentDecisions = new Dictionary<Guid, Guid>();
-        foreach (var r in result.Routes)
+        var routeMetaByVehicleId = new Dictionary<Guid, (decimal MaxWeight, decimal? MaxVolume, decimal WeightPct, string PrioritySummary, string AssignmentReason, string CutReason)>();
+
+        for (int routeIdx = 0; routeIdx < result.Routes.Count; routeIdx++)
         {
+            var r = result.Routes[routeIdx];
+            var capacity = capacities.GetValueOrDefault(r.VehicleId);
+            decimal maxWeight = capacity?.MaxWeight ?? 0m;
+            decimal? maxVolume = capacity?.MaxVolume;
+            decimal weightPct = maxWeight > 0 ? Math.Round(r.LoadWeight / maxWeight * 100m, 1) : 0m;
+            int mandatoryCount = r.Stops.Count(s => !s.IsConsolidation);
+            int consolCount = r.Stops.Count(s => s.IsConsolidation);
+            string prioritySummary = consolCount > 0
+                ? $"Prioritaria/Obligatoria ({mandatoryCount}), Consolidación ({consolCount})"
+                : $"Prioritaria/Obligatoria ({mandatoryCount})";
+            string assignmentReason = $"Vehículo {routeIdx + 1} de {usedVehiclesCount} ({r.VehicleCode}, tamaño {maxWeight:0.#} kg): seleccionado entre {totalAvailableVehicles} activos para llevar {r.Stops.Count} entrega(s) ({prioritySummary}) con {r.LoadWeight:0.#} kg ({weightPct:0.#}% de capacidad).";
+            string lastPoint = r.Stops.LastOrDefault()?.PointCode ?? r.VehicleCode;
+            string cutReason = routeIdx < usedVehiclesCount - 1
+                ? $"Corta en {lastPoint} con {r.LoadWeight:0.#}/{maxWeight:0.#} kg ({weightPct:0.#}% de capacidad) y {r.Minutes:0.#} min de recorrido para respetar tamaño y prioridad; continúa {result.Routes[routeIdx + 1].VehicleCode}."
+                : usedVehiclesCount > 1
+                    ? $"Cierra el plan conjunto en {lastPoint} ({r.LoadWeight:0.#}/{maxWeight:0.#} kg, {weightPct:0.#}%) trabajando en equipo con {usedVehiclesCount} de {totalAvailableVehicles} vehículos ({reserveVehicles} en reserva)."
+                    : $"Único vehículo requerido ({r.LoadWeight:0.#}/{maxWeight:0.#} kg, {weightPct:0.#}%): cubre todas las entregas sin requerir corte adicional ({reserveVehicles} en reserva).";
+            routeMetaByVehicleId[r.VehicleId] = (maxWeight, maxVolume, weightPct, prioritySummary, assignmentReason, cutReason);
+
             var baseCode = $"PLAN-{planDate:yyyyMMdd}-{r.VehicleCode}";
 
             // Verificar si ya existe una revisión para este código y calcular la siguiente revisión
@@ -630,6 +721,17 @@ public sealed partial class RoutePlansController(
                 InputJson = JsonSerializer.Serialize(new
                 {
                     proposalBatchId,
+                    totalAvailableVehicles,
+                    usedVehiclesCount,
+                    splitExplanation = batchSplitExplanation,
+                    assignmentReason,
+                    cutReason,
+                    prioritySummary,
+                    loadWeight = r.LoadWeight,
+                    loadVolume = r.LoadVolume,
+                    maxWeight,
+                    maxVolume,
+                    weightUtilizationPct = weightPct,
                     stops = r.Stops.Select(s => new
                     {
                         sequence = s.Sequence,
@@ -715,17 +817,16 @@ public sealed partial class RoutePlansController(
 
         var explanation = templates.Explain("plan", allFacts);
 
-        // #199: carga usada frente a capacidad y cantidades por línea (requerida, planificada, pendiente) para panel y n8n.
-        var routeVehicleIds = result.Routes.Select(r => r.VehicleId).ToList();
-        var capacities = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id && routeVehicleIds.Contains(v.Id))
-            .ToDictionaryAsync(v => v.Id, v => new { v.MaxWeight, v.MaxVolume }, ct);
-
         return StatusCode(StatusCodes.Status201Created, new
         {
+            proposalBatchId,
+            totalAvailableVehicles,
+            usedVehiclesCount,
+            splitExplanation = batchSplitExplanation,
             routes = createdPlans.Select(p =>
             {
                 var r = result.Routes.First(x => x.VehicleId == p.VehicleId);
-                var capacity = capacities.GetValueOrDefault(r.VehicleId);
+                var meta = routeMetaByVehicleId[r.VehicleId];
                 return new
                 {
                     routePlanId = p.Id,
@@ -733,12 +834,20 @@ public sealed partial class RoutePlansController(
                     code = p.Code,
                     revision = p.Revision,
                     status = p.Status,
+                    proposalBatchId,
+                    totalAvailableVehicles,
+                    usedVehiclesCount,
+                    splitExplanation = batchSplitExplanation,
+                    assignmentReason = meta.AssignmentReason,
+                    cutReason = meta.CutReason,
+                    prioritySummary = meta.PrioritySummary,
                     agentDecisionId = agentDecisions.TryGetValue(p.Id, out var decisionId) ? decisionId : (Guid?)null,
                     vehicleCode = r.VehicleCode,
                     loadWeight = r.LoadWeight,
                     loadVolume = r.LoadVolume,
-                    maxWeight = capacity?.MaxWeight,
-                    maxVolume = capacity?.MaxVolume,
+                    maxWeight = meta.MaxWeight,
+                    maxVolume = meta.MaxVolume,
+                    weightUtilizationPct = meta.WeightPct,
                     stops = r.Stops.Select(s => new { sequence = s.Sequence, pointCode = s.PointCode, isConsolidation = s.IsConsolidation, loads = s.Loads, trafficFactorApplied = s.TrafficFactorApplied })
                 };
             }),
@@ -933,6 +1042,11 @@ public sealed partial class RoutePlansController(
         var products = await db.Products
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
+
+        var activeVehicles = await db.Vehicles.AsNoTracking()
+            .Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive)
+            .OrderBy(v => v.Code)
+            .ToListAsync(ct);
 
         // #197 / #207: prioridad y fecha de cada pedido, y ventana de cada punto destino
         var destinationPointIds = orders.Values
@@ -1168,11 +1282,47 @@ public sealed partial class RoutePlansController(
                     candidates,
                     sourcingLinesResult,
                     Array.Empty<object>(),
+                    Array.Empty<object>(),
+                    activeVehicles.Count,
+                    0,
+                    "Operador logístico externo contratado para cubrir la totalidad de las entregas sin emplear vehículos de la flota propia.",
                     Array.Empty<object>()
                 ));
             }
             else
             {
+                var decisionSources = sOpt.Lines.Select(l => new DecisionSourceLine(
+                    l.OrderId,
+                    l.DestinationId,
+                    l.ProductId,
+                    l.TotalAllocated,
+                    Math.Max(0m, l.RequestedQuantity - l.TotalAllocated),
+                    l.Allocations.Select(a => new DecisionAllocation(a.WarehouseId, a.Quantity)).ToList()
+                )).ToList();
+                var fleetPartition = await PartitionFleetOptionAsync(
+                    sOpt.OptionId, candidates, decisionSources, orders, products, activeVehicles, plannedStartUtc, ct);
+                var fleetRoutesDto = fleetPartition.Routes.Select(r => new
+                {
+                    routeId = r.Id,
+                    vehicleId = r.VehicleId,
+                    vehicleCode = r.VehicleCode,
+                    maxWeight = r.MaxWeight,
+                    maxVolume = r.MaxVolume,
+                    loadWeight = r.LoadWeight,
+                    loadVolume = r.LoadVolume,
+                    weightUtilizationPct = r.WeightUtilizationPct,
+                    volumeUtilizationPct = r.VolumeUtilizationPct,
+                    prioritySummary = r.PrioritySummary,
+                    assignmentReason = r.AssignmentReason,
+                    cutReason = r.CutReason,
+                    totalDistanceKm = r.Evaluation.TotalDistanceKm,
+                    totalDurationMinutes = r.Evaluation.TotalDurationMinutes,
+                    totalCost = r.Evaluation.TotalCost,
+                    stopsCount = r.Stops.Count,
+                    deliveryStopsCount = r.Stops.Count(s => s.Kind == RouteStopKind.Delivery),
+                    stops = r.Stops
+                }).ToList();
+
                 var vehicleMatches = await vehicleMatcher.MatchVehiclesAsync(candidates, plannedStartUtc, ct);
                 var bestVehicleMatch = vehicleMatches.FirstOrDefault(m => m.IsMatch);
                 var eval = await routeEvaluator.EvaluateSequenceAsync(candidates, bestVehicleMatch?.Vehicle, plannedStartUtc, ct);
@@ -1342,7 +1492,11 @@ public sealed partial class RoutePlansController(
                     candidates,
                     sourcingLinesResult,
                     pendingDemands,
-                    vehicleMatchesDto
+                    vehicleMatchesDto,
+                    activeVehicles.Count,
+                    fleetPartition.Routes.Count,
+                    fleetPartition.SplitExplanation,
+                    fleetRoutesDto
                 ));
             }
         }
@@ -1380,6 +1534,10 @@ public sealed partial class RoutePlansController(
             sourcingLines = chosenOption.SourcingLines,
             pendingDemands = chosenOption.PendingDemands,
             vehicleMatches = chosenOption.VehicleMatches,
+            totalAvailableVehicles = chosenOption.TotalAvailableVehicles,
+            usedVehiclesCount = chosenOption.UsedVehiclesCount,
+            splitExplanation = chosenOption.SplitExplanation,
+            fleetRoutes = chosenOption.FleetRoutes,
             options = optionsArray
         };
 
@@ -1415,7 +1573,11 @@ public sealed partial class RoutePlansController(
         stops = o.Stops,
         sourcingLines = o.SourcingLines,
         pendingDemands = o.PendingDemands,
-        vehicleMatches = o.VehicleMatches
+        vehicleMatches = o.VehicleMatches,
+        totalAvailableVehicles = o.TotalAvailableVehicles,
+        usedVehiclesCount = o.UsedVehiclesCount,
+        splitExplanation = o.SplitExplanation,
+        fleetRoutes = o.FleetRoutes
     };
 
     private sealed record EvaluatedOptionDto(
@@ -1446,7 +1608,11 @@ public sealed partial class RoutePlansController(
         IReadOnlyList<RouteStopCandidate> Stops,
         object SourcingLines,
         object PendingDemands,
-        object VehicleMatches
+        object VehicleMatches,
+        int TotalAvailableVehicles,
+        int UsedVehiclesCount,
+        string SplitExplanation,
+        object FleetRoutes
     );
 
     [HttpPost("evaluate")]
@@ -2473,6 +2639,105 @@ public sealed partial class RoutePlansController(
         if (string.IsNullOrWhiteSpace(json)) return null;
         try { return JsonNode.Parse(json)?["planningDecisionId"]?.GetValue<Guid>(); }
         catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException) { return null; }
+    }
+
+    private sealed record FleetPlanMeta(
+        Guid? ProposalBatchId,
+        int TotalAvailableVehicles,
+        int UsedVehiclesCount,
+        string SplitExplanation,
+        string AssignmentReason,
+        string CutReason,
+        string PrioritySummary,
+        decimal LoadWeight,
+        decimal MaxWeight,
+        decimal WeightUtilizationPct);
+
+    private static FleetPlanMeta ExtractFleetMeta(
+        string? inputJson,
+        Vehicle? vehicle,
+        int totalActiveVehicles,
+        int siblingPlansCount,
+        int stopsCount,
+        IReadOnlyList<string> siblingVehicleCodes)
+    {
+        Guid? proposalBatchId = ReadPlanningDecisionId(inputJson);
+        int totalAvail = Math.Max(1, totalActiveVehicles);
+        int usedCount = Math.Max(1, siblingPlansCount);
+        string? splitExp = null;
+        string? assignReason = null;
+        string? cutReason = null;
+        string? prioritySummary = null;
+        decimal loadWeight = 0m;
+        decimal maxWeight = vehicle?.MaxWeight ?? 0m;
+        decimal weightPct = 0m;
+
+        if (!string.IsNullOrWhiteSpace(inputJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(inputJson);
+                var root = doc.RootElement;
+                if (TryGetPropertyCaseInsensitive(root, "proposalBatchId", out var pbEl)
+                    && pbEl.ValueKind == JsonValueKind.String
+                    && Guid.TryParse(pbEl.GetString(), out var pbGuid))
+                {
+                    proposalBatchId = pbGuid;
+                }
+                if (TryGetPropertyCaseInsensitive(root, "totalAvailableVehicles", out var tavEl) && tavEl.ValueKind == JsonValueKind.Number)
+                    totalAvail = Math.Max(1, tavEl.GetInt32());
+                if (TryGetPropertyCaseInsensitive(root, "usedVehiclesCount", out var uvcEl) && uvcEl.ValueKind == JsonValueKind.Number)
+                    usedCount = Math.Max(1, uvcEl.GetInt32());
+                if (TryGetPropertyCaseInsensitive(root, "splitExplanation", out var seEl) && seEl.ValueKind == JsonValueKind.String)
+                    splitExp = seEl.GetString();
+                if (TryGetPropertyCaseInsensitive(root, "assignmentReason", out var arEl) && arEl.ValueKind == JsonValueKind.String)
+                    assignReason = arEl.GetString();
+                if (TryGetPropertyCaseInsensitive(root, "cutReason", out var crEl) && crEl.ValueKind == JsonValueKind.String)
+                    cutReason = crEl.GetString();
+                if (TryGetPropertyCaseInsensitive(root, "prioritySummary", out var psEl) && psEl.ValueKind == JsonValueKind.String)
+                    prioritySummary = psEl.GetString();
+                if (TryGetPropertyCaseInsensitive(root, "loadWeight", out var lwEl) && lwEl.ValueKind == JsonValueKind.Number)
+                    loadWeight = lwEl.GetDecimal();
+                if (TryGetPropertyCaseInsensitive(root, "maxWeight", out var mwEl) && mwEl.ValueKind == JsonValueKind.Number && mwEl.GetDecimal() > 0)
+                    maxWeight = mwEl.GetDecimal();
+                if (TryGetPropertyCaseInsensitive(root, "weightUtilizationPct", out var wpEl) && wpEl.ValueKind == JsonValueKind.Number)
+                    weightPct = wpEl.GetDecimal();
+            }
+            catch
+            {
+                // Ignore malformed InputJson
+            }
+        }
+
+        string vCode = vehicle?.Code ?? "Vehículo";
+        int deliveryCount = Math.Max(1, stopsCount > 1 ? stopsCount - 1 : stopsCount);
+        string vehiclesJoined = siblingVehicleCodes.Count > 0 ? string.Join(" + ", siblingVehicleCodes.Distinct()) : vCode;
+
+        splitExp ??= usedCount <= 1
+            ? $"Plan concentrado en 1 de {totalAvail} vehículos disponibles ({vCode}, cap. {maxWeight:0.#} kg) al cubrir las {deliveryCount} parada(s) de entrega sin requerir corte de flota."
+            : $"Plan conjunto coordinado con {usedCount} de {totalAvail} vehículos disponibles ({vehiclesJoined}): se divide la operación por capacidad vehicular y prioridad de entrega para despachar en paralelo sin saturación.";
+
+        assignReason ??= usedCount <= 1
+            ? $"{vCode} (cap. {maxWeight:0.#} kg) seleccionado entre {totalAvail} vehículos por cubrir las entregas sin dividir carga."
+            : $"{vCode} (cap. {maxWeight:0.#} kg) asignado dentro del plan conjunto de {usedCount} de {totalAvail} vehículos por ajuste de tamaño y prioridad.";
+
+        cutReason ??= usedCount <= 1
+            ? $"Sin corte de flota: {vCode} absorbe el bloque completo dentro de su capacidad ({maxWeight:0.#} kg)."
+            : $"Corte coordinado entre {usedCount} vehículos ({vehiclesJoined}) para separar bloques por tamaño de carga y nivel de prioridad.";
+
+        prioritySummary ??= "Prioridad operativa balanceada";
+
+        return new FleetPlanMeta(
+            proposalBatchId,
+            totalAvail,
+            usedCount,
+            splitExp,
+            assignReason,
+            cutReason,
+            prioritySummary,
+            loadWeight,
+            maxWeight,
+            weightPct);
     }
 
     private static void ExtractReconciledInfo(string? inputJson, out decimal? reconciledCost, out object? reconciledExecution, out string? reconciledCostStatus)

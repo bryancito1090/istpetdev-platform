@@ -81,6 +81,16 @@ export interface RisksResponseDto {
 
 export interface RoutePlanSummaryDto {
   planningDecisionId?: string | null;
+  proposalBatchId?: string | null;
+  totalAvailableVehicles?: number;
+  usedVehiclesCount?: number;
+  splitExplanation?: string;
+  assignmentReason?: string;
+  cutReason?: string;
+  prioritySummary?: string;
+  loadWeight?: number;
+  maxWeight?: number;
+  weightUtilizationPct?: number;
   id: string;
   code: string;
   revision: number;
@@ -111,6 +121,13 @@ export interface PlanningDecisionRoute {
   evaluation: RouteSuggestionOptionDto['evaluation'];
   orderIds: string[];
   lines: Array<{ deliveryOrderId: string; productId: string; plannedQuantity: number }>;
+  loadWeight?: number;
+  loadVolume?: number;
+  weightUtilizationPct?: number;
+  volumeUtilizationPct?: number;
+  prioritySummary?: string;
+  assignmentReason?: string;
+  cutReason?: string;
 }
 
 export interface PlanningAlternative {
@@ -124,6 +141,9 @@ export interface PlanningAlternative {
   totalCost: number | null;
   totalDistanceKm: number | null;
   pendingOrdersCount: number;
+  totalAvailableVehicles?: number;
+  usedVehiclesCount?: number;
+  splitExplanation?: string;
   status: 'Available' | 'Accepted' | 'Discarded';
 }
 
@@ -237,6 +257,16 @@ export interface RouteDriverAssignmentDto {
 
 export interface RoutePlanDetailDto {
   planningDecisionId?: string | null;
+  proposalBatchId?: string | null;
+  totalAvailableVehicles?: number;
+  usedVehiclesCount?: number;
+  splitExplanation?: string;
+  assignmentReason?: string;
+  cutReason?: string;
+  prioritySummary?: string;
+  loadWeight?: number;
+  maxWeight?: number;
+  weightUtilizationPct?: number;
   id: string;
   code: string;
   revision: number;
@@ -487,12 +517,37 @@ export interface SavedRouteComparisonRunDto {
   responseRawJson?: string;
 }
 
+export interface RouteSuggestionFleetRouteDto {
+  routeId: string;
+  vehicleId: string;
+  vehicleCode: string;
+  maxWeight: number;
+  maxVolume?: number | null;
+  loadWeight: number;
+  loadVolume?: number;
+  weightUtilizationPct: number;
+  volumeUtilizationPct?: number;
+  prioritySummary?: string;
+  assignmentReason?: string;
+  cutReason?: string;
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+  totalCost: number;
+  stopsCount: number;
+  deliveryStopsCount?: number;
+  stops?: RouteCandidateStop[];
+}
+
 export interface RouteSuggestionOptionDto {
   optionId: string;
   sourcingOptionId?: string;
   title: string;
   description: string;
   isRecommended: boolean;
+  totalAvailableVehicles?: number;
+  usedVehiclesCount?: number;
+  splitExplanation?: string;
+  fleetRoutes?: RouteSuggestionFleetRouteDto[];
   evaluation: {
     isValid: boolean;
     totalDistanceKm: number;
@@ -678,6 +733,16 @@ export class ApiService {
           vehicleId: item.vehicleId,
           vehicleCode: item.vehicleCode,
           planningDecisionId: item.planningDecisionId ?? null,
+          proposalBatchId: item.proposalBatchId ?? item.planningDecisionId ?? null,
+          totalAvailableVehicles: item.totalAvailableVehicles,
+          usedVehiclesCount: item.usedVehiclesCount,
+          splitExplanation: item.splitExplanation,
+          assignmentReason: item.assignmentReason,
+          cutReason: item.cutReason,
+          prioritySummary: item.prioritySummary,
+          loadWeight: item.loadWeight,
+          maxWeight: item.maxWeight,
+          weightUtilizationPct: item.weightUtilizationPct,
           totalCost: item.totalCost ?? null,
           costStatus: item.costStatus,
           driverAccountId: item.driverAccountId ?? null,
@@ -713,6 +778,16 @@ export class ApiService {
           vehicleId: res.vehicleId,
           vehicleCode: res.vehicleCode,
           planningDecisionId: res.planningDecisionId ?? null,
+          proposalBatchId: res.proposalBatchId ?? res.planningDecisionId ?? null,
+          totalAvailableVehicles: res.totalAvailableVehicles,
+          usedVehiclesCount: res.usedVehiclesCount,
+          splitExplanation: res.splitExplanation,
+          assignmentReason: res.assignmentReason,
+          cutReason: res.cutReason,
+          prioritySummary: res.prioritySummary,
+          loadWeight: res.loadWeight,
+          maxWeight: res.maxWeight,
+          weightUtilizationPct: res.weightUtilizationPct,
           plannedStartUtc: res.plannedStartUtc,
           plannedEndUtc: res.plannedEndUtc,
           totalDistanceKm: res.totalDistanceKm ?? res.totalKm ?? res.km ?? 0,

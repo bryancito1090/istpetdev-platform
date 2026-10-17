@@ -237,4 +237,127 @@ public sealed class RoutePlanningDecisionTests(PostgisContainer postgres) : ICla
         var reloaded = await client.GetFromJsonAsync<JsonElement>($"/api/v1/route-plans/decisions/{id}");
         Assert.True(reloaded.GetProperty("published").GetBoolean());
     }
+
+    [Fact]
+    public async Task Five_vehicles_are_divided_into_coordinated_two_and_three_vehicle_plans_by_size_and_priority()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase(), overrides: new Dictionary<string, string?> { ["Logistics:Osrm:BaseUrl"] = "", ["Logistics:Osrm:RouteGeometryUrl"] = "" });
+        var client = api.ClientFor(TestTokens.Planner);
+        (await client.PostAsync("/api/v1/demo/reset", null)).EnsureSuccessStatusCode();
+
+        Guid[] orderIds;
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var product = await db.Products.SingleAsync(p => p.Sku == "DES-01");
+            product.WeightPerBaseUnit = 10m;
+            product.VolumePerBaseUnit = 0.01m;
+
+            var warehouse = await db.Locations.OrderBy(l => l.Code).FirstAsync(l => l.Kind == LocationKinds.Warehouse);
+            var points = await db.ServicePoints.OrderBy(p => p.Code).Take(4).ToListAsync();
+            foreach (var point in points)
+            {
+                point.Position = warehouse.Position;
+                point.WindowStartLocal = new TimeOnly(7, 0);
+                point.WindowEndLocal = new TimeOnly(20, 0);
+            }
+
+            var existingVehicles = await db.Vehicles.ToListAsync();
+            foreach (var v in existingVehicles) v.IsActive = false;
+
+            var capacities = new[] { 120m, 180m, 250m, 350m, 500m };
+            for (int i = 0; i < capacities.Length; i++)
+            {
+                db.Vehicles.Add(new Vehicle
+                {
+                    Code = $"VEH-FLOTA-0{i + 1}",
+                    DepotLocationId = warehouse.Id,
+                    MaxWeight = capacities[i],
+                    MaxVolume = 50m,
+                    CostPerKm = 0.45m + i * 0.05m,
+                    IsActive = true
+                });
+            }
+
+            var lotIds = await db.Lots.Where(l => l.ProductId == product.Id).Select(l => l.Id).ToListAsync();
+            foreach (var stock in await db.StockBalances.Where(b => lotIds.Contains(b.LotId)).ToListAsync())
+            {
+                stock.QuantityOnHand = 5000m;
+                stock.QuantityReserved = 0m;
+            }
+
+            var priorities = new[] { "Critical", "High", "Normal", "Low" };
+            var quantities = new[] { 8m, 10m, 7m, 6m };
+            var createdOrders = new List<DeliveryOrder>();
+            for (int i = 0; i < points.Count; i++)
+            {
+                var order = new DeliveryOrder
+                {
+                    OrderNumber = $"MULTI-5V-{i + 1}",
+                    DestinationServicePointId = points[i].Id,
+                    RequiredDateUtc = new DateTime(2026, 10, 12, 14 + i, 0, 0, DateTimeKind.Utc),
+                    Priority = priorities[i]
+                };
+                db.DeliveryOrders.Add(order);
+                db.DeliveryOrderLines.Add(new DeliveryOrderLine
+                {
+                    DeliveryOrderId = order.Id,
+                    ProductId = product.Id,
+                    RequestedQuantity = quantities[i]
+                });
+                createdOrders.Add(order);
+            }
+
+            await db.SaveChangesAsync();
+            orderIds = createdOrders.Select(o => o.Id).ToArray();
+        }
+
+        var run = await PrepareAsync(client, orderIds);
+        var options = run.GetProperty("options").EnumerateArray().ToList();
+        var optionA = options.Single(o => o.GetProperty("optionId").GetString() == "A");
+        var optionB = options.Single(o => o.GetProperty("optionId").GetString() == "B");
+
+        Assert.Equal(5, optionA.GetProperty("totalAvailableVehicles").GetInt32());
+        Assert.Equal(2, optionA.GetProperty("usedVehiclesCount").GetInt32());
+        Assert.Equal(2, optionA.GetProperty("routes").GetArrayLength());
+        Assert.Contains("2 de 5 vehículos", optionA.GetProperty("splitExplanation").GetString()!);
+        Assert.All(optionA.GetProperty("routes").EnumerateArray(), route =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("assignmentReason").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("cutReason").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("prioritySummary").GetString()));
+        });
+
+        Assert.Equal(5, optionB.GetProperty("totalAvailableVehicles").GetInt32());
+        Assert.Equal(3, optionB.GetProperty("usedVehiclesCount").GetInt32());
+        Assert.Equal(3, optionB.GetProperty("routes").GetArrayLength());
+        Assert.Contains("3 de 5 vehículos", optionB.GetProperty("splitExplanation").GetString()!);
+        Assert.All(optionB.GetProperty("routes").EnumerateArray(), route =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("assignmentReason").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("cutReason").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(route.GetProperty("prioritySummary").GetString()));
+        });
+
+        var runId = run.GetProperty("id").GetGuid();
+        var accepted = await client.PostAsJsonAsync($"/api/v1/route-plans/decisions/{runId}/accept", new
+        {
+            optionId = "B",
+            expectedVersion = 1,
+            operationId = Guid.NewGuid()
+        });
+        Assert.True(accepted.IsSuccessStatusCode, await accepted.Content.ReadAsStringAsync());
+
+        var plansList = await client.GetFromJsonAsync<JsonElement>("/api/v1/route-plans");
+        var items = plansList.GetProperty("items").EnumerateArray().ToList();
+        Assert.Equal(3, items.Count);
+        Assert.All(items, item =>
+        {
+            Assert.Equal(5, item.GetProperty("totalAvailableVehicles").GetInt32());
+            Assert.Equal(3, item.GetProperty("usedVehiclesCount").GetInt32());
+            Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("splitExplanation").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("assignmentReason").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(item.GetProperty("cutReason").GetString()));
+        });
+    }
 }
