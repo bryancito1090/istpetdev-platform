@@ -9,6 +9,7 @@ using IstpetDev.Application;
 using IstpetDev.Application.Agent;
 using IstpetDev.Application.Demo;
 using IstpetDev.Application.Logistics;
+using IstpetDev.Application.Field;
 using IstpetDev.Infrastructure;
 using IstpetDev.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -85,6 +86,7 @@ builder.Services.AddCognitoAuthentication(builder.Configuration);
 builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformation>();
 
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
+builder.Services.Configure<FieldSimulationOptions>(builder.Configuration.GetSection(FieldSimulationOptions.Section));
 
 // Configuración de LogisticsOptions con soporte opcional de appsettings.demo-quito.json (#275)
 builder.Services.AddOptions<LogisticsOptions>()
