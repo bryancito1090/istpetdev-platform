@@ -19,7 +19,7 @@ public sealed class ContractedCarrierAndRecommendationTests
 {
     private sealed class FakeDistanceProvider : IDistanceProvider
     {
-        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default)
+        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default, bool persistCache = true)
         {
             var dict = new Dictionary<(GeoPoint From, GeoPoint To), Leg>();
             for (int i = 0; i < points.Count; i++)
@@ -794,5 +794,11 @@ public sealed class ContractedCarrierAndRecommendationTests
         // Control humano verificado: la solicitud se procesó con éxito respetando el OptionId indicado
         var proposal = okResult.Value.GetType().GetProperty("proposal")?.GetValue(okResult.Value);
         Assert.NotNull(proposal);
+        Assert.Equal("A", proposal.GetType().GetProperty("sourcingOptionId")?.GetValue(proposal));
+        var comparison = Assert.IsType<DemandSourcingResult>(
+            okResult.Value.GetType().GetProperty("comparison")?.GetValue(okResult.Value));
+        Assert.Contains(comparison.Options, option => option.CarrierType == "Contratada");
+        Assert.Contains(comparison.Options, option => option.OptionId == comparison.RecommendedOptionId);
+        Assert.False(string.IsNullOrWhiteSpace(comparison.Justification));
     }
 }

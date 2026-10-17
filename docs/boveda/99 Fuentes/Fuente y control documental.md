@@ -752,6 +752,12 @@ Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y event
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
 
+## 16-oct-2026 — Consolidación parcial, revisiones con pedidos y botón de cancelar (issue #199, cierre)
+
+Fuente: issue #199 y los pendientes de T15 y T19 del spec 002. [[Contratos API y eventos]] registra la consolidación parcial en `POST /api/v1/route-plans`, el descuento de pedidos al publicar una revisión que retira una parada, la suma inversa en `revert`, el comportamiento de los planes sin `orderLines` y el botón «Cancelar ruta» del panel. El spec 002 añade FR-28 y la tarea T21. No hay endpoints ni campos nuevos, migración ni cambios de datos; no se despliega.
+
+Verificación documental: **117 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
 
 ## 16-oct-2026 — Restricciones de vehículo y aviso extraurbano (#244)
 
@@ -764,3 +770,23 @@ comportamiento anterior. Ejemplo y evidencia local en
 `docs/evidence/244-restricciones/`; valores sintéticos, sin migración ni
 activación/despliegue en producción. Las pruebas y capturas se registran por
 separado de las decisiones documentales.
+
+## 16-oct-2026 — Comparación A/B/C sobre corrida calculada (#276)
+
+Fuente: issue #276, contrato de #241 y configuración incorporada por #275 en
+develop `33387ca` (PR #283). La pantalla inicia con la API; la corrida guardada
+solo se muestra al solicitarla y usa el mapeo compartido, metadatos de commit,
+fecha y SHA de configuración. Se quitó la maqueta numérica. T6 sigue abierta:
+no se pudo ejecutar el generador porque Docker/API local no estaban activos, y
+Joseph aún debe aprobar la selección del pitch. No se reinició ninguna base ni
+se produjo evidencia final. Resultados y límites: [revisión T6](../../specs/006-validacion-pitch-entrega/revision-issue-276-t6.md).
+
+## 16-oct-2026 — Consulta sin efectos y recepción única de retornos (#280)
+
+Fuente: revisión de seguridad del issue #280 sobre #247. [[Contratos API y eventos]]
+registra los roles acotados del GET, el número completo y el rechazo de colisiones,
+la idempotencia de receive y la exclusión de bultos ya devueltos. La generación
+explícita conserva la escritura de custodia. Evidencia local y límites en
+`docs/evidence/280-retornos/`: 121 pruebas de campo, incluidas 24 nuevas por HTTP;
+los casos de consulta, permiso y replay fallan con el código previo. Sin migración,
+conexión a bases compartidas, despliegue ni afirmaciones nuevas para el pitch.

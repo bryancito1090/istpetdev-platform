@@ -17,6 +17,7 @@ import { FIELD_API, IFieldApi, ReceiverUnit } from '../field/field-api.interface
 import { parseUnitQr } from '../field/unit-qr';
 import { MockFieldApiService } from '../field/mock/mock-field-api.service';
 import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component';
+import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page-header.component';
 
 @Component({
   selector: 'app-home',
@@ -25,59 +26,81 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
     CommonModule,
     FormsModule,
     IonContent,
-    WarehouseComponent
+    WarehouseComponent,
+    FieldPageHeaderComponent
   ],
   template: `
-    <!-- Barra Superior: Entorno de Prueba (Stripe Inspired Dark Bar) -->
-    <div class="stripe-top-banner">
-      <div class="stripe-banner-left">
-        <span class="banner-title">Entorno de prueba</span>
-        <button type="button" class="info-bubble-btn" (click)="openTestEnvInfo()" aria-label="Información de entorno">
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
-          </svg>
-        </button>
+    <app-field-page-header
+      [home]="true"
+      [userName]="authService.me()?.displayName || 'Operaciones de campo'"
+      [pendingCount]="pendingCount()"
+      (help)="openHelpGuide()"
+      (menu)="openMenuAlert()"
+      (sync)="openSyncQueue()"
+      (search)="toggleSearch()" />
+
+    @if (helpGuideOpen()) {
+      <div class="help-sheet-backdrop" (click)="closeHelpGuide()" (keydown.escape)="closeHelpGuide()">
+        <section class="help-sheet" role="dialog" aria-modal="true" aria-labelledby="help-sheet-title" (click)="$event.stopPropagation()">
+          <div class="help-sheet-handle" aria-hidden="true"></div>
+          <header class="help-sheet-header">
+            <div>
+              <span class="help-sheet-eyebrow">ISTET DEV · GUÍA RÁPIDA</span>
+              <h2 id="help-sheet-title">Tus funciones en el sistema</h2>
+              <p>Guía para el rol {{ roleSubtitle() || 'Operador de Campo' }}</p>
+            </div>
+            <button type="button" class="help-sheet-close" (click)="closeHelpGuide()" aria-label="Cerrar guía">×</button>
+          </header>
+
+          @if (authService.currentRole() === 'Conductor') {
+            <div class="help-sheet-content">
+              <article class="help-guide-card">
+                <span class="help-step">01</span><div><h3>Consulta tu ruta</h3><p>Revisa las paradas, destinos y entregas asignadas en Inicio. Usa la búsqueda para encontrar una parada o código.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">02</span><div><h3>Registra la custodia</h3><p>En cada parada, escanea el QR del bulto para registrar la carga o entrega. Confirma los productos y las cantidades antes de continuar.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">03</span><div><h3>Confirma y sincroniza</h3><p>Guarda la entrega y añade evidencia si se solicita. Sin conexión, los registros quedan en el teléfono y se envían al recuperar señal; puedes revisar su estado en Notificaciones.</p></div>
+              </article>
+            </div>
+          } @else if (authService.currentRole() === 'Bodega') {
+            <div class="help-sheet-content">
+              <article class="help-guide-card">
+                <span class="help-step">01</span><div><h3>Abre la preparación</h3><p>Desde Inicio, entra a la entrega o preparación asignada para consultar destino, productos, lotes y cantidades requeridas.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">02</span><div><h3>Verifica físicamente</h3><p>Comprueba cada producto y lote contra la lista, marca las líneas verificadas y prepara los bultos. Registra cualquier diferencia antes de cerrar.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">03</span><div><h3>Identifica y entrega</h3><p>Genera o escanea los códigos de custodia para que el conductor pueda validar los bultos. Consulta Notificaciones si hay operaciones pendientes.</p></div>
+              </article>
+            </div>
+          } @else if (authService.currentRole() === 'Receptor') {
+            <div class="help-sheet-content">
+              <article class="help-guide-card">
+                <span class="help-step">01</span><div><h3>Busca el envío</h3><p>Escanea el QR de custodia con la cámara o pega el enlace o código del bulto en el campo de búsqueda.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">02</span><div><h3>Valida lo recibido</h3><p>Compara productos, lotes y cantidades con la entrega física. Marca cada línea conforme; si hay diferencias, indícalas y registra el motivo.</p></div>
+              </article>
+              <article class="help-guide-card">
+                <span class="help-step">03</span><div><h3>Confirma la recepción</h3><p>Revisa el resumen y guarda la recepción para dejar constancia de la custodia. Si no hay señal, la captura se conserva y se sincroniza después.</p></div>
+              </article>
+            </div>
+          } @else {
+            <div class="help-sheet-content">
+              <article class="help-guide-card"><span class="help-step">i</span><div><h3>Funciones según tu acceso</h3><p>El sistema muestra tareas y acciones según tu rol. En Inicio puedes consultar las actividades disponibles y abrir Notificaciones para revisar operaciones pendientes.</p></div></article>
+            </div>
+          }
+
+          <footer class="help-sheet-footer">Los cambios y registros realizados quedan asociados a tu sesión y al flujo de custodia.</footer>
+        </section>
       </div>
+    }
 
-      <button type="button" class="stripe-verify-pill" (click)="openVerifyModal()">
-        Verificar tu empresa
-      </button>
-    </div>
-
-    <!-- Contenedor Principal con Bordes Redondeados Superiores -->
-    <div class="stripe-header-card">
-      <!-- Fila de Navegación: Hamburguesa, Título de Usuario, Campana, Búsqueda -->
-      <div class="stripe-nav-header">
-        <button type="button" class="stripe-nav-btn" aria-label="Menú principal" (click)="openMenuAlert()">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
-          </svg>
-        </button>
-
-        <h1 class="stripe-user-title">
-          {{ authService.me()?.displayName || 'Alexander Martinez' }}
-        </h1>
-
-        <div class="stripe-header-actions">
-          <button type="button" class="stripe-nav-btn relative" aria-label="Notificaciones" (click)="openSyncQueue()">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-            </svg>
-            @if (pendingCount() > 0) {
-              <span class="stripe-bell-badge">{{ pendingCount() }}</span>
-            }
-          </button>
-
-          <button type="button" class="stripe-nav-btn" aria-label="Buscar" (click)="toggleSearch()">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Barra de Búsqueda Desplegable -->
-      @if (searchOpen()) {
+    <!-- Barra de búsqueda desplegable compartida con la cabecera móvil -->
+    @if (searchOpen()) {
         <div class="stripe-search-bar px-4 pb-2">
           <div class="relative flex items-center">
             <input
@@ -90,9 +113,7 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
             </button>
           </div>
         </div>
-      }
-
-    </div>
+    }
 
     <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
     <ion-content class="ion-padding stripe-main-content">
@@ -561,6 +582,65 @@ import { WarehouseComponent } from '../field/pages/warehouse/warehouse.component
       cursor: pointer;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
       transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .help-trigger {
+      width: 40px;
+      height: 40px;
+      padding: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      color: #ffffff;
+    }
+
+    .help-trigger svg { width: 21px; height: 21px; }
+    .help-trigger:hover { background: transparent; }
+
+    .help-sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: flex-end;
+      background: rgba(3, 20, 32, 0.52);
+      animation: help-backdrop-in 160ms ease-out;
+    }
+
+    .help-sheet {
+      width: 100%;
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+      background: #fff;
+      border-radius: 22px 22px 0 0;
+      color: #0A2540;
+      box-shadow: 0 -12px 40px rgba(3, 20, 32, 0.2);
+      animation: help-sheet-in 220ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .help-sheet-handle { width: 38px; height: 4px; margin: 0 auto 18px; border-radius: 999px; background: #CBD5E1; }
+    .help-sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 18px; }
+    .help-sheet-eyebrow { color: #008CA5; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+    .help-sheet-header h2 { margin: 5px 0 3px; font-size: 21px; line-height: 1.2; font-weight: 800; letter-spacing: -.03em; }
+    .help-sheet-header p { margin: 0; color: #64748B; font-size: 13px; }
+    .help-sheet-close { flex: 0 0 34px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #F1F5F9; color: #334155; font-size: 25px; line-height: 1; cursor: pointer; }
+    .help-sheet-content { display: grid; gap: 10px; }
+    .help-guide-card { display: grid; grid-template-columns: 30px 1fr; align-items: start; gap: 12px; padding: 14px; border: 1px solid #E3E8EF; border-radius: 13px; background: #fff; }
+    .help-step { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: #E6F8FB; color: #007F96; font-size: 12px; font-weight: 800; }
+    .help-guide-card h3 { margin: 1px 0 4px; color: #0A2540; font-size: 14px; font-weight: 750; }
+    .help-guide-card p { margin: 0; color: #526174; font-size: 12px; line-height: 1.55; }
+    .help-sheet-footer { margin-top: 14px; padding: 12px 2px 0; color: #64748B; font-size: 11px; line-height: 1.5; }
+
+    @keyframes help-sheet-in { from { transform: translateY(30px); opacity: .7; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes help-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .help-sheet-backdrop, .help-sheet { animation: none; }
     }
 
     .stripe-verify-pill:hover {
@@ -1101,6 +1181,7 @@ export class HomePage {
   }
 
   readonly pendingCount = this.outboxService.pendingCount;
+  readonly helpGuideOpen = signal(false);
 
   readonly totalDeliveries = computed(() => {
     const a = this.outboxService.activeAssignment();
@@ -1173,6 +1254,14 @@ export class HomePage {
   // --- Métodos de Interacción del Nuevo Diseño ---
   toggleSearch(): void {
     this.searchOpen.set(!this.searchOpen());
+  }
+
+  openHelpGuide(): void {
+    this.helpGuideOpen.set(true);
+  }
+
+  closeHelpGuide(): void {
+    this.helpGuideOpen.set(false);
   }
 
   async openTestEnvInfo(): Promise<void> {

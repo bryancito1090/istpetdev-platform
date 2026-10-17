@@ -1,7 +1,7 @@
 ---
 tipo: registro-ejecucion
 estado: pendiente
-actualizado: 2026-10-15
+actualizado: 2026-10-16
 tags: [equipo, seguimiento, pruebas, hallazgos]
 ---
 
@@ -213,3 +213,20 @@ El orden de continuidad está en [[Continuidad del piloto y specs 007 a 012]]. L
   no se rotó ni se sustituyó la credencial del backend. Jorge debe conciliarla.
 
 Fuente: [evidencia #39](../../specs/003-agente-logistico/evidencia/2026-10-14-preparacion-39.md).
+
+## 16 de octubre de 2026 — Issue #276, comparación A/B/C
+
+- Rama `fix/276-comparacion-abc-datos-reales` actualizada por fast-forward a
+  `33387ca` (develop, PR #283 incluye #275). La configuración demo versionada
+  ya contiene `ServiceCost`, `TrafficBands`, operador contratado y recomendación.
+- T1–T5 implementadas; pruebas web 161/161, build web/API y seis pruebas unitarias
+  de sourcing aprobados. Generador y hash de configuración validados offline.
+- T6 no puede cerrarse aún: Docker Desktop no tiene daemon activo y no hay API
+  local en 5000/5001. Por seguridad no se llamó al reset, que modifica los datos
+  operativos de la base demo, ni se generaron pedidos, corrida o captura.
+- También está pendiente que Joseph apruebe/corrija puntos, prioridades, fórmula
+  de cantidades y fecha de la [selección propuesta](../../specs/006-validacion-pitch-entrega/seleccion-issue-276.propuesta.json).
+  Sin aprobación, un run provisional no es evidencia final para la lámina 4.
+- Siguiente: aprobación del caso, levantar API contra base local aislada con la
+  configuración de #275, generar/revisar corrida y capturar tabla. Estado y
+  comandos: [revisión T6](../../specs/006-validacion-pitch-entrega/revision-issue-276-t6.md).

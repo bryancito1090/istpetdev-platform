@@ -46,6 +46,7 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                     .OrderBy(p => p.Code)
                     .Select(p => new
                     {
+                        id = p.Id,
                         code = p.Code,
                         name = p.Name,
                         lat = p.Position != null ? (double?)p.Position.Y : null,
@@ -70,6 +71,7 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                     .OrderBy(p => p.Sku)
                     .Select(p => new
                     {
+                        id = p.Id,
                         sku = p.Sku,
                         name = p.Name,
                         base_unit = p.BaseUnit,

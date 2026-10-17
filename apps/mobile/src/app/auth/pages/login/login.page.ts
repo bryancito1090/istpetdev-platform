@@ -2,16 +2,17 @@ import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonButton, IonContent } from '@ionic/angular/standalone';
 import { MobileAuthService } from '../../auth.service';
+import { FieldPageHeaderComponent } from '../../../shared/field-page-header/field-page-header.component';
 
 /** FR-01: esta página no recibe contraseñas; abre la página administrada de Cognito. */
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [IonContent, IonButton],
+  imports: [IonContent, IonButton, FieldPageHeaderComponent],
   template: `
+    <app-field-page-header [brandOnly]="true" [showHelp]="false" />
     <ion-content class="ion-padding login-screen">
       <div class="login-layout">
-        <div class="login-brand toolbar-brand">istpet<span>dev.</span><small>EXPO CLEAN / ECUADOR 2026</small></div>
         <section class="login-hero">
           <span class="eyebrow">LOGÍSTICA QUE CONECTA</span>
           <h1>Grandes equipos.<br><span>Todo en tus manos.</span></h1>
@@ -50,7 +51,8 @@ import { MobileAuthService } from '../../auth.service';
         <p class="login-footnote">Diseñado para acompañarte en campo.</p>
       </div>
     </ion-content>
-  `
+  `,
+  styles: [`:host { display: flex; flex-direction: column; height: 100%; } ion-content { flex: 1; }`]
 })
 export class LoginPage implements OnInit {
   readonly auth = inject(MobileAuthService);

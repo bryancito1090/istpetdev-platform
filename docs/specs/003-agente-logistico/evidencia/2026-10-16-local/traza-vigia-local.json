@@ -1,0 +1,432 @@
+{
+  "runId": "01a147f7-ad37-771b-b1d5-0e4b961762d3",
+  "kind": "Watch",
+  "status": "Completed",
+  "latencyMs": 5483,
+  "model": "deepseek-chat",
+  "promptVersion": "v2",
+  "n8nExecutionId": "38",
+  "fallbackReason": null,
+  "toolCalls": [
+    {
+      "method": "GET",
+      "path": "/api/v1/risks",
+      "status": 200,
+      "milliseconds": 21,
+      "atUtc": "2026-10-17T03:46:16.8573814Z",
+      "event": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logistics/stock",
+      "status": 200,
+      "milliseconds": 12,
+      "atUtc": "2026-10-17T03:46:18.8900105Z",
+      "event": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logistics/stock",
+      "status": 200,
+      "milliseconds": 12,
+      "atUtc": "2026-10-17T03:46:19.039518Z",
+      "event": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logistics/stock",
+      "status": 200,
+      "milliseconds": 13,
+      "atUtc": "2026-10-17T03:46:19.1799981Z",
+      "event": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/logistics/sourcing",
+      "status": 200,
+      "milliseconds": 46,
+      "atUtc": "2026-10-17T03:46:19.3413388Z",
+      "event": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/logistics/vehicles/available",
+      "status": 200,
+      "milliseconds": 58,
+      "atUtc": "2026-10-17T03:46:19.5360542Z",
+      "event": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/route-plans",
+      "status": 201,
+      "milliseconds": 299,
+      "atUtc": "2026-10-17T03:46:19.9830765Z",
+      "event": null
+    }
+  ],
+  "decisions": [
+    {
+      "agentDecisionId": "01a147f7-ba64-721a-a835-8742de2ebad0",
+      "vehicleCode": "VEH-01",
+      "outcome": "Proposed",
+      "explanation": "VEH-01 cubre 6 paradas desde BOD-SUR. 57.451 km y 34.602 USD; sin pendientes.",
+      "driverMessage": "6 paradas, 57.451 km. Inicia en HOS-N01.",
+      "source": "Llm",
+      "mismatchReason": null,
+      "facts": [
+        {
+          "code": "route_km",
+          "subject": "VEH-01",
+          "value": 57.451,
+          "unit": "km"
+        },
+        {
+          "code": "route_cost",
+          "subject": "VEH-01",
+          "value": 34.602,
+          "unit": "USD"
+        },
+        {
+          "code": "route_km",
+          "subject": "VEH-02",
+          "value": 11.487,
+          "unit": "km"
+        },
+        {
+          "code": "route_cost",
+          "subject": "VEH-02",
+          "value": 6.069,
+          "unit": "USD"
+        },
+        {
+          "code": "revision",
+          "subject": "VEH-01",
+          "value": 1,
+          "unit": "revision"
+        },
+        {
+          "code": "stops_count",
+          "subject": "VEH-01",
+          "value": 6,
+          "unit": "stops"
+        },
+        {
+          "code": "total_km",
+          "subject": "VEH-01",
+          "value": 57.45,
+          "unit": "km"
+        },
+        {
+          "code": "total_minutes",
+          "subject": "VEH-01",
+          "value": 178.56,
+          "unit": "min"
+        },
+        {
+          "code": "total_cost",
+          "subject": "VEH-01",
+          "value": 34.6,
+          "unit": "USD"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_1",
+          "value": 1,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_2",
+          "value": 2,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_3",
+          "value": 3,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_4",
+          "value": 4,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_5",
+          "value": 5,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_6",
+          "value": 6,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_7",
+          "value": 7,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_8",
+          "value": 8,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_9",
+          "value": 9,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_10",
+          "value": 10,
+          "unit": "sequence"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOS-N01",
+          "value": 12.4823833333333,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOS-N01",
+          "value": 748.943,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "OFI-N03",
+          "value": 12.9860833333056,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "OFI-N03",
+          "value": 779.164999998333,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOT-N06",
+          "value": 13.2772833333056,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOT-N06",
+          "value": 796.636999998333,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "COM-N05",
+          "value": 13.6166999999722,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "COM-N05",
+          "value": 817.001999998333,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "COM-S11",
+          "value": 14.4874499999722,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "COM-S11",
+          "value": 869.246999998333,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOS-S08",
+          "value": 14.9685833333056,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "HOS-S08",
+          "value": 898.114999998334,
+          "unit": "min"
+        }
+      ],
+      "originWarehouseCode": "BOD-SUR",
+      "originWarehouseName": "Bodega Sur (sintética)",
+      "orderedStops": [
+        {
+          "sequence": 1,
+          "pointCode": "HOS-N01"
+        },
+        {
+          "sequence": 2,
+          "pointCode": "OFI-N03"
+        },
+        {
+          "sequence": 3,
+          "pointCode": "HOT-N06"
+        },
+        {
+          "sequence": 4,
+          "pointCode": "COM-N05"
+        },
+        {
+          "sequence": 5,
+          "pointCode": "COM-S11"
+        },
+        {
+          "sequence": 6,
+          "pointCode": "HOS-S08"
+        }
+      ]
+    },
+    {
+      "agentDecisionId": "01a147f7-ba6d-7c13-afca-e4ced22262c0",
+      "vehicleCode": "VEH-02",
+      "outcome": "Proposed",
+      "explanation": "VEH-02 atiende CLI-S09 (Crítico) y EDU-S10. 11.487 km y 6.069 USD; sin pendientes.",
+      "driverMessage": "2 paradas, 11.487 km. Primero CLI-S09.",
+      "source": "Llm",
+      "mismatchReason": null,
+      "facts": [
+        {
+          "code": "route_km",
+          "subject": "VEH-01",
+          "value": 57.451,
+          "unit": "km"
+        },
+        {
+          "code": "route_cost",
+          "subject": "VEH-01",
+          "value": 34.602,
+          "unit": "USD"
+        },
+        {
+          "code": "route_km",
+          "subject": "VEH-02",
+          "value": 11.487,
+          "unit": "km"
+        },
+        {
+          "code": "route_cost",
+          "subject": "VEH-02",
+          "value": 6.069,
+          "unit": "USD"
+        },
+        {
+          "code": "revision",
+          "subject": "VEH-02",
+          "value": 1,
+          "unit": "revision"
+        },
+        {
+          "code": "stops_count",
+          "subject": "VEH-02",
+          "value": 2,
+          "unit": "stops"
+        },
+        {
+          "code": "total_km",
+          "subject": "VEH-02",
+          "value": 11.49,
+          "unit": "km"
+        },
+        {
+          "code": "total_minutes",
+          "subject": "VEH-02",
+          "value": 43.46,
+          "unit": "min"
+        },
+        {
+          "code": "total_cost",
+          "subject": "VEH-02",
+          "value": 6.07,
+          "unit": "USD"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_1",
+          "value": 1,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_2",
+          "value": 2,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_3",
+          "value": 3,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_4",
+          "value": 4,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_5",
+          "value": 5,
+          "unit": "sequence"
+        },
+        {
+          "code": "stop_sequence",
+          "subject": "stop_6",
+          "value": 6,
+          "unit": "sequence"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "CLI-S09",
+          "value": 12.1571166666389,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "CLI-S09",
+          "value": 729.426999998334,
+          "unit": "min"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "EDU-S10",
+          "value": 12.4840666666389,
+          "unit": "hora"
+        },
+        {
+          "code": "arrival_time",
+          "subject": "EDU-S10",
+          "value": 749.043999998333,
+          "unit": "min"
+        }
+      ],
+      "originWarehouseCode": "BOD-SUR",
+      "originWarehouseName": "Bodega Sur (sintética)",
+      "orderedStops": [
+        {
+          "sequence": 1,
+          "pointCode": "CLI-S09"
+        },
+        {
+          "sequence": 2,
+          "pointCode": "EDU-S10"
+        }
+      ]
+    }
+  ]
+}

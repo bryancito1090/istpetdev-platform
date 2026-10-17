@@ -138,3 +138,36 @@ La ronda E2E #118 está cerrada y no sustituye estos ensayos del pitch.
 | 3 | Sábado 15:20–15:45 | Pasada final, preguntas breves y revisión de archivos; congelar materiales exactamente a las 15:45. | Jorge (propuesto; confirmar) |
 
 Los cinco integrantes cubren su papel en cada pasada. Registrar duración real y fallos solo después de ejecutarlos.
+
+## Diapositivas v3: clics y animaciones
+
+Guía para quien presenta con `materiales/pitch-v3.pptx`. Todas las láminas entran con un fundido de 0,75 s. «Auto» significa que la entrada ocurre sola al abrir la lámina, sin clic; si se hace clic antes de que termine, PowerPoint completa la entrada. Los clics indicados son **adicionales** al que pasa a la lámina siguiente. En v3, la tabla A/B/C es la **lámina 5**, porque se agregó una portada (en v2 era la 4). El PDF es estático y muestra cada lámina completa.
+
+| # | Lámina | Clics | Orden de aparición | Chillo |
+|---:|---|---:|---|---|
+| 1 | Portada | 1 | Auto: logo → título (barrido) → subtítulo y equipo → Chillo (zoom). Clic 1: globo. | Entra solo; globo en el clic 1 |
+| 2 | Problema | 2 | Auto: título → «Mirar solo kilómetros» (barrido) → Chillo (zoom). Clic 1: «Comparar el servicio completo» → hipótesis. Clic 2: globo. | Entra solo; globo en el clic 2 |
+| 3 | Solución | 4 | Auto: título → línea dorada. Clics 1 a 4: Comparar, Desglosar, Explicar, Decidir; tras el 4 aparecen solos el rótulo PROPUESTA y «La IA explica; el planificador decide». | — |
+| 4 | Captura de rutas | 0 | Auto: título → captura (barrido) → tarjeta → rótulo «datos sintéticos». | — |
+| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Combustible, Desgaste, Conductor y ayudantes, Merma (en cascada). Clic 2: Costo total → frase y notas #241 / captura pendiente. Clic 3: globo. | Entra solo; globo en el clic 3 |
+| 6 | Impacto | 0 | Auto: título → seis indicadores en cascada. | — |
+| 7 | Viabilidad | 0 | Auto: título → tarjeta 01 → tarjeta 02 → banda «Límite» (barrido). | — |
+| 8 | Modelo de negocio | 0 | Auto: título → tarjeta 01 → tarjeta 02 → frase del piloto. | — |
+| 9 | Riesgos y mitigación | 1 | Auto: título → Chillo (zoom) → cinco riesgos en cascada → nota de la charla. Clic 1: globo. | Entra solo; globo en el clic 1 |
+| 10 | Hoja de ruta y cierre | 2 | Auto: título → Chillo de cuerpo entero (zoom) → cuatro pasos. Clic 1: banda «Próximo paso» (barrido). Clic 2: globo. | Entra solo; globo en el clic 2 |
+
+**Total: 13 clics de animación + 9 avances de lámina.**
+
+### Frases de Chillo (aprobadas por Joseph, 16-oct)
+
+Solo visuales: nadie las lee ni las dice en el pitch. No agregan hechos ni cifras: solo reformulan lo que ya dice cada lámina.
+
+| Lámina | Frase |
+|---|---|
+| 1 · Portada | «¡Hola! Soy Chillo y hoy les cuento cómo **decidir mejor** cada ruta.» |
+| 2 · Problema | «Si solo miramos kilómetros, la cuenta sale **incompleta**.» |
+| 5 · A / B / C | «Una ruta no es solo kilómetros: también es **quien descarga**.» |
+| 9 · Riesgos | «Todo plan tiene riesgos; lo clave es saber **mitigarlos**.» |
+| 10 · Cierre | «¿Lo validamos juntos en un **piloto**? ¡Kikirikí!» |
+
+Las frases están en `slide_cover`, `slide_problem`, `slide_abc`, `slide_risks` y `slide_roadmap` de `materiales/generar_v3.py`. Para cambiar una, se edita allí y se vuelve a generar.

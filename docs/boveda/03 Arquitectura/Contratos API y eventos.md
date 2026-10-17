@@ -218,6 +218,16 @@ Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factib
   - **`404`:** el plan no existe.
 - **Panel del asistente (paso 4):** permite editar la cantidad de cada línea pendiente. Por defecto propone todo lo pendiente; solo las líneas editadas se envían en `lines`. No deja confirmar una cantidad ≤ 0 o mayor que lo pendiente.
 
+### Consolidación parcial, revisiones y botón de cancelar (#199, cierre — 16 de octubre de 2026)
+
+Detalle en el FR-28 del spec 002. No hay endpoints nuevos ni campos nuevos; cambian estos comportamientos:
+
+- **`POST /api/v1/route-plans`:** una parada de consolidación (`isConsolidation: true`) que no cabe completa lleva la parte que cabe, con `loads[].quantity` < `requiredQuantity` y `pendingQuantity` > 0. Solo entra después de todos los obligatorios y con desvío ≤ `MaxDetourMinutes`. No aparece en `unserved`, pero emite los hechos `required_quantity`, `planned_quantity` y `pending_quantity` (sujeto `PUNTO/SKU`), así que la regla 8 del prompt de n8n la explica sin cambios.
+- **`POST /api/v1/route-plans/{id}/publish` de una revisión por incidente** (también al aprobar su decisión): si retira una parada con pedidos, resta de `DeliveryOrderLine.PlannedQuantity` lo que el plan sumó a los pedidos de ese destino y guarda en la revisión el `orderLines` restante. El pedido vuelve a `Pending` si ya no queda planificado por completo.
+- **`POST /api/v1/route-plans/{id}/revert`:** vuelve a sumar lo que la revisión había descontado. La ruta restaurada conserva el tipo (`Pickup`/`Delivery`) y la bodega de cada parada.
+- **Planes sin `orderLines`** (confirmados antes de #264): `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`, porque no hay datos de cuánto sumó cada ruta. `orderLines` de la respuesta de `cancel` sale vacío.
+- **Panel (Rutas):** el detalle de una ruta `Proposed` o `Published` muestra «Cancelar ruta» a quien puede escribir. Pide confirmación, llama a `POST …/cancel` y muestra lo liberado y descontado, o el `detail` del 409.
+
 ## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
 
 Las tres consultas usan `LogisticsQueriesController`, `SourcingService` y
@@ -599,3 +609,31 @@ reutiliza el contrato existente para el mismo aviso. No hay endpoint nuevo ni
 migración. El ejemplo reproducible vive en
 `docs/evidence/244-restricciones/appsettings.RestriccionesSinteticas.json`;
 no se activa automáticamente en la aplicación ni es ordenanza vigente.
+
+## Consulta y recepción de guías de retorno (#280 — 16-oct-2026)
+
+- `GET /api/v1/return-guides/{guideNumber}` es de solo lectura: no genera la guía,
+  no cambia `HandlingUnit` ni agrega `CustodyEvent`. Roles: Conductor, Bodega,
+  Planificador, Gerencia y Auditor. Receptor recibe 403.
+- El número completo exige `GRT-` seguido de ocho dígitos hexadecimales mayúsculos;
+  formato inválido responde 422 `INVALID_GUIDE_NUMBER`, sin plan responde 404
+  `UNIT_NOT_FOUND` y una colisión entre planes responde 409
+  `AMBIGUOUS_GUIDE_NUMBER`. No se admiten prefijos abreviados ni se elige el primer
+  plan cuando hay ambigüedad. También se comprueba al generar y recibir.
+- `POST /api/v1/return-guides/generate` conserva sus roles Conductor, Bodega,
+  Planificador y Gerencia. Persiste la custodia de generación bajo bloqueo de
+  organización; no altera bultos que ya estén `Returned`.
+- `POST /api/v1/return-guides/receive` conserva Bodega/Gerencia y el cuerpo
+  `{ guideNumber, operationId, occurredAtDevice? }`. La idempotencia usa el UUID
+  del cuerpo, sin exigir una cabecera nueva. Dentro de la transacción serializada,
+  la misma cuenta, UUID y cuerpo devuelve la respuesta 200 original; otro cuerpo
+  o acción con ese UUID responde 409 `IDEMPOTENCY_CONFLICT`. UUID vacío: 422
+  `INVALID_OPERATION_ID`.
+- Solo se concilian bultos pendientes: los `Returned` no suman stock, movimientos,
+  eventos ni demanda de reposición. Una guía totalmente recibida responde 409
+  `ALREADY_RECEIVED` para una operación nueva; una guía sin bultos de retorno,
+  409 `NO_HANDLING_UNITS`. La respuesta idempotente y todos los efectos se guardan
+  en el mismo commit.
+- Los bultos devueltos siguen visibles en la consulta; cuando todos lo están,
+  `status` es `ReceivedAtWarehouse`. Auditor no puede generar ni recibir. No hay
+  migración ni endpoint nuevo; evidencia local en `docs/evidence/280-retornos/`.

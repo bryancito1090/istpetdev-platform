@@ -237,6 +237,24 @@ export interface RoutePlanDetailDto {
   driverRoutes?: RouteDriverAssignmentDto[];
 }
 
+/** #199: respuesta de `POST /route-plans/{id}/cancel`. */
+export interface RoutePlanCancellationDto {
+  routePlanId: string;
+  status: string;
+  alreadyCancelled: boolean;
+  cancelledDeliveries: number;
+  releasedReservedQuantity: number;
+  orderLines: Array<{
+    orderId: string;
+    orderNumber: string;
+    sku: string;
+    releasedQuantity: number;
+    plannedQuantity: number;
+    pendingQuantity: number;
+    orderStatus: string;
+  }>;
+}
+
 export interface CreateManualRoutePlanRequest {
   code?: string;
   vehicleId?: string;
@@ -352,8 +370,70 @@ export interface RouteCandidateStop {
   serviceMinutes: number;
 }
 
+export interface FuelPriceDto {
+  value: number | null;
+  date: string | null;
+  source: string | null;
+  unit?: string;
+}
+
+export interface SourcingComparisonOptionDto {
+  optionId: string;
+  title: string;
+  description?: string;
+  carrierType?: string;
+  isRecommended?: boolean;
+  justification?: string | null;
+  totalKm?: number | null;
+  totalCost?: number | null;
+  criticalDeliveriesTotal?: number | null;
+  criticalDeliveriesOnTime?: number | null;
+  pendingOrdersCount?: number | null;
+  risks?: string[] | null;
+  costBreakdown?: {
+    fuel?: number | null;
+    wear?: number | null;
+    driver?: number | null;
+    helpers?: number | null;
+    helperCount?: number | null;
+    shrink?: number | null;
+    carrierTariff?: number | null;
+    total?: number | null;
+    notes?: string[] | null;
+  } | null;
+}
+
+export interface SourcingComparisonDto {
+  options: SourcingComparisonOptionDto[];
+  operationalDate?: string;
+  recommendedOptionId?: string | null;
+  justification?: string | null;
+  fuelPrice?: FuelPriceDto | null;
+}
+
+export interface RouteSuggestionResponseDto {
+  options: RouteSuggestionOptionDto[];
+  message?: string;
+  comparison?: SourcingComparisonDto;
+}
+
+export interface SavedRouteComparisonRunDto {
+  metadata: {
+    commit: string;
+    capturedAtUtc: string;
+    fixture: string;
+    configSha256: string;
+    selection?: unknown;
+    request?: unknown;
+    operationalDate?: string | null;
+  };
+  response: RouteSuggestionResponseDto;
+  responseRawJson?: string;
+}
+
 export interface RouteSuggestionOptionDto {
   optionId: string;
+  sourcingOptionId?: string;
   title: string;
   description: string;
   isRecommended: boolean;
@@ -627,10 +707,17 @@ export class ApiService {
   }
 
   // --- MÉTODOS DE RUTAS POR PEDIDOS & VEHÍCULOS ---
-  suggestRoutes(orderIds: string[], plannedDate?: string): Observable<{ options: RouteSuggestionOptionDto[] }> {
-    return this.http.post<{ options: RouteSuggestionOptionDto[] }>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
+  suggestRoutes(orderIds: string[], plannedDate?: string, optionId?: string): Observable<RouteSuggestionResponseDto> {
+    return this.http.post<RouteSuggestionResponseDto>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
       orderIds,
-      plannedDate
+      plannedDate,
+      optionId
+    });
+  }
+
+  getSavedRouteComparisonRun(): Observable<SavedRouteComparisonRunDto> {
+    return this.http.get<SavedRouteComparisonRunDto>('/corrida-abc.demo-quito.json', {
+      headers: new HttpHeaders({ 'Cache-Control': 'no-cache' })
     });
   }
 
@@ -778,6 +865,11 @@ export class ApiService {
   publishRoutePlan(id: string, assignment?: { vehicleCode: string; driverAccountId: string }): Observable<any> {
     const body = assignment ? { driverAssignments: { [assignment.vehicleCode]: assignment.driverAccountId } } : {};
     return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, body);
+  }
+
+  /** #199: cancela una ruta propuesta o publicada antes del despacho (409 `cancel_conflict` si ya salió). */
+  cancelRoutePlan(id: string): Observable<RoutePlanCancellationDto> {
+    return this.http.post<RoutePlanCancellationDto>(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/cancel`, {});
   }
 
   completeStop(routePlanId: string, sequence: number): Observable<any> {
