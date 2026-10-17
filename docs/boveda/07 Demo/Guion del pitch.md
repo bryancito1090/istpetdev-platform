@@ -41,7 +41,7 @@ Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|ment
 | 1 | 1 · Portada | Añadir la pregunta del gancho como título grande; el nombre del equipo queda pequeño. |
 | 2 | 2 · ¿Flota propia o contratada? | Nuevo título «El faltante se descubre cuando el cliente llama» y los tres dolores (planificación reactiva, bodega sin visibilidad, entrega sin prueba). |
 | 3 | 3 · Comparar, Desglosar, Explicar, Decidir | Cambiar los cuatro pasos por **Detectar → Decidir → Entregar → Probar**. |
-| 4 | — (nueva) | Esquema: datos → **motor** (calcula) → **agente IA en n8n** (explica) → **persona** (aprueba), con la nota «si la IA falla, explicación de respaldo». |
+| 4 | — (nueva) | Esquema: datos → **motor** (calcula) → **agente IA en n8n** (explica) → **persona** (aprueba), con la nota «si la IA falla, explicación de respaldo». Al generar la lámina, usar el logo `materiales/assets/n8n-logo.png` en el bloque del agente. |
 | 5 | 4 · Captura de rutas | Sustituir por la captura de la alerta en vivo (#318). La captura de rutas puede quedar de fondo o salir. |
 | 6 | 5 · Panel A/B/C | Sin cambios. |
 | 7 | 7 · Lo que podemos respaldar hoy | Rehacer como tres columnas: **Construido / Probado / Falta**. |
