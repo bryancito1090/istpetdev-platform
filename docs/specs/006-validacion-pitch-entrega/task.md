@@ -6,7 +6,7 @@ No son tareas de código. Cada casilla produce un documento, una entrevista, una
 
 - [x] Generador v8 reutilizando v7, diez diapositivas, QR grande al dominio y explicación de seguridad en diez líneas; editable/PDF con credencial disponibles localmente fuera de Git y copia de revisión sin contraseña para el PR.
 - [x] [Guion v8](guion-pitch-v8.md), con versiones DOCX/PDF y notas del presentador: meta propuesta de 290 s (4:50), sin ensayo cronometrado atribuido.
-- [x] **Producción real:** usuario dedicado `jurado@istpetdev.doicela.dev` confirmado en Cognito y cuenta humana activa `Auditor` en RDS `istpetdev_integration`. Sin migraciones ni cambios de grants, IAM, MFA o configuración del pool. Contraseña gestionada por Cognito, ausente de `Account` y de los archivos versionables.
+- [x] **Producción real:** usuario dedicado `jurado@expo.ec` confirmado en Cognito y cuenta humana activa `Auditor` en RDS `istpetdev_integration`. Sin migraciones ni cambios de grants, IAM, MFA o configuración del pool. Contraseña gestionada por Cognito, ausente de `Account` y de los archivos versionables.
 - [x] **Verificación real:** inicio de sesión desde el dominio en navegador; `/api/v1/me` devuelve `Auditor`/`web`, rutas/riesgos/entregas devuelven 200; seis escrituras devuelven 403; sin botones de escritura comprobados en Rutas. [Evidencia y límites](evidencia/pitch-v8-acceso-jurado.md).
 - [ ] Ensayar 4:50 con el equipo, escanear desde el teléfono del jurado y desactivar la cuenta cuando termine la evaluación.
 

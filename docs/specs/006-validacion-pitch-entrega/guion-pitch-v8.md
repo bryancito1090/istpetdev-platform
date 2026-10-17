@@ -15,22 +15,22 @@ Conserva las nueve láminas de la v7 y añade la invitación al jurado. El cierr
 | 7 | **Construido / Ensayado / Siguiente fase** | Anthony | 25 | «Construido: de la alerta a la prueba de entrega. Ensayado: la decisión A, B y C en un ensayo técnico sobre un escenario sintético de Quito de 40 puntos, y una corrida del agente de inteligencia artificial, incluida su caída al respaldo. Siguiente fase: usarlo en una empresa real, cargar sus datos y medir contra su línea base, probar el recorrido sin señal en un teléfono real, y llevar la comparación A, B y C a producción.» |
 | 8 | **Impacto y modelo** | Jorge | 40 | «En un piloto queremos medir tres cosas: menos faltantes descubiertos tarde, más entregas críticas a tiempo y cuánto cuesta realmente cada entrega. No prometemos un ahorro: lo medimos contra una línea base. No necesita hardware nuevo: funciona en la web y en el teléfono del conductor. Proponemos implementación inicial más suscripción, que validaremos. Y si falta un dato, el sistema dice “sin dato”. Esos indicadores alimentan informes ejecutivos: ya tenemos la sección Reportes.» |
 | 9 | **Cierre** | Joseph | 15 | «Una buena cotización de limpieza suma el costo completo. Nosotros hacemos lo mismo con la entrega: la decidimos con su costo real, antes de hacerla, y dejamos la prueba. Buscamos una empresa de limpieza para un piloto: con su línea base, indicadores acordados y sus datos. Gracias.» |
-| 10 | **Pruébenlo ustedes**: QR, cuenta Auditor y seguridad | Bryan | 20 | «Escaneen el QR y entren con la cuenta del jurado. Amazon Cognito, el servicio de acceso de Amazon en la nube, valida su identidad. Ustedes pueden consultar como auditores, sin modificar la operación. La conexión va cifrada. Dejamos esta pantalla para sus preguntas.» |
+| 10 | **Pruébenlo ustedes**: QR, cuenta Auditor y seguridad | Bryan | 20 | «Escaneen el QR y entren con este usuario y clave. El acceso usa AWS Cognito en la nube de Amazon, con conexión cifrada. Entran como auditores: pueden ver todo el sistema sin modificar datos. Dejamos la pantalla para sus preguntas.» |
 
 **Duración prevista:** 15 + 40 + 15 + 55 + 30 + 35 + 25 + 40 + 15 + 20 = **290 s**. Quedan 10 s de margen respecto a cinco minutos. La lámina 10 aparece sin animación y se mantiene visible durante las preguntas; no leer la contraseña en voz alta ni enumerar las diez líneas salvo que el jurado pregunte.
 
 ## Seguridad en diez líneas
 
-1. Amazon Cognito es el servicio de acceso de AWS.
-2. AWS es la nube de Amazon: funciona por Internet.
-3. Cognito comprueba el usuario y la contraseña.
-4. La contraseña la gestiona Cognito.
-5. La aplicación recibe una sesión temporal.
-6. Cada cuenta tiene permisos según su función.
-7. El jurado entra con el rol Auditor.
-8. Puede consultar; no modificar la operación.
-9. La conexión usa HTTPS para cifrar los datos.
-10. La cuenta puede desactivarse al terminar.
+1. AWS Cognito valida el ingreso en la nube de Amazon.
+2. Verifica usuario y clave antes de abrir el sistema.
+3. La clave la protege Cognito, no nuestra base.
+4. Al entrar entrega una sesión temporal.
+5. La conexión viaja cifrada por HTTPS.
+6. Cada cuenta tiene permisos según su rol.
+7. El jurado entra con rol Auditor.
+8. Modo solo lectura: ver todo sin alterar datos.
+9. El servidor bloquea cualquier intento de edición.
+10. La cuenta se desactiva al cerrar la evaluación.
 
 Fuente para Cognito: [documentación oficial de AWS](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-how-to-authenticate.html). Los permisos Auditor los comprueba la API de IstpetDev por separado. No afirmar MFA habilitado: el pool consultado el 17-oct tiene MFA desactivado.
 
@@ -41,7 +41,7 @@ Fuente para Cognito: [documentación oficial de AWS](https://docs.aws.amazon.com
 - Presentación: `materiales/pitch-v8.pptx` (GIF y animaciones) y `materiales/pitch-v8.pdf` (imágenes fijas); vistas en `materiales/render-v8/`.
 - Guion: este Markdown, `materiales/guion-pitch-v8.docx` y `materiales/guion-pitch-v8.pdf`; los tres omiten la contraseña.
 - QR: `https://istpetdev.doicela.dev/`. Solo contiene el dominio, sin contraseña, token ni acceso automático.
-- Usuario: `jurado@istpetdev.doicela.dev`, nombre «Jurado Expo Clean 2026», rol `Auditor`.
+- Usuario: `jurado@expo.ec`, nombre «Jurado Expo Clean 2026», rol `Auditor`.
 - La contraseña está en la última diapositiva y en `~/.config/istpetdev/private/jurado-pitch-v8.json` (0600). Los archivos que la contienen se excluyen localmente de Git. No se sustituye la v7 versionada en `docs/boveda/Entregable/` por una copia con credenciales.
 - Revocación: al terminar la evaluación, Gerencia puede desactivar la cuenta desde Usuarios. La cuenta no caduca automáticamente; queda pendiente que el responsable la desactive tras el evento.
 - Registro del acceso productivo y sus límites: `evidencia/pitch-v8-acceso-jurado.md`. Issue #371.

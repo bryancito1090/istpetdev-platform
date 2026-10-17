@@ -49,14 +49,14 @@ def slide_access(deck, credential, qr):
                 DORADO_CLARO, bold=True, align=PP_ALIGN.CENTER)
     x, w = 5.40, 7.15
     rect(sh, x, 1.90, w, 1.65, ACERO)
-    text(sh, x + .22, 2.01, w - .44, .23, "USUARIO DEL JURADO", 11, DORADO, bold=True)
-    text(sh, x + .22, 2.29, w - .44, .41, credential["email"], 23, BLANCO, bold=True)
-    text(sh, x + .22, 2.80, 1.25, .24, "Contraseña", 11, DORADO, bold=True)
-    text(sh, x + 1.55, 2.75, w - 1.77, .42, credential["password"], 22, BLANCO,
+    text(sh, x + .22, 2.01, 1.25, .24, "Usuario", 11, DORADO, bold=True)
+    text(sh, x + 1.55, 1.96, w - 1.77, .42, credential["email"], 23, BLANCO, bold=True)
+    text(sh, x + .22, 2.55, 1.25, .24, "Clave", 11, DORADO, bold=True)
+    text(sh, x + 1.55, 2.50, w - 1.77, .42, credential["password"], 23, BLANCO,
          bold=True, label="credencial del jurado")
-    text(sh, x + .22, 3.20, w - .44, .25,
-         "Torre de Control → usar esta cuenta", 12, GRIS_NIEBLA)
-    text(sh, x, 3.73, w, .35, "SEGURIDAD, EN PALABRAS SENCILLAS", 16, DORADO_CLARO, bold=True)
+    text(sh, x + .22, 3.15, w - .44, .25,
+         "Botón: Torre de Control · Rol Auditor (solo lectura)", 12, GRIS_NIEBLA)
+    text(sh, x, 3.73, w, .35, "SEGURIDAD · AWS COGNITO (NUBE)", 16, DORADO_CLARO, bold=True)
     for index, line in enumerate(security_lines()):
         text(sh, x, 4.14 + index * .235, w, .24, f"{index + 1:02d}  {line}", 12.6,
              BLANCO, label=f"seguridad {index + 1}")
@@ -107,7 +107,7 @@ def export_script():
         doc.add_paragraph(spoken)
         elapsed = end
     doc.add_page_break()
-    doc.add_heading("Seguridad en diez líneas — apoyo para preguntas", 1)
+    doc.add_heading("Seguridad en diez líneas — AWS Cognito (nube)", 1)
     for i, line in enumerate(security_lines(), 1):
         doc.add_paragraph(f"{i}. {line}")
     doc.add_paragraph("Fuente: documentación oficial de Amazon Cognito; controles de la aplicación verificados por separado.")
@@ -127,9 +127,9 @@ def main():
     parser.add_argument("--sin-credenciales", action="store_true", help="Generar copia de revisión versionable")
     args = parser.parse_args()
     os.umask(0o077)
-    credential = ({"email": "jurado@istpetdev.doicela.dev", "password": "Entregada al jurado", "url": URL}
+    credential = ({"email": "jurado@expo.ec", "password": "Entregada al jurado", "url": URL}
                   if args.sin_credenciales else json.loads(CREDENTIAL.read_text()))
-    assert credential["email"] == "jurado@istpetdev.doicela.dev"
+    assert credential["email"] == "jurado@expo.ec"
     assert credential["url"] == URL and credential["password"]
     stem = "pitch-v8-revision" if args.sin_credenciales else "pitch-v8"
     render_dir = HERE / ("render-v8-revision" if args.sin_credenciales else "render-v8")
