@@ -86,4 +86,9 @@ public interface IFieldService
     Task<ReceiverUnitResponse> GetReceiverUnitAsync(Guid unitId, string? traceToken, CancellationToken ct = default);
     Task<ReceiptResponse> CreateReceiverReceiptAsync(Guid unitId, string? traceToken, CreateReceiptRequest request, Guid actorAccountId, string idempotencyKey, CancellationToken ct = default);
     RejectionReasonsCatalogResponse GetRejectionReasonsCatalog();
+
+    // Issue #247: Guía de Retorno de lo no entregado
+    Task<ReturnGuideDto> GenerateReturnGuideAsync(Guid routePlanId, Guid actorAccountId, CancellationToken ct = default);
+    Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default);
+    Task<ReceiveReturnGuideResponse> ReceiveReturnGuideAsync(ReceiveReturnGuideRequest request, Guid actorAccountId, CancellationToken ct = default);
 }
