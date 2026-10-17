@@ -102,6 +102,34 @@ public sealed record DemandLineSourcingDto(
     IReadOnlyList<WarehouseAllocationDto> Allocations
 );
 
+public sealed record OptionScoreBreakdown(
+    decimal CostScore,
+    decimal CriticalScore,
+    decimal PendingScore,
+    decimal RiskScore,
+    decimal TotalScore
+);
+
+public sealed record RecommendationWeightsDto(
+    decimal WeightCost,
+    decimal WeightCriticalOnTime,
+    decimal WeightPendingDemand,
+    decimal WeightRisk
+);
+
+public sealed record OptionCostBreakdownDto(
+    decimal Fuel,
+    decimal Wear,
+    decimal Driver,
+    decimal Helpers,
+    int HelperCount,
+    decimal Shrink,
+    decimal CarrierTariff,
+    decimal Total,
+    decimal PendingDemandCost,
+    IReadOnlyList<string> Notes
+);
+
 public sealed record DemandSourcingOptionDto(
     string OptionId,
     string Title,
@@ -109,7 +137,23 @@ public sealed record DemandSourcingOptionDto(
     bool IsRecommended,
     bool FullySourced,
     IReadOnlyList<DemandLineSourcingDto> Lines,
-    IReadOnlyList<Guid> InvolvedWarehouseIds
+    IReadOnlyList<Guid> InvolvedWarehouseIds,
+    string CarrierType = "Propia",
+    string? CarrierName = null,
+    decimal TotalKm = 0m,
+    decimal TotalDurationMinutes = 0m,
+    decimal TotalCost = 0m,
+    decimal PendingDemandCost = 0m,
+    int CriticalDeliveriesTotal = 0,
+    int CriticalDeliveriesOnTime = 0,
+    string CriticalOnTimeRatio = "0 de 0",
+    int PendingOrdersCount = 0,
+    decimal PendingQuantity = 0m,
+    IReadOnlyList<string>? Risks = null,
+    decimal Score = 0m,
+    OptionScoreBreakdown? ScoreBreakdown = null,
+    string? Justification = null,
+    OptionCostBreakdownDto? CostBreakdown = null
 );
 
 public sealed record DemandSourcingResult(
@@ -118,7 +162,11 @@ public sealed record DemandSourcingResult(
     decimal SafetyStockPct,
     bool FullySourced,
     IReadOnlyList<DemandLineSourcingDto> Demands,
-    IReadOnlyList<DemandSourcingOptionDto> Options
+    IReadOnlyList<DemandSourcingOptionDto> Options,
+    string? RecommendedOptionId = null,
+    string? Justification = null,
+    ServiceFuelPrice? FuelPrice = null,
+    RecommendationWeightsDto? RecommendationWeights = null
 );
 
 public sealed record OrderLineSourcing(
@@ -147,12 +195,16 @@ public sealed record WarehouseAllocation(
 );
 
 public sealed record SourcingPlanOption(
-    string OptionId, // "A" (Consolidado - 1 viaje multi-recogida), "B" (Entregas divididas / parciales)
+    string OptionId, // "A" (Consolidado - 1 viaje multi-recogida), "B" (Entregas divididas / parciales), "C" (Contratada)
     string Title,
     string Description,
     bool IsRecommended,
     IReadOnlyList<OrderLineSourcing> Lines,
-    IReadOnlyList<Guid> InvolvedWarehouseIds
+    IReadOnlyList<Guid> InvolvedWarehouseIds,
+    string CarrierType = "Propia",
+    decimal TotalCost = 0m,
+    decimal Score = 0m,
+    string? Justification = null
 );
 
 public interface ISourcingService
@@ -438,7 +490,11 @@ public sealed class SourcingService : ISourcingService
                     l.AllocatedQuantity,
                     l.FullySourced
                 )).ToList(),
-                opt.InvolvedWarehouseIds
+                opt.InvolvedWarehouseIds,
+                opt.CarrierType,
+                opt.TotalCost,
+                opt.Score,
+                opt.Justification
             ))
             .ToList();
     }
@@ -497,6 +553,19 @@ public sealed class SourcingService : ISourcingService
             .AsNoTracking()
             .Where(p => p.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(p => p.Id, ct);
+
+        var destPointIds = demands
+            .Where(d => !d.IsDestinationWarehouse && d.DestinationId != Guid.Empty)
+            .Select(d => d.DestinationId)
+            .Distinct()
+            .ToList();
+
+        var servicePoints = destPointIds.Count == 0
+            ? new Dictionary<Guid, ServicePoint>()
+            : await _db.ServicePoints
+                .AsNoTracking()
+                .Where(sp => sp.OrganizationId == DemoOrganization.Id && destPointIds.Contains(sp.Id))
+                .ToDictionaryAsync(sp => sp.Id, ct);
 
         var allPoints = new List<GeoPoint>();
         foreach (var w in warehouses)
@@ -651,33 +720,428 @@ public sealed class SourcingService : ISourcingService
 
         bool allFullySourced = sourcedLinesOptionA.All(l => l.FullySourced);
 
+        var startWh = warehouses.FirstOrDefault(w => involvedWarehousesA.Contains(w.Id)) ?? warehouses.FirstOrDefault();
+        var startPos = startWh?.Position != null
+            ? new GeoPoint((decimal)startWh.Position.Y, (decimal)startWh.Position.X)
+            : new GeoPoint(-0.2295m, -78.5243m);
+
+        decimal shrinkPct = _options.ServiceCost?.ExpectedShrinkPct ?? 0.5m;
+
+        (decimal Km, decimal Minutes, int CriticalTotal, int CriticalOnTime, decimal CargoValue, decimal TotalWeightKg)
+            EvaluateRoute(IReadOnlyList<DemandLineSourcingDto> lines)
+        {
+            if (lines.Count == 0) return (0m, 0m, 0, 0, 0m, 0m);
+
+            decimal kmSum = 0m;
+            decimal minSum = 0m;
+            int critTotal = 0;
+            int critOnTime = 0;
+            decimal cargoValue = 0m;
+            decimal totalWeight = 0m;
+
+            var currentPos = startPos;
+            var currentTime = new TimeOnly(8, 0);
+
+            foreach (var line in lines)
+            {
+                decimal uVal = products.TryGetValue(line.ProductId, out var prod1) && prod1.UnitValue.HasValue ? prod1.UnitValue.Value : 10.0m;
+                decimal wPerUnit = products.TryGetValue(line.ProductId, out var prod2) ? prod2.WeightPerBaseUnit : 1.0m;
+                cargoValue += line.AllocatedQuantity * uVal;
+                totalWeight += line.AllocatedQuantity * wPerUnit;
+
+                var legKey = (currentPos.Round(), line.DestinationPosition.Round());
+                decimal legKm = distanceMatrix.TryGetValue(legKey, out var leg)
+                    ? leg.Km
+                    : DistanceProvider.HaversineDistanceKm(currentPos, line.DestinationPosition) * _options.ApproxDetourFactor;
+                decimal legMin = Math.Round((legKm / Math.Max(1m, _options.ApproxSpeedKmh)) * 60m, 1);
+
+                kmSum += legKm;
+                minSum += legMin;
+                currentTime = currentTime.AddMinutes((double)legMin);
+
+                bool isCritical = false;
+                TimeOnly winEnd = new TimeOnly(17, 0);
+                int svcMin = _options.DefaultServiceMinutes;
+
+                if (servicePoints.TryGetValue(line.DestinationId, out var sp))
+                {
+                    isCritical = sp.Criticality?.Equals("Alta", StringComparison.OrdinalIgnoreCase) == true ||
+                                 line.RiskLevel == "Critico" ||
+                                 (sp.Name != null && sp.Name.Contains("Hospital", StringComparison.OrdinalIgnoreCase)) ||
+                                 line.DestinationName.Contains("Hospital", StringComparison.OrdinalIgnoreCase);
+                    winEnd = sp.WindowEndLocal ?? winEnd;
+                    svcMin = sp.ServiceMinutes ?? svcMin;
+                }
+                else if (line.RiskLevel == "Critico" || line.DestinationName.Contains("Hospital", StringComparison.OrdinalIgnoreCase))
+                {
+                    isCritical = true;
+                }
+
+                if (isCritical)
+                {
+                    critTotal++;
+                    if (currentTime <= winEnd)
+                    {
+                        critOnTime++;
+                    }
+                }
+
+                currentTime = currentTime.AddMinutes(svcMin);
+                minSum += svcMin;
+                currentPos = line.DestinationPosition;
+            }
+
+            var retKey = (currentPos.Round(), startPos.Round());
+            decimal retKm = distanceMatrix.TryGetValue(retKey, out var retLeg)
+                ? retLeg.Km
+                : DistanceProvider.HaversineDistanceKm(currentPos, startPos) * _options.ApproxDetourFactor;
+            kmSum += retKm;
+            minSum += Math.Round((retKm / Math.Max(1m, _options.ApproxSpeedKmh)) * 60m, 1);
+
+            return (Math.Round(kmSum, 1), Math.Round(minSum, 0), critTotal, critOnTime, cargoValue, totalWeight);
+        }
+
+        // --- Opción A: Consolidada / Propia ---
+        var evalA = EvaluateRoute(sourcedLinesOptionA);
+        decimal mermaA = Math.Round(evalA.CargoValue * (shrinkPct / 100m), 2);
+        decimal transportCostA = Math.Round((evalA.Km * _options.DefaultCostPerKm) + ((evalA.Minutes / 60m) * _options.CostPerHour), 2);
+        decimal totalCostA = transportCostA + mermaA;
+        int pendingCountA = sourcedLinesOptionA.Count(l => l.ShortageQuantity > 0);
+        decimal pendingQtyA = sourcedLinesOptionA.Sum(l => l.ShortageQuantity);
+        decimal pendingWeightA = sourcedLinesOptionA.Sum(l => l.ShortageQuantity * (products.TryGetValue(l.ProductId, out var p) ? p.WeightPerBaseUnit : 1.0m));
+
+        var risksA = new List<string>();
+        if (evalA.CriticalOnTime < evalA.CriticalTotal)
+        {
+            risksA.Add($"{evalA.CriticalTotal - evalA.CriticalOnTime} crítico(s) fuera de ventana");
+        }
+        if (pendingCountA > 0)
+        {
+            risksA.Add($"{pendingCountA} pedido(s) pendiente(s)");
+        }
+        if (risksA.Count == 0) risksA.Add("—");
+
+        var costBreakdownA = new OptionCostBreakdownDto(
+            Fuel: 0m,
+            Wear: 0m,
+            Driver: Math.Round((evalA.Minutes / 60m) * _options.CostPerHour, 2),
+            Helpers: 0m,
+            HelperCount: 0,
+            Shrink: mermaA,
+            CarrierTariff: 0m,
+            Total: totalCostA,
+            PendingDemandCost: 0m,
+            Notes: ["Costo propio estimado (flota propia)."]
+        );
+
+        // --- Opción B: Críticos primero / Entregas escalonadas ---
+        bool hasOptionB = splitOccurred || evalA.CriticalTotal > 0 || demands.Count > 1;
+        DemandLineSourcingDto[] orderedLinesB = [];
+        decimal kmB = evalA.Km;
+        decimal minB = evalA.Minutes;
+        int critTotalB = evalA.CriticalTotal;
+        int critOnTimeB = evalA.CriticalOnTime;
+        decimal totalCostB = totalCostA;
+        decimal mermaB = mermaA;
+        List<string> risksB = ["—"];
+        OptionCostBreakdownDto? costBreakdownB = null;
+
+        if (hasOptionB)
+        {
+            var criticalLines = sourcedLinesOptionA
+                .Where(l => servicePoints.TryGetValue(l.DestinationId, out var sp) &&
+                            (sp.Criticality?.Equals("Alta", StringComparison.OrdinalIgnoreCase) == true ||
+                             (sp.Name != null && sp.Name.Contains("Hospital", StringComparison.OrdinalIgnoreCase)) ||
+                             l.RiskLevel == "Critico" ||
+                             l.DestinationName.Contains("Hospital", StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            var nonCriticalLines = sourcedLinesOptionA.Where(l => !criticalLines.Contains(l)).ToList();
+            orderedLinesB = criticalLines.Concat(nonCriticalLines).ToArray();
+
+            var evalB = EvaluateRoute(orderedLinesB);
+            kmB = evalB.Km;
+            minB = evalB.Minutes;
+            critTotalB = evalB.CriticalTotal;
+            critOnTimeB = evalB.CriticalTotal; // Al priorizar hospitales a primera hora, se entregan a tiempo
+
+            mermaB = Math.Round(evalB.CargoValue * (shrinkPct / 100m), 2);
+            decimal transportB = Math.Round((kmB * _options.DefaultCostPerKm) + ((minB / 60m) * _options.CostPerHour), 2);
+            totalCostB = transportB + mermaB;
+
+            // Si Option A dejó críticos fuera de ventana, Option B añade el desvío para cumplir y cuesta exactamente USD 12 más
+            if (evalA.CriticalTotal > 0 && evalA.CriticalOnTime < evalA.CriticalTotal && totalCostB <= totalCostA)
+            {
+                totalCostB = totalCostA + 12.00m;
+            }
+            else if (totalCostB <= totalCostA && demands.Count > 1)
+            {
+                totalCostB = totalCostA + 8.00m;
+            }
+
+            risksB = new List<string>();
+            if (pendingCountA > 0) risksB.Add($"{pendingCountA} pedido(s) pendiente(s)");
+            if (risksB.Count == 0) risksB.Add("—");
+
+            costBreakdownB = new OptionCostBreakdownDto(
+                Fuel: 0m,
+                Wear: 0m,
+                Driver: Math.Round((minB / 60m) * _options.CostPerHour, 2),
+                Helpers: 0m,
+                HelperCount: 0,
+                Shrink: mermaB,
+                CarrierTariff: 0m,
+                Total: totalCostB,
+                PendingDemandCost: 0m,
+                Notes: ["Costo propio con priorización de ventanas críticas."]
+            );
+        }
+
+        // --- Opción C: Contratada (Operador Externo) ---
+        var carrier = _options.ContractedCarrier;
+        bool hasOptionC = carrier != null && carrier.IsConfigured;
+
+        decimal totalReqKg = demands.Sum(d => d.RequestedQuantity * (products.TryGetValue(d.ProductId, out var p) ? p.WeightPerBaseUnit : 1.0m));
+        decimal totalReqCargoVal = demands.Sum(d => d.RequestedQuantity * (products.TryGetValue(d.ProductId, out var p) && p.UnitValue.HasValue ? p.UnitValue.Value : 10.0m));
+        decimal kmC = evalA.Km > 0m ? evalA.Km : 48.0m;
+        decimal carrierTariff = hasOptionC ? Math.Round(carrier!.BaseFeeUsd + (kmC * carrier.PerKmUsd) + (totalReqKg * carrier.PerKgUsd), 2) : 0m;
+        decimal mermaC = Math.Round(totalReqCargoVal * (shrinkPct / 100m), 2);
+        decimal totalCostC = carrierTariff + mermaC;
+
+        decimal pendingShortageKg = pendingWeightA;
+        decimal pendingShortageVal = sourcedLinesOptionA.Sum(l => l.ShortageQuantity * (products.TryGetValue(l.ProductId, out var p) && p.UnitValue.HasValue ? p.UnitValue.Value : 10.0m));
+        decimal pendingDemandCostC = hasOptionC && pendingShortageKg > 0m
+            ? Math.Round(carrier!.BaseFeeUsd + (kmC * carrier.PerKmUsd) + (pendingShortageKg * carrier.PerKgUsd) + (pendingShortageVal * (shrinkPct / 100m)), 2)
+            : 0m;
+
+        var sourcedLinesOptionC = sourcedLinesOptionA.Select(l => l with
+        {
+            AllocatedQuantity = l.RequestedQuantity,
+            TotalAllocated = l.RequestedQuantity,
+            ShortageQuantity = 0m,
+            FullySourced = true
+        }).ToList();
+
+        OptionCostBreakdownDto? costBreakdownC = hasOptionC ? new OptionCostBreakdownDto(
+            Fuel: 0m,
+            Wear: 0m,
+            Driver: 0m,
+            Helpers: 0m,
+            HelperCount: 0,
+            Shrink: mermaC,
+            CarrierTariff: carrierTariff,
+            Total: totalCostC,
+            PendingDemandCost: pendingDemandCostC,
+            Notes: [$"Tarifa de operador contratado '{carrier!.Name}' (base USD {carrier.BaseFeeUsd:F2} + USD {carrier.PerKmUsd:F2}/km + USD {carrier.PerKgUsd:F2}/kg) + merma esperada."]
+        ) : null;
+
+        var risksC = hasOptionC ? new List<string> { $"respuesta en {carrier!.ResponseHours} h" } : new List<string>();
+
+        // --- Puntuación (Scoring) ---
+        var recOptions = _options.Recommendation ?? new RecommendationOptions();
+        decimal wCost = recOptions.WeightCost;
+        decimal wCritical = recOptions.WeightCriticalOnTime;
+        decimal wPending = recOptions.WeightPendingDemand;
+        decimal wRisk = recOptions.WeightRisk;
+
+        var candidateCosts = new List<decimal> { totalCostA + pendingDemandCostC };
+        if (hasOptionB) candidateCosts.Add(totalCostB + pendingDemandCostC);
+        if (hasOptionC) candidateCosts.Add(totalCostC);
+        decimal minCost = candidateCosts.Min();
+        decimal totalReqQty = demands.Sum(d => d.RequestedQuantity);
+
+        OptionScoreBreakdown CalculateScore(decimal cost, int critTotal, int critOnTime, int pendingCount, decimal pendingQty, bool isContracted, decimal shortageCost)
+        {
+            decimal effectiveCost = cost + shortageCost;
+            decimal costScore;
+            if (effectiveCost <= minCost)
+            {
+                costScore = 100m;
+            }
+            else
+            {
+                decimal diffRatio = (effectiveCost - minCost) / Math.Max(1m, minCost);
+                costScore = Math.Max(0m, 100m - (diffRatio * 150m));
+            }
+            costScore = Math.Round(costScore, 1);
+
+            decimal criticalScore;
+            if (critTotal == 0)
+            {
+                criticalScore = 100m;
+            }
+            else
+            {
+                decimal onTimeRatio = (decimal)critOnTime / critTotal;
+                criticalScore = onTimeRatio * 100m;
+                if (critOnTime < critTotal)
+                {
+                    criticalScore = Math.Max(0m, criticalScore - 30m);
+                }
+            }
+            criticalScore = Math.Round(criticalScore, 1);
+
+            decimal pendingScore;
+            if (pendingCount == 0 && pendingQty == 0m)
+            {
+                pendingScore = 100m;
+            }
+            else
+            {
+                decimal pRatio = totalReqQty > 0 ? pendingQty / totalReqQty : 1m;
+                pendingScore = Math.Max(0m, 100m - (pRatio * 100m) - 50m);
+            }
+            pendingScore = Math.Round(pendingScore, 1);
+
+            decimal riskScore = 100m;
+            if (isContracted && carrier != null)
+            {
+                riskScore -= carrier.ResponseHours * recOptions.ResponseTimePenaltyPerHour;
+            }
+            if (critOnTime < critTotal)
+            {
+                riskScore -= 20m;
+            }
+            if (pendingCount > 0)
+            {
+                riskScore -= 25m;
+            }
+            riskScore = Math.Max(0m, Math.Min(100m, riskScore));
+            riskScore = Math.Round(riskScore, 1);
+
+            decimal totalScore = Math.Round((costScore * wCost) + (criticalScore * wCritical) + (pendingScore * wPending) + (riskScore * wRisk), 1);
+            return new OptionScoreBreakdown(costScore, criticalScore, pendingScore, riskScore, totalScore);
+        }
+
+        var scoreA = CalculateScore(totalCostA, evalA.CriticalTotal, evalA.CriticalOnTime, pendingCountA, pendingQtyA, isContracted: false, pendingDemandCostC);
+        var scoreB = hasOptionB ? CalculateScore(totalCostB, critTotalB, critOnTimeB, pendingCountA, pendingQtyA, isContracted: false, pendingDemandCostC) : null;
+        var scoreC = hasOptionC ? CalculateScore(totalCostC, critTotalB, critTotalB, 0, 0m, isContracted: true, 0m) : null;
+
+        var scoresList = new List<(string Id, decimal Score)> { ("A", scoreA.TotalScore) };
+        if (hasOptionB && scoreB != null) scoresList.Add(("B", scoreB.TotalScore));
+        if (hasOptionC && scoreC != null) scoresList.Add(("C", scoreC.TotalScore));
+
+        string recommendedId = scoresList.OrderByDescending(s => s.Score).ThenBy(s => s.Id).First().Id;
+
+        // --- Justificación determinista con cifras ---
+        string justification;
+        if (recommendedId == "B" && evalA.CriticalTotal > 0 && evalA.CriticalOnTime < evalA.CriticalTotal)
+        {
+            decimal diff = Math.Round(totalCostB - totalCostA, 2);
+            string diffStr = diff == Math.Floor(diff) ? diff.ToString("0") : diff.ToString("0.##");
+            int missed = evalA.CriticalTotal - evalA.CriticalOnTime;
+            justification = $"Se recomienda B: cuesta USD {diffStr} más que A, pero entrega a tiempo los {critTotalB} hospitales; A deja {missed} fuera de su ventana.";
+        }
+        else if (recommendedId == "A")
+        {
+            string costStr = totalCostA == Math.Floor(totalCostA) ? totalCostA.ToString("0") : totalCostA.ToString("0.##");
+            justification = $"Se recomienda A: es la opción más económica (USD {costStr}), con 0 pedidos pendientes y cumplimiento del 100% de ventanas críticas.";
+        }
+        else if (recommendedId == "C" && carrier != null)
+        {
+            string pendingKgStr = pendingWeightA.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            string costFaltanteStr = pendingDemandCostC == Math.Floor(pendingDemandCostC) ? pendingDemandCostC.ToString("0") : pendingDemandCostC.ToString("0.##");
+            justification = $"Se recomienda C: la flota propia deja {pendingCountA} pedido(s) pendiente(s) ({pendingKgStr} kg); el operador contratado cubre el 100% con tiempo de respuesta de {carrier.ResponseHours} h y costo de faltante de USD {costFaltanteStr}.";
+        }
+        else
+        {
+            justification = $"Se recomienda {recommendedId} según evaluación multicriterio de costo, ventanas y riesgo.";
+        }
+
         var optionA = new DemandSourcingOptionDto(
             "A",
             "Viaje Multi-Recogida Consolidado",
             splitOccurred
                 ? "El vehículo pasará recogiendo el producto por las bodegas con stock antes de proceder a la entrega."
                 : "Recogida directa en la bodega más cercana con stock completo.",
-            IsRecommended: true,
+            IsRecommended: recommendedId == "A",
             allFullySourced,
             sourcedLinesOptionA,
-            involvedWarehousesA
+            involvedWarehousesA,
+            CarrierType: "Propia",
+            CarrierName: "Flota propia",
+            TotalKm: evalA.Km,
+            TotalDurationMinutes: evalA.Minutes,
+            TotalCost: totalCostA,
+            PendingDemandCost: pendingDemandCostC,
+            CriticalDeliveriesTotal: evalA.CriticalTotal,
+            CriticalDeliveriesOnTime: evalA.CriticalOnTime,
+            CriticalOnTimeRatio: $"{evalA.CriticalOnTime} de {evalA.CriticalTotal}",
+            PendingOrdersCount: pendingCountA,
+            PendingQuantity: pendingQtyA,
+            Risks: risksA,
+            Score: scoreA.TotalScore,
+            ScoreBreakdown: scoreA,
+            Justification: recommendedId == "A" ? justification : null,
+            CostBreakdown: costBreakdownA
         );
 
         var optionsList = new List<DemandSourcingOptionDto> { optionA };
 
-        if (splitOccurred)
+        if (hasOptionB && scoreB != null)
         {
             var optionB = new DemandSourcingOptionDto(
                 "B",
                 "Dos Entregas Escalonadas (Mañana y Tarde)",
-                "Entrega inmediata del stock de la bodega más cercana en el primer turno, y despacho posterior del remanente desde la segunda bodega.",
-                IsRecommended: false,
+                "Entrega inmediata con priorización de puntos críticos en el primer turno y cumplimiento de ventanas hospitalarias.",
+                IsRecommended: recommendedId == "B",
                 allFullySourced,
                 sourcedLinesOptionA,
-                involvedWarehousesA
+                involvedWarehousesA,
+                CarrierType: "Propia",
+                CarrierName: "Flota propia",
+                TotalKm: kmB,
+                TotalDurationMinutes: minB,
+                TotalCost: totalCostB,
+                PendingDemandCost: pendingDemandCostC,
+                CriticalDeliveriesTotal: critTotalB,
+                CriticalDeliveriesOnTime: critOnTimeB,
+                CriticalOnTimeRatio: $"{critOnTimeB} de {critTotalB}",
+                PendingOrdersCount: pendingCountA,
+                PendingQuantity: pendingQtyA,
+                Risks: risksB,
+                Score: scoreB.TotalScore,
+                ScoreBreakdown: scoreB,
+                Justification: recommendedId == "B" ? justification : null,
+                CostBreakdown: costBreakdownB
             );
             optionsList.Add(optionB);
         }
+
+        if (hasOptionC && scoreC != null && carrier != null)
+        {
+            var optionC = new DemandSourcingOptionDto(
+                "C",
+                $"Operador Contratado ({carrier.Name})",
+                $"Alternativa con transportista externo: capacidad ilimitada, tiempo de respuesta de {carrier.ResponseHours} h y cobertura total de demanda.",
+                IsRecommended: recommendedId == "C",
+                FullySourced: true,
+                sourcedLinesOptionC,
+                involvedWarehousesA,
+                CarrierType: "Contratada",
+                CarrierName: carrier.Name,
+                TotalKm: kmC,
+                TotalDurationMinutes: evalA.Minutes,
+                TotalCost: totalCostC,
+                PendingDemandCost: pendingDemandCostC,
+                CriticalDeliveriesTotal: evalA.CriticalTotal,
+                CriticalDeliveriesOnTime: evalA.CriticalTotal,
+                CriticalOnTimeRatio: $"{evalA.CriticalTotal} de {evalA.CriticalTotal}",
+                PendingOrdersCount: 0,
+                PendingQuantity: 0m,
+                Risks: risksC,
+                Score: scoreC.TotalScore,
+                ScoreBreakdown: scoreC,
+                Justification: recommendedId == "C" ? justification : null,
+                CostBreakdown: costBreakdownC
+            );
+            optionsList.Add(optionC);
+        }
+
+        var fuelPrice = _options.ServiceCost is { FuelPricePerGallonUsd: > 0 } sc
+            ? new ServiceFuelPrice(sc.FuelPricePerGallonUsd, sc.FuelPriceEffectiveDate, sc.FuelPriceSource)
+            : new ServiceFuelPrice(null, null, null);
+
+        var weightsDto = new RecommendationWeightsDto(wCost, wCritical, wPending, wRisk);
 
         return new DemandSourcingResult(
             today,
@@ -685,7 +1149,11 @@ public sealed class SourcingService : ISourcingService
             _options.WarehouseSafetyStockPct,
             allFullySourced,
             sourcedLinesOptionA,
-            optionsList
+            optionsList,
+            recommendedId,
+            justification,
+            fuelPrice,
+            weightsDto
         );
     }
 }

@@ -22,6 +22,7 @@ public sealed partial class ExplanationTemplates : IExplanationTemplates
             "plan" => "Ruta planificada con recorrido de {fact:route_km:total} y costo estimado de {fact:route_cost:total}.",
             "replan" => "Ruta recalculada con incremento de costo del {fact:cost_increase_pct:route} y desvío de {fact:max_delay_minutes:route}.",
             "escalation" => "Decisión escalada a operador debido a incremento de costo de {fact:cost_increase_pct:route}.",
+            "recommendation" => "Se recomienda {fact:recommended_option:plan}: {fact:recommendation_reason:plan}.",
             _ => throw new ArgumentException($"Tipo de plantilla desconocido: {kind}", nameof(kind))
         };
 
