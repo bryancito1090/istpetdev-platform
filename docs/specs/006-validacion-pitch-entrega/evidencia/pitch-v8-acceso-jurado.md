@@ -21,10 +21,10 @@ SHA-256 de los archivos versionables de `../materiales/`:
 
 | Archivo | SHA-256 |
 |---|---|
-| `pitch-v8-revision.pptx` | `001f8fef713737511a95e6f178f47b1f1e11b3cce52d37aef02b4a8152414c9a` |
-| `pitch-v8-revision.pdf` | `7855b9bb0671f4e3e0ebe63cbb4b7524538086ff5a1a72802e1b6a61c87c4c56` |
-| `guion-pitch-v8.docx` | `11956c65a7b9ce3452c9b07b17ca3a8bfb4c54839ab08308e3d28f2377129c40` |
-| `guion-pitch-v8.pdf` | `1a3049a230d2023bf29d94eddabfd296dd13da78dd8f3d84cfd449f6b5ddbc6c` |
+| `pitch-v8-revision.pptx` | `5963754cab0b2153bdba4c7b53de52e2d8318fa349eb844a85fa3679be52dd28` |
+| `pitch-v8-revision.pdf` | `c795a52d03e4cdc739d5d142580b4f71774a178a44b21e0987d4167eb117988e` |
+| `guion-pitch-v8.docx` | `ae9ffe3e5bcce3b39391165d1ec8d50e65b8f7e6e2a3a01519100e3883a386b2` |
+| `guion-pitch-v8.pdf` | `18f1bb79ff836ad26146abc053163f5f70cea7c8d4010077d7d7f18e45d739c3` |
 
 ## Revisión prelaunch del acceso afectado
 
@@ -34,10 +34,10 @@ Base local del cambio: `704b558cfbd689e25accca0c78f6a63aea7a000f` (`origin/devel
 
 | Control | Estado y evidencia | Límite |
 |---|---|---|
-| Identidad productiva | Verificado. Pool `us-east-1_4Y2j5DINp`, región `us-east-1`, cuenta AWS `747456040427`; usuario nuevo `jurado@istpetdev.doicela.dev`, nombre «Jurado Expo Clean 2026», estado `CONFIRMED`, habilitado. Alta con `MessageAction=SUPPRESS`, sin envío de correo; contraseña permanente para no imponer cambio al primer jurado. | Cuenta compartida para evaluación; no sirve para atribuir acciones a una persona. No se afirma verificación de propiedad de un buzón. |
+| Identidad productiva | Verificado. Pool `us-east-1_4Y2j5DINp`, región `us-east-1`, cuenta AWS `747456040427`; usuario `jurado@expo.ec` (`sub=84d81448-a031-70fb-7d39-2a42371be95f`), nombre «Jurado Expo Clean 2026», estado `CONFIRMED`, habilitado. Alta con `MessageAction=SUPPRESS`, sin envío de correo; contraseña permanente simplificada para ingreso rápido del jurado. | Cuenta compartida para evaluación; no sirve para atribuir acciones a una persona. No se afirma verificación de propiedad de un buzón. |
 | Cuenta en base de producción | Verificado. RDS `istpetdev-rds-dev`, base `istpetdev_integration`, organización fija `01990000-0000-7000-8000-000000000001`, Account `01a14b8d-ccfe-77e7-a8fc-f09c0f435f91`, `Kind=human`, `Role=Auditor`, activa. Inserción transaccional con conflicto por `(Issuer, Subject)` sin cambiar cuentas existentes. | Solo alta de Account, autorizada expresamente. No se creó un login SQL para el jurado; usa navegador y API. No se guarda contraseña en PostgreSQL. |
 | Conexión administrativa RDS | Verificado. Túnel SSM temporal al nodo `i-0bba84773e794de36`, puerto local 15433; libpq `sslmode=verify-full` y CA oficial de RDS; `current_database()=istpetdev_integration`, sesión SSL activa. | No se alteraron esquema, políticas, grants ni reglas de red. |
-| Inicio de sesión del jurado | Verificado en navegador Chromium/Playwright contra el dominio real. Landing 200, botón «Torre de Control», formulario Cognito, retorno OIDC a `/auth/callback` y llegada a `/inicio`. `/api/v1/me`: 200, Account esperada, rol `Auditor`, plataforma `web`; la interfaz muestra Auditor. | Comprobación del 17-oct, 20:31 UTC (15:31 Ecuador). No es prueba de teléfono físico ni de la red del recinto. Un primer intento automatizado falló por resolución DNS; el segundo completó todo el recorrido. |
+| Inicio de sesión del jurado | Verificado en navegador Chromium/Playwright contra el dominio real con `jurado@expo.ec`. Landing 200, botón «Torre de Control», formulario Cognito, retorno OIDC a `/auth/callback` y llegada a `/inicio`. `/api/v1/me`: 200, Account esperada, rol `Auditor`, plataforma `web`; la interfaz muestra Auditor. | Comprobación del 17-oct, 20:43 UTC (15:43 Ecuador). No es prueba de teléfono físico ni de la red del recinto. |
 | Permisos de lectura | Verificado con la misma sesión real: GET `route-plans?limit=1`, `risks` y `deliveries?limit=1` respondieron 200. | Se verifican estas rutas, no todas las lecturas posibles. |
 | Escrituras bloqueadas | Verificado: POST `route-plans`, `incidents`, `accounts`, `demo/reset`, PUT `route-plans/{uuid-nulo}/driver` y POST `route-plans/{uuid-nulo}/publish`: seis respuestas 403. Cuerpos vacíos y UUID nulo para evitar operaciones válidas incluso ante una regresión. | No se provocaron movimientos de inventario ni cambios de planificación. |
 | Interfaz de solo lectura | Verificado en `/rutas`: cero botones visibles coincidentes con aprobar/publicar, generar plan o cancelar ruta. Capturas privadas `jurado-v8-inicio.png` y `jurado-v8-rutas.png`. | La autorización decisiva es la API; la observación de botones no sustituye esos 403. |
