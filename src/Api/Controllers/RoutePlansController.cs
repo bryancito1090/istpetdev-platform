@@ -1034,6 +1034,7 @@ public sealed class RoutePlansController(
                 }).ToList();
 
             var uncertainty = CostUncertaintyService.GetUncalibratedResult();
+            var proposalId = Guid.NewGuid();
             if (sOpt.CarrierType == "Contratada" || sOpt.OptionId.Equals("C", StringComparison.OrdinalIgnoreCase))
             {
                 var carrier = logisticsOptions?.Value?.ContractedCarrier;
@@ -1063,6 +1064,7 @@ public sealed class RoutePlansController(
                 };
 
                 evaluatedOptions.Add(new EvaluatedOptionDto(
+                    sOpt.OptionId,
                     sOpt.OptionId,
                     proposalId,
                     1,
@@ -1178,6 +1180,7 @@ public sealed class RoutePlansController(
 
                 evaluatedOptions.Add(new EvaluatedOptionDto(
                     sOpt.OptionId,
+                    sOpt.OptionId,
                     proposalId,
                     1,
                     status,
@@ -1214,8 +1217,11 @@ public sealed class RoutePlansController(
             ?? evaluatedOptions.FirstOrDefault(o => o.IsRecommended)
             ?? evaluatedOptions.First();
 
+        var chosenObj = ToOptionObject(chosenOption);
         bool showAll = req.IncludeAlternatives == true || evaluatedOptions.Any(o => o.OptionId.Equals("C", StringComparison.OrdinalIgnoreCase));
-        var optionsArray = showAll ? (object)evaluatedOptions : new object[] { chosenOption };
+        var optionsArray = showAll
+            ? (object)evaluatedOptions.Select(ToOptionObject).ToArray()
+            : new object[] { chosenObj };
 
         // #276: conservar la propuesta operativa y exponer el contrato comparativo de #241.
         var comparison = await sourcingService.QueryOrderSourcingAsync(req.OrderIds, ct);
@@ -1226,7 +1232,7 @@ public sealed class RoutePlansController(
             revision = 1,
             status = chosenOption.Status,
             requestId = req.RequestId,
-            proposal = chosenOption,
+            proposal = chosenObj,
             selectedVehicle = chosenOption.SelectedVehicle,
             chosenVehicle = chosenOption.ChosenVehicle,
             evaluation = chosenOption.Evaluation,
@@ -1249,8 +1255,41 @@ public sealed class RoutePlansController(
         return Ok(responsePayload);
     }
 
+    private static object ToOptionObject(EvaluatedOptionDto o) => new
+    {
+        optionId = o.OptionId,
+        sourcingOptionId = o.SourcingOptionId,
+        proposalId = o.ProposalId,
+        revision = o.Revision,
+        status = o.Status,
+        requestId = o.RequestId,
+        title = o.Title,
+        description = o.Description,
+        isRecommended = o.IsRecommended,
+        justification = o.Justification,
+        score = o.Score,
+        carrierType = o.CarrierType,
+        carrierName = o.CarrierName,
+        totalCost = o.TotalCost,
+        estimatedTotalCost = o.EstimatedTotalCost,
+        totalDistanceKm = o.TotalDistanceKm,
+        totalDurationMinutes = o.TotalDurationMinutes,
+        selectedVehicle = o.SelectedVehicle,
+        chosenVehicle = o.ChosenVehicle,
+        evaluation = o.Evaluation,
+        costBreakdown = o.CostBreakdown,
+        serviceCostBreakdown = o.ServiceCostBreakdown,
+        uncertainty = o.Uncertainty,
+        costUncertainty = o.CostUncertainty,
+        stops = o.Stops,
+        sourcingLines = o.SourcingLines,
+        pendingDemands = o.PendingDemands,
+        vehicleMatches = o.VehicleMatches
+    };
+
     private sealed record EvaluatedOptionDto(
         string OptionId,
+        string SourcingOptionId,
         Guid ProposalId,
         int Revision,
         string Status,
