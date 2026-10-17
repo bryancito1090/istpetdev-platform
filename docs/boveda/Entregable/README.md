@@ -1,0 +1,27 @@
+---
+tipo: demo
+estado: propuesta
+actualizado: 2026-10-17
+tags: [entregable, pdf, indice]
+---
+
+# Carpeta Entregable
+
+Aquí van **solo PDF actualizados** de lo que se entrega al jurado, más el PPTX del pitch (con los GIF animados). No se edita nada en esta carpeta: cada PDF se genera desde su fuente y se vuelve a copiar aquí. Si cambia la fuente, se regenera el PDF.
+
+| PDF | Qué es | Fuente (se edita allí) |
+|---|---|---|
+| `1-Problema.pdf` | Entregable 1: problema | `docs/specs/006-validacion-pitch-entrega/materiales/entregables/e1_problema.py` |
+| `2-Solucion.pdf` | Entregable 2: solución y propuesta de valor | nota «Entregable Solucion y propuesta de valor» (07 Demo) y `materiales/entregable-2/` |
+| `3-Prototipo-demo.pdf` | Entregable 3: prototipo y demo | `materiales/entregables/e3_prototipo.py` |
+| `4-Validacion.pdf` | Entregable 4: validación | `materiales/entregables/e4_validacion.py` |
+| `5-Viabilidad.pdf` | Entregable 5: viabilidad | `materiales/entregables/e5_viabilidad.py` |
+| `6-Modelo-de-negocio.pdf` | Entregable 6: modelo de negocio | `materiales/entregables/e6_modelo_negocio.py` |
+| `7-Pitch.pdf` | Diapositivas del pitch, 12 láminas, con imágenes fijas | `materiales/generar_v5.py` (capturas en `materiales/assets/capturas-v5/`) |
+| `7-Pitch.pptx` | Las mismas 12 láminas con animaciones y el GIF de rutas (lámina 6); es el que se presenta | `materiales/generar_v5.py` |
+| `8-Guion-del-pitch.pdf` | Guion hablado v5, 4:40 | nota «Guion del pitch» (07 Demo), sección «Versión vigente v5» |
+
+## Pendiente
+
+- Falta el PDF del guion del video (`9-…`), que se hace aparte.
+- Esta carpeta solo guarda PDF, el PPTX del pitch y este índice; el guion en texto vive en `07 Demo/Guion del pitch.md`.

@@ -5,11 +5,77 @@ actualizado: 2026-10-17
 tags: [demo, validacion, istpetdev, planificacion]
 ---
 
-# Guion del pitch — T4 (alineado a diapositivas v3)
+# Guion del pitch — T4
 
-## Propuesta v4 (17-oct): dolor, innovación e IA al frente
+## Versión vigente v5 (17-oct): 12 láminas, 4:40
 
-Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: propuesta aprobada por Joseph; falta ensayarla.** Láminas: [`pitch-v4.pptx`](../../specs/006-validacion-pitch-entrega/materiales/pitch-v4.pptx) (PDF y PNG en `render-v4/`), generadas con `materiales/generar_v4.py`. La lámina 5 muestra «CAPTURA PENDIENTE» hasta que se guarde C1 como `materiales/assets/capturas-v4/c1-alerta.png` y se vuelva a ejecutar el script. La v3 queda debajo como respaldo.
+Reemplaza a la v4 (conservada más abajo como antecedente). Los PDF y el PPTX del pitch (`7-Pitch`) salen de `materiales/generar_v5.py`. Mismo texto que el PDF [`8-Guion-del-pitch.pdf`](../Entregable/8-Guion-del-pitch.pdf) de la carpeta `Entregable`; **esta nota es la fuente**: se edita aquí y se regenera el PDF. Las láminas 5, 6 y 7 usan capturas reales (cobertura, rutas, novedades).
+
+### Láminas 5–7: capturas (17-oct)
+
+| Lámina | s | Pantalla | Qué debe verse en la captura | Estado |
+|---|---:|---|---|---|
+| 5 | 10 | Monitoreo de cobertura (antes «Alertas») | Tabla con centro de salud, SKU, días de cobertura, nivel de riesgo y cantidad sugerida; pestañas con 9 quiebres críticos y 203 en margen preventivo. | Hecha (`alertas.png`) |
+| 6 | 10 | Rutas | Vista previa de la ruta Bodega Sur → Clínica Sur (GIF en el PPTX, imagen fija en el PDF), más recortes de VEH-02 con «Aprobar y publicar ruta» y del seguimiento en vivo de paradas. | Hecha |
+| 7 | 10 | Novedades | KPIs (rechazos en destino, impacto de reentrada USD 19,62 estimado, ajustes de percha, pedidos de campo) y rechazos por motivo: daño y error de rotulado. | Hecha (`novedades.png`) |
+
+Capturas y GIF en `docs/specs/006-validacion-pitch-entrega/materiales/assets/capturas-v5/`; se montan con `materiales/generar_v5.py`, que produce el PPTX con GIF animado y el PDF con la imagen fija. Si el texto de una lámina deja de coincidir con la pantalla, se corrige el guion o se vuelve a capturar.
+
+
+### 00:00–00:15 · Joseph · Diapositiva 1
+
+¿Cómo se entera hoy una empresa de limpieza de que a un hospital le falta desinfectante? Cuando el hospital llama. Ese día ya es tarde.
+
+### 00:15–00:45 · Joseph · Diapositiva 2
+
+Lo escuchamos ayer en la charla del sector. El planificador repone por calendario o por urgencia; bodega pierde de vista el insumo cuando sale; y nadie puede probar qué se entregó. Cuando se apura una entrega, se decide mirando kilómetros y no el costo real: personal, combustible, descarga y producto que se daña. Y el que paga es el cliente final: un hospital o una clínica sin insumos de limpieza.
+
+### 00:45–01:15 · Joseph · Diapositiva 3
+
+IstpetDev une eso en una sola cadena. Detecta: revisa el inventario y avisa qué punto se quedará sin producto. Decide: compara cómo atenderlo con flota propia o con un operador contratado, sumando todo lo que cuesta servir. Entrega: arma la ruta respetando capacidad, horarios y jornada. Y prueba: cada caja viaja con QR. Bodega y conductor pueden guardar registros sin señal y sincronizarlos después; la recepción final del cliente requiere conexión.
+
+### 01:15–01:50 · Bryan · Diapositiva 4
+
+¿Qué es lo nuevo? Que no es otro inventario con alertas: la alerta termina en una decisión con costo y en una entrega comprobable. Lo calcula un motor con reglas, siempre igual con los mismos datos. Encima trabaja un agente de inteligencia artificial, orquestado con n8n, que lee esos resultados y le explica al planificador, en lenguaje simple, por qué conviene cada opción. La IA no inventa cifras: solo explica las del motor, y si falla, hay una explicación de respaldo. La persona aprueba. Y como n8n está separado del motor, podemos cambiar de modelo o agregar automatizaciones sin tocar el cálculo.
+
+### 01:50–02:00 · Alexander · Diapositiva 5
+
+Así se ve. Primero, el monitoreo de cobertura: qué punto entra en riesgo y cuánto reponer, antes de que el cliente llame.
+
+### 02:00–02:10 · Alexander · Diapositiva 6
+
+De la alerta a la ruta: el mapa y el seguimiento de paradas, en nuestro escenario sintético de Quito. El planificador la revisa y aprueba.
+
+### 02:10–02:20 · Alexander · Diapositiva 7
+
+Y lo que pasa en el camino queda registrado: novedades de campo, como un daño o un error de rotulado, con su motivo.
+
+### 02:20–03:05 · Alexander · Diapositiva 8
+
+Y esta es la decisión. A, flota propia: la más barata, 57,89 dólares, pero llega a tiempo solo al 83 % de los críticos. B llega al 100 %, pero cuesta un 20,7 % más. C, un operador contratado, también llega al 100 % y cuesta un 4,3 % menos que B. El motor recomienda C con 90,8 puntos y la IA explica por qué. La más barata no siempre es la mejor: pondera costo y entregas críticas a tiempo por igual.
+
+### 03:05–03:40 · Anthony · Diapositiva 9
+
+Seamos claros con lo que hay. Construido: inventario con alertas, motor de rutas y costos, agente de IA con n8n y custodia con QR. Probado: el motor y la comparación A/B/C en un ensayo técnico con un escenario sintético de Quito de 40 puntos, y una corrida registrada del agente, incluida su caída al respaldo. Falta: ensayar el recorrido en teléfono sin señal, llevar la comparación a producción y medir con datos de una empresa real. Preferimos mostrarles lo que funciona de verdad que prometer lo que no hemos medido.
+
+### 03:40–04:05 · Jorge · Diapositiva 10
+
+El impacto que buscamos: menos faltantes que se descubren tarde, entregas críticas a tiempo y saber cuánto cuesta realmente cada entrega. No prometemos un ahorro: lo mediremos en un piloto contra una línea base. Cada indicador está escrito para que lo entienda cualquier rol, de bodega a gerencia.
+
+### 04:05–04:20 · Jorge · Diapositiva 11
+
+No necesita hardware nuevo: funciona en la web y en el teléfono del conductor. Proponemos implementación inicial más suscripción. Y si faltan datos, el sistema dice “sin dato” y no inventa.
+
+### 04:20–04:40 · Joseph · Diapositiva 12
+
+El siguiente paso: un piloto con una empresa de limpieza, una línea base e indicadores acordados. Buscamos ese aliado aquí. Detectar antes, decidir con el costo real y probar cada entrega. Gracias.
+
+---
+
+## Propuesta v4 (antecedente)
+ dolor, innovación e IA al frente
+
+Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: superada por la v5.** Láminas: [`pitch-v4.pptx`](../../specs/006-validacion-pitch-entrega/materiales/pitch-v4.pptx) (PDF y PNG en `render-v4/`), generadas con `materiales/generar_v4.py`. La lámina 5 muestra «CAPTURA PENDIENTE» hasta que se guarde C1 como `materiales/assets/capturas-v4/c1-alerta.png` y se vuelva a ejecutar el script. La v3 queda debajo como respaldo.
 
 **Frase central:** «Detectamos el faltante antes de que el cliente llame, proponemos cómo atenderlo al costo real y dejamos prueba de cada entrega. El motor calcula, la IA explica y la persona decide.»
 
