@@ -765,6 +765,16 @@ comportamiento anterior. Ejemplo y evidencia local en
 activación/despliegue en producción. Las pruebas y capturas se registran por
 separado de las decisiones documentales.
 
+## 16-oct-2026 — Comparación A/B/C sobre corrida calculada (#276)
+
+Fuente: issue #276, contrato de #241 y configuración incorporada por #275 en
+develop `33387ca` (PR #283). La pantalla inicia con la API; la corrida guardada
+solo se muestra al solicitarla y usa el mapeo compartido, metadatos de commit,
+fecha y SHA de configuración. Se quitó la maqueta numérica. T6 sigue abierta:
+no se pudo ejecutar el generador porque Docker/API local no estaban activos, y
+Joseph aún debe aprobar la selección del pitch. No se reinició ninguna base ni
+se produjo evidencia final. Resultados y límites: [revisión T6](../../specs/006-validacion-pitch-entrega/revision-issue-276-t6.md).
+
 ## 16-oct-2026 — Consulta sin efectos y recepción única de retornos (#280)
 
 Fuente: revisión de seguridad del issue #280 sobre #247. [[Contratos API y eventos]]

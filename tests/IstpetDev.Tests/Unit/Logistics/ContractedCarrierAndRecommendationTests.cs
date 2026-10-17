@@ -794,5 +794,11 @@ public sealed class ContractedCarrierAndRecommendationTests
         // Control humano verificado: la solicitud se procesó con éxito respetando el OptionId indicado
         var proposal = okResult.Value.GetType().GetProperty("proposal")?.GetValue(okResult.Value);
         Assert.NotNull(proposal);
+        Assert.Equal("A", proposal.GetType().GetProperty("sourcingOptionId")?.GetValue(proposal));
+        var comparison = Assert.IsType<DemandSourcingResult>(
+            okResult.Value.GetType().GetProperty("comparison")?.GetValue(okResult.Value));
+        Assert.Contains(comparison.Options, option => option.CarrierType == "Contratada");
+        Assert.Contains(comparison.Options, option => option.OptionId == comparison.RecommendedOptionId);
+        Assert.False(string.IsNullOrWhiteSpace(comparison.Justification));
     }
 }

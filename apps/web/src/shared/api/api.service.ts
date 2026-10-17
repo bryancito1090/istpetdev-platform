@@ -352,8 +352,70 @@ export interface RouteCandidateStop {
   serviceMinutes: number;
 }
 
+export interface FuelPriceDto {
+  value: number | null;
+  date: string | null;
+  source: string | null;
+  unit?: string;
+}
+
+export interface SourcingComparisonOptionDto {
+  optionId: string;
+  title: string;
+  description?: string;
+  carrierType?: string;
+  isRecommended?: boolean;
+  justification?: string | null;
+  totalKm?: number | null;
+  totalCost?: number | null;
+  criticalDeliveriesTotal?: number | null;
+  criticalDeliveriesOnTime?: number | null;
+  pendingOrdersCount?: number | null;
+  risks?: string[] | null;
+  costBreakdown?: {
+    fuel?: number | null;
+    wear?: number | null;
+    driver?: number | null;
+    helpers?: number | null;
+    helperCount?: number | null;
+    shrink?: number | null;
+    carrierTariff?: number | null;
+    total?: number | null;
+    notes?: string[] | null;
+  } | null;
+}
+
+export interface SourcingComparisonDto {
+  options: SourcingComparisonOptionDto[];
+  operationalDate?: string;
+  recommendedOptionId?: string | null;
+  justification?: string | null;
+  fuelPrice?: FuelPriceDto | null;
+}
+
+export interface RouteSuggestionResponseDto {
+  options: RouteSuggestionOptionDto[];
+  message?: string;
+  comparison?: SourcingComparisonDto;
+}
+
+export interface SavedRouteComparisonRunDto {
+  metadata: {
+    commit: string;
+    capturedAtUtc: string;
+    fixture: string;
+    configSha256: string;
+    selection?: unknown;
+    request?: unknown;
+    operationalDate?: string | null;
+  };
+  response: RouteSuggestionResponseDto;
+  responseRawJson?: string;
+}
+
 export interface RouteSuggestionOptionDto {
   optionId: string;
+  sourcingOptionId?: string;
   title: string;
   description: string;
   isRecommended: boolean;
@@ -627,10 +689,17 @@ export class ApiService {
   }
 
   // --- MÉTODOS DE RUTAS POR PEDIDOS & VEHÍCULOS ---
-  suggestRoutes(orderIds: string[], plannedDate?: string): Observable<{ options: RouteSuggestionOptionDto[] }> {
-    return this.http.post<{ options: RouteSuggestionOptionDto[] }>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
+  suggestRoutes(orderIds: string[], plannedDate?: string, optionId?: string): Observable<RouteSuggestionResponseDto> {
+    return this.http.post<RouteSuggestionResponseDto>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
       orderIds,
-      plannedDate
+      plannedDate,
+      optionId
+    });
+  }
+
+  getSavedRouteComparisonRun(): Observable<SavedRouteComparisonRunDto> {
+    return this.http.get<SavedRouteComparisonRunDto>('/corrida-abc.demo-quito.json', {
+      headers: new HttpHeaders({ 'Cache-Control': 'no-cache' })
     });
   }
 
