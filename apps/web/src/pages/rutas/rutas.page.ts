@@ -751,6 +751,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     <ui-map-view 
                       [markers]="mapMarkers()" 
                       [polylines]="mapPolylines()"
+                      [animatedPolylineId]="selectedPlanId()"
                       [zoom]="7">
                     </ui-map-view>
                   </div>
@@ -2214,6 +2215,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 #wizardMapView
                 [markers]="wizardMarkers()"
                 [polylines]="wizardPolylines()"
+                animatedPolylineId="wizard-road-route"
                 [zoom]="8">
               </ui-map-view>
             </div>
