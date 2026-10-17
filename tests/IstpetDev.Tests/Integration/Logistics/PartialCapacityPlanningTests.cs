@@ -107,6 +107,29 @@ public sealed class PartialCapacityPlanningTests(PostgisContainer postgres) : IC
                 new DistanceProvider(db, new HttpClient(), options, NullLogger<DistanceProvider>.Instance), options);
             return await planner.PlanAsync(new PlanRequest(new DateOnly(2026, 10, 12), null));
         }
+
+        // Guarda cada ruta como lo hace POST /route-plans y la publica: crea entregas Draft y reserva el stock.
+        public async Task PublishAsync(PlanResult result)
+        {
+            var options = Options();
+            var publisher = new RoutePublisher(db, new OperationalClock(db, options), options);
+            foreach (var route in result.Routes)
+            {
+                var plan = new RoutePlan
+                {
+                    OrganizationId = DemoOrganization.Id, Code = $"PLAN-T-{route.VehicleCode}-{Guid.NewGuid():N}"[..24], Revision = 1,
+                    VehicleId = route.VehicleId, Status = "Proposed", ProposedBy = "test", AlgorithmVersion = "2.0-deterministic",
+                    InputJson = JsonSerializer.Serialize(new { stops = route.Stops.Select(st => new { sequence = st.Sequence, pointCode = st.PointCode, loads = st.Loads }) },
+                        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                };
+                db.RoutePlans.Add(plan);
+                foreach (var st in route.Stops)
+                    db.RouteStops.Add(new RouteStop { OrganizationId = DemoOrganization.Id, RoutePlanId = plan.Id, ServicePointId = st.ServicePointId,
+                                                      SequenceNumber = st.Sequence, PlannedArrivalUtc = st.ArrivalUtc, PlannedDepartureUtc = st.DepartureUtc, Status = "Pending" });
+                await db.SaveChangesAsync();
+                await publisher.PublishAsync(new PublishRequest(plan.Id));
+            }
+        }
     }
 
     [Fact]
@@ -193,5 +216,25 @@ public sealed class PartialCapacityPlanningTests(PostgisContainer postgres) : IC
             unserved = r.Unserved.Select(u => new { u.PointCode, u.Reason, lines = u.Lines.Select(l => new { l.Sku, l.RequiredQuantity, l.PlannedQuantity, l.PendingQuantity }) })
         });
         Assert.Equal(Canon(first), Canon(second));
+    }
+
+    // #199: lo publicado (Draft, reservado) cuenta como en camino; planificar otra vez antes del despacho no repite las 100 reservadas.
+    [Fact]
+    public async Task Planning_again_after_publishing_only_proposes_the_remainder()
+    {
+        await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        var scenario = new Scenario(db).Product("SKU-A", 1m, 0.001m).Vehicle("VEH-01", 100m, 10m)
+            .Point("HOS-01", "alta", -78.50, -0.20, "SKU-A");
+
+        var first = await scenario.PlanAsync();
+        Assert.Equal(100m, Assert.Single(Assert.Single(first.Routes).Stops).Loads.Single().Quantity);
+        await scenario.PublishAsync(first);
+
+        var second = await scenario.PlanAsync();
+        var load = Assert.Single(Assert.Single(Assert.Single(second.Routes).Stops).Loads);
+        Assert.Equal(50m, load.RequiredQuantity);
+        Assert.Equal(50m, load.Quantity);
+        Assert.Equal(0m, load.PendingQuantity);
+        Assert.Empty(second.Unserved);
     }
 }

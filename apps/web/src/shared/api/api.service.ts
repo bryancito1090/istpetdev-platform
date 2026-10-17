@@ -652,6 +652,8 @@ export class ApiService {
     stops: RouteCandidateStop[];
     polyline?: string;
     coordinates?: [number, number][];
+    // #199: cantidad planificada por línea (parcial explícita); la API rechaza más de lo pendiente.
+    lines?: Array<{ deliveryOrderId: string; productId: string; plannedQuantity: number }>;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/v1/route-plans/confirm`, req);
   }

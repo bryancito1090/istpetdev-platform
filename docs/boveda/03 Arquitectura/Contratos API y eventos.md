@@ -39,6 +39,7 @@ tags: [arquitectura, contratos]
 | POST /api/v1/route-plans/{id}/publish        | Aprobar/publicar versión                |
 | GET /api/v1/drivers                          | Conductores activos para asignar (#160) |
 | PUT /api/v1/route-plans/{id}/driver          | Reasignar conductor de entregas pendientes (#160) |
+| POST /api/v1/route-plans/{id}/cancel         | Cancelar ruta antes del despacho; libera reservas y descuenta lo planificado del pedido (#199) |
 | POST /api/v1/deliveries/{id}/dispatch        | Registrar salida y custodia             |
 | POST /api/v1/deliveries/{id}/receipts        | Recepción por líneas, idempotente       |
 | POST /api/v1/receipts/{id}/evidence-uploads  | Obtener autorización de carga           |
@@ -206,6 +207,16 @@ Cuando la carga sugerida no cabe en peso o volumen, el motor planifica lo factib
   - La respuesta añade `lines[]` (requerida, planificada y pendiente), `loadWeight`, `loadVolume`, `maxWeight`, `maxVolume` y `partial`.
 - **`POST /api/v1/route-plans/suggest`:** ofrece solo el remanente sin planificar de cada línea.
 - **`GET /api/v1/route-plans/{id}`:** cada parada añade `loadQuantities[]` con las tres cantidades por SKU (rutas del motor).
+
+### Reserva, cancelación y cantidad por línea (#199, fase 2 — 16 de octubre de 2026)
+
+- **Riesgo (`GET /api/v1/risks` y `POST /api/v1/route-plans`):** `inTransit` y el hecho `in_transit_qty` incluyen ahora lo publicado y reservado que aún no sale: entregas `Draft` sin despacho, por su `PlannedQuantity`. Al despacharse cuentan por `DispatchedQuantity − AcceptedQuantity`, como antes; una entrega nunca cuenta por las dos vías. Solo se suma lo que va al mismo punto. Así, planificar de nuevo antes del despacho propone solo el remanente.
+- **`POST /api/v1/route-plans/confirm`:** en una parada con pedidos, la carga guardada (lo que se publica y reserva) y el peso evaluado salen de lo planificado por línea; el `deltaWeight`, `deltaVolume` y `loads` que envía el panel ya no lo amplían. Con pedidos, la recogida pesa exactamente lo planificado. El plan guarda en `InputJson.orderLines[]` (`deliveryOrderLineId`, `plannedQuantity`) lo que sumó a cada línea.
+- **`POST /api/v1/route-plans/{id}/cancel`** (nuevo; `Roles.Planning`, sin cuerpo): cancela una ruta `Proposed` o `Published` sin entregas despachadas. Libera sus reservas activas, pasa sus entregas `Draft` a `Cancelled` y deja el plan en `Cancelled`. Descuenta de `DeliveryOrderLine.PlannedQuantity` lo guardado en `orderLines`; si la ruta es una revisión, toma el de la revisión más cercana que lo tenga. El pedido vuelve a `Pending` si ya no queda planificado por completo.
+  - **`200`:** `{ routePlanId, status: "Cancelled", alreadyCancelled, cancelledDeliveries, releasedReservedQuantity, orderLines: [{ orderId, orderNumber, sku, releasedQuantity, plannedQuantity, pendingQuantity, orderStatus }] }`. Repetir la llamada no descuenta otra vez: devuelve `alreadyCancelled: true`.
+  - **`409 cancel_conflict`:** hay una entrega despachada, entregada o recibida; o el plan está `Superseded`; o tiene una revisión posterior publicada.
+  - **`404`:** el plan no existe.
+- **Panel del asistente (paso 4):** permite editar la cantidad de cada línea pendiente. Por defecto propone todo lo pendiente; solo las líneas editadas se envían en `lines`. No deja confirmar una cantidad ≤ 0 o mayor que lo pendiente.
 
 ## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
 
