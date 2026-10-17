@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
-import { buildExplorationSpurs, downsampleRoute, indexAtFraction } from './route-animation';
+import { buildExplorationSpurs, downsampleRoute, indexAtFraction, progressiveRoute } from './route-animation';
 
 export interface MapMarker {
   id: string;
@@ -98,6 +98,9 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showLegend = true;
   /** Ruta que se anima al dibujarse; las demás se muestran de inmediato. */
   @Input() animatedPolylineId: string | null = null;
+  @Input() animationMode: 'exploration' | 'journey' = 'exploration';
+  @Input() animationPaused = false;
+  @Output() animationComplete = new EventEmitter<string>();
 
   @Output() markerClick = new EventEmitter<MapMarker>();
   @Output() mapClick = new EventEmitter<[number, number]>();
@@ -107,15 +110,19 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
   private map?: L.Map;
   private markersLayer?: L.LayerGroup;
   private polylinesLayer?: L.LayerGroup;
+  private boundsSignature = '';
+  private resumeJourney?: () => void;
   private animationLayer?: L.LayerGroup;
   private animationFrameId?: number;
   private lastAnimatedKey: string | null = null;
+  private polylinesSignature = '';
 
   ngOnInit(): void {
     this.initMap();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['animationPaused'] && !this.animationPaused) this.resumeJourney?.();
     if (this.map) {
       if (changes['markers']) {
         this.renderMarkers();
@@ -228,7 +235,9 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
       this.markersLayer?.addLayer(marker);
     });
 
-    if (this.markers.length > 0 && this.map) {
+    const signature = this.markers.map(m => `${m.id}:${m.latitude}:${m.longitude}`).sort().join('|');
+    if (this.markers.length > 0 && this.map && signature !== this.boundsSignature) {
+      this.boundsSignature = signature;
       const group = L.featureGroup(this.markers.map(m => L.marker([m.latitude, m.longitude])));
       this.map.fitBounds(group.getBounds().pad(0.2));
     }
@@ -236,6 +245,9 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
 
   private renderPolylines(): void {
     if (!this.map || !this.polylinesLayer) return;
+    const signature = JSON.stringify([this.animationMode, this.animatedPolylineId, this.polylines]);
+    if (signature === this.polylinesSignature) return;
+    this.polylinesSignature = signature;
     this.cancelRouteAnimation();
     this.polylinesLayer.clearLayers();
 
@@ -243,11 +255,11 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
       ? this.polylines.find(line => line.id === this.animatedPolylineId)
       : undefined;
     const canAnimate = !!animated
-      && !animated.dashArray
+      && (!animated.dashArray || this.animationMode === 'journey')
       && animated.coordinates.length > 1
       && !this.prefersReducedMotion();
     const animationKey = canAnimate ? this.animationKey(animated!) : null;
-    const animateNow = canAnimate && animationKey !== this.lastAnimatedKey;
+    const animateNow = canAnimate && (this.animationMode === 'journey' || animationKey !== this.lastAnimatedKey);
 
     if (!canAnimate) this.lastAnimatedKey = null;
 
@@ -258,7 +270,8 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
 
     if (animateNow) {
       this.lastAnimatedKey = animationKey;
-      this.animateRoute(animated!);
+      if (this.animationMode === 'journey') this.animateJourney(animated!);
+      else this.animateRoute(animated!);
     }
   }
 
@@ -351,7 +364,35 @@ export class MapViewComponent implements OnInit, OnChanges, OnDestroy {
     this.animationFrameId = requestAnimationFrame(tick);
   }
 
+  private animateJourney(line: MapPolyline): void {
+    if (!this.animationLayer || !this.polylinesLayer) return;
+    const coordinates = downsampleRoute(line.coordinates);
+    const path = L.polyline([], { color: line.color, weight: 6, opacity: 1, dashArray: line.dashArray, interactive: false }).addTo(this.animationLayer);
+    const head = L.circleMarker(coordinates[0], { radius: 6, color: '#fff', weight: 3, fillColor: line.color,
+      fillOpacity: 1, interactive: false }).addTo(this.animationLayer);
+    let previousTime = performance.now();
+    let elapsed = 0;
+    const tick = (now: number): void => {
+      if (this.animationPaused) { this.animationFrameId = undefined; return; }
+      elapsed += now - previousTime;
+      previousTime = now;
+      const progress = Math.min(1, elapsed / 2000);
+      const points = progressiveRoute(coordinates, progress);
+      path.setLatLngs(points);
+      head.setLatLng(points[points.length - 1]);
+      if (progress < 1) { this.animationFrameId = requestAnimationFrame(tick); return; }
+      this.animationFrameId = undefined;
+      this.resumeJourney = undefined;
+      this.animationLayer?.clearLayers();
+      this.polylinesLayer?.addLayer(this.buildPolyline(line));
+      this.animationComplete.emit(line.id);
+    };
+    this.resumeJourney = () => { if (this.animationFrameId === undefined) { previousTime = performance.now(); this.animationFrameId = requestAnimationFrame(tick); } };
+    this.animationFrameId = requestAnimationFrame(tick);
+  }
+
   private cancelRouteAnimation(): void {
+    this.resumeJourney = undefined;
     if (this.animationFrameId !== undefined && typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(this.animationFrameId);
     }

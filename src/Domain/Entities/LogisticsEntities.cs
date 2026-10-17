@@ -2,6 +2,15 @@ using IstpetDev.Domain.Common;
 
 namespace IstpetDev.Domain.Entities;
 
+public sealed class RoutePlanningDecision : OrganizationEntity
+{
+    public Guid CreatedByAccountId { get; set; }
+    public string Status { get; set; } = "Open";
+    public string? AcceptedOptionId { get; set; }
+    public string SnapshotJson { get; set; } = "{}";
+    public string RouteIdsJson { get; set; } = "[]";
+}
+
 public sealed class RoutePlan : OrganizationEntity
 {
     public string Code { get; set; } = string.Empty;

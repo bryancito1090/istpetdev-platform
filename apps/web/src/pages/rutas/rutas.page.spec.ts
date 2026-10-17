@@ -7,6 +7,43 @@ import { ApiService } from '@shared/api';
 import { RutasPage } from './rutas.page';
 
 describe('RutasPage (FR-21)', () => {
+  it('muestra siete propuestas seleccionables y evita abrir un cálculo sin identificador', () => {
+    const plans = Array.from({ length: 7 }, (_, index) => ({ id: `route-${index}`, code: `R-${index}`,
+      revision: 1, status: 'Proposed', vehicleId: `vehicle-${index}`, vehicleCode: `VEH-${index}`,
+      plannedStartUtc: '2026-10-17T13:00:00Z', totalDistanceKm: 100 - index,
+      totalDurationMinutes: 100 - index * 10, totalCost: 20 + index * 10, stopsCount: 3 }));
+    localStorage.removeItem('istpet.route-decision.registry-test');
+    TestBed.configureTestingModule({ imports: [RutasPage], providers: [provideRouter([]),
+      { provide: AuthSession, useValue: { canWrite: () => true, me: () => ({ accountId: 'registry-test' }) } },
+      { provide: ApiService, useValue: {
+        getRoutePlans: vi.fn(() => of(plans)), getRoutePlanById: vi.fn((id: string) => of({ ...plans.find(p => p.id === id), stops: [] })),
+        getRoutePlanGeometry: vi.fn(() => of(null)), getDrivers: vi.fn(() => of([])),
+        getServicePoints: vi.fn(() => of([])), getDeliveryOrders: vi.fn(() => of([])),
+        getWarehouses: vi.fn(() => of([])), getEntityData: vi.fn(() => of([])),
+        getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 }))
+      } }
+    ] });
+    const fixture = TestBed.createComponent(RutasPage); fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const cards = fixture.nativeElement.querySelectorAll('.registered-route-cards .route-card') as NodeListOf<HTMLButtonElement>;
+    expect(cards).toHaveLength(7);
+    expect(cards[0].textContent).toContain('Menor costo');
+    expect(cards[6].textContent).toContain('Mayor costo');
+    expect(cards[6].textContent).toContain('Más rápida');
+    cards[6].click(); fixture.detectChanges();
+    expect(page.selectedPlanId()).toBe('route-6');
+    expect(fixture.nativeElement.querySelector('.route-approve-button').textContent).toContain('Aprobar y publicar ruta');
+    page.openPreviousDecision();
+    expect(page.isDecisionWorkbenchOpen()).toBe(false);
+    expect(page.isWizardOpen()).toBe(true);
+    page.closeWizard();
+    page.routePlans.set([{ ...plans[6], planningDecisionId: 'group-decision' }]);
+    page.openPreviousDecision();
+    expect(page.activeDecisionId()).toBe('group-decision');
+    expect(page.isDecisionWorkbenchOpen()).toBe(true);
+    fixture.destroy();
+  });
+
   it('oculta al Auditor las acciones para generar y publicar rutas', () => {
     const plan = {
       id: 'route-1',
