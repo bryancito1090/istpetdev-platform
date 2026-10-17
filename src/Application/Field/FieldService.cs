@@ -2045,10 +2045,15 @@ public sealed class FieldService : IFieldService
         }
         else // complete or legacy stops count
         {
-            await PrepareDeliveriesCoreAsync(deliveries);
-            var firstStop = allStops.FirstOrDefault();
-            var dispTime = firstStop?.PlannedArrivalUtc?.AddMinutes(-30) ?? DateTime.UtcNow;
-            await DispatchDeliveriesCoreAsync(deliveries, dispTime);
+            // El modo legado (sin mode) solo toca las paradas que avanza: AdvanceStopCoreAsync prepara y despacha
+            // cada una, y las entregas pendientes siguen en Draft para que el replanificador las reutilice.
+            if (!string.IsNullOrWhiteSpace(mode))
+            {
+                await PrepareDeliveriesCoreAsync(deliveries);
+                var firstStop = allStops.FirstOrDefault();
+                var dispTime = firstStop?.PlannedArrivalUtc?.AddMinutes(-30) ?? DateTime.UtcNow;
+                await DispatchDeliveriesCoreAsync(deliveries, dispTime);
+            }
 
             List<RouteStop> stopsToRun;
             if (mode == "complete" || (string.IsNullOrWhiteSpace(mode) && request.Stops == 0))

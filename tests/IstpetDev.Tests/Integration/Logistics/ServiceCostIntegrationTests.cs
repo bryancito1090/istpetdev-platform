@@ -105,7 +105,8 @@ public sealed class ServiceCostIntegrationTests(PostgisContainer postgres) : ICl
             foreach (var table in tables)
             {
                 // Identificadores exclusivamente del modelo EF, nunca entrada del cliente.
-                await using var command = new NpgsqlCommand($"SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.\"Id\"), '[]')::text FROM \"{table}\" t", (NpgsqlConnection)db.Database.GetDbConnection());
+                // MetadataJson (#328) llega en una migración posterior a la de destino: bajar el esquema la borra, así que no se compara.
+                await using var command = new NpgsqlCommand($"SELECT coalesce(jsonb_agg(to_jsonb(t) - 'MetadataJson' ORDER BY t.\"Id\"), '[]')::text FROM \"{table}\" t", (NpgsqlConnection)db.Database.GetDbConnection());
                 result[table] = (string)(await command.ExecuteScalarAsync())!;
             }
         }
