@@ -15,7 +15,7 @@ public sealed class DistanceProvider(
     IOptions<LogisticsOptions> options,
     ILogger<DistanceProvider> logger) : IDistanceProvider
 {
-    public async Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default)
+    public async Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default, bool persistCache = true)
     {
         var result = new Dictionary<(GeoPoint From, GeoPoint To), Leg>();
         if (points == null || points.Count == 0) return result;
@@ -70,7 +70,7 @@ public sealed class DistanceProvider(
         {
             try
             {
-                await QueryOsrmAndSaveAsync(missingPairs, distinctPoints, result, osrmBaseUrl.TrimEnd('/'), ct);
+                await QueryOsrmAndSaveAsync(missingPairs, distinctPoints, result, osrmBaseUrl.TrimEnd('/'), persistCache, ct);
             }
             catch (Exception ex)
             {
@@ -111,6 +111,7 @@ public sealed class DistanceProvider(
         List<GeoPoint> allPoints,
         Dictionary<(GeoPoint From, GeoPoint To), Leg> result,
         string osrmBaseUrl,
+        bool persistCache,
         CancellationToken ct)
     {
         var missing = missingPairs.ToHashSet();
@@ -124,10 +125,10 @@ public sealed class DistanceProvider(
         foreach (var destinations in blocks)
         {
             if (!sources.Any(f => destinations.Any(t => missing.Contains((f, t))))) continue;
-            await QueryOsrmBlockAsync(sources, destinations, missing, result, newEdgesToPersist, osrmBaseUrl, ct);
+            await QueryOsrmBlockAsync(sources, destinations, missing, result, newEdgesToPersist, osrmBaseUrl, persistCache, ct);
         }
 
-        if (newEdgesToPersist.Count > 0)
+        if (persistCache && newEdgesToPersist.Count > 0)
         {
             await db.SaveChangesAsync(ct);
         }
@@ -140,6 +141,7 @@ public sealed class DistanceProvider(
         Dictionary<(GeoPoint From, GeoPoint To), Leg> result,
         List<RoadMatrixEdge> newEdgesToPersist,
         string osrmBaseUrl,
+        bool persistCache,
         CancellationToken ct)
     {
         var points = sources.Concat(destinations).Distinct().ToList();
@@ -192,8 +194,11 @@ public sealed class DistanceProvider(
                 var leg = new Leg(from, to, km, minutes, DistanceSource.Road, null);
                 result[pair] = leg;
 
+                if (!persistCache) continue;
+
                 var edge = new RoadMatrixEdge
                 {
+                    OrganizationId = DemoOrganization.Id,
                     FromLat = from.Lat,
                     FromLon = from.Lon,
                     ToLat = to.Lat,
