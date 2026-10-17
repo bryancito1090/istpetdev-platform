@@ -1072,3 +1072,17 @@ Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` e
 - [ ] PR a develop, validación CI, merge y cierre de #317.
 
 Estado: código y pruebas locales completados; listo para integración vía PR a develop.
+
+## Issue #361 — planes conjuntos multi-vehículo con división por tamaño y prioridad — 17-oct-2026
+
+- [x] Código backend (`RoutePlansDecisions.cs` y `RoutePlansController.cs`):
+  - Partición coordinada de flota (`PartitionFleetOptionAsync`): ante múltiples vehículos disponibles (p. ej. 5 vehículos) y múltiples entregas, divide y coordina las entregas en conjunto: Opción A balanceada en 2 vehículos (ajustados por tamaño/capacidad `MaxWeight` y prioridad) y Opción B segmentada en 3 vehículos por escalones de prioridad (`Critical`, `High`, `Normal`, `Low`).
+  - Explicaciones deterministas por propuesta y por vehículo: `totalAvailableVehicles`, `usedVehiclesCount`, `splitExplanation` (por qué usa 2 o 3 vehículos del total y por qué corta), `assignmentReason` (elección por capacidad/tamaño y utilización), `cutReason` (motivo del corte por prioridad/capacidad) y `prioritySummary`.
+  - Persistencia en `RoutePlan.InputJson` al aceptar una decisión o generar un plan automático (`POST /api/v1/route-plans`) y exposición en `GET /api/v1/route-plans`, `GET /api/v1/route-plans/{id}` y `POST /api/v1/route-plans/suggest`.
+- [x] Código frontend (`api.service.ts`, `route-decision-workbench.component.ts`, `rutas.page.ts`):
+  - Comparador de decisiones muestra cuántos vehículos trabajan en conjunto respecto al total disponible (`2 de 5 vehículos en conjunto`, `3 de 5 vehículos en conjunto`), explicación del corte global y justificación por vehículo (capacidad, % de uso, prioridad, motivo de elección y motivo de corte).
+  - Vista principal de `Rutas Planificadas` incluye el banner de **Plan Conjunto de Flota** y el desglose de coordinación y corte en el detalle de cada ruta y en el asistente por pedidos.
+- [x] Pruebas locales: `RoutePlanningDecisionTests` 7/7 (incluido escenario de 5 vehículos con corte en 2 y 3 vehículos por tamaño y prioridad), suite web completa 39/39 archivos (`231/231` pruebas en verde) y `npm run build` / `lint` limpios.
+- [ ] PR a `develop`, verificación de CI remoto, aprobación, merge y cierre de #361.
+
+Estado: código y pruebas locales completados; sin despliegue a producción.
