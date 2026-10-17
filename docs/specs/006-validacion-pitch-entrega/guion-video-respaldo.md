@@ -1,5 +1,37 @@
 # Guion de video de respaldo — demo de planificación
 
+## Versión v4 (17-oct): la cadena completa en 2:30
+
+Acompaña la [propuesta v4 del guion del pitch](../../boveda/07%20Demo/Guion%20del%20pitch.md). Muestra la historia «detectar → decidir → entregar → probar» con pantallas reales del sistema. Todo con el escenario sintético `demo-quito-planificacion`; el rótulo «escenario sintético» va fijo en una esquina durante todo el video, así no hay que repetirlo en la voz. Si una toma falla, se corta: no se simula.
+
+| Plano / tiempo | Pantalla (ruta web) | Acción | Texto en off | s |
+|---|---|---|---|---:|
+| 1 · 00:00–00:10 | Tarjeta de título | Pregunta en grande sobre fondo oscuro. | «¿Cómo se entera una empresa de limpieza de que a un hospital le falta desinfectante? Hoy, cuando el hospital llama.» | 10 |
+| 2 · 00:10–00:30 | `/inicio` → `/alertas` | Entrar como planificador. En `/inicio`, esperar a que aparezca la notificación de alerta (#318) y la campana con conteo. Clic en la notificación → `/alertas`. | «Con IstpetDev el aviso llega antes: el sistema revisa el inventario y avisa qué punto entra en riesgo, con días de cobertura y cantidad sugerida.» | 20 |
+| 3 · 00:30–00:45 | `/alertas` (detalle) | Abrir el detalle de un punto crítico: cobertura, demanda diaria, tiempo de reposición. | «Cada alerta explica sus datos: cuánto se consume, cuánto queda y cuánto tarda en reponerse.» | 15 |
+| 4 · 00:45–01:20 | `/rutas` | Mostrar la ruta propuesta en el mapa con paradas numeradas. Clic en **«Pedir al Agente IA»**; esperar la tarjeta «Propuesta del agente logístico» (modelo, latencia, estado). Hacer zoom a la explicación. | «Luego el sistema decide cómo atenderlo. El motor arma la ruta respetando capacidad, horarios y jornada. Y un agente de IA, orquestado con n8n, explica en palabras simples la propuesta. La IA no cambia las cifras: solo explica las del motor.» | 35 |
+| 5 · 01:20–01:45 | Lámina A/B/C (`render-v3`, lámina 5) | Mostrar el panel con los clics de animación. | «Comparamos flota propia y un operador contratado con el costo completo de servir. La más barata llega tarde a parte de los críticos; el motor recomienda la opción C, con 90,8 puntos.» | 25 |
+| 6 · 01:45–02:10 | `/public-trace/:unitId` (y, si está listo, la app móvil del conductor) | Abrir la traza pública de un bulto: hitos de bodega, despacho y recepción. | «Y cada entrega deja prueba: el bulto viaja con un QR y cualquiera puede consultar sus hitos, sin ver datos internos.» | 25 |
+| 7 · 02:10–02:30 | Tarjeta de cierre | Tres columnas: Construido / Probado / Falta. Logo y «Buscamos una empresa para el piloto». | «Esto está construido y probado en un escenario sintético de Quito. Lo siguiente es un piloto con una empresa real.» | 20 |
+
+**Si falla DeepSeek en el plano 4:** la tarjeta mostrará «⚠ Respuesta determinista». Se puede dejar y narrar «si la IA falla, el sistema responde con una explicación de respaldo»: es una capacidad probada (A-12).
+
+### Capturas que necesitamos (para láminas y como respaldo del video)
+
+Todas a 1920×1080, navegador sin barras de marcadores ni datos personales, con `demo-quito-planificacion` cargado.
+
+| # | Pantalla | Qué debe verse | Uso |
+|---|---|---|---|
+| C1 | `/inicio` con la notificación de alerta abierta | Toast de alerta (nivel, punto, SKU, cobertura) y la campana con el conteo | Lámina 5 v4 y plano 2 |
+| C2 | `/alertas` con el detalle de un punto crítico | Cobertura en días, demanda diaria, tiempo de reposición, cantidad sugerida | Lámina 5 v4 (alterna) y plano 3 |
+| C3 | `/rutas` con la tarjeta «Propuesta del agente logístico» | Estado **Completado**, modelo y la explicación en texto | Lámina 4 v4 y plano 4 |
+| C4 | `/rutas`, mapa con la ruta | Paradas numeradas y ventanas horarias | Plano 4 |
+| C5 | `/public-trace/<bulto>` | Hitos de custodia de un bulto entregado | Lámina 3 v4 («Probar») y plano 6 |
+| C6 | Editor de n8n con el workflow del agente | Nodos del flujo (disparo → DeepSeek → respuesta / respaldo), sin credenciales visibles | Lámina 4 v4 |
+| C7 (opcional) | App móvil del conductor | Lista de paradas o escaneo de un bulto | Lámina 3 v4 |
+
+`<bulto>` es un `unitId` existente en el entorno de demo; quien graba lo anota aquí antes de grabar.
+
 **Duración objetivo:** 2 min 50 s (170 s). **Estado:** guion; grabación pendiente. El video enseña el alcance real descrito en la [matriz de afirmaciones](matriz-afirmaciones.md), con `demo-quito-planificacion`. El panel A/B/C muestra solo la columna A con el costo estimado del motor (ensayo sintético de #240, `demo-base`, commit `6adcf53`); B, C y la recomendación quedan «en integración» hasta que #241 entre en `develop`. Mientras tanto se conserva el marcador de captura y no se reemplaza por una captura ficticia.
 
 | Plano / tiempo | Pantalla y rol | Acción | Texto en off | Duración |
