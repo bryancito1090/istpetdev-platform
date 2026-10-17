@@ -42,8 +42,15 @@ public sealed class DemoController(
     public async Task<IActionResult> SeedFieldActivity([FromServices] FieldActivitySeed seeder, CancellationToken ct = default)
     {
         if (!options.Value.Enabled) return NotFound();
-        var report = await seeder.RunAsync(true, ct);
-        return Ok(report);
+        try
+        {
+            var report = await seeder.RunAsync(true, ct);
+            return Ok(report);
+        }
+        catch (Exception ex)
+        {
+            return Problem(detail: ex.Message, statusCode: 500, title: "SeedFailed");
+        }
     }
 
     [HttpPost("incidents")]
