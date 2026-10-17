@@ -79,6 +79,7 @@ export interface HandlingUnitLineDto {
   sku: string;
   quantity: number;
   unit: string;
+  name?: string;
 }
 
 export interface CreateHandlingUnitRequest {
@@ -323,7 +324,10 @@ export interface EvidenceConfirmResponse {
 
 export interface DemoAdvanceRequest {
   operationId: string;
-  stops: number;
+  stops?: number;
+  mode?: 'complete' | 'half' | 'next';
+  withIncidents?: boolean;
+  noveltyRate?: number;
 }
 
 export interface CompletedStopDto {
@@ -331,10 +335,42 @@ export interface CompletedStopDto {
   deliveryId: string;
   receiptId: string;
   acceptedAtUtc: string;
+  hadIncidents?: boolean;
+  quantityRejected?: number | null;
+  rejectionReason?: string | null;
 }
 
 export interface DemoAdvanceResponse {
   completedStops: CompletedStopDto[];
+  checkpointCompleted?: string;
+  nextCheckpoint?: string;
+  totalStops?: number;
+  completedStopsCount?: number;
+  status?: string;
+}
+
+export interface TodayRouteStopDto {
+  stopId: string;
+  sequenceNumber: number;
+  kind: string;
+  pointName: string;
+  status: string;
+  plannedArrivalUtc?: string;
+  actualArrivalUtc?: string;
+}
+
+export interface TodayRoutePlanDto {
+  routePlanId: string;
+  code: string;
+  vehicleCode: string;
+  driverName?: string;
+  driverAccountId?: string;
+  status: string;
+  totalStops: number;
+  completedStops: number;
+  nextCheckpoint: string;
+  plannedStartUtc: string;
+  stops: TodayRouteStopDto[];
 }
 
 // ==========================================
@@ -461,4 +497,35 @@ export interface ReceiveReturnGuideResponse {
   itemsReconciled: number;
   rebalanceOrderId: string;
 }
+
+// ==========================================
+// Incidencias en Ruta (Conductor / Campo)
+// ==========================================
+
+export interface ReportIncidentRequest {
+  kind: string;
+  vehicleCode?: string;
+  description?: string;
+  severity?: string;
+  lat?: number;
+  lon?: number;
+  radiusKm?: number;
+  slowdownFactor?: number;
+  factor?: number;
+  isSynthetic?: boolean;
+}
+
+export interface ReportIncidentResponse {
+  incidentId: string;
+  kind: string;
+  slowdownFactor?: number | null;
+  runId?: string | null;
+  affectedRoutes?: Array<{
+    routePlanId: string;
+    vehicleCode: string;
+    affectedLegs: Array<{ from: { lat: number; lon: number }; to: { lat: number; lon: number } }>;
+    affectedStops: Array<{ pointCode: string; sequenceNumber: number }>;
+  }>;
+}
+
 

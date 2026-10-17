@@ -545,7 +545,7 @@ describe('RutasPage (FR-21)', () => {
       // Al preparar otra alternativa, enviar el ID del contrato y no publicar la propuesta anterior.
       api.suggestRoutes = vi.fn(() => of({ options: [] }));
       component.selectComparisonOption('B');
-      expect(api.suggestRoutes).toHaveBeenCalledWith([], undefined, 'B');
+      expect(api.suggestRoutes).toHaveBeenCalledWith([], undefined, 'B', false);
       expect(component.routeOptions()).toEqual([]);
       expect(component.currentEvaluation()).toBeNull();
     });

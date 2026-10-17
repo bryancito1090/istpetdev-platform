@@ -5,11 +5,17 @@ actualizado: 2026-10-17
 tags: [demo, validacion, istpetdev, planificacion]
 ---
 
-# Guion del pitch — T4 (alineado a diapositivas v3)
+# Guion del pitch — v5 (12 diapositivas, 4:40)
 
-## Propuesta v4 (17-oct): dolor, innovación e IA al frente
+## Versión vigente v5 — revisión desde develop (17-oct)
 
-Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|mentoría «Pitch que Convence»]] y el [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|apunte de audio]]. Resuelve cuatro huecos de la v3: el dolor era abstracto (flota propia o contratada), la innovación no se veía como cadena, la IA solo aparecía para decir lo que no hace y n8n no se nombraba. Además, la apertura «Somos IstpetDev…» rompía la regla de los primeros 30 segundos. **Estado: propuesta aprobada por Joseph; falta ensayarla y ajustar las láminas.** La v3 queda debajo como respaldo.
+Revisado sobre `origin/develop` actualizado, commit `fc0586f`, el 17-oct-2026. La v5 conserva el argumento de v4 y amplía únicamente su lámina 5 a tres vistas: consola de alertas/rutas, mapa y escáner QR. **Estado: material preparado; falta ensayar.**
+
+Material vigente: [PowerPoint v5](../../specs/006-validacion-pitch-entrega/materiales/pitch-v5.pptx), [PDF v5](../../specs/006-validacion-pitch-entrega/materiales/pitch-v5.pdf) y `materiales/render-v5/`, generados con `materiales/generar_v5.py`. La v4 se conserva como respaldo.
+
+**Capturas disponibles:** se reutilizan las imágenes de `materiales/entregable-2/img/`. La consola muestra cero alertas activas; el mapa corresponde a un escenario sintético de Ambato, distinto del ensayo A/B/C de Quito; el QR muestra el escáner, no una recepción completada. La captura de una alerta real disparada C1/C2 sigue pendiente. Estas imágenes ilustran la interfaz y no certifican el estado actual del despliegue ni un recorrido completo.
+
+**Revisión del guion:** se corrige el encabezado que todavía indicaba v3, se actualiza la numeración y se elimina la dependencia del marcador de captura pendiente. Los estados de validación se mantienen acotados a la evidencia registrada: estar fusionado en develop no prueba despliegue ni ensayo en teléfono. Los cortes v3 de abajo son históricos y no deben mezclarse con esta versión.
 
 **Frase central:** «Detectamos el faltante antes de que el cliente llame, proponemos cómo atenderlo al costo real y dejamos prueba de cada entrega. El motor calcula, la IA explica y la persona decide.»
 
@@ -17,31 +23,43 @@ Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|ment
 
 **Regla de honestidad:** se dice una sola vez, en el bloque de validación, con el formato del mentor: construido, probado y pendiente. El resto del guion no repite advertencias en cada frase, pero tampoco afirma nada fuera de la [matriz de afirmaciones](../../specs/006-validacion-pitch-entrega/matriz-afirmaciones.md).
 
-### Guion v4 — 240 s (deja ~1 min para preguntas)
+### Guion v5 — 280 s (turno de 5 min de exposición + 1 min de preguntas; 20 s de margen)
 
-| # (mentor) | Lámina propuesta | s | Texto para ensayar | Respaldo |
+| # (mentor) | Lámina vigente | s | Texto para ensayar | Respaldo |
 |---|---|---:|---|---|
 | 1. Problema (gancho) | 1 · Portada con la pregunta | 15 | «¿Cómo se entera hoy una empresa de limpieza de que a un hospital le falta desinfectante? Cuando el hospital llama. Ese día ya es tarde.» | Dolor recogido en la charla del sector ([[2026-10-16-1109-bb-charla-limpieza-logistica]]); es hipótesis (A-02), no cifra. |
-| 2. Usuario | 2 · Tres dolores | 25 | «Lo escuchamos ayer en la charla del sector. El planificador repone por calendario o por urgencia; bodega pierde de vista el insumo cuando sale; y nadie puede probar qué se entregó. Cuando se apura una entrega, se decide mirando kilómetros y no el costo real: personal, combustible, descarga y producto que se daña.» | [[Historia y propuesta de valor]] |
-| 3. Solución | 3 · Detectar → Decidir → Entregar → Probar | 25 | «IstpetDev une eso en una sola cadena. Detecta: revisa el inventario y avisa qué punto se quedará sin producto. Decide: compara cómo atenderlo con flota propia o con un operador contratado, sumando todo lo que cuesta servir. Entrega: arma la ruta respetando capacidad, horarios y jornada. Y prueba: cada caja viaja con QR hasta que el cliente la recibe.» | A-04, A-07, P-02, A-13 |
-| 4. Diferenciación (IA + n8n) | 4 · Cómo funciona por dentro | 30 | «¿Qué es lo nuevo? Que no es otro inventario con alertas: la alerta termina en una decisión con costo y en una entrega comprobable. Lo calcula un motor con reglas, siempre igual con los mismos datos. Encima trabaja un agente de inteligencia artificial, orquestado con n8n, que lee esos resultados y le explica al planificador, en lenguaje simple, por qué conviene cada opción. La IA no inventa cifras: solo explica las del motor, y si falla, hay una explicación de respaldo. La persona aprueba.» | A-08, A-11, A-12, A-10 |
-| 5. Demo (a) | 5 · Captura de la alerta en vivo | 20 | «Así se ve: el sistema detecta que un punto entra en riesgo y lo avisa en pantalla, con días de cobertura y la cantidad sugerida para reponer.» | #318 (fusionado el 17-oct; hecho sin ensayo). Mostrar captura real del entorno de demo. |
-| 5. Demo (b) | 6 · Panel A/B/C (lámina 5 de v3) | 45 | «Y esta es la decisión. A, flota propia: la más barata, 57,89 dólares, pero llega a tiempo solo al 83 % de los críticos. B llega al 100 %, pero cuesta un 20,7 % más. C, un operador contratado, también llega al 100 % y cuesta un 4,3 % menos que B. El motor recomienda C con 90,8 puntos y la IA explica por qué. La más barata no siempre es la mejor.» | P-02, P-05 (#285) |
-| 6. Validación | 7 · Construido / Probado / Falta | 30 | «Seamos claros con lo que hay. Construido: inventario con alertas, motor de rutas y costos, agente de IA con n8n y custodia con QR. Probado: el motor y la comparación A/B/C en un ensayo técnico con un escenario sintético de Quito de 40 puntos, y una corrida registrada del agente, incluida su caída al respaldo. Falta: ensayar el recorrido en teléfono sin señal, llevar la comparación a producción y medir con datos de una empresa real.» | P-04, P-05, A-03, A-11, A-12, A-15, #198 |
-| 7. Impacto | 8 · Indicadores | 20 | «El impacto que buscamos: menos faltantes que se descubren tarde, entregas críticas a tiempo y saber cuánto cuesta realmente cada entrega. No prometemos un ahorro: lo mediremos en un piloto contra una línea base.» | A-21 |
-| 8–9. Viabilidad y modelo | 9 · Modelo y riesgos | 15 | «No necesita hardware nuevo: funciona en la web y en el teléfono del conductor. Proponemos implementación inicial más suscripción. Y si faltan datos, el sistema dice “sin dato” y no inventa.» | A-22, [[Modelo de negocio y piloto]] |
-| 10. Próximo paso | 10 · Hoja de ruta | 15 | «El siguiente paso: un piloto con una empresa de limpieza, una línea base e indicadores acordados. Buscamos ese aliado aquí. Gracias.» | — |
+| 2. Usuario | 2 · Tres dolores | 30 | «Lo escuchamos ayer en la charla del sector. El planificador repone por calendario o por urgencia; bodega pierde de vista el insumo cuando sale; y nadie puede probar qué se entregó. Cuando se apura una entrega, se decide mirando kilómetros y no el costo real: personal, combustible, descarga y producto que se daña. Y el que paga es el cliente final: un hospital o una clínica sin insumos de limpieza.» | [[Historia y propuesta de valor]] |
+| 3. Solución | 3 · Detectar → Decidir → Entregar → Probar | 30 | «IstpetDev une eso en una sola cadena. Detecta: revisa el inventario y avisa qué punto se quedará sin producto. Decide: compara cómo atenderlo con flota propia o con un operador contratado, sumando todo lo que cuesta servir. Entrega: arma la ruta respetando capacidad, horarios y jornada. Y prueba: cada caja viaja con QR. Bodega y conductor pueden guardar registros sin señal y sincronizarlos después; la recepción final del cliente requiere conexión.» | A-04, A-07, P-02, A-13 |
+| 4. Diferenciación (IA + n8n) | 4 · Cómo funciona por dentro | 35 | «¿Qué es lo nuevo? Que no es otro inventario con alertas: la alerta termina en una decisión con costo y en una entrega comprobable. Lo calcula un motor con reglas, siempre igual con los mismos datos. Encima trabaja un agente de inteligencia artificial, orquestado con n8n, que lee esos resultados y le explica al planificador, en lenguaje simple, por qué conviene cada opción. La IA no inventa cifras: solo explica las del motor, y si falla, hay una explicación de respaldo. La persona aprueba. Y como n8n está separado del motor, podemos cambiar de modelo o agregar automatizaciones sin tocar el cálculo.» | A-08, A-11, A-12, A-10 |
+| 5. Demo (a1) | 5 · Consola de alertas y rutas | 9 | «Así se ve: una consola reúne el estado del stock, las alertas y las rutas para revisar qué requiere atención.» | Captura existente, rol Auditor; cero alertas activas. Entrada automática. |
+| 5. Demo (a2) | 6 · Mapa de rutas | 9 | «En el mapa vemos los recorridos y sus paradas. Esta vista usa un escenario sintético de Ambato, distinto de la comparación de Quito.» | Captura de Ambato; no atribuirle las cifras A/B/C. Entrada automática. |
+| 5. Demo (a3) | 7 · Escáner QR | 7 | «Y el QR identifica cada bulto para consultar su trazabilidad. Aquí mostramos el escáner.» | Captura de identificación; no afirmar recepción ni ensayo offline. Entrada automática. |
+| 5. Demo (b) | 8 · Panel A/B/C | 50 | «Y esta es la decisión. A, flota propia: la más barata, 57,89 dólares, pero llega a tiempo solo al 83 % de los críticos. B llega al 100 %, pero cuesta un 20,7 % más. C, un operador contratado, también llega al 100 % y cuesta un 4,3 % menos que B. El motor recomienda C con 90,8 puntos y la IA explica por qué. La más barata no siempre es la mejor: pondera costo y entregas críticas a tiempo por igual.» | P-02, P-05 (#285) |
+| 6. Validación | 9 · Construido / Probado / Falta | 35 | «Seamos claros con lo que hay. Construido: inventario con alertas, motor de rutas y costos, agente de IA con n8n y custodia con QR. Probado: el motor y la comparación A/B/C en un ensayo técnico con un escenario sintético de Quito de 40 puntos, y una corrida registrada del agente, incluida su caída al respaldo. Falta: ensayar el recorrido en teléfono sin señal, llevar la comparación a producción y medir con datos de una empresa real. Preferimos mostrarles lo que funciona de verdad que prometer lo que no hemos medido.» | P-04, P-05, A-03, A-11, A-12, A-15, #198 |
+| 7. Impacto | 10 · Indicadores | 25 | «El impacto que buscamos: menos faltantes que se descubren tarde, entregas críticas a tiempo y saber cuánto cuesta realmente cada entrega. No prometemos un ahorro: lo mediremos en un piloto contra una línea base. Cada indicador está escrito para que lo entienda cualquier rol, de bodega a gerencia.» | A-21 |
+| 8–9. Viabilidad y modelo | 11 · Modelo y riesgos | 15 | «No necesita hardware nuevo: funciona en la web y en el teléfono del conductor. Proponemos implementación inicial más suscripción. Y si faltan datos, el sistema dice “sin dato” y no inventa.» | A-22, [[Modelo de negocio y piloto]] |
+| 10. Próximo paso | 12 · Hoja de ruta | 20 | «El siguiente paso: un piloto con una empresa de limpieza, una línea base e indicadores acordados. Buscamos ese aliado aquí. Detectar antes, decidir con el costo real y probar cada entrega. Gracias.» | — |
 
-**Suma:** 15 + 25 + 25 + 30 + 20 + 45 + 30 + 20 + 15 + 15 = **240 s**.
+**Suma:** 15 + 30 + 30 + 35 + (9 + 9 + 7) + 50 + 35 + 25 + 15 + 20 = **280 s** (4:40). Si en el ensayo se pasa de 4:50, se recortan primero las frases añadidas al final de los bloques 2, 4 y 6 para volver a la meta de 280 s.
 
-### Cambios de láminas respecto de v3
+Las tres capturas entran automáticamente, sin clics internos. Los dos avances adicionales se incluyen en los 25 s del bloque; la duración de 4:40 sigue siendo una meta pendiente de ensayo.
+
+### Correspondencia v4 → v5
+
+| v4 | v5 | Cambio |
+|---|---|---|
+| 1–4 | 1–4 | Mismo argumento y diseño. |
+| 5 | 5–7 | Tres capturas con descripción breve; 9 + 9 + 7 s. |
+| 6–10 | 8–12 | Mismo contenido; numeración desplazada dos posiciones. |
+
+### Histórico: cambios de v3 a v4
 
 | v4 | Viene de v3 | Cambio |
 |---|---|---|
 | 1 | 1 · Portada | Añadir la pregunta del gancho como título grande; el nombre del equipo queda pequeño. |
 | 2 | 2 · ¿Flota propia o contratada? | Nuevo título «El faltante se descubre cuando el cliente llama» y los tres dolores (planificación reactiva, bodega sin visibilidad, entrega sin prueba). |
 | 3 | 3 · Comparar, Desglosar, Explicar, Decidir | Cambiar los cuatro pasos por **Detectar → Decidir → Entregar → Probar**. |
-| 4 | — (nueva) | Esquema: datos → **motor** (calcula) → **agente IA en n8n** (explica) → **persona** (aprueba), con la nota «si la IA falla, explicación de respaldo». |
+| 4 | — (nueva) | Esquema: datos → **motor** (calcula) → **agente IA en n8n** (explica) → **persona** (aprueba), con la nota «si la IA falla, explicación de respaldo». Al generar la lámina, usar el logo `materiales/assets/n8n-logo.png` en el bloque del agente. |
 | 5 | 4 · Captura de rutas | Sustituir por la captura de la alerta en vivo (#318). La captura de rutas puede quedar de fondo o salir. |
 | 6 | 5 · Panel A/B/C | Sin cambios. |
 | 7 | 7 · Lo que podemos respaldar hoy | Rehacer como tres columnas: **Construido / Probado / Falta**. |
@@ -51,7 +69,7 @@ Reorganiza el pitch con la [[2026-10-17-1129-jb-presentacion-pitch-perfecto|ment
 
 ### Capturas y video
 
-La lista de capturas (C1–C7) y el guion del video v4, plano por plano y con la ruta web de cada pantalla, están en el [guion del video de respaldo](../../specs/006-validacion-pitch-entrega/guion-video-respaldo.md). Las láminas 3, 4 y 5 de la v4 dependen de C1, C3, C5 y C6.
+La lista de capturas (C1–C7) y el guion del video v4, plano por plano y con la ruta web de cada pantalla, están en el [guion del video de respaldo](../../specs/006-validacion-pitch-entrega/guion-video-respaldo.md). La v5 usa las tres capturas existentes indicadas arriba. C1–C7 siguen siendo la lista de tomas deseadas para renovar el material y grabar el video; las láminas 3 y 4 son esquemas y no dependen de esas imágenes.
 
 ### Preguntas probables del jurado (nuevas)
 

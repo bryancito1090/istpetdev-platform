@@ -79,9 +79,14 @@ public sealed class ServiceCostIntegrationTests(PostgisContainer postgres) : ICl
         await using var db = TestDb.Context(postgres.NewDatabase());
         Assert.True((await Import(db, Fixtures.Request("demo-base"))).Applied);
         var vehicle = await db.Vehicles.SingleAsync();
+        // El esquema anterior a ServiceCostCatalog tampoco contenía MetadataJson.
+        // No poblar columnas futuras al recrear esa base histórica mediante downgrade.
+        vehicle.MetadataJson = null;
+        foreach (var product in await db.Products.ToListAsync()) product.MetadataJson = null;
         db.RoutePlans.Add(new() { Code = "HIST-240", VehicleId = vehicle.Id, Status = "Proposed", TotalCost = 42.25m,
             PlannedStartUtc = new DateTime(2026, 10, 16, 12, 0, 0, DateTimeKind.Utc) });
         await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlRawAsync("UPDATE \"Product\" SET \"MetadataJson\" = NULL; UPDATE \"Vehicle\" SET \"MetadataJson\" = NULL;");
         var before = await Snapshot(db);
         // Recrear el esquema inmediatamente anterior, con los datos de la demo ya cargados.
         await db.GetService<IMigrator>().MigrateAsync("20261015234714_CustodyChainStates");

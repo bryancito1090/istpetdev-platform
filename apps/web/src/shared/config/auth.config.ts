@@ -7,6 +7,8 @@ export const webOidcConfig: PassedInitialConfig = {
     authority: environment.oidc.authority,
     clientId: environment.oidc.clientId,
     redirectUrl: environment.oidc.redirectUrl,
+    postLoginRoute: '/auth/callback',
+    unauthorizedRoute: '/login',
     postLogoutRedirectUri: environment.oidc.postLogoutRedirectUri,
     scope: 'openid email profile istpetdev-api/access',
     responseType: 'code',

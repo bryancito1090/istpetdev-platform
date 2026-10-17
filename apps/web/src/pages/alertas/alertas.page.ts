@@ -19,7 +19,7 @@ type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
         <div>
           <div class="flex items-center gap-2.5">
             <h1 class="text-[22px] font-semibold text-[#1A2C44] tracking-tight">
-              Monitoreo y Alertas de Inventario
+              Monitoreo de Cobertura de Stock
             </h1>
             <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F8FAFC] text-[#697386] border border-[#E3E8EE]">
               Auditoría y Supervisión
@@ -48,77 +48,6 @@ type FilterType = 'ALL' | 'CRITICAL' | 'WARNING' | 'NORMAL';
             class="inline-flex items-center h-9 px-4 text-[13px] font-medium rounded-md bg-[#635BFF] hover:bg-[#5248E0] text-white transition-colors shadow-xs cursor-pointer">
             <span>Planificar Rutas de Entrega</span>
           </a>
-        </div>
-      </div>
-
-      <!-- Tarjetas de Métricas Resumen (KPIs) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <!-- Puntos Críticos -->
-        <div class="p-4 rounded-lg bg-white border border-[#E3E8EE] shadow-xs space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Stock Crítico</span>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-              Atención inmediata
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-[24px] font-bold text-rose-600 tracking-tight">{{ criticalCount() }}</span>
-            <span class="text-[12px] text-[#8792A2]">ítems en riesgo</span>
-          </div>
-          <p class="text-[12px] text-[#4F5B66]">
-            El inventario disponible no alcanza para cubrir los días de reposición.
-          </p>
-        </div>
-
-        <!-- Puntos en Observación -->
-        <div class="p-4 rounded-lg bg-white border border-[#E3E8EE] shadow-xs space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">En Observación</span>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-              Margen de reserva
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-[24px] font-bold text-amber-600 tracking-tight">{{ warningCount() }}</span>
-            <span class="text-[12px] text-[#8792A2]">ítems preventivos</span>
-          </div>
-          <p class="text-[12px] text-[#4F5B66]">
-            Cobertura ajustada dentro de la ventana de seguridad.
-          </p>
-        </div>
-
-        <!-- Cobertura Promedio -->
-        <div class="p-4 rounded-lg bg-white border border-[#E3E8EE] shadow-xs space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Cobertura Promedio</span>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE]">
-              Red general
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-[24px] font-bold text-[#1A2C44] tracking-tight">{{ averageCoverage().toFixed(1) }}</span>
-            <span class="text-[12px] text-[#8792A2]">días promedio</span>
-          </div>
-          <p class="text-[12px] text-[#4F5B66]">
-            Calculado sobre los centros de salud con consumo activo registrado.
-          </p>
-        </div>
-
-        <!-- Volumen Sugerido -->
-        <div class="p-4 rounded-lg bg-white border border-[#E3E8EE] shadow-xs space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-semibold text-[#8792A2] uppercase tracking-wider">Reposición Sugerida</span>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Cálculo sugerido
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-[24px] font-bold text-[#635BFF] tracking-tight">{{ totalSuggested() | number }}</span>
-            <span class="text-[12px] text-[#8792A2]">unidades requeridas</span>
-          </div>
-          <p class="text-[12px] text-[#4F5B66]">
-            Cantidad estimada para restablecer el stock de seguridad en toda la red.
-          </p>
         </div>
       </div>
 

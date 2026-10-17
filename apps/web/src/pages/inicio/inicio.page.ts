@@ -420,65 +420,114 @@ interface ProcessStep {
         <!-- Tarjetas de Resumen en Cuadrícula Estilo Stripe (Captura 3) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
           @for (step of steps(); track step.id) {
-            <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 hover:border-[#CBD5E1] transition-all flex flex-col justify-between group shadow-2xs">
-              <div>
-                <!-- Encabezado de la Tarjeta con ⓘ y Micro-icono de cuadrícula -->
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 min-w-0">
-                    <h3 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44] truncate">
-                      {{ step.title }}
-                    </h3>
-                    <span class="text-[#8792A2] group-hover:text-[#1A2C44] transition-colors cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
+            @if (!step.writeOnly || session.canWrite()) {
+              <a
+                [routerLink]="step.route"
+                class="bg-white border border-[#E3E8EE] rounded-xl p-5 hover:border-[#635BFF] hover:shadow-xs transition-all flex flex-col justify-between group shadow-2xs block cursor-pointer no-underline text-inherit">
+                <div>
+                  <!-- Encabezado de la Tarjeta con ⓘ y Micro-icono de cuadrícula -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <h3 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44] truncate group-hover:text-[#635BFF] transition-colors">
+                        {{ step.title }}
+                      </h3>
+                      <span class="text-[#8792A2] group-hover:text-[#1A2C44] transition-colors cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
+                    </div>
+                    <svg class="w-3.5 h-3.5 text-[#8792A2] group-hover:text-[#635BFF] transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
                   </div>
-                  <svg class="w-3.5 h-3.5 text-[#8792A2]" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
+
+                  <!-- Métrica Principal de la Tarjeta (24px, #1A2C44) -->
+                  <div class="mt-3">
+                    <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight font-mono">
+                      @if (step.id === 1) {
+                        {{ servicePointsCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">puntos activos</span>
+                      } @else if (step.id === 2) {
+                        <span [ngClass]="criticalRisksCount() > 0 ? 'text-[#DF1B41]' : 'text-[#1A2C44]'">
+                          {{ criticalRisksCount() }}
+                        </span>
+                        <span class="text-[13px] font-normal text-[#697386] font-sans"> quiebres críticos</span>
+                      } @else if (step.id === 3) {
+                        {{ publishedRoutesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">/ {{ routePlansCount() }} rutas</span>
+                      } @else {
+                        {{ warehousesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">bodega base</span>
+                      }
+                    </div>
+
+                    <!-- Subtexto comparativo exacto a período anterior de Stripe -->
+                    <div class="text-[12px] leading-[18px] text-[#697386] mt-0.5">
+                      0 en período anterior
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Métrica Principal de la Tarjeta (24px, #1A2C44) -->
-                <div class="mt-3">
-                  <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight font-mono">
-                    @if (step.id === 1) {
-                      {{ servicePointsCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">puntos activos</span>
-                    } @else if (step.id === 2) {
-                      <span [ngClass]="criticalRisksCount() > 0 ? 'text-[#DF1B41]' : 'text-[#1A2C44]'">
-                        {{ criticalRisksCount() }}
-                      </span>
-                      <span class="text-[13px] font-normal text-[#697386] font-sans"> quiebres críticos</span>
-                    } @else if (step.id === 3) {
-                      {{ publishedRoutesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">/ {{ routePlansCount() }} rutas</span>
-                    } @else {
-                      {{ warehousesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">bodega base</span>
-                    }
-                  </div>
+                <!-- Acción Inferior estilo Stripe Link -->
+                <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
+                  <span 
+                    class="text-[11px] px-2 py-0.5 rounded font-medium border font-mono"
+                    [ngClass]="step.badgeClass">
+                    {{ step.badge }}
+                  </span>
 
-                  <!-- Subtexto comparativo exacto a período anterior de Stripe -->
-                  <div class="text-[12px] leading-[18px] text-[#697386] mt-0.5">
-                    0 en período anterior
-                  </div>
-                </div>
-              </div>
-
-              <!-- Acción Inferior estilo Stripe Link -->
-              <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
-                <span 
-                  class="text-[11px] px-2 py-0.5 rounded font-medium border font-mono"
-                  [ngClass]="step.badgeClass">
-                  {{ step.badge }}
-                </span>
-
-                @if (!step.writeOnly || session.canWrite()) {
-                  <a
-                    [routerLink]="step.route"
-                    class="text-[13px] font-medium text-[#635BFF] hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform cursor-pointer">
+                  <span
+                    class="text-[13px] font-medium text-[#635BFF] group-hover:underline inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     <span>{{ step.actionText }}</span>
                     <span>&rarr;</span>
-                  </a>
-                } @else {
+                  </span>
+                </div>
+              </a>
+            } @else {
+              <div class="bg-white border border-[#E3E8EE] rounded-xl p-5 flex flex-col justify-between group shadow-2xs opacity-85">
+                <div>
+                  <!-- Encabezado de la Tarjeta con ⓘ y Micro-icono de cuadrícula -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <h3 class="text-[14px] leading-[20px] font-semibold text-[#1A2C44] truncate">
+                        {{ step.title }}
+                      </h3>
+                      <span class="text-[#8792A2] cursor-help text-[13px]" title="{{ step.desc }}">&#9432;</span>
+                    </div>
+                    <svg class="w-3.5 h-3.5 text-[#8792A2]" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+
+                  <!-- Métrica Principal de la Tarjeta (24px, #1A2C44) -->
+                  <div class="mt-3">
+                    <div class="text-[24px] leading-[32px] font-semibold text-[#1A2C44] tracking-tight font-mono">
+                      @if (step.id === 1) {
+                        {{ servicePointsCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">puntos activos</span>
+                      } @else if (step.id === 2) {
+                        <span [ngClass]="criticalRisksCount() > 0 ? 'text-[#DF1B41]' : 'text-[#1A2C44]'">
+                          {{ criticalRisksCount() }}
+                        </span>
+                        <span class="text-[13px] font-normal text-[#697386] font-sans"> quiebres críticos</span>
+                      } @else if (step.id === 3) {
+                        {{ publishedRoutesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">/ {{ routePlansCount() }} rutas</span>
+                      } @else {
+                        {{ warehousesCount() }} <span class="text-[13px] font-normal text-[#697386] font-sans">bodega base</span>
+                      }
+                    </div>
+
+                    <!-- Subtexto comparativo exacto a período anterior de Stripe -->
+                    <div class="text-[12px] leading-[18px] text-[#697386] mt-0.5">
+                      0 en período anterior
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Acción Inferior estilo Stripe Link -->
+                <div class="mt-4 pt-3 border-t border-[#F1F3F5] flex items-center justify-between">
+                  <span 
+                    class="text-[11px] px-2 py-0.5 rounded font-medium border font-mono"
+                    [ngClass]="step.badgeClass">
+                    {{ step.badge }}
+                  </span>
                   <span class="text-[12px] text-[#8792A2] italic">Solo lectura</span>
-                }
+                </div>
               </div>
-            </div>
+            }
           }
         </div>
       </div>
@@ -499,38 +548,38 @@ interface ProcessStep {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1 text-xs">
-            <div class="space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE]">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#DF1B41]">Alerta de Stock</span>
+            <a routerLink="/alertas" class="group block space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] hover:border-[#635BFF] hover:bg-[#F1F5F9] transition-all cursor-pointer no-underline text-inherit shadow-2xs">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-[#DF1B41]">Cobertura de Stock</span>
               <p class="text-[13px] leading-[18px] text-[#2D3748]">
                 {{ criticalRisksCount() > 0 ? 'Detectado ' + criticalRisksCount() + ' quiebre de stock crítico inminente en centros de salud.' : 'Todos los puntos de salud operan en niveles normales de cobertura.' }}
               </p>
-              <a routerLink="/alertas" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
-                <span>Resolver alertas de stock</span>
+              <span class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] group-hover:underline font-medium pt-1 group-hover:translate-x-0.5 transition-transform">
+                <span>Monitorear cobertura de stock</span>
                 <span>&rarr;</span>
-              </a>
-            </div>
+              </span>
+            </a>
 
-            <div class="space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE]">
+            <a routerLink="/rutas" class="group block space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] hover:border-[#635BFF] hover:bg-[#F1F5F9] transition-all cursor-pointer no-underline text-inherit shadow-2xs">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[#635BFF]">Flota y Despacho</span>
               <p class="text-[13px] leading-[18px] text-[#2D3748]">
                 {{ publishedRoutesCount() }} rutas despachadas. Revisa el estado de entrega y custodia con firma digital.
               </p>
-              <a routerLink="/rutas" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
+              <span class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] group-hover:underline font-medium pt-1 group-hover:translate-x-0.5 transition-transform">
                 <span>Inspeccionar rutas</span>
                 <span>&rarr;</span>
-              </a>
-            </div>
+              </span>
+            </a>
 
-            <div class="space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE]">
+            <a routerLink="/simulation" class="group block space-y-1.5 p-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] hover:border-[#635BFF] hover:bg-[#F1F5F9] transition-all cursor-pointer no-underline text-inherit shadow-2xs">
               <span class="text-[11px] font-semibold uppercase tracking-wider text-[#00875A]">Simulación y Proyección</span>
               <p class="text-[13px] leading-[18px] text-[#2D3748]">
                 Prueba el modelo de optimización logística frente a baselines a 90 días.
               </p>
-              <a routerLink="/simulation" class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] hover:underline font-medium cursor-pointer pt-1">
+              <span class="inline-flex items-center gap-1 text-[13px] text-[#635BFF] group-hover:underline font-medium pt-1 group-hover:translate-x-0.5 transition-transform">
                 <span>Abrir simulador 90d</span>
                 <span>&rarr;</span>
-              </a>
-            </div>
+              </span>
+            </a>
           </div>
         </div>
       </div>
@@ -591,10 +640,10 @@ export class InicioPage implements OnInit {
     },
     {
       id: 2,
-      title: '2. Monitorear Alertas de Stock',
+      title: '2. Monitorear Cobertura de Stock',
       desc: 'Verificar qué hospitales tienen insumos con menos de 5 días de cobertura o quiebre de stock.',
       route: '/alertas',
-      actionText: 'Ver Alertas',
+      actionText: 'Ver Cobertura',
       badge: 'Riesgo y Demanda',
       badgeClass: 'bg-[#FFF4E5] text-[#B76E00] border-[#FFE2B5]',
       writeOnly: false

@@ -45,7 +45,7 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/alertas').then(m => m.AlertasPage),
-    title: 'Alertas — IstpetDev'
+    title: 'Cobertura de Stock — IstpetDev'
   },
   {
     path: 'rutas',
@@ -82,6 +82,13 @@ export const routes: Routes = [
     data: { roles: WEB_READ_ROLES },
     loadComponent: () => import('@pages/simulation').then(m => m.SimulationPage),
     title: 'Simulador 90 Días — IstpetDev'
+  },
+  {
+    path: 'reportes',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/reportes').then(m => m.ReportesPage),
+    title: 'Reportes & Analítica — IstpetDev'
   },
   {
     // Pública: el QR impreso en el bulto apunta aquí.

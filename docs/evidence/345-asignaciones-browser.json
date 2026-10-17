@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-17",
+  "codeRevision": "7ee3d2c6b90e710e5ecdd0f30128965b9ff3e571",
+  "source": "Componente real en harness aislado con ApiService sintético; sin sesión real ni prueba productiva del mapa",
+  "results": [
+    { "viewport": "desktop", "width": 1440, "height": 1000, "noAutomaticCalculation": true, "explicitRemaining": true, "fullyAssignedBlocked": true, "noOverflow": true, "pageErrors": [] },
+    { "viewport": "mobile", "width": 390, "height": 844, "noAutomaticCalculation": true, "explicitRemaining": true, "fullyAssignedBlocked": true, "noOverflow": true, "pageErrors": [] }
+  ]
+}

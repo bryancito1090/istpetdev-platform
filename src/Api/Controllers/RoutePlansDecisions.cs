@@ -21,7 +21,7 @@ public sealed partial class RoutePlansController
     public async Task<IActionResult> PrepareDecision([FromBody] PrepareDecisionRequest request, CancellationToken ct)
     {
         var result = await BuildSuggestionAsync(new SuggestRoutesRequest(request.OrderIds, request.PlannedDate,
-            IncludeAlternatives: true), ct);
+            IncludeAlternatives: true, PlanRemainingOnly: request.PlanRemainingOnly), ct);
         if (result is not OkObjectResult ok) return result;
         var suggestion = JsonSerializer.SerializeToElement(ok.Value, DecisionJson);
         var today = request.PlannedDate ?? await clock.TodayAsync(ct);
@@ -236,7 +236,8 @@ public sealed partial class RoutePlansController
     }
 }
 
-public sealed record PrepareDecisionRequest(IReadOnlyList<Guid> OrderIds, DateOnly? PlannedDate = null, Guid? OperationId = null);
+public sealed record PrepareDecisionRequest(IReadOnlyList<Guid> OrderIds, DateOnly? PlannedDate = null, Guid? OperationId = null,
+    bool PlanRemainingOnly = false);
 public sealed record AcceptDecisionRequest(string OptionId, int ExpectedVersion, Guid OperationId);
 public sealed record PublishDecisionRequest(IReadOnlyDictionary<string, string> DriverAssignments, Guid OperationId);
 public sealed record DecisionAllocation(Guid WarehouseId, decimal Quantity);

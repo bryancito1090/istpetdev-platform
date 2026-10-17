@@ -105,6 +105,11 @@ public sealed class FieldUnitTests
             return Task.FromResult(new DemoAdvanceResponse(Array.Empty<CompletedStopDto>()));
         }
 
+        public Task<IReadOnlyList<TodayRoutePlanDto>> GetTodayRoutePlansAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult<IReadOnlyList<TodayRoutePlanDto>>(Array.Empty<TodayRoutePlanDto>());
+        }
+
         public Task<EvidenceUploadResponse> CreateEvidenceUploadAsync(Guid receiptId, EvidenceUploadRequest request, Guid actorAccountId, CancellationToken ct = default)
         {
             return Task.FromResult(new EvidenceUploadResponse(Guid.NewGuid(), "https://s3/up", null, DateTime.UtcNow.AddMinutes(15)));

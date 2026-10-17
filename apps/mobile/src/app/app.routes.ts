@@ -47,6 +47,13 @@ export const routes: Routes = [
     title: 'Cola de Sincronización Outbox — IstpetDev Móvil'
   },
   {
+    path: 'demo',
+    loadComponent: () => import('./field/pages/demo/demo-simulation.component').then((m) => m.DemoSimulationComponent),
+    canActivate: [roleGuard],
+    data: { roles: ['Conductor', 'Bodega', 'Receptor'] as FieldRole[] },
+    title: 'Simulador Demo — IstpetDev Móvil'
+  },
+  {
     path: '**',
     redirectTo: 'home'
   }

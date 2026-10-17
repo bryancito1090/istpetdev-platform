@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {
   IonContent,
   AlertController,
@@ -10,7 +11,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { logOutOutline, mapOutline, syncOutline } from 'ionicons/icons';
-import { RECEIPT_REJECTION_REASONS, MobileAssignmentDelivery } from '@istpetdev/shared-core';
+import { RECEIPT_REJECTION_REASONS, MobileAssignmentDelivery, ReportIncidentRequest } from '@istpetdev/shared-core';
 import { FIELD_ROLE_LABELS, MobileAuthService } from '../auth';
 import { FieldOutboxService } from '../field/outbox/field-outbox.service';
 import { FIELD_API, IFieldApi, ReceiverUnit } from '../field/field-api.interface';
@@ -145,6 +146,25 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
           <span><strong>{{ pendingCount() }} operaciones pendientes</strong><small>Consulta el estado de tus registros</small></span>
           <span class="summary-arrow" aria-hidden="true">→</span>
         </button>
+      }
+
+      <!-- Botón Simulador Demo (visible solo si FieldSimulation:Enabled está activo) -->
+      @if (demoAvailable()) {
+        <div class="mb-3 p-3 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00A7C4] animate-pulse"></span>
+            <div>
+              <span class="font-bold text-xs text-[#04303B] block">Simulador de Campo (Demo)</span>
+              <span class="text-[10px] text-slate-600">Ejecutar rutas publicadas del día sin labor física</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="openDemoSimulation()"
+            class="px-3 py-1.5 bg-[#00A7C4] hover:bg-[#008CA5] text-white text-xs font-bold rounded-lg shadow-xs transition">
+            Abrir Demo →
+          </button>
+        </div>
       }
 
       <!-- ======================================================== -->
@@ -384,6 +404,16 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
               <span class="tile-subtitle">Entregas completadas</span>
             </div>
           }
+
+          <button type="button" class="stripe-action-tile border-amber-200 hover:border-amber-400 bg-amber-50/30" (click)="openIncidentModal()">
+            <div class="tile-icon">
+              <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <span class="tile-title text-amber-950">Incidencia</span>
+            <span class="tile-subtitle text-amber-700">Alerta en ruta</span>
+          </button>
 
           <button type="button" class="stripe-action-tile" [disabled]="loadingRoute()" (click)="downloadRoute()">
             <div class="tile-icon">
@@ -878,15 +908,15 @@ import { FieldPageHeaderComponent } from '../shared/field-page-header/field-page
     /* --- Botones de Acción de Conductor Estilo Stripe --- */
     .stripe-actions-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
     }
 
     .stripe-action-tile {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      padding: 14px;
+      padding: 12px 8px;
       background: #ffffff;
       border: 1px solid #E3E8EF;
       border-radius: 12px;
@@ -1096,6 +1126,7 @@ export class HomePage {
 
   readonly loadingRoute = signal<boolean>(false);
   readonly showAssignedRoute = signal(false);
+  readonly demoAvailable = signal<boolean>(false);
 
   // Estados visuales
   readonly searchOpen = signal<boolean>(false);
@@ -1239,16 +1270,34 @@ export class HomePage {
   }
 
   async ngOnInit(): Promise<void> {
+    this.checkDemoAvailability();
     // Si es conductor y no hay ruta en caché, intentar descargarla
     if (this.authService.currentRole() === 'Conductor' && !this.outboxService.activeAssignment()) {
       await this.downloadRoute();
     }
   }
+
   ionViewWillEnter(): void {
+    this.checkDemoAvailability();
     const qr = history.state?.receiverQr;
     if (this.authService.currentRole() === 'Receptor' && qr?.unitId && qr?.token) {
       void this.loadReceiverUnit(qr.unitId, qr.token);
     }
+  }
+
+  checkDemoAvailability(): void {
+    if (typeof this.fieldApi?.getTodayRoutePlans !== 'function') {
+      this.demoAvailable.set(false);
+      return;
+    }
+    this.fieldApi.getTodayRoutePlans().subscribe({
+      next: () => this.demoAvailable.set(true),
+      error: () => this.demoAvailable.set(false)
+    });
+  }
+
+  openDemoSimulation(): void {
+    this.router.navigate(['/demo']);
   }
 
   // --- Métodos de Interacción del Nuevo Diseño ---
@@ -1285,15 +1334,35 @@ export class HomePage {
   }
 
   async openMenuAlert(): Promise<void> {
+    const buttons: any[] = [
+      { text: 'Escanear QR de Custodia', handler: () => this.openScan() }
+    ];
+
+    if (this.authService.currentRole() === 'Conductor') {
+      buttons.push({
+        text: '🚨 Reportar Incidencia en Ruta',
+        handler: () => this.openIncidentModal()
+      });
+    }
+
+    buttons.push({ text: 'Cola de Sincronización', handler: () => this.openSyncQueue() });
+
+    if (this.demoAvailable()) {
+      buttons.push({
+        text: '⚡ Simulador de Campo (Demo)',
+        handler: () => this.openDemoSimulation()
+      });
+    }
+
+    buttons.push(
+      { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
+      { text: 'Cancelar', role: 'cancel' }
+    );
+
     const alert = await this.alerts.create({
       header: this.authService.me()?.displayName || 'Alexander Martinez',
       subHeader: `Rol: ${this.roleSubtitle() || 'Operador de Campo'}`,
-      buttons: [
-        { text: 'Escanear QR de Custodia', handler: () => this.openScan() },
-        { text: 'Cola de Sincronización', handler: () => this.openSyncQueue() },
-        { text: 'Cerrar Sesión', role: 'destructive', handler: () => this.logout() },
-        { text: 'Cancelar', role: 'cancel' }
-      ]
+      buttons
     });
     await alert.present();
   }
@@ -1534,8 +1603,7 @@ export class HomePage {
     for (const hu of del.handlingUnits) {
       if (!hu.lines) continue;
       for (const line of hu.lines) {
-        const rawName = (line as any).productName || line.sku || 'Producto';
-        const displayName = this.formatProductName(rawName);
+        const displayName = line.name?.trim() ? line.name : this.formatProductName((line as any).productName || line.sku || 'Producto');
         const key = `${displayName}__${line.unit}`;
         const existing = productMap.get(key);
         if (existing) {
@@ -1562,8 +1630,168 @@ export class HomePage {
     return codeOrName;
   }
 
+  async openIncidentModal(): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Reportar Incidencia en Ruta',
+      subHeader: 'Selecciona la novedad ocurrida en campo',
+      inputs: [
+        {
+          name: 'incidentType',
+          type: 'radio',
+          label: '🚨 Avería Mecánica del Vehículo',
+          value: 'VEHICLE_BREAKDOWN',
+          checked: true
+        },
+        {
+          name: 'incidentType',
+          type: 'radio',
+          label: '🚧 Bloqueo de Vía / Vía Cerrada',
+          value: 'ROAD_CLOSURE'
+        },
+        {
+          name: 'incidentType',
+          type: 'radio',
+          label: '🚗 Congestión Vehicular Severa',
+          value: 'Congestion'
+        },
+        {
+          name: 'incidentType',
+          type: 'radio',
+          label: '⚠️ Accidente de Tránsito',
+          value: 'Accidente'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Siguiente',
+          handler: (type: string) => {
+            if (!type) return false;
+            this.promptIncidentDetails(type);
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async promptIncidentDetails(kind: string): Promise<void> {
+    const kindLabels: Record<string, string> = {
+      VEHICLE_BREAKDOWN: 'Avería Mecánica',
+      ROAD_CLOSURE: 'Bloqueo de Vía',
+      Congestion: 'Congestión Vehicular',
+      Accidente: 'Accidente de Tránsito'
+    };
+    const title = kindLabels[kind] || kind;
+
+    const alert = await this.alerts.create({
+      header: `Reporte: ${title}`,
+      message: 'Describe brevemente lo ocurrido para notificar a Planificación y re-optimizar rutas si aplica.',
+      inputs: [
+        {
+          name: 'description',
+          type: 'textarea',
+          placeholder: 'Ej: Falla en motor / Cierre vial por deslizamiento / Congestión severa...',
+          value: ''
+        }
+      ],
+      buttons: [
+        {
+          text: 'Atrás',
+          role: 'cancel',
+          handler: () => {
+            this.openIncidentModal();
+          }
+        },
+        {
+          text: 'Enviar Alerta',
+          handler: async (data: { description?: string }) => {
+            await this.submitIncidentReport(kind, data?.description || '');
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async submitIncidentReport(kind: string, description: string): Promise<void> {
+    const loading = await this.alerts.create({
+      header: 'Enviando reporte...',
+      message: 'Notificando al centro de control y evaluando impacto en ruta...',
+      backdropDismiss: false
+    });
+    await loading.present();
+
+    try {
+      let lat: number | undefined;
+      let lon: number | undefined;
+
+      try {
+        const pos = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
+          if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+              () => resolve(null),
+              { timeout: 3000, enableHighAccuracy: true }
+            );
+          } else {
+            resolve(null);
+          }
+        });
+        if (pos) {
+          lat = pos.lat;
+          lon = pos.lon;
+        }
+      } catch {
+        // Fallback: el backend infiere la posición de la siguiente parada activa
+      }
+
+      const activeRoute = this.outboxService.activeAssignment()?.routes?.[0];
+      const vehicleCode = activeRoute?.vehicleCode;
+
+      const req: ReportIncidentRequest = {
+        kind,
+        description: description.trim() || `Reporte de ${kind} por conductor en ruta`,
+        severity: 'ALTA',
+        vehicleCode,
+        lat,
+        lon,
+        radiusKm: kind === 'VEHICLE_BREAKDOWN' ? undefined : 3,
+        slowdownFactor: kind === 'Congestion' ? 0.3 : kind === 'Accidente' ? 0.2 : undefined
+      };
+
+      const res = await firstValueFrom(this.fieldApi.reportIncident(req));
+      await loading.dismiss();
+
+      const successAlert = await this.alerts.create({
+        header: 'Incidencia Registrada',
+        subHeader: `ID: ${res.incidentId.slice(0, 8)}`,
+        message: 'La alerta ha sido registrada y notificada a Planificación. Si tu ruta sufre cambios o reasignaciones, se te avisará en la aplicación.',
+        buttons: [
+          {
+            text: 'Entendido',
+            handler: () => {
+              this.downloadRoute();
+            }
+          }
+        ]
+      });
+      await successAlert.present();
+    } catch (err: unknown) {
+      await loading.dismiss();
+      const errorMsg = err instanceof HttpErrorResponse
+        ? (err.error?.detail || err.error?.title || err.message)
+        : (err instanceof Error ? err.message : 'No se pudo registrar la incidencia');
+      await this.showToast(`Error al reportar: ${errorMsg}`, 'warning');
+    }
+  }
+
   openIncident(): void {
-    this.router.navigate(['/scan']);
+    this.openIncidentModal();
   }
 
   private async showToast(message: string, color: 'success' | 'warning'): Promise<void> {
