@@ -175,6 +175,17 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
         product.UnitValue = row.Decimal("unit_value") ?? product.UnitValue;
         product.UnitsPerPackage = row.Decimal("units_per_package") ?? product.UnitsPerPackage;
         product.IsActive = true;
+        if (row.RawRow is { Count: > 0 })
+        {
+            var meta = new Dictionary<string, object?>();
+            foreach (var (k, v) in row.RawRow)
+            {
+                if (string.IsNullOrWhiteSpace(k) || string.IsNullOrWhiteSpace(v)) continue;
+                meta[k] = v;
+            }
+            if (meta.Count > 0)
+                product.MetadataJson = System.Text.Json.JsonSerializer.Serialize(meta);
+        }
         return true;
     }
 
@@ -203,6 +214,17 @@ internal sealed class CanonicalWriter(IApplicationDbContext db, ImportContext co
         vehicle.VehicleType = row.Text("vehicle_type")?.ToLowerInvariant() ?? vehicle.VehicleType;
         vehicle.UsageScope = row.Text("usage_scope")?.ToLowerInvariant() ?? vehicle.UsageScope;
         vehicle.IsActive = true;
+        if (row.RawRow is { Count: > 0 })
+        {
+            var meta = new Dictionary<string, object?>();
+            foreach (var (k, v) in row.RawRow)
+            {
+                if (string.IsNullOrWhiteSpace(k) || string.IsNullOrWhiteSpace(v)) continue;
+                meta[k] = v;
+            }
+            if (meta.Count > 0)
+                vehicle.MetadataJson = System.Text.Json.JsonSerializer.Serialize(meta);
+        }
         UpsertLocation(LocationKinds.Vehicle, code, $"Vehículo {code}", null, null, vehicleId: vehicle.Id);
         return true;
     }

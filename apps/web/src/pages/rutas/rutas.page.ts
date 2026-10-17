@@ -547,7 +547,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 <button type="button" (click)="selectPlan(plan.id)" class="route-card" [class.route-selected]="selectedPlanId() === plan.id" [attr.aria-pressed]="selectedPlanId() === plan.id">
                   <div class="route-card-heading"><strong>{{ plan.code }}</strong><span class="route-status" [class.proposed]="plan.status === 'Proposed'">{{ plan.status === 'Proposed' ? 'Propuesta' : plan.status === 'Published' ? 'Publicada' : plan.status }}</span></div>
                   @if (plan.status === 'Proposed') { <div class="route-reasons" aria-label="Diferencias de esta propuesta">@for (label of registeredRouteLabels(plan); track label) { <span>{{ label }}</span> }</div> }
-                  <div class="route-card-vehicle"><svg lucideTruck [size]="16"></svg>{{ plan.vehicleCode || 'Sin vehículo' }}<span>{{ plan.stopsCount }} paradas</span></div>
+                  <div class="route-card-vehicle"><svg lucideTruck [size]="16"></svg>{{ plan.vehicleDescription || plan.vehiclePlate || plan.vehicleCode || 'Sin vehículo' }}<span>{{ plan.stopsCount }} paradas</span></div>
                   <div class="route-card-metrics"><strong>{{ plan.totalCost == null ? 'Costo sin dato' : '$ ' + (plan.totalCost | number:'1.2-2') }}</strong><span>{{ plan.totalDistanceKm | number:'1.0-1' }} km · {{ plan.totalDurationMinutes | number:'1.0-0' }} min</span></div>
                   <span class="route-card-link">{{ selectedPlanId() === plan.id ? 'Viendo recorrido' : 'Ver recorrido' }}<svg lucideArrowUpRight [size]="15"></svg></span>
                 </button>
@@ -584,7 +584,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#697386] font-mono mt-1">
                       <span><strong>Distancia:</strong> {{ selectedDetail()!.totalDistanceKm }} km</span>
                       <span><strong>Duración:</strong> {{ selectedDetail()!.totalDurationMinutes }} min</span>
-                      <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleCode || 'Sin vehículo' }}</span>
+                      <span><strong>Vehículo:</strong> {{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}</span>
                       <span><strong>Salida:</strong> {{ selectedDetail()!.plannedStartUtc | date:'shortTime' }}</span>
                       @if (selectedDetail()!.plannedEndUtc) {
                         <span><strong>Fin Est.:</strong> {{ selectedDetail()!.plannedEndUtc | date:'shortTime' }}</span>
@@ -656,7 +656,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 <section class="rounded-xl border border-[#dce4ed] bg-white p-4 space-y-4" data-route-assignment aria-label="Asignación de la ruta">
                   <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="flex items-start gap-3 min-w-0"><svg lucideWarehouse [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Bodega de origen</dt><dd class="text-sm font-semibold text-[#152a42] break-words">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</dd></div></div>
-                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleCode || 'Sin vehículo' }}</dd></div></div>
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}</dd></div></div>
                     @if (selectedDetail()!.status === 'Published') {
                       <div class="flex items-start gap-3 min-w-0"><svg lucideUserRound [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Conductor asignado</dt><dd class="text-sm font-semibold break-words" [class]="selectedDetail()!.driverName ? 'text-[#152a42]' : 'text-amber-800'">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</dd></div></div>
                     }
@@ -770,7 +770,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             }
 
                             <!-- Info de la parada -->
-                            <span class="mt-1 text-xs font-medium text-[#152a42] truncate max-w-[130px]" [title]="stop.name">
+                            <span class="mt-1 text-xs font-medium text-[#152a42] truncate max-w-[130px]" [title]="stop.code + ' - ' + stop.name">
                               {{ stop.name }}
                             </span>
                             <span class="text-[10px] text-[#53647b] font-mono">
@@ -1180,7 +1180,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2.5 border-t border-[#E3E8EE] text-xs">
                         <div>
                           <span class="text-[#697386] block text-[10px]">Vehículo</span>
-                          <strong class="font-mono text-[#1A2C44] font-medium">{{ selectedDetail()!.vehicleCode || '—' }}</strong>
+                          <strong class="font-mono text-[#1A2C44] font-medium" [title]="selectedDetail()!.vehicleDescription || selectedDetail()!.vehicleCode || '—'">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || '—' }}</strong>
                         </div>
                         <div>
                           <span class="text-[#697386] block text-[10px]">Bodega Origen</span>
@@ -2145,30 +2145,81 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </p>
                   </div>
 
-                  <div class="space-y-2">
+                  <div class="space-y-2.5">
                     @for (vm of availableVehicleMatches(); track vm.vehicleId) {
                       <div
                         (click)="vm.isMatch ? selectedVehicleId.set(vm.vehicleId) : null"
-                        class="p-3.5 rounded-md border text-xs transition-colors shadow-xs"
+                        class="p-4 rounded-lg border text-xs transition-all shadow-xs relative"
                         [ngClass]="{
-                          'border-[#635BFF] ring-1 ring-[#635BFF] bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
-                          'border-[#E3E8EE] bg-white hover:border-[#697386]/40 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
+                          'border-[#635BFF] ring-2 ring-[#635BFF]/30 bg-white cursor-pointer': vm.isMatch && selectedVehicleId() === vm.vehicleId,
+                          'border-[#E3E8EE] bg-white hover:border-[#635BFF]/50 cursor-pointer': vm.isMatch && selectedVehicleId() !== vm.vehicleId,
                           'border-[#E3E8EE] bg-[#F8FAFC] opacity-60 cursor-not-allowed': !vm.isMatch
                         }">
-                        <div class="flex items-center justify-between">
-                          <span class="font-semibold text-[#1A2C44] text-sm font-mono">{{ vm.vehicleCode }}</span>
-                          @if (vm.isMatch) {
-                            <span class="text-[9px] bg-[#00D924]/10 text-[#0E6245] border border-[#00D924]/30 font-semibold px-2 py-0.5 rounded">COMPATIBLE</span>
-                          } @else {
-                            <span class="text-[9px] bg-[#DF1B41]/10 text-[#DF1B41] border border-[#DF1B41]/30 font-semibold px-2 py-0.5 rounded">NO COMPATIBLE</span>
-                          }
+
+                        <!-- Recomendación destacada del asistente -->
+                        @if (vm.isRecommended) {
+                          <div class="mb-2.5 flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-[11px] font-semibold">
+                            <span>RECOMENDACIÓN DEL ASISTENTE:</span>
+                            <span class="font-normal">Menor costo operacional y base directa en bodega.</span>
+                          </div>
+                        }
+
+                        <div class="flex items-start justify-between gap-2">
+                          <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                              <span class="font-bold text-[#1A2C44] text-sm">
+                                {{ vm.vehicleModel || vm.vehicleDescription || vm.vehicleCode }}
+                              </span>
+                              @if (vm.vehiclePlate) {
+                                <span class="font-mono text-[11px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold border border-slate-200">
+                                  {{ vm.vehiclePlate }}
+                                </span>
+                              }
+                              <span class="text-[11px] text-[#697386] font-mono">({{ vm.vehicleCode }})</span>
+                            </div>
+
+                            <!-- Badges de tecnología, propulsión y restricciones -->
+                            <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              @if (vm.isElectric || vm.fuelType === 'electrico') {
+                                <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  100% Eléctrico (Cero Emisiones)
+                                </span>
+                              } @else if (vm.fuelType === 'diesel') {
+                                <span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-300 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  Diésel
+                                </span>
+                              } @else if (vm.fuelType === 'gasolina') {
+                                <span class="text-[10px] bg-slate-100 text-slate-700 border border-slate-300 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  Gasolina
+                                </span>
+                              }
+                              @if (vm.autonomyKm) {
+                                <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded">
+                                  Autonomía: {{ vm.autonomyKm }} km
+                                </span>
+                              }
+                              @if (vm.picoYPlacaDia) {
+                                <span class="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                  Pico y Placa: {{ vm.picoYPlacaDia | titlecase }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+
+                          <div class="shrink-0 flex flex-col items-end gap-1">
+                            @if (vm.isMatch) {
+                              <span class="text-[10px] bg-[#00D924]/10 text-[#0E6245] border border-[#00D924]/30 font-bold px-2 py-0.5 rounded">COMPATIBLE</span>
+                            } @else {
+                              <span class="text-[10px] bg-[#DF1B41]/10 text-[#DF1B41] border border-[#DF1B41]/30 font-bold px-2 py-0.5 rounded">NO COMPATIBLE</span>
+                            }
+                          </div>
                         </div>
 
-                        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] font-mono text-[#697386]">
+                        <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono text-[#697386] bg-slate-50 p-2.5 rounded border border-slate-100">
                           <div>Capacidad: <strong class="text-[#1A2C44] font-medium">{{ vm.maxWeight }} kg</strong></div>
                           <div>Uso estimado: <strong class="text-[#1A2C44] font-medium">{{ vm.weightUtilizationPct }}%</strong></div>
                           <div>Depósito base: <strong class="text-[#1A2C44] font-medium">{{ vm.distanceToFirstPickupKm }} km</strong></div>
-                          <div>Costo estimado: <strong class="text-[#1A2C44] font-medium">USD {{ vm.estimatedCost }}</strong></div>
+                          <div>Costo est.: <strong class="text-[#1A2C44] font-bold text-emerald-700">USD {{ vm.estimatedCost }}</strong></div>
                         </div>
 
                         @if (!vm.isMatch) {

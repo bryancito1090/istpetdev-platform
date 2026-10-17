@@ -27,7 +27,10 @@ import { ButtonComponent, CardComponent } from '@shared/ui';
             }
             @case ('error') {
               <p role="alert" class="text-sm text-slate-800 mb-4">No pudimos verificar tu cuenta. Intenta de nuevo en unos minutos.</p>
-              <ui-button variant="primary" [fullWidth]="true" (buttonClick)="session.login()">Reintentar</ui-button>
+              <div class="space-y-2">
+                <ui-button variant="primary" [fullWidth]="true" (buttonClick)="session.login()">Reintentar</ui-button>
+                <ui-button variant="outline" [fullWidth]="true" (buttonClick)="session.logout()">Cerrar sesión</ui-button>
+              </div>
             }
             @default {
               <div class="py-3 space-y-3">

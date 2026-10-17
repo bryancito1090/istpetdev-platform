@@ -65,7 +65,7 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
             }
             case ImportEntity.Products:
             {
-                var list = await db.Products
+                var rawProducts = await db.Products
                     .Where(p => p.OrganizationId == DemoOrganization.Id)
                     .AsNoTracking()
                     .OrderBy(p => p.Sku)
@@ -77,14 +77,46 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                         base_unit = p.BaseUnit,
                         weight_per_unit = p.WeightPerBaseUnit,
                         volume_per_unit = p.VolumePerBaseUnit,
-                        isActive = p.IsActive
+                        isActive = p.IsActive,
+                        metadataJson = p.MetadataJson
                     })
                     .ToListAsync(cancellationToken);
+
+                var list = rawProducts.Select(p =>
+                {
+                    string presentation = "";
+                    string unitsPkg = "";
+                    if (!string.IsNullOrWhiteSpace(p.metadataJson))
+                    {
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(p.metadataJson);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("presentacion", out var pr)) presentation = pr.GetString() ?? "";
+                            if (root.TryGetProperty("units_per_package", out var up)) unitsPkg = up.GetString() ?? "";
+                        }
+                        catch { }
+                    }
+
+                    return new
+                    {
+                        id = p.id,
+                        sku = p.sku,
+                        name = p.name,
+                        presentation = !string.IsNullOrWhiteSpace(presentation) ? presentation : "-",
+                        base_unit = p.base_unit,
+                        weight_per_unit = p.weight_per_unit,
+                        volume_per_unit = p.volume_per_unit,
+                        units_per_package = !string.IsNullOrWhiteSpace(unitsPkg) ? unitsPkg : "1",
+                        isActive = p.isActive
+                    };
+                }).ToList();
+
                 return Ok(list);
             }
             case ImportEntity.Vehicles:
             {
-                var list = await (from v in db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id).AsNoTracking()
+                var rawVehicles = await (from v in db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id).AsNoTracking()
                                   join l in db.Locations on v.DepotLocationId equals l.Id into locs
                                   from loc in locs.DefaultIfEmpty()
                                   orderby v.Code
@@ -95,8 +127,52 @@ public sealed class ImportsController(IImportService importer, IApplicationDbCon
                                       max_weight = v.MaxWeight,
                                       max_volume = v.MaxVolume,
                                       cost_per_km = v.CostPerKm,
-                                      isActive = v.IsActive
+                                      isActive = v.IsActive,
+                                      metadataJson = v.MetadataJson
                                   }).ToListAsync(cancellationToken);
+
+                var list = rawVehicles.Select(v =>
+                {
+                    string plate = "";
+                    string model = "";
+                    string brand = "";
+                    string mechanicalStatus = "";
+                    int? odometerKm = null;
+                    if (!string.IsNullOrWhiteSpace(v.metadataJson))
+                    {
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(v.metadataJson);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("matricula", out var p)) plate = p.GetString() ?? "";
+                            if (root.TryGetProperty("marca", out var b)) brand = b.GetString() ?? "";
+                            if (root.TryGetProperty("modelo", out var m)) model = m.GetString() ?? "";
+                            if (root.TryGetProperty("estado_mecanico", out var s)) mechanicalStatus = s.GetString() ?? "";
+                            if (root.TryGetProperty("kilometraje_actual", out var km) && int.TryParse(km.GetString(), out var kmVal)) odometerKm = kmVal;
+                            else if (root.TryGetProperty("kilometraje_odometro", out var km2) && int.TryParse(km2.GetString(), out var kmVal2)) odometerKm = kmVal2;
+                        }
+                        catch { }
+                    }
+
+                    var fullModel = !string.IsNullOrWhiteSpace(brand)
+                        ? (!string.IsNullOrWhiteSpace(model) ? $"{brand} {model}" : brand)
+                        : model;
+
+                    return new
+                    {
+                        code = v.code,
+                        plate = !string.IsNullOrWhiteSpace(plate) ? plate : "-",
+                        vehicle_model = !string.IsNullOrWhiteSpace(fullModel) ? fullModel : "-",
+                        depot_code = v.depot_code,
+                        max_weight = v.max_weight,
+                        max_volume = v.max_volume,
+                        cost_per_km = v.cost_per_km,
+                        mechanical_status = !string.IsNullOrWhiteSpace(mechanicalStatus) ? (char.ToUpper(mechanicalStatus[0]) + mechanicalStatus[1..].Replace('_', ' ')) : "Operativo",
+                        odometer_km = odometerKm.HasValue ? $"{odometerKm.Value:N0} km" : "-",
+                        isActive = v.isActive
+                    };
+                }).ToList();
+
                 return Ok(list);
             }
             case ImportEntity.Lots:
