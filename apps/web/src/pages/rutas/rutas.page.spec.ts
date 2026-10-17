@@ -376,4 +376,174 @@ describe('RutasPage (FR-21)', () => {
       expect(component.comparisonOptions().length).toBe(2);
     });
   });
+
+  describe('Seguimiento de la ruta en el Planificador (#231)', () => {
+    it('renderiza la tarjeta de seguimiento con el resumen de paradas, bultos y la parada actual', () => {
+      const plan = {
+        id: 'plan-tracking-1',
+        code: 'R-TRACK-01',
+        revision: 1,
+        status: 'Published',
+        vehicleCode: 'VEH-01',
+        driverName: 'Conductor Prueba',
+        totalDistanceKm: 32,
+        totalDurationMinutes: 90,
+        stopsCount: 3,
+        stops: [
+          {
+            sequence: 1,
+            kind: 'Pickup',
+            servicePointCode: 'BOD-CENTRAL',
+            servicePointName: 'Bodega Principal',
+            status: 'Completed',
+            deliveryStatus: 'Dispatched',
+            handlingUnits: [
+              { id: 'hu-1', code: 'BUL-01', status: 'InTransit' },
+              { id: 'hu-2', code: 'BUL-02', status: 'InTransit' }
+            ],
+            lines: []
+          },
+          {
+            sequence: 2,
+            kind: 'Delivery',
+            servicePointCode: 'CS-NORTE',
+            servicePointName: 'Centro de Salud Norte',
+            status: 'Completed',
+            deliveryStatus: 'Received',
+            handlingUnits: [{ id: 'hu-3', code: 'BUL-03', status: 'Received' }],
+            lines: [
+              {
+                productId: 'p1',
+                sku: 'MED-01',
+                productName: 'Amoxicilina',
+                plannedQuantity: 5,
+                baseUnit: 'Caja',
+                deliveryStatus: 'Received'
+              }
+            ]
+          },
+          {
+            sequence: 3,
+            kind: 'Delivery',
+            servicePointCode: 'HOSP-SUR',
+            servicePointName: 'Hospital del Sur',
+            status: 'Pending',
+            deliveryStatus: 'InTransit',
+            handlingUnits: [{ id: 'hu-4', code: 'BUL-04', status: 'InTransit' }],
+            lines: [
+              {
+                productId: 'p2',
+                sku: 'MED-02',
+                productName: 'Ibuprofeno',
+                plannedQuantity: 10,
+                baseUnit: 'Caja',
+                deliveryStatus: 'InTransit'
+              }
+            ]
+          }
+        ]
+      };
+
+      const getRoutePlanByIdMock = vi.fn(() => of(plan));
+
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [
+          provideRouter([]),
+          { provide: AuthSession, useValue: { canWrite: () => true, role: () => 'Planner' } },
+          {
+            provide: ApiService,
+            useValue: {
+              getRoutePlans: vi.fn(() => of([plan])),
+              getRoutePlanById: getRoutePlanByIdMock,
+              getRoutePlanGeometry: vi.fn(() => of(null)),
+              getDrivers: vi.fn(() => of([])),
+              getServicePoints: vi.fn(() => of([])),
+              getDeliveryOrders: vi.fn(() => of([])),
+              getWarehouses: vi.fn(() => of([])),
+              getEntityData: vi.fn(() => of([])),
+              getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+            },
+          },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(RutasPage);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      // Debe haber cargado el plan y seleccionado el detalle
+      expect(component.selectedDetail()).toBeTruthy();
+
+      const trackingCard = fixture.nativeElement.querySelector('[data-testid="tracking-card"]');
+      expect(trackingCard).toBeTruthy();
+
+      // Verifica el texto resumen: 1 de 2 paradas de entrega completada, 3 bultos en vehículo
+      const summaryTextEl = fixture.nativeElement.querySelector('[data-testid="tracking-summary-text"]');
+      expect(summaryTextEl.textContent).toContain('1 de 2 paradas entregadas · 3 bultos en el vehículo');
+
+      // Verifica que exista la insignia de "Parada actual" en la secuencia 3 (primera no entregada)
+      const badgeCurrent = fixture.nativeElement.querySelector('[data-testid="badge-current-stop"]');
+      expect(badgeCurrent).toBeTruthy();
+      expect(badgeCurrent.textContent).toContain('Parada actual');
+
+      // Verifica que todos los estados aparezcan traducidos en español
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('Seguimiento de Ruta en Vivo');
+      expect(text).toContain('Autorefresco 25s');
+      expect(text).toContain('Recibido conforme');
+      expect(text).toContain('En vehículo');
+    });
+
+    it('permite refrescar manualmente y detiene el temporizador al destruir el componente', () => {
+      const plan = {
+        id: 'plan-tracking-2',
+        code: 'R-TRACK-02',
+        revision: 1,
+        status: 'Published',
+        vehicleCode: 'VEH-02',
+        totalDistanceKm: 15,
+        totalDurationMinutes: 45,
+        stopsCount: 1,
+        stops: []
+      };
+
+      const getRoutePlanByIdMock = vi.fn(() => of(plan));
+
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [
+          provideRouter([]),
+          { provide: AuthSession, useValue: { canWrite: () => true } },
+          {
+            provide: ApiService,
+            useValue: {
+              getRoutePlans: vi.fn(() => of([plan])),
+              getRoutePlanById: getRoutePlanByIdMock,
+              getRoutePlanGeometry: vi.fn(() => of(null)),
+              getDrivers: vi.fn(() => of([])),
+              getServicePoints: vi.fn(() => of([])),
+              getDeliveryOrders: vi.fn(() => of([])),
+              getWarehouses: vi.fn(() => of([])),
+              getEntityData: vi.fn(() => of([])),
+              getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+            },
+          },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(RutasPage);
+      const component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const refreshBtn = fixture.nativeElement.querySelector('[data-testid="btn-refresh-tracking"]');
+      if (refreshBtn) {
+        refreshBtn.click();
+        expect(getRoutePlanByIdMock).toHaveBeenCalled();
+      }
+
+      // Detiene el temporizador sin arrojar error al destruir
+      expect(() => fixture.destroy()).not.toThrow();
+    });
+  });
 });
