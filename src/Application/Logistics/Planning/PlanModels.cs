@@ -53,7 +53,13 @@ public sealed record VehicleRoute(
     decimal LoadWeight,
     decimal LoadVolume,
     bool HasApproximations,
-    IReadOnlyList<Leg> Legs);
+    IReadOnlyList<Leg> Legs)
+{
+    // #300: llegada y salida de cada recogida pendiente del prefijo (FixedPrefix.LeadingStops), en orden.
+    // Solo interno: el replanificador lo usa para las paradas de la revisión; no se expone en la API.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<(DateTime ArrivalUtc, DateTime DepartureUtc)> LeadingTimes { get; init; } = [];
+}
 
 public sealed record Unserved(
     string PointCode,
@@ -77,7 +83,18 @@ public sealed record FixedPrefix(
     GeoPoint Position,
     DateTime ReadyAtUtc,
     IReadOnlyList<string> PendingPointCodes,
-    bool VehicleAvailable);
+    bool VehicleAvailable)
+{
+    // #300: plan que se replanifica (de él salen las cargas); null = la última ruta publicada del vehículo.
+    public Guid? RoutePlanId { get; init; }
+    // #300: recogidas en bodega pendientes que el vehículo hace, en orden, antes de las entregas.
+    public IReadOnlyList<FixedStop> LeadingStops { get; init; } = [];
+    // #300: paradas ya hechas, incluidas las recogidas; null = CompletedPointCodes.Count. Alinea los tramos guardados.
+    public int? CompletedStopCount { get; init; }
+}
+
+// #300: parada fija que no es un punto de servicio (recogida en bodega).
+public sealed record FixedStop(string Code, GeoPoint Position, int ServiceMinutes);
 
 public sealed record IncidentEffect(
     IReadOnlySet<(GeoPoint, GeoPoint)> BlockedLegs,

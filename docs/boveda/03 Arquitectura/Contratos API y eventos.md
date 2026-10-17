@@ -1,7 +1,7 @@
 ---
 tipo: arquitectura
 estado: propuesta
-actualizado: 2026-10-16
+actualizado: 2026-10-17
 tags: [arquitectura, contratos]
 ---
 
@@ -227,6 +227,14 @@ Detalle en el FR-28 del spec 002. No hay endpoints nuevos ni campos nuevos; camb
 - **`POST /api/v1/route-plans/{id}/revert`:** vuelve a sumar lo que la revisión había descontado. La ruta restaurada conserva el tipo (`Pickup`/`Delivery`) y la bodega de cada parada.
 - **Planes sin `orderLines`** (confirmados antes de #264): `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`, porque no hay datos de cuánto sumó cada ruta. `orderLines` de la respuesta de `cancel` sale vacío.
 - **Panel (Rutas):** el detalle de una ruta `Proposed` o `Published` muestra «Cancelar ruta» a quien puede escribir. Pide confirmación, llama a `POST …/cancel` y muestra lo liberado y descontado, o el `detail` del 409.
+
+### Replanificar rutas del asistente de pedidos (#300 — 17 de octubre de 2026)
+
+Detalle en el FR-29 del spec 002. No hay endpoints ni campos nuevos; cambian estos comportamientos:
+
+- **`POST /api/v1/route-plans/{id}/replan`** sobre una ruta confirmada con `/route-plans/confirm` (recogida en bodega + entregas) responde 201 como cualquier otra; antes fallaba con `KeyNotFoundException` (500). Solo se reoptimizan las entregas a puntos de servicio. Una recogida pendiente se conserva al inicio de la revisión, con su `kind`, `locationId` y cargas, y las entregas parten desde esa bodega. Si ya se hizo (marcada o con una parada posterior completada), queda como hecha y el vehículo parte desde la última parada hecha. Si no queda ninguna entrega (p. ej., avería), la revisión tampoco conserva la recogida. Las entregas a bodega no se reordenan: se conservan al final si el vehículo sigue disponible y, si no, salen en `diff.droppedStops` con el código de la bodega.
+- **`POST /api/v1/incidents` y `GET /api/v1/incidents/{id}`:** una ruta del asistente, que no guarda tramos, se evalúa con tramos armados desde la bodega del vehículo por sus paradas (polilínea de la caché de tramos si existe; si no, segmento recto). Así un `BloqueoVial` sobre sus paradas la incluye en `affectedRoutes` y el agente la replanifica. En `affectedStops` y en las paradas de la decisión del agente, una parada en bodega se nombra por el código de la bodega.
+- **Publicar o revertir la revisión:** la entrega pendiente se reasigna a la parada de la revisión con el mismo tipo, punto y bodega. El descuento de pedidos de FR-28 sigue igual.
 
 ## Consultas de abastecimiento para planificación y agente (#194 — 16 de octubre de 2026)
 

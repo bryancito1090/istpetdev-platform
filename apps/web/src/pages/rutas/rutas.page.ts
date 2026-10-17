@@ -112,17 +112,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       <!-- Encabezado Principal -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold text-[#1A2C44] tracking-tight">
               Planificación y Asignación de Rutas
             </h1>
             @if (isAuditor()) {
-              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE]">
                 Panel de Auditoría (Solo Lectura)
               </span>
             }
           </div>
-          <p class="text-sm text-slate-500 mt-1">
+          <p class="text-sm text-[#4F5B66] mt-1">
             @if (isAuditor()) {
               Auditoría y fiscalización de itinerarios: verificación de ventanas de atención, ETAs calculadas, tiempos de viaje y kilometraje.
             } @else {
@@ -138,12 +138,15 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               type="button"
               (click)="triggerAgentWatch()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
+              class="h-9 inline-flex items-center gap-1.5 text-xs font-medium px-3.5 rounded-lg bg-[#635BFF] text-white hover:bg-[#5851EA] transition-colors shadow-2xs disabled:opacity-50">
               @if (agentLoading()) {
-                <span class="inline-block animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></span>
+                <span class="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></span>
                 <span>Consultando agente…</span>
               } @else {
-                <span>🤖 Pedir al Agente IA</span>
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Pedir al Agente IA</span>
               }
             </button>
 
@@ -152,7 +155,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               type="button"
               (click)="triggerEmergencyFlow()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50">
+              class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#DF1B41] text-white hover:bg-[#CD163A] transition-colors shadow-2xs disabled:opacity-50">
               <span>Proponer Ruta de Emergencia</span>
             </button>
 
@@ -161,32 +164,38 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               type="button"
               (click)="openOrderRoutingModal()"
               [disabled]="agentLoading() || actionLoading()"
-              class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50">
-              <span>+ Nueva Ruta por Pedidos</span>
+              class="h-9 inline-flex items-center gap-1.5 text-xs font-medium px-3.5 rounded-lg bg-[#00A7C4] text-white hover:bg-[#0093AD] transition-colors shadow-2xs disabled:opacity-50">
+              <span class="text-sm font-semibold leading-none">+</span>
+              <span>Nueva Ruta por Pedidos</span>
             </button>
           </div>
         }
       </div>
 
       <!-- Selector de Pestañas: Rutas / Bandeja de Rechazos -->
-      <div class="flex items-center gap-6 border-b border-slate-200">
+      <div class="flex items-center gap-8 border-b border-[#E3E8EE]">
         <button
           type="button"
           (click)="activeTab.set('rutas'); startTrackingTimer()"
-          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
-          [ngClass]="activeTab() === 'rutas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          class="relative pb-3 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+          [ngClass]="activeTab() === 'rutas' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
           <span>Rutas Planificadas</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">{{ routePlans().length }}</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full font-mono"
+            [ngClass]="activeTab() === 'rutas' ? 'bg-[#F1F3F5] text-[#1A2C44] font-bold' : 'bg-[#F1F3F5] text-[#697386]'">
+            {{ routePlans().length }}
+          </span>
         </button>
 
         <button
           type="button"
           (click)="activeTab.set('rechazos'); stopTrackingTimer(); loadRejectedCaptures()"
-          class="pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2"
-          [ngClass]="activeTab() === 'rechazos' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          class="relative pb-3 text-xs font-semibold tracking-tight transition-colors flex items-center gap-2 -mb-px"
+          [ngClass]="activeTab() === 'rechazos' ? 'border-b-2 border-[#1A2C44] text-[#1A2C44]' : 'border-b-2 border-transparent text-[#697386] hover:text-[#1A2C44]'">
           <span>Bandeja de Capturas Rechazadas</span>
           @if (rejectedCaptures().length > 0) {
-            <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold font-mono">{{ rejectedCaptures().length }}</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200">
+              {{ rejectedCaptures().length }}
+            </span>
           }
         </button>
       </div>
@@ -195,63 +204,66 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
         <!-- Banner de retroalimentación -->
         @if (feedbackMessage()) {
         <div 
-          class="p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all"
-          [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'">
+          class="p-3.5 rounded-xl text-xs font-medium flex items-center justify-between border shadow-2xs transition-all"
+          [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-[#F8FAFC] text-[#00875A] border-[#B3E6CD]' : 'bg-[#F8FAFC] text-[#DF1B41] border-[#F8B4C0]'">
           <div class="flex items-center gap-2">
-            <span class="font-bold">[{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]</span>
-            <span>{{ feedbackMessage()!.text }}</span>
+            <span class="font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 rounded font-mono"
+              [ngClass]="feedbackMessage()!.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+              [{{ feedbackMessage()!.type === 'success' ? 'Éxito' : 'Aviso' }}]
+            </span>
+            <span class="text-[#2D3748]">{{ feedbackMessage()!.text }}</span>
           </div>
           <div class="flex items-center gap-2">
             @if (hasRemainingPendingOrders()) {
               <button
                 type="button"
                 (click)="openWizardForRemainingOrders()"
-                class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-bold hover:bg-emerald-800 transition-colors shadow-xs">
+                class="h-8 px-3 rounded-lg bg-emerald-700 text-white font-medium hover:bg-emerald-800 transition-colors shadow-2xs">
                 + Crear siguiente ruta con los pedidos pendientes restantes
               </button>
             }
-            <button (click)="feedbackMessage.set(null); hasRemainingPendingOrders.set(false)" class="text-slate-400 hover:text-slate-600 font-semibold ml-3 text-xs">Cerrar</button>
+            <button (click)="feedbackMessage.set(null); hasRemainingPendingOrders.set(false)" class="text-[#697386] hover:text-[#1A2C44] font-medium ml-3 text-xs">Cerrar</button>
           </div>
         </div>
       }
 
       <!-- Tarjeta del Agente IA n8n -->
       @if (agentRun()) {
-        <div class="bg-gradient-to-r from-indigo-50/80 via-white to-purple-50/50 border border-indigo-200 rounded-2xl p-5 shadow-sm space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+        <div class="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-2xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F3F5] pb-3">
             <div class="flex items-center gap-2.5">
-              <span class="p-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold leading-none">IA</span>
+              <span class="p-1.5 bg-[#635BFF] text-white rounded-lg text-xs font-bold leading-none">IA</span>
               <div>
-                <h3 class="text-sm font-bold text-slate-900">Propuesta del agente logístico</h3>
-                <p class="text-[11px] text-slate-500">
+                <h3 class="text-sm font-bold text-[#1A2C44]">Propuesta del agente logístico</h3>
+                <p class="text-[11px] text-[#697386]">
                   Ejecución {{ agentRun()!.runId.substring(0, 8) }} · Modelo: {{ agentRun()!.model || 'No informado' }} · Latencia: {{ agentRun()!.latencyMs }} ms
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-2">
               <span
-                class="text-xs px-2.5 py-1 rounded-full font-semibold border"
-                [ngClass]="agentRun()!.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
+                class="text-xs px-2.5 py-0.5 rounded-full font-medium border"
+                [ngClass]="agentRun()!.status === 'Completed' ? 'bg-[#E8F7F0] text-[#00875A] border-[#B3E6CD]' : 'bg-[#FFF4E5] text-[#B76E00] border-[#FFE2B5]'">
                 {{ agentRun()!.status === 'Completed' ? '✓ Completado' : agentRun()!.status === 'Fallback' ? '⚠ Respuesta determinista' : agentRun()!.status === 'Running' ? 'En ejecución' : 'Falló la ejecución' }}
               </span>
-              <button (click)="agentRun.set(null)" class="text-slate-400 hover:text-slate-600 text-sm ml-2">✕</button>
+              <button (click)="agentRun.set(null)" class="text-[#697386] hover:text-[#1A2C44] text-sm ml-2">✕</button>
             </div>
           </div>
 
           <!-- Decisiones generadas por el Agente -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             @for (decision of agentRun()!.decisions; track decision.agentDecisionId) {
-              <div class="bg-white border border-indigo-100 rounded-xl p-3.5 space-y-2 text-xs shadow-xs">
+              <div class="bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg p-3.5 space-y-2 text-xs">
                 <div class="flex items-center justify-between">
-                  <span class="font-bold text-slate-900">Vehículo: {{ decision.vehicleCode }}</span>
-                  <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  <span class="font-bold text-[#1A2C44]">Vehículo: {{ decision.vehicleCode }}</span>
+                  <span class="text-[11px] font-medium text-[#4F5B66] bg-[#F1F3F5] px-2 py-0.5 rounded">
                     Fuente: {{ decision.source === 'Llm' ? 'DeepSeek LLM' : 'Plantilla' }}
                   </span>
                 </div>
-                <p class="text-slate-700 leading-relaxed">{{ decision.explanation }}</p>
+                <p class="text-[#2D3748] leading-relaxed">{{ decision.explanation }}</p>
                 @if (decision.driverMessage) {
-                  <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] text-slate-600">
-                    <span class="font-semibold text-slate-700">Mensaje al conductor:</span> "{{ decision.driverMessage }}"
+                  <div class="bg-white border border-[#E3E8EE] rounded-lg p-2 text-[11px] text-[#4F5B66]">
+                    <span class="font-semibold text-[#1A2C44]">Mensaje al conductor:</span> "{{ decision.driverMessage }}"
                   </div>
                 }
               </div>
