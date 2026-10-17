@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonContent } from '@ionic/angular/standalone';
 import { FIELD_API } from '../../field-api.interface';
+import { generateUuidV7 } from '../../uuid';
 import { DemoAdvanceRequest, TodayRoutePlanDto } from '@istpetdev/shared-core';
 import { FieldPageHeaderComponent } from '../../../shared/field-page-header/field-page-header.component';
 
@@ -387,7 +388,9 @@ export class DemoSimulationComponent implements OnInit {
     this.actionInProgress.set(actionKey);
     this.lastResult.set(null);
 
-    const operationId = `sim-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const operationId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : generateUuidV7();
     const req: DemoAdvanceRequest = {
       operationId,
       mode,
@@ -411,7 +414,10 @@ export class DemoSimulationComponent implements OnInit {
       },
       error: (err) => {
         this.actionInProgress.set(null);
-        const errMsg = err?.error?.detail || err?.error?.message || err?.message || 'Error al ejecutar la simulación de ruta.';
+        const apiErrors = err?.error?.errors
+          ? Object.values(err.error.errors).flat().join(' ')
+          : null;
+        const errMsg = err?.error?.detail || apiErrors || err?.error?.message || err?.message || 'Error al ejecutar la simulación de ruta.';
         this.lastResult.set({ message: errMsg, type: 'error' });
       }
     });
