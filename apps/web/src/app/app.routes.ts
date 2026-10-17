@@ -84,6 +84,13 @@ export const routes: Routes = [
     title: 'Simulador 90 Días — IstpetDev'
   },
   {
+    path: 'reportes',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: WEB_READ_ROLES },
+    loadComponent: () => import('@pages/reportes').then(m => m.ReportesPage),
+    title: 'Reportes & Analítica — IstpetDev'
+  },
+  {
     // Pública: el QR impreso en el bulto apunta aquí.
     path: 'public-trace',
     loadComponent: () => import('@pages/public-trace').then(m => m.PublicTracePage),
