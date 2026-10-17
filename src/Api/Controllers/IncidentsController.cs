@@ -26,10 +26,66 @@ public sealed class IncidentsController(
     private static readonly GeometryFactory Gf = new(new PrecisionModel(), 4326);
 
     [HttpPost]
-    [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion + "," + Roles.Conductor)]
     [RetryableOperation("CreateIncident")]
     public async Task<IActionResult> CreateIncident([FromBody] CreateIncidentRequest request, CancellationToken ct = default)
     {
+        // Si el conductor reporta, inferir vehicleCode, coordenadas de próxima parada y factor de retraso si faltan
+        if (User.IsInRole(Roles.Conductor))
+        {
+            var driverId = User.AccountId();
+            var delivery = await db.Deliveries
+                .Where(d => d.OrganizationId == DemoOrganization.Id && d.AssignedAccountId == driverId && d.RouteStopId.HasValue)
+                .OrderByDescending(d => d.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+            RoutePlan? activePlan = null;
+            if (delivery?.RouteStopId != null)
+            {
+                var stop = await db.RouteStops.FirstOrDefaultAsync(s => s.Id == delivery.RouteStopId.Value && s.OrganizationId == DemoOrganization.Id, ct);
+                if (stop != null)
+                {
+                    activePlan = await db.RoutePlans.FirstOrDefaultAsync(p => p.Id == stop.RoutePlanId && p.OrganizationId == DemoOrganization.Id && p.Status == "Published", ct);
+                }
+            }
+            if (activePlan != null)
+            {
+                if (string.IsNullOrWhiteSpace(request.VehicleCode))
+                {
+                    var assignedVehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == activePlan.VehicleId, ct);
+                    if (assignedVehicle != null)
+                    {
+                        request = request with { VehicleCode = assignedVehicle.Code };
+                    }
+                }
+
+                if (!request.Lat.HasValue && !request.Lon.HasValue && !string.Equals(request.Kind, "VEHICLE_BREAKDOWN", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nextPendingStop = await db.RouteStops
+                        .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == activePlan.Id && s.Status != "Completed")
+                        .OrderBy(s => s.SequenceNumber)
+                        .FirstOrDefaultAsync(ct);
+                    if (nextPendingStop != null)
+                    {
+                        var sp = await db.ServicePoints.FirstOrDefaultAsync(s => s.Id == nextPendingStop.ServicePointId, ct);
+                        if (sp?.Position != null)
+                        {
+                            request = request with
+                            {
+                                Lat = (decimal)sp.Position.Y,
+                                Lon = (decimal)sp.Position.X,
+                                RadiusKm = request.RadiusKm ?? 3m
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (IncidentSlowdown.IsSlowdownKind(request.Kind) && !request.SlowdownFactor.HasValue && !request.Factor.HasValue)
+            {
+                request = request with { SlowdownFactor = 0.3m };
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(request.Kind) || request.RadiusKm is < 0 ||
             request.Lat.HasValue != request.Lon.HasValue || request.Lat is < -90 or > 90 || request.Lon is < -180 or > 180)
             return Problem(statusCode: StatusCodes.Status400BadRequest, title: "invalid_incident_input",

@@ -279,7 +279,7 @@ import { FieldOutboxService } from '../../outbox/field-outbox.service';
                       <span class="stop-products-title">Contenido del Bulto</span>
                       @for (l of created.hu.lines; track l.deliveryLineId) {
                         <div class="flex justify-between items-center text-xs py-0.5">
-                          <span class="font-semibold text-slate-800">{{ l.sku }}</span>
+                          <span class="font-semibold text-slate-800">{{ l.name || l.sku }}</span>
                           <span class="product-qty">{{ l.quantity }} {{ l.unit }}</span>
                         </div>
                       }
