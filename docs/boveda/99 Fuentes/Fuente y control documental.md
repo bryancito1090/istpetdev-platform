@@ -739,3 +739,9 @@ la integración del controlador compartido; #244/#245 rebasan después.
 Fuente: issue #245 y el diseño de [[Planificacion potenciada - propuesta del evento]]. [[Contratos API y eventos]] registra `Logistics:TrafficBands` y el campo `trafficFactorApplied` por parada en `POST /api/v1/route-plans`, `GET /api/v1/route-plans/{id}` y `RouteEvaluationResult`; el spec 002 añade FR-26 y la tarea T17. Sin franjas configuradas, las duraciones no cambian. Los factores de la demo (0,64 y 0,80) vienen de `appsettings.demo-quito.json` (#243) y son supuestos documentados en su README. No altera baselines ni datos; no se despliega.
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Reserva antes del despacho, cancelación y cantidad por línea (issue #199, fase 2)
+
+Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y eventos]] registra `POST /api/v1/route-plans/{id}/cancel`, `InputJson.orderLines` de `confirm`, el cálculo de `inTransit` con entregas `Draft` y la carga de `confirm` desde lo planificado por línea; el spec 002 añade la tarea T19. La consolidación parcial (`VIGILAR`) queda fuera de alcance. Sin migración ni cambios de datos; no se despliega.
+
+Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
