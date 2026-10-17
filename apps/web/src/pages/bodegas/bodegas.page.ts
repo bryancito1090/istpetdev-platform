@@ -268,20 +268,42 @@ export interface WarehousePolicyItem {
       @if (activeTab() === 'rebalancing') {
         <div class="space-y-4">
           @if (suggestionsList().length === 0) {
-            <div class="bg-white border border-[#E3E8EE] rounded-lg p-10 text-center shadow-2xs space-y-3">
-              <svg class="w-10 h-10 text-slate-300 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 class="text-sm font-semibold text-[#1A2C44]">No hay traslados pendientes de revisión</h3>
-              <p class="text-xs text-[#3C4F69] max-w-md mx-auto">
-                La red de bodegas se encuentra equilibrada. Puedes pulsar en "Analizar y Sugerir Traslados" para reevaluar con el histórico de consumos.
-              </p>
-              <button
-                type="button"
-                (click)="generateSuggestions()"
-                class="inline-flex items-center text-xs font-medium px-4 py-2 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-xs cursor-pointer">
-                Ejecutar Análisis Ahora
-              </button>
+            <div class="bg-white border border-[#E3E8EE] rounded-lg p-10 text-center shadow-2xs space-y-4">
+              <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-[#1A2C44]">No hay traslados pendientes de revisión</h3>
+                @if (uniqueLocationsCount() <= 1) {
+                  <p class="text-xs text-[#3C4F69] max-w-lg mx-auto mt-1 leading-relaxed">
+                    La red opera actualmente con 1 sola bodega activa ({{ analysisList()[0]?.locationCode || 'BOD-SUR' }}). Los traslados de rebalanceo inteligente requieren al menos dos bodegas operativas para transferir excedentes hacia almacenes con déficit de cobertura.
+                  </p>
+                } @else {
+                  <p class="text-xs text-[#3C4F69] max-w-lg mx-auto mt-1 leading-relaxed">
+                    La red de bodegas se encuentra equilibrada y con cobertura segura. Puedes reevaluar en cualquier momento con el histórico de consumos.
+                  </p>
+                }
+              </div>
+              <div class="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  (click)="activeTab.set('analysis')"
+                  class="inline-flex items-center text-xs font-medium px-3.5 py-2 rounded-md border border-[#E3E8EE] bg-white text-[#30313D] hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer">
+                  &larr; Ver Inventario de Bodega
+                </button>
+                <button
+                  type="button"
+                  (click)="generateSuggestions()"
+                  [disabled]="loadingAction()"
+                  class="inline-flex items-center text-xs font-medium px-4 py-2 rounded-md bg-[#635BFF] text-white hover:bg-[#5248E0] transition-colors shadow-xs cursor-pointer disabled:opacity-50">
+                  <svg class="w-3.5 h-3.5 mr-1.5" [ngClass]="{'animate-spin': loadingAction()}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                  <span>{{ loadingAction() ? 'Analizando...' : 'Ejecutar Análisis Ahora' }}</span>
+                </button>
+              </div>
             </div>
           } @else {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -493,22 +515,37 @@ export class BodegasPage implements OnInit {
   }
 
   loadAnalysis(): void {
-    this.apiService.getWarehouseAnalysis().subscribe(res => {
-      this.analysisList.set(res || []);
+    this.apiService.getWarehouseAnalysis().subscribe({
+      next: (res) => {
+        this.analysisList.set(res || []);
+      },
+      error: (err) => {
+        console.error('Error cargando análisis de bodegas:', err);
+      }
     });
   }
 
   loadSuggestions(): void {
-    this.apiService.getTransferSuggestions().subscribe(res => {
-      const list = res || [];
-      this.suggestionsList.set(list);
-      this.pendingSuggestionsCount.set(list.filter(s => s.status === 'Suggested').length);
+    this.apiService.getTransferSuggestions().subscribe({
+      next: (res) => {
+        const list = res || [];
+        this.suggestionsList.set(list);
+        this.pendingSuggestionsCount.set(list.filter(s => s.status === 'Suggested').length);
+      },
+      error: (err) => {
+        console.error('Error cargando sugerencias de traslado:', err);
+      }
     });
   }
 
   loadPolicies(): void {
-    this.apiService.getWarehousePolicies().subscribe(res => {
-      this.policiesList.set(res || []);
+    this.apiService.getWarehousePolicies().subscribe({
+      next: (res) => {
+        this.policiesList.set(res || []);
+      },
+      error: (err) => {
+        console.error('Error cargando políticas de stock:', err);
+      }
     });
   }
 
@@ -518,13 +555,38 @@ export class BodegasPage implements OnInit {
     this.apiService.generateRebalancingSuggestions().subscribe({
       next: () => {
         this.loadingAction.set(false);
-        this.feedback.set({
-          type: 'success',
-          text: 'Análisis de consumo finalizado. Se actualizaron las sugerencias de traslado entre bodegas.'
-        });
-        this.loadSuggestions();
         this.loadAnalysis();
-        this.activeTab.set('rebalancing');
+        this.apiService.getTransferSuggestions().subscribe({
+          next: (res) => {
+            const list = res || [];
+            this.suggestionsList.set(list);
+            const pending = list.filter(s => s.status === 'Suggested').length;
+            this.pendingSuggestionsCount.set(pending);
+
+            if (pending > 0) {
+              this.feedback.set({
+                type: 'success',
+                text: `Análisis finalizado: Se ${pending === 1 ? 'generó 1 sugerencia' : `generaron ${pending} sugerencias`} de traslado entre bodegas.`
+              });
+              this.activeTab.set('rebalancing');
+            } else {
+              const locCount = this.uniqueLocationsCount();
+              const firstLoc = this.analysisList()[0]?.locationCode || 'BOD-SUR';
+              const text = locCount <= 1
+                ? `Análisis finalizado: La red opera actualmente con 1 sola bodega activa (${firstLoc}). Se requieren al menos dos bodegas operativas para realizar traslados de rebalanceo.`
+                : 'Análisis finalizado: La red de bodegas se encuentra equilibrada y con cobertura segura. No se requieren traslados preventivos en este momento.';
+
+              this.feedback.set({
+                type: 'success',
+                text
+              });
+              // Conserva la pestaña actual (análisis) para no ocultar la tabla de inventario
+            }
+          },
+          error: () => {
+            this.loadSuggestions();
+          }
+        });
       },
       error: (err) => {
         this.loadingAction.set(false);

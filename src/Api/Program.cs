@@ -9,6 +9,7 @@ using IstpetDev.Application;
 using IstpetDev.Application.Agent;
 using IstpetDev.Application.Demo;
 using IstpetDev.Application.Logistics;
+using IstpetDev.Application.Field;
 using IstpetDev.Infrastructure;
 using IstpetDev.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -85,6 +86,7 @@ builder.Services.AddCognitoAuthentication(builder.Configuration);
 builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformation>();
 
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
+builder.Services.Configure<FieldSimulationOptions>(builder.Configuration.GetSection(FieldSimulationOptions.Section));
 
 // Configuración de LogisticsOptions con soporte opcional de appsettings.demo-quito.json (#275)
 builder.Services.AddOptions<LogisticsOptions>()
@@ -185,6 +187,22 @@ if (provisionAt >= 0)
         return;
     }
     Environment.ExitCode = await ProvisionAccountsCommand.RunAsync(app.Services, args[provisionAt + 1], Console.Out);
+    return;
+}
+
+var resetAt = Array.IndexOf(args, "--reset-demo");
+if (resetAt >= 0)
+{
+    var fixture = resetAt + 1 < args.Length ? args[resetAt + 1] : null;
+    using var scope = app.Services.CreateScope();
+    var reset = scope.ServiceProvider.GetRequiredService<IstpetDev.Application.Demo.IDemoResetService>();
+    var report = await reset.ResetAsync(fixture);
+    Console.WriteLine($"Reset result: Applied={report.Applied}, Errors={report.ErrorCount}, Status={report.Status}");
+    if (report.HasErrors)
+    {
+        foreach (var err in report.Issues)
+            Console.WriteLine($"  [{err.Entity}] Row {err.Row}: {err.Field} - {err.Message}");
+    }
     return;
 }
 

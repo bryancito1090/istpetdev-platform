@@ -1,12 +1,85 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
 import { RutasPage } from './rutas.page';
+import { RouteJourneyPlayer } from './route-journey-player.component';
 
 describe('RutasPage (FR-21)', () => {
+  it('muestra desde abastecimiento el recorrido recomendado, permite cambiarlo y conserva la elección al comparar', async () => {
+    const stops = [0, 1, 2].map(index => ({ sequence: index + 1, kind: index ? 'Delivery' as const : 'Pickup' as const,
+      code: `P-${index}`, name: index ? `Entrega ${index}` : 'Bodega Norte', position: { lat: -.1 - index * .01, lon: -78.4 },
+      deltaWeight: 1, deltaVolume: 1, windowStart: '08:00', windowEnd: '18:00', serviceMinutes: 5 }));
+    const option = (optionId: string, isRecommended: boolean) => ({ optionId, title: `Propuesta ${optionId}`, description: 'Recogida y dos entregas', isRecommended,
+      stops, sourcingLines: [{ productName: 'Guantes', requestedQuantity: 10, destinationName: 'Bodega Sur',
+        allocations: [{ warehouseId: 'norte', warehouseCode: 'BOD-NORTE', quantity: 10 }] }],
+      vehicleMatches: [{ vehicleId: 'v1', vehicleCode: 'VEH-01', isMatch: true, maxWeight: 100, weightUtilizationPct: 1, volumeUtilizationPct: 1, estimatedCost: 20, distanceToFirstPickupKm: 1 }],
+      evaluation: { isValid: true, totalDistanceKm: isRecommended ? 10 : 20, totalDurationMinutes: 30, totalCost: isRecommended ? 20 : 30,
+        maxWeightOnRoute: 1, maxVolumeOnRoute: 1, stops: [], validationErrors: [], warnings: [],
+        coordinates: isRecommended ? stops.map(stop => [stop.position.lat, stop.position.lon] as [number, number]) : [], coordinatesSource: isRecommended ? 'osrm' as const : 'approximate' as const } });
+    const api = { getRoutePlans: vi.fn(() => of([])), getDrivers: vi.fn(() => of([])), getServicePoints: vi.fn(() => of([])),
+      getDeliveryOrders: vi.fn(() => of([])), getWarehouses: vi.fn(() => of([])), getEntityData: vi.fn(() => of([])),
+      getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })), suggestRoutes: vi.fn(() => of({ options: [option('A', false), option('B', true)] })) };
+    TestBed.configureTestingModule({ imports: [RutasPage], providers: [provideRouter([]),
+      { provide: AuthSession, useValue: { canWrite: () => true } }, { provide: ApiService, useValue: api }] });
+    const fixture = TestBed.createComponent(RutasPage), page = fixture.componentInstance;
+    fixture.detectChanges(); page.isWizardOpen.set(true); page.selectedOrderIds.set(new Set(['order']));
+    page.advanceWizardStep(); fixture.detectChanges(); await Promise.resolve(); fixture.detectChanges();
+    expect(page.wizardStep()).toBe(2); expect(page.selectedOptionId()).toBe('B');
+    expect(fixture.nativeElement.textContent).toContain('Recogidas y entregas');
+    expect(fixture.nativeElement.textContent).toContain('Recoger en'); expect(fixture.nativeElement.textContent).toContain('Entregar en');
+    expect(fixture.nativeElement.textContent).toContain('Menor distancia');
+    const player = fixture.debugElement.query(By.directive(RouteJourneyPlayer)).componentInstance as RouteJourneyPlayer;
+    expect(player.legs()).toHaveLength(2); expect(player.selected()?.coordinates).toHaveLength(3);
+    const replayKey = page.wizardReplayKey(); page.selectComparisonOption('B'); fixture.detectChanges();
+    expect(page.wizardReplayKey()).toBeGreaterThan(replayKey);
+    page.selectComparisonOption('A'); fixture.detectChanges();
+    expect(player.selected()?.id).toBe('sourcing-A'); expect(player.selected()?.approximate).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Trazado aproximado');
+    page.advanceWizardFlow(); expect(page.isDecisionWorkbenchOpen()).toBe(true);
+    expect(page.selectedOptionId()).toBe('A'); expect(page.decisionOrderIds()).toEqual(['order']);
+    fixture.destroy();
+  });
+  it('muestra siete propuestas seleccionables y evita abrir un cálculo sin identificador', () => {
+    const plans = Array.from({ length: 7 }, (_, index) => ({ id: `route-${index}`, code: `R-${index}`,
+      revision: 1, status: 'Proposed', vehicleId: `vehicle-${index}`, vehicleCode: `VEH-${index}`,
+      plannedStartUtc: '2026-10-17T13:00:00Z', totalDistanceKm: 100 - index,
+      totalDurationMinutes: 100 - index * 10, totalCost: 20 + index * 10, stopsCount: 3 }));
+    localStorage.removeItem('istpet.route-decision.registry-test');
+    TestBed.configureTestingModule({ imports: [RutasPage], providers: [provideRouter([]),
+      { provide: AuthSession, useValue: { canWrite: () => true, me: () => ({ accountId: 'registry-test' }) } },
+      { provide: ApiService, useValue: {
+        getRoutePlans: vi.fn(() => of(plans)), getRoutePlanById: vi.fn((id: string) => of({ ...plans.find(p => p.id === id), stops: [] })),
+        getRoutePlanGeometry: vi.fn(() => of(null)), getDrivers: vi.fn(() => of([])),
+        getServicePoints: vi.fn(() => of([])), getDeliveryOrders: vi.fn(() => of([])),
+        getWarehouses: vi.fn(() => of([])), getEntityData: vi.fn(() => of([])),
+        getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 }))
+      } }
+    ] });
+    const fixture = TestBed.createComponent(RutasPage); fixture.detectChanges();
+    const page = fixture.componentInstance;
+    const cards = fixture.nativeElement.querySelectorAll('.registered-route-cards .route-card') as NodeListOf<HTMLButtonElement>;
+    expect(cards).toHaveLength(7);
+    expect(cards[0].textContent).toContain('Menor costo');
+    expect(cards[6].textContent).toContain('Mayor costo');
+    expect(cards[6].textContent).toContain('Más rápida');
+    cards[6].click(); fixture.detectChanges();
+    expect(page.selectedPlanId()).toBe('route-6');
+    expect(fixture.nativeElement.querySelector('.route-approve-button').textContent).toContain('Aprobar y publicar ruta');
+    page.openPreviousDecision();
+    expect(page.isDecisionWorkbenchOpen()).toBe(false);
+    expect(page.isWizardOpen()).toBe(true);
+    page.closeWizard();
+    page.routePlans.set([{ ...plans[6], planningDecisionId: 'group-decision' }]);
+    page.openPreviousDecision();
+    expect(page.activeDecisionId()).toBe('group-decision');
+    expect(page.isDecisionWorkbenchOpen()).toBe(true);
+    fixture.destroy();
+  });
+
   it('oculta al Auditor las acciones para generar y publicar rutas', () => {
     const plan = {
       id: 'route-1',
@@ -472,7 +545,7 @@ describe('RutasPage (FR-21)', () => {
       // Al preparar otra alternativa, enviar el ID del contrato y no publicar la propuesta anterior.
       api.suggestRoutes = vi.fn(() => of({ options: [] }));
       component.selectComparisonOption('B');
-      expect(api.suggestRoutes).toHaveBeenCalledWith([], undefined, 'B');
+      expect(api.suggestRoutes).toHaveBeenCalledWith([], undefined, 'B', false);
       expect(component.routeOptions()).toEqual([]);
       expect(component.currentEvaluation()).toBeNull();
     });

@@ -59,6 +59,7 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
 
     private async Task DeleteOperationalDataAsync(CancellationToken ct)
     {
+        await db.RoutePlanningDecisions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.CustodyEvents.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Evidences.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.ReceiptLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);

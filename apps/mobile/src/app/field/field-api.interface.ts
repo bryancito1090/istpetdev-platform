@@ -18,7 +18,10 @@ import {
   EvidenceConfirmResponse,
   DemoAdvanceRequest,
   DemoAdvanceResponse,
-  PublicTraceUnitDto
+  PublicTraceUnitDto,
+  TodayRoutePlanDto,
+  ReportIncidentRequest,
+  ReportIncidentResponse
 } from '@istpetdev/shared-core';
 
 /**
@@ -34,6 +37,7 @@ export interface IFieldApi {
   getDelivery(deliveryId: string): Observable<DeliveryDetailResponse>;
   revokePublicToken(unitId: string): Observable<void>;
   advanceDemo(routePlanId: string, req: DemoAdvanceRequest): Observable<DemoAdvanceResponse>;
+  getTodayRoutePlans(): Observable<TodayRoutePlanDto[]>;
 
   // Conductor (Mobile / Captura y Sincronización)
   getAssignments(): Observable<MobileAssignmentResponse>;
@@ -43,6 +47,7 @@ export interface IFieldApi {
   createReceipt(deliveryId: string, req: CreateReceiptRequest, idempotencyKey: string): Observable<ReceiptResponse>;
   uploadEvidence(receiptId: string, req: EvidenceUploadRequest, fileBlob?: Blob): Observable<EvidenceUploadResponse>;
   confirmEvidence(evidenceId: string, req: EvidenceConfirmRequest): Observable<EvidenceConfirmResponse>;
+  reportIncident(req: ReportIncidentRequest): Observable<ReportIncidentResponse>;
 
   // Público (Consulta QR sin datos sensibles)
   getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto>;

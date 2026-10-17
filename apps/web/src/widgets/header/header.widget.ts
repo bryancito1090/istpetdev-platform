@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
 import { getMobileAppUrl } from '@shared/config';
+import { AlertNotificationService } from '@features/alert-notification';
 
 interface NavItem {
   path: string;
@@ -15,7 +16,7 @@ interface NavItem {
 const PLANNER_NAV: NavItem[] = [
   { path: '/inicio', label: '1. Inicio' },
   { path: '/datos', label: '2. Datos' },
-  { path: '/alertas', label: '3. Alertas' },
+  { path: '/alertas', label: '3. Cobertura de Stock' },
   { path: '/rutas', label: '4. Rutas' },
   { path: '/novedades', label: '5. Novedades de campo' },
   { path: '/bodegas', label: '6. Bodegas & Rebalanceo' },
@@ -25,7 +26,7 @@ const PLANNER_NAV: NavItem[] = [
 const MANAGER_NAV: NavItem[] = [
   { path: '/inicio', label: 'Inicio' },
   { path: '/datos', label: 'Datos' },
-  { path: '/alertas', label: 'Alertas' },
+  { path: '/alertas', label: 'Cobertura de Stock' },
   { path: '/rutas', label: 'Rutas' },
   { path: '/novedades', label: 'Novedades' },
   { path: '/bodegas', label: 'Bodegas' },
@@ -35,7 +36,7 @@ const MANAGER_NAV: NavItem[] = [
 
 const AUDITOR_NAV: NavItem[] = [
   { path: '/inicio', label: 'Inicio' },
-  { path: '/alertas', label: 'Alertas' },
+  { path: '/alertas', label: 'Cobertura de Stock' },
   { path: '/rutas', label: 'Rutas' },
   { path: '/novedades', label: 'Novedades' },
   { path: '/simulation', label: 'Simulador 90d' }
@@ -102,9 +103,9 @@ const AUDITOR_NAV: NavItem[] = [
             <!-- Campana de alertas al lado del botón salir -->
             <a
               routerLink="/alertas"
-              [title]="hasAlerts() ? 'Tienes ' + alertCount() + ' alerta(s) de stock activa(s)' : 'Sin alertas de stock'"
+              [title]="hasAlerts() ? 'Tienes ' + alertCount() + ' alerta(s) de cobertura activa(s)' : 'Sin riesgos de cobertura'"
               class="relative p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer"
-              aria-label="Alertas">
+              aria-label="Monitoreo de Cobertura">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
@@ -140,9 +141,13 @@ export class HeaderWidget implements OnInit {
   private readonly apiService = inject(ApiService);
   readonly mobileAppUrl = getMobileAppUrl();
 
+  private readonly alertNotification = inject(AlertNotificationService, { optional: true });
+  private readonly _localAlertCount = signal(0);
+
   readonly currentUrl = signal(this.router.url);
-  readonly alertCount = signal(0);
+  readonly alertCount = computed(() => this.alertNotification?.alertCount() ?? this._localAlertCount());
   readonly hasAlerts = computed(() => this.alertCount() > 0);
+  readonly hasNewAlert = computed(() => this.alertNotification?.hasNewAlert() ?? false);
 
   constructor() {
     this.router.events.pipe(
@@ -175,7 +180,11 @@ export class HeaderWidget implements OnInit {
 
   private checkAlerts(): void {
     if (this.session.status() !== 'authenticated') {
-      this.alertCount.set(0);
+      this._localAlertCount.set(0);
+      return;
+    }
+    if (this.alertNotification) {
+      this.alertNotification.checkRisks();
       return;
     }
     this.apiService.getRisks().subscribe(res => {
@@ -183,9 +192,9 @@ export class HeaderWidget implements OnInit {
         const criticalOrRisky = res.items.filter(
           item => item.level === 'Critical' || item.level === 'High' || item.level === 'Critico' || item.level === 'Alto' || item.level === 'Vigilar'
         );
-        this.alertCount.set(criticalOrRisky.length > 0 ? criticalOrRisky.length : res.items.length);
+        this._localAlertCount.set(criticalOrRisky.length > 0 ? criticalOrRisky.length : res.items.length);
       } else {
-        this.alertCount.set(0);
+        this._localAlertCount.set(0);
       }
     });
   }

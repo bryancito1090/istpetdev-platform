@@ -132,7 +132,8 @@ public sealed class RoutePublisherTests(PostgisContainer postgres) : IClassFixtu
         {
             OrganizationId = DemoOrganization.Id,
             Code = "PLAN-20261012-01",
-            Revision = 1,
+            Revision = 2,
+            AlgorithmVersion = "2.0-deterministic",
             VehicleId = vehicle.Id,
             Status = "Proposed",
             PlannedStartUtc = new DateTime(2026, 10, 12, 13, 0, 0, DateTimeKind.Utc),
@@ -159,6 +160,13 @@ public sealed class RoutePublisherTests(PostgisContainer postgres) : IClassFixtu
             })
         };
         db.RoutePlans.Add(plan);
+        var competitor = new RoutePlan
+        {
+            OrganizationId = DemoOrganization.Id, Code = plan.Code, Revision = 1,
+            VehicleId = vehicle.Id, Status = "Proposed", AlgorithmVersion = plan.AlgorithmVersion,
+            PlannedStartUtc = plan.PlannedStartUtc, InputJson = "{}"
+        };
+        db.RoutePlans.Add(competitor);
 
         var stop = new RouteStop
         {
@@ -181,6 +189,7 @@ public sealed class RoutePublisherTests(PostgisContainer postgres) : IClassFixtu
         var pubResult1 = await publisher.PublishAsync(new PublishRequest(plan.Id));
 
         Assert.Equal("Published", pubResult1.Status);
+        Assert.Equal("Discarded", (await db.RoutePlans.AsNoTracking().SingleAsync(p => p.Id == competitor.Id)).Status);
         Assert.Single(pubResult1.Deliveries);
         Assert.Equal(2, pubResult1.Reservations.Count);
 

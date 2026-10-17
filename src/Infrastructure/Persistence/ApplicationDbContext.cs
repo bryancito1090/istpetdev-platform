@@ -20,6 +20,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<StockBalance> StockBalances => Set<StockBalance>();
     public DbSet<Consumption> Consumptions => Set<Consumption>();
     public DbSet<RoutePlan> RoutePlans => Set<RoutePlan>();
+    public DbSet<RoutePlanningDecision> RoutePlanningDecisions => Set<RoutePlanningDecision>();
     public DbSet<RouteStop> RouteStops => Set<RouteStop>();
     public DbSet<Delivery> Deliveries => Set<Delivery>();
     public DbSet<DeliveryLine> DeliveryLines => Set<DeliveryLine>();

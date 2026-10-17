@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthSession } from '@entities/session';
 import { FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
-import { NovedadesPage, formatBacktrack, summarizeRejections } from './novedades.page';
+import { NovedadesPage, formatBacktrack, formatOrderNumber, summarizeRejections } from './novedades.page';
 
 const receipt: ReceiptExceptionDto = {
   receiptId: 'r-1',
@@ -207,5 +207,65 @@ describe('Reentrega estimada en cada tarjeta (#237)', () => {
       { ...receipt, receiptId: 'r-none' },
     ]);
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-backtrack]')).toBeNull();
+  });
+});
+
+describe('Rediseño intuitivo y operativo (#342)', () => {
+  it('formatea números de pedido largos a una versión compacta pero conserva el original', () => {
+    expect(formatOrderNumber('ORD-o-1')).toBe('ORD-o-1');
+    const longOrder = 'ORD-DEL-SYN-NOV-V1-01-R1-02-01a14ad148cf780cb5a2b5725882672a';
+    const formatted = formatOrderNumber(longOrder);
+    expect(formatted).toContain('…');
+    expect(formatted.length).toBeLessThan(longOrder.length);
+  });
+
+  it('muestra el panel de KPIs ejecutivos con métricas consolidadas', () => {
+    const fixture = render(true, {
+      listReceiptExceptions: vi.fn(() => of({
+        items: [{
+          ...receipt,
+          estimatedBacktrack: { km: 10, costUsd: 15, hours: 0.5, isApproximate: false },
+        }],
+        total: 1,
+      })),
+      listFieldRequests: vi.fn(() => of([order('o-1', 'Pending')])),
+      cancelOrder: vi.fn(),
+    });
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Rechazos en Destino');
+    expect(text).toContain('Impacto de Reentrega');
+    expect(text).toContain('Ajustes en Percha');
+    expect(text).toContain('Pedidos en Campo');
+  });
+
+  it('permite cambiar entre pestañas operativas para filtrar la vista', () => {
+    const fixture = render(true, {
+      listReceiptExceptions: vi.fn(() => of({
+        items: [
+          { ...receipt, receiptId: 'r-rej', hasRejections: true, hasAdjustments: false },
+          { ...receipt, receiptId: 'r-adj', hasRejections: false, hasAdjustments: true },
+        ],
+        total: 2,
+      })),
+      listFieldRequests: vi.fn(() => of([order('o-1', 'Pending')])),
+      cancelOrder: vi.fn(),
+    });
+    const el = fixture.nativeElement as HTMLElement;
+    const tabButtons = Array.from(el.querySelectorAll('nav button')) as HTMLButtonElement[];
+
+    const rejectionsTab = tabButtons.find(b => b.textContent?.includes('Rechazos de entrega'))!;
+    rejectionsTab.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-receipt="r-rej"]')).not.toBeNull();
+    expect(el.querySelector('[data-receipt="r-adj"]')).toBeNull();
+
+    const ordersTab = tabButtons.find(b => b.textContent?.includes('Pedidos de reposición'))!;
+    ordersTab.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-receipt="r-rej"]')).toBeNull();
+    expect(el.querySelector('[data-order="o-1"]')).not.toBeNull();
   });
 });

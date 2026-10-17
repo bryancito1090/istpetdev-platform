@@ -1503,9 +1503,11 @@ export class DatosPage {
       tableCols: [
         { key: 'sku', label: 'SKU' },
         { key: 'name', label: 'Descripción del Producto' },
+        { key: 'presentation', label: 'Presentación' },
         { key: 'base_unit', label: 'Unidad Base' },
         { key: 'weight_per_unit', label: 'Peso Unit. (kg)' },
         { key: 'volume_per_unit', label: 'Volumen Unit. (m³)' },
+        { key: 'units_per_package', label: 'Unid. / Bulto' },
         { key: 'isActive', label: 'Activo', badge: true }
       ]
     },
@@ -1527,10 +1529,14 @@ export class DatosPage {
       csvTemplate: `code,depot_code,max_weight,max_volume,cost_per_km\n`,
       tableCols: [
         { key: 'code', label: 'Código Unidad' },
+        { key: 'plate', label: 'Placa' },
+        { key: 'vehicle_model', label: 'Marca / Modelo' },
         { key: 'depot_code', label: 'Bodega Base' },
         { key: 'max_weight', label: 'Cap. Peso (kg)' },
         { key: 'max_volume', label: 'Cap. Vol. (m³)' },
         { key: 'cost_per_km', label: 'Costo / Km ($)' },
+        { key: 'mechanical_status', label: 'Estado Mecánico' },
+        { key: 'odometer_km', label: 'Kilometraje' },
         { key: 'isActive', label: 'Operativo', badge: true }
       ]
     },
@@ -1949,9 +1955,15 @@ export class DatosPage {
       lon: 'Longitud',
       sku: 'Código SKU',
       product_name: 'Nombre del producto conforme',
+      presentation: 'Presentación',
       base_unit: 'Unidad de medida base',
       weight_per_unit: 'Peso por unidad (kg)',
       volume_per_unit: 'Volumen por unidad (m³)',
+      units_per_package: 'Unidades por Bulto',
+      plate: 'Placa / Matrícula',
+      vehicle_model: 'Marca / Modelo',
+      mechanical_status: 'Estado Mecánico',
+      odometer_km: 'Kilometraje',
       depot_code: 'Código de Bodega Base',
       max_weight: 'Capacidad máx. peso (kg)',
       max_volume: 'Capacidad máx. volumen (m³)',

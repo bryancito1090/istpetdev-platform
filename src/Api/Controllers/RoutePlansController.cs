@@ -16,7 +16,7 @@ namespace IstpetDev.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/route-plans")]
-public sealed class RoutePlansController(
+public sealed partial class RoutePlansController(
     IApplicationDbContext db,
     IRoutePlanner planner,
     IRoutePublisher publisher,
@@ -51,6 +51,8 @@ public sealed class RoutePlansController(
             query = query.Where(p => p.Status == status);
         }
 
+        if (string.IsNullOrWhiteSpace(status)) query = query.Where(p => p.Status != RouteProposalAcceptance.Discarded);
+
         if (date.HasValue)
         {
             var startUtc = date.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
@@ -58,7 +60,9 @@ public sealed class RoutePlansController(
             query = query.Where(p => p.PlannedStartUtc >= startUtc && p.PlannedStartUtc <= endUtc);
         }
 
-        var vehicles = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id).ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+        var vehiclesList = await db.Vehicles.AsNoTracking().Where(v => v.OrganizationId == DemoOrganization.Id).ToListAsync(ct);
+        var vehicles = vehiclesList.ToDictionary(v => v.Id, v => v.Code);
+        var vehicleDetails = vehiclesList.ToDictionary(v => v.Id, v => ExtractVehicleDetails(v));
 
         if (!string.IsNullOrWhiteSpace(vehicleCode))
         {
@@ -122,6 +126,10 @@ public sealed class RoutePlansController(
                 status = p.Status,
                 vehicleId = p.VehicleId,
                 vehicleCode = vehicles.GetValueOrDefault(p.VehicleId, ""),
+                vehiclePlate = vehicleDetails.TryGetValue(p.VehicleId, out var vd) ? vd.Plate : "",
+                vehicleModel = vd.Model,
+                vehicleDescription = vd.Description,
+                vehicleMechanicalStatus = vd.Status,
                 driverAccountId = planDrivers.Count == 1 ? planDrivers[0].Id : (Guid?)null,
                 driverName = string.Join(", ", planDrivers.Select(d => d.Name)),
                 km = p.TotalKm ?? 0m,
@@ -130,6 +138,7 @@ public sealed class RoutePlansController(
                 totalDurationMinutes = p.TotalMinutes ?? 0m,
                 cost = p.TotalCost,
                 totalCost = p.TotalCost,
+                planningDecisionId = ReadPlanningDecisionId(p.InputJson),
                 costStatus = recStatus ?? (p.TotalCost.HasValue ? "estimated" : "unknown"),
                 reconciledCost = recCost,
                 reconciledExecution = recExec,
@@ -531,11 +540,16 @@ public sealed class RoutePlansController(
         {
             routePlanId = plan.Id,
             id = plan.Id,
+            planningDecisionId = ReadPlanningDecisionId(plan.InputJson),
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
             vehicleId = plan.VehicleId,
             vehicleCode = vehicle?.Code ?? "",
+            vehiclePlate = ExtractVehicleDetails(vehicle).Plate,
+            vehicleModel = ExtractVehicleDetails(vehicle).Model,
+            vehicleDescription = ExtractVehicleDetails(vehicle).Description,
+            vehicleMechanicalStatus = ExtractVehicleDetails(vehicle).Status,
             originWarehouseCode = origin?.Code ?? "",
             originWarehouseName = origin?.Name ?? "",
             driverAccountId = drivers.Count == 1 ? drivers[0].Id : (Guid?)null,
@@ -585,6 +599,7 @@ public sealed class RoutePlansController(
         var agentRunId = await GetAgentRunIdAsync("Watch", ct);
 
         // Guardar cada ruta como un RoutePlan con estado Proposed
+        var proposalBatchId = Guid.NewGuid();
         var createdPlans = new List<RoutePlan>();
         var agentDecisions = new Dictionary<Guid, Guid>();
         foreach (var r in result.Routes)
@@ -614,6 +629,7 @@ public sealed class RoutePlansController(
                 AlgorithmVersion = "2.0-deterministic",
                 InputJson = JsonSerializer.Serialize(new
                 {
+                    proposalBatchId,
                     stops = r.Stops.Select(s => new
                     {
                         sequence = s.Sequence,
@@ -737,6 +753,9 @@ public sealed class RoutePlansController(
     [RetryableOperation("PublishRoutePlan")]
     public async Task<IActionResult> Publish([FromRoute] Guid id, [FromBody] PublishRequest? req = null, CancellationToken ct = default)
     {
+        var groupedPlan = await db.RoutePlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id && p.OrganizationId == DemoOrganization.Id, ct);
+        if (ReadPlanningDecisionId(groupedPlan?.InputJson) is not null)
+            return Conflict(new { message = "Esta ruta pertenece a una alternativa aceptada. Publica el conjunto desde su cálculo para conservar todas sus rutas." });
         var request = new PublishRequest(id, req?.DriverAssignments, User.AccountId());
         try
         {
@@ -871,6 +890,9 @@ public sealed class RoutePlansController(
     [HttpPost("suggest")]
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> SuggestRoutes([FromBody] SuggestRoutesRequest req, CancellationToken ct = default)
+        => await BuildSuggestionAsync(req, ct);
+
+    private async Task<IActionResult> BuildSuggestionAsync(SuggestRoutesRequest req, CancellationToken ct)
     {
         if (req == null || req.OrderIds == null || req.OrderIds.Count == 0)
         {
@@ -881,6 +903,24 @@ public sealed class RoutePlansController(
         var orders = await db.DeliveryOrders
             .Where(o => o.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, ct);
+
+        // La lista del cliente puede ser anterior a una aceptación en otra sesión.
+        // Revisar el saldo del pedido antes de calcular abastecimiento o crear propuestas.
+        var orderLines = await db.DeliveryOrderLines.AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && req.OrderIds.Contains(l.DeliveryOrderId))
+            .ToListAsync(ct);
+        var assigned = orders.Values.Where(o => o.Status is DeliveryOrderStatus.Planned or DeliveryOrderStatus.Dispatched or DeliveryOrderStatus.Delivered
+                || orderLines.Any(l => l.DeliveryOrderId == o.Id && (l.PlannedQuantity > 0 || l.DeliveredQuantity > 0)))
+            .Select(o => new { orderId = o.Id, orderNumber = o.OrderNumber,
+                hasPendingQuantity = o.Status != DeliveryOrderStatus.Delivered && o.Status != DeliveryOrderStatus.Cancelled
+                    && orderLines.Any(l => l.DeliveryOrderId == o.Id && l.RequestedQuantity > l.PlannedQuantity + l.DeliveredQuantity) })
+            .ToList();
+        if (assigned.Count > 0 && (!req.PlanRemainingOnly || assigned.Any(o => !o.hasPendingQuantity)))
+            return Conflict(new { code = "orders_already_assigned",
+                message = "Hay pedidos que ya tienen una ruta asignada o entregas realizadas. Revisa sus rutas antes de calcular otra propuesta. "
+                    + (assigned.Any(o => !o.hasPendingQuantity) ? "Retira los pedidos que ya están cubiertos de la selección."
+                        : "Si necesitas otra ruta, elige expresamente calcular solo las cantidades pendientes."),
+                assignedOrders = assigned });
 
         var sourcingOptions = await sourcingService.PlanSourcingAsync(req.OrderIds, ct);
         var today = req.PlannedDate ?? await clock.TodayAsync(ct);
@@ -1208,19 +1248,70 @@ public sealed class RoutePlansController(
                     distanceToFirstPickupKm = bestVehicleMatch.DistanceToFirstPickupKm
                 } : null;
 
-                var vehicleMatchesDto = vehicleMatches.Select(m => new
+                var sortedMatches = vehicleMatches
+                    .OrderByDescending(m => m.IsMatch)
+                    .ThenByDescending(m => {
+                        if (!string.IsNullOrWhiteSpace(m.Vehicle.MetadataJson) && m.Vehicle.MetadataJson.Contains("electrico", StringComparison.OrdinalIgnoreCase)) return 2;
+                        return 1;
+                    })
+                    .ThenBy(m => m.DistanceToFirstPickupKm)
+                    .ThenBy(m => m.EstimatedTotalCost)
+                    .ToList();
+
+                var bestMatchId = sortedMatches.FirstOrDefault(m => m.IsMatch)?.Vehicle.Id;
+
+                var vehicleMatchesDto = sortedMatches.Select(m =>
                 {
-                    vehicleId = m.Vehicle.Id,
-                    vehicleCode = m.Vehicle.Code,
-                    maxWeight = m.Vehicle.MaxWeight,
-                    maxVolume = m.Vehicle.MaxVolume,
-                    isMatch = m.IsMatch,
-                    discardReason = m.DiscardReason,
-                    warnings = m.Warnings,
-                    weightUtilizationPct = m.WeightUtilizationPct,
-                    volumeUtilizationPct = m.VolumeUtilizationPct,
-                    estimatedCost = m.EstimatedTotalCost,
-                    distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+                    var vDetails = ExtractVehicleDetails(m.Vehicle);
+                    string fuel = "";
+                    string vType = "";
+                    string usageScope = "";
+                    string picoYPlaca = "";
+                    int autonomyKm = 0;
+
+                    if (!string.IsNullOrWhiteSpace(m.Vehicle.MetadataJson))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(m.Vehicle.MetadataJson);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("combustible", out var c)) fuel = c.GetString() ?? "";
+                            if (root.TryGetProperty("vehicle_type", out var vt)) vType = vt.GetString() ?? "";
+                            if (root.TryGetProperty("usage_scope", out var us)) usageScope = us.GetString() ?? "";
+                            if (root.TryGetProperty("pico_y_placa_dia", out var pyp)) picoYPlaca = pyp.GetString() ?? "";
+                            if (root.TryGetProperty("autonomia_km", out var a) && int.TryParse(a.GetString(), out var aVal)) autonomyKm = aVal;
+                        }
+                        catch { }
+                    }
+
+                    bool isElectric = fuel.Equals("electrico", StringComparison.OrdinalIgnoreCase);
+                    bool isRecommended = m.IsMatch && m.Vehicle.Id == bestMatchId;
+
+                    return new
+                    {
+                        vehicleId = m.Vehicle.Id,
+                        vehicleCode = m.Vehicle.Code,
+                        vehiclePlate = vDetails.Plate,
+                        vehicleModel = vDetails.Model,
+                        vehicleDescription = vDetails.Description,
+                        vehicleMechanicalStatus = vDetails.Status,
+                        fuelType = fuel,
+                        isElectric,
+                        vehicleType = vType,
+                        usageScope,
+                        autonomyKm,
+                        picoYPlacaDia = picoYPlaca,
+                        maxWeight = m.Vehicle.MaxWeight,
+                        maxVolume = m.Vehicle.MaxVolume,
+                        isMatch = m.IsMatch,
+                        isRecommended,
+                        discardReason = m.DiscardReason,
+                        warnings = m.Warnings,
+                        weightUtilizationPct = m.WeightUtilizationPct,
+                        volumeUtilizationPct = m.VolumeUtilizationPct,
+                        estimatedCost = m.EstimatedTotalCost,
+                        distanceToFirstPickupKm = m.DistanceToFirstPickupKm
+                    };
                 }).ToList();
 
                 evaluatedOptions.Add(new EvaluatedOptionDto(
@@ -1386,6 +1477,9 @@ public sealed class RoutePlansController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     [RetryableOperation("ConfirmRoutePlan")]
     public async Task<IActionResult> ConfirmRoutePlan([FromBody] ConfirmRoutePlanRequest req, CancellationToken ct = default)
+        => await ConfirmRoutePlanCoreAsync(req, ct);
+
+    private async Task<IActionResult> ConfirmRoutePlanCoreAsync(ConfirmRoutePlanRequest req, CancellationToken ct, bool preservePickupLoads = false)
     {
         if (req == null || req.Stops == null || req.Stops.Count == 0)
         {
@@ -1563,7 +1657,7 @@ public sealed class RoutePlansController(
 
         // Si hay paradas de pickup, asignarles la carga total a recoger si supera lo enviado.
         // #199: con pedidos, la recogida es exactamente lo planificado (no el total que envía el panel).
-        for (int i = 0; i < stopsToEvaluate.Count; i++)
+        for (int i = 0; !preservePickupLoads && i < stopsToEvaluate.Count; i++)
         {
             if (stopsToEvaluate[i].Kind == RouteStopKind.Pickup)
             {
@@ -2374,6 +2468,13 @@ public sealed class RoutePlansController(
         return result.OrderBy(t => t.TripDate).ToList();
     }
 
+    private static Guid? ReadPlanningDecisionId(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonNode.Parse(json)?["planningDecisionId"]?.GetValue<Guid>(); }
+        catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException) { return null; }
+    }
+
     private static void ExtractReconciledInfo(string? inputJson, out decimal? reconciledCost, out object? reconciledExecution, out string? reconciledCostStatus)
     {
         reconciledCost = null;
@@ -2402,6 +2503,36 @@ public sealed class RoutePlansController(
             // Ignore JSON parse errors
         }
     }
+
+    private static (string Plate, string Model, string Description, string Status) ExtractVehicleDetails(Vehicle? vehicle)
+    {
+        if (vehicle == null) return ("", "", "", "");
+        string plate = "";
+        string model = "";
+        string status = "";
+        if (!string.IsNullOrWhiteSpace(vehicle.MetadataJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(vehicle.MetadataJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("matricula", out var p)) plate = p.GetString() ?? "";
+                if (root.TryGetProperty("modelo", out var m)) model = m.GetString() ?? "";
+                if (root.TryGetProperty("marca", out var b))
+                {
+                    var brand = b.GetString() ?? "";
+                    if (!string.IsNullOrWhiteSpace(brand))
+                        model = string.IsNullOrWhiteSpace(model) ? brand : $"{brand} {model}";
+                }
+                if (root.TryGetProperty("estado_mecanico", out var s)) status = s.GetString() ?? "";
+            }
+            catch { }
+        }
+        string desc = !string.IsNullOrWhiteSpace(model)
+            ? (!string.IsNullOrWhiteSpace(plate) ? $"{model} ({plate})" : model)
+            : (!string.IsNullOrWhiteSpace(plate) ? $"{vehicle.Code} ({plate})" : vehicle.Code);
+        return (plate, model, desc, status);
+    }
 }
 
 public sealed record ReplanRequestInput(Guid IncidentId);
@@ -2412,7 +2543,8 @@ public sealed record SuggestRoutesRequest(
     string? RequestId = null,
     string? CriticalDeadlineLocal = null,
     string? OptionId = null,
-    bool? IncludeAlternatives = null
+    bool? IncludeAlternatives = null,
+    bool PlanRemainingOnly = false
 );
 
 public sealed record EvaluateRouteRequest(

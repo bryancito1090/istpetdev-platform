@@ -55,7 +55,8 @@ public sealed record HandlingUnitLineDto(
     Guid LotId,
     string Sku,
     decimal Quantity,
-    string Unit);
+    string Unit,
+    string Name = "");
 
 public sealed record HandlingUnitResponse(
     Guid HandlingUnitId,
@@ -265,16 +266,49 @@ public sealed record DeliveryDetailResponse(
 
 public sealed record DemoAdvanceRequest(
     Guid OperationId,
-    int Stops);
+    int Stops = 0,
+    string? Mode = null,
+    bool WithIncidents = false,
+    double? NoveltyRate = null);
 
 public sealed record CompletedStopDto(
     int Sequence,
     Guid DeliveryId,
     Guid ReceiptId,
-    DateTime AcceptedAtUtc);
+    DateTime AcceptedAtUtc,
+    bool HadIncidents = false,
+    decimal? QuantityRejected = null,
+    string? RejectionReason = null);
 
 public sealed record DemoAdvanceResponse(
-    IReadOnlyList<CompletedStopDto> CompletedStops);
+    IReadOnlyList<CompletedStopDto> CompletedStops,
+    string? CheckpointCompleted = null,
+    string? NextCheckpoint = null,
+    int TotalStops = 0,
+    int CompletedStopsCount = 0,
+    string Status = "Published");
+
+public sealed record TodayRouteStopDto(
+    Guid StopId,
+    int SequenceNumber,
+    string Kind,
+    string PointName,
+    string Status,
+    DateTime? PlannedArrivalUtc,
+    DateTime? ActualArrivalUtc);
+
+public sealed record TodayRoutePlanDto(
+    Guid RoutePlanId,
+    string Code,
+    string VehicleCode,
+    string? DriverName,
+    Guid? DriverAccountId,
+    string Status,
+    int TotalStops,
+    int CompletedStops,
+    string NextCheckpoint,
+    DateTime PlannedStartUtc,
+    IReadOnlyList<TodayRouteStopDto> Stops);
 
 // ==========================================
 // T7: Public & Operative Trace

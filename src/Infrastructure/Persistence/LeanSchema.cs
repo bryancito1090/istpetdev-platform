@@ -40,6 +40,11 @@ internal static class LeanSchema
             e.Property(p => p.Position).HasColumnType(PointType);
             Fk<ServicePoint, Location>(e, p => p.ServingWarehouseLocationId);
         });
+        model.Entity<RoutePlanningDecision>(e =>
+        {
+            e.HasIndex(d => new { d.OrganizationId, d.CreatedByAccountId, d.CreatedAtUtc });
+            Fk<RoutePlanningDecision, Account>(e, d => d.CreatedByAccountId);
+        });
         model.Entity<Location>(e =>
         {
             e.HasIndex(l => new { l.OrganizationId, l.Kind, l.Code }).IsUnique();
@@ -50,9 +55,14 @@ internal static class LeanSchema
         model.Entity<Vehicle>(e =>
         {
             e.HasIndex(v => new { v.OrganizationId, v.Code }).IsUnique();
+            e.Property(v => v.MetadataJson).HasColumnType("jsonb");
             Fk<Vehicle, Location>(e, v => v.DepotLocationId);
         });
-        model.Entity<Product>(e => e.HasIndex(p => new { p.OrganizationId, p.Sku }).IsUnique());
+        model.Entity<Product>(e =>
+        {
+            e.HasIndex(p => new { p.OrganizationId, p.Sku }).IsUnique();
+            e.Property(p => p.MetadataJson).HasColumnType("jsonb");
+        });
         model.Entity<Lot>(e =>
         {
             e.HasIndex(l => new { l.ProductId, l.Code }).IsUnique();

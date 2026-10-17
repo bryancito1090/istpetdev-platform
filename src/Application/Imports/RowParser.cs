@@ -1,6 +1,10 @@
 namespace IstpetDev.Application.Imports;
 
-public sealed record ParsedRow(int Row, IReadOnlyDictionary<string, object?> Values, IReadOnlySet<string>? SuppliedFields = null)
+public sealed record ParsedRow(
+    int Row,
+    IReadOnlyDictionary<string, object?> Values,
+    IReadOnlySet<string>? SuppliedFields = null,
+    IReadOnlyDictionary<string, string>? RawRow = null)
 {
     public string? Text(string field) => Values.GetValueOrDefault(field) as string;
     public decimal? Decimal(string field) => Values.GetValueOrDefault(field) as decimal?;
@@ -94,7 +98,7 @@ public static class RowParser
                 values[field.Name] = value;
             }
             if (valid) valid = RowRules.Check(entity, rowNumber, values, report);
-            if (valid) rows.Add(new ParsedRow(rowNumber, values, supplied));
+            if (valid) rows.Add(new ParsedRow(rowNumber, values, supplied, table.Rows[i]));
             else entityReport.Skipped++;
         }
         return rows;

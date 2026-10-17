@@ -10,4 +10,5 @@ export * from './public-trace/public-trace.page';
 export * from './users/users.page';
 export * from './simulation/simulation.page';
 export * from './guias-retorno/guia-retorno.page';
+export * from './reportes/reportes.page';
 
