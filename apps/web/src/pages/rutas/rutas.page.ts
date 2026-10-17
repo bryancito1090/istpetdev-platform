@@ -531,7 +531,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <a 
               routerLink="/alertas" 
               class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] text-[#2D3748] hover:bg-[#F1F3F5] transition-colors shadow-2xs">
-              Ver alertas pendientes
+              Ver riesgos de cobertura
             </a>
           </div>
         </div>
