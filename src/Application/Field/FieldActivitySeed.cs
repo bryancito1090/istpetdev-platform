@@ -178,7 +178,7 @@ public sealed class FieldActivitySeed(IApplicationDbContext db, IFieldService fi
     {
         var actor = await db.Accounts.SingleOrDefaultAsync(a => a.OrganizationId == DemoOrganization.Id && a.Issuer == ActorIssuer && a.Subject == subject, ct);
         if (actor is not null) return actor;
-        actor = new Account { OrganizationId = DemoOrganization.Id, Kind = "technical", Issuer = ActorIssuer, Subject = subject,
+        actor = new Account { OrganizationId = DemoOrganization.Id, Kind = "human", Issuer = ActorIssuer, Subject = subject,
             DisplayName = "[Demo sintética] " + role, Role = role, IsActive = true };
         db.Accounts.Add(actor); return actor;
     }

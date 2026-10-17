@@ -795,7 +795,7 @@ public sealed partial class RoutePlansController(
                         revision = plan.Revision,
                         facts = routeFacts
                     }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true }),
-                    Rationale = templates.Explain("plan", routeFacts),
+                    Rationale = templates.Explain("plan", routeFacts.OrderByDescending(f => string.Equals(f.Subject, r.VehicleCode, StringComparison.OrdinalIgnoreCase)).ToList()),
                     CorrelationId = agentRunId.Value,
                     CreatedAtUtc = DateTime.UtcNow
                 };

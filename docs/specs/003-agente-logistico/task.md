@@ -1086,3 +1086,20 @@ Estado: código y pruebas locales completados; listo para integración vía PR a
 - [ ] PR a `develop`, verificación de CI remoto, aprobación, merge y cierre de #361.
 
 Estado: código y pruebas locales completados; sin despliegue a producción.
+## Issue #362 — compactación de contexto n8n en vigía/incidente y sincronización productiva — 17-oct-2026
+
+- [x] Diagnóstico de la ejecución `01a14b59-898b-7388-b32a-3b913d3f19ab` (`n8nExecutionId: 348`, `status: Fallback`, `fallbackReason: timeout`, `latencyMs: 10781`):
+  - La instancia remota de n8n (`https://n8n.bryan-bano.com`) conservaba una versión previa de `vigia` (`HO5zltuyBMATIwLT`) e `incidente` (`u5l4WnjD2sPhhvEb`) con `Register Execution` antes de `Respond Accepted` y el prompt anterior a `#291`, provocando 12 llamadas a `find_stock` y dejando `< 2200 ms` al llegar a `propose_routes` (`deadline_too_short`).
+  - Adicionalmente, sobre el dataset `demo-quito-planificacion` (40 puntos, 12 productos, 212 ítems en riesgo, 6 vehículos), `AI Agent` (`83.5 KB`), `Return Sourcing` en `plan_sourcing` (`399.7 KB` por duplicar 212 líneas en `demands` y en las 3 opciones `A`/`B`/`C`) y `Return Proposals` en `propose_routes` (`27.2 KB` por incluir todas las cargas sin pendiente en cada parada y duplicar facts por vehículo) acumulaban `192,653` tokens de entrada hacia DeepSeek (ejecución `331`, `13.0 s`).
+  - En el respaldo determinista (`RoutePlansController` y `AgentRunService`), `Explain("plan", ...)` tomaba el primer `route_km`/`route_cost` global (`VEH-0001`: `3.24 km` y `2.66 USD`) para todos los vehículos.
+- [x] Código:
+  - En `automation/n8n/templates/{vigia,incidente}.template.json` y `automation/n8n/workflows/{vigia,incidente}.json`: compactar `initialContext` en `AI Agent` (`totalItems` + hasta 15 ítems proyectados; `plan_sourcing` sigue leyendo todos los puntos autenticados desde `Load Initial Context`), compactar `Return Sourcing` (`totalDemands` + hasta 12 demandas priorizando faltantes y opciones sin duplicar `lines`) y compactar `Return Proposals` (conservar `loads` solo en entregas parciales `pendingQuantity > 0` y no duplicar facts por vehículo en el nivel raíz), manteniendo el escape `\u007b`/`\u007d` en literales `workflowJson`.
+  - En `src/Api/Controllers/RoutePlansController.cs` y `src/Application/Agent/AgentRunService.cs`: priorizar los facts cuyo `Subject` coincide con `VehicleCode` al construir la explicación determinista de respaldo por ruta.
+  - En `tests/scripts/test_workflow_context.py`: agregar prueba de regresión `test_watch_context_sourcing_and_proposals_compact_large_datasets`.
+- [x] Pruebas locales y prelaunch (`istpetdev-prelaunch`):
+  - Suites Python `tests/scripts/test_*.py` (9 archivos, incluido `test_workflow_context.py` 14/14), `build-workflows.py --check`, `check_vault.py` (0 errores) y pruebas unitarias .NET (`WorkflowSecretsTests`, `N8nTriggerTests`, 13/13) en verde.
+  - Revisión prelaunch: sin cambios de esquema BD ni grants (ADR-21 intacto), sin secretos ni credenciales literales en Git, respaldos de workflows remotos guardados fuera del repositorio (`~/.config/istpetdev/private/n8n-backup-20261017-362.json`, `0600`).
+- [x] Sincronización y ejecución real en producción:
+  - Actualizados y activados `vigia` (`HO5zltuyBMATIwLT`, `versionId: c1ce8b3f-f0fa-45ca-9be1-0cd6e47806f4`) e `incidente` (`u5l4WnjD2sPhhvEb`, `versionId: 383eebb8-33cd-4279-a1e2-f180b7423a53`) en `https://n8n.bryan-bano.com` con mapeo de credenciales remotas (`mZiC4AJxPhcKtANv`, `5aBicMrj0xaH7Nfl`, `qlGTGdlXrYdYCVU2`).
+  - Corrida real `Watch` en producción (`https://istpetdev.doicela.dev/api/v1/agent/runs`): `runId: 01a14b76-533b-787b-b682-cb48fe2af347`, `n8nExecutionId: 367`, `status: Completed`, `model: deepseek-chat`, `promptVersion: v2`, `latencyMs: 6022`, **6/6 decisiones de vehículo con `explanationSource: Llm`** (`VEH-0001`, `VEH-0003`, `VEH-0004`, `VEH-0006`, `VEH-0007`, `VEH-0009`).
+- [ ] Integración vía PR a `develop`, cierre de `#362` y promoción `develop` → `main`.
