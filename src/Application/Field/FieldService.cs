@@ -127,10 +127,12 @@ public sealed class FieldService : IFieldService
             lots.TryGetValue(reqLine.LotId, out var lot);
             var sku = "MED-001";
             var unit = "U";
+            var name = "";
             if (lot != null && products.TryGetValue(lot.ProductId, out var product))
             {
                 sku = product.Sku;
                 unit = product.BaseUnit;
+                name = product.Name;
             }
 
             responseLines.Add(new HandlingUnitLineDto(
@@ -138,7 +140,8 @@ public sealed class FieldService : IFieldService
                 reqLine.LotId,
                 sku,
                 reqLine.Quantity,
-                unit));
+                unit,
+                name));
         }
 
         var existingHuCount = await _db.HandlingUnits
@@ -1198,12 +1201,14 @@ public sealed class FieldService : IFieldService
         {
             var sku = "MED-001";
             var unit = "U";
+            var name = "";
             if (assignmentLots.TryGetValue(line.LotId, out var lot) && assignmentProducts.TryGetValue(lot.ProductId, out var product))
             {
                 sku = product.Sku;
                 unit = product.BaseUnit;
+                name = product.Name;
             }
-            return new HandlingUnitLineDto(line.DeliveryLineId ?? Guid.Empty, line.LotId, sku, line.Quantity, unit);
+            return new HandlingUnitLineDto(line.DeliveryLineId ?? Guid.Empty, line.LotId, sku, line.Quantity, unit, name);
         }
 
         var routes = new List<MobileAssignmentRoute>();
@@ -1584,12 +1589,14 @@ public sealed class FieldService : IFieldService
         {
             var sku = "MED-001";
             var unit = "U";
+            var name = "";
             if (lots.TryGetValue(l.LotId, out var lot) && products.TryGetValue(lot.ProductId, out var prod))
             {
                 sku = prod.Sku;
                 unit = prod.BaseUnit;
+                name = prod.Name;
             }
-            return new HandlingUnitLineDto(l.DeliveryLineId ?? Guid.Empty, l.LotId, sku, l.Quantity, unit);
+            return new HandlingUnitLineDto(l.DeliveryLineId ?? Guid.Empty, l.LotId, sku, l.Quantity, unit, name);
         }).ToList();
 
         var events = await _db.CustodyEvents

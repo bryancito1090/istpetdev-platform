@@ -20,7 +20,9 @@ import {
   DemoAdvanceRequest,
   DemoAdvanceResponse,
   PublicTraceUnitDto,
-  TodayRoutePlanDto
+  TodayRoutePlanDto,
+  ReportIncidentRequest,
+  ReportIncidentResponse
 } from '@istpetdev/shared-core';
 import { environment } from '../config/environment';
 import { IFieldApi, ReceiverUnit } from './field-api.interface';
@@ -110,6 +112,10 @@ export class HttpFieldApiService implements IFieldApi {
 
   confirmEvidence(evidenceId: string, req: EvidenceConfirmRequest): Observable<EvidenceConfirmResponse> {
     return this.http.post<EvidenceConfirmResponse>(`${this.baseUrl}/api/v1/evidence/${evidenceId}/confirm`, req);
+  }
+
+  reportIncident(req: ReportIncidentRequest): Observable<ReportIncidentResponse> {
+    return this.http.post<ReportIncidentResponse>(`${this.baseUrl}/api/v1/incidents`, req);
   }
 
   getPublicTrace(unitId: string, token: string): Observable<PublicTraceUnitDto> {

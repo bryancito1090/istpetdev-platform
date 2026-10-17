@@ -211,7 +211,9 @@ public class ReplanAssistantRouteTests(PostgisContainer postgres) : IClassFixtur
             // La entrega pendiente es la misma (no se recrea) y ahora apunta a la parada de la revisión.
             var delivery = await db.Deliveries.SingleAsync(d => d.Id == pendingDeliveryId);
             Assert.Equal(stops[2].Id, delivery.RouteStopId);
-            Assert.Contains(delivery.Status, new[] { DeliveryStates.Draft, DeliveryStates.Dispatched });
+            // La simulación prepara/despacha toda la carga antes de recorrer las paradas (#320).
+            // Replanificar conserva ese despacho y la entrega existente.
+            Assert.Equal(DeliveryStates.Dispatched, delivery.Status);
             // Sale de la última parada hecha (IND-S13), no de la bodega: la llegada a EDU-S10 es posterior a esa entrega.
             Assert.True(stops[2].PlannedArrivalUtc > stops[1].ActualArrivalUtc);
         }

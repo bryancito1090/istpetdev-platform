@@ -153,7 +153,7 @@ type CustodyStage = 'WaitingWarehouse' | 'ToPickup' | 'ToDeliver' | 'Delivered' 
                   <div class="mt-1 pt-1.5 border-t border-slate-200/60 space-y-1">
                     @for (l of hu.lines; track l.deliveryLineId) {
                       <div class="product-row">
-                        <span class="product-name">• SKU: {{ l.sku }}</span>
+                        <span class="product-name">• {{ l.name || ('SKU: ' + l.sku) }}</span>
                         <span class="product-qty">{{ l.quantity }} {{ l.unit }}</span>
                       </div>
                     }
