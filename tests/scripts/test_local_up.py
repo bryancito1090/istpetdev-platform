@@ -51,11 +51,17 @@ from pathlib import Path
 args = sys.argv[1:]
 server_id = os.environ.get('EXISTING_ERROR_ID') or 'a1130000-0000-4000-8000-000000000001'
 if 'export:workflow' in args:
-    print(json.dumps([{'name': 'IstpetDev Agent - error', 'id': server_id}] if os.environ.get('EXISTING_ERROR_ID') else []))
+    if os.environ.get('EXISTING_ERROR_ID'):
+        print(json.dumps([{'name': 'IstpetDev Agent - error', 'id': server_id}]))
+    else:
+        print('There are no workflows to export', file=sys.stderr)
+        sys.exit(1)
 elif 'node' in args:
     Path(os.environ['GENERATED_ID_FILE']).touch()
     print(server_id)
 elif args[0] == 'cp':
+    if os.environ.get('SIMULATE_MSYS') == '1':
+        assert os.environ.get('MSYS_NO_PATHCONV') == '1', 'MSYS_NO_PATHCONV missing'
     workflows = [json.loads(path.read_text()) for path in Path(args[1]).glob('*.json')]
     error = next(w for w in workflows if w['name'] == 'IstpetDev Agent - error')
     assert error['id'] == server_id
@@ -73,6 +79,14 @@ elif 'import:workflow' in args and os.environ['FAIL_IMPORT'] == '1':
 """
             )
             (mock_bin / "curl").write_text("#!/bin/sh\nexit 0\n")
+            real_uname = shutil.which("uname") or "/bin/uname"
+            (mock_bin / "uname").write_text(
+                '#!/bin/sh\nif [ "${SIMULATE_MSYS:-0}" = 1 ]; then echo MINGW64_NT-10.0; '
+                f'else exec {shlex.quote(real_uname)} "$@"; fi\n'
+            )
+            (mock_bin / "cygpath").write_text(
+                '#!/bin/sh\n[ "$1" = "-w" ] && shift\nprintf "%s\\n" "$1"\n'
+            )
             # The final HTTP readiness probe is covered by the real n8n E2E test.
             (mock_bin / "python3").write_text(
                 '#!/bin/sh\nif [ "$#" = 1 ] && [ "$1" = - ]; then cat >/dev/null; exit 0; fi\n'
@@ -82,8 +96,10 @@ elif 'import:workflow' in args and os.environ['FAIL_IMPORT'] == '1':
                 path.chmod(0o700)
             temporary = repo / "temporary"
             temporary.mkdir()
-            for existing_id, fail_import in product(("", "server-existing-error-113"), (True, False)):
-                with self.subTest(existing_id=bool(existing_id), fail_import=fail_import):
+            for existing_id, fail_import, simulate_msys in product(
+                ("", "server-existing-error-113"), (True, False), (True, False)
+            ):
+                with self.subTest(existing_id=bool(existing_id), fail_import=fail_import, simulate_msys=simulate_msys):
                     generated = repo / "generated-id"
                     generated.unlink(missing_ok=True)
                     check = repo / "import-check.json"
@@ -95,7 +111,8 @@ elif 'import:workflow' in args and os.environ['FAIL_IMPORT'] == '1':
                         env={**os.environ, "PATH": f"{mock_bin}:{os.environ['PATH']}",
                              "TMPDIR": str(temporary), "EXISTING_ERROR_ID": existing_id,
                              "GENERATED_ID_FILE": str(generated), "IMPORT_CHECK_FILE": str(check),
-                             "PUBLISHED_ID_FILE": str(published), "FAIL_IMPORT": "1" if fail_import else "0"},
+                             "PUBLISHED_ID_FILE": str(published), "FAIL_IMPORT": "1" if fail_import else "0",
+                             "SIMULATE_MSYS": "1" if simulate_msys else "0"},
                     )
                     self.assertEqual(42 if fail_import else 0, result.returncode, result.stderr)
                     self.assertEqual({"linked": 4}, json.loads(check.read_text()))

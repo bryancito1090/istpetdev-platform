@@ -24,6 +24,8 @@ Los comandos `npm run docker:up`, `docker:down` y `docker:reset` usan el Compose
 
 El script valida las variables, importa las credenciales desde un temporal que elimina al salir, genera e importa los workflows versionados y los publica en la instancia local. **Interfaz web de n8n:** [http://localhost:5678](http://localhost:5678).
 
+En Windows (Git Bash) configura `ISTPETDEV_API_BASE_URL=http://host.docker.internal:5000/api/v1`; en Linux usa el gateway del bridge (por ejemplo, `http://172.18.0.1:5000/api/v1`). Ver el [README del agente](../scripts/agent/README.md).
+
 ### 1.3. Levantar la API Backend (.NET 8)
 ```bash
 # Opción A: Desde npm en la raíz
