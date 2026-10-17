@@ -389,25 +389,32 @@ public sealed class RoutePlanner(
             if (!vehicles.TryGetValue(prefix.VehicleCode, out var vehicle))
                 throw new InvalidOperationException("El vehículo del prefijo no existe o está inactivo.");
             var depotPos = DepotOf(vehicle, warehouseLocations) ?? defaultDepotPos;
-            var published = await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id &&
-                    p.VehicleId == vehicle.Id && p.Status == "Published")
-                .OrderByDescending(p => p.Revision).ThenByDescending(p => p.CreatedAtUtc).FirstAsync(ct);
+            // #300: se replanifica el plan indicado; antes se tomaba la última ruta publicada del vehículo.
+            var published = prefix.RoutePlanId is { } routePlanId
+                ? await db.RoutePlans.FirstAsync(p => p.OrganizationId == DemoOrganization.Id && p.Id == routePlanId, ct)
+                : await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id &&
+                        p.VehicleId == vehicle.Id && p.Status == "Published")
+                    .OrderByDescending(p => p.Revision).ThenByDescending(p => p.CreatedAtUtc).FirstAsync(ct);
             using var stored = JsonDocument.Parse(published.InputJson);
-            var loads = stored.RootElement.GetProperty("stops").EnumerateArray().ToDictionary(
-                s => s.GetProperty("pointCode").GetString()!,
-                s => JsonSerializer.Deserialize<List<StopLoad>>(s.GetProperty("loads").GetRawText(),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!);
-            var consolidationCodes = stored.RootElement.GetProperty("stops").EnumerateArray()
-                .Where(s => s.TryGetProperty("isConsolidation", out var value) && value.ValueKind == JsonValueKind.True)
-                .Select(s => s.GetProperty("pointCode").GetString()!).ToHashSet();
-            var previousLegs = stored.RootElement.TryGetProperty("legs", out var savedLegs)
+            // #300: el asistente guarda "code" en vez de "pointCode" e incluye recogidas en bodega, que no se reoptimizan.
+            var storedStops = StoredServiceStops(stored.RootElement);
+            var loads = new Dictionary<string, List<StopLoad>>();
+            foreach (var (code, element) in storedStops) loads.TryAdd(code, StoredLoads(element));
+            var consolidationCodes = storedStops
+                .Where(s => s.Element.TryGetProperty("isConsolidation", out var value) && value.ValueKind == JsonValueKind.True)
+                .Select(s => s.Code).ToHashSet();
+            var previousLegs = stored.RootElement.TryGetProperty("legs", out var savedLegs) && savedLegs.ValueKind == JsonValueKind.Array
                 ? JsonSerializer.Deserialize<List<Leg>>(savedLegs.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!
                 : new List<Leg>();
-            var completedLegs = previousLegs.Take(prefix.CompletedPointCodes.Count).ToList();
+            var completedStopCount = prefix.CompletedStopCount ?? prefix.CompletedPointCodes.Count;
+            var completedLegs = previousLegs.Take(completedStopCount).ToList();
+            // #300: sin tramos guardados (rutas del asistente) se rellenan tramos vacíos para que el tramo i siga llegando a la parada i.
+            while (completedLegs.Count < completedStopCount)
+                completedLegs.Add(new Leg(prefix.Position.Round(), prefix.Position.Round(), 0m, 0m, DistanceSource.Road, null));
             var completedKm = completedLegs.Sum(l => l.Km);
             var completedMinutes = completedLegs.Sum(l => l.Minutes) + prefix.CompletedPointCodes
                 .Sum(code => points[code].ServiceMinutes ?? _options.DefaultServiceMinutes);
-            var completedCost = prefix.CompletedPointCodes.Count == 0 ? 0m : Math.Round(
+            var completedCost = completedStopCount == 0 ? 0m : Math.Round(
                 completedKm * (vehicle.CostPerKm ?? _options.DefaultCostPerKm) +
                 Math.Max(0m, (decimal)(prefix.ReadyAtUtc - workdayStart).TotalHours) * _options.CostPerHour,
                 3, MidpointRounding.AwayFromZero);
@@ -415,7 +422,7 @@ public sealed class RoutePlanner(
             foreach (var code in prefix.PendingPointCodes.Except(prefix.CompletedPointCodes).Distinct())
             {
                 var point = points[code];
-                var cargo = loads[code];
+                var cargo = loads.GetValueOrDefault(code) ?? [];
                 var risk = risks.Where(r => r.ServicePointId == point.Id && cargo.Any(l => l.ProductId == r.ProductId))
                     .OrderBy(r => r.Level).FirstOrDefault();
                 // Preserve the classification at publication; receipts elsewhere
@@ -447,13 +454,33 @@ public sealed class RoutePlanner(
                     consolidation, risk?.Level ?? RiskLevel.Alto, point.Criticality,
                     risk?.CoverageDays ?? 999m, risk?.LeadTimeDays ?? 2m));
             }
-            var position = prefix.Position.Round();
+            var leading = prefix.LeadingStops.Select(l => l with { Position = l.Position.Round() }).ToList();
             var matrix = await distanceProvider.MatrixAsync(
-                new[] { position, depotPos }.Concat(candidates.Select(c => c.Position)).Distinct().ToList(), ct);
+                new[] { prefix.Position.Round(), depotPos }.Concat(leading.Select(l => l.Position))
+                    .Concat(candidates.Select(c => c.Position)).Distinct().ToList(), ct);
+            // #300: las recogidas pendientes van primero y en su orden; las entregas se reoptimizan desde la última bodega.
+            var position = prefix.Position.Round();
+            var readyAt = prefix.ReadyAtUtc;
+            var leadingLegs = new List<Leg>();
+            var leadingTimes = new List<(DateTime ArrivalUtc, DateTime DepartureUtc)>();
+            decimal leadingKm = 0m, leadingMinutes = 0m;
+            foreach (var lead in leading)
+            {
+                var leg = matrix[(position, lead.Position)];
+                var legMinutes = TrafficBands.Apply(leg.Minutes,
+                    TrafficBands.SpeedFactorAt(_options.TrafficBands, TimeOnly.FromDateTime(readyAt.AddHours(-5))));
+                var arrival = readyAt.AddMinutes((double)legMinutes);
+                readyAt = arrival.AddMinutes(lead.ServiceMinutes);
+                leadingTimes.Add((arrival, readyAt));
+                leadingLegs.Add(leg with { Minutes = legMinutes });
+                leadingKm += leg.Km;
+                leadingMinutes += legMinutes + lead.ServiceMinutes;
+                position = lead.Position;
+            }
             FeasibilityCheck Evaluate(IReadOnlyList<StopCandidate> stops) => RouteFeasibility.EvaluateRoute(
-                vehicle, position, stops, prefix.ReadyAtUtc, _options.WorkdayHours, _options.CostPerHour,
+                vehicle, position, stops, readyAt, _options.WorkdayHours, _options.CostPerHour,
                 _options.DefaultCostPerKm, matrix, input.Effect, input.Mode, depotPos, workdayEnd, _options.TrafficBands);
-            var selected = RouteImprover.TwoOpt(vehicle, position, candidates, prefix.ReadyAtUtc,
+            var selected = RouteImprover.TwoOpt(vehicle, position, candidates, readyAt,
                 _options.WorkdayHours, _options.CostPerHour, _options.DefaultCostPerKm, matrix,
                 input.Effect, input.Mode, depotPos, workdayEnd, _options.TrafficBands);
             if (!Evaluate(selected).IsFeasible)
@@ -481,7 +508,7 @@ public sealed class RoutePlanner(
             }
             var evaluation = Evaluate(selected);
             var planned = new List<PlannedStop>();
-            var time = prefix.ReadyAtUtc;
+            var time = readyAt;
             var from = position;
             foreach (var stop in selected)
             {
@@ -501,14 +528,49 @@ public sealed class RoutePlanner(
                 { TrafficFactorApplied = TrafficBands.Reported(speedFactor) });
                 from = stop.Position;
             }
-            routes.Add(new VehicleRoute(vehicle.Code, vehicle.Id, planned, completedKm + evaluation.CumulativeKm,
-                completedMinutes + evaluation.CumulativeMinutes, completedCost + evaluation.CumulativeCost, evaluation.TotalWeight,
-                evaluation.TotalVolume, evaluation.HasApproximations, completedLegs.Concat(evaluation.Legs).ToList()));
-            facts.Add(new Fact("route_km", vehicle.Code, completedKm + evaluation.CumulativeKm, "km"));
-            facts.Add(new Fact("route_cost", vehicle.Code, completedCost + evaluation.CumulativeCost, "USD"));
+            // #300: sin entregas que hacer, la recogida pendiente ya no tiene sentido y no suma al costo.
+            if (selected.Count == 0)
+            {
+                leadingLegs.Clear();
+                leadingTimes.Clear();
+                leadingKm = leadingMinutes = 0m;
+            }
+            var leadingCost = leadingLegs.Count == 0 ? 0m : Math.Round(
+                leadingKm * (vehicle.CostPerKm ?? _options.DefaultCostPerKm) + leadingMinutes / 60m * _options.CostPerHour,
+                3, MidpointRounding.AwayFromZero);
+            var totalKm = completedKm + leadingKm + evaluation.CumulativeKm;
+            var totalCost = completedCost + leadingCost + evaluation.CumulativeCost;
+            routes.Add(new VehicleRoute(vehicle.Code, vehicle.Id, planned, totalKm,
+                completedMinutes + leadingMinutes + evaluation.CumulativeMinutes, totalCost, evaluation.TotalWeight,
+                evaluation.TotalVolume, evaluation.HasApproximations, completedLegs.Concat(leadingLegs).Concat(evaluation.Legs).ToList())
+            { LeadingTimes = leadingTimes });
+            facts.Add(new Fact("route_km", vehicle.Code, totalKm, "km"));
+            facts.Add(new Fact("route_cost", vehicle.Code, totalCost, "USD"));
         }
         return new PlanResult(routes, unserved.OrderBy(u => u.PointCode, StringComparer.Ordinal).ToList(), facts);
     }
+
+    // #300: paradas guardadas que son puntos de servicio (sin recogidas ni entregas a bodega), con su código.
+    private static List<(string Code, JsonElement Element)> StoredServiceStops(JsonElement root)
+    {
+        var result = new List<(string Code, JsonElement Element)>();
+        if (!root.TryGetProperty("stops", out var stops) || stops.ValueKind != JsonValueKind.Array) return result;
+        foreach (var stop in stops.EnumerateArray())
+        {
+            if (stop.TryGetProperty("kind", out var kind) && kind.GetString() == RouteStopKind.Pickup) continue;
+            if (stop.TryGetProperty("locationId", out var location) && location.ValueKind == JsonValueKind.String) continue;
+            var code = stop.TryGetProperty("pointCode", out var pointCode) && pointCode.ValueKind == JsonValueKind.String
+                ? pointCode.GetString()
+                : stop.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+            if (!string.IsNullOrEmpty(code)) result.Add((code, stop));
+        }
+        return result;
+    }
+
+    private static List<StopLoad> StoredLoads(JsonElement stop) =>
+        stop.TryGetProperty("loads", out var loads) && loads.ValueKind == JsonValueKind.Array
+            ? JsonSerializer.Deserialize<List<StopLoad>>(loads.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? []
+            : [];
 
     private static decimal WeightOf(IEnumerable<StopLoad> loads, IReadOnlyDictionary<Guid, Product> products) =>
         loads.Sum(l => products.TryGetValue(l.ProductId, out var p) ? l.Quantity * p.WeightPerBaseUnit : 0m);

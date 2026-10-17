@@ -458,6 +458,14 @@ public sealed class AgentRunService(
         var pointCodes = pointIds.Count == 0
             ? new Dictionary<Guid, string>()
             : await db.ServicePoints.AsNoTracking().Where(sp => pointIds.Contains(sp.Id)).ToDictionaryAsync(sp => sp.Id, sp => sp.Code, ct);
+        // #300: las paradas en bodega (recogidas del asistente) se nombran por su bodega, no por el punto de relleno.
+        var stopLocationIds = storedStops.Where(s => s.LocationId.HasValue).Select(s => s.LocationId!.Value).Distinct().ToList();
+        var stopLocationCodes = stopLocationIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await db.Locations.AsNoTracking().Where(l => stopLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, l => l.Code, ct);
+        string StopCode(RouteStop s) =>
+            s.LocationId is { } locationId && stopLocationCodes.TryGetValue(locationId, out var locationCode) ? locationCode
+            : pointCodes.TryGetValue(s.ServicePointId, out var code) ? code : string.Empty;
 
         var decisionViews = new List<AgentDecisionView>();
         foreach (var decision in decisions)
@@ -491,7 +499,7 @@ public sealed class AgentRunService(
                 orderedStops = storedStops
                     .Where(s => s.RoutePlanId == proposal.ProposedRoutePlanId.Value)
                     .OrderBy(s => s.SequenceNumber)
-                    .Select(s => new DecisionStopView(s.SequenceNumber, pointCodes.TryGetValue(s.ServicePointId, out var code) ? code : string.Empty))
+                    .Select(s => new DecisionStopView(s.SequenceNumber, StopCode(s)))
                     .ToList();
             }
             else if (proposal.RouteStops is { Count: > 0 })

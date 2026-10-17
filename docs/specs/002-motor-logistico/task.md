@@ -22,6 +22,7 @@
 | T13 | Las rutas publicadas llegan al conductor (asignación, entregas del asistente y bodega de origen) | T5 | — | completada (15-oct; 6 pruebas nuevas) |
 | T19 | Reserva antes del despacho, cancelación y cantidad por línea | T15 | — | completada (#199) |
 | T20 | Activar ServiceCost y TrafficBands en la demo | T4, T12 | — | completada (#275) |
+| T22 | Replanificar rutas del asistente de pedidos (recogida en bodega) | T7, T21 | — | completada (#300) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -144,6 +145,7 @@
 | FR-25 | T16 | `RoutePlannerTests`, `RoutePlanningTests` |
 | FR-26 | T17 | `TrafficBandTests`, `TrafficBandsQuitoTests` |
 | FR-27 | T18 | `IncidentSlowdownTests`, `SlowdownIncidentQuitoTests`, `DemoRegionTests` |
+| FR-29 | T22 | `ReplanAssistantRouteTests`, `AgentJourneyTests` |
 | NFR-01, CE-02, CE-06 | T10 | `LogisticsPerformanceTests`, E2E-06 |
 | NFR-02, CE-05 | T3, T9 | `DistanceProviderTests`, E2E-05 |
 | NFR-03, CE-07 | T6 | `ExplanationTemplatesTests`, E2E-07 |
@@ -734,6 +736,60 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | Panel: confirmar, no confirmar y 409 | Llama a la API y muestra lo liberado; no llama; muestra el `detail` del 409 | Pasa (vitest) |
 | Panel en pantalla | Botón visible en el detalle | No verificado en pantalla |
 
-**Hallazgo (sin corregir aquí):** `POST /route-plans/{id}/replan` sobre una ruta del asistente por pedidos falla con `KeyNotFoundException` antes de crear la revisión. Se comprobó con una prueba exploratoria local, que no quedó en el repositorio. Causa probable, por lectura del código: `RoutePlanner.ReplanAsync` lee las paradas guardadas por `pointCode`, y las del asistente guardan `code` e incluyen la recogida. Hoy esa revisión no llega a crearse desde un incidente. La corrección de T21 actúa al publicar cualquier revisión que retire una parada con pedidos, y la prueba arma la revisión como la guarda `Replanner`. Que la replanificación acepte rutas por pedidos queda para otro issue.
+**Hallazgo (corregido en T22, #300):** ~~`POST /route-plans/{id}/replan` sobre una ruta del asistente por pedidos falla con `KeyNotFoundException` antes de crear la revisión. Se comprobó con una prueba exploratoria local, que no quedó en el repositorio. Causa probable, por lectura del código: `RoutePlanner.ReplanAsync` lee las paradas guardadas por `pointCode`, y las del asistente guardan `code` e incluyen la recogida. Hoy esa revisión no llega a crearse desde un incidente. La corrección de T21 actúa al publicar cualquier revisión que retire una parada con pedidos, y la prueba arma la revisión como la guarda `Replanner`. Que la replanificación acepte rutas por pedidos queda para otro issue.~~ La causa se confirmó en T22: `JsonElement.GetProperty("pointCode")` en `RoutePlanner.ReplanAsync`.
 
 **Verificación:** `dotnet test --filter` con RoutePlanner, RoutePlanning, PartialCapacity, PartialLoad, ConfirmCapacity, Replan, RoutePlanCancellation, Risk, PublishToDriver, DemoQuito y RoutePublisher: 81 de 82. Falló un caso de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entra por «Replan» y ya fallaba así en T19; corrida sola, esa clase pasa 9 de 9. Por separado, `PartialCapacityPlanningTests` pasa 7 de 7 y `ConfirmCapacityTests` 8 de 8. Web: `npm run test:web`, 29 archivos y 166 pruebas en verde; eslint sin errores en los archivos cambiados. Después de integrar `develop` (#294 y #298), con el mismo filtro (`ReplanningTests` en lugar de «Replan») más `MergedEndpointsSecurity`: 97 de 97; web, specs de `pages/rutas` y `map-view`: 64 de 64. No se corrió la suite completa.
+
+### T22 — Replanificar rutas del asistente de pedidos (#300, 17-oct)
+
+**Síntoma:** `POST /route-plans/{id}/replan` sobre una ruta confirmada con el asistente de pedidos (`/route-plans/suggest` → `/confirm`) respondía 500 antes de crear la revisión. Además, un `BloqueoVial` sobre sus paradas no la marcaba como afectada, así que el agente de incidente nunca la replanificaba.
+
+**Error reproducido en develop `e06d4f7`** (prueba nueva, antes de la corrección):
+
+```
+System.Collections.Generic.KeyNotFoundException : The given key was not present in the dictionary.
+   at System.Text.Json.JsonElement.GetProperty(String propertyName)
+   at IstpetDev.Application.Logistics.Planning.RoutePlanner.<>c.<ReplanAsync>b__8_9(JsonElement s) in …/RoutePlanner.cs:line 397
+   at IstpetDev.Application.Logistics.Planning.RoutePlanner.ReplanAsync(ReplanInput input, CancellationToken ct) in …/RoutePlanner.cs:line 396
+   at IstpetDev.Application.Logistics.Replanner.ReplanAsync(Guid routePlanId, Guid incidentId, CancellationToken ct) in …/Replanner.cs:line 132
+```
+
+**Causa** (confirmada con las pruebas):
+1. `RoutePlanner.ReplanAsync` leía las paradas guardadas con `GetProperty("pointCode")`; el asistente guarda `code` e incluye la recogida en bodega. Además tomaba las cargas de la última ruta publicada del vehículo, no del plan que se replanifica.
+2. `Replanner` trataba todas las paradas como puntos de servicio. La recogida del asistente no da `KeyNotFoundException` en `spMap` (como suponía el issue), porque `confirm` le pone como relleno el primer punto de servicio. Por eso entraba al prefijo como si fuera una entrega más y podía repetir el código de una entrega real. La revisión perdía la recogida y su `LocationId`, y la ruta previa reconstruida usaba siempre `"VEH-01"`.
+3. `PublishRevisionAsync` buscaba la parada nueva de cada entrega solo por `ServicePointId`, y ese relleno puede coincidir con el de una entrega.
+4. `IncidentEvaluator` solo usaba los tramos guardados (`legs`), y las rutas del asistente no los tienen. Para una avería tomaba la primera ruta publicada del vehículo, no la del incidente.
+
+**Decisión (FR-29):**
+- `FixedPrefix` lleva el `RoutePlanId`, las recogidas pendientes (`LeadingStops`) y el número de paradas hechas. El planificador recorre primero las recogidas (tramo, hora pico y servicio) y reoptimiza las entregas desde la última bodega. Si no queda ninguna entrega, descarta las recogidas y no las suma al costo. Lee `pointCode` o `code` y omite las paradas en bodega.
+- La revisión guarda, en orden: paradas hechas (con su tipo y bodega), recogidas pendientes con las horas calculadas, entregas reoptimizadas y entregas a bodega. Su `InputJson` usa la misma secuencia que cada `RouteStop`, y copia del plan original las cargas de las paradas que no se reoptimizan.
+- Una recogida cuenta como hecha si su estado es `Completed`, `PickedUp` o `PartiallyPickedUp`, o si ya se completó una parada posterior. Hoy el avance de demo y la PWA no marcan las recogidas.
+- El evaluador arma los tramos de una ruta sin `legs` desde la bodega del vehículo por sus paradas. Usa la polilínea de la caché de tramos si existe y, si no, el segmento recto.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `Contratos API y eventos.md` | Contrato | FR-29; comportamiento de `replan`, `incidents` y publicación de la revisión (sin endpoints ni campos nuevos) | Contrato antes de implementar | — | Hecho |
+| `PlanModels.cs` | Aplicación | `FixedPrefix.RoutePlanId`, `LeadingStops`, `CompletedStopCount`; `FixedStop`; `VehicleRoute.LeadingTimes` (no se serializa) | Pasar la recogida al planificador sin romper los constructores | — | Hecho |
+| `RoutePlanner.ReplanAsync` | Aplicación | Plan indicado; `pointCode` o `code`; omite paradas en bodega; recorre las recogidas antes de reoptimizar; rellena tramos de paradas hechas sin `legs` | Origen del `KeyNotFoundException` y entregas desde la bodega | Cierre sobre una entrega | Hecho |
+| `Replanner.ReplanAsync` | Aplicación | Separa recogidas y entregas a bodega; parte de la última parada hecha; conserva tipo, `LocationId` y cargas; código real del vehículo en la ruta previa | La revisión no pierde la recogida | Los cuatro de abajo | Hecho |
+| `RoutePublisher.PublishRevisionAsync` | Aplicación | La parada nueva de una entrega se busca por tipo, punto y bodega | El punto de relleno puede coincidir con una entrega | Publicar la revisión | Hecho |
+| `IncidentEvaluator` | Aplicación | Tramos desde las paradas si no hay `legs`; avería sobre la ruta del incidente; paradas en bodega nombradas por la bodega | El agente detecta la ruta del asistente | Agente con cierre | Hecho |
+| `AgentRunService.BuildViewAsync` | Aplicación | `orderedStops` nombra la parada en bodega por la bodega | La decisión no muestra un punto de relleno | Agente con cierre | Hecho |
+| `ReplanAssistantRouteTests.cs`, `AgentJourneyTests.cs` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios** (demo-region; los cuatro fallan en develop sin la corrección):
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Ruta del asistente VEH-01 (BOD-SUR → CLI-S09 → IND-S13) publicada; `BloqueoVial` sobre CLI-S09 (preset cierre-norte); `replan` | 201; CLI-S09 en `droppedStops`; revisión `[1 Pickup BOD-SUR Pending, 2 Delivery IND-S13]`; `InputJson` con `kind`, `locationId` y la carga de 20 | Pasa (en develop: `KeyNotFoundException`) |
+| Publicar esa revisión y luego revertirla | El pedido de CLI-S09 vuelve a `Pending` con 0; IND-S13 sigue `Planned` con 20 y 20 reservadas en una sola entrega; revertir vuelve a sumar 10 | Pasa |
+| VEH-02 con la recogida hecha (inferida) y IND-S13 entregada por el avance de demo; cierre lejano; `replan` y publicar | 201 sin no atendidos; `[Pickup Completed, IND-S13 Completed, EDU-S10 Pending]`; la entrega de EDU-S10 es la misma, sigue `Draft` y apunta a la parada nueva; su llegada es posterior a la entrega en IND-S13 | Pasa (en develop: `KeyNotFoundException`) |
+| Avería `VEHICLE_BREAKDOWN` de VEH-01 con la ruta del asistente | `affectedStops` = `BOD-SUR`, `IND-S13`; `replan` 201 `Escalated` con IND-S13 en `droppedStops`; la revisión no conserva la recogida | Pasa (en develop: `affectedStops` con el punto de relleno) |
+| Agente automático (n8n simulado de `AgentJourneyTests`) con cierre-norte y la ruta del asistente | La ruta aparece en `affectedRoutes`; la corrida termina `Completed` con una decisión de VEH-01 y paradas `BOD-SUR`, `IND-S13` | Pasa (en develop: la ruta no aparece como afectada) |
+
+**Limitaciones:**
+- Las entregas a bodega (transferencias) no se reordenan; se mantienen al final con sus horas originales.
+- Si un tramo hacia la bodega de recogida está bloqueado, se recorre igual: la recogida no se puede omitir.
+- La ruta previa del asistente guarda horas aproximadas de `confirm` (inicio + 20 min por parada). Las diferencias de ETA y de costo contra la revisión son orientativas.
+
+**Verificación:** `dotnet test --filter` con Replan, DemoRegion, AgentJourney, ConfirmCapacity, PartialCapacity, RoutePlanCancellation, IncidentEvaluator, RoutePlanning, SlowdownIncident, RoutePublisher, AgentRunService, AgentRunTrace, IncidentSlowdown y MergedEndpointsIsolation: 68 de 68. Incluye las 4 pruebas nuevas, que fallan las 4 con el código de develop. No se corrió la suite completa. `check_vault.py`: 0 errores.
