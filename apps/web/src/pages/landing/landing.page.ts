@@ -171,7 +171,7 @@ interface FaqItem {
               </video>
               <img
                 [src]="assets.walkthrough.scene1Warehouse"
-                alt="Bodega Matriz Pallatanga"
+                alt="Bodega Central Sur (Turubamba)"
                 class="absolute inset-0 size-full object-cover -z-10"
                 [style.transform]="getSceneTransform(0)" />
             </div>
@@ -263,10 +263,10 @@ interface FaqItem {
                 IstpetDev · Reto 1 Expo Clean Ecuador 2026
               </p>
               <h1 class="mt-4 font-display text-4xl lg:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
-                Abastecimiento seguro y a tiempo<br />para hospitales de todo el país
+                Abastecimiento y trazabilidad<br />de insumos a nivel nacional
               </h1>
               <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
-                Anticipamos el consumo de insumos de limpieza con 5 días de antelación, organizamos las mejores rutas de entrega y garantizamos que cada producto llegue a su destino.
+                Anticipamos el desabastecimiento, decidimos desde qué bodega y en qué vehículo atender primero lo crítico, y garantizamos la custodia de cada entrega incluso sin señal.
               </p>
               <div class="mt-6 flex flex-wrap items-center gap-3">
                 <button
@@ -282,48 +282,48 @@ interface FaqItem {
                 </a>
               </div>
               <ul class="mt-6 flex flex-wrap gap-2 text-xs text-[#F0F4F8]/80 font-zen" aria-label="Capacidades operativas">
-                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Rutas inteligentes y directas</li>
-                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Sellado digital de seguridad</li>
-                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Funciona en el celular sin internet</li>
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Cadena completa en una sola operación</li>
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Prioridad explicable con datos</li>
+                <li class="rounded-full bg-[#060D1A]/60 px-3 py-1 ring-1 ring-[#F0F4F8]/20 backdrop-blur-md">Operación de campo 100% offline</li>
               </ul>
             </div>
           </article>
 
-          <!-- Parada 1: Bodega Matriz Pallatanga -->
+          <!-- Parada 1: Bodegas de Origen -->
           <article id="bodega" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 1">
             <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
               <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
                 <span class="tabular-nums font-mono text-[#00C2FF]">01 / 04</span>
                 <span class="size-1 rounded-full bg-[#00E5A3]"></span>
-                <span>Bodega Central Pallatanga</span>
+                <span>Bodegas Central Sur, Norte y Valle</span>
               </p>
-              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Preparación y Sellado</p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Despacho y Precinto QR</p>
               <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
-                Envasado de insumos y control de seguridad
+                Control de bultos y asignación de carga
               </h2>
               <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
-                Revisión automática de bidones de limpieza de 60 litros y escaneo de sellos de seguridad antes de cargarlos en los camiones de reparto.
+                Cada caja o caneca se registra con un código QR único (unidad logística). Se valida peso y volumen antes de asignar el camión de reparto.
               </p>
               <ol class="mt-6 flex max-w-md flex-col gap-4 font-zen">
                 <li class="flex gap-4 items-start">
                   <span class="font-display text-2xl text-[#00C2FF] tabular-nums">1</span>
                   <div>
                     <h3 class="text-base text-[#F0F4F8] font-medium">Selección de Insumos</h3>
-                    <p class="text-sm text-[#F0F4F8]/70">Reserva inmediata de los productos prioritarios para cada hospital.</p>
+                    <p class="text-sm text-[#F0F4F8]/70">Reserva inmediata de hipoclorito, amonio cuaternario y consumibles críticos.</p>
                   </div>
                 </li>
                 <li class="flex gap-4 items-start">
                   <span class="font-display text-2xl text-[#00C2FF] tabular-nums">2</span>
                   <div>
-                    <h3 class="text-base text-[#F0F4F8] font-medium">Sellado Digital de Seguridad</h3>
-                    <p class="text-sm text-[#F0F4F8]/70">Código digital único para asegurar que la caja no sea abierta en el camino.</p>
+                    <h3 class="text-base text-[#F0F4F8] font-medium">Sellado Digital con QR</h3>
+                    <p class="text-sm text-[#F0F4F8]/70">Registro digital inmutable por bulto para garantizar la custodia de inicio a fin.</p>
                   </div>
                 </li>
                 <li class="flex gap-4 items-start">
                   <span class="font-display text-2xl text-[#00C2FF] tabular-nums">3</span>
                   <div>
-                    <h3 class="text-base text-[#F0F4F8] font-medium">Asignación a Camiones</h3>
-                    <p class="text-sm text-[#F0F4F8]/70">Selección del vehículo ideal según el peso de la carga y salida directa a carretera.</p>
+                    <h3 class="text-base text-[#F0F4F8] font-medium">Asignación a Flota</h3>
+                    <p class="text-sm text-[#F0F4F8]/70">Elección de vehículo según capacidad (Hino Dutro, Chevrolet N400 o BYD T35 eléctrico).</p>
                   </div>
                 </li>
               </ol>
@@ -331,85 +331,85 @@ interface FaqItem {
             </div>
           </article>
 
-          <!-- Parada 2: Sala de Telemetría -->
+          <!-- Parada 2: Planificación de Rutas -->
           <article id="telemetria" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 2">
             <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
               <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
                 <span class="tabular-nums font-mono text-[#00C2FF]">02 / 04</span>
                 <span class="size-1 rounded-full bg-[#00E5A3]"></span>
-                <span>Centro de Monitoreo y Rutas GPS</span>
+                <span>Planificación de Rutas y Tráfico en Quito</span>
               </p>
-              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Supervisión Satelital 24/7</p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Planificación Inteligente</p>
               <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
-                Rutas seguras y control de viaje en vivo
+                Rutas priorizadas según ventanas y estado vial
               </h2>
               <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
-                Seguimiento de cada camión minuto a minuto, con desvíos automáticos si hay cierres viales o problemas en la carretera.
+                Organizamos paradas respetando horarios restringidos (ej. centros comerciales de 07:00 a 09:30) y restricciones de Quito, con recálculo automático ante incidentes o cierres viales.
               </p>
               <dl class="mt-6 grid w-full max-w-md grid-cols-3 gap-4">
                 <div class="flex flex-col-reverse gap-1">
-                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Respuesta GPS</dt>
-                  <dd class="font-display text-2xl lg:text-4xl text-[#00C2FF]">En vivo</dd>
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Ventanas de entrega</dt>
+                  <dd class="font-display text-2xl lg:text-3xl text-[#00C2FF]">100% integradas</dd>
                 </div>
                 <div class="flex flex-col-reverse gap-1">
-                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Ruta guiada</dt>
-                  <dd class="font-display text-2xl lg:text-4xl text-[#00E5A3]">100%</dd>
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Recálculo vial</dt>
+                  <dd class="font-display text-2xl lg:text-3xl text-[#00E5A3]">Automático</dd>
                 </div>
                 <div class="flex flex-col-reverse gap-1">
-                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Desvíos no autorizados</dt>
-                  <dd class="font-display text-2xl lg:text-4xl text-[#F0F4F8]">0%</dd>
+                  <dt class="font-zen text-xs text-[#F0F4F8]/60">Desvíos sin justificar</dt>
+                  <dd class="font-display text-2xl lg:text-3xl text-[#F0F4F8]">0%</dd>
                 </div>
               </dl>
-              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Consultar monitoreo de rutas</a>
+              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Consultar opciones de flota</a>
             </div>
           </article>
 
-          <!-- Parada 3: Planta de Silos y Reserva -->
+          <!-- Parada 3: Reabastecimiento Predictivo -->
           <article id="reserva" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 3">
             <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
               <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
                 <span class="tabular-nums font-mono text-[#00C2FF]">03 / 04</span>
                 <span class="size-1 rounded-full bg-[#00E5A3]"></span>
-                <span>Bodega de Reserva y Silos</span>
+                <span>Reabastecimiento Predictivo</span>
               </p>
-              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Reserva de Emergencia</p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Cálculo de Cobertura</p>
               <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
-                Insumos garantizados con 5 días de anticipación
+                Reposición preventiva con 5 días de anticipación
               </h2>
               <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
-                Cálculo automático que evita que los hospitales se queden sin insumos de limpieza, analizando el uso diario y sumando 3 días extra de reserva por seguridad.
+                El sistema evalúa el consumo diario frente al lead time de transporte más 3 días de margen de seguridad. Si el stock no cubre este umbral, se genera la orden de reposición antes del quiebre.
               </p>
               <div class="mt-6 flex items-end gap-4">
-                <span class="font-display text-5xl text-[#00E5A3] lg:text-7xl">90 d</span>
-                <span class="max-w-48 pb-1 font-zen text-sm text-[#F0F4F8]/70">Operación continua comprobada durante 3 meses sin desabastecimiento</span>
+                <span class="font-display text-5xl text-[#00E5A3] lg:text-7xl">5 d</span>
+                <span class="max-w-48 pb-1 font-zen text-sm text-[#F0F4F8]/70">Umbral preventivo: tiempo de viaje más 3 días de reserva de seguridad</span>
               </div>
-              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Ver cobertura hospitalaria</a>
+              <a href="#modalidades" class="link mt-6 font-zen text-sm text-[#00C2FF]">Ver cobertura de servicio</a>
             </div>
           </article>
 
-          <!-- Parada 4: Muelle Hospitalario Estéril -->
+          <!-- Parada 4: Muelle Hospitalario y Recepción -->
           <article id="esclusa" class="stop pointer-events-none flex min-h-[160vh] flex-col justify-end" [class.is-current]="activeStationIndex() === 4">
             <div class="stop-body pointer-events-auto sticky bottom-0 flex w-full max-w-2xl xl:max-w-3xl flex-col items-start px-4 pt-32 pb-12 md:px-12 lg:pb-16 xl:px-20">
               <p class="flex items-center gap-2 font-zen text-xs tracking-widest text-[#F0F4F8]/60 uppercase">
                 <span class="tabular-nums font-mono text-[#00C2FF]">04 / 04</span>
                 <span class="size-1 rounded-full bg-[#00E5A3]"></span>
-                <span>Entrega en Centros de Salud</span>
+                <span>Muelle de Entrega y Recepción de Campo</span>
               </p>
-              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Confirmación de Entrega Segura</p>
+              <p class="mt-4 font-zen text-xs font-medium tracking-widest text-[#00C2FF] uppercase">Custodia y Recepción Verificada</p>
               <h2 class="mt-2 max-w-xl font-display text-4xl lg:text-5xl xl:text-6xl text-[#F0F4F8] text-balance font-normal leading-tight">
-                Entrega sin papeles y con firma en pantalla
+                Recepción sin internet y firma digital en pantalla
               </h2>
               <p class="mt-4 max-w-md font-zen text-base text-[#F0F4F8]/80 lg:text-lg text-pretty">
-                El personal del hospital firma directamente en la pantalla del celular, incluso en sótanos o bodegas sin señal. Al salir a un lugar con cobertura, todo se guarda automáticamente en el sistema.
+                El conductor y el encargado del hospital escanean el QR, verifican cantidades y firman en el teléfono celular sin necesitar cobertura. Todo se sincroniza automáticamente sin duplicar registros.
               </p>
               <ul class="mt-6 grid w-full max-w-md grid-cols-2 gap-4 font-zen">
                 <li class="flex flex-col gap-1 rounded-2xl bg-[#060D1A]/60 p-4 ring-1 ring-white/10 backdrop-blur-md">
                   <span class="font-display text-2xl lg:text-3xl text-[#00E5A3]">100 %</span>
-                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">Entregas certificadas</span>
+                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">Custodia verificada</span>
                 </li>
                 <li class="flex flex-col gap-1 rounded-2xl bg-[#060D1A]/60 p-4 ring-1 ring-white/10 backdrop-blur-md">
                   <span class="font-display text-2xl lg:text-3xl text-[#00C2FF]">Offline</span>
-                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">Funciona en el móvil sin internet</span>
+                  <span class="text-xs text-[#F0F4F8]/70 lg:text-sm">PWA con firma táctil en pantalla</span>
                 </li>
               </ul>
               <button
@@ -508,25 +508,25 @@ interface FaqItem {
 
 
       <!-- ========================================================================= -->
-      <!-- 5. PRENSA Y RECONOCIMIENTOS (CALCA EXACTA PRESS.ASTRO MIDUDEV)            -->
+      <!-- 5. PROPUESTA DE VALOR OFICIAL (ENTREGABLE 2 · ANEXO 5.6)                   -->
       <!-- ========================================================================= -->
       <section id="prensa" aria-labelledby="prensa-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10 bg-[#060D1A]">
         <figure class="mx-auto flex max-w-4xl flex-col items-center text-center">
           <p id="prensa-title" class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">
-            Evaluación del Servicio en Hospitales
+            Propuesta de Valor · Entregable Oficial 2
           </p>
           <blockquote class="mt-6">
-            <p class="font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal leading-snug">
-              “Con IstpetDev dejamos de apagar incendios. Sabemos con 5 días de anticipación qué abastecer y conservamos la evidencia física de cada entrega sin depender de la red móvil.”
+            <p class="font-display text-2xl sm:text-3xl lg:text-4xl text-[#F0F4F8] font-normal leading-snug">
+              “Anticipamos el faltante, decidimos desde qué bodega y en qué vehículo atender primero lo crítico, y demostramos cada entrega con código QR y firma digital, incluso sin señal.”
             </p>
             <p class="mx-auto mt-6 max-w-2xl font-zen text-base text-[#F0F4F8]/70 lg:text-lg">
-              Operación continua en las rutas de Quito y Pichincha con cero faltantes de insumos durante 90 días evaluados.
+              Frente a las hojas de cálculo, rutas fijas y listas de control en papel que hoy generan quiebres de stock y sobrecostos de transporte.
             </p>
           </blockquote>
           <figcaption class="mt-8 flex flex-col items-center gap-2 font-zen text-sm text-[#F0F4F8]/60">
-            <span>Dra. Andrea Morales · Dirección de Operaciones Sanitarias · 2026</span>
-            <a routerLink="/public-trace/HU-2026-EC-089" class="link inline-flex items-center gap-1.5 text-[#00C2FF] hover:underline">
-              <span>Ver ejemplo de entrega confirmada</span>
+            <span>IstpetDev · Reto 1 Expo Clean Ecuador 2026 · Gestión Inteligente de Procesos</span>
+            <a routerLink="/public-trace" class="link inline-flex items-center gap-1.5 text-[#00C2FF] hover:underline">
+              <span>Ver consulta pública de custodia QR</span>
               <svg lucideArrowUpRight [size]="14"></svg>
             </a>
           </figcaption>
@@ -535,17 +535,17 @@ interface FaqItem {
 
 
       <!-- ========================================================================= -->
-      <!-- 6. MODALIDADES / EXPERIENCIAS (CALCA EXPERIENCES.ASTRO MIDUDEV)           -->
+      <!-- 6. PLANIFICACIÓN Y FLOTA (ENTREGABLE 2 · PASOS 4 Y 5)                      -->
       <!-- ========================================================================= -->
       <section id="modalidades" aria-labelledby="exp-title" class="px-4 py-24 md:px-12 xl:px-24 border-t border-[#F0F4F8]/10">
         <div class="mx-auto max-w-6xl">
           <div class="max-w-xl">
-            <p class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">Modalidades de Entrega</p>
+            <p class="text-sm font-zen text-[#00C2FF] uppercase tracking-widest">Planificación y Flota</p>
             <h2 id="exp-title" class="mt-4 font-display text-3xl lg:text-5xl text-[#F0F4F8] font-normal">
-              Dos redes, cobertura garantizada
+              Flota propia frente a contratada
             </h2>
             <p class="mt-6 font-zen text-base text-[#F0F4F8]/70 lg:text-lg">
-              Un modelo flexible adaptado tanto para grandes hospitales públicos como para clínicas privadas con entregas diarias.
+              El sistema calcula el costo total de servir cada ruta (combustible, kilómetros, desgaste y personal de descarga) y compara con la tarifa de un operador contratado.
             </p>
           </div>
 
@@ -572,27 +572,27 @@ interface FaqItem {
                     type="button"
                     (click)="session.login('/inicio')"
                     class="btn btn-primary w-full py-3 rounded-full bg-[#0066FF] hover:bg-[#00C2FF] text-white font-zen text-sm font-medium transition-all cursor-pointer">
-                    <span>Activar en Torre de Control</span>
+                    <span>Ver en Torre de Control</span>
                   </button>
                 </div>
               </article>
             }
 
-            <!-- Tarjeta lateral con máscara oval idéntica a Midudev (Vinos / Silos) -->
+            <!-- Tarjeta lateral con máscara oval: 3 Bodegas -->
             <article class="flex flex-col items-center gap-6 rounded-3xl p-6 text-center ring-1 ring-[#F0F4F8]/15 lg:p-8 bg-[#060D1A]">
               <div class="mirror-frame mask-oval w-40 lg:w-48">
                 <img
                   [src]="assets.walkthrough.scene3Silos"
-                  alt="Silos de Reserva"
+                  alt="Bodegas de Distribución"
                   class="aspect-[3/4] w-full mask-oval object-cover" />
               </div>
               <div>
-                <h3 class="font-display text-2xl text-[#F0F4F8] font-normal">Reserva de Emergencia</h3>
+                <h3 class="font-display text-2xl text-[#F0F4F8] font-normal">Red de 3 Bodegas</h3>
                 <p class="mt-2 font-zen text-base text-[#F0F4F8]/70">
-                  Bodega con producto extra para responder ante cierres de carreteras o emergencias sanitarias sin desabastecer ningún hospital.
+                  Suministro coordinado desde Bodega Central Sur (Turubamba), Bodega Norte (Carcelén) y Bodega Valle (Conocoto).
                 </p>
               </div>
-              <p class="font-display text-4xl text-[#00E5A3]">+5 Días</p>
+              <p class="font-display text-4xl text-[#00E5A3]">3 Bodegas</p>
             </article>
           </div>
         </div>
@@ -641,7 +641,7 @@ interface FaqItem {
           <div class="mirror-frame mask-mirror mx-auto w-full max-w-sm">
             <img
               [src]="assets.walkthrough.scene1Warehouse"
-              alt="Bodega Matriz Pallatanga e inspección óptica"
+              alt="Bodega Central Sur e inspección y despacho"
               class="aspect-[4/5] w-full mask-mirror object-cover" />
           </div>
           <div>
@@ -743,8 +743,9 @@ interface FaqItem {
           <div class="flex flex-col gap-2 font-zen text-sm">
             <h3 class="text-xs tracking-widest text-[#F0F4F8]/50 uppercase">Instalaciones</h3>
             <address class="not-italic text-[#F0F4F8]/80 leading-relaxed">
-              Bodega Matriz Pallatanga<br />
-              Corredor Logístico Pichincha, Ecuador
+              Bodega Central Sur (Turubamba)<br />
+              Bodega Norte (Carcelén) · Bodega Valle (Conocoto)<br />
+              Quito, Ecuador
             </address>
             <a routerLink="/public-trace" class="inline-flex items-center gap-2 text-[#00C2FF] hover:underline pt-2">
               <svg lucideMapPin [size]="14"></svg>
@@ -808,60 +809,66 @@ export class LandingPage implements AfterViewInit, OnDestroy {
   ];
 
   readonly taglineLines = [
-    ['Sin', 'margen', 'de', 'error:'],
-    ['abastecimiento', 'hospitalario', 'continuo,'],
-    ['entregas', '100%', 'certificadas,'],
-    ['cero', 'faltantes', 'en', 'salas', 'de', 'emergencia.']
+    ['Anticipar', 'el', 'faltante,'],
+    ['atender', 'primero', 'lo', 'crítico,'],
+    ['y', 'demostrar', 'cada', 'entrega'],
+    ['incluso', 'sin', 'señal', 'de', 'internet.']
   ];
 
   readonly insumos: readonly InsumoDestacado[] = [
     {
       numero: '01',
-      nombre: 'Amonio Cuaternario para Desinfección',
-      detalle: 'Bidón de 60 litros con precinto de seguridad para limpieza profunda de quirófanos y salas de parto.',
-      categoria: 'Desinfección Quirúrgica'
-    },
-    {
-      numero: '02',
-      nombre: 'Cloro Hospitalario Concentrado',
-      detalle: 'Garrafa de 20 litros con concentración certificada para desinfectar pisos, camillas y áreas de aislamiento.',
+      nombre: 'Hipoclorito de Sodio 5% (Caja de 4 Galones)',
+      detalle: 'Desinfección general de pisos, superficies y áreas clínicas comunes (PRD-0001).',
       categoria: 'Desinfección General'
     },
     {
+      numero: '02',
+      nombre: 'Desinfectante Amonio Cuaternario (Caja de 4 Galones)',
+      detalle: 'Limpieza profunda en quirófanos, áreas de aislamiento y neonatología (PRD-0002).',
+      categoria: 'Desinfección Crítica'
+    },
+    {
       numero: '03',
-      nombre: 'Gel Antibacterial con Alcohol al 70%',
-      detalle: 'Dispensador de 1 litro con recarga fácil para pasillos y puntos de atención rápida a pacientes.',
-      categoria: 'Higiene de Manos'
+      nombre: 'Detergente Industrial en Polvo (Saco de 30 kg)',
+      detalle: 'Lavado intensivo de ropa hospitalaria, textiles e instrumental de limpieza (PRD-0003).',
+      categoria: 'Lavado Pesado'
     },
     {
       numero: '04',
-      nombre: 'Detergente Especial para Instrumental Médico',
-      detalle: 'Líquido concentrado de 5 litros para limpieza y remoción de residuos en instrumentos quirúrgicos.',
-      categoria: 'Lavado de Instrumental'
+      nombre: 'Jabón Líquido Antibacterial (Caja de 4 Galones)',
+      detalle: 'Higiene antiséptica de manos para personal sanitario y pacientes (PRD-0004).',
+      categoria: 'Higiene de Manos'
     },
     {
       numero: '05',
-      nombre: 'Alcohol para Equipos Médicos y Pantallas',
-      detalle: 'Envase de 4 litros para limpiar monitores médicos, equipos de diagnóstico y pantallas sin dañarlos.',
-      categoria: 'Cuidado de Equipos'
+      nombre: 'Alcohol Gel 70% (Caja de 12 Frascos de 1 L)',
+      detalle: 'Dispensadores de desinfección rápida en pasillos y accesos hospitalarios (PRD-0005).',
+      categoria: 'Bioseguridad'
+    },
+    {
+      numero: '06',
+      nombre: 'Guantes de Nitrilo (Caja de 100 Unidades)',
+      detalle: 'Protección personal de operarios de limpieza y manejo de desechos (PRD-0010).',
+      categoria: 'Protección Personal'
     }
   ];
 
   readonly modalidades: readonly ExperienciaLogistica[] = [
     {
-      nombre: 'Red Hospitalaria Pública',
-      descripcion: 'Abastecimiento programado desde la bodega más cercana para hospitales generales y centros del MSP.',
-      precio: '80 Centros',
-      periodo: 'de salud atendidos',
-      cobertura: 'Aviso con 5 días de anticipación y rutas actualizadas al instante',
-      etiqueta: 'Recomendado'
+      nombre: 'Flota Propia de Distribución',
+      descripcion: 'Camiones Hino Dutro (3.500 a 6.500 kg), furgonetas Chevrolet N400 y camiones eléctricos BYD T35 para rutas urbanas y extraurbanas.',
+      precio: '10 Vehículos',
+      periodo: 'en red de Quito',
+      cobertura: 'Cálculo de costo por km, combustible, desgaste y cuadrilla de descarga',
+      etiqueta: 'Flota Dedicada'
     },
     {
-      nombre: 'Red Clínica Privada',
-      descripcion: 'Entregas prioritarias para emergencias y salas de cirugía, con horario de llegada garantizado en menos de 2 horas.',
-      precio: '24/7',
-      periodo: 'todos los días del año',
-      cobertura: 'Monitoreo de temperatura del producto y ubicación en vivo del camión'
+      nombre: 'Transporte Externo Contratado',
+      descripcion: 'Activación automática de operadores contratados cuando la demanda excede la capacidad de la flota propia o la distancia lo justifica.',
+      precio: 'Tarifa Dinámica',
+      periodo: 'según km y kg',
+      cobertura: 'Comparación automática de costo total de servir antes de publicar la ruta'
     }
   ];
 
@@ -869,22 +876,22 @@ export class LandingPage implements AfterViewInit, OnDestroy {
     {
       id: 'faq1',
       pregunta: '¿Cómo funciona la firma y recepción sin internet en sótanos?',
-      respuesta: 'La aplicación móvil guarda la firma y los datos de entrega en la memoria del teléfono. Cuando el conductor o el personal del hospital vuelve a tener señal, toda la información se envía automáticamente a la plataforma central sin duplicar registros.'
+      respuesta: 'La aplicación móvil PWA guarda el escaneo del QR, la firma táctil y la hora exacta en la memoria local (IndexedDB). Cuando el conductor recupera cobertura, los datos se sincronizan con la API central de forma idempotente, sin duplicar registros ni perder entregas.'
     },
     {
       id: 'faq2',
       pregunta: '¿Cómo calcula el sistema los 5 días de anticipación?',
-      respuesta: 'El sistema revisa cuánto gasta cada hospital por día, cuántas existencias le quedan y cuánto tarda el camión en llegar. Si el producto disponible alcanza para menos de lo que dura el viaje más 3 días de reserva, se crea un pedido de reposición de inmediato.'
+      respuesta: 'El sistema calcula la media móvil de consumo diario de cada centro de salud y la compara contra el tiempo de viaje (lead time) más 3 días de margen de reserva obligatorio. Si las existencias no cubren este umbral, se genera de inmediato una orden de reposición.'
     },
     {
       id: 'faq3',
-      pregunta: '¿Qué ocurre si hay un cierre de vía o problema en la carretera?',
-      respuesta: 'El sistema detecta el problema en el mapa y traza automáticamente una ruta alterna por vías seguras. Mantiene el registro de los paquetes ya entregados y notifica al hospital la nueva hora exacta de llegada.'
+      pregunta: '¿Qué ocurre si hay un cierre de vía o bloqueo en la carretera?',
+      respuesta: 'El sistema detecta el incidente vial, conserva todas las entregas que ya fueron completadas y recalcula automáticamente la secuencia de las paradas pendientes, priorizando los puntos con mayor criticidad hospitalaria.'
     },
     {
       id: 'faq4',
       pregunta: '¿Cómo puede cualquier persona verificar una entrega sin tener cuenta?',
-      respuesta: 'Cualquier ciudadano, médico o inspector puede apuntar la cámara de su celular al código QR de la caja o escribir su código en la página de rastreo público. Al instante podrá ver la fecha y hora de entrega, el camión asignado y la confirmación oficial sin contraseñas.'
+      respuesta: 'Cualquier ciudadano, inspector o auditor puede escanear el código QR impreso en la caja o ingresar el código de la unidad en la página de rastreo público (/public-trace). Podrá consultar la fecha de salida de bodega, el vehículo asignado y la confirmación de recepción firmada.'
     }
   ];
 
