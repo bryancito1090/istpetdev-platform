@@ -489,7 +489,7 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 
 **Pendiente:**
 - ~~El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado.~~ Resuelto en T19: lo publicado en `Draft` cuenta como en camino.
-- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente. Sigue fuera de alcance (ver T19).
+- ~~Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente.~~ Resuelto en T21 (FR-28): cargan la parte que cabe después de los obligatorios.
 - ~~El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía.~~ Resuelto en T19.
 - ~~Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.~~ Resuelto en T19 con `POST /route-plans/{id}/cancel`. Revertir restaura los mismos pedidos, así que no descuenta.
 - ~~Cuando se integre #193 (hora límite de críticos) habrá que revisar que `SplitByCapacity` evalúe con las mismas reglas de ventana que la inserción.~~ Revisado al integrar #193 (ver T16): la parte hereda la ventana recortada.
@@ -620,10 +620,10 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 - **Panel:** el paso 4 muestra cada línea pendiente con su cantidad, por defecto todo lo pendiente. Solo se envían en `lines` las editadas. El servidor sigue validando: 409 si se pide más de lo pendiente.
 
 **Fuera de alcance:**
-- **Consolidación:** repartir parcialmente las paradas `VIGILAR` cambia la política de FR-08 y el orden entre puntos; queda para otro issue.
-- **Revisión que retira una parada:** una revisión por incidente puede retirar una parada de pedidos. Cancela la entrega, pero no descuenta `PlannedQuantity`; para eso habría que repartir `orderLines` por punto.
-- **Datos anteriores a este cambio:** los planes confirmados antes no tienen `orderLines`; cancelarlos libera reservas, pero no descuenta.
-- **Botón de cancelar:** el endpoint aún no tiene botón en el panel.
+- ~~**Consolidación:** repartir parcialmente las paradas `VIGILAR` cambia la política de FR-08 y el orden entre puntos; queda para otro issue.~~ Resuelto en T21 sin cambiar el orden de los obligatorios.
+- ~~**Revisión que retira una parada:** una revisión por incidente puede retirar una parada de pedidos. Cancela la entrega, pero no descuenta `PlannedQuantity`; para eso habría que repartir `orderLines` por punto.~~ Resuelto en T21: al publicar la revisión se descuenta lo de los pedidos de ese destino, y `revert` lo vuelve a sumar.
+- **Datos anteriores a este cambio:** los planes confirmados antes no tienen `orderLines`; cancelarlos libera reservas, pero no descuenta. Queda documentado como comportamiento esperado en FR-28 y T21: no hay datos de cuánto sumó cada ruta y no se inventan.
+- ~~**Botón de cancelar:** el endpoint aún no tiene botón en el panel.~~ Resuelto en T21.
 - **Un solo SKU en varios pedidos:** si dos pedidos de la misma parada llevan el mismo SKU y el panel envía `loads` sin `lines`, cada línea toma la carga total del SKU. Es comportamiento previo, sin cambios.
 
 | Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
@@ -670,4 +670,48 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 - Actualizar generador `generate-demo-quito-planificacion.py` para sincronizar `appsettings.demo-quito.json`.
 - Pruebas unitarias e integración en `DemoQuitoConfigurationTests.cs` y `DemoQuitoConfigurationIntegrationTests.cs`: validan binding completo, `/health/ready` Healthy, desglose real no nulo en evaluación y variación de duración de ruta en hora pico (07:30 vs 11:00).
 
+### T21 — Consolidación parcial, revisiones con pedidos y botón de cancelar (#199 cierre, 16-oct)
 
+**Síntoma** (lo que quedaba fuera de alcance en T15 y T19):
+1. Una parada de consolidación (`VIGILAR`) entraba entera o no entraba. Si no cabía completa, el vehículo salía con capacidad libre aunque una parte sí cabía.
+2. Una revisión por incidente que retiraba una parada con pedidos cancelaba la entrega y liberaba la reserva, pero el pedido seguía con su `PlannedQuantity`. Ese saldo no se podía volver a planificar.
+3. `POST /route-plans/{id}/cancel` no tenía botón en el panel.
+4. No estaba escrito qué pasa con los planes confirmados antes de #264, que no tienen `orderLines`.
+
+**Causa** (por lectura del código; las pruebas nuevas fallan sin la corrección donde se indica):
+1. `RoutePlanner` solo probaba la parada de consolidación completa (`TryInsertConsolidation`).
+2. `RoutePublisher.PublishRevisionAsync` cancelaba la entrega de la parada retirada sin mirar los pedidos. Además, `RevertPlanAsync` copiaba las paradas sin `Kind` ni `LocationId`, así que la recogida de una ruta por pedidos se restauraba como entrega.
+
+**Decisión:**
+- **Consolidación (FR-28):** si la parada no cabe completa, se toma con `FitLoads` (orden de FR-24 y unidades base enteras) lo que cabe en la capacidad libre de cada vehículo, y se inserta en un solo vehículo con desvío ≤ `MaxDetourMinutes`. Gana el que lleva más unidades, luego el de menor desvío y luego el de menor código y menor posición. Va después de insertar y repartir todos los obligatorios, así que nunca les quita capacidad ni cambia su orden. No se agrega a `unserved` (FR-09 solo lista obligatorios), pero emite `required_quantity`, `planned_quantity` y `pending_quantity`; la regla 8 del prompt de n8n ya los explica.
+- **Revisión:** al publicarla, se descuenta de `PlannedQuantity` lo que el plan sumó (según `orderLines`) a los pedidos cuyo destino es la parada retirada, y la revisión guarda el `orderLines` restante. `revert` vuelve a sumar la diferencia y restaura el tipo y la bodega de cada parada. La lógica común (`EffectiveOrderLinesAsync`, `AdjustPlannedAsync` y `WithOrderLines`) vive en `RoutePlanCancellation`.
+- **Planes sin `orderLines`:** no hay datos para descontar y no se inventan. `cancel` y la revisión liberan reservas y cancelan entregas, pero no cambian `PlannedQuantity`; `orderLines` de la respuesta sale vacío.
+- **Panel:** «Cancelar ruta» en el detalle de una ruta `Proposed` o `Published` sin entregas despachadas, solo para quien puede escribir. Pide confirmación con `window.confirm`, llama a `POST …/cancel` y muestra entregas canceladas, unidades liberadas y lo devuelto por pedido, o el `detail` del 409. Es un cambio acotado en `rutas.page.ts`: un botón en la cabecera del detalle y dos métodos, sin tocar el asistente ni el rediseño (#253).
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `spec.md`, `plan.md`, `Contratos API y eventos.md` | Contrato | FR-28; consolidación parcial, revisión, `revert` y planes sin `orderLines` | Contrato antes de implementar | — | Hecho |
+| `RoutePlanner.cs` | Aplicación | `TryInsertConsolidationPart` después de los obligatorios; hechos de la parte | Cargar la consolidación que cabe | Obligatorio de 150 kg y consolidación de 60 kg en 180 kg | Hecho |
+| `RoutePlanCancellation.cs` | Aplicación | `EffectiveOrderLinesAsync`, `AdjustPlannedAsync` y `WithOrderLines`; `CancelAsync` los usa | Mismo mecanismo para cancelar, revisar y revertir | — | Hecho |
+| `RoutePublisher.PublishRevisionAsync` | Aplicación | Descuenta los pedidos de las paradas retiradas y guarda el `orderLines` restante | El saldo vuelve a estar pendiente | Revisión sin una de dos paradas | Hecho |
+| `Replanner.RevertPlanAsync` | Aplicación | Vuelve a sumar lo descontado; copia `Kind` y `LocationId` | Revertir no pierde el saldo ni convierte la recogida en entrega | Revertir esa revisión | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Botón «Cancelar ruta», `canCancelPlan`, `cancelPlan`, `cancelRoutePlan` y `RoutePlanCancellationDto` | Cancelar desde el panel | Ruta publicada sin despacho | Hecho |
+| `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `rutas-cancelar-ruta.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Obligatorio de 150 u de 1 kg y consolidación de 60 u en un vehículo de 180 kg | Obligatorio 150 completo; consolidación 30 planificadas, 60 requeridas y 30 pendientes; sin no atendidos; hechos de `VIG-01/SKU-A`; mismo resultado en dos corridas | Pasa |
+| El mismo obligatorio y la misma consolidación en un vehículo de 120 kg | Obligatorio 120 (30 pendientes, `capacity`); la consolidación no entra ni emite hechos | Pasa |
+| Ruta por pedidos con dos entregas (30 y 40), publicada; revisión que retira la de 30 | Pedido de 30 en `Pending` con 0; pedido de 40 sigue `Planned`; reserva activa 40 | Pasa (falla sin la corrección) |
+| Revertir esa revisión | Pedido de 30 vuelve a `Planned` con 30; la ruta restaurada tiene 2 entregas `Draft` y 70 reservadas | Pasa |
+| Cancelar la ruta restaurada | Los dos pedidos quedan en `Pending` con 0 (sin descontar dos veces) | Pasa |
+| Cancelar un plan sin `orderLines` (como los anteriores a #264) | 200; libera 50; `orderLines` vacío; el pedido sigue `Planned` con 50 | Pasa |
+| Panel: ruta `Proposed`, o `Published` con entrega `Draft` | Muestra «Cancelar ruta»; no aparece con entrega despachada, en rutas `Cancelled`/`Superseded` ni sin permiso de escritura | Pasa (vitest) |
+| Panel: confirmar, no confirmar y 409 | Llama a la API y muestra lo liberado; no llama; muestra el `detail` del 409 | Pasa (vitest) |
+| Panel en pantalla | Botón visible en el detalle | No verificado en pantalla |
+
+**Hallazgo (sin corregir aquí):** `POST /route-plans/{id}/replan` sobre una ruta del asistente por pedidos falla con `KeyNotFoundException` antes de crear la revisión. Se comprobó con una prueba exploratoria local, que no quedó en el repositorio. Causa probable, por lectura del código: `RoutePlanner.ReplanAsync` lee las paradas guardadas por `pointCode`, y las del asistente guardan `code` e incluyen la recogida. Hoy esa revisión no llega a crearse desde un incidente. La corrección de T21 actúa al publicar cualquier revisión que retire una parada con pedidos, y la prueba arma la revisión como la guarda `Replanner`. Que la replanificación acepte rutas por pedidos queda para otro issue.
+
+**Verificación:** `dotnet test --filter` con RoutePlanner, RoutePlanning, PartialCapacity, PartialLoad, ConfirmCapacity, Replan, RoutePlanCancellation, Risk, PublishToDriver, DemoQuito y RoutePublisher: 81 de 82. Falló un caso de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entra por «Replan» y ya fallaba así en T19; corrida sola, esa clase pasa 9 de 9. Por separado, `PartialCapacityPlanningTests` pasa 7 de 7 y `ConfirmCapacityTests` 8 de 8. Web: `npm run test:web`, 29 archivos y 166 pruebas en verde; eslint sin errores en los archivos cambiados. No se corrió la suite completa.
