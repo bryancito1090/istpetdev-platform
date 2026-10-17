@@ -16,7 +16,11 @@ public sealed record PlannedStop(
     TimeSpan Wait,
     IReadOnlyList<StopLoad> Loads,
     bool IsConsolidation,
-    int? LateMinutes);
+    int? LateMinutes)
+{
+    // #245: factor de hora pico aplicado al tramo que llega a esta parada; null fuera de hora pico.
+    public decimal? TrafficFactorApplied { get; init; }
+}
 
 public sealed record StopLoad(
     Guid ProductId,
