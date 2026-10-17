@@ -176,3 +176,21 @@ Componentes reales con datos sintéticos en harness temporal fuera de la aplicac
 Chromium a 1500 × 1100: mapa/reproductor de 930.7 × 915 px, secuencia llega a **5/5** y `finished=true`. A 390 × 844: documento de 390 px, mapa de 348 px, mapa antes del resumen y comprobación geométrica `noOverlap=true`. Elegir B en abastecimiento abre B en el comparador y muestra sus dos vehículos. Capturas temporales `/tmp/istpetdev-rutas-abastecimiento-{desktop,mobile}.png`, resultado `/tmp/istpetdev-rutas-step2-review.json`. Son datos sintéticos; Cognito operativo sigue pendiente.
 
 Web **209/209**, 36 archivos, incluidas recomendación inicial, fallback aproximado, reinicio y selección conservada. Build/lint finales aprobados, incluido el ajuste de altura; avisos CSS 5.88/7.82 kB bajo límite de 8 kB y aviso CommonJS de Leaflet. Regresión PostgreSQL de aceptación/replanificación/reversión **28/28**. Los resultados finales del CI están vinculados al HEAD del [PR #324](https://github.com/bryancito1090/istpetdev-platform/pull/324); no se publican comentarios adicionales en GitHub.
+
+
+### Ajuste del bloque de asignación solicitado durante la integración
+
+Se simplifica el bloque de bodega, vehículo y conductor mediante campos separados, iconos Lucide, selector con etiqueta del vehículo activo y botón «Asignar conductor» de 44 px. Se coloca encima del mapa, coherente con la selección de vehículo. Se mantienen autorización y confirmación del servidor. Prelaunch del harness local reutilizado: únicamente UI con datos sintéticos en loopback, sin cambios de contratos, dependencias ni credenciales.
+
+
+| Before | After | Why |
+| --- | --- | --- |
+| Bodega, vehículo y conductor en una línea difícil de leer | Tres campos con iconos, etiquetas y valores separados | Reconocer origen, vehículo y responsable |
+| Botón «Asignar» como enlace pequeño | Selector ancho con etiqueta del vehículo y botón «Asignar conductor» de 44 px | Identificar la acción y usarla desde móvil |
+| Asignación debajo del mapa | Asignación encima del recorrido | Mantener vehículo/conductor visibles en contexto |
+
+Verificación sintética en Chromium: 1500 px, tres campos, botón de 44 px y bloque encima del mapa; 390 px sin desbordamiento, tarjeta de 332 px y botón de 298 × 44 px. Capturas temporales `/tmp/istpetdev-rutas-asignacion-{desktop,mobile}.png`, resultados `/tmp/istpetdev-rutas-assignment-review.json`. Harness y Chromium temporales cerrados. Pruebas de rutas afectadas **40/40**, 7 archivos, después de la ampliación de asignación. La suite web completa previa del mismo código funcional pasó **209/209**; el CI vuelve a probar la versión final.
+
+Suite backend completa después de la corrección de revisiones operativas: **744/744**, 0 fallidas y 0 omitidas, 8 min 7 s, Integration/Unit/E2E con PostgreSQL de Testcontainers (`DOTNET_PROCESSOR_COUNT=2`). Log `/tmp/istpetdev-rutas-final-merge-backend.log`. Se restauraron solo los siete archivos de evidencia generados por pruebas de spec 006 en este worktree; no pertenecen al cambio de rutas.
+
+Prelaunch antes de actualizar el proceso API local: se reutilizan la revisión DemoCore local y sus límites ya documentados; código backend comprobado con 744 pruebas, flujo afectado de aceptación/replanificación/reversión con 28 pruebas, consultas EF parametrizadas y exclusión de revisiones operativas del descarte. Sin cambios adicionales de identidad, privilegios, dependencias, lockfiles ni esquema; conservar `ApplyMigrations=false`. No hay RDS/reset ni despliegue externo. Auditoría NuGet/imagen y Cognito manual continúan pendientes; esta evidencia habilita solo el entorno local autorizado, no un release expuesto.

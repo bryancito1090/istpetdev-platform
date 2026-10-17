@@ -26,7 +26,7 @@ import {
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
-import { LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute } from '@lucide/angular';
+import { LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute, LucideUserRound } from '@lucide/angular';
 import { RouteJourneyPlayer } from './route-journey-player.component';
 import { JourneyRoute } from './route-journey.model';
 import { RouteDecisionWorkbench } from './route-decision-workbench.component';
@@ -111,7 +111,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 @Component({
   selector: 'page-rutas',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent, RouteDecisionWorkbench, RouteJourneyPlayer, LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute],
+  imports: [CommonModule, FormsModule, RouterLink, MapViewComponent, RouteDecisionWorkbench, RouteJourneyPlayer, LucideArrowLeft, LucideArrowRight, LucideArrowUpRight, LucideWarehouse, LucideBot, LucideMapPin, LucidePackage, LucideTruck, LucideRefreshCw, LucideTriangleAlert, LucideZap, LucideScale, LucideRoute, LucideUserRound],
   styleUrl: './rutas.page.css',
   template: `
     <div class="rutas-root">
@@ -653,42 +653,42 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   }
                 </div>
 
+                <section class="rounded-xl border border-[#dce4ed] bg-white p-4 space-y-4" data-route-assignment aria-label="Asignación de la ruta">
+                  <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideWarehouse [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Bodega de origen</dt><dd class="text-sm font-semibold text-[#152a42] break-words">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</dd></div></div>
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleCode || 'Sin vehículo' }}</dd></div></div>
+                    @if (selectedDetail()!.status === 'Published') {
+                      <div class="flex items-start gap-3 min-w-0"><svg lucideUserRound [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Conductor asignado</dt><dd class="text-sm font-semibold break-words" [class]="selectedDetail()!.driverName ? 'text-[#152a42]' : 'text-amber-800'">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</dd></div></div>
+                    }
+                  </dl>
+                  @if (selectedDetail()!.status === 'Published') {
+                    @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
+                      <p role="status" class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">{{ selectedDetail()!.unassignedDeliveries }} entregas pendientes de asignar a un conductor.</p>
+                    }
+                    @if (session.canWrite()) {
+                      <div class="flex flex-col sm:flex-row sm:items-end gap-3 border-t border-[#dce4ed] pt-4">
+                        <label class="flex-1 min-w-0 text-xs text-[#53647b]">{{ selectedDetail()!.driverName ? 'Cambiar conductor de ' : 'Elegir conductor para ' }}{{ selectedDetail()!.vehicleCode }}
+                          <select class="mt-2 block w-full min-h-11 border border-[#dce4ed] rounded-lg px-3 text-sm text-[#152a42] bg-white" aria-label="Reasignar conductor"
+                            [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)" [disabled]="actionLoading()">
+                            <option value="">Seleccionar conductor</option>
+                            @for (driver of drivers(); track driver.accountId) { <option [value]="driver.accountId">{{ driver.displayName }}</option> }
+                          </select>
+                        </label>
+                        <button type="button" class="min-h-11 px-5 rounded-lg bg-[#0066ff] text-white text-sm font-semibold hover:bg-[#0052d9] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                          [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
+                          <svg lucideUserRound [size]="17"></svg>{{ actionLoading() ? 'Asignando…' : 'Asignar conductor' }}
+                        </button>
+                      </div>
+                    }
+                  }
+                </section>
+
                 <!-- Mapa -->
                 @if (mapMarkers().length > 0) {
                   <div class="rutas-map rounded-lg overflow-hidden border border-slate-200">
                     <route-journey-player [routes]="operationJourneyRoutes()" [focusedRouteId]="selectedPlanId()" [replayKey]="routeReplayKey()" (focusRoute)="selectPlan($event)"></route-journey-player>
                   </div>
                 }
-
-                <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#697386]" data-route-assignment>
-                  <span><span class="text-[#697386]">Bodega:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</strong></span>
-                  <span><span class="text-[#697386]">Vehículo:</span> <strong class="text-[#1A2C44]">{{ selectedDetail()!.vehicleCode || '—' }}</strong></span>
-                  @if (selectedDetail()!.status === 'Published') {
-                    <span>
-                      <span class="text-[#697386]">Conductor:</span>
-                      <strong [class.text-[#DF1B41]]="!selectedDetail()!.driverName" class="text-[#1A2C44]">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</strong>
-                    </span>
-                    @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
-                      <span class="text-[#DF1B41]">{{ selectedDetail()!.unassignedDeliveries }} entregas sin conductor: no aparecen en ningún teléfono.</span>
-                    }
-                    @if (session.canWrite()) {
-                      <span class="flex items-center gap-2">
-                        <select class="h-8 border border-[#E3E8EE] rounded-md px-2 py-0.5 text-xs text-[#2D3748] bg-white" aria-label="Reasignar conductor"
-                          [ngModel]="reassignDriverId()" (ngModelChange)="reassignDriverId.set($event)">
-                          <option value="">Cambiar conductor…</option>
-                          @for (driver of drivers(); track driver.accountId) {
-                            <option [value]="driver.accountId">{{ driver.displayName }}</option>
-                          }
-                        </select>
-                        <button type="button" class="text-xs font-semibold text-[#00A7C4] hover:text-[#0093AD] underline disabled:opacity-50"
-                          [disabled]="!reassignDriverId() || actionLoading()" (click)="reassignDriver(selectedDetail()!.id)">
-                          Asignar
-                        </button>
-                      </span>
-                    }
-                  }
-                </div>
 
                 <!-- #231: SEGUIMIENTO EN VIVO: LÍNEA DE AVANCE, RESUMEN Y ESTADOS EN ESPAÑOL -->
                 @if (selectedDetail()!.stops.length > 0) {

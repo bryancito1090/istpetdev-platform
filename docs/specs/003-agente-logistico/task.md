@@ -1023,6 +1023,8 @@ Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` e
 
 - [x] Paso 2 simplificado a productos, «Recoger en» y «Entregar en», con encabezado claro, mapa dominante y acción «Comparar y aprobar».
 - [x] Mismo reproductor por paradas desde el abastecimiento: recorrido completo, pausa/reinicio, aproximación explícita y selección inicial de recomendación viable. La elección se conserva al entrar al comparador persistente.
-- [x] Verificación tras los cambios: **209/209 pruebas web**, 36 archivos; build/lint aprobados. Aceptación/replanificación/reversión **28/28** con PostgreSQL, incluida la regresión real del E2E y conservación de borradores operativos. La suite backend completa y CI final siguen en ejecución.
+- [x] Verificación tras los cambios: **209/209 pruebas web**, 36 archivos; build/lint aprobados. Aceptación/replanificación/reversión **28/28** con PostgreSQL, incluida la regresión real del E2E y conservación de borradores operativos. La suite backend completa terminó después con **744/744**; el CI final se sigue en el PR.
 
 - [x] Revisión visual de abastecimiento con componentes reales y datos sintéticos: mapa dominante a 1500 px, recorrido 5/5, móvil de 390 px sin desbordamiento ni superposición, y opción B conservada con dos vehículos al abrir comparador. Ajustada altura móvil tras detectar superposición en la primera captura. Sin ejecución Cognito real ni despliegue.
+
+- [x] Ampliación posterior: bodega de origen, vehículo y conductor en campos separados con iconos Lucide sobre el mapa; selector etiquetado por vehículo y botón «Asignar conductor» de 44 px en escritorio/móvil. Se conservan permisos y confirmación del servidor. Pruebas afectadas **40/40**, 7 archivos; revisión visual a 1500/390 px sin desbordamiento.
