@@ -484,11 +484,62 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | `confirm` con pedido sin parada de entrega, o con una unidad de 200 kg | 409, pedido sin cambios | Pasa |
 
 **Pendiente:**
-- El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado. Es comportamiento previo; queda para decidir.
-- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente.
-- El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía. Un pedido que no cabe en ningún vehículo compatible no se puede confirmar desde el panel.
-- Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.
+- ~~El remanente de la propuesta automática se recalcula en la siguiente planificación a partir del riesgo. `RiskCalculator` solo cuenta como en camino lo despachado (`Dispatched`, `InTransit`, `Delivered` sin recibo), no lo publicado en `Draft`. Por eso planificar de nuevo antes del despacho puede volver a sugerir lo ya reservado.~~ Resuelto en T19: lo publicado en `Draft` cuenta como en camino.
+- Las paradas de consolidación (`VIGILAR`) no se reparten parcialmente. Sigue fuera de alcance (ver T19).
+- ~~El panel del asistente no permite editar la cantidad por línea: la API la acepta en `lines`, pero hoy el panel no la envía.~~ Resuelto en T19.
+- ~~Si una ruta confirmada se cancela o se revierte, no se descuenta `PlannedQuantity` del pedido.~~ Resuelto en T19 con `POST /route-plans/{id}/cancel`. Revertir restaura los mismos pedidos, así que no descuenta.
 - ~~Cuando se integre #193 (hora límite de críticos) habrá que revisar que `SplitByCapacity` evalúe con las mismas reglas de ventana que la inserción.~~ Revisado al integrar #193 (ver T16): la parte hereda la ventana recortada.
+
+### T19 — Reserva antes del despacho, cancelación y cantidad por línea (#199 fase 2, 16-oct)
+
+**Síntoma** (pendientes de T15):
+1. Planificar, publicar y volver a planificar antes del despacho proponía otra vez la misma cantidad: el riesgo no veía lo reservado en `Draft`.
+2. No había forma de cancelar una ruta confirmada; el pedido quedaba con `PlannedQuantity` aunque la ruta no saliera.
+3. El panel no dejaba editar la cantidad por línea.
+
+**Causa** (por lectura del código; las pruebas nuevas de riesgo fallan sin la corrección de `RiskCalculator`):
+1. `RiskCalculator` contaba en camino solo `Dispatched`, `InTransit` y `Delivered` sin recibo. Además, sumaba las líneas de **todos** los puntos para cada producto y solo veía lotes con saldo en el punto.
+2. `confirm` no guardaba cuánto sumó a cada línea de pedido y no había endpoint de cancelación. `revert` solo existe para revisiones y restaura los mismos pedidos.
+3. Aunque el panel enviara `lines`, `confirm` guardaba las `loads` del panel (pedido completo) y tomaba el mayor entre su peso y el enviado (`deltaWeight`). Una parcial editada daba 409 por capacidad o publicaba y reservaba más de lo planificado.
+
+**Decisión:**
+- **En camino:** una entrega `Draft` sin despacho cuenta por `PlannedQuantity`. Al despacharse deja de ser `Draft` y cuenta por `DispatchedQuantity − AcceptedQuantity`, así que no se cuenta dos veces. Una cancelada no cuenta. Solo se suma lo que va a su punto.
+- **Cancelar:** nuevo `POST /route-plans/{id}/cancel`. Solo se cancela una ruta `Proposed` o `Published` sin entregas despachadas. Es idempotente, y solo la revisión vigente descuenta. El descuento sale de `InputJson.orderLines`, que ahora guarda `confirm`.
+- **Panel:** el paso 4 muestra cada línea pendiente con su cantidad, por defecto todo lo pendiente. Solo se envían en `lines` las editadas. El servidor sigue validando: 409 si se pide más de lo pendiente.
+
+**Fuera de alcance:**
+- **Consolidación:** repartir parcialmente las paradas `VIGILAR` cambia la política de FR-08 y el orden entre puntos; queda para otro issue.
+- **Revisión que retira una parada:** una revisión por incidente puede retirar una parada de pedidos. Cancela la entrega, pero no descuenta `PlannedQuantity`; para eso habría que repartir `orderLines` por punto.
+- **Datos anteriores a este cambio:** los planes confirmados antes no tienen `orderLines`; cancelarlos libera reservas, pero no descuenta.
+- **Botón de cancelar:** el endpoint aún no tiene botón en el panel.
+- **Un solo SKU en varios pedidos:** si dos pedidos de la misma parada llevan el mismo SKU y el panel envía `loads` sin `lines`, cada línea toma la carga total del SKU. Es comportamiento previo, sin cambios.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `Contratos API y eventos.md`, `plan.md` | Contrato | `cancel`, `orderLines`, en camino con `Draft`, carga de `confirm` desde lo planificado | Contrato antes de implementar | — | Hecho |
+| `RiskCalculator.cs` | Aplicación | `Draft` sin despacho cuenta por `PlannedQuantity`; filtro por punto; lotes de la entrega aunque no tengan saldo en el punto | No repetir lo reservado | Planificar, publicar y replanificar | Hecho |
+| `RoutePlanCancellation.cs` (nuevo) | Aplicación | Libera reservas, cancela `Draft`, descuenta `orderLines` y recalcula el estado del pedido | Cancelar sin perder el saldo del pedido | Cancelar publicada y propuesta | Hecho |
+| `RoutePlansController.ConfirmRoutePlan` | API | Con pedidos: carga y peso desde lo planificado por línea; recogida = lo planificado; guarda `orderLines` | Lo publicado y reservado coincide con lo planificado | Panel con totales completos y `lines` = 100 | Hecho |
+| `RoutePlansController.Cancel` | API | `POST /{id}/cancel`: 200, 404 o 409 `cancel_conflict` | Exponer la cancelación | — | Hecho |
+| `rutas.page.ts`, `api.service.ts` | Web | Cantidad por línea en el paso 4, validación y envío de `lines` | Confirmar una parcial desde el panel | Pedido que no cabe completo | Hecho |
+| `RiskPendingDeliveriesTests.cs`, `PartialCapacityPlanningTests.cs`, `ConfirmCapacityTests.cs`, `rutas-cantidad-por-linea.spec.ts` | Pruebas | Escenarios de abajo | Regresión | — | Pasan |
+
+**Escenarios:**
+
+| Escenario | Resultado esperado | Estado |
+|---|---|---|
+| Punto con entrega `Draft` de 100, `Dispatched` de 20 y `Cancelled` de 40; otro punto con `Draft` de 70 | En camino: 120 en el primero y 70 en el otro | Pasa (falla sin la corrección) |
+| 150 u de 1 kg, vehículo de 100 kg: planificar, publicar y volver a planificar | Primera: 100. Segunda: requerida 50, planificada 50, nada pendiente | Pasa (falla sin la corrección) |
+| `confirm` con las paradas del panel (150 kg y `loads` de 150) y `lines` = 100 | 201, `loadWeight` 100, pedido `Pending` con 100; la publicación reserva 100 | Pasa |
+| Pedido de 150: ruta de 100 publicada y ruta de 50 propuesta; cancelar la publicada | 200; libera 100 reservadas; entrega `Cancelled`; pedido `Pending` con 50 planificadas y 100 pendientes | Pasa |
+| Cancelar otra vez | 200 sin descontar de nuevo | Pasa |
+| Cancelar la propuesta de 50 y volver a confirmar 100 | Pedido `Pending` con 0; el nuevo `confirm` responde 201 | Pasa |
+| Cancelar con la entrega ya despachada, o un plan inexistente | 409 y pedido sin cambios; 404 | Pasa |
+| Panel: línea con 150 pedidas y 30 planificadas; otra ya completa | Ofrece 120; omite la completa; sin editar no envía `lines` | Pasa (vitest) |
+| Panel: cantidad 121 de 120, 0 o vacía | Mensaje de error y no llama a la API | Pasa (vitest) |
+| Panel en pantalla | Campo visible en el paso 4 | No verificado en pantalla |
+
+**Verificación:** `dotnet test --filter` con Risk, PartialCapacity, PartialLoad, ConfirmCapacity, PublishToDriver, Replan, RoutePlanning, RoutePublisher, SingleProposal, OrderBasedRouting, RouteSuggestPriority, ReplenishmentAllocator, LogisticsApi y CustodyGuardsHttp: 105 de 107. Fallaron 2 casos de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entran por el filtro «Replan». Corrida sola, esa clase pasa 9 de 9. Web: `ng test --include` de `rutas-cantidad-por-linea`, `rutas-priorizacion-pedidos`, `rutas.page` y `api.service`: 28 de 28. No se corrió la suite completa.
 
 ### T16 — Hora límite para puntos críticos (#193, 16-oct)
 
