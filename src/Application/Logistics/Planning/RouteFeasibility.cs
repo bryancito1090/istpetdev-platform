@@ -49,7 +49,8 @@ public static class RouteFeasibility
         IncidentEffect? incidentEffect = null,
         ReplanMode replanMode = ReplanMode.Strict,
         GeoPoint? returnDepot = null,
-        DateTime? workdayEndUtc = null)
+        DateTime? workdayEndUtc = null,
+        IReadOnlyList<TrafficBandOptions>? trafficBands = null)
     {
         // 1. Capacidad: Peso y Volumen
         decimal totalWeight = stops.Sum(s => s.Weight);
@@ -100,7 +101,9 @@ public static class RouteFeasibility
 
             if (leg.Source == DistanceSource.Approximation) hasApproximations = true;
 
-            decimal legMinutes = leg.Minutes;
+            // #245: hora pico según la hora local de inicio del tramo (UTC-5 como el resto del cálculo)
+            decimal legMinutes = TrafficBands.Apply(leg.Minutes,
+                TrafficBands.SpeedFactorAt(trafficBands, TimeOnly.FromDateTime(currentTimeUtc.AddHours(-5))));
             if (incidentEffect != null && incidentEffect.SlowFactors.TryGetValue((currentPos, nextPos), out var factor))
             {
                 legMinutes *= factor;
@@ -158,7 +161,8 @@ public static class RouteFeasibility
 
         if (returnLeg.Source == DistanceSource.Approximation) hasApproximations = true;
 
-        decimal returnMinutes = returnLeg.Minutes;
+        decimal returnMinutes = TrafficBands.Apply(returnLeg.Minutes,
+            TrafficBands.SpeedFactorAt(trafficBands, TimeOnly.FromDateTime(currentTimeUtc.AddHours(-5))));
         if (incidentEffect != null && incidentEffect.SlowFactors.TryGetValue((currentPos, destination), out var returnFactor))
         {
             returnMinutes *= returnFactor;

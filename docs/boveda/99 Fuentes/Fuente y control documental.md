@@ -733,3 +733,9 @@ La captura sale del resultado calculado sobre demo-base, con parámetros de prue
 sintéticos. No se presenta como pantalla #242 ni como dataset Quito #243.
 Sin despliegue; el estado remoto se comprueba en el PR de #240. Anthony conserva
 la integración del controlador compartido; #244/#245 rebasan después.
+
+## 16-oct-2026 — Hora pico por franja en el motor de rutas (issue #245)
+
+Fuente: issue #245 y el diseño de [[Planificacion potenciada - propuesta del evento]]. [[Contratos API y eventos]] registra `Logistics:TrafficBands` y el campo `trafficFactorApplied` por parada en `POST /api/v1/route-plans`, `GET /api/v1/route-plans/{id}` y `RouteEvaluationResult`; el spec 002 añade FR-26 y la tarea T17. Sin franjas configuradas, las duraciones no cambian. Los factores de la demo (0,64 y 0,80) vienen de `appsettings.demo-quito.json` (#243) y son supuestos documentados en su README. No altera baselines ni datos; no se despliega.
+
+Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.

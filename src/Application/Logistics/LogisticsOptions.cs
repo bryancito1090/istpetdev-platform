@@ -30,6 +30,8 @@ public sealed class LogisticsOptions
     public RebalancingOptions Rebalancing { get; set; } = new();
     public OsrmOptions Osrm { get; set; } = new();
     public PolicyOptions Policy { get; set; } = new();
+    // #245: franjas de hora pico; vacío = las duraciones no cambian.
+    public List<TrafficBandOptions> TrafficBands { get; set; } = [];
 }
 
 public sealed class RebalancingOptions
