@@ -7,6 +7,7 @@ import {
   AlertController
 } from '@ionic/angular/standalone';
 import { FieldOutboxService, OutboxItem } from '../../outbox/field-outbox.service';
+import { FieldPageHeaderComponent } from '../../../shared/field-page-header/field-page-header.component';
 
 interface SyncFeedback {
   type: 'success' | 'warning' | 'error';
@@ -20,45 +21,16 @@ interface SyncFeedback {
   imports: [
     CommonModule,
     IonContent,
-    IonToggle
+    IonToggle,
+    FieldPageHeaderComponent
   ],
   template: `
-    <!-- Barra Superior: Entorno de Prueba (Dark Cyan Bar) -->
-    <div class="stripe-top-banner">
-      <div class="stripe-banner-left">
-        <span class="banner-title">Entorno de prueba</span>
-        <button type="button" class="info-bubble-btn" (click)="openTestEnvInfo()" aria-label="Información de entorno">
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-
-      <button type="button" class="stripe-verify-pill" (click)="openVerifyModal()">
-        Verificar tu empresa
-      </button>
-    </div>
-
-    <!-- Contenedor Principal con Bordes Redondeados Superiores -->
-    <div class="stripe-header-card">
-      <div class="stripe-nav-header">
-        <button type="button" class="stripe-nav-btn" aria-label="Volver" (click)="goHome()">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-
-        <h1 class="stripe-user-title">
-          Cola de Sincronización
-        </h1>
-
-        <div class="stripe-header-actions">
-          @if (pendingCount() > 0) {
-            <span class="stripe-bell-badge static relative-none">{{ pendingCount() }}</span>
-          }
-        </div>
-      </div>
-    </div>
+    <app-field-page-header
+      title="Cola de Sincronización"
+      [pendingCount]="pendingCount()"
+      [syncAction]="false"
+      (back)="goHome()"
+      (help)="openTestEnvInfo()" />
 
     <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
     <ion-content class="ion-padding stripe-main-content">

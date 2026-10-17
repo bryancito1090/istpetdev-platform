@@ -9,6 +9,7 @@ import {
 import { FieldOutboxService } from '../../outbox/field-outbox.service';
 import { MobileAuthService } from '../../../auth/auth.service';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
+import { FieldPageHeaderComponent } from '../../../shared/field-page-header/field-page-header.component';
 import { extractUnitId, parseUnitQr } from '../../unit-qr';
 import { HandlingUnitResponse } from '@istpetdev/shared-core';
 
@@ -44,50 +45,16 @@ function formatProductName(codeOrName: string): string {
     CommonModule,
     FormsModule,
     IonContent,
-    QrScannerComponent
+    QrScannerComponent,
+    FieldPageHeaderComponent
   ],
   template: `
-    <!-- Barra Superior: Entorno de Prueba (Dark Cyan Bar) -->
-    <div class="stripe-top-banner">
-      <div class="stripe-banner-left">
-        <span class="banner-title">Entorno de prueba</span>
-        <button type="button" class="info-bubble-btn" (click)="openTestEnvInfo()" aria-label="Información de entorno">
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-
-      <button type="button" class="stripe-verify-pill" (click)="openVerifyModal()">
-        Verificar tu empresa
-      </button>
-    </div>
-
-    <!-- Contenedor Principal con Bordes Redondeados Superiores -->
-    <div class="stripe-header-card">
-      <div class="stripe-nav-header">
-        <button type="button" class="stripe-nav-btn" aria-label="Volver" (click)="goHome()">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.3">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-
-        <h1 class="stripe-user-title">
-          {{ isPickupMode() ? 'Escanear Cajas' : 'Escanear Código QR' }}
-        </h1>
-
-        <div class="stripe-header-actions">
-          <button type="button" class="stripe-nav-btn relative" aria-label="Cola de sincronización" (click)="openSyncQueue()">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-            </svg>
-            @if (pendingCount() > 0) {
-              <span class="stripe-bell-badge">{{ pendingCount() }}</span>
-            }
-          </button>
-        </div>
-      </div>
-    </div>
+    <app-field-page-header
+      [title]="isPickupMode() ? 'Escanear Cajas' : 'Escanear Código QR'"
+      [pendingCount]="pendingCount()"
+      (back)="goHome()"
+      (sync)="openSyncQueue()"
+      (help)="openTestEnvInfo()" />
 
     <!-- Contenido Scrollable con Tarjetas Estilo Stripe -->
     <ion-content class="ion-padding stripe-main-content">

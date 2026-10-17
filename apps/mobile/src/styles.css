@@ -199,11 +199,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .driver-actions .driver-action-tile::part(native) { min-height: 92px; padding: 12px; }
 .driver-actions .driver-action-tile[fill='outline'] { --border-width: 1px; --border-color: #e3e8ef; }
 .action-kicker { margin: 4px 8px 12px; }
-.login-layout { max-width: 440px; margin: auto; padding: 8px 4px 24px; }
+.login-layout { width: min(100%, calc(100vw - 48px)); max-width: 440px; min-width: 0; box-sizing: border-box; margin: auto; padding: 8px 4px 24px; }
 .login-brand { margin-bottom: 24px; }
 .login-hero { position: relative; z-index: 1; }
 .login-screen { --background: radial-gradient(ellipse at 100% 34%, #06b6d430, transparent 48%), radial-gradient(ellipse at 0% 46%, #635bff18, transparent 45%), #f8fafc; }
-.login-pass { display: block; width: 100%; position: relative; padding: 20px; margin: 24px 0 16px; border: 1px solid white; border-radius: 16px; background: linear-gradient(120deg, #ffffffd9, #e0f2fe99, #d1fae5aa); backdrop-filter: blur(20px); box-shadow: 0 24px 48px -24px #0284c770; color: #0a2540; text-align: left; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.login-pass { display: block; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; position: relative; padding: 20px; margin: 24px 0 16px; border: 1px solid white; border-radius: 16px; background: linear-gradient(120deg, #ffffffd9, #e0f2fe99, #d1fae5aa); backdrop-filter: blur(20px); box-shadow: 0 24px 48px -24px #0284c770; color: #0a2540; text-align: left; cursor: pointer; transition: transform .2s, box-shadow .2s; }
 .login-pass:not(:disabled):hover { transform: translateY(-3px); box-shadow: 0 28px 48px -24px #0284c790; }
 .login-pass:not(:disabled):active { transform: scale(.98); }
 .login-pass:disabled { cursor: default; opacity: .65; }
