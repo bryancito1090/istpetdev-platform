@@ -15,7 +15,10 @@ public sealed record VehicleMatchResult(
     decimal EstimatedTotalCost,
     decimal DistanceToFirstPickupKm,
     ServiceCostBreakdown? ServiceCostBreakdown = null
-);
+)
+{
+    public IReadOnlyList<string> Warnings { get; init; } = [];
+}
 
 public sealed record AvailableVehicleDto(
     Guid VehicleId,
@@ -177,6 +180,8 @@ public sealed class VehicleMatcher : IVehicleMatcher
             }
         }
 
+        var restrictionsConfigured = VehicleRestrictions.Configured(_options);
+        var regions = restrictionsConfigured ? await VehicleRestrictions.RegionsAsync(_db, stops, ct) : [];
         var results = new List<VehicleMatchResult>();
         var firstStop = stops.FirstOrDefault();
         var lastStop = stops.Count > 0 ? stops[^1] : null;
@@ -238,6 +243,33 @@ public sealed class VehicleMatcher : IVehicleMatcher
                 discardReason = $"jornada_excedida (Duración {totalTripMinutes:F0} min excede jornada {_options.WorkdayHours * 60:F0} min)";
             }
 
+            IReadOnlyList<string> warnings = [];
+            if (restrictionsConfigured && stops.Count > 0)
+            {
+                var localStart = VehicleRestrictions.LocalTime(plannedStartUtc, snapshot.TimeZoneId, _options.FallbackUtcOffsetHours);
+                // Reutiliza las estimaciones del matcher y añade espera y hora pico para la ventana de restricción.
+                var current = localStart;
+                void Travel(decimal minutes) => current = current.AddMinutes((double)TrafficBands.Apply(minutes,
+                    TrafficBands.SpeedFactorAt(_options.TrafficBands, TimeOnly.FromDateTime(current))));
+                Travel(timeToPickup);
+                for (var i = 0; i < stops.Count; i++)
+                {
+                    var stop = stops[i];
+                    if (i > 0)
+                    {
+                        var km = DistanceProvider.HaversineDistanceKm(stops[i - 1].Position, stop.Position) * _options.ApproxDetourFactor;
+                        Travel(Math.Round(km / _options.ApproxSpeedKmh * 60m, 1));
+                    }
+                    if (stop.Kind == RouteStopKind.Delivery && TimeOnly.FromDateTime(current) < stop.WindowStart)
+                        current = current.Date.Add(stop.WindowStart.ToTimeSpan());
+                    current = current.AddMinutes(serviceCost.ServiceMinutes(stop, v, routeHelperCount));
+                }
+                Travel(timeReturn);
+                var reason = VehicleRestrictions.DiscardReason(_options, v, localStart, current, regions);
+                if (isMatch && reason is not null) { isMatch = false; discardReason = reason; }
+                warnings = VehicleRestrictions.Warnings(_options, v, regions);
+            }
+
             decimal weightUtil = v.MaxWeight > 0 ? Math.Round((maxWeightOnTrip / v.MaxWeight) * 100m, 1) : 0m;
             decimal volUtil = v.MaxVolume.HasValue && v.MaxVolume.Value > 0 ? Math.Round((maxVolumeOnTrip / v.MaxVolume.Value) * 100m, 1) : 0m;
             var breakdown = serviceCost.Calculate(totalTripKm, totalTripMinutes, v, maxWeightOnTrip, stops);
@@ -252,7 +284,7 @@ public sealed class VehicleMatcher : IVehicleMatcher
                 fullEstimatedCost,
                 Math.Round(distToPickup, 1),
                 breakdown
-            ));
+            ) { Warnings = warnings });
         }
 
         // Ordenar: Primero los factibles (ordenados por costo total completo, luego menor tamaño adecuado), luego los descartados

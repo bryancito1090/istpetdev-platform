@@ -562,3 +562,40 @@ El payload `SuggestRoutesRequest` admite la propiedad opcional `optionId` (`"A"`
 - Si el planificador omite `optionId` o envía `null`/vacío, el backend toma automáticamente la opción marcada con `isRecommended: true`.
 - Si el planificador especifica un `optionId` explícito (ej. `"A"` o `"C"`), el backend respeta la decisión humana y construye las rutas y reservas asociadas a dicha opción, preservando el principio de control humano.
 
+
+## Restricción horaria y uso extraurbano (#244 — 16-oct-2026)
+
+Configuración opcional `Logistics:VehicleRestrictions`: lista de
+`{ VehicleType?, UsageScope?, Start, End, Zone? }`. Debe existir al menos un
+selector de vehículo; si aparecen ambos, ambos deben coincidir. `Start` y `End`
+usan `HH:mm` local, con intervalos `[Start, End)` y soporte de medianoche.
+Valores inválidos, horas iguales y reglas sin selector se ignoran. Las
+comparaciones de tipo, uso y región ignoran mayúsculas y espacios extremos.
+`Zone`, cuando está presente, compara exactamente `ServicePoint.Region` de
+los puntos consultados de la organización; no geocodifica calles ni determina
+por dónde pasa un tramo. Una región ausente no se inventa.
+
+`VehicleMatcher` devuelve `isMatch: false` y `discardReason` que comienza por
+`restriccion_horaria` si el intervalo de la ruta se cruza con la franja. Conserva
+la precedencia de descartes anteriores de peso, volumen, ocupación y jornada.
+La ventana temporal usa las estimaciones de viaje del matcher, salida del
+depósito, regreso, servicio, espera de apertura y factores de #245; no acredita
+tráfico real ni cartografía de restricciones. `RouteEvaluator` aplica la misma
+regla al itinerario evaluado; `/evaluate` devuelve el error y `/confirm` lo
+rechaza con 409 antes de crear el plan, sin confiar en el cliente.
+
+La nueva lista opcional `Logistics:UrbanRegions` declara qué valores de
+`ServicePoint.Region` se consideran urbanos; evita asumir una clasificación
+geográfica. Si está vacía, no se infiere el ámbito. Cuando `UsageScope=urbano`
+y algún punto tiene región conocida fuera de esa lista, se agrega un aviso
+`uso_extraurbano` y se conserva `isMatch`. Sin estas configuraciones no cambian
+la elegibilidad ni los costos existentes.
+
+`POST /api/v1/route-plans/suggest` agrega `warnings: string[]` a cada elemento
+de `vehicleMatches` y al vehículo elegido (`selectedVehicle`/`chosenVehicle`).
+El asistente muestra esos avisos sin deshabilitar la selección; los descartes
+siguen apareciendo mediante `discardReason`. `RouteEvaluationResult.warnings`
+reutiliza el contrato existente para el mismo aviso. No hay endpoint nuevo ni
+migración. El ejemplo reproducible vive en
+`docs/evidence/244-restricciones/appsettings.RestriccionesSinteticas.json`;
+no se activa automáticamente en la aplicación ni es ordenanza vigente.

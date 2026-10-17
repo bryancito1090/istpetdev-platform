@@ -222,6 +222,19 @@ public sealed class RouteEvaluator : IRouteEvaluator
             }
         }
 
+        // #244: la evaluación/confirmación también aplica la regla; cambiar el vehículo en el cliente no la omite.
+        if (vehicle is not null && VehicleRestrictions.Configured(_options))
+        {
+            var regions = await VehicleRestrictions.RegionsAsync(_db, sequence, ct);
+            var timeZone = _db is null ? null : await _db.Organizations.AsNoTracking()
+                .Where(o => o.Id == DemoOrganization.Id).Select(o => o.TimeZone).FirstOrDefaultAsync(ct);
+            var startLocal = VehicleRestrictions.LocalTime(plannedStartUtc, timeZone, _options.FallbackUtcOffsetHours);
+            var endLocal = VehicleRestrictions.LocalTime(currentTime, timeZone, _options.FallbackUtcOffsetHours);
+            var reason = VehicleRestrictions.DiscardReason(_options, vehicle, startLocal, endLocal, regions);
+            if (reason is not null) errors.Add(reason);
+            warnings.AddRange(VehicleRestrictions.Warnings(_options, vehicle, regions));
+        }
+
         // 5. Validar jornada laboral máxima permitida
         if (_options.WorkdayHours > 0 && totalMinutes > _options.WorkdayHours * 60)
         {

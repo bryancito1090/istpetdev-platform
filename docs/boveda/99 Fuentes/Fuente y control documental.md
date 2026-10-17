@@ -752,3 +752,15 @@ Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y event
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
 
+
+## 16-oct-2026 — Restricciones de vehículo y aviso extraurbano (#244)
+
+Fuente: issue #244 y [[Planificacion potenciada - propuesta del evento]].
+[[Contratos API y eventos]] registra las franjas opcionales por tipo/uso y
+región, el motivo `restriccion_horaria`, la lista explícita de regiones urbanas
+y `warnings` con `uso_extraurbano` en el asistente. La regla también se comprueba
+al evaluar y confirmar en el servidor. Sin configuración conserva el
+comportamiento anterior. Ejemplo y evidencia local en
+`docs/evidence/244-restricciones/`; valores sintéticos, sin migración ni
+activación/despliegue en producción. Las pruebas y capturas se registran por
+separado de las decisiones documentales.
