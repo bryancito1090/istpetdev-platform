@@ -138,4 +138,48 @@ describe('Confirmación de alternativas', () => {
     expect(component.selected()?.optionId).toBe('B');
     expect(fixture.nativeElement.textContent).toContain('Mayor costo');
   });
+  it('muestra la división conjunta de 2 y 3 vehículos entre 5 disponibles con explicación por tamaño y prioridad', () => {
+    const { component, fixture } = setup();
+    const makeRoute = (code: string, weight: number, maxW: number, prio: string, assign: string, cut: string) => ({
+      id: `route-${code}`, vehicleId: `id-${code}`, vehicleCode: code, maxWeight: maxW, maxVolume: 20,
+      loadWeight: weight, weightUtilizationPct: Math.round((weight / maxW) * 100),
+      prioritySummary: prio, assignmentReason: assign, cutReason: cut,
+      orderIds: ['o1'], lines: [], stops: [],
+      evaluation: { isValid: true, totalDistanceKm: 12, totalDurationMinutes: 25, totalCost: 18,
+        maxWeightOnRoute: weight, maxVolumeOnRoute: 1, stops: [], validationErrors: [], warnings: [], coordinates: [[0, 0]] as [number, number][] }
+    });
+    component.decision.update(value => ({
+      ...value!,
+      options: [
+        {
+          ...value!.options[0],
+          totalAvailableVehicles: 5,
+          usedVehiclesCount: 2,
+          splitExplanation: 'Plan conjunto balanceado: se emplean 2 de 5 vehículos disponibles para dividir 4 entregas por capacidad y prioridad.',
+          routes: [
+            makeRoute('VEH-01', 90, 120, 'Prioridad Crítica (1)', 'VEH-01 elegido por ajuste de capacidad (75%).', 'Corte tras bloque crítico; el resto pasa a VEH-02.'),
+            makeRoute('VEH-02', 110, 180, 'Prioridad Alta (2)', 'VEH-02 absorbe el segundo bloque.', 'Cierre del plan de 2 vehículos.')
+          ]
+        },
+        {
+          ...value!.options[1],
+          totalAvailableVehicles: 5,
+          usedVehiclesCount: 3,
+          splitExplanation: 'Plan conjunto por niveles de prioridad: se emplean 3 de 5 vehículos disponibles dedicando unidades separadas.',
+          routes: [
+            makeRoute('VEH-01', 60, 120, 'Prioridad Crítica (1)', 'Dedica unidad ligera a urgencias.', 'Corte prioritario crítico.'),
+            makeRoute('VEH-02', 80, 180, 'Prioridad Alta (1)', 'Unidad mediana para prioridad alta.', 'Corte entre alta y normal.'),
+            makeRoute('VEH-03', 70, 250, 'Prioridad Normal (2)', 'Unidad de soporte para entregas normales.', 'Cierre de los 3 vehículos.')
+          ]
+        }
+      ]
+    }));
+    component.focusVehicle('route-VEH-01');
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('2 de 5 vehículos en conjunto');
+    expect(text).toContain('3 de 5 vehículos en conjunto');
+    expect(text).toContain('VEH-01 elegido por ajuste de capacidad');
+    expect(text).toContain('Corte tras bloque crítico');
+  });
 });

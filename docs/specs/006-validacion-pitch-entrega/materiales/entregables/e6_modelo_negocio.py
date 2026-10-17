@@ -63,8 +63,8 @@ para(doc, "Separamos el ahorro simulado del observado. Una ruta más corta puede
           "si solo traslada el costo a faltantes o a más horas de trabajo. Indicadores del piloto: quiebres evitados y nuevos, "
           "demanda no atendida, costo de transporte y puntualidad, cada uno con unidad, período y denominador.", after=6)
 tabla(doc, ("Evidencia disponible hoy", "Alcance"), [
-    ("Simulación de 90 días: 9,8 % menos costo de transporte que el calendario fijo", "Sintética; no es ahorro observado ni ROI"),
-    ("Comparación A/B/C: la opción recomendada cuesta 4,3 % menos que la propia con críticos primero", "Ensayo técnico sobre un escenario sintético"),
+    ("Simulación de 90 días en Quito: IstpetDev gasta menos que la política reactiva y más que el calendario fijo semanal", "Sintética; no demuestra ahorro. El efecto sobre quiebres se mide en el piloto"),
+    ("Comparación A/B/C: la opción recomendada cuesta 4,3 % menos que la propia con críticos primero (USD 2,99)", "Una sola corrida técnica sobre un escenario sintético"),
 ], (Cm(10.2), Cm(6.4)), negrita_col0=False)
 
 h1(doc, "6", "Próximo paso")

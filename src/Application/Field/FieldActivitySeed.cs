@@ -80,11 +80,16 @@ public sealed class FieldActivitySeed(IApplicationDbContext db, IFieldService fi
         foreach (var group in items.GroupBy(i => i.Warehouse.Id))
         {
             var warehouse = group.First().Warehouse;
-            var depotVehicles = vehicles.Where(v => v.DepotLocationId == warehouse.Id).ToList();
+            var depotVehicles = vehicles.Where(v => v.DepotLocationId == warehouse.Id && v.VehicleType != "camion_pesado").ToList();
+            if (depotVehicles.Count == 0)
+                depotVehicles = vehicles.Where(v => v.DepotLocationId == warehouse.Id).ToList();
             foreach (var chunk in group.Chunk(6))
             {
                 var vehicle = depotVehicles[routeIndex % depotVehicles.Count];
-                var start = nextStart.GetValueOrDefault(vehicle.Id, DateTime.UtcNow.Date.AddHours(12)); // 07:00 Guayaquil.
+                var defaultStart = vehicle.VehicleType == "camion_pesado"
+                    ? DateTime.UtcNow.Date.AddHours(15).AddMinutes(15) // 10:15 Guayaquil (tras franja 06:00-10:00)
+                    : DateTime.UtcNow.Date.AddHours(12); // 07:00 Guayaquil
+                var start = nextStart.GetValueOrDefault(vehicle.Id, defaultStart);
                 var pending = chunk.ToList();
                 var ordered = new List<Item>();
                 var position = Position(warehouse);

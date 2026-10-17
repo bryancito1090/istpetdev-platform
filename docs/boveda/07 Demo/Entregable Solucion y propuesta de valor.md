@@ -80,7 +80,7 @@ La charla del 16-oct ([[Hallazgos de la charla para el Reto 1]]) describe progra
 
 ## Límites que decimos en voz alta
 
-- La escena en vivo usa `demo-region` (unos 15 puntos, 2 vehículos); la escala de 80 puntos y 90 días es simulada.
+- La escena en vivo usa `demo-region` (unos 15 puntos, 2 vehículos); la simulación de 90 días usa el escenario sintético de Quito (40 puntos) y no es una medición.
 - No hay cifras de ahorro validadas con una empresa; los resultados del simulador se presentan con su escenario y semilla.
 - La anticipación de «cinco días» solo se dice si la corrida del spec 005 la respalda ([[Guion del pitch]]).
 

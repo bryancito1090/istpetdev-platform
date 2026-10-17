@@ -719,5 +719,88 @@ describe('RutasPage (FR-21)', () => {
       // Detiene el temporizador sin arrojar error al destruir
       expect(() => fixture.destroy()).not.toThrow();
     });
+
+    it('muestra el banner de plan conjunto multi-vehículo y la explicación del corte por tamaño y prioridad', () => {
+      const plans = [
+        {
+          id: 'plan-joint-1',
+          code: 'R-JOINT-01',
+          revision: 1,
+          status: 'Proposed',
+          vehicleId: 'v-1',
+          vehicleCode: 'VEH-01',
+          totalAvailableVehicles: 5,
+          usedVehiclesCount: 2,
+          maxWeight: 180,
+          weightUtilizationPct: 78,
+          prioritySummary: 'Prioridad Crítica (2)',
+          splitExplanation: 'Plan conjunto balanceado: se emplean 2 de 5 vehículos disponibles para dividir las entregas por tamaño y prioridad.',
+          assignmentReason: 'Vehículo VEH-01 (cap. 180 kg) elegido entre 5 unidades por ajuste de capacidad.',
+          cutReason: 'Corte aplicado tras cubrir entregas críticas; el resto pasa a VEH-02.',
+          plannedStartUtc: '2026-10-16T13:00:00Z',
+          totalDistanceKm: 18,
+          totalDurationMinutes: 40,
+          stopsCount: 3,
+          stops: []
+        },
+        {
+          id: 'plan-joint-2',
+          code: 'R-JOINT-02',
+          revision: 1,
+          status: 'Proposed',
+          vehicleId: 'v-2',
+          vehicleCode: 'VEH-02',
+          totalAvailableVehicles: 5,
+          usedVehiclesCount: 2,
+          maxWeight: 250,
+          weightUtilizationPct: 64,
+          prioritySummary: 'Prioridad Normal (2)',
+          splitExplanation: 'Plan conjunto balanceado: se emplean 2 de 5 vehículos disponibles para dividir las entregas por tamaño y prioridad.',
+          assignmentReason: 'Vehículo VEH-02 (cap. 250 kg) elegido para el bloque secundario.',
+          cutReason: 'Cierre del plan conjunto de 2 vehículos.',
+          plannedStartUtc: '2026-10-16T13:00:00Z',
+          totalDistanceKm: 22,
+          totalDurationMinutes: 50,
+          stopsCount: 3,
+          stops: []
+        }
+      ];
+
+      TestBed.configureTestingModule({
+        imports: [RutasPage],
+        providers: [
+          provideRouter([]),
+          { provide: AuthSession, useValue: { canWrite: () => true } },
+          {
+            provide: ApiService,
+            useValue: {
+              getRoutePlans: vi.fn(() => of(plans)),
+              getRoutePlanById: vi.fn((id: string) => of(plans.find(p => p.id === id) ?? plans[0])),
+              getRoutePlanGeometry: vi.fn(() => of(null)),
+              getDrivers: vi.fn(() => of([])),
+              getServicePoints: vi.fn(() => of([])),
+              getDeliveryOrders: vi.fn(() => of([])),
+              getWarehouses: vi.fn(() => of([])),
+              getEntityData: vi.fn(() => of([])),
+              getRejectedCaptures: vi.fn(() => of({ items: [], count: 0 })),
+            },
+          },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(RutasPage);
+      fixture.detectChanges();
+
+      const banner = fixture.nativeElement.querySelector('[data-testid="coordinated-fleet-plan-banner"]');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('Plan Conjunto · 2 de 5 vehículos');
+      expect(banner.textContent).toContain('Plan conjunto balanceado: se emplean 2 de 5 vehículos disponibles');
+
+      const rationale = fixture.nativeElement.querySelector('[data-testid="route-detail-split-rationale"]');
+      expect(rationale).toBeTruthy();
+      expect(rationale.textContent).toContain('Vehículo VEH-01 (cap. 180 kg) elegido entre 5 unidades');
+      expect(rationale.textContent).toContain('Corte aplicado tras cubrir entregas críticas');
+      fixture.destroy();
+    });
   });
 });

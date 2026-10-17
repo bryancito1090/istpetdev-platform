@@ -540,6 +540,49 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
 
       <!-- Listado y detalle de rutas -->
       @if (!loading() && visibleRoutePlans().length > 0) {
+        <section class="bg-white border border-[#dce4ed] rounded-xl p-4 shadow-2xs space-y-3" data-testid="coordinated-fleet-plan-banner" aria-label="Plan conjunto de flota">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200">
+                <svg lucideTruck [size]="14" aria-hidden="true"></svg>
+                Plan Conjunto · {{ coordinatedFleetSummary().usedVehiclesCount }} de {{ coordinatedFleetSummary().totalAvailableVehicles }} vehículos
+              </span>
+              <h2 class="text-sm font-bold text-[#1A2C44]">División coordinada de entregas por tamaño vehicular y prioridad</h2>
+            </div>
+            <span class="text-xs text-[#53647b] font-mono">{{ coordinatedFleetSummary().plans.length }} ruta(s) activas en paralelo</span>
+          </div>
+          <p class="text-xs text-[#2D3748] leading-relaxed bg-[#F8FAFC] border border-[#E3E8EE] rounded-lg p-3" data-testid="coordinated-fleet-split-explanation">
+            {{ coordinatedFleetSummary().splitExplanation }}
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            @for (plan of coordinatedFleetSummary().plans; track plan.id) {
+              <button
+                type="button"
+                (click)="selectPlan(plan.id)"
+                class="text-left p-2.5 rounded-lg border text-xs transition-colors flex flex-col gap-1"
+                [ngClass]="selectedPlanId() === plan.id ? 'border-[#00A7C4] bg-sky-50/60' : 'border-[#E3E8EE] bg-white hover:bg-[#F8FAFC]'">
+                <div class="flex items-center justify-between gap-2">
+                  <strong class="text-[#1A2C44] font-semibold">{{ plan.vehicleCode || plan.code }}</strong>
+                  <span class="text-[11px] font-mono text-[#53647b]">{{ plan.stopsCount }} paradas · {{ plan.totalDistanceKm | number:'1.0-1' }} km</span>
+                </div>
+                @if (plan.maxWeight || plan.prioritySummary) {
+                  <div class="flex flex-wrap gap-1.5 text-[11px]">
+                    @if (plan.maxWeight) {
+                      <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">Cap. {{ plan.maxWeight | number:'1.0-0' }} kg @if (plan.weightUtilizationPct) { ({{ plan.weightUtilizationPct | number:'1.0-0' }}%) }</span>
+                    }
+                    @if (plan.prioritySummary) {
+                      <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-medium">{{ plan.prioritySummary }}</span>
+                    }
+                  </div>
+                }
+                @if (plan.cutReason || plan.assignmentReason) {
+                  <p class="text-[11px] text-[#4F5B66] line-clamp-2">{{ plan.cutReason || plan.assignmentReason }}</p>
+                }
+              </button>
+            }
+          </div>
+        </section>
+
         <div class="rutas-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
           <section class="rutas-registry" aria-labelledby="registered-routes-title">
             <div class="registry-heading"><div><h2 id="registered-routes-title">Rutas registradas ({{ visibleRoutePlans().length }})</h2><p>Selecciona una ruta para ver su recorrido. Las etiquetas comparan propuestas de la misma fecha; revisa también sus paradas y cobertura.</p></div><div class="registry-controls"><button type="button" aria-label="Ver rutas anteriores" (click)="registeredRoutes.scrollBy({left: -330})"><svg lucideArrowLeft [size]="18"></svg></button><button type="button" aria-label="Ver más rutas" (click)="registeredRoutes.scrollBy({left: 330})"><svg lucideArrowRight [size]="18"></svg></button></div></div>
@@ -549,6 +592,12 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <div class="route-card-heading"><strong>{{ plan.code }}</strong><span class="route-status" [class.proposed]="plan.status === 'Proposed'">{{ plan.status === 'Proposed' ? 'Propuesta' : plan.status === 'Published' ? 'Publicada' : plan.status }}</span></div>
                   @if (plan.status === 'Proposed') { <div class="route-reasons" aria-label="Diferencias de esta propuesta">@for (label of registeredRouteLabels(plan); track label) { <span>{{ label }}</span> }</div> }
                   <div class="route-card-vehicle"><svg lucideTruck [size]="16"></svg>{{ plan.vehicleDescription || plan.vehiclePlate || plan.vehicleCode || 'Sin vehículo' }}<span>{{ plan.stopsCount }} paradas</span></div>
+                  @if (plan.prioritySummary || plan.maxWeight) {
+                    <div class="text-[11px] text-[#4F5B66] flex flex-wrap gap-1.5">
+                      @if (plan.maxWeight) { <span>Cap. {{ plan.maxWeight | number:'1.0-0' }} kg</span> }
+                      @if (plan.prioritySummary) { <span>· {{ plan.prioritySummary }}</span> }
+                    </div>
+                  }
                   <div class="route-card-metrics"><strong>{{ plan.totalCost == null ? 'Costo sin dato' : '$ ' + (plan.totalCost | number:'1.2-2') }}</strong><span>{{ plan.totalDistanceKm | number:'1.0-1' }} km · {{ plan.totalDurationMinutes | number:'1.0-0' }} min</span></div>
                   <span class="route-card-link">{{ selectedPlanId() === plan.id ? 'Viendo recorrido' : 'Ver recorrido' }}<svg lucideArrowUpRight [size]="15"></svg></span>
                 </button>
@@ -657,11 +706,27 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 <section class="rounded-xl border border-[#dce4ed] bg-white p-4 space-y-4" data-route-assignment aria-label="Asignación de la ruta">
                   <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div class="flex items-start gap-3 min-w-0"><svg lucideWarehouse [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Bodega de origen</dt><dd class="text-sm font-semibold text-[#152a42] break-words">{{ selectedDetail()!.originWarehouseName || 'Sin bodega' }}</dd></div></div>
-                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}</dd></div></div>
+                    <div class="flex items-start gap-3 min-w-0"><svg lucideTruck [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div><dt class="text-xs text-[#53647b] mb-1">Vehículo</dt><dd class="text-sm font-semibold text-[#152a42]">{{ selectedDetail()!.vehicleDescription || selectedDetail()!.vehiclePlate || selectedDetail()!.vehicleCode || 'Sin vehículo' }}@if (selectedDetail()!.maxWeight) { <span class="text-xs font-normal text-[#53647b]"> · Cap. {{ selectedDetail()!.maxWeight | number:'1.0-0' }} kg</span> }</dd></div></div>
                     @if (selectedDetail()!.status === 'Published') {
                       <div class="flex items-start gap-3 min-w-0"><svg lucideUserRound [size]="20" class="text-sky-700 shrink-0 mt-1"></svg><div class="min-w-0"><dt class="text-xs text-[#53647b] mb-1">Conductor asignado</dt><dd class="text-sm font-semibold break-words" [class]="selectedDetail()!.driverName ? 'text-[#152a42]' : 'text-amber-800'">{{ selectedDetail()!.driverName || 'Sin conductor asignado' }}</dd></div></div>
                     }
                   </dl>
+                  @if (selectedDetail()!.splitExplanation || selectedDetail()!.assignmentReason || selectedDetail()!.cutReason) {
+                    <div class="rounded-lg bg-[#F8FAFC] border border-[#E3E8EE] p-3 text-xs text-[#2D3748] space-y-1.5" data-testid="route-detail-split-rationale">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold text-[#1A2C44]">Coordinación de flota ({{ selectedDetail()!.usedVehiclesCount || coordinatedFleetSummary().usedVehiclesCount }} de {{ selectedDetail()!.totalAvailableVehicles || coordinatedFleetSummary().totalAvailableVehicles }} vehículos)</span>
+                        @if (selectedDetail()!.prioritySummary) {
+                          <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 text-[11px] font-medium">{{ selectedDetail()!.prioritySummary }}</span>
+                        }
+                      </div>
+                      @if (selectedDetail()!.assignmentReason) {
+                        <p><strong>Elección por tamaño y capacidad:</strong> {{ selectedDetail()!.assignmentReason }}</p>
+                      }
+                      @if (selectedDetail()!.cutReason) {
+                        <p><strong>Por qué corta y divide entregas:</strong> {{ selectedDetail()!.cutReason }}</p>
+                      }
+                    </div>
+                  }
                   @if (selectedDetail()!.status === 'Published') {
                     @if ((selectedDetail()!.unassignedDeliveries ?? 0) > 0) {
                       <p role="status" class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">{{ selectedDetail()!.unassignedDeliveries }} entregas pendientes de asignar a un conductor.</p>
@@ -1864,6 +1929,23 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     <div class="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 space-y-2">
                       <div class="flex flex-wrap gap-2">@if (opt.isRecommended) { <strong>Recomendada por el planificador</strong> } @for (label of wizardOptionLabels(opt); track label) { <span>{{ label }}</span> }</div>
                       <p>{{ opt.description }}</p>
+                      @if (opt.splitExplanation) {
+                        <p class="text-[11px] bg-white/80 border border-sky-200 rounded-lg p-2 text-slate-800">{{ opt.splitExplanation }}</p>
+                      }
+                      @if (opt.fleetRoutes && opt.fleetRoutes.length > 0) {
+                        <div class="space-y-1.5 pt-1">
+                          <p class="text-[11px] font-semibold text-sky-950">Distribución conjunta ({{ opt.usedVehiclesCount || opt.fleetRoutes.length }} de {{ opt.totalAvailableVehicles || opt.fleetRoutes.length }} vehículos):</p>
+                          @for (fr of opt.fleetRoutes; track fr.routeId) {
+                            <div class="rounded-lg bg-white border border-sky-200 p-2 text-[11px] text-slate-700">
+                              <div class="flex items-center justify-between font-semibold text-slate-900">
+                                <span>{{ fr.vehicleCode }} (Cap. {{ fr.maxWeight | number:'1.0-0' }} kg · Uso {{ fr.weightUtilizationPct | number:'1.0-0' }}%)</span>
+                                <span>{{ fr.prioritySummary }}</span>
+                              </div>
+                              @if (fr.cutReason) { <p class="mt-0.5 text-slate-600">{{ fr.cutReason }}</p> }
+                            </div>
+                          }
+                        </div>
+                      }
                       <div class="flex flex-wrap gap-4 font-semibold"><span>{{ opt.evaluation.totalDistanceKm | number:'1.0-1' }} km</span><span>{{ opt.evaluation.totalDurationMinutes | number:'1.0-0' }} min</span><span>$ {{ opt.evaluation.totalCost | number:'1.2-2' }}</span></div>
                     </div>
                     <div class="space-y-3" aria-label="Productos, orígenes y destinos">
@@ -2443,6 +2525,24 @@ export class RutasPage implements OnInit, OnDestroy {
   });
   readonly loadedStopsCount = computed(() => this.visibleRoutePlans().reduce((sum, route) => sum + route.stopsCount, 0));
   readonly loadedVehicleCount = computed(() => new Set(this.visibleRoutePlans().map(route => route.vehicleId)).size);
+  readonly coordinatedFleetSummary = computed(() => {
+    const active = currentPlans(this.visibleRoutePlans());
+    const detail = this.selectedDetail();
+    const usedCount = detail?.usedVehiclesCount || active[0]?.usedVehiclesCount || active.length || 1;
+    const totalAvail = Math.max(usedCount, detail?.totalAvailableVehicles || active[0]?.totalAvailableVehicles || active.length || 1);
+    const vehicleCodes = active.map(p => p.vehicleCode || p.code).join(' + ');
+    const splitExplanation = detail?.splitExplanation
+      || active.find(p => p.splitExplanation)?.splitExplanation
+      || (usedCount > 1
+        ? `Plan conjunto coordinado con ${usedCount} de ${totalAvail} vehículos disponibles (${vehicleCodes}): se divide la operación por tamaño de vehículo y prioridad de entrega para despachar en paralelo sin saturar capacidad.`
+        : `Plan concentrado en 1 de ${totalAvail} vehículos disponibles (${vehicleCodes}) al cubrir las paradas de entrega dentro de su capacidad.`);
+    return {
+      usedVehiclesCount: usedCount,
+      totalAvailableVehicles: totalAvail,
+      splitExplanation,
+      plans: active
+    };
+  });
 
   openPreviousDecision(): void {
     const id = this.previousDecisionId();

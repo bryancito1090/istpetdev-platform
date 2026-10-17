@@ -759,9 +759,9 @@ def slide_abc(deck):
     right = CHILLO_RIGHT
     head = chrome(deck, s, False, "Anexo 5.7 · Prototipo / demo",
                   "A / B / C: el motor compara y recomienda",
-                  "Fuente: ensayo técnico #285 (PR #295, 1585ab7), 02-suggest-pitch-abc.json · "
-                  "demo-quito-planificacion, corrida local 17-oct · 4 pedidos, 6 entregas críticas, "
-                  "55,9 km · diésel USD 3,11/gal (Primicias, 12-oct) · matriz P-02.", 5,
+                  "Fuente: ensayo técnico local del motor, 17-oct · escenario sintético de Quito · "
+                  "4 pedidos, 6 entregas críticas, 55,9 km · diésel USD 3,11/gal (Primicias, "
+                  "12-oct). Una sola corrida, sin clientes reales.", 5,
                   source_right=right)
     tl.add(head, "fade", dur=400)
     band = sh.add_group_shape()
