@@ -1,7 +1,7 @@
 ---
 tipo: fuente
 estado: vigente
-actualizado: 2026-10-16
+actualizado: 2026-10-17
 tags: [istpetdev, documentacion]
 ---
 
@@ -73,7 +73,7 @@ Estas fuentes verifican límites de plataforma y convenciones; no validan el aho
 | 2026-10-07 | Skills y archivos de IA fuera de la bóveda | Se dejan de versionar `.agents/`, `.claude/`, `AGENTS.md`, `CLAUDE.md` y `GEMINI.md` (quedan en [[Catalogo y plan de skills]] como documentación, con una nota por skill en `08 Skills/`); el verificador pasa a `.github/scripts/check_vault.py` |
 | 2026-10-08 | Skill istpetdev-dbflow incorporada a la bóveda | Flujo colaborativo de base de datos en RDS dev, aislamiento por integrante, túnel SSM y resolución de conflictos incorporado a `08 Skills/` y al catálogo |
 | 2026-10-11 | Formalización y cierre de decisiones Frontend (ADR-04, ADR-05, ADR-17, ADR-18) | Jefe de Frontend y Bryan: Leaflet para mapas en shared/ui/map-view, Arquetipo B Técnico/Minimalista con Lucide Icons y tokens Tailwind, PWA offline con signature_pad e idb, cliente OIDC PKCE para Cognito |
-| 2026-10-11 | Normativa cromática oficial Expo Clean Ecuador y tokens de diseño | Identidad gráfica canónica extraída del material oficial del evento (Clean Cyan `#00A7C4`, Expo Lime `#9EC200`, Energy Orange `#EA601F`) en [[Sistema de diseno y colores]] y configurada en Tailwind |
+| 2026-10-11 | Normativa cromática oficial Expo Clean Ecuador y tokens de diseño | Identidad gráfica canónica extraída del material oficial del evento (Clean Cyan `#00A7C4`, Expo Lime `#9EC200`, Energy Orange `#EA601F`) en [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]] y configurada en Tailwind |
 | Pendiente | Respuestas de capacitación | Actualizar reglas/alcance al recibirlas |
 
 ## Actualizar el manual
@@ -130,7 +130,7 @@ Fuente: acuerdo técnico liderado por el Jefe de Frontend junto a Bryan para hab
 
 ## Normativa cromática oficial Expo Clean Ecuador — 11 de octubre de 2026
 
-Fuente: flyer promocional oficial y material de difusión de la Feria Internacional de Limpieza e Higiene Profesional — Expo Clean Ecuador 2026 (Centro de Exposiciones Quito). Se define formalmente [[Sistema de diseno y colores]], estableciendo los tokens semánticos en Tailwind CSS (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`, Slate `#2D3748`) para `apps/web` y `apps/mobile`, armonizados con [[Requisitos y aceptacion|RNF-09]] (accesibilidad multicanal de estados) y el Arquetipo B.
+Fuente: flyer promocional oficial y material de difusión de la Feria Internacional de Limpieza e Higiene Profesional — Expo Clean Ecuador 2026 (Centro de Exposiciones Quito). Se define formalmente [[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]], estableciendo los tokens semánticos en Tailwind CSS (Cyan `#00A7C4`, Lime `#9EC200`, Orange `#EA601F`, Slate `#2D3748`) para `apps/web` y `apps/mobile`, armonizados con [[Requisitos y aceptacion|RNF-09]] (accesibilidad multicanal de estados) y el Arquetipo B.
 
 Validación del 11 de octubre: **72 notas Markdown**, **585 enlaces internos resueltos**, frontmatter, enlaces e integridad de bóveda comprobados por el verificador.
 
@@ -745,3 +745,54 @@ Verificación documental: **109 notas Markdown**, **0 errores**; se conservan lo
 Fuente: issue #246 y el diseño de [[Planificacion potenciada - propuesta del evento]]. [[Contratos API y eventos]] registra los tipos `Congestion`, `Manifestacion` y `Accidente` con `slowdownFactor` en `POST /api/v1/incidents`, el error 400 `invalid_slowdown_factor` y la decisión de guardar el factor al final de la descripción sin migración; el spec 002 añade FR-27 y la tarea T18. `BloqueoVial` no cambia. Los factores de prueba son los presets de `incidentes.json` (#243), que su README declara como supuestos de la demo. No altera baselines ni datos; no se despliega.
 
 Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Reserva antes del despacho, cancelación y cantidad por línea (issue #199, fase 2)
+
+Fuente: issue #199 y los pendientes de T15 del spec 002. [[Contratos API y eventos]] registra `POST /api/v1/route-plans/{id}/cancel`, `InputJson.orderLines` de `confirm`, el cálculo de `inTransit` con entregas `Draft` y la carga de `confirm` desde lo planificado por línea; el spec 002 añade la tarea T19. La consolidación parcial (`VIGILAR`) queda fuera de alcance. Sin migración ni cambios de datos; no se despliega.
+
+Verificación documental: **109 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+## 16-oct-2026 — Consolidación parcial, revisiones con pedidos y botón de cancelar (issue #199, cierre)
+
+Fuente: issue #199 y los pendientes de T15 y T19 del spec 002. [[Contratos API y eventos]] registra la consolidación parcial en `POST /api/v1/route-plans`, el descuento de pedidos al publicar una revisión que retira una parada, la suma inversa en `revert`, el comportamiento de los planes sin `orderLines` y el botón «Cancelar ruta» del panel. El spec 002 añade FR-28 y la tarea T21. No hay endpoints ni campos nuevos, migración ni cambios de datos; no se despliega.
+
+Verificación documental: **117 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.
+
+
+## 16-oct-2026 — Restricciones de vehículo y aviso extraurbano (#244)
+
+Fuente: issue #244 y [[Planificacion potenciada - propuesta del evento]].
+[[Contratos API y eventos]] registra las franjas opcionales por tipo/uso y
+región, el motivo `restriccion_horaria`, la lista explícita de regiones urbanas
+y `warnings` con `uso_extraurbano` en el asistente. La regla también se comprueba
+al evaluar y confirmar en el servidor. Sin configuración conserva el
+comportamiento anterior. Ejemplo y evidencia local en
+`docs/evidence/244-restricciones/`; valores sintéticos, sin migración ni
+activación/despliegue en producción. Las pruebas y capturas se registran por
+separado de las decisiones documentales.
+
+## 16-oct-2026 — Comparación A/B/C sobre corrida calculada (#276)
+
+Fuente: issue #276, contrato de #241 y configuración incorporada por #275 en
+develop `33387ca` (PR #283). La pantalla inicia con la API; la corrida guardada
+solo se muestra al solicitarla y usa el mapeo compartido, metadatos de commit,
+fecha y SHA de configuración. Se quitó la maqueta numérica. T6 sigue abierta:
+no se pudo ejecutar el generador porque Docker/API local no estaban activos, y
+Joseph aún debe aprobar la selección del pitch. No se reinició ninguna base ni
+se produjo evidencia final. Resultados y límites: [revisión T6](../../specs/006-validacion-pitch-entrega/revision-issue-276-t6.md).
+
+## 16-oct-2026 — Consulta sin efectos y recepción única de retornos (#280)
+
+Fuente: revisión de seguridad del issue #280 sobre #247. [[Contratos API y eventos]]
+registra los roles acotados del GET, el número completo y el rechazo de colisiones,
+la idempotencia de receive y la exclusión de bultos ya devueltos. La generación
+explícita conserva la escritura de custodia. Evidencia local y límites en
+`docs/evidence/280-retornos/`: 121 pruebas de campo, incluidas 24 nuevas por HTTP;
+los casos de consulta, permiso y replay fallan con el código previo. Sin migración,
+conexión a bases compartidas, despliegue ni afirmaciones nuevas para el pitch.
+
+## 17-oct-2026 — Replanificar rutas del asistente de pedidos (issue #300)
+
+Fuente: issue #300 y el hallazgo de T21 del spec 002. [[Contratos API y eventos]] registra que `POST /api/v1/route-plans/{id}/replan` acepta rutas del asistente y conserva la recogida en bodega, que el evaluador de incidentes arma los tramos de las rutas sin `legs` y que una parada en bodega se nombra por su bodega. El spec 002 añade FR-29 y la tarea T22, con el error reproducido en develop. No hay endpoints ni campos nuevos, migración ni cambios de datos; no se despliega.
+
+Verificación documental: **117 notas Markdown**, **0 errores**; se conservan los cuatro avisos de lenguaje preexistentes.

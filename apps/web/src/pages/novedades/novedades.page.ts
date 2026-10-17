@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthSession } from '@entities/session';
-import { FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
+import { EstimatedBacktrackDto, FieldExceptionsApiService, FieldRequestOrderDto, ReceiptExceptionDto } from '@shared/api';
 
 /** Mensaje legible de un error HTTP: el detalle de Problem Details si existe. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -23,6 +23,52 @@ const STATUS_LABELS: Record<string, string> = {
   Delivered: 'Entregado',
   Cancelled: 'Cancelado',
 };
+
+// Etiquetas del catálogo de motivos (V2, #236). Un texto fuera del catálogo se muestra tal cual.
+const REASON_LABELS: Record<string, string> = {
+  Faltante: 'Faltante',
+  Sobrante: 'Sobrante',
+  Daño: 'Daño',
+  PrecintoViolado: 'Precinto violado',
+  LoteNoCoincide: 'Lote no coincide',
+  CadenaDeFrio: 'Cadena de frío',
+  ErrorRotulado: 'Error de rotulado',
+};
+
+const NO_REASON = 'Sin motivo registrado';
+
+export interface RejectionReasonSummary {
+  reason: string;
+  label: string;
+  lines: number;
+  units: number;
+}
+
+/** #236: líneas y unidades rechazadas por motivo, de mayor a menor número de líneas. */
+export function summarizeRejections(receipts: ReceiptExceptionDto[]): RejectionReasonSummary[] {
+  const byReason = new Map<string, RejectionReasonSummary>();
+  for (const r of receipts) {
+    for (const l of r.lines) {
+      if (l.quantityRejected <= 0) continue;
+      const reason = l.rejectionReason?.trim() || NO_REASON;
+      const row = byReason.get(reason) ?? { reason, label: REASON_LABELS[reason] ?? reason, lines: 0, units: 0 };
+      row.lines += 1;
+      row.units += l.quantityRejected;
+      byReason.set(reason, row);
+    }
+  }
+  return [...byReason.values()].sort((a, b) => b.lines - a.lines || b.units - a.units || a.label.localeCompare(b.label));
+}
+
+/** Número con coma decimal, como se lee en Ecuador: 18,4 · 8,30. */
+function decimalEs(value: number, digits: number): string {
+  return value.toFixed(digits).replace('.', ',');
+}
+
+/** #237: «Reentrega estimada: 18,4 km · USD 8,30 · 0,6 h». Nunca se presenta como costo medido. */
+export function formatBacktrack(b: EstimatedBacktrackDto): string {
+  return `Reentrega estimada: ${decimalEs(b.km, 1)} km · USD ${decimalEs(b.costUsd, 2)} · ${decimalEs(b.hours, 1)} h`;
+}
 
 /**
  * #116: novedades de campo para el Planificador.
@@ -87,6 +133,20 @@ const STATUS_LABELS: Record<string, string> = {
           <p class="text-sm text-slate-500 p-4 rounded-lg border border-dashed border-slate-300">No hay recepciones con rechazos ni ajustes.</p>
         } @else {
           <p class="text-xs text-slate-500">Mostrando {{ receipts().length }} de {{ receiptsTotal() }}.</p>
+          @if (rejectionSummary().length > 0) {
+            <div role="region" class="rounded-xl border border-slate-200 bg-white p-4" aria-labelledby="titulo-resumen-motivos" data-rejection-summary>
+              <h3 id="titulo-resumen-motivos" class="text-sm font-semibold text-slate-900">Líneas rechazadas por motivo</h3>
+              <p class="text-[11px] text-slate-500">Calculado sobre las {{ receipts().length }} recepciones mostradas.</p>
+              <ul class="mt-2 flex flex-wrap gap-2">
+                @for (s of rejectionSummary(); track s.reason) {
+                  <li class="text-xs px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-800" [attr.data-reason]="s.reason">
+                    <span class="font-semibold">{{ s.label }}</span>:
+                    {{ s.lines }} {{ s.lines === 1 ? 'línea' : 'líneas' }} · {{ s.units }} {{ s.units === 1 ? 'unidad' : 'unidades' }}
+                  </li>
+                }
+              </ul>
+            </div>
+          }
           @for (r of receipts(); track r.receiptId) {
             <article class="rounded-xl border border-slate-200 bg-white p-4 space-y-3" [attr.data-receipt]="r.receiptId">
               <div class="flex flex-wrap items-center gap-2 justify-between">
@@ -108,6 +168,16 @@ const STATUS_LABELS: Record<string, string> = {
                 </div>
               </div>
 
+              @if (r.estimatedBacktrack; as b) {
+                <p class="text-xs text-slate-700" data-backtrack
+                  title="Viaje de ida y vuelta bodega de origen → punto para reponer lo rechazado. No se suma al costo de la ruta original.">
+                  {{ backtrackLabel(b) }}
+                  @if (b.isApproximate) {
+                    <span class="text-amber-800">(aproximado: distancia en línea recta)</span>
+                  }
+                </p>
+              }
+
               <div class="overflow-x-auto">
                 <table class="w-full text-xs">
                   <thead class="text-slate-500 text-left">
@@ -126,7 +196,7 @@ const STATUS_LABELS: Record<string, string> = {
                         <td class="py-1 pr-3">{{ l.sku }} {{ l.productName }} <span class="text-slate-400">({{ l.lotCode }})</span></td>
                         <td class="py-1 pr-3 text-right">{{ l.quantityAccepted }}</td>
                         <td class="py-1 pr-3 text-right" [class.text-rose-700]="l.quantityRejected > 0">{{ l.quantityRejected }}</td>
-                        <td class="py-1 pr-3">{{ l.quantityRejected > 0 ? (l.rejectionReason || 'Sin motivo registrado') : '—' }}</td>
+                        <td class="py-1 pr-3">{{ l.quantityRejected > 0 ? reasonLabel(l.rejectionReason) : '—' }}</td>
                         <td class="py-1 pr-3 text-right">{{ l.remainingDeclared ?? '—' }}</td>
                         <td class="py-1" [title]="l.adjustmentReason ?? ''">
                           @if (l.adjustmentQuantity != null) {
@@ -255,6 +325,7 @@ export class NovedadesPage implements OnInit {
   // Puntos vistos en la última carga sin filtro, para no perder opciones al filtrar.
   private readonly knownPoints = signal<Array<{ id: string; code: string; name: string }>>([]);
   readonly pointOptions = computed(() => this.knownPoints());
+  readonly rejectionSummary = computed(() => summarizeRejections(this.receipts()));
 
   readonly orders = signal<FieldRequestOrderDto[]>([]);
   readonly ordersLoading = signal(false);
@@ -314,6 +385,15 @@ export class NovedadesPage implements OnInit {
         this.ordersLoading.set(false);
       },
     });
+  }
+
+  backtrackLabel(b: EstimatedBacktrackDto): string {
+    return formatBacktrack(b);
+  }
+
+  reasonLabel(reason: string | null | undefined): string {
+    const trimmed = reason?.trim();
+    return trimmed ? (REASON_LABELS[trimmed] ?? trimmed) : NO_REASON;
   }
 
   statusLabel(status: string): string {

@@ -82,4 +82,42 @@ public sealed class RiskPendingDeliveriesTests(PostgisContainer postgres) : ICla
         var item = Assert.Single(items, i => i.ServicePointId == point.Id && i.ProductId == product.Id);
         Assert.Equal(30m, item.InTransit); // Dispatched 10 + InTransit 10 + Delivered pendiente 10
     }
+
+    // #199: lo publicado y reservado (Draft sin despachar) cuenta como en camino por lo planificado, solo hacia su punto;
+    // el lote puede venir de bodega sin saldo en el punto. Lo cancelado no cuenta.
+    [Fact]
+    public async Task In_transit_counts_published_draft_deliveries_by_planned_quantity_only_for_their_point()
+    {
+        var connection = postgres.NewDatabase();
+        await using var db = TestDb.Context(connection);
+
+        var point = new ServicePoint { Code = "SP-DRAFT", Name = "Punto", Criticality = "normal", IsActive = true };
+        var other = new ServicePoint { Code = "SP-OTHER", Name = "Otro", Criticality = "normal", IsActive = true };
+        var product = new Product { Sku = "SKU-DRAFT", Name = "Producto", BaseUnit = "u", IsActive = true };
+        var warehouseLot = new Lot { ProductId = product.Id, Code = "L-BOD" };
+        var warehouse = new DomainLocation { Code = "B-DRAFT", Name = "Bodega", Kind = LocationKinds.Warehouse, IsActive = true };
+        var pointLocation = new DomainLocation { Code = "SP-DRAFT", Name = "Punto", Kind = LocationKinds.ServicePoint, ServicePointId = point.Id, IsActive = true };
+        var otherLocation = new DomainLocation { Code = "SP-OTHER", Name = "Otro", Kind = LocationKinds.ServicePoint, ServicePointId = other.Id, IsActive = true };
+        db.AddRange(point, other, product, warehouseLot, warehouse, pointLocation, otherLocation);
+
+        void AddDelivery(string code, ServicePoint destination, string status, decimal planned, decimal dispatched)
+        {
+            var delivery = new Delivery { Code = code, OriginLocationId = warehouse.Id, ServicePointId = destination.Id, Status = status,
+                                          DispatchedAtUtc = status == DeliveryStates.Draft || status == DeliveryStates.Cancelled ? null : DateTime.UtcNow };
+            db.Add(delivery);
+            db.Add(new DeliveryLine { DeliveryId = delivery.Id, LotId = warehouseLot.Id, PlannedQuantity = planned, DispatchedQuantity = dispatched });
+        }
+
+        AddDelivery("D-DRAFT", point, DeliveryStates.Draft, planned: 100m, dispatched: 0m);
+        AddDelivery("D-DISP", point, DeliveryStates.Dispatched, planned: 20m, dispatched: 20m);
+        AddDelivery("D-CANC", point, DeliveryStates.Cancelled, planned: 40m, dispatched: 0m);
+        AddDelivery("D-OTHER", other, DeliveryStates.Draft, planned: 70m, dispatched: 0m);
+        await db.SaveChangesAsync();
+
+        var options = Options();
+        var items = await new RiskCalculator(db, new OperationalClock(db, options), options).CalculateAsync();
+
+        Assert.Equal(120m, Assert.Single(items, i => i.ServicePointId == point.Id && i.ProductId == product.Id).InTransit);
+        Assert.Equal(70m, Assert.Single(items, i => i.ServicePointId == other.Id && i.ProductId == product.Id).InTransit);
+    }
 }

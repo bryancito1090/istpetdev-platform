@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "propuesta-pendiente-joseph",
+  "fixture": "demo-quito-planificacion",
+  "referenceWarehouseCode": "BOD-0001",
+  "warehouseSelection": "automatic-by-sourcing-api",
+  "plannedDate": "2026-10-16",
+  "timeZone": "America/Guayaquil",
+  "demandRule": {
+    "source": "consumos.csv",
+    "startDate": "2026-10-09",
+    "endDate": "2026-10-15",
+    "requiredDailySamples": 7,
+    "coverageDays": 3,
+    "rounding": "ceil",
+    "missingData": "fail",
+    "subtractDestinationStock": false
+  },
+  "orders": [
+    { "key": "pitch-276-cam", "pointCode": "PTO-0004", "priority": "Critical", "productSkus": ["PRD-0001", "PRD-0003"] },
+    { "key": "pitch-276-enrique-garces", "pointCode": "PTO-0005", "priority": "Critical", "productSkus": ["PRD-0001", "PRD-0003"] },
+    { "key": "pitch-276-iess-sur", "pointCode": "PTO-0006", "priority": "Critical", "productSkus": ["PRD-0001", "PRD-0003"] },
+    { "key": "pitch-276-mariscal", "pointCode": "PTO-0015", "priority": "Normal", "productSkus": ["PRD-0001"] }
+  ]
+}

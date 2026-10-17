@@ -11,6 +11,8 @@ public static class DeliveryStates
     public const string Delivered = "Delivered";
     public const string Received = "Received";
     public const string Partial = "Partial";
+    public const string NotDelivered = "NotDelivered";
+    public const string Returned = "Returned";
     public const string Cancelled = "Cancelled";
 
     // Recibo final previo o estado terminal: no admite una segunda recepción.
@@ -32,6 +34,8 @@ public static class HandlingUnitStates
     public const string Delivered = "Delivered";
     public const string Received = "Received";
     public const string Partial = "Partial";
+    public const string NotDelivered = "NotDelivered";
+    public const string Returned = "Returned";
 
     public static bool IsPrepared(string status) => status is Sealed or Prepared;
     public static bool IsReceived(string status) => status is Received or Partial;
@@ -45,4 +49,6 @@ public static class CustodyEventKinds
     public const string Delivered = "Delivered";
     public const string Received = "Received";
     public const string Partial = "Partial";
+    public const string NotDelivered = "NotDelivered";
+    public const string Returned = "Returned";
 }

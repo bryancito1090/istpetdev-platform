@@ -141,6 +141,83 @@ public sealed class AgentJourneyTests(PostgisContainer postgres) : IClassFixture
         Assert.All(view.Decisions, d => Assert.NotEmpty(d.DriverMessage));
     }
 
+    // #300: el agente de incidente detecta y replanifica una ruta del asistente de pedidos (recogida en bodega + entregas).
+    [Fact]
+    public async Task Automatic_incident_replans_an_assistant_route_keeping_its_pickup()
+    {
+        var connection = postgres.NewDatabase();
+        var trigger = new FakeN8n();
+        await using var api = NewApi(connection, trigger, auto: true);
+        using var planner = api.ClientFor(TestTokens.Planner);
+        await ResetAndSeedAsync(planner, connection);
+        using var automation = Automation(api.CreateClient());
+        trigger.Client = automation;
+
+        Guid warehouseId, vehicleId;
+        var points = new Dictionary<string, (Guid Id, decimal Lat, decimal Lon)>();
+        var orderIds = new List<Guid>();
+        await using (var db = TestDb.Context(connection))
+        {
+            var warehouse = await db.Locations.SingleAsync(l => l.Kind == LocationKinds.Warehouse);
+            warehouseId = warehouse.Id;
+            vehicleId = await db.Vehicles.Where(v => v.Code == "VEH-01").Select(v => v.Id).SingleAsync();
+            var productId = await db.Products.Where(p => p.Sku == "DES-01").Select(p => p.Id).SingleAsync();
+            foreach (var point in await db.ServicePoints.Where(p => p.Code == "CLI-S09" || p.Code == "IND-S13").ToListAsync())
+            {
+                points[point.Code] = (point.Id, (decimal)point.Position!.Y, (decimal)point.Position.X);
+                var order = new DeliveryOrder { OrderNumber = $"ORD-J-{Guid.NewGuid():N}"[..16], DestinationServicePointId = point.Id,
+                                                RequiredDateUtc = DateTime.UtcNow.AddDays(1), SourceType = "Manual" };
+                db.AddRange(order, new DeliveryOrderLine { DeliveryOrderId = order.Id, ProductId = productId, RequestedQuantity = 5m });
+                orderIds.Add(order.Id);
+            }
+            await db.SaveChangesAsync();
+        }
+        object Stop(int sequence, string kind, Guid? pointId, Guid? locationId, string code, decimal lat, decimal lon) => new
+        {
+            sequence, kind, servicePointId = pointId, locationId, code, name = code, position = new { lat, lon },
+            deltaWeight = 0m, deltaVolume = 0m, windowStart = "07:00:00", windowEnd = "19:00:00", serviceMinutes = 15
+        };
+        var confirm = await planner.PostAsJsonAsync("/api/v1/route-plans/confirm", new
+        {
+            code = $"WIZ-{Guid.NewGuid():N}"[..12], vehicleId, totalDistanceKm = 1m, totalDurationMinutes = 1m, totalCost = 0.01m, orderIds,
+            stops = new[]
+            {
+                Stop(1, "Pickup", null, warehouseId, "BOD-SUR", -0.285m, -78.54m),
+                Stop(2, "Delivery", points["CLI-S09"].Id, null, "CLI-S09", points["CLI-S09"].Lat, points["CLI-S09"].Lon),
+                Stop(3, "Delivery", points["IND-S13"].Id, null, "IND-S13", points["IND-S13"].Lat, points["IND-S13"].Lon)
+            }
+        });
+        Assert.True(confirm.StatusCode == HttpStatusCode.Created, await confirm.Content.ReadAsStringAsync());
+        Guid planId;
+        using (var confirmed = JsonDocument.Parse(await confirm.Content.ReadAsStringAsync()))
+            planId = confirmed.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await planner.PostAsJsonAsync($"/api/v1/route-plans/{planId}/publish", new { })).StatusCode);
+
+        // Cierre sobre la Clínica Sur: la ruta del asistente (sin tramos guardados) aparece como afectada y el agente la replanifica.
+        var response = await planner.PostAsJsonAsync("/api/v1/incidents", Fixtures.IncidentPreset("demo-region", "cierre-norte"));
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        using var incident = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Contains(incident.RootElement.GetProperty("affectedRoutes").EnumerateArray(), r => r.GetProperty("routePlanId").GetGuid() == planId);
+        var runId = incident.RootElement.GetProperty("runId").GetGuid();
+        AgentRunView? view = null;
+        for (var i = 0; i < 100; i++)
+        {
+            view = await planner.GetFromJsonAsync<AgentRunView>($"/api/v1/agent/runs/{runId}", Json);
+            if (view!.Status != AgentRunStatus.Running) break;
+            await Task.Delay(100);
+        }
+        Assert.NotNull(view);
+        Assert.Equal(AgentRunStatus.Completed, view.Status);
+        var decision = Assert.Single(view.Decisions);
+        Assert.Equal("VEH-01", decision.VehicleCode);
+        // La revisión empieza por la recogida en BOD-SUR y conserva IND-S13; CLI-S09 queda fuera por el cierre.
+        Assert.Equal(new[] { "BOD-SUR", "IND-S13" }, decision.OrderedStops!.Select(s => s.PointCode));
+        await using var check = TestDb.Context(connection);
+        var revision = await check.RoutePlans.SingleAsync(p => p.SupersedesRoutePlanId == planId);
+        var pickup = await check.RouteStops.SingleAsync(s => s.RoutePlanId == revision.Id && s.SequenceNumber == 1);
+        Assert.Equal((RouteStopKind.Pickup, (Guid?)warehouseId), (pickup.Kind, pickup.LocationId));
+    }
+
     private static ApiFactory NewApi(string connection, FakeN8n trigger, bool enabled = true, bool auto = false)
         => new JourneyApi(connection, trigger, new Dictionary<string, string?>
         {

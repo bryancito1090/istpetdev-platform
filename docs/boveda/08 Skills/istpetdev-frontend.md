@@ -15,6 +15,7 @@ Rutas de notas relativas a `docs/boveda/`; los comandos Git y de verificación s
 
 ## Leer primero
 
+- `10 Diseno y UI-UX/00 Indice y principios de diseno.md`: normativa rectora de diseño, estándar ejecutivo Stripe Dashboard, tokens, catálogo de componentes y estándar de rutas ([[00 Indice y principios de diseno]]).
 - `03 Arquitectura/Frontend con Feature-Sliced Design.md`: capas, slices, API pública e imports (ADR-13, aceptada).
 - `03 Arquitectura/Frontend y componentes.md`: Signals y RxJS, `libs/shared-core`, mapas, consulta QR, RBAC en cliente.
 - `03 Arquitectura/Movil offline y sincronizacion.md`: persistencia, protocolo de sincronización y conflictos.
@@ -54,8 +55,12 @@ Detalle de identidad visual, tokens y leyes de UX: sección «Referencia: diseno
 ## Prohibido inventar
 
 - Versiones, librerías o rutas de carpetas no registradas en `00 Inicio/Hechos canonicos.md`.
-- Campos o endpoints que no estén en el contrato.
-- Un arquetipo visual como decisión del equipo: hasta que se registre, es PENDIENTE (recomendación en las referencias).
+- Campos o endpoints que no estén en el contrato de API del backend (.NET 8).
+- **Funciones, botones o acciones fantasma:** Ningún elemento interactivo puede añadirse si no está respaldado por un endpoint, servicio o método real en el sistema.
+- **Datos quemados (`hardcoding`):** Prohibido insertar datos estáticos o arrays simulados para aparentar funcionalidad. La UI se nutre al 100% de los DTOs y signals reales. Si un dato no existe en el backend, se muestra explícitamente «sin dato» en estado atenuado con su debida justificación técnica.
+- **Alteración de lógica de negocio o rotura de tests:** El rediseño visual se limita estrictamente a presentación, ergonomía y accesibilidad. Queda terminantemente prohibido alterar cálculos, flujos de validación o causar fallos en las suites de pruebas unitarias (`*.spec.ts`), las cuales deben mantenerse 100% en verde.
+- **Conceptos ajenos al dominio:** Prohibido introducir conceptos financieros, pasarelas de pago o cobros ajenos al abastecimiento de insumos de higiene hospitalaria.
+- Un arquetipo visual como decisión del equipo: la normativa rectora vigente es el estándar ejecutivo de Stripe Dashboard documentado en [[01 Guia de maquetacion y arquetipos UI-UX]].
 
 ## Verificar
 
@@ -79,7 +84,7 @@ Referencia de la skill `istpetdev-frontend`. Nada de esto reemplaza una decisió
 Estado: **Aceptado y ratificado (Arquetipo B — Técnico/Minimalista con Identidad Expo Clean Ecuador).**
 
 - **Estilo:** Función antes que decoración, espacio en blanco generoso, tipografía sans neutral y tipografía monoespaciada para cifras, color disciplinado enfocado en acción y estado logístico.
-- **Paleta oficial:** Extraída del material oficial de Expo Clean Ecuador ([[Sistema de diseno y colores]]):
+- **Paleta oficial:** Extraída del material oficial de Expo Clean Ecuador ([[02 Sistema de diseno colores y tokens|Sistema de diseno y colores]]):
   - Primario (`primary`): Clean Cyan `#00A7C4` (higiene, agua, desinfección, navegación).
   - Secundario (`secondary`): Expo Lime `#9EC200` (sostenibilidad, insumos verdes, stock en regla).
   - Acento (`accent` / `cta`): Energy Orange `#EA601F` (botones de acción crítica, escaneo QR, alerta preventiva).

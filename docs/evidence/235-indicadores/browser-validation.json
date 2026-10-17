@@ -1,0 +1,29 @@
+{
+  "result": "PASS",
+  "rows": [
+    "Costos/km",
+    "Faltantes",
+    "Servicio",
+    "Tiempo",
+    "Mermas",
+    "Exactitud"
+  ],
+  "widths": [
+    1366,
+    390
+  ],
+  "consoleErrors": [],
+  "requestMethods": [
+    "GET"
+  ],
+  "states": [
+    "normal",
+    "error aislado",
+    "reintento",
+    "vacío"
+  ],
+  "evidence": [
+    "desktop.png",
+    "mobile.png"
+  ]
+}

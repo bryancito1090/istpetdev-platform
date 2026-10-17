@@ -54,6 +54,17 @@ export interface ReceiptEvidenceDto {
   confirmedAtUtc?: string | null;
 }
 
+/**
+ * #237: reentrega estimada (ida y vuelta bodega de origen → punto) por rechazos Faltante, Daño o ErrorRotulado.
+ * Siempre es estimada; `isApproximate` = algún tramo salió de la línea recta. No forma parte del costo de la ruta.
+ */
+export interface EstimatedBacktrackDto {
+  km: number;
+  costUsd: number;
+  hours: number;
+  isApproximate: boolean;
+}
+
 export interface ReceiptExceptionDto {
   receiptId: string;
   deliveryId: string;
@@ -68,6 +79,8 @@ export interface ReceiptExceptionDto {
   hasAdjustments: boolean;
   lines: ReceiptExceptionLineDto[];
   evidence: ReceiptEvidenceDto[];
+  /** Null si ningún rechazo obliga a volver o faltan coordenadas de la bodega o del punto. */
+  estimatedBacktrack?: EstimatedBacktrackDto | null;
 }
 
 export interface ReceiptExceptionsResponse {

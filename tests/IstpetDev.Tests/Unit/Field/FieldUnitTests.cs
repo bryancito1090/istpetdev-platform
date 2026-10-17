@@ -132,6 +132,44 @@ public sealed class FieldUnitTests
                 .ToList();
             return new RejectionReasonsCatalogResponse(ReceiptRejectionReasons.Version, items);
         }
+
+        public Task<ReturnGuideDto> GenerateReturnGuideAsync(Guid routePlanId, Guid actorAccountId, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReturnGuideDto(
+                $"GRT-{routePlanId.ToString()[..8].ToUpperInvariant()}",
+                routePlanId,
+                "VEH-01",
+                "Conductor Demo",
+                Guid.NewGuid(),
+                "Bodega Central",
+                DateTime.UtcNow,
+                "PendingWarehouse",
+                Array.Empty<ReturnGuideLineDto>()));
+        }
+
+        public Task<ReturnGuideDto> GetReturnGuideAsync(string guideNumber, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReturnGuideDto(
+                guideNumber,
+                Guid.NewGuid(),
+                "VEH-01",
+                "Conductor Demo",
+                Guid.NewGuid(),
+                "Bodega Central",
+                DateTime.UtcNow,
+                "PendingWarehouse",
+                Array.Empty<ReturnGuideLineDto>()));
+        }
+
+        public Task<ReceiveReturnGuideResponse> ReceiveReturnGuideAsync(ReceiveReturnGuideRequest request, Guid actorAccountId, CancellationToken ct = default)
+        {
+            return Task.FromResult(new ReceiveReturnGuideResponse(
+                request.GuideNumber,
+                "ReceivedAtWarehouse",
+                DateTime.UtcNow,
+                1,
+                Guid.NewGuid()));
+        }
     }
 
     [Fact]
@@ -240,8 +278,8 @@ public sealed class FieldUnitTests
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var catalog = Assert.IsType<RejectionReasonsCatalogResponse>(okResult.Value);
-        Assert.Equal("V1", catalog.Version);
-        Assert.Equal(6, catalog.Reasons.Count);
+        Assert.Equal("V2", catalog.Version); // #236: V2 agrega ErrorRotulado
+        Assert.Equal(7, catalog.Reasons.Count);
     }
 
     [Fact]

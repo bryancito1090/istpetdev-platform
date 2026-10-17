@@ -1,0 +1,15 @@
+{
+  "vehiculo": {
+    "Id": "01a14816-49c8-7f1b-8aa1-60bddc9d0272",
+    "Code": "VEH-0002",
+    "VehicleType": "camion_pesado"
+  },
+  "intentoHoraLocal": "07:30",
+  "franjaRestriccion": "06:00-10:00",
+  "corredores": [
+    "Av. Sim\u00F3n Bol\u00EDvar",
+    "Ruta Viva"
+  ],
+  "httpStatus": 409,
+  "detalleError": "{\u0022message\u0022:\u0022restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)\u0022,\u0022errors\u0022:[\u0022restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)\u0022]}"
+}

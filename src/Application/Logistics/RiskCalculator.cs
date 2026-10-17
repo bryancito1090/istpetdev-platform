@@ -74,7 +74,7 @@ public sealed class RiskCalculator(
         var lotIds = balances.Select(b => b.LotId).Distinct().ToList();
         var lots = await db.Lots
             .AsNoTracking()
-            .Where(l => lotIds.Contains(l.Id))
+            .Where(l => l.OrganizationId == DemoOrganization.Id && lotIds.Contains(l.Id))
             .ToDictionaryAsync(l => l.Id, ct);
 
         // 2. Consumos en la ventana de demanda
@@ -86,18 +86,31 @@ public sealed class RiskCalculator(
         // 3. Entregas en tránsito hacia el punto (despachadas, recogidas o entregadas y aún no recibidas).
         // #162: Delivered sigue pendiente del recibo del receptor; Received/Partial ya conciliaron.
         // Compatibilidad legada: una entrega Delivered con recibo previo ya es recepción final.
+        // #199: una entrega publicada en Draft (sin despachar) ya tiene stock reservado para el punto; cuenta como en camino
+        // por su cantidad planificada. Al despacharse deja de ser Draft y cuenta por lo despachado: no se suma dos veces.
         var pendingDeliveries = await db.Deliveries
             .AsNoTracking()
-            .Where(d => d.OrganizationId == DemoOrganization.Id && spIds.Contains(d.ServicePointId) && d.DispatchedAtUtc != null
-                && (d.Status == DeliveryStates.Dispatched || d.Status == DeliveryStates.InTransit || d.Status == DeliveryStates.Delivered)
-                && !(d.Status == DeliveryStates.Delivered && db.Receipts.Any(r => r.OrganizationId == DemoOrganization.Id && r.DeliveryId == d.Id)))
-            .Select(d => d.Id)
+            .Where(d => d.OrganizationId == DemoOrganization.Id && spIds.Contains(d.ServicePointId)
+                && ((d.Status == DeliveryStates.Draft && d.DispatchedAtUtc == null)
+                    || (d.DispatchedAtUtc != null
+                        && (d.Status == DeliveryStates.Dispatched || d.Status == DeliveryStates.InTransit || d.Status == DeliveryStates.Delivered)
+                        && !(d.Status == DeliveryStates.Delivered && db.Receipts.Any(r => r.OrganizationId == DemoOrganization.Id && r.DeliveryId == d.Id)))))
+            .Select(d => new { d.Id, d.ServicePointId, IsDraft = d.Status == DeliveryStates.Draft })
             .ToListAsync(ct);
+        var pendingDeliveryById = pendingDeliveries.ToDictionary(d => d.Id);
+        var pendingDeliveryIds = pendingDeliveryById.Keys.ToList();
 
         var pendingLines = await db.DeliveryLines
             .AsNoTracking()
-            .Where(dl => pendingDeliveries.Contains(dl.DeliveryId))
+            .Where(dl => dl.OrganizationId == DemoOrganization.Id && pendingDeliveryIds.Contains(dl.DeliveryId))
             .ToListAsync(ct);
+
+        // Los lotes en camino salen de bodega: pueden no tener saldo todavía en el punto.
+        var pendingLotIds = pendingLines.Select(l => l.LotId).Distinct().ToList();
+        var pendingLotProduct = await db.Lots
+            .AsNoTracking()
+            .Where(l => l.OrganizationId == DemoOrganization.Id && pendingLotIds.Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, l => l.ProductId, ct);
 
         var results = new List<RiskItem>();
 
@@ -134,10 +147,11 @@ public sealed class RiskCalculator(
                     ? Math.Round(totalProrated / totalOverlapDays, 3)
                     : null;
 
-                // En tránsito
+                // En camino hacia este punto: lo reservado en Draft por lo planificado; lo despachado por lo aún no aceptado.
                 var inTransit = pendingLines
-                    .Where(l => lots.TryGetValue(l.LotId, out var lot) && lot.ProductId == product.Id)
-                    .Sum(l => l.DispatchedQuantity - l.AcceptedQuantity);
+                    .Where(l => pendingDeliveryById[l.DeliveryId].ServicePointId == sp.Id
+                        && pendingLotProduct.TryGetValue(l.LotId, out var productId) && productId == product.Id)
+                    .Sum(l => pendingDeliveryById[l.DeliveryId].IsDraft ? l.PlannedQuantity : l.DispatchedQuantity - l.AcceptedQuantity);
 
                 decimal? coverage = ComputeCoverage(availableStock, dailyDemand);
                 var level = ClassifyLevel(coverage, leadTime, safetyMargin, consolidationExtra);

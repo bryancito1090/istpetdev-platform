@@ -1,16 +1,20 @@
 ---
-tipo: arquitectura
+tipo: diseno
 estado: vigente
 actualizado: 2026-10-16
-tags: [arquitectura, frontend, ui-ux, design-system, maquetacion, stripe-design, angular]
+tags: [diseno, ui-ux, maquetacion, stripe-dashboard, arquetipos, angular]
+aliases: [Guia de maquetacion y diseno UI-UX, Guía de maquetación y diseño UI-UX]
 ---
 
-# Guía de maquetación y diseño UI-UX para IstpetDev Platform
+# Guía de maquetación y arquetipos UI-UX
 
-Normativa técnica, reglas de diseño y catálogo de componentes visuales para la estandarización transversal de todas las pantallas de la plataforma web (`apps/web`).
+Normativa técnica, reglas de diseño y catálogo de componentes visuales para la estandarización transversal de todas las pantallas de la plataforma web (`apps/web`). Documento rector del área [[00 Indice y principios de diseno]].
 
-> [!IMPORTANT] Principio de Fidelidad al Dominio del Sistema
-> La estética visual, jerarquía tipográfica, geometría de contenedores y paleta de contrastes toman como referencia el estándar ejecutivo de **Stripe Dashboard**. No obstante, **queda estrictamente prohibido introducir conceptos, campos o elementos ajenos al dominio logístico de IstpetDev** (como claves de pasarelas de pago, cobros a clientes o formularios financieros). Las referencias visuales son exclusivas de UX/UI para estructurar la operación logística de insumos de higiene hospitalaria.
+> [!IMPORTANT] Principio de Fidelidad al Dominio e Inmutabilidad Funcional
+> 1. **Referencia Visual Exclusiva:** La estética, jerarquía tipográfica y geometría toman como referencia el estándar ejecutivo de **Stripe Dashboard**, pero aplicada **100% al dominio logístico de IstpetDev** (bodegas, centros de salud, SKUs hospitalarios, camiones y custodias). Queda estrictamente prohibido introducir conceptos ajenos (pasarelas de pago o cobros financieros).
+> 2. **Cero Funciones Inventadas y Cero Botones Fantasma:** Toda interacción debe respaldarse en un servicio, endpoint y signal real del backend (.NET 8) y `@shared/api`. Prohibido inventar botones o estados decorativos sin soporte operativo real.
+> 3. **Cero Datos Quemados (`hardcoding`):** Prohibido insertar datos estáticos para falsear métricas o simular actividad. Si un campo no existe en la API, se muestra explícitamente «sin dato» en estado atenuado con su debida justificación técnica.
+> 4. **Protección Absoluta de la Lógica:** El rediseño se enfoca puramente en presentación, ergonomía y accesibilidad. Ningún cambio visual puede romper o alterar reglas de negocio, y el 100% de las suites de pruebas (`*.spec.ts`) debe mantenerse en verde.
 
 ---
 

@@ -411,3 +411,52 @@ export const RECEIPT_REJECTION_REASONS = [
   { code: 'LoteNoCoincide', label: 'Lote no coincide' },
   { code: 'CadenaDeFrio', label: 'Cadena de frío' }
 ] as const;
+
+// ==========================================
+// Issue #247: Guía de Retorno de lo No Entregado
+// ==========================================
+
+export interface ReturnGuideLineDto {
+  handlingUnitId: string;
+  handlingUnitCode: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  lotId: string;
+  lotCode: string;
+  quantity: number;
+  unit: string;
+  reason: string;
+}
+
+export interface ReturnGuideDto {
+  guideNumber: string;
+  routePlanId: string;
+  vehiclePlate: string;
+  driverName: string;
+  destinationWarehouseId: string;
+  destinationWarehouseName: string;
+  generatedAtUtc: string;
+  status: string;
+  lines: ReturnGuideLineDto[];
+}
+
+export interface GenerateReturnGuideRequest {
+  routePlanId: string;
+  notes?: string;
+}
+
+export interface ReceiveReturnGuideRequest {
+  guideNumber: string;
+  operationId: string;
+  occurredAtDevice?: string;
+}
+
+export interface ReceiveReturnGuideResponse {
+  guideNumber: string;
+  status: string;
+  receivedAtUtc: string;
+  itemsReconciled: number;
+  rebalanceOrderId: string;
+}
+

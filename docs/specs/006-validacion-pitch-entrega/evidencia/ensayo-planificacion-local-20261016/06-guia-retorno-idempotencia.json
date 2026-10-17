@@ -1,0 +1,25 @@
+{
+  "numeroGuia": "GRT-3EC50383",
+  "planRutaId": "3ec50383-7e3a-468b-9920-6e7db8b9d803",
+  "lineas": 1,
+  "primeraRecepcion": {
+    "status": 200,
+    "respuesta": {
+      "guideNumber": "GRT-3EC50383",
+      "status": "ReceivedAtWarehouse",
+      "receivedAtUtc": "2026-10-17T04:20:06.8790667Z",
+      "itemsReconciled": 1,
+      "rebalanceOrderId": "01a14816-a881-7b21-a1b7-43874b76a5d4"
+    }
+  },
+  "segundaRecepcionDuplicada": {
+    "status": 409,
+    "error": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+      "title": "ALREADY_RECEIVED",
+      "status": 409,
+      "detail": "La gu\u00EDa de retorno ya fue recibida en bodega.",
+      "traceId": "00-c6ea95b10d1b9ccd541b3d8b95b73bfd-a45a6650e447d747-00"
+    }
+  }
+}

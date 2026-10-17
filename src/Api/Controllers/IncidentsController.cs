@@ -28,6 +28,11 @@ public sealed class IncidentsController(
     [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
     public async Task<IActionResult> CreateIncident([FromBody] CreateIncidentRequest request, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(request.Kind) || request.RadiusKm is < 0 ||
+            request.Lat.HasValue != request.Lon.HasValue || request.Lat is < -90 or > 90 || request.Lon is < -180 or > 180)
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "invalid_incident_input",
+                detail: "Indique un tipo, un radio no negativo y coordenadas completas dentro de sus rangos geográficos.");
+
         // #246: los tipos de retraso parcial exigen el factor de velocidad (slowdownFactor o factor) en (0, 1].
         decimal? slowdown = null;
         if (IncidentSlowdown.IsSlowdownKind(request.Kind))

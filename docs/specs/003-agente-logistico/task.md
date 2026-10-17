@@ -855,3 +855,68 @@ ejecución n8n `297`). El primer Watch (ejecución `292`) cayó en `agent_error`
 por credenciales locales dentro de los sub-workflows embebidos; se corrigió el
 remapeo y se reaplicó antes de acreditar. Evidencia:
 [2026-10-16-sincronizacion-productiva](evidencia/2026-10-16-sincronizacion-productiva.md).
+
+## Issue #240 — costo total estimado de servir — 16-oct-2026
+
+- [x] Revisar issue, coordinación #253 y propuesta #239; #230 cerrado.
+- [x] [Plan de implementación](plan-240-costo-servicio.md), rama propia desde develop.
+- [x] Migración aditiva e importador compatible.
+- [x] Cálculo y desglose en evaluación/selección; sin editar RoutePlansController.
+- [x] 40/40 pruebas dirigidas finales; historial desde cero, fixture demo y copia real de base local (37 tablas/387 filas) sin pérdida.
+- [x] [Evidencia, prelaunch local y captura](evidencia/2026-10-16-240-costo-servicio.md): API real/PostGIS, readiness 200 y Receptor 403.
+- Revisión técnica local completada; 559/559 en la suite completa y 40/40
+  dirigidas tras los últimos ajustes. CI del HEAD final, aprobación permitida,
+  merge a develop y cierre se acreditan en el PR vinculado a
+  [#240](https://github.com/bryancito1090/istpetdev-platform/issues/240).
+
+Estado del código, pruebas locales y ensayo API: completos; no desplegado. La integración de /confirm es
+responsabilidad de Anthony y la pantalla de #242. Los estados de código, prueba,
+ejecución real y despliegue se registrarán por separado.
+
+## Issue #241 — opción con operador contratado y recomendación calculada con justificación — 16-oct-2026
+
+- [x] Revisar issue, concepto de contratación logística y coordinación #253 (Bryan dueño único de `SourcingService.cs`).
+- [x] Opciones en archivos propios: `ContractedCarrierOptions.cs` y `RecommendationOptions.cs`, expuestas en `LogisticsOptions.cs`.
+- [x] Modelo virtual del operador contratado: `BaseFeeUsd`, `PerKmUsd`, `PerKgUsd`, `ResponseHours`, `Name`, sin límite de capacidad física ni afección a la flota propia, sin migración de base de datos.
+- [x] Opción C «Contratada»: evalúa la misma demanda que la mejor opción propia, calcula costo tarifario ($C = \text{base} + \text{km} \times \text{tarifa/km} + \text{kg} \times \text{tarifa/kg}$) más merma esperada. Si la flota propia deja demanda insatisfecha, C cubre el 100% y expone el costo del faltante frente a dejarlo desatendido.
+- [x] Puntaje calculado multicriterio: evaluación de costo total, entregas críticas dentro de ventana, demanda pendiente y factores de riesgo (tiempo de respuesta, sobrecarga > 90%). Recomendación dinámica (`IsRecommended`) asignada a la opción de mayor puntaje.
+- [x] Desglose auditado y justificación determinista con cifras exactas (`ExplanationTemplates.cs` / `SourcingService.cs`), respetando la plantilla («Se recomienda B: cuesta USD X más que A, pero entrega a tiempo los Y hospitales; A deja Z fuera de su ventana»).
+- [x] Control humano del planificador en `RoutePlansController.SuggestRoutes`: soporte del parámetro opcional `OptionId` para publicar una opción distinta de la recomendada si así lo decide el operador humano.
+- [x] Retrocompatibilidad: sin configuración de operador contratado, la opción C no se genera y el comportamiento opera idéntico a las opciones propias A y B.
+- [x] Pruebas unitarias dirigidas: 6/6 casos cubiertos en `ContractedCarrierAndRecommendationTests.cs` (ganador por costo, ganador por ventana de críticos, ganador C por capacidad insuficiente, exclusión sin configuración, pesos auditables y control humano en suggest).
+- [x] Documentación de contratos en `docs/boveda/03 Arquitectura/Contratos API y eventos.md`.
+
+Estado: código y pruebas locales completados; sin ejecución real en n8n remoto ni despliegue a producción. La maquetación de la pantalla comparativa corresponde a Alexander (#242).
+
+## Issue #275 — activar ServiceCost y TrafficBands en la demo — 16-oct-2026
+
+- [x] Crear `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json` con secciones `ServiceCost` (diésel $3.11/gal, perfiles vehiculares `camioneta`, `camion_liviano`, `camion_pesado`, ayudante $4.13/h, merma), `TrafficBands` (3 bandas: 06:00-09:30 y 16:00-20:00 factor 0.64; 12:30-14:00 factor 0.80), `ContractedCarrier` y `Recommendation` para #241.
+- [x] Configurar carga opcional en `Program.cs` mediante `DEMO_QUITO_CONFIG_ENABLED=true` / `LOGISTICS_CONFIG_FILE` / producción, garantizando cero impacto en el entorno `Testing` de pruebas preexistentes.
+- [x] Actualizar `docker-compose.prod.yml` y sincronizar script de fixture `generate-demo-quito-planificacion.py`.
+- [x] Pruebas unitarias e integración en `DemoQuitoConfigurationTests.cs` y `DemoQuitoConfigurationIntegrationTests.cs`: verifican `/health/ready` 200 Healthy, deserialización de opciones, desglose de costos activo y variación por hora pico (07:30 tarda más que a las 11:00).
+- [x] Despliegue en producción coordinado con Jorge (#198).
+
+Estado: código, configuración y pruebas locales de integración completados; aplicación a producción a cargo de Jorge (#198) en el siguiente despliegue. Alexander queda habilitado para #276.
+
+## Issue #285 — ensayo técnico automatizado del módulo de planificación con demo-quito (local y producción) y matriz de afirmaciones — 16-oct-2026
+
+- [x] Script reproducible y suite de integración: `tests/IstpetDev.Tests/Integration/Logistics/EnsayoPlanificacionIntegrationTests.cs` y `scripts/demo/ensayo-planificacion.mjs`.
+- [x] Paso 1: Reset a `demo-quito-planificacion` (`POST /api/v1/demo/reset?fixture=demo-quito-planificacion`) confirmado (`applied: true`, `01-reset.json`).
+- [x] Paso 2: Caso del pitch en `suggest` (`POST /api/v1/route-plans/suggest`) con 4 pedidos sintéticos (PTO-0004, PTO-0005, PTO-0006, PTO-0015):
+  - Opciones A (USD 57.89), B (USD 69.89) y C (USD 66.90). Opción recomendada calculada C por puntaje (90.80) con justificación determinista (`02-suggest-pitch-abc.json`).
+  - Desglose de costos de flota propia (Opción A): combustible USD 5.63, ayudantes USD 53.19, merma USD 3.83, desgaste USD 3.91, conductor USD 38.64 (todos > 0).
+  - Precio de combustible fechado (2026-10-12) y con fuente (`Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)`).
+- [x] Paso 3: Comparación saliendo a las 07:30 frente a las 11:00 (`POST /api/v1/route-plans/evaluate`):
+  - Salida a las 07:30 (hora pico, factor 0.64): 78 min. Salida a las 11:00 (fuera de pico, factor 1.0): 68 min. Diferencia comprobada de +10 min (+14.71 %) (`03-evaluacion-horas-pico.json`).
+- [x] Paso 4: Descarte de camión pesado en hora restringida (`POST /api/v1/route-plans/confirm`):
+  - Vehículo pesado `VEH-0002` en franja 06:00-10:00 (Av. Simón Bolívar / Ruta Viva) descartado y bloqueado con HTTP 409 Conflict (`restriccion_horaria`) (`04-restriccion-camion-pesado.json`).
+- [x] Paso 5: Incidente Manifestación con retraso parcial y opciones en replanificación:
+  - Registro de incidente `Manifestacion` con factor 0.3 (`POST /api/v1/incidents`); replanificación de ruta afectada (`POST /api/v1/route-plans/{id}/replan`) genera decisión `Escalated` con opciones de entrega tardía y priorización crítica (`05-incidente-manifestacion-replan.json`).
+- [x] Paso 6: Guía de retorno y recepción idempotente:
+  - Generación de guía de retorno `GRT-...` (`POST /api/v1/return-guides/generate`), primera recepción en bodega HTTP 200 OK y segundo receive responde HTTP 409 Conflict (`AlreadyReceived`) sin duplicar inventario (`06-guia-retorno-idempotencia.json`).
+- [x] Evidencia guardada en `docs/specs/006-validacion-pitch-entrega/evidencia/ensayo-planificacion-local-20261016/` con `resumen.md` legible y trazable.
+- [x] Sonda a producción: ejecutada contra `https://istpetdev.doicela.dev`. `/health/ready` 200 OK; despliegue de #275 (Jorge, #198) pendiente de promoción desde develop a main en producción, documentado en `sonda-produccion.json`.
+- [x] Matriz de afirmaciones actualizada: capacidades P-02, P-05, P-10, P-11, P-12, P-13 promovidas a «HECHO Y ENSAYADO — ensayo técnico local» con enlaces directos a la evidencia.
+
+Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y evidencia técnica local guardada; ejecución en producción pendiente del despliegue de #275 por Jorge (#198). Cifras de A/B/C listas para alimentar la lámina 4 del pitch (#200) y la corrida guardada de Alexander (#276).
+

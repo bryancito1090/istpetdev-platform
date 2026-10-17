@@ -151,7 +151,7 @@ public sealed class TrafficBandTests
 
     private sealed class FixedDistance : IDistanceProvider
     {
-        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default) =>
+        public Task<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>> MatrixAsync(IReadOnlyList<GeoPoint> points, CancellationToken ct = default, bool persistCache = true) =>
             Task.FromResult<IReadOnlyDictionary<(GeoPoint From, GeoPoint To), Leg>>(Matrix);
     }
 }

@@ -30,9 +30,9 @@ public static class OrderStopLoads
             .Where(o => o.OrganizationId == DemoOrganization.Id && orderIds.Contains(o.Id) && o.Status != DeliveryOrderStatus.Cancelled)
             .ToListAsync(ct);
         var ids = orders.Select(o => o.Id).ToList();
-        var lines = await db.DeliveryOrderLines.Where(l => ids.Contains(l.DeliveryOrderId)).ToListAsync(ct);
+        var lines = await db.DeliveryOrderLines.Where(l => l.OrganizationId == DemoOrganization.Id && ids.Contains(l.DeliveryOrderId)).ToListAsync(ct);
         var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
-        var products = await db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+        var products = await db.Products.Where(p => p.OrganizationId == DemoOrganization.Id && productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
 
         foreach (var stop in stops.Where(s => s.Kind != RouteStopKind.Pickup))
         {

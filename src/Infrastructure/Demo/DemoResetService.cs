@@ -67,6 +67,7 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.RouteStockReservations.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.QrAccessTokens.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.HandlingUnitLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.RouteStopLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.DeliveryLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.HandlingUnits.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Deliveries.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
@@ -77,6 +78,8 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         await db.AgentDecisions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.RiskSnapshots.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         // Se conservan SimulationRuns y SimulationMetrics completados para spec 005
+        await db.DeliveryOrderLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.DeliveryOrders.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.IdempotencyRecords.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.StockBalances.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Consumptions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);

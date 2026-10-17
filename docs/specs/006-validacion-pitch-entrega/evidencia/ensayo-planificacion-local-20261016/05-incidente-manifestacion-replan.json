@@ -1,0 +1,1004 @@
+{
+  "incidenteId": "01a14816-99c9-7cab-95e3-5a78be66ce0b",
+  "tipo": "Manifestacion",
+  "factorRalentizacion": 0.3,
+  "rutasAfectadas": 1,
+  "rutaReplanificada": "01a14816-9344-7d98-97ea-c5747958df1e",
+  "decisionReplanificacion": "Escalated",
+  "diff": {
+    "movedStops": [
+      "PTO-0014",
+      "PTO-0013",
+      "PTO-0037",
+      "PTO-0005",
+      "PTO-0040",
+      "PTO-0011",
+      "PTO-0029"
+    ],
+    "droppedStops": [
+      "PTO-0026",
+      "PTO-0027"
+    ],
+    "etaChangesMinutes": {
+      "PTO-0014": -61,
+      "PTO-0013": -3,
+      "PTO-0037": -57,
+      "PTO-0005": 42,
+      "PTO-0040": 3,
+      "PTO-0011": 3,
+      "PTO-0029": 3
+    },
+    "costDeltaPct": 0.99
+  },
+  "options": [
+    {
+      "key": "late_service",
+      "feasible": true,
+      "failureReason": null,
+      "routes": [
+        {
+          "vehicleCode": "VEH-0004",
+          "vehicleId": "01a14816-49c8-7d45-8f6a-a88897dfd283",
+          "stops": [
+            {
+              "sequence": 1,
+              "pointCode": "PTO-0040",
+              "servicePointId": "01a14816-4972-7537-83b7-bffe14018924",
+              "arrivalUtc": "2026-10-16T12:06:09.375Z",
+              "departureUtc": "2026-10-16T12:16:09.375Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 5.54,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 5.54,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 2,
+              "pointCode": "PTO-0011",
+              "servicePointId": "01a14816-496c-789e-bc89-18f8b0562496",
+              "arrivalUtc": "2026-10-16T12:18:49.6875Z",
+              "departureUtc": "2026-10-16T13:15:00Z",
+              "wait": "00:41:10.3125000",
+              "loads": [
+                {
+                  "productId": "01a14816-49a1-7441-bfed-90581cc0082c",
+                  "sku": "PRD-0008",
+                  "quantity": 15.03,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 15.03,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.58,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.58,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-728b-96e3-0b9c84701a05",
+                  "sku": "PRD-0010",
+                  "quantity": 13.46,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 13.46,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 3,
+              "pointCode": "PTO-0037",
+              "servicePointId": "01a14816-4971-789e-8ec2-218769497f58",
+              "arrivalUtc": "2026-10-16T13:53:29.8125Z",
+              "departureUtc": "2026-10-16T14:03:29.8125Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 10.85,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 10.85,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 3.01,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 3.01,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 25.49,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 25.49,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-79bb-a00a-5c3bc197af06",
+                  "sku": "PRD-0007",
+                  "quantity": 5.67,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 5.67,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 5.98,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 5.98,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 4,
+              "pointCode": "PTO-0013",
+              "servicePointId": "01a14816-496c-7fa5-a510-e36efc2f5731",
+              "arrivalUtc": "2026-10-16T14:40:20.6249999Z",
+              "departureUtc": "2026-10-16T15:00:20.6249999Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 129.88,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 129.88,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+                  "sku": "PRD-0001",
+                  "quantity": 14.98,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 14.98,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 12.07,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 12.07,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-79bb-a00a-5c3bc197af06",
+                  "sku": "PRD-0007",
+                  "quantity": 21.26,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 21.26,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": 11,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 5,
+              "pointCode": "PTO-0014",
+              "servicePointId": "01a14816-496d-7d4e-8b47-df0ce9ecac91",
+              "arrivalUtc": "2026-10-16T15:04:23.4449998Z",
+              "departureUtc": "2026-10-16T15:14:23.4449998Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 3.6,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 3.6,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.48,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.48,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 9.96,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 9.96,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 24.33,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 24.33,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 6.77,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 6.77,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 6,
+              "pointCode": "PTO-0027",
+              "servicePointId": "01a14816-496f-7a58-8bc8-22aa7e9f70e0",
+              "arrivalUtc": "2026-10-16T15:41:02.4449997Z",
+              "departureUtc": "2026-10-16T15:51:02.4449997Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 10.99,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 10.99,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 1.63,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 1.63,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 1.9,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 1.9,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": 132,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 7,
+              "pointCode": "PTO-0026",
+              "servicePointId": "01a14816-496f-70eb-b19c-9148f5e268e0",
+              "arrivalUtc": "2026-10-16T15:54:24.4449997Z",
+              "departureUtc": "2026-10-16T16:09:24.4449997Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 3.47,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 3.47,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 2.97,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 2.97,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 7.32,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 7.32,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-79bb-a00a-5c3bc197af06",
+                  "sku": "PRD-0007",
+                  "quantity": 6.34,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 6.34,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 6.84,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 6.84,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-7279-93ca-c13da38825a4",
+                  "sku": "PRD-0012",
+                  "quantity": 1.04,
+                  "baseUnit": "UNIDAD",
+                  "requiredQuantity": 1.04,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": 145,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 8,
+              "pointCode": "PTO-0005",
+              "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+              "arrivalUtc": "2026-10-16T16:41:40.0449996Z",
+              "departureUtc": "2026-10-16T17:11:40.0449996Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+                  "sku": "PRD-0001",
+                  "quantity": 117.55,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 117.55,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 112.52,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 112.52,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": 42,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 9,
+              "pointCode": "PTO-0029",
+              "servicePointId": "01a14816-496f-7dfb-9fb1-dd422fb2d0f3",
+              "arrivalUtc": "2026-10-16T17:17:54.6249996Z",
+              "departureUtc": "2026-10-16T18:45:00Z",
+              "wait": "01:12:05.3750004",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 5.56,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 5.56,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.75,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.75,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 10.71,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 10.71,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 6.98,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 6.98,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": null
+            }
+          ],
+          "km": 63.565,
+          "minutes": 312.86979166666666666666666667,
+          "cost": 47.381,
+          "loadWeight": 1958.44700,
+          "loadVolume": 11.98778,
+          "hasApproximations": false,
+          "legs": [
+            {
+              "from": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "to": {
+                "lat": -0.33,
+                "lon": -78.55002
+              },
+              "km": 1.932,
+              "minutes": 6.15625,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.33,
+                "lon": -78.55002
+              },
+              "to": {
+                "lat": -0.32421,
+                "lon": -78.54937
+              },
+              "km": 0.850,
+              "minutes": 2.671875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.32421,
+                "lon": -78.54937
+              },
+              "to": {
+                "lat": -0.28966,
+                "lon": -78.47981
+              },
+              "km": 14.475,
+              "minutes": 38.496875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.28966,
+                "lon": -78.47981
+              },
+              "to": {
+                "lat": -0.17777,
+                "lon": -78.48542
+              },
+              "km": 19.694,
+              "minutes": 36.846875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.17777,
+                "lon": -78.48542
+              },
+              "to": {
+                "lat": -0.19052,
+                "lon": -78.4854
+              },
+              "km": 2.360,
+              "minutes": 4.047,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.19052,
+                "lon": -78.4854
+              },
+              "to": {
+                "lat": -0.2195,
+                "lon": -78.51074
+              },
+              "km": 4.820,
+              "minutes": 26.650000000000000000000000000,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.2195,
+                "lon": -78.51074
+              },
+              "to": {
+                "lat": -0.21995,
+                "lon": -78.51258
+              },
+              "km": 0.421,
+              "minutes": 3.3666666666666666666666666666,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.21995,
+                "lon": -78.51258
+              },
+              "to": {
+                "lat": -0.24439,
+                "lon": -78.54124
+              },
+              "km": 5.235,
+              "minutes": 32.260000000000000000000000000,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.24439,
+                "lon": -78.54124
+              },
+              "to": {
+                "lat": -0.24359,
+                "lon": -78.52578
+              },
+              "km": 2.511,
+              "minutes": 6.243,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.24359,
+                "lon": -78.52578
+              },
+              "to": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "km": 11.267,
+              "minutes": 21.13125,
+              "source": "Road",
+              "encodedPolyline": null
+            }
+          ]
+        }
+      ],
+      "lateStops": {
+        "PTO-0013": 11,
+        "PTO-0027": 132,
+        "PTO-0026": 145,
+        "PTO-0005": 42
+      },
+      "droppedConsolidation": [],
+      "totalCost": 47.381
+    },
+    {
+      "key": "prioritize_critical",
+      "feasible": false,
+      "failureReason": "infeasible",
+      "routes": [
+        {
+          "vehicleCode": "VEH-0004",
+          "vehicleId": "01a14816-49c8-7d45-8f6a-a88897dfd283",
+          "stops": [
+            {
+              "sequence": 1,
+              "pointCode": "PTO-0014",
+              "servicePointId": "01a14816-496d-7d4e-8b47-df0ce9ecac91",
+              "arrivalUtc": "2026-10-16T12:43:58.7812499Z",
+              "departureUtc": "2026-10-16T13:10:00Z",
+              "wait": "00:16:01.2187501",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 3.6,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 3.6,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.48,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.48,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 9.96,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 9.96,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 24.33,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 24.33,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 6.77,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 6.77,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 2,
+              "pointCode": "PTO-0013",
+              "servicePointId": "01a14816-496c-7fa5-a510-e36efc2f5731",
+              "arrivalUtc": "2026-10-16T13:14:51.2812499Z",
+              "departureUtc": "2026-10-16T13:34:51.2812499Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 129.88,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 129.88,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+                  "sku": "PRD-0001",
+                  "quantity": 14.98,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 14.98,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 12.07,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 12.07,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-79bb-a00a-5c3bc197af06",
+                  "sku": "PRD-0007",
+                  "quantity": 21.26,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 21.26,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 3,
+              "pointCode": "PTO-0037",
+              "servicePointId": "01a14816-4971-789e-8ec2-218769497f58",
+              "arrivalUtc": "2026-10-16T14:14:02.0624999Z",
+              "departureUtc": "2026-10-16T14:24:02.0624999Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 10.85,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 10.85,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 3.01,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 3.01,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 25.49,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 25.49,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-79bb-a00a-5c3bc197af06",
+                  "sku": "PRD-0007",
+                  "quantity": 5.67,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 5.67,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 5.98,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 5.98,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 4,
+              "pointCode": "PTO-0005",
+              "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+              "arrivalUtc": "2026-10-16T15:00:15.8437498Z",
+              "departureUtc": "2026-10-16T15:30:15.8437498Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+                  "sku": "PRD-0001",
+                  "quantity": 117.55,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 117.55,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-763b-a9c0-50eade3a2871",
+                  "sku": "PRD-0006",
+                  "quantity": 112.52,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 112.52,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": 0.64
+            },
+            {
+              "sequence": 5,
+              "pointCode": "PTO-0040",
+              "servicePointId": "01a14816-4972-7537-83b7-bffe14018924",
+              "arrivalUtc": "2026-10-16T15:49:33.4237497Z",
+              "departureUtc": "2026-10-16T15:59:33.4237497Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 5.54,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 5.54,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 6,
+              "pointCode": "PTO-0011",
+              "servicePointId": "01a14816-496c-789e-bc89-18f8b0562496",
+              "arrivalUtc": "2026-10-16T16:01:16.0237497Z",
+              "departureUtc": "2026-10-16T16:16:16.0237497Z",
+              "wait": "00:00:00",
+              "loads": [
+                {
+                  "productId": "01a14816-49a1-7441-bfed-90581cc0082c",
+                  "sku": "PRD-0008",
+                  "quantity": 15.03,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 15.03,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.58,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.58,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-728b-96e3-0b9c84701a05",
+                  "sku": "PRD-0010",
+                  "quantity": 13.46,
+                  "baseUnit": "CAJA",
+                  "requiredQuantity": 13.46,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": null
+            },
+            {
+              "sequence": 7,
+              "pointCode": "PTO-0029",
+              "servicePointId": "01a14816-496f-7dfb-9fb1-dd422fb2d0f3",
+              "arrivalUtc": "2026-10-16T16:33:24.5437496Z",
+              "departureUtc": "2026-10-16T18:45:00Z",
+              "wait": "01:56:35.4562504",
+              "loads": [
+                {
+                  "productId": "01a14816-49a0-7a99-a178-0386143962b6",
+                  "sku": "PRD-0002",
+                  "quantity": 5.56,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 5.56,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7733-a9fc-1739a19fa1ec",
+                  "sku": "PRD-0004",
+                  "quantity": 4.75,
+                  "baseUnit": "GALON",
+                  "requiredQuantity": 4.75,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a0-7833-9f1f-a19caa12edb0",
+                  "sku": "PRD-0005",
+                  "quantity": 10.71,
+                  "baseUnit": "FRASCO",
+                  "requiredQuantity": 10.71,
+                  "pendingQuantity": 0
+                },
+                {
+                  "productId": "01a14816-49a1-72e5-91af-6bf66f113be1",
+                  "sku": "PRD-0009",
+                  "quantity": 6.98,
+                  "baseUnit": "PAQUETE",
+                  "requiredQuantity": 6.98,
+                  "pendingQuantity": 0
+                }
+              ],
+              "isConsolidation": false,
+              "lateMinutes": null,
+              "trafficFactorApplied": null
+            }
+          ],
+          "km": 93.581,
+          "minutes": 293.5200000,
+          "cost": 49.632,
+          "loadWeight": 1828.18700,
+          "loadVolume": 11.29385,
+          "hasApproximations": false,
+          "legs": [
+            {
+              "from": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "to": {
+                "lat": -0.19052,
+                "lon": -78.4854
+              },
+              "km": 18.697,
+              "minutes": 43.9796875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.19052,
+                "lon": -78.4854
+              },
+              "to": {
+                "lat": -0.17777,
+                "lon": -78.48542
+              },
+              "km": 1.659,
+              "minutes": 4.8546875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.17777,
+                "lon": -78.48542
+              },
+              "to": {
+                "lat": -0.28966,
+                "lon": -78.47981
+              },
+              "km": 19.902,
+              "minutes": 39.1796875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.28966,
+                "lon": -78.47981
+              },
+              "to": {
+                "lat": -0.24439,
+                "lon": -78.54124
+              },
+              "km": 18.603,
+              "minutes": 36.2296875,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.24439,
+                "lon": -78.54124
+              },
+              "to": {
+                "lat": -0.33,
+                "lon": -78.55002
+              },
+              "km": 11.377,
+              "minutes": 19.293,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.33,
+                "lon": -78.55002
+              },
+              "to": {
+                "lat": -0.32421,
+                "lon": -78.54937
+              },
+              "km": 0.850,
+              "minutes": 1.710,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.32421,
+                "lon": -78.54937
+              },
+              "to": {
+                "lat": -0.24359,
+                "lon": -78.52578
+              },
+              "km": 11.226,
+              "minutes": 17.142,
+              "source": "Road",
+              "encodedPolyline": null
+            },
+            {
+              "from": {
+                "lat": -0.24359,
+                "lon": -78.52578
+              },
+              "to": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "km": 11.267,
+              "minutes": 21.13125,
+              "source": "Road",
+              "encodedPolyline": null
+            }
+          ]
+        }
+      ],
+      "lateStops": {},
+      "droppedConsolidation": [],
+      "totalCost": 49.632
+    }
+  ]
+}

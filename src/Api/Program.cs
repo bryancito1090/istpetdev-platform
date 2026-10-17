@@ -85,7 +85,52 @@ builder.Services.AddCognitoAuthentication(builder.Configuration);
 builder.Services.AddScoped<IClaimsTransformation, AccountRoleClaimsTransformation>();
 
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.Section));
-builder.Services.Configure<LogisticsOptions>(builder.Configuration.GetSection(LogisticsOptions.SectionName));
+
+// Configuración de LogisticsOptions con soporte opcional de appsettings.demo-quito.json (#275)
+builder.Services.AddOptions<LogisticsOptions>()
+    .Bind(builder.Configuration.GetSection(LogisticsOptions.SectionName))
+    .Configure<IConfiguration, IWebHostEnvironment>((options, config, env) =>
+    {
+        var explicitConfigFile = config["LOGISTICS_CONFIG_FILE"]
+            ?? config["DEMO_CONFIG_FILE"]
+            ?? Environment.GetEnvironmentVariable("LOGISTICS_CONFIG_FILE")
+            ?? Environment.GetEnvironmentVariable("DEMO_CONFIG_FILE");
+
+        string? resolvedFile = null;
+        if (!string.IsNullOrWhiteSpace(explicitConfigFile) && File.Exists(explicitConfigFile))
+        {
+            resolvedFile = explicitConfigFile;
+        }
+        else if (!env.IsEnvironment("Testing"))
+        {
+            var enableDemoQuito = string.Equals(Environment.GetEnvironmentVariable("DEMO_QUITO_CONFIG_ENABLED"), "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(config["Demo:EnableQuitoConfig"], "true", StringComparison.OrdinalIgnoreCase)
+                || env.IsProduction();
+
+            if (enableDemoQuito)
+            {
+                var candidatePaths = new[]
+                {
+                    Path.Combine(env.ContentRootPath, "data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json"),
+                    Path.Combine(env.ContentRootPath, "../../data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json"),
+                    "/app/data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json"
+                };
+
+                resolvedFile = candidatePaths.FirstOrDefault(File.Exists);
+            }
+        }
+
+        if (resolvedFile != null)
+        {
+            var quitoConfig = new ConfigurationBuilder()
+                .AddJsonFile(resolvedFile, optional: false)
+                .Build();
+
+            quitoConfig.GetSection(LogisticsOptions.SectionName).Bind(options);
+            config.GetSection(LogisticsOptions.SectionName).Bind(options);
+        }
+    });
+
 builder.Services.Configure<PolicyOptions>(builder.Configuration.GetSection(PolicyOptions.SectionName));
 builder.Services.Configure<AgentOptions>(builder.Configuration.GetSection("Agent"));
 // Rutas relativas de fixtures se resuelven contra la raíz de contenido (src/Api en desarrollo, /app en Docker).
