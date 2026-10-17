@@ -98,6 +98,21 @@ public sealed class PartialCapacityPlanningTests(PostgisContainer postgres) : IC
             return this;
         }
 
+        // Disponible 100 y demanda 16/día: cobertura 6,25 días, VIGILAR (consolidación) con sugerida de 60.
+        public Scenario WatchPoint(string code, double lon, double lat, string sku)
+        {
+            var (product, lot) = _products[sku];
+            var sp = new ServicePoint { OrganizationId = DemoOrganization.Id, Code = code, Name = code, Category = "Centro de salud",
+                                        Criticality = "normal", Position = Gf.CreatePoint(new Coordinate(lon, lat)),
+                                        WindowStartLocal = new TimeOnly(8, 0), WindowEndLocal = new TimeOnly(17, 0), ServiceMinutes = 20, IsActive = true };
+            var loc = new DomainLocation { OrganizationId = DemoOrganization.Id, Code = code, Name = code, Kind = LocationKinds.ServicePoint, ServicePointId = sp.Id, IsActive = true };
+            db.AddRange(sp, loc,
+                new StockBalance { OrganizationId = DemoOrganization.Id, LocationId = loc.Id, LotId = lot.Id, QuantityOnHand = 100m },
+                new Consumption { OrganizationId = DemoOrganization.Id, ServicePointId = sp.Id, ProductId = product.Id,
+                                  OccurredOn = new DateOnly(2026, 10, 1), PeriodDays = 10, Quantity = 160m, SourceKind = "test" });
+            return this;
+        }
+
         public async Task<PlanResult> PlanAsync()
         {
             await db.SaveChangesAsync();
@@ -236,5 +251,59 @@ public sealed class PartialCapacityPlanningTests(PostgisContainer postgres) : IC
         Assert.Equal(50m, load.Quantity);
         Assert.Equal(0m, load.PendingQuantity);
         Assert.Empty(second.Unserved);
+    }
+
+    // #199 (FR-28): la consolidación que no cabe completa carga la parte que cabe en lo que dejaron libre los obligatorios.
+    [Fact]
+    public async Task A_consolidation_stop_that_does_not_fit_takes_the_part_that_fits_after_the_mandatory_ones()
+    {
+        async Task<PlanResult> RunAsync()
+        {
+            await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+            // Obligatorio de 150 kg y consolidación de 60 kg en un vehículo de 180 kg: quedan 30 kg para la consolidación.
+            return await new Scenario(db).Product("SKU-A", 1m, 0.001m).Vehicle("VEH-01", 180m, 10m)
+                .Point("HOS-01", "alta", -78.50, -0.20, "SKU-A")
+                .WatchPoint("VIG-01", -78.505, -0.205, "SKU-A").PlanAsync();
+        }
+
+        var first = await RunAsync();
+        var route = Assert.Single(first.Routes);
+        Assert.True(route.LoadWeight <= 180m);
+        var stops = route.Stops.ToDictionary(s => s.PointCode);
+        var mandatory = Assert.Single(stops["HOS-01"].Loads);
+        Assert.False(stops["HOS-01"].IsConsolidation);
+        Assert.Equal((150m, 0m), (mandatory.Quantity, mandatory.PendingQuantity));
+        Assert.True(stops["VIG-01"].IsConsolidation);
+        var part = Assert.Single(stops["VIG-01"].Loads);
+        Assert.Equal((30m, 60m, 30m), (part.Quantity, part.RequiredQuantity, part.PendingQuantity));
+        // No es un no atendido (FR-09 solo lista obligatorios), pero sus cifras quedan en los hechos.
+        Assert.Empty(first.Unserved);
+        Assert.Contains(first.Facts, f => f.Code == "planned_quantity" && f.Subject == "VIG-01/SKU-A" && f.Value == 30m);
+        Assert.Contains(first.Facts, f => f.Code == "pending_quantity" && f.Subject == "VIG-01/SKU-A" && f.Value == 30m);
+
+        // Mismos datos, mismo resultado.
+        static string Canon(PlanResult r) => JsonSerializer.Serialize(new
+        {
+            routes = r.Routes.Select(x => new { x.VehicleCode, x.LoadWeight, stops = x.Stops.Select(s => new { s.Sequence, s.PointCode, s.IsConsolidation, loads = s.Loads.Select(l => new { l.Sku, l.Quantity, l.RequiredQuantity, l.PendingQuantity }) }) }),
+            facts = r.Facts.Where(f => f.Code.EndsWith("_quantity")).Select(f => new { f.Code, f.Subject, f.Value })
+        });
+        Assert.Equal(Canon(first), Canon(await RunAsync()));
+    }
+
+    [Fact]
+    public async Task A_consolidation_stop_gets_nothing_when_the_mandatory_ones_fill_the_vehicle()
+    {
+        await using var db = await TestDb.CreateMigratedAsync(postgres.NewDatabase());
+        // El obligatorio (150 kg) ya no cabe completo en 120 kg: la consolidación no le quita capacidad.
+        var result = await new Scenario(db).Product("SKU-A", 1m, 0.001m).Vehicle("VEH-01", 120m, 10m)
+            .Point("HOS-01", "alta", -78.50, -0.20, "SKU-A")
+            .WatchPoint("VIG-01", -78.505, -0.205, "SKU-A").PlanAsync();
+
+        var stop = Assert.Single(Assert.Single(result.Routes).Stops);
+        Assert.Equal("HOS-01", stop.PointCode);
+        Assert.Equal(120m, stop.Loads.Single().Quantity);
+        var unserved = Assert.Single(result.Unserved);
+        Assert.Equal(("HOS-01", "capacity", 30m), (unserved.PointCode, unserved.Reason, unserved.Lines.Single().PendingQuantity));
+        Assert.DoesNotContain(result.Facts, f => f.Subject.StartsWith("VIG-01/"));
     }
 }
