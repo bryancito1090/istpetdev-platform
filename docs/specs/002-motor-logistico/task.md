@@ -20,6 +20,8 @@
 | T11 | Rutas con cualquier dataset: bodega propia por vehículo y coordenadas de alta precisión | T4 | — | completada (15-oct; 444/444) |
 | T12 | Rutas por calles (mapa y distancias del motor con OSRM) y un color por vehículo | T11 | — | completada (15-oct; verificada en vivo; demo-region sin cambios) |
 | T13 | Las rutas publicadas llegan al conductor (asignación, entregas del asistente y bodega de origen) | T5 | — | completada (15-oct; 6 pruebas nuevas) |
+| T19 | Reserva antes del despacho, cancelación y cantidad por línea | T15 | — | completada (#199) |
+| T20 | Activar ServiceCost y TrafficBands en la demo | T4, T12 | — | completada (#275) |
 
 `[P]` implica archivos distintos y commits independientes. Las firmas entre tareas son las de [Componentes e interfaces](plan.md#componentes-e-interfaces); cambiar una exige actualizar consumidores y pruebas en el mismo commit. No poner códigos, nombres o coordenadas de `demo-region` en C#.
 
@@ -650,4 +652,22 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 | Panel en pantalla | Campo visible en el paso 4 | No verificado en pantalla |
 
 **Verificación:** `dotnet test --filter` con Risk, PartialCapacity, PartialLoad, ConfirmCapacity, PublishToDriver, Replan, RoutePlanning, RoutePublisher, SingleProposal, OrderBasedRouting, RouteSuggestPriority, ReplenishmentAllocator, LogisticsApi y CustodyGuardsHttp: 105 de 107. Fallaron 2 casos de `AgentJourneyTests.Automatic_incident_finishes_and_does_not_repeat_completed_replan`, que entran por el filtro «Replan». Corrida sola, esa clase pasa 9 de 9. Web: `ng test --include` de `rutas-cantidad-por-linea`, `rutas-priorizacion-pedidos`, `rutas.page` y `api.service`: 28 de 28. Después de integrar `develop` (#245), con Risk, PartialCapacity, PartialLoad, ConfirmCapacity, PublishToDriver, RoutePlanning, RoutePublisher, SingleProposal, OrderBasedRouting, ReplanningTests y TrafficBand: 73 de 73. No se corrió la suite completa.
+
+### T20 — Activar ServiceCost y TrafficBands en la demo (#275, 16-oct)
+
+**Problema:**
+#240 (costo total de servir) y #245 (horas pico) estaban integrados pero sin configuración en ningún entorno (`ServiceCost` y `TrafficBands` vacíos). Sin `ServiceCost`, `IsValid` era falso y el motor caía a la fórmula clásica (sin combustible por carga, ayudantes ni merma). Sin `TrafficBands`, el factor de hora pico era 1.0 (sin efecto en velocidad/duración).
+
+**Solución implementada:**
+- Crear `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json` con las secciones documentadas en su README:
+  - `ServiceCost`: diésel $3.11/gal (fuente Primicias, 2026-10-12), `HelperCostPerHour`: $4.13/h, `LoadFuelFactor`: 0.3, perfiles por tipo de vehículo (`camioneta`, `camion_liviano`, `camion_pesado`), reglas laborales de 3 tramos y porcentajes de merma por tipo de producto.
+  - `TrafficBands`: 3 bandas horarias (06:00–09:30 con factor 0.64, 12:30–14:00 con factor 0.80, 16:00–20:00 con factor 0.64; fuente Secretaría de Movilidad DMQ).
+  - `ContractedCarrier` y `Recommendation`: parámetros del operador sintético y ponderación multicriterio para #241.
+  - `VehicleRestrictions`: restricciones para camión pesado.
+- Cargar `appsettings.demo-quito.json` en `Program.cs` para el entorno de producción o cuando `LOGISTICS_CONFIG_FILE` / `DEMO_CONFIG_FILE` / `DEMO_QUITO_CONFIG_ENABLED=true` estén configurados, sin alterar el comportamiento de las pruebas existentes (ambiente `Testing`).
+- Actualizar `.gitignore` para no ignorar `data/fixtures/demo-quito-planificacion/appsettings.demo-quito.json`.
+- Actualizar `docker-compose.prod.yml` con `DEMO_QUITO_CONFIG_ENABLED: "true"`.
+- Actualizar generador `generate-demo-quito-planificacion.py` para sincronizar `appsettings.demo-quito.json`.
+- Pruebas unitarias e integración en `DemoQuitoConfigurationTests.cs` y `DemoQuitoConfigurationIntegrationTests.cs`: validan binding completo, `/health/ready` Healthy, desglose real no nulo en evaluación y variación de duración de ruta en hora pico (07:30 vs 11:00).
+
 

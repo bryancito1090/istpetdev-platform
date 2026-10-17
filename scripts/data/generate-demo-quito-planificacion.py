@@ -373,6 +373,68 @@ def main():
         json.dump(mapping, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
+    appsettings_data = {
+        "Logistics": {
+            "ServiceCost": {
+                "FuelPricePerGallonUsd": DIESEL_USD_GAL,
+                "FuelPriceEffectiveDate": "2026-10-12",
+                "FuelPriceSource": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+                "LoadFuelFactor": 0.3,
+                "HelperCostPerHour": 4.13,
+                "ExpectedShrinkPct": 0.5,
+                "OverloadShrinkPct": 2.0,
+                "OverloadThresholdPct": 90.0,
+                "VehicleProfiles": {
+                    "camioneta": {"LitersPer100Km": 12.21, "WearPerKm": 0.065},
+                    "camion_liviano": {"LitersPer100Km": 14.84, "WearPerKm": 0.09},
+                    "camion_pesado": {"LitersPer100Km": 18.93, "WearPerKm": 0.10}
+                },
+                "LaborRules": [
+                    {"MaxKg": 150.0, "MaxPackageKg": 25.0, "Helpers": 0},
+                    {"MaxKg": 400.0, "MaxPackageKg": 25.0, "Helpers": 1},
+                    {"Helpers": 2}
+                ]
+            },
+            "TrafficBands": [
+                {"Start": "06:00", "End": "09:30", "SpeedFactor": 0.64},
+                {"Start": "12:30", "End": "14:00", "SpeedFactor": 0.80},
+                {"Start": "16:00", "End": "20:00", "SpeedFactor": 0.64}
+            ],
+            "ContractedCarrier": {
+                "BaseFeeUsd": 25.0,
+                "PerKmUsd": 0.55,
+                "PerKgUsd": 0.01,
+                "ResponseHours": 4,
+                "Name": "Operador Logístico Contratado (Quito)",
+                "IsEnabled": True
+            },
+            "Recommendation": {
+                "WeightCost": 0.35,
+                "WeightCriticalOnTime": 0.35,
+                "WeightPendingDemand": 0.20,
+                "WeightRisk": 0.10,
+                "ActiveIncidentPenalty": 15.0,
+                "OverloadThresholdPct": 90.0,
+                "OverloadPenalty": 10.0,
+                "ResponseTimePenaltyPerHour": 2.5
+            },
+            "VehicleRestrictions": [
+                {
+                    "VehicleType": "camion_pesado",
+                    "Corridors": ["Av. Simón Bolívar", "Ruta Viva"],
+                    "Bands": [
+                        {"Start": "06:00", "End": "10:00"},
+                        {"Start": "16:00", "End": "20:00"}
+                    ]
+                }
+            ]
+        }
+    }
+    with open(os.path.join(OUT, "appsettings.demo-quito.json"), "w", encoding="utf-8") as f:
+        json.dump(appsettings_data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
     files = ["bodegas.csv", "puntos.csv", "productos.csv", "lotes.csv", "vehiculos.csv", "consumos.csv",
              "inventario.csv", "tramos.csv", "incidentes.json", "mapping.json"]
     manifest = {
