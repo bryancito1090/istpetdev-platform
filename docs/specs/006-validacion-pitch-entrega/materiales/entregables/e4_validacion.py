@@ -7,32 +7,40 @@ h1(doc, "1", "¿Qué probamos?")
 para(doc, "Probamos el prototipo en cuatro frentes. Cada resultado se presenta con su escenario y su límite; lo que no "
           "se ejecutó se dice como pendiente.", after=6)
 tabla(doc, ("Frente", "Qué se hizo", "Resultado", "Límite"), [
-    ("Simulación de 90 días", "12 corridas: 3 políticas × 4 escenarios (3 semillas base y 1 adversa)", "Reproducible por semilla", "Datos sintéticos"),
+    ("Simulación de 90 días", "12 corridas: 3 políticas × 4 escenarios (3 semillas base y 1 adversa)", "Sin ahorro frente al calendario fijo", "Datos sintéticos"),
     ("Comparación A/B/C", "Ensayo técnico del motor en el escenario de Quito", "Recomienda la opción C", "Local; no en producción"),
     ("Agente de IA", "Corrida registrada: riesgos, abastecimiento y rutas con explicación", "Completó, con caída al respaldo", "Una corrida registrada"),
     ("Despliegue en producción", "Verificación de salud el 17-oct a las 08:28", "Todo en HTTP 200", "Salud técnica, no uso por usuarios"),
 ], (Cm(3.4), Cm(5.6), Cm(3.8), Cm(3.8)), tam=9)
 
 h1(doc, "2", "Simulación de 90 días")
-para(doc, "Se comparó el fixture nacional canónico: 80 puntos de servicio, 6 bodegas, 12 vehículos y 2 productos "
-          "(desinfectante y papel toalla), sobre 90 días desde el 12-oct-2026. Semillas base 42, 101 y 2024; escenario "
-          "adverso 9999 (demanda +20 % y un vehículo retirado).", after=6)
-tabla(doc, ("Política", "Km totales (mediana)", "Costo de transporte", "Entregas"), [
-    ("Reactiva: repone cuando ya falta", "4 562,5", "USD 7 984,38", "365"),
-    ("Calendario fijo semanal", "7 800,0", "USD 13 650,00", "624"),
-    ("IstpetDev: preventiva", "7 037,5", "USD 12 315,63", "563"),
-    ("IstpetDev, escenario adverso", "6 962,5", "USD 12 184,38", "557"),
-], (Cm(6.2), Cm(3.6), Cm(3.8), Cm(3.0)))
-bullet(doc, [("Frente al calendario fijo: ", True), ("IstpetDev recorre 7 037,5 km en lugar de 7 800 y su costo de transporte es 9,8 % menor "
-             "(USD 12 315,63 frente a USD 13 650,00).", False)])
-bullet(doc, [("Frente a la política reactiva: ", True), ("la reactiva hace menos entregas, pero tarde, cuando el punto ya está desabastecido. "
-             "IstpetDev adelanta la reposición.", False)])
-bullet(doc, [("Ante la disrupción: ", True), ("con demanda +20 % y un vehículo menos, completa 557 entregas sin colapsar.", False)])
-aviso(doc, "Cómo leer el 9,8 %:", "el costo por entrega es igual en las tres políticas (USD 21,88); el ahorro viene de eliminar "
-                                 "visitas innecesarias a puntos con stock suficiente. Es una simulación con datos sintéticos, no un ahorro "
-                                 "observado en una empresa, y esta comparación no mide quiebres de stock.")
-para(doc, "Las corridas se reproducen con las semillas fijadas y el fixture `national-v1`; el resumen y el paquete exportado "
-          "quedan en el repositorio, y una prueba automatizada los genera y verifica.", 9.5, False, GREY)
+para(doc, "Estas son las escalas que usamos en todo el paquete; cada cifra se refiere a una sola de ellas.", after=4)
+tabla(doc, ("Uso", "Escala"), [
+    ("Comparación A/B/C", "Escenario sintético de Quito: 40 puntos; el ensayo usa 4 pedidos y 6 entregas críticas"),
+    ("Simulación de 90 días", "El mismo escenario: 40 puntos, 3 bodegas, 10 vehículos y 12 productos"),
+    ("Demostración en vivo", "Región de demostración: unos 15 puntos y 2 vehículos"),
+], (Cm(4.4), Cm(12.2)), tam=9)
+para(doc, "", after=2)
+para(doc, "Se comparó el escenario sintético de Quito importado en la base de datos (12 de los 40 puntos usan referencias de "
+          "establecimientos públicos), sobre 90 días. Semillas base 42, 101 y 2024; escenario adverso 9999, con un vehículo "
+          "retirado (VEH-0001). Corrida del 17-oct, commit ceeaf03; cifras en mediana de las semillas base.", after=6)
+tabla(doc, ("Política", "Costo de transporte", "Km totales", "Entregas", "Quiebres"), [
+    ("Reactiva: repone cuando ya falta", "USD 8 507,86", "9 699,4", "1 966", "16 608"),
+    ("Calendario fijo semanal", "USD 4 889,23", "5 589,1", "1 611", "16 117"),
+    ("IstpetDev: preventiva", "USD 6 077,22", "6 571,2", "939", "16 589"),
+], (Cm(5.4), Cm(3.6), Cm(2.6), Cm(2.4), Cm(2.6)))
+bullet(doc, [("Frente al calendario fijo semanal: ", True), ("no hay ahorro. IstpetDev cuesta más (USD 6 077,22 frente a USD 4 889,23), "
+             "recorre más km y tiene más quiebres netos en las semillas base. En el escenario adverso la diferencia neta de quiebres "
+             "se invierte (+168 a favor de IstpetDev).", False)])
+bullet(doc, [("Frente a la política reactiva: ", True), ("IstpetDev gasta menos en transporte, pero también entrega menos veces "
+             "(939 frente a 1 966) y su diferencia neta de quiebres no mejora (−20 en la mediana).", False)])
+bullet(doc, [("Puntualidad: ", True), ("similar entre políticas (38,6 % en IstpetDev y reactiva, 40,4 % en el calendario fijo).", False)])
+aviso(doc, "Cómo leer estas cifras:", "es una simulación con datos sintéticos, no un ahorro observado. No sostiene que IstpetDev reduzca "
+                                      "el costo frente a un calendario fijo: ese efecto, y su relación con los quiebres, se medirá con datos "
+                                      "de una empresa en el piloto. Una versión anterior de este entregable citaba un 9,8 % de ahorro "
+                                      "calculado sobre otro conjunto de datos; se retira.")
+para(doc, "Las corridas se reproducen con las semillas fijadas y el dataset `demo-quito-planificacion`; el resumen queda en "
+          "`docs/evidence/simulation-quito/` y las cifras comentadas en la nota «Cifras del simulador 90 días».", 9.5, False, GREY)
 
 h1(doc, "3", "¿Con quién probamos?")
 bullet(doc, [("Con el sector, en la charla: ", True), ("escuchamos el testimonio de un prestador de servicios de limpieza (16-oct). "
@@ -45,6 +53,7 @@ aviso(doc, "Importante:", "una conversación con un mentor no equivale a un pilo
                          "no demuestran frecuencia del problema ni disposición de pago.")
 
 h1(doc, "4", "¿Qué modificamos a partir de las pruebas?")
+bullet(doc, "Retiramos la cifra de 9,8 % de ahorro: venía de otro conjunto de datos y no se sostiene con la corrida del 17-oct sobre el escenario de Quito.")
 bullet(doc, "Retiramos del discurso el desglose por componente de la comparación A/B/C, porque en esa corrida no suma el total.")
 bullet(doc, "Pasamos de rutas con cifras fijas en pantalla a rutas y paradas calculadas por la API real.")
 bullet(doc, "Pasamos de un solo almacén a abastecimiento multialmacén con vigencia de lote (FEFO), validación de peso y volumen del vehículo y rebalanceo.")
