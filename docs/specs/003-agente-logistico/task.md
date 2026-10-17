@@ -6,6 +6,8 @@
 - [x] Pruebas locales iniciales: tres integraciones PostgreSQL (rollback, conservación e idempotencia, falta de stock) y build de CLI.
 - [x] Inspección de desarrollo configurado y producción; respaldo productivo verificado, sin secretos en Git.
 - [x] Regresión de campo: 98/98 aprobadas; ensayo sobre desarrollo (12 recepciones, rollback) y respaldo local verificado.
+- [x] Datos aplicados en desarrollo: 12 recepciones, 2 rechazos, 2 ajustes y 8 pedidos; repetición sin duplicados, reservas y registros preexistentes conservados.
+- [x] Revalidar regresiones de develop detectadas en CI: revocación de cuentas, simulación, replanificación y pruebas de migraciones (32 casos aprobados entre las repeticiones).
 - [ ] Integración por PR a develop antes de aplicar en producción.
 - [ ] Ejecución real: aplicar en desarrollo/producción y verificar novedades, saldo y repetición sin duplicados.
 - [ ] Registrar resultados finales en `docs/evidence/330-novedades-campo.md`.

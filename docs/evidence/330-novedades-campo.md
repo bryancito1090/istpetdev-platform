@@ -64,6 +64,26 @@ inicial. La carga no lo retira ni modifica.
 
 ## Ejecución real y despliegue
 
-Pendiente: integración del código, ensayo
-y aplicación productiva y recuentos finales. No se ha desplegado una aplicación
+Desarrollo aplicado: 12 recepciones (2 con rechazo, 2 con ajuste), 8 pedidos,
+2 planes y 12 entregas nuevos. Reejecución: `AlreadyApplied=true`, sin duplicados.
+Stock total 4265 antes/después; reservas 440 antes/después; cero saldos negativos.
+Los hashes de las rutas y entregas preexistentes permanecieron idénticos.
+La API local sigue con readiness 200. La consulta HTTP autenticada de este
+runtime queda pendiente: la sesión privada de planificador venció y no pudo
+renovarse; no se sustituyó autenticación. La consulta HTTP está cubierta por las
+pruebas de integración, lo que no acredita una consulta autenticada productiva.
+
+CI inicial detectó regresiones procedentes de develop: el seed de cuentas
+reactivaba revocaciones y cambiaba roles; una nueva opción de simulación no se
+habilitaba en el harness de pruebas; dos pruebas de migración asumían el catálogo
+anterior a los metadatos. Se conserva el rol/actividad de cuentas existentes,
+se declara explícitamente la simulación en Testing y se ajusta la recreación del
+esquema histórico, sin tocar migraciones publicadas. Sincronizado con develop
+`85e4141`. La prueba de replanificación conserva el estado Dispatched que ahora
+produce la simulación de #320 antes de iniciar el recorrido, en lugar de asumir
+Draft. Repetición: 31 casos aprobados y el caso de replanificación aprobado tras
+ese ajuste; pendiente CI completo. Build de CLI sobre develop sincronizado:
+cero errores y advertencias.
+
+Pendiente: integración del código, ensayo y aplicación productiva y recuentos finales. No se ha desplegado una aplicación
 ni aplicado la migración de metadatos de catálogo mediante esta tarea.

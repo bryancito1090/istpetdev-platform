@@ -27,6 +27,7 @@ public class ApiFactory(string connectionString, bool demoEnabled = true, IReadO
             ["Authentication:AllowedClientIds:0"] = TestTokens.ClientId,
             ["ApplyMigrations"] = "true",
             ["Demo:Enabled"] = demoEnabled.ToString(),
+            ["FieldSimulation:Enabled"] = demoEnabled.ToString(),
             ["Demo:FixturePath"] = Fixtures.Folder("demo-base"),
             ["Demo:Accounts:0:Subject"] = TestTokens.Planner,
             ["Demo:Accounts:0:DisplayName"] = "Planificación de prueba",
