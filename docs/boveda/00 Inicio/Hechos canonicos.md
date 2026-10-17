@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 estado: vigente
-actualizado: 2026-10-16
+actualizado: 2026-10-17
 tags: [hackathon, equipo, ia]
 ---
 
@@ -23,7 +23,7 @@ Certeza: ✅ confirmado con fuente · ⚠️ a validar (propuesta, supuesto o da
 | Zona horaria | America/Guayaquil (UTC−05:00) | Decisión del equipo en [[Cronograma oficial]] | ✅ |
 | Sede | Centro de Exposiciones Quito (CEQ), según listado público de la feria; el manual solo dice «espacio definido por la organización» (p. 14) | [Listado público](https://www.cantonfair.net/event/67411-ecuador-cleaning-expo-2026) | ⚠️ confirmar en O-07 |
 | Jurado | Confirmado: 5 jurados por panel. Revelados: Alexander (conferencia magistral), María del Pilar Rodríguez (Presidenta Federación Colombia de Limpieza, 10+ años de experiencia), invitados internacionales y especialistas en ergonomía (reto 5). En el manual constaba previsión de 7 jurados comunes | Charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]]; [Charla del 16-oct](../NotasEvento/2026-10-16-1109-bb-charla-limpieza-logistica.md) | ✅ confirmado |
-| Pesos de evaluación | Matriz oficial ratificada (100%): Prototipo/Demostración real 20%, Calidad de presentación y equipo 20%, Comprensión del problema 15%, Innovación/Diferenciador 15%, Factibilidad técnica/Operativa 15%, Impacto potencial 15% | Charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]]; Manual, pp. 9 y 26; [[Evaluacion y entregables]] | ✅ |
+| Pesos de evaluación | Matriz oficial ratificada (100%): Prototipo/Demostración real 20%, Comprensión del problema 15%, Innovación/Diferenciador 15%, Factibilidad técnica/Operativa 15%, Impacto potencial 15%, Calidad de presentación 10%, Proceso y trabajo en equipo 10%. En el audio del 17-oct se oyó «presentación y equipo 20%»; el documento del mentor y el Manual los separan en dos criterios de 10% | Charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]]; documento del mentor [[2026-10-17-1129-jb-presentacion-pitch-perfecto]]; Manual, pp. 9 y 26; [[Evaluacion y entregables]] | ✅ |
 | Trabajo previo permitido | PENDIENTE (consulta O-01) | [[Consultas para la organizacion]] | ⚠️ |
 | Duración del pitch | 5 minutos por equipo confirmados el 17-oct (incluye ~1 minuto de preguntas del jurado). Meta interna del guion: 4:40 (o 4:00 si se corta exacto para preguntas) | Charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]]; [[Guion del pitch]] | ✅ |
 | Presentaciones simultáneas | 4 equipos en 4 cubículos asignados por reto; inicio a las 16:15 en punto. Transmisión simultánea en circuito cerrado sin audio en pantallas exteriores (Max) | Charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]]; O-08/O-13 | ✅ |
@@ -193,7 +193,7 @@ Cada una sigue el protocolo de [[Convenciones y estados]]: no se corrige en sile
 | Trabajo previo permitido | Un integrante informó el 12-oct que se puede llevar trabajo hecho; O-01 sigue sin respuesta registrada de la organización | Quien recibió la respuesta, registrándola en O-01 |
 | Paneles de evaluación | **Cerrada el 17-oct**: 5 jurados por panel ratificados oficialmente. Integrantes revelados: Alexander (magistral), María del Pilar Rodríguez (Presidenta Federación Colombia de Limpieza, 10+ años), internacionales y ergonomía. Cuatro cubículos simultáneos por reto con transmisión en circuito cerrado sin audio en pantallas exteriores (Max). | Organización, O-04/O-13; charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]] |
 | Cortes de entrega | Aclarado el 16-oct mediante la Agenda General oficial ([[2026-10-16-1126-bb-agenda-general-y-mentorias]]): el viernes 16 a las 18:30–19:00 es el Checkpoint de avances con Mónica Sevilla y William Chamorro; la Entrega de hitos definitiva se ratifica para el sábado 17 de 16:00 a 16:15, seguida de las presentaciones finales (16:15–18:15) y premiación (18:30–19:00). | Organización, [[Cronograma oficial]] |
-| Tiempo del pitch | **Cerrada el 17-oct**: 5 minutos totales por equipo confirmados en la mentoría de Henry Califa, incluyendo aproximadamente 1 minuto para preguntas del jurado. Guion maestro calibrado a 4:40 (o corte a 4:00 si se corta exacto para preguntas). | Organización, O-04; charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]] |
+| Tiempo del pitch | **Cerrada el 17-oct**: 5 minutos totales por equipo confirmados en la mentoría de Hendrith Caripa Castellanos (transcrito de oído como «Henry Califa»), incluyendo aproximadamente 1 minuto para preguntas del jurado. Guion maestro calibrado a 4:40 (o corte a 4:00 si se corta exacto para preguntas). | Organización, O-04; charla del 17-oct [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad]] |
 | Papel del LLM | Resuelto el 14-oct: el LLM elige herramientas y explica; el motor determinista calcula y aplica límites (ADR-22) | Bryan, aprobación expresa en revisión de #37 |
 | Scopes de automatización | Resuelto para spec 003: `istpetdev-api/automation` + rol `Automatizacion`, sin operaciones de aprobación/publicación | Bryan, aprobación expresa del diseño 003 |
 | Distancias en línea recta | Solo en un escenario separado ([[Rutas y sobrecostos]]) o mezcladas por tramo con etiqueta en la operación, nunca en el simulador (ADR-23) | Equipo |
