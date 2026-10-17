@@ -237,6 +237,24 @@ export interface RoutePlanDetailDto {
   driverRoutes?: RouteDriverAssignmentDto[];
 }
 
+/** #199: respuesta de `POST /route-plans/{id}/cancel`. */
+export interface RoutePlanCancellationDto {
+  routePlanId: string;
+  status: string;
+  alreadyCancelled: boolean;
+  cancelledDeliveries: number;
+  releasedReservedQuantity: number;
+  orderLines: Array<{
+    orderId: string;
+    orderNumber: string;
+    sku: string;
+    releasedQuantity: number;
+    plannedQuantity: number;
+    pendingQuantity: number;
+    orderStatus: string;
+  }>;
+}
+
 export interface CreateManualRoutePlanRequest {
   code?: string;
   vehicleId?: string;
@@ -847,6 +865,11 @@ export class ApiService {
   publishRoutePlan(id: string, assignment?: { vehicleCode: string; driverAccountId: string }): Observable<any> {
     const body = assignment ? { driverAssignments: { [assignment.vehicleCode]: assignment.driverAccountId } } : {};
     return this.http.post(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/publish`, body);
+  }
+
+  /** #199: cancela una ruta propuesta o publicada antes del despacho (409 `cancel_conflict` si ya salió). */
+  cancelRoutePlan(id: string): Observable<RoutePlanCancellationDto> {
+    return this.http.post<RoutePlanCancellationDto>(`${this.baseUrl}/api/v1/route-plans/${encodeURIComponent(id)}/cancel`, {});
   }
 
   completeStop(routePlanId: string, sequence: number): Observable<any> {

@@ -612,6 +612,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       </a>
                     </div>
                   }
+                  <!-- #199: cancelar una ruta antes del despacho (libera reservas y devuelve lo planificado al pedido) -->
+                  @if (session.canWrite() && canCancelPlan(selectedDetail()!)) {
+                    <button
+                      type="button"
+                      data-testid="btn-cancel-plan"
+                      (click)="cancelPlan(selectedDetail()!.id)"
+                      [disabled]="actionLoading()"
+                      class="inline-flex items-center text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50">
+                      Cancelar ruta
+                    </button>
+                  }
                 </div>
 
                 <!-- #160: a qué bodega sale, con qué vehículo y qué conductor -->
@@ -3048,6 +3059,44 @@ export class RutasPage implements OnInit, OnDestroy {
           type: 'error',
           text: err?.error?.detail || err?.error?.message || 'Error al publicar la ruta.'
         });
+      }
+    });
+  }
+
+  /** #199: solo se cancela una ruta propuesta o publicada que todavía no salió (ninguna entrega despachada). */
+  canCancelPlan(detail: RoutePlanDetailDto): boolean {
+    if (detail.status !== 'Proposed' && detail.status !== 'Published') return false;
+    const dispatched = ['Dispatched', 'InTransit', 'Delivered', 'Partial', 'Received'];
+    return !detail.stops.some(s => !!s.deliveryStatus && dispatched.includes(s.deliveryStatus));
+  }
+
+  /** #199: cancela la ruta con confirmación y muestra lo liberado y lo devuelto a cada pedido. */
+  cancelPlan(id: string): void {
+    if (!this.session.canWrite()) return;
+    const code = this.selectedDetail()?.code ?? '';
+    if (!window.confirm(`¿Cancelar la ruta ${code}? Se liberan sus reservas y lo planificado vuelve a los pedidos.`)) return;
+    this.actionLoading.set(true);
+    this.apiService.cancelRoutePlan(id).subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        if (res.alreadyCancelled) {
+          this.feedbackMessage.set({ type: 'success', text: 'La ruta ya estaba cancelada.' });
+        } else {
+          const lines = res.orderLines
+            .map(l => `${l.orderNumber} ${l.sku}: ${l.releasedQuantity} devueltas (pendiente ${l.pendingQuantity})`)
+            .join('; ');
+          this.feedbackMessage.set({
+            type: 'success',
+            text: `Ruta cancelada: ${res.cancelledDeliveries} entregas canceladas y ${res.releasedReservedQuantity} unidades liberadas.` +
+              (lines ? ` ${lines}.` : '')
+          });
+        }
+        this.selectPlan(id);
+        this.loadPlans();
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({ type: 'error', text: err?.error?.detail || 'No se pudo cancelar la ruta.' });
       }
     });
   }
