@@ -53,7 +53,7 @@ public sealed class RoutePublisher(
         {
             var existingDeliveries = await db.Deliveries
                 .Where(d => d.OrganizationId == DemoOrganization.Id &&
-                            db.RouteStops.Any(s => s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
+                            db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
                 .ToListAsync(ct);
 
             var existingReservations = await db.RouteStockReservations
@@ -77,7 +77,7 @@ public sealed class RoutePublisher(
 
         // Bodega de origen por parada (ADR-28, varias bodegas): la última recogida en bodega previa en la ruta o,
         // si no hay, la bodega del vehículo. Antes todas las entregas salían de la primera bodega encontrada.
-        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
+        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == plan.VehicleId, ct);
         var warehouses = await db.Locations
             .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse)
             .ToDictionaryAsync(l => l.Id, ct);
@@ -300,7 +300,7 @@ public sealed class RoutePublisher(
         var closed = new[] { DeliveryStates.Delivered, DeliveryStates.Partial, DeliveryStates.Received, DeliveryStates.Cancelled };
         var pending = await db.Deliveries
             .Where(d => d.OrganizationId == DemoOrganization.Id && !closed.Contains(d.Status) &&
-                        db.RouteStops.Any(s => s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
+                        db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
             .ToListAsync(ct);
         if (pending.Count == 0)
             throw new InvalidOperationException("La ruta no tiene entregas pendientes a las que asignar conductor.");
@@ -338,7 +338,7 @@ public sealed class RoutePublisher(
                     throw new ReplanConflictException("No se puede retirar una entrega ya despachada.");
                 foreach (var reservation in reservations.Where(r => r.DeliveryId == delivery.Id))
                 {
-                    var balance = await db.StockBalances.FirstAsync(b => b.Id == reservation.StockBalanceId, ct);
+                    var balance = await db.StockBalances.FirstAsync(b => b.OrganizationId == DemoOrganization.Id && b.Id == reservation.StockBalanceId, ct);
                     balance.QuantityReserved -= reservation.Quantity;
                     reservation.Status = RouteStockReservationStatus.Released;
                     reservation.ClosedAtUtc = DateTime.UtcNow;
