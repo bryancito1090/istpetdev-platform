@@ -63,3 +63,16 @@ migraciones. Respaldo actualizado previo: 424.185 bytes, 40 tablas, catálogo
 `b3d85683849e6b5c13df4f2c79224704366e5857249108be719bbecebb07b6da`.
 No se cambió el esquema ni se desplegó la aplicación en producción.
 Pendientes CI e integración a develop.
+
+Validación visual adicional con Chromium, componente real y ApiService sintético
+en una vista aislada sin sesión real: escritorio 1440×1000 y móvil 390×844,
+sin errores JavaScript ni desbordamiento horizontal del aviso. En ambos tamaños
+se verificó cero llamadas automáticas, bloqueo del botón principal, transmisión
+de `planRemainingOnly=true` únicamente tras la acción explícita y ausencia de
+esa acción con cantidades cubiertas. Capturas inspeccionadas; resultados en
+`345-asignaciones-browser.json`. No representa una prueba autenticada de la
+aplicación productiva ni del servicio de mapas.
+
+La política efectiva de este repositorio admite `fix/*` y rechazó `bugfix/*`.
+Se conservó el mismo código en `fix/345-aviso-rutas-asignadas`, cerrando el PR
+redundante #348 sin comentarios; PR vigente #349, sin relajar la política.
