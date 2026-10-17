@@ -591,6 +591,7 @@ describe('FieldOutboxService por cuenta (H2, FR-09)', () => {
     await outbox.saveCustodyCommand({ deliveryId: 'd-stat-1', command: 'Pickup', label: 'Retiro' });
     expect(outbox.latestPendingCustodyStatus('d-stat-1')).toBe('InTransit');
 
+    await new Promise((r) => setTimeout(r, 10));
     await outbox.saveCustodyCommand({ deliveryId: 'd-stat-1', command: 'Deliver', label: 'Entrega' });
     expect(outbox.latestPendingCustodyStatus('d-stat-1')).toBe('Delivered');
   });
