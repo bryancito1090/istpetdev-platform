@@ -9,7 +9,7 @@ tags: [oficial, hackathon]
 
 **Fuente:** [[Manual oficial.pdf]], p. 8 (entregables), p. 9 (criterios), p. 10 (jurado), pp. 23–26 (Anexos 5 y 6). Las tablas del manual son imágenes; las de esta nota marcadas «transcrito de imagen» copian su texto sin cambios.
 
-**Aviso del 16-oct:** la [[2026-10-16-1109-bb-charla-limpieza-logistica|charla del evento]] anuncia pitches de cinco minutos, cuatro cubículos por reto y menciona cinco jurados sin precisar su distribución. Contradice la organización del jurado del manual que se conserva abajo como fuente escrita. O-13 en [[Consultas para la organizacion]] pide composición, consolidación y desempate; no se deducen cambios de pesos ni de fórmula.
+**Aviso del 17-oct:** la [[2026-10-17-1050-bb-charla-pitch-jurado-rentabilidad|charla matutina del 17-oct]] ratifica que serán **5 jurados** por panel en cuatro cubículos simultáneos (Alexander, María del Pilar Rodríguez de Colombia, jurados internacionales y especialistas en ergonomía). La matriz ratifica los mismos criterios sumando 100% (agrupando presentación y equipo en 20%). Los pitches inician a las 16:15 en punto con 5 minutos por equipo (incluye preguntas).
 
 ## Matriz oficial (transcrito de imagen, p. 9)
 
