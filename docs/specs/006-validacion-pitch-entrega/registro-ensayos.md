@@ -25,7 +25,7 @@
 |---|---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — | — |
 
-No hay ensayo de escena registrado. La pantalla A/B/C del guion es una maqueta; no anotarla como comparación conectada ni como resultado del motor.
+No hay ensayo de escena registrado. Las cifras A/B/C de la lámina 5 salen del ensayo técnico local de #285 (`demo-quito-planificacion`); no anotarlas como recorrido en pantalla ni como producción.
 
 ## Ronda de preguntas
 
@@ -93,7 +93,7 @@ Las respuestas se revisaron contra la [matriz de afirmaciones](matriz-afirmacion
 | 17 | ¿Cuánto cuesta y cuál es el precio? | A-26, A-30, A-31 | 28 | Proponemos implementación e integración más suscripción. El costo de operación y el precio siguen por validar con costos reales y disposición de pago; no presentamos una tarifa fija. |
 | 18 | ¿Evita multas hospitalarias? | A-01, A-33 | 21 | No afirmamos que evite multas. La propuesta busca reducir el riesgo de faltantes; cualquier afirmación contractual requiere contrastar la cláusula aplicable. |
 | 19 | ¿Qué validaron con el sector? | A-02, A-29 | 22 | La propuesta se está contrastando con el sector. No atribuimos entrevistas, acuerdos ni confirmación general del problema sin registros que lo acrediten. |
-| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | P-02, P-03, P-11 | 27 | La maqueta A/B/C y las pruebas configuradas del motor son hechos con alcances distintos. La comparación contratada, la recomendación calculada y la validación operativa están en la hoja de ruta. |
+| 20 | ¿Qué parte está implementada y qué queda como hoja de ruta? | P-02, P-03, P-11 | 27 | El motor ya compara flota propia y operador contratado y recomienda con puntaje en un ensayo técnico local sobre el escenario sintético de Quito (#285). Falta llevarlo a producción, conciliar el desglose por componente y validarlo con una operación real. |
 | 21 | ¿A quién atienden primero si no alcanza el camión? | A-34 | 27 | El motor prioriza entregas y puede conservar una parte pendiente cuando la capacidad no alcanza. No afirmamos que la comparación con operador contratado ya decida esa asignación. |
 | 22 | ¿Qué pasa ante un cierre vial? | A-09, A-12 | 28 | Ante incidentes compatibles, el motor conserva lo ya ejecutado y evalúa una nueva versión para lo pendiente. Eso no incluye ralentizaciones parciales ni reasignación a un operador contratado. |
 | 23 | ¿Por qué no Dijkstra? | A-07, A-33 | 29 | Para el pitch importa el plan completo: el motor propone rutas con ventanas, capacidad y jornada. No prometemos óptimo global; la matriz no compara algoritmos como afirmación de producto. |
@@ -122,7 +122,7 @@ Propuesta basada en áreas de contribución registradas en los PR y documentos d
 | Papel | Integrante propuesto | Base de contribución |
 |---|---|---|
 | Narración | Joseph Baño | Coordinación, documentación y pitch; mantenerlo en el rol no crítico de presentación. |
-| Web | Alexander Martínez | Interfaz de rutas, planificador web y campo; responsable de tomar la captura A/B/C cuando #241 esté integrado. |
+| Web | Alexander Martínez | Interfaz de rutas, planificador web y campo; responsable de tomar la captura A/B/C con `demo-quito-planificacion`. |
 | Móvil | Anthony Pilatasig | Motor de rutas y flujos operativos; coordinar la demostración del recorrido móvil si se incluye. |
 | Técnica | Bryan Baño | Motor/agente, datos y costos; responsable de #241 y de explicar límites de integración. |
 | Negocio | Jorge Doicela | Infraestructura, despliegue y panel; presentar viabilidad, riesgos y piloto propuesto. |
@@ -149,7 +149,7 @@ Guía para quien presenta con `materiales/pitch-v3.pptx`. Todas las láminas ent
 | 2 | Problema | 2 | Auto: título → «Mirar solo kilómetros» (barrido) → Chillo (zoom). Clic 1: «Comparar el servicio completo» → hipótesis. Clic 2: globo. | Entra solo; globo en el clic 2 |
 | 3 | Solución | 4 | Auto: título → línea dorada. Clics 1 a 4: Comparar, Desglosar, Explicar, Decidir; tras el 4 aparecen solos el rótulo PROPUESTA y «La IA explica; el planificador decide». | — |
 | 4 | Captura de rutas | 0 | Auto: título → captura (barrido) → tarjeta → rótulo «datos sintéticos». | — |
-| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Combustible, Desgaste, Conductor y ayudantes, Merma (en cascada). Clic 2: Costo total → frase y notas #241 / captura pendiente. Clic 3: globo. | Entra solo; globo en el clic 3 |
+| 5 | Panel A / B / C | 3 | Auto: título y rótulo → encabezado → Chillo (zoom). Clic 1: filas Flota, Críticos a tiempo, Puntaje (en cascada). Clic 2: Costo total → marco dorado en C y recomendación del motor. Clic 3: globo. | Entra solo; globo en el clic 3 |
 | 6 | Impacto | 0 | Auto: título → seis indicadores en cascada. | — |
 | 7 | Viabilidad | 0 | Auto: título → tarjeta 01 → tarjeta 02 → banda «Límite» (barrido). | — |
 | 8 | Modelo de negocio | 0 | Auto: título → tarjeta 01 → tarjeta 02 → frase del piloto. | — |

@@ -681,7 +681,7 @@ def slide_solution(deck):
              align=PP_ALIGN.CENTER, line_spacing=1.0)
         tl.add(grp, "fade", mode="click", dur=450)
     tag = text(sh, MARGIN, 5.02, W - 2 * MARGIN, 0.35,
-               "PROPUESTA · la comparación completa A/B/C sigue en integración",
+               "PROPUESTA · A/B/C ya ensayado en el motor; falta llevarlo a operación",
                13, DORADO_CLARO, bold=True, align=PP_ALIGN.CENTER, spacing=120)
     tl.add(tag, "fade", dur=400)
     claim = sh.add_group_shape()
@@ -734,12 +734,20 @@ def slide_capture(deck):
            "Todo automático: título → captura (barrido) → tarjeta → rótulo «datos sintéticos».")
 
 
-# Cifras de la columna A: selector de #240 (PR #254, merge 6adcf53), fixture demo-base,
-# BOD-UIO -> HOS-001 -> regreso. Fuente: 003-agente-logistico/evidencia/240-desglose-demo.json
-# (match.serviceCostBreakdown). B y C dependen de #241 y quedan en integración (matriz P-02).
-ABC_ENGINE_COMMIT = "6adcf53"
-ABC_COLUMN_A = ["USD 2,26", "USD 2,15", "USD 7,22 + 4,81", "USD 3,50", "USD 19,94"]
-ABC_PENDING = "en integración"
+# Cifras A/B/C: ensayo técnico de #285 (PR #295, merge 1585ab7), fixture demo-quito-planificacion,
+# corrida local del 17-oct-2026 04:20 UTC. Fuente: evidencia/ensayo-planificacion-local-20261016/
+# 02-suggest-pitch-abc.json (comparison.options[*].totalCost, criticalOnTimeRatio, score) y resumen.md.
+# El desglose por componente no se muestra: en esa corrida no suma el total (revisión pedida en #276).
+ABC_ENGINE_COMMIT = "1585ab7"
+ABC_ROWS = [
+    ("Flota", ["Propia", "Propia", "Contratada"]),
+    ("Críticos a tiempo", ["5 de 6", "6 de 6", "6 de 6"]),
+    ("Puntaje del motor", ["81,7", "89,1", "90,8"]),
+    ("Costo total estimado", ["USD 57,89", "USD 69,89", "USD 66,90"]),
+]
+ABC_RECOMMENDED = 3  # columna C (índice 3 en la tabla, 0 = rótulos)
+ABC_JUSTIFICATION = ("Recomendación del motor: C. El operador contratado cubre el 100 % de los pedidos, "
+                     "con los 6 críticos a tiempo y respuesta de 4 h.")
 
 
 def slide_abc(deck):
@@ -748,58 +756,60 @@ def slide_abc(deck):
     tl = Timeline()
     right = CHILLO_RIGHT
     head = chrome(deck, s, False, "Anexo 5.7 · Prototipo / demo",
-                  "A / B / C: la columna A ya la calcula el motor",
-                  "Fuente: #240, PR #254 (6adcf53), 240-desglose-demo.json · demo-base: Bodega Quito → "
-                  "Hospital Norte → regreso, 210 kg, 20 bultos, 1 ayudante · combustible sintético "
-                  "USD 3,785/gal · matriz P-01; P-02 en curso.", 5, source_right=right)
+                  "A / B / C: el motor compara y recomienda",
+                  "Fuente: ensayo técnico #285 (PR #295, 1585ab7), 02-suggest-pitch-abc.json · "
+                  "demo-quito-planificacion, corrida local 17-oct · 4 pedidos, 6 entregas críticas, "
+                  "55,9 km · diésel USD 3,11/gal (Primicias, 12-oct) · matriz P-02.", 5,
+                  source_right=right)
     tl.add(head, "fade", dur=400)
     band = sh.add_group_shape()
     cw = chip(band.shapes, MARGIN, 1.68, "DATOS SINTÉTICOS")
     text(band.shapes, MARGIN + cw + 0.2, 1.68, right - MARGIN - cw - 0.2, 0.34,
-         f"A: costo estimado del motor · escenario demo-base · commit {ABC_ENGINE_COMMIT}",
+         "Ensayo técnico del motor · escenario sintético de Quito",
          13, GRIS, bold=True, valign=MSO_ANCHOR.MIDDLE)
     tl.add(band, "fade", mode="with", dur=400)
 
     x0, y0 = MARGIN, 2.2
-    widths = [2.7, 2.45, 1.8, 1.8]
-    headings = ["Componente", "A · Flota propia", "B · Propia, críticos primero", "C · Contratada"]
+    widths = [2.45, 1.95, 1.95, 2.15]
+    headings = ["", "A · Flota propia", "B · Propia, críticos primero", "C · Operador contratado"]
     header = sh.add_group_shape()
     xx = x0
     for j, (w, title) in enumerate(zip(widths, headings)):
-        fill = NIEBLA if j == 0 else (AZUL if j == 1 else GRIS)
-        color = AZUL if j == 0 else BLANCO
+        fill = NIEBLA if j == 0 else (DORADO if j == ABC_RECOMMENDED else AZUL)
+        color = NOCHE if j == ABC_RECOMMENDED else (AZUL if j == 0 else BLANCO)
         rect(header.shapes, xx, y0, w, 0.66, fill)
         text(header.shapes, xx + 0.1, y0, w - 0.2, 0.66, title, 15, color, bold=True,
              font=TITLE_FONT, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE,
              line_spacing=0.9)
         xx += w
-    rect(header.shapes, x0 + widths[0], y0 + 0.62, widths[1], 0.04, DORADO)
     tl.add(header, "fade", dur=400)
     gallo = chillo_peek(deck, s)
     tl.add(gallo, "zoom", dur=500)
 
-    labels = ["Combustible", "Desgaste", "Conductor y ayudantes", "Merma esperada", "Costo total"]
-    rh = 0.47
+    rh = 0.5
     rows = []
     yy = y0 + 0.66
-    for i, label in enumerate(labels):
-        total = i == len(labels) - 1
-        h = rh + (0.12 if total else 0)
+    for i, (label, values) in enumerate(ABC_ROWS):
+        total = i == len(ABC_ROWS) - 1
+        h = rh + (0.14 if total else 0)
         grp = sh.add_group_shape()
         xx = x0
         for j, w in enumerate(widths):
-            fill = CREMA if total else (BLANCO if i % 2 == 0 else NIEBLA)
+            if total:
+                fill = CREMA
+            elif j == ABC_RECOMMENDED:
+                fill = CREMA if i % 2 == 0 else RGBColor(0xF1, 0xE8, 0xCB)
+            else:
+                fill = BLANCO if i % 2 == 0 else NIEBLA
             rect(grp.shapes, xx, yy, w, h, fill)
             if j == 0:
                 text(grp.shapes, xx + 0.2, yy, w - 0.25, h, label, 14, AZUL, bold=True,
                      valign=MSO_ANCHOR.MIDDLE)
-            elif j == 1:
-                text(grp.shapes, xx + 0.1, yy, w - 0.2, h, ABC_COLUMN_A[i], 25 if total else 19,
-                     AZUL, bold=True, font=TITLE_FONT, align=PP_ALIGN.CENTER,
-                     valign=MSO_ANCHOR.MIDDLE)
             else:
-                text(grp.shapes, xx + 0.1, yy, w - 0.2, h, ABC_PENDING, 13, GRIS, italic=True,
-                     align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
+                rec = j == ABC_RECOMMENDED
+                text(grp.shapes, xx + 0.1, yy, w - 0.2, h, values[j - 1],
+                     24 if total else 18, DORADO_OSCURO if rec else AZUL, bold=True,
+                     font=TITLE_FONT, align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
             xx += w
         rect(grp.shapes, x0, yy + h - 0.012, sum(widths), 0.012, LINEA)
         if total:
@@ -809,33 +819,27 @@ def slide_abc(deck):
     for i, grp in enumerate(rows[:-1]):
         tl.add(grp, "wipe", mode="click" if i == 0 else "after", dur=300)
     tl.add(rows[-1], "fade", mode="click", dur=450)
+    frame = rect(sh, x0 + sum(widths[:ABC_RECOMMENDED]), y0, widths[ABC_RECOMMENDED],
+                 yy - y0, None, DORADO, line_width=3)
+    tl.add(frame, "fade", mode="after", dur=400)
 
-    quote = text(sh, MARGIN, yy + 0.14, right - MARGIN, 0.6,
-                 "«El costo de una ruta no es solo kilómetros: sumamos combustible según carga, "
-                 "personas que descargan y merma esperada».",
-                 14, AZUL, italic=True)
-    tl.add(quote, "fade", dur=400)
     notes = sh.add_group_shape()
-    ny = 6.08
-    left_w = 5.55
-    rect(notes.shapes, MARGIN, ny, left_w, 0.6, NIEBLA)
-    rect(notes.shapes, MARGIN, ny, 0.06, 0.6, DORADO)
-    text(notes.shapes, MARGIN + 0.22, ny, left_w - 0.35, 0.6,
-         "La comparación con operador contratado y la recomendación calculada se integran en #241.",
-         12, AZUL, bold=True, valign=MSO_ANCHOR.MIDDLE)
-    px = MARGIN + left_w + 0.15
-    rect(notes.shapes, px, ny, right - px, 0.6, BLANCO, GRIS, line_width=1)
-    text(notes.shapes, px + 0.1, ny, right - px - 0.2, 0.6,
-         "[CAPTURA PENDIENTE: pantalla A/B/C]", 12, GRIS, bold=True,
-         align=PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
-    tl.add(notes, "fade", mode="with", dur=400)
+    ny = yy + 0.22
+    rect(notes.shapes, MARGIN, ny, right - MARGIN, 0.72, NIEBLA)
+    rect(notes.shapes, MARGIN, ny, 0.06, 0.72, DORADO)
+    text(notes.shapes, MARGIN + 0.22, ny, right - MARGIN - 0.35, 0.72,
+         [[(ABC_JUSTIFICATION + " ", {"bold": True}),
+           ("La más barata no siempre es la mejor: A deja un crítico fuera de ventana. "
+            "El planificador decide.", {})]],
+         12.5, AZUL, valign=MSO_ANCHOR.MIDDLE)
+    tl.add(notes, "fade", mode="after", dur=400)
     msg = peek_bubble(s, [("Una ruta no es solo kilómetros: también es ", False),
                           ("quien descarga", True), (".", False)])
     tl.add(msg, "fade", mode="click", dur=400)
     record(deck, s, tl, "Panel A / B / C",
-           "Auto: título y rótulo → encabezado de tabla → Chillo (zoom). Clic 1: filas Combustible, "
-           "Desgaste, Conductor y ayudantes, Merma (en cascada). Clic 2: Costo total → (auto) frase "
-           "y notas #241 / captura pendiente. Clic 3: globo de Chillo.",
+           "Auto: título y rótulo → encabezado de tabla → Chillo (zoom). Clic 1: filas Flota, "
+           "Críticos a tiempo, Puntaje (en cascada). Clic 2: Costo total → (auto) marco dorado en C "
+           "y recomendación del motor. Clic 3: globo de Chillo.",
            chillo="Chillo entra solo (zoom). Globo: clic 3.")
 
 
@@ -988,7 +992,7 @@ def slide_roadmap(deck):
     gallo = chillo_full(deck, s, 10.42, 6.72, 4.3)
     tl.add(gallo, "zoom", dur=550)
     steps = [
-        ("Integrar", "Comparación propia / contratada y recomendación justificada"),
+        ("Desplegar", "Comparación propia / contratada, en producción"),
         ("Validar Quito", "Tráfico y restricciones con fuentes vigentes"),
         ("Completar el ciclo", "Guía de retorno para entregas pendientes"),
         ("Calibrar", "Pronóstico y costos con datos conciliados"),
