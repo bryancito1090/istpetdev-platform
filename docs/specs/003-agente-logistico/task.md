@@ -932,3 +932,22 @@ Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y 
 
 Estado: código, pruebas locales y ensayo Linux completados; Windows Git Bash no se ejecutó físicamente. Sin despliegue. La integración se realiza por PR a `develop` con `Closes #293`.
 
+## Issue #290 — corrección de reinicio de demo con pedidos existentes — 17-oct-2026
+
+- [x] Corrección en `DemoResetService.DeleteOperationalDataAsync`: agregado el borrado explícito de `TransferSuggestions` y `WarehouseStockPolicies` en el orden estricto de claves foráneas:
+  1. `RouteStopLines` (antes de `RouteStops` y `DeliveryOrders`).
+  2. `DeliveryLines` y `Deliveries` (antes de `DeliveryOrders` y `RouteStops`).
+  3. `RouteStops` y `RoutePlans`.
+  4. `DeliveryOrderLines`.
+  5. `DeliveryOrders` (antes de `TransferSuggestions`, `ServicePoints` y `Locations`).
+  6. `TransferSuggestions` (antes de `Locations` y `Products`).
+  7. `WarehouseStockPolicies` (antes de `Locations` y `Products`).
+  8. `StockBalances`, `Consumptions`, `Lots`, `Vehicles`, `Locations`, `ServicePoints` y `Products`.
+- [x] Decisión sobre `WarehouseStockPolicies`: se eliminan durante el reset de la demo dado que mantienen claves foráneas contra `Location` y `Product` (recreados desde el fixture) y corresponden a políticas dinámicas de rebalanceo (`StockPolicyAdvisor`) calculadas sobre consumos históricos que se restablecen al baseline.
+- [x] Pruebas de integración añadidas en `tests/IstpetDev.Tests/Integration/Logistics/DemoResetOrdersTests.cs`:
+  1. `Reset_succeeds_when_database_has_delivery_orders_transfer_suggestions_and_stock_policies`: reset inicial con `demo-region`, inserción directa de pedidos, líneas, sugerencias de transferencia, paradas y políticas de stock; segundo reset retorna `applied: true` y comprueba la eliminación completa de datos operacionales y la recarga canónica de entidades maestras.
+  2. `Reset_after_order_creation_and_confirmation_workflow_succeeds`: flujo real vía API con `POST /api/v1/route-plans/confirm` y `IStockPolicyAdvisor.ApplyPolicyAsync`, seguido de un segundo reset exitoso sin residuos ni violaciones de integridad referencial.
+- [x] Pruebas de regresión verificadas: `DemoRegionTests` (3/3), `DemoQuitoPlanificacionTests` (1/1), `LeanSchemaTests` (3/3) y `ConfirmCapacityTests` (8/8) pasando al 100% en verde.
+
+Estado: código y pruebas locales completados; listo para integración vía Pull Request a develop.
+
