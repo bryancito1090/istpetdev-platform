@@ -91,7 +91,7 @@
         [
           {
             "index": 0,
-            "node": "Respond Accepted",
+            "node": "Initial Context Allowed?",
             "type": "main"
           }
         ]
@@ -102,7 +102,7 @@
         [
           {
             "index": 0,
-            "node": "Initial Context Allowed?",
+            "node": "Register Execution",
             "type": "main"
           }
         ]
@@ -113,7 +113,7 @@
         [
           {
             "index": 0,
-            "node": "Register Execution",
+            "node": "Respond Accepted",
             "type": "main"
           }
         ],
