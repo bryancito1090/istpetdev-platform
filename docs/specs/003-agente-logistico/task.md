@@ -920,3 +920,15 @@ Estado: código, configuración y pruebas locales de integración completados; a
 
 Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y evidencia técnica local guardada; ejecución en producción pendiente del despliegue de #275 por Jorge (#198). Cifras de A/B/C listas para alimentar la lámina 4 del pitch (#200) y la corrida guardada de Alexander (#276).
 
+## Issue #293 — arranque de n8n en volumen nuevo y Git Bash — 17-oct-2026
+
+- [x] `local-up.sh` tolera la exportación vacía de una instalación nueva y continúa con la importación.
+- [x] Detección de Python funcional: `python3` o el lanzador `py -3` de Windows.
+- [x] `docker exec`/`docker cp` con `MSYS_NO_PATHCONV=1`; en Git Bash el origen temporal se convierte con `cygpath -w`.
+- [x] Documentación multiplataforma en `scripts/agent/README.md`, `.env.example` y `docs/api-guide.md` (`host.docker.internal` en Windows; gateway del bridge en Linux).
+- [x] Regresión en `tests/scripts/test_local_up.py`: exportación vacía con error y simulación MSYS (`uname`/`cygpath`) verificando `MSYS_NO_PATHCONV=1`.
+- [x] Ensayo real en Linux con el volumen `compose_local_n8n` eliminado: `local-up.sh` terminó con los 4 workflows publicados (`error`, `incidente`, `revision-dataset`, `vigia`) y los webhooks `watch`/`incident` respondieron 401 con firma inválida.
+- [ ] Ensayo físico en Windows Git Bash: no disponible en este entorno; la rama MSYS queda cubierta por la prueba simulada.
+
+Estado: código, pruebas locales y ensayo Linux completados; Windows Git Bash no se ejecutó físicamente. Sin despliegue. La integración se realiza por PR a `develop` con `Closes #293`.
+
