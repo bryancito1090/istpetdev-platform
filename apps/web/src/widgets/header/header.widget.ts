@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { AuthSession } from '@entities/session';
 import { ApiService } from '@shared/api';
 import { getMobileAppUrl } from '@shared/config';
+import { AlertNotificationService } from '@features/alert-notification';
 
 interface NavItem {
   path: string;
@@ -140,9 +141,13 @@ export class HeaderWidget implements OnInit {
   private readonly apiService = inject(ApiService);
   readonly mobileAppUrl = getMobileAppUrl();
 
+  private readonly alertNotification = inject(AlertNotificationService, { optional: true });
+  private readonly _localAlertCount = signal(0);
+
   readonly currentUrl = signal(this.router.url);
-  readonly alertCount = signal(0);
+  readonly alertCount = computed(() => this.alertNotification?.alertCount() ?? this._localAlertCount());
   readonly hasAlerts = computed(() => this.alertCount() > 0);
+  readonly hasNewAlert = computed(() => this.alertNotification?.hasNewAlert() ?? false);
 
   constructor() {
     this.router.events.pipe(
@@ -175,7 +180,11 @@ export class HeaderWidget implements OnInit {
 
   private checkAlerts(): void {
     if (this.session.status() !== 'authenticated') {
-      this.alertCount.set(0);
+      this._localAlertCount.set(0);
+      return;
+    }
+    if (this.alertNotification) {
+      this.alertNotification.checkRisks();
       return;
     }
     this.apiService.getRisks().subscribe(res => {
@@ -183,9 +192,9 @@ export class HeaderWidget implements OnInit {
         const criticalOrRisky = res.items.filter(
           item => item.level === 'Critical' || item.level === 'High' || item.level === 'Critico' || item.level === 'Alto' || item.level === 'Vigilar'
         );
-        this.alertCount.set(criticalOrRisky.length > 0 ? criticalOrRisky.length : res.items.length);
+        this._localAlertCount.set(criticalOrRisky.length > 0 ? criticalOrRisky.length : res.items.length);
       } else {
-        this.alertCount.set(0);
+        this._localAlertCount.set(0);
       }
     });
   }
