@@ -5,6 +5,7 @@ using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Infrastructure.Simulation;
+using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +33,7 @@ public sealed class SimulationComparisonJourneyTests
     public async Task E2E_FullJourney_SimulationComparison_Deterministic_And_Exportable()
     {
         var (provider, db) = CreateServices();
+        await SimulationSeed.SeedAsync(db);
         var worker = new SimulationWorker(provider, NullLogger<SimulationWorker>.Instance);
 
         var comparisonId = Guid.NewGuid();

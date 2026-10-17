@@ -28,6 +28,7 @@ public static class ExportBuilder
         string datasetVersion,
         string commitHash,
         string hostName,
+        string? datasetHash = null,
         CancellationToken cancellationToken = default)
     {
         var fileContents = new Dictionary<string, byte[]>();
@@ -86,6 +87,7 @@ public static class ExportBuilder
         {
             comparisonId = comparisonId.ToString(),
             datasetVersion,
+            datasetHash,
             seed = calendar.Key.Seed,
             scenarioCode = calendar.Key.ScenarioCode,
             commitHash,
