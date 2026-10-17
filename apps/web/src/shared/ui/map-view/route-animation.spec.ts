@@ -4,6 +4,7 @@ import {
   distanceMeters,
   downsampleRoute,
   indexAtFraction,
+  progressiveRoute,
   type LatLng
 } from './route-animation';
 
@@ -12,6 +13,12 @@ function straightRoute(points: number): LatLng[] {
 }
 
 describe('route-animation', () => {
+  it('interpela el avance de un tramo incluso con solo dos coordenadas', () => {
+    const route: LatLng[] = [[0, 0], [0, 2]];
+    expect(progressiveRoute(route, .25)).toEqual([[0, 0], [0, .5]]);
+    expect(progressiveRoute(route, 1)).toEqual(route);
+    expect(progressiveRoute(route, 0)).toEqual([[0, 0]]);
+  });
   it('reduce el trazado sin perder los extremos ni el orden', () => {
     const route = straightRoute(2000);
     const sampled = downsampleRoute(route, 320);

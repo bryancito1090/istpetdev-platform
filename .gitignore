@@ -14,7 +14,7 @@
 secrets/
 
 # Dependencias y resultados de compilación
-node_modules/
+node_modules
 bin/
 obj/
 dist/

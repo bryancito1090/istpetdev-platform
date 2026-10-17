@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthSession } from '@entities/session';
 import { ApiService, RouteGeometryDto, RoutePlanSummaryDto } from '@shared/api';
@@ -49,6 +49,7 @@ describe('RutasPage: mapa de todas las rutas', () => {
             getRoutePlans: vi.fn(() => of(plans)),
             getRoutePlanById: vi.fn((id: string) => of({ ...plans.find(p => p.id === id), stops: [] })),
             getRoutePlanGeometry: vi.fn((id: string) => of(geometries[id])),
+            publishRoutePlan: vi.fn(() => of({})),
             getDrivers: vi.fn(() => of([{ accountId: 'drv-1', displayName: 'Conductor 1' }])),
             getServicePoints: vi.fn(() => of([])),
             getDeliveryOrders: vi.fn(() => of([])),
@@ -81,6 +82,61 @@ describe('RutasPage: mapa de todas las rutas', () => {
     expect(selected.dashArray).toBeUndefined();
   });
 
+  it('selecciona vehículos encima del mapa y mantiene un conductor distinto por vehículo', () => {
+    const fixture = render(), page = fixture.componentInstance;
+    const selector = fixture.nativeElement.querySelector('.vehicle-selector') as HTMLElement;
+    const map = fixture.nativeElement.querySelector('.rutas-map') as HTMLElement;
+    expect(selector.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    page.assignSelectedDriver('drv-1');
+    page.selectPlan('p2');
+    expect(page.selectedDriverId()).toBe('');
+    page.assignSelectedDriver('drv-2');
+    page.selectPlan('p1');
+    expect(page.selectedDriverId()).toBe('drv-1');
+    page.selectPlan('p2');
+    expect(page.selectedDriverId()).toBe('drv-2');
+    fixture.destroy();
+  });
+  it('oculta otras propuestas solo después del éxito al publicar', () => {
+    const fixture = render(), page = fixture.componentInstance;
+    const response = new Subject<object>();
+    vi.spyOn(TestBed.inject(ApiService), 'publishRoutePlan').mockReturnValue(response);
+    vi.spyOn(TestBed.inject(ApiService), 'getRoutePlans').mockReturnValue(of([page.routePlans()[0]]));
+    page.assignSelectedDriver('drv-1');
+    page.publishPlan('p1');
+    expect(page.visibleRoutePlans()).toHaveLength(2);
+    response.next({}); fixture.detectChanges();
+    expect(page.visibleRoutePlans().map(plan => plan.id)).toEqual(['p1']);
+    expect(page.routeLegend().map(item => item.planId)).toEqual(['p1']);
+    expect(page.routePlans()).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).not.toContain('Ver todas las rutas');
+    page.loadPlans();
+    expect(page.visibleRoutePlans().map(plan => plan.id)).toEqual(['p1']);
+    fixture.destroy();
+  });
+  it('conserva todos los vehículos aceptados y oculta una tercera propuesta del área de trabajo', () => {
+    const fixture = render(), page = fixture.componentInstance;
+    const plans = [...page.routePlans(), plan('p3', 'VEH-03')];
+    vi.spyOn(TestBed.inject(ApiService), 'getRoutePlans').mockReturnValue(of(plans.slice(0, 2)));
+    page.selectPlan('p2');
+    page.onDecisionSaved(['p1', 'p2']); fixture.detectChanges();
+    expect(page.selectedDetail()?.id).toBe('p1');
+    expect(page.routePlans()).toHaveLength(2);
+    expect(page.visibleRoutePlans().map(plan => plan.id)).toEqual(['p1', 'p2']);
+    expect(page.routeLegend().map(item => item.planId)).toEqual(['p1', 'p2']);
+    fixture.destroy();
+  });
+  it('incluye la revisión seleccionada aunque exista otra más reciente del mismo vehículo', () => {
+    const fixture = render(), page = fixture.componentInstance;
+    const old = { ...page.routePlans()[0], id: 'previous-revision', revision: 0 };
+    page.routePlans.update(plans => [...plans, old]);
+    vi.spyOn(TestBed.inject(ApiService), 'getRoutePlanById').mockReturnValue(of({ ...old, stops: [] }) as never);
+    vi.spyOn(TestBed.inject(ApiService), 'getRoutePlanGeometry').mockReturnValue(of(geometry(old.id, 'VEH-01', 'osrm')));
+    const replay = page.routeReplayKey(); page.selectPlan(old.id);
+    expect(page.routeLegend().some(item => item.planId === old.id && item.selected)).toBe(true);
+    expect(page.routeReplayKey()).toBeGreaterThan(replay);
+    fixture.destroy();
+  });
   it('marca la bodega una sola vez, numera las paradas con el color de su ruta y arma la leyenda', () => {
     const fixture = render();
     const page = fixture.componentInstance;
