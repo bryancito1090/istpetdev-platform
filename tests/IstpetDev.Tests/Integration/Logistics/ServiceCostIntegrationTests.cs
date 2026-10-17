@@ -82,6 +82,7 @@ public sealed class ServiceCostIntegrationTests(PostgisContainer postgres) : ICl
         db.RoutePlans.Add(new() { Code = "HIST-240", VehicleId = vehicle.Id, Status = "Proposed", TotalCost = 42.25m,
             PlannedStartUtc = new DateTime(2026, 10, 16, 12, 0, 0, DateTimeKind.Utc) });
         await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlRawAsync("UPDATE \"Product\" SET \"MetadataJson\" = NULL; UPDATE \"Vehicle\" SET \"MetadataJson\" = NULL;");
         var before = await Snapshot(db);
         // Recrear el esquema inmediatamente anterior, con los datos de la demo ya cargados.
         await db.GetService<IMigrator>().MigrateAsync("20261015234714_CustodyChainStates");
