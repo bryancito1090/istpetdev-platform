@@ -304,6 +304,7 @@ importador: la API sigue calculando y decidiendo; n8n coordina y explica.
   descarta si menciona números que no aparecen en los hechos y se sustituye por
   la plantilla determinista. Sin flota o sin stock, el flujo informa el bloqueo
   en lugar de completar datos.
+- **Tratamiento de formatos y errores API (#317):** los datasets se evalúan en formatos tabulares estándar (`.csv`, `.tsv`, `.xlsx`) mediante archivo multipart o payload JSON directo normalizado en `Check Token`. Si el archivo no es soportado (ej. `.json`) o la API responde HTTP 400/500 Problem Details, el flujo rechaza la solicitud de forma determinista con veredicto «Formato no soportado» o «Error en validación» y expone el mensaje exacto del importador, sin enmascarar la falla como viable con 0 errores.
 - **Evidencia:** ejecución real en n8n 2.39.5 con un puente HTTP local (sin
   DeepSeek): el LLM cayó y respondió la plantilla determinista con el dictamen
   íntegro; detalle en
