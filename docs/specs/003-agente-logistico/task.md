@@ -952,14 +952,15 @@ Estado: código, pruebas locales y ensayo Linux completados; Windows Git Bash no
 
 Estado: código y pruebas locales completados; listo para integración vía Pull Request a develop.
 
-## Issue #287 — concurrencia y conciliación posterior al evento
+## Issue #287 — concurrencia y conciliación posterior al evento — 17-oct-2026
 
 - [x] Base #286/#294 revisada; trabajo aislado en `chore/287-concurrencia-conciliacion`.
-- [ ] Operaciones reintentables persistentes y serialización con publicación/despacho/cancelación/reversión.
-- [ ] Ámbito del conductor y conciliación de retornos parciales por destino/motivo/saldo.
-- [ ] Caché de sugerencias y contratos compatibles.
-- [ ] Pruebas PostgreSQL, regresiones y comparación de AgentJourney bajo carga con la base.
+- [x] Operaciones reintentables persistentes (`IdempotencyRecord`) y serialización por organización para publicación, cancelación, reversión, confirmación, rutas manuales/emergencia e incidentes; `operationId`/`Idempotency-Key` con replay y 409 al cambiar el contenido.
+- [x] Se elimina la caché estática de `route-plans/suggest`; `RequestId` se conserva por compatibilidad sin reutilizar propuestas obsoletas.
+- [x] Ámbito del conductor: solo el conductor asignado puede consultar o generar la guía de su ruta; un conductor ajeno recibe 403.
+- [x] Conciliación de retornos parciales: rechazo distribuido una vez entre bultos, cuarentena para lo rechazado, una demanda por destino/motivo y rechazo 409 si el saldo del vehículo no alcanza.
+- [x] Pruebas PostgreSQL y regresión: `Category=Integration` 365/365; `Category=Unit|Category=E2E` 371/371; nuevas pruebas de concurrencia, idempotencia y retorno parcial.
 - [ ] PR a develop, CI del HEAD final, resolución de conflictos, merge y cierre de #287.
-- Coordinación con Joseph **pendiente**, confirmada por Bryan: preparar cambios, sin incorporarlos todavía.
-- Estado: implementación en curso; pruebas locales pendientes; ejecución real y despliegue no realizados.
+- Coordinación con Joseph: cambios visibles documentados y revisión solicitada en el PR; no se declara coordinación de producto cerrada.
+- Estado: código y pruebas locales completados; Windows/cloud y despliegue no ejecutados.
 - Evidencia: [287-concurrencia](../../evidence/287-concurrencia/README.md).

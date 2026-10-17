@@ -2158,7 +2158,8 @@ public sealed class FieldService : IFieldService
                     receiptsByLine.ContainsKey(dl.Id) ? "Quarantine" : "Available"));
             }
         }
-        if (rejectedRemaining.Values.Any(q => q > 0))
+        if (rejectedRemaining.Any(p => p.Value > 0 &&
+                huLines.Any(l => l.DeliveryLineId == p.Key)))
             throw new FieldConflictException("RETURN_LINE_MISMATCH", "La cantidad rechazada excede lo identificado en los bultos despachados.");
 
         var returnedIds = handlingUnits.Where(h => h.Status == HandlingUnitStates.Returned).Select(h => h.Id).ToHashSet();

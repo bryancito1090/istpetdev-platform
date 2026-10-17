@@ -174,7 +174,7 @@ public class SingleProposalIntegrationTests(PostgisContainer postgres) : IClassF
         var createdDoc = await validConfirmResp.Content.ReadFromJsonAsync<JsonElement>();
         var createdPlanId = createdDoc.GetProperty("id").GetGuid();
 
-        // Idempotencia con proposalId
+        // Idempotencia con proposalId: el reintento reproduce la respuesta original (201) sin crear otro plan.
         var duplicateConfirmResp = await planner.PostAsJsonAsync("/api/v1/route-plans/confirm", new
         {
             code = "RP-VAL-01",
@@ -183,7 +183,7 @@ public class SingleProposalIntegrationTests(PostgisContainer postgres) : IClassF
             orderIds = new[] { critOrderId, lowOrderId },
             stops = validStops
         });
-        Assert.Equal(HttpStatusCode.OK, duplicateConfirmResp.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, duplicateConfirmResp.StatusCode);
         var dupDoc = await duplicateConfirmResp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(createdPlanId, dupDoc.GetProperty("id").GetGuid());
     }
