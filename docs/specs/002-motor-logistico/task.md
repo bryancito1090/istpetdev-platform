@@ -380,6 +380,28 @@ Verificación: backend 455/456. Falla `N8nErrorWorkflowTests`, que también fall
 - Backend: 518 de 519. Falla `N8nErrorWorkflowTests`, que necesita un n8n real en local.
 - Web: 77 de 77.
 
+#### T12e — Exploración visual bidireccional sobre la ruta (#296, 16-oct)
+
+**Pedido:** que el mapa muestre la ruta trazarse desde ambos extremos, con ramas que aparecen y se desvanecen, como una búsqueda bidireccional, sin perder la Leyenda, los colores por vehículo ni el comportamiento de las rutas aproximadas.
+
+**Decisión:** es una **capa decorativa**. OSRM sigue calculando el camino (Contraction Hierarchies, ver T12c); la web no ejecuta Dijkstra, no cambia distancias, ni toca backend, API o base de datos. Las ramas se generan de forma determinista a partir de la geometría real y solo son un efecto visual; al terminar se dibuja el trazado OSRM completo con su color, grosor, tooltip y popups actuales.
+
+**Alcance:**
+- Solo se anima la ruta seleccionada en el mapa principal y la previsualización del asistente.
+- Solo se animan trazados sólidos (`osrm`); las aproximadas punteadas se dibujan de inmediato.
+- Se usa una versión reducida del trazado (~320 puntos) para animar y la geometría completa para el resultado final.
+- `prefers-reduced-motion: reduce` muestra la ruta final sin animación.
+- Sin dependencias nuevas: Leaflet 1.9.4 + `requestAnimationFrame`.
+
+| Archivo / Componente | Capa | Cambio | Por qué | Escenario | Estado |
+|---|---|---|---|---|---|
+| `route-animation.ts` | Web | Muestreo, fracción por distancia y ramas deterministas | Base testeable de la animación | Mapa de Rutas | Hecho |
+| `map-view.component.ts` | Web | Dos frentes, ramas y trazado final; cancelación y movimiento reducido | Efecto visual sin cambiar datos | Ruta seleccionada | Hecho |
+| `rutas.page.ts` | Web | Activa la animación en el mapa principal y el asistente | Ambas vistas | — | Hecho |
+| `route-animation.spec.ts`, `map-view.component.spec.ts` | Pruebas | Determinismo, extremos, fracciones, segmentos acotados y ruta final tras la animación | Regresión | — | Hecho |
+
+**Verificación:** `lint:web`, `test:web` (168 pruebas) y `build:web` en verde; comprobación visual en navegador pendiente de registrar en el PR.
+
 #### T13c — «Sin productos registrados para esta parada» en el detalle de la ruta (16-oct)
 
 **Síntoma:** en Planificación → Rutas, las paradas no mostraban qué productos se llevan, y la recogida en bodega no decía qué cargar.
