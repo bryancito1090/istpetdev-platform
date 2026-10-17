@@ -1,0 +1,16 @@
+{
+  "horaPico": {
+    "horaLocal": "07:30",
+    "horaUtc": "12:30",
+    "totalDurationMinutes": 78,
+    "speedFactor": 0.64
+  },
+  "fueraDePico": {
+    "horaLocal": "11:00",
+    "horaUtc": "16:00",
+    "totalDurationMinutes": 68,
+    "speedFactor": 1.0
+  },
+  "diferenciaMinutos": 10,
+  "incrementoPct": 14.71
+}

@@ -898,3 +898,25 @@ Estado: código y pruebas locales completados; sin ejecución real en n8n remoto
 
 Estado: código, configuración y pruebas locales de integración completados; aplicación a producción a cargo de Jorge (#198) en el siguiente despliegue. Alexander queda habilitado para #276.
 
+## Issue #285 — ensayo técnico automatizado del módulo de planificación con demo-quito (local y producción) y matriz de afirmaciones — 16-oct-2026
+
+- [x] Script reproducible y suite de integración: `tests/IstpetDev.Tests/Integration/Logistics/EnsayoPlanificacionIntegrationTests.cs` y `scripts/demo/ensayo-planificacion.mjs`.
+- [x] Paso 1: Reset a `demo-quito-planificacion` (`POST /api/v1/demo/reset?fixture=demo-quito-planificacion`) confirmado (`applied: true`, `01-reset.json`).
+- [x] Paso 2: Caso del pitch en `suggest` (`POST /api/v1/route-plans/suggest`) con 4 pedidos sintéticos (PTO-0004, PTO-0005, PTO-0006, PTO-0015):
+  - Opciones A (USD 57.89), B (USD 69.89) y C (USD 66.90). Opción recomendada calculada C por puntaje (90.80) con justificación determinista (`02-suggest-pitch-abc.json`).
+  - Desglose de costos de flota propia (Opción A): combustible USD 5.63, ayudantes USD 53.19, merma USD 3.83, desgaste USD 3.91, conductor USD 38.64 (todos > 0).
+  - Precio de combustible fechado (2026-10-12) y con fuente (`Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)`).
+- [x] Paso 3: Comparación saliendo a las 07:30 frente a las 11:00 (`POST /api/v1/route-plans/evaluate`):
+  - Salida a las 07:30 (hora pico, factor 0.64): 78 min. Salida a las 11:00 (fuera de pico, factor 1.0): 68 min. Diferencia comprobada de +10 min (+14.71 %) (`03-evaluacion-horas-pico.json`).
+- [x] Paso 4: Descarte de camión pesado en hora restringida (`POST /api/v1/route-plans/confirm`):
+  - Vehículo pesado `VEH-0002` en franja 06:00-10:00 (Av. Simón Bolívar / Ruta Viva) descartado y bloqueado con HTTP 409 Conflict (`restriccion_horaria`) (`04-restriccion-camion-pesado.json`).
+- [x] Paso 5: Incidente Manifestación con retraso parcial y opciones en replanificación:
+  - Registro de incidente `Manifestacion` con factor 0.3 (`POST /api/v1/incidents`); replanificación de ruta afectada (`POST /api/v1/route-plans/{id}/replan`) genera decisión `Escalated` con opciones de entrega tardía y priorización crítica (`05-incidente-manifestacion-replan.json`).
+- [x] Paso 6: Guía de retorno y recepción idempotente:
+  - Generación de guía de retorno `GRT-...` (`POST /api/v1/return-guides/generate`), primera recepción en bodega HTTP 200 OK y segundo receive responde HTTP 409 Conflict (`AlreadyReceived`) sin duplicar inventario (`06-guia-retorno-idempotencia.json`).
+- [x] Evidencia guardada en `docs/specs/006-validacion-pitch-entrega/evidencia/ensayo-planificacion-local-20261016/` con `resumen.md` legible y trazable.
+- [x] Sonda a producción: ejecutada contra `https://istpetdev.doicela.dev`. `/health/ready` 200 OK; despliegue de #275 (Jorge, #198) pendiente de promoción desde develop a main en producción, documentado en `sonda-produccion.json`.
+- [x] Matriz de afirmaciones actualizada: capacidades P-02, P-05, P-10, P-11, P-12, P-13 promovidas a «HECHO Y ENSAYADO — ensayo técnico local» con enlaces directos a la evidencia.
+
+Estado: código, pruebas unitarias (331/331), integración E2E completa (1/1) y evidencia técnica local guardada; ejecución en producción pendiente del despliegue de #275 por Jorge (#198). Cifras de A/B/C listas para alimentar la lámina 4 del pitch (#200) y la corrida guardada de Alexander (#276).
+

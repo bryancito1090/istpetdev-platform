@@ -7,6 +7,12 @@ using Microsoft.EntityFrameworkCore;
 namespace IstpetDev.Application.Logistics;
 
 // Franjas sintéticas, en hora local. Zone compara ServicePoint.Region; no interpreta calles ni ordenanzas.
+public sealed class VehicleRestrictionBand
+{
+    public string Start { get; set; } = string.Empty;
+    public string End { get; set; } = string.Empty;
+}
+
 public sealed class VehicleRestrictionOptions
 {
     public string? VehicleType { get; set; }
@@ -14,6 +20,8 @@ public sealed class VehicleRestrictionOptions
     public string Start { get; set; } = string.Empty;
     public string End { get; set; } = string.Empty;
     public string? Zone { get; set; }
+    public List<VehicleRestrictionBand>? Bands { get; set; }
+    public List<string>? Corridors { get; set; }
 }
 
 public static class VehicleRestrictions
@@ -45,15 +53,29 @@ public static class VehicleRestrictions
             if (!string.IsNullOrWhiteSpace(rule.VehicleType) && !Same(rule.VehicleType, vehicle.VehicleType)) continue;
             if (!string.IsNullOrWhiteSpace(rule.UsageScope) && !Same(rule.UsageScope, vehicle.UsageScope)) continue;
             if (!string.IsNullOrWhiteSpace(rule.Zone) && !regions.Any(r => Same(r, rule.Zone))) continue;
-            if (!TimeOnly.TryParseExact(rule.Start, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) ||
-                !TimeOnly.TryParseExact(rule.End, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end) || start == end) continue;
-            // Intervalos [Start, End); una franja nocturna termina al día siguiente.
-            for (var day = localStart.Date.AddDays(-1); day <= localEnd.Date; day = day.AddDays(1))
+
+            var bands = new List<(string Start, string End)>();
+            if (rule.Bands is { Count: > 0 })
             {
-                var bandStart = day.Add(start.ToTimeSpan());
-                var bandEnd = day.Add(end.ToTimeSpan()).AddDays(end < start ? 1 : 0);
-                if (localStart < bandEnd && (localEnd > bandStart || localEnd == localStart && localStart >= bandStart))
-                    return $"restriccion_horaria ({vehicle.VehicleType ?? vehicle.UsageScope} no circula {start:HH:mm}–{end:HH:mm}{(string.IsNullOrWhiteSpace(rule.Zone) ? "" : $" en {rule.Zone}")}; regla sintética)";
+                bands.AddRange(rule.Bands.Select(b => (b.Start, b.End)));
+            }
+            else if (!string.IsNullOrWhiteSpace(rule.Start) && !string.IsNullOrWhiteSpace(rule.End))
+            {
+                bands.Add((rule.Start, rule.End));
+            }
+
+            foreach (var (startStr, endStr) in bands)
+            {
+                if (!TimeOnly.TryParseExact(startStr, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) ||
+                    !TimeOnly.TryParseExact(endStr, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end) || start == end) continue;
+                // Intervalos [Start, End); una franja nocturna termina al día siguiente.
+                for (var day = localStart.Date.AddDays(-1); day <= localEnd.Date; day = day.AddDays(1))
+                {
+                    var bandStart = day.Add(start.ToTimeSpan());
+                    var bandEnd = day.Add(end.ToTimeSpan()).AddDays(end < start ? 1 : 0);
+                    if (localStart < bandEnd && (localEnd > bandStart || localEnd == localStart && localStart >= bandStart))
+                        return $"restriccion_horaria ({vehicle.VehicleType ?? vehicle.UsageScope} no circula {start:HH:mm}–{end:HH:mm}{(string.IsNullOrWhiteSpace(rule.Zone) ? "" : $" en {rule.Zone}")}; regla sintética)";
+                }
             }
         }
         return null;

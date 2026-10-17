@@ -1,0 +1,379 @@
+{
+  "batchId": "01a14816-4693-7b39-820a-59fb7fcd2a7d",
+  "profile": "demo-quito-planificacion",
+  "dryRun": false,
+  "applied": true,
+  "status": "Applied",
+  "countsMode": "Committed",
+  "feasibility": {
+    "verdict": "Inviable",
+    "unroutablePoints": [],
+    "warehousesWithoutFleet": [],
+    "productsWithoutCapacity": [],
+    "stockShortages": [
+      {
+        "sku": "PRD-0001",
+        "name": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "baseUnit": "GALON",
+        "demanded": 7890.62,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0002",
+        "name": "Desinfectante amonio cuaternario (gal\u00F3n)",
+        "baseUnit": "GALON",
+        "demanded": 3843.69,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0004",
+        "name": "Jab\u00F3n l\u00EDquido antibacterial (gal\u00F3n)",
+        "baseUnit": "GALON",
+        "demanded": 3397.89,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0005",
+        "name": "Alcohol gel 70% (frasco 1 L)",
+        "baseUnit": "FRASCO",
+        "demanded": 11923.35,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0006",
+        "name": "Papel higi\u00E9nico jumbo (paquete 4 rollos)",
+        "baseUnit": "PAQUETE",
+        "demanded": 18426.98,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0007",
+        "name": "Toalla de manos interfoliada (caja 20 paquetes)",
+        "baseUnit": "CAJA",
+        "demanded": 3174.64,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0008",
+        "name": "Fundas rojas para desechos infecciosos (paquete 100)",
+        "baseUnit": "PAQUETE",
+        "demanded": 5243.34,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0009",
+        "name": "Fundas negras para desechos comunes (paquete 100)",
+        "baseUnit": "PAQUETE",
+        "demanded": 5781.68,
+        "available": 2600
+      },
+      {
+        "sku": "PRD-0010",
+        "name": "Guantes de nitrilo (caja 100)",
+        "baseUnit": "CAJA",
+        "demanded": 8489.09,
+        "available": 1950
+      }
+    ],
+    "hasFindings": true
+  },
+  "errorCount": 0,
+  "warningCount": 5,
+  "omittedIssues": 0,
+  "hasErrors": false,
+  "entities": [
+    {
+      "entity": "warehouses",
+      "file": "bodegas.csv",
+      "rowsRead": 3,
+      "created": 3,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "code": "code",
+        "name": "name",
+        "lat": "lat",
+        "lon": "lon"
+      },
+      "ignoredColumns": [],
+      "assumptions": {
+        "lat_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 3
+        },
+        "lon_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 3
+        }
+      }
+    },
+    {
+      "entity": "service_points",
+      "file": "puntos.csv",
+      "rowsRead": 40,
+      "created": 40,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "code": "code",
+        "name": "name",
+        "lat": "lat",
+        "lon": "lon",
+        "region": "region",
+        "category": "category",
+        "criticality": "criticality",
+        "window_start": "window_start",
+        "window_end": "window_end",
+        "service_minutes": "service_minutes",
+        "lead_time_days": "lead_time_days"
+      },
+      "ignoredColumns": [
+        "fuente_ubicacion",
+        "referencia_osm_o_barrio"
+      ],
+      "assumptions": {
+        "lat_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 40
+        },
+        "lon_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 40
+        }
+      }
+    },
+    {
+      "entity": "products",
+      "file": "productos.csv",
+      "rowsRead": 12,
+      "created": 12,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "sku": "sku",
+        "name": "name",
+        "base_unit": "base_unit",
+        "weight_per_unit": "weight_per_unit",
+        "unit_value": "unit_value",
+        "units_per_package": "units_per_package",
+        "volume_per_unit": "volume_per_unit"
+      },
+      "ignoredColumns": [
+        "presentacion",
+        "peso_bulto_kg"
+      ],
+      "assumptions": {
+        "weight_per_unit_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 12
+        },
+        "unit_value_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 12
+        },
+        "volume_per_unit_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 12
+        }
+      }
+    },
+    {
+      "entity": "vehicles",
+      "file": "vehiculos.csv",
+      "rowsRead": 10,
+      "created": 10,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "code": "code",
+        "depot_code": "depot_code",
+        "max_weight": "max_weight",
+        "max_volume": "max_volume",
+        "vehicle_type": "vehicle_type",
+        "usage_scope": "usage_scope",
+        "cost_per_km": "cost_per_km"
+      },
+      "ignoredColumns": [
+        "matricula",
+        "marca",
+        "modelo",
+        "anio",
+        "combustible",
+        "kilometraje_actual",
+        "autonomia_km",
+        "rendimiento_km_gal_supuesto",
+        "estado_mecanico",
+        "pico_y_placa_dia"
+      ],
+      "assumptions": {
+        "cost_per_km_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 10
+        },
+        "max_volume_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 3
+        }
+      }
+    },
+    {
+      "entity": "lots",
+      "file": "lotes.csv",
+      "rowsRead": 24,
+      "created": 24,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "sku": "sku",
+        "lot_code": "lot_code",
+        "expires_on": "expires_on",
+        "origin": "origin"
+      },
+      "ignoredColumns": [],
+      "assumptions": {}
+    },
+    {
+      "entity": "stock",
+      "file": "inventario.csv",
+      "rowsRead": 397,
+      "created": 397,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "location_kind": "location_kind",
+        "location_code": "location_code",
+        "sku": "sku",
+        "lot_code": "lot_code",
+        "quantity": "quantity"
+      },
+      "ignoredColumns": [],
+      "assumptions": {
+        "quantity_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 327
+        }
+      }
+    },
+    {
+      "entity": "consumptions",
+      "file": "consumos.csv",
+      "rowsRead": 18103,
+      "created": 18103,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "point_code": "point_code",
+        "sku": "sku",
+        "date": "date",
+        "quantity": "quantity",
+        "period_days": "period_days"
+      },
+      "ignoredColumns": [],
+      "assumptions": {
+        "quantity_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 13833
+        }
+      }
+    },
+    {
+      "entity": "road_segments",
+      "file": "tramos.csv",
+      "rowsRead": 1806,
+      "created": 1806,
+      "updated": 0,
+      "skipped": 0,
+      "duplicates": 0,
+      "encoding": "UTF-8",
+      "sheet": null,
+      "resolvedColumns": {
+        "from_code": "from_code",
+        "to_code": "to_code",
+        "distance_km": "distance_km",
+        "duration_min": "duration_min",
+        "geometry": "geometry",
+        "from_kind": "from_kind",
+        "to_kind": "to_kind"
+      },
+      "ignoredColumns": [],
+      "assumptions": {
+        "distance_km_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 1806
+        },
+        "duration_min_decimal": {
+          "note": "Separador decimal inferido; decl\u00E1relo en el perfil si el texto representa miles",
+          "rows": 1806
+        }
+      }
+    }
+  ],
+  "issues": [
+    {
+      "entity": "products",
+      "row": 2,
+      "field": "volume_per_unit",
+      "severity": "Warning",
+      "code": "rounded",
+      "message": "Se redonde\u00F3 a tres decimales despu\u00E9s de convertir y sumar.",
+      "file": "productos.csv"
+    },
+    {
+      "entity": "products",
+      "row": 3,
+      "field": "volume_per_unit",
+      "severity": "Warning",
+      "code": "rounded",
+      "message": "Se redonde\u00F3 a tres decimales despu\u00E9s de convertir y sumar.",
+      "file": "productos.csv"
+    },
+    {
+      "entity": "products",
+      "row": 5,
+      "field": "volume_per_unit",
+      "severity": "Warning",
+      "code": "rounded",
+      "message": "Se redonde\u00F3 a tres decimales despu\u00E9s de convertir y sumar.",
+      "file": "productos.csv"
+    },
+    {
+      "entity": "products",
+      "row": 6,
+      "field": "volume_per_unit",
+      "severity": "Warning",
+      "code": "rounded",
+      "message": "Se redonde\u00F3 a tres decimales despu\u00E9s de convertir y sumar.",
+      "file": "productos.csv"
+    },
+    {
+      "entity": "products",
+      "row": 11,
+      "field": "volume_per_unit",
+      "severity": "Warning",
+      "code": "rounded",
+      "message": "Se redonde\u00F3 a tres decimales despu\u00E9s de convertir y sumar.",
+      "file": "productos.csv"
+    }
+  ]
+}

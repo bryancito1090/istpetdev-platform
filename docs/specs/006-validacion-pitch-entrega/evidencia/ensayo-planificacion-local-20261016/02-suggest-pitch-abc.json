@@ -1,0 +1,5369 @@
+{
+  "comparison": {
+    "operationalDate": "2026-10-16",
+    "sourceKind": "Order",
+    "safetyStockPct": 10,
+    "fullySourced": true,
+    "demands": [
+      {
+        "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+        "orderNumber": "ORD-20261016-001",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0004",
+        "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "destinationPosition": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "baseUnit": "GALON",
+        "requestedQuantity": 42.000,
+        "allocatedQuantity": 42.000,
+        "totalAllocated": 42.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 15.460,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 42.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "expiresOn": "2026-11-04",
+                "quantity": 42.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+        "orderNumber": "ORD-20261016-001",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0004",
+        "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "destinationPosition": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "baseUnit": "SACO",
+        "requestedQuantity": 3.000,
+        "allocatedQuantity": 3.000,
+        "totalAllocated": 3.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 15.460,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 3.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "expiresOn": "2027-06-12",
+                "quantity": 3.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+        "orderNumber": "ORD-20261016-002",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0005",
+        "destinationName": "Hospital General Enrique Garc\u00E9s",
+        "destinationPosition": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "baseUnit": "GALON",
+        "requestedQuantity": 51.000,
+        "allocatedQuantity": 51.000,
+        "totalAllocated": 51.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 10.791,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 51.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "expiresOn": "2026-11-04",
+                "quantity": 51.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+        "orderNumber": "ORD-20261016-002",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0005",
+        "destinationName": "Hospital General Enrique Garc\u00E9s",
+        "destinationPosition": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "baseUnit": "SACO",
+        "requestedQuantity": 2.000,
+        "allocatedQuantity": 2.000,
+        "totalAllocated": 2.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 10.791,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 2.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "expiresOn": "2027-06-12",
+                "quantity": 2.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+        "orderNumber": "ORD-20261016-003",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0006",
+        "destinationName": "Hospital General IESS Quito Sur",
+        "destinationPosition": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "baseUnit": "GALON",
+        "requestedQuantity": 26.000,
+        "allocatedQuantity": 26.000,
+        "totalAllocated": 26.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 8.580,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 26.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "expiresOn": "2026-11-04",
+                "quantity": 26.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+        "orderNumber": "ORD-20261016-003",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0006",
+        "destinationName": "Hospital General IESS Quito Sur",
+        "destinationPosition": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "baseUnit": "SACO",
+        "requestedQuantity": 2.000,
+        "allocatedQuantity": 2.000,
+        "totalAllocated": 2.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "distanceKm": 8.580,
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 2.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "expiresOn": "2027-06-12",
+                "quantity": 2.000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+        "orderNumber": "ORD-20261016-004",
+        "sourceKind": "Order",
+        "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0015",
+        "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+        "destinationPosition": {
+          "lat": -0.20335,
+          "lon": -78.49307
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "baseUnit": "GALON",
+        "requestedQuantity": 5.000,
+        "allocatedQuantity": 5.000,
+        "totalAllocated": 5.000,
+        "shortageQuantity": 0,
+        "fullySourced": true,
+        "riskLevel": null,
+        "coverageDays": null,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+            "warehouseCode": "BOD-0003",
+            "warehouseName": "Bodega Valle - Conocoto (sint\u00E9tica)",
+            "distanceKm": 16.790,
+            "warehousePosition": {
+              "lat": -0.29173,
+              "lon": -78.47768
+            },
+            "quantity": 5.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "expiresOn": "2026-11-04",
+                "quantity": 5.000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "options": [
+      {
+        "optionId": "A",
+        "title": "Viaje Multi-Recogida Consolidado",
+        "description": "Recogida directa en la bodega m\u00E1s cercana con stock completo.",
+        "isRecommended": false,
+        "fullySourced": true,
+        "lines": [
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 42.000,
+            "allocatedQuantity": 42.000,
+            "totalAllocated": 42.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 42.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 42.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 3.000,
+            "allocatedQuantity": 3.000,
+            "totalAllocated": 3.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 3.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 3.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 51.000,
+            "allocatedQuantity": 51.000,
+            "totalAllocated": 51.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 51.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 51.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 26.000,
+            "allocatedQuantity": 26.000,
+            "totalAllocated": 26.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 26.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 26.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+            "orderNumber": "ORD-20261016-004",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0015",
+            "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+            "destinationPosition": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 5.000,
+            "allocatedQuantity": 5.000,
+            "totalAllocated": 5.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+                "warehouseCode": "BOD-0003",
+                "warehouseName": "Bodega Valle - Conocoto (sint\u00E9tica)",
+                "distanceKm": 16.790,
+                "warehousePosition": {
+                  "lat": -0.29173,
+                  "lon": -78.47768
+                },
+                "quantity": 5.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 5.000
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "involvedWarehouseIds": [
+          "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "01a14816-4936-7112-936f-a3bb9bf95b71"
+        ],
+        "carrierType": "Propia",
+        "carrierName": "Flota propia",
+        "totalKm": 55.9,
+        "totalDurationMinutes": 289,
+        "totalCost": 57.89,
+        "pendingDemandCost": 0,
+        "criticalDeliveriesTotal": 6,
+        "criticalDeliveriesOnTime": 5,
+        "criticalOnTimeRatio": "5 de 6",
+        "pendingOrdersCount": 0,
+        "pendingQuantity": 0,
+        "risks": [
+          "1 cr\u00EDtico(s) fuera de ventana"
+        ],
+        "score": 81.7,
+        "scoreBreakdown": {
+          "costScore": 100,
+          "criticalScore": 53.3,
+          "pendingScore": 100,
+          "riskScore": 80,
+          "totalScore": 81.7
+        },
+        "justification": null,
+        "costBreakdown": {
+          "fuel": 0,
+          "wear": 0,
+          "driver": 28.90,
+          "helpers": 0,
+          "helperCount": 0,
+          "shrink": 3.83,
+          "carrierTariff": 0,
+          "total": 57.89,
+          "pendingDemandCost": 0,
+          "notes": [
+            "Costo propio estimado (flota propia)."
+          ]
+        }
+      },
+      {
+        "optionId": "B",
+        "title": "Dos Entregas Escalonadas (Ma\u00F1ana y Tarde)",
+        "description": "Entrega inmediata con priorizaci\u00F3n de puntos cr\u00EDticos en el primer turno y cumplimiento de ventanas hospitalarias.",
+        "isRecommended": false,
+        "fullySourced": true,
+        "lines": [
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 42.000,
+            "allocatedQuantity": 42.000,
+            "totalAllocated": 42.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 42.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 42.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 3.000,
+            "allocatedQuantity": 3.000,
+            "totalAllocated": 3.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 3.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 3.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 51.000,
+            "allocatedQuantity": 51.000,
+            "totalAllocated": 51.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 51.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 51.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 26.000,
+            "allocatedQuantity": 26.000,
+            "totalAllocated": 26.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 26.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 26.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+            "orderNumber": "ORD-20261016-004",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0015",
+            "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+            "destinationPosition": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 5.000,
+            "allocatedQuantity": 5.000,
+            "totalAllocated": 5.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+                "warehouseCode": "BOD-0003",
+                "warehouseName": "Bodega Valle - Conocoto (sint\u00E9tica)",
+                "distanceKm": 16.790,
+                "warehousePosition": {
+                  "lat": -0.29173,
+                  "lon": -78.47768
+                },
+                "quantity": 5.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 5.000
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "involvedWarehouseIds": [
+          "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "01a14816-4936-7112-936f-a3bb9bf95b71"
+        ],
+        "carrierType": "Propia",
+        "carrierName": "Flota propia",
+        "totalKm": 55.9,
+        "totalDurationMinutes": 289,
+        "totalCost": 69.89,
+        "pendingDemandCost": 0,
+        "criticalDeliveriesTotal": 6,
+        "criticalDeliveriesOnTime": 6,
+        "criticalOnTimeRatio": "6 de 6",
+        "pendingOrdersCount": 0,
+        "pendingQuantity": 0,
+        "risks": [
+          "\u2014"
+        ],
+        "score": 89.1,
+        "scoreBreakdown": {
+          "costScore": 68.9,
+          "criticalScore": 100,
+          "pendingScore": 100,
+          "riskScore": 100,
+          "totalScore": 89.1
+        },
+        "justification": null,
+        "costBreakdown": {
+          "fuel": 0,
+          "wear": 0,
+          "driver": 28.90,
+          "helpers": 0,
+          "helperCount": 0,
+          "shrink": 3.83,
+          "carrierTariff": 0,
+          "total": 69.89,
+          "pendingDemandCost": 0,
+          "notes": [
+            "Costo propio con priorizaci\u00F3n de ventanas cr\u00EDticas."
+          ]
+        }
+      },
+      {
+        "optionId": "C",
+        "title": "Operador Contratado (Operador Log\u00EDstico Contratado (Quito))",
+        "description": "Alternativa con transportista externo: capacidad ilimitada, tiempo de respuesta de 4 h y cobertura total de demanda.",
+        "isRecommended": true,
+        "fullySourced": true,
+        "lines": [
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 42.000,
+            "allocatedQuantity": 42.000,
+            "totalAllocated": 42.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 42.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 42.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+            "orderNumber": "ORD-20261016-001",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0004",
+            "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "destinationPosition": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 3.000,
+            "allocatedQuantity": 3.000,
+            "totalAllocated": 3.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 15.460,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 3.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 3.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 51.000,
+            "allocatedQuantity": 51.000,
+            "totalAllocated": 51.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 51.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 51.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+            "orderNumber": "ORD-20261016-002",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0005",
+            "destinationName": "Hospital General Enrique Garc\u00E9s",
+            "destinationPosition": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 10.791,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 26.000,
+            "allocatedQuantity": 26.000,
+            "totalAllocated": 26.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 26.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 26.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+            "orderNumber": "ORD-20261016-003",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0006",
+            "destinationName": "Hospital General IESS Quito Sur",
+            "destinationPosition": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "productName": "Detergente industrial en polvo (saco 30 kg)",
+            "baseUnit": "SACO",
+            "requestedQuantity": 2.000,
+            "allocatedQuantity": 2.000,
+            "totalAllocated": 2.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+                "warehouseCode": "BOD-0001",
+                "warehouseName": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+                "distanceKm": 8.580,
+                "warehousePosition": {
+                  "lat": -0.31888,
+                  "lon": -78.54932
+                },
+                "quantity": 2.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                    "lotCode": "L-0003-2609",
+                    "expiresOn": "2027-06-12",
+                    "quantity": 2.000
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+            "orderNumber": "ORD-20261016-004",
+            "sourceKind": "Order",
+            "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "isDestinationWarehouse": false,
+            "destinationCode": "PTO-0015",
+            "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+            "destinationPosition": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+            "baseUnit": "GALON",
+            "requestedQuantity": 5.000,
+            "allocatedQuantity": 5.000,
+            "totalAllocated": 5.000,
+            "shortageQuantity": 0,
+            "fullySourced": true,
+            "riskLevel": null,
+            "coverageDays": null,
+            "allocations": [
+              {
+                "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+                "warehouseCode": "BOD-0003",
+                "warehouseName": "Bodega Valle - Conocoto (sint\u00E9tica)",
+                "distanceKm": 16.790,
+                "warehousePosition": {
+                  "lat": -0.29173,
+                  "lon": -78.47768
+                },
+                "quantity": 5.000,
+                "lots": [
+                  {
+                    "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                    "lotCode": "L-0001-2609",
+                    "expiresOn": "2026-11-04",
+                    "quantity": 5.000
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "involvedWarehouseIds": [
+          "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "01a14816-4936-7112-936f-a3bb9bf95b71"
+        ],
+        "carrierType": "Contratada",
+        "carrierName": "Operador Log\u00EDstico Contratado (Quito)",
+        "totalKm": 55.9,
+        "totalDurationMinutes": 289,
+        "totalCost": 66.90,
+        "pendingDemandCost": 0,
+        "criticalDeliveriesTotal": 6,
+        "criticalDeliveriesOnTime": 6,
+        "criticalOnTimeRatio": "6 de 6",
+        "pendingOrdersCount": 0,
+        "pendingQuantity": 0,
+        "risks": [
+          "respuesta en 4 h"
+        ],
+        "score": 90.8,
+        "scoreBreakdown": {
+          "costScore": 76.7,
+          "criticalScore": 100,
+          "pendingScore": 100,
+          "riskScore": 90.0,
+          "totalScore": 90.8
+        },
+        "justification": "Se recomienda C: la flota propia deja 0 pedido(s) pendiente(s) (0 kg); el operador contratado cubre el 100% con tiempo de respuesta de 4 h y costo de faltante de USD 0.",
+        "costBreakdown": {
+          "fuel": 0,
+          "wear": 0,
+          "driver": 0,
+          "helpers": 0,
+          "helperCount": 0,
+          "shrink": 3.83,
+          "carrierTariff": 63.07,
+          "total": 66.90,
+          "pendingDemandCost": 0,
+          "notes": [
+            "Tarifa de operador contratado \u0027Operador Log\u00EDstico Contratado (Quito)\u0027 (base USD 25.00 \u002B USD 0.55/km \u002B USD 0.01/kg) \u002B merma esperada."
+          ]
+        }
+      }
+    ],
+    "recommendedOptionId": "C",
+    "justification": "Se recomienda C: la flota propia deja 0 pedido(s) pendiente(s) (0 kg); el operador contratado cubre el 100% con tiempo de respuesta de 4 h y costo de faltante de USD 0.",
+    "fuelPrice": {
+      "value": 3.11,
+      "date": "2026-10-12",
+      "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+      "unit": "USD/gal"
+    },
+    "recommendationWeights": {
+      "weightCost": 0.35,
+      "weightCriticalOnTime": 0.35,
+      "weightPendingDemand": 0.20,
+      "weightRisk": 0.10
+    }
+  },
+  "proposalId": "e2799cf3-3ee3-4bbe-849e-4f047b10180c",
+  "revision": 1,
+  "status": "Feasible",
+  "requestId": null,
+  "proposal": {
+    "optionId": "C",
+    "sourcingOptionId": "C",
+    "proposalId": "e2799cf3-3ee3-4bbe-849e-4f047b10180c",
+    "revision": 1,
+    "status": "Feasible",
+    "requestId": null,
+    "title": "Operador Contratado (Operador Log\u00EDstico Contratado (Quito))",
+    "description": "Alternativa con transportista externo: capacidad ilimitada, tiempo de respuesta de 4 h y cobertura total de demanda.",
+    "isRecommended": true,
+    "justification": "Se recomienda C: la flota propia deja 0 pedido(s) pendiente(s) (0 kg); el operador contratado cubre el 100% con tiempo de respuesta de 4 h y costo de faltante de USD 0.",
+    "score": 90.8,
+    "carrierType": "Contratada",
+    "carrierName": "Operador Log\u00EDstico Contratado (Quito)",
+    "totalCost": 66.90,
+    "estimatedTotalCost": 66.90,
+    "totalDistanceKm": 43.5,
+    "totalDurationMinutes": 386,
+    "selectedVehicle": null,
+    "chosenVehicle": null,
+    "evaluation": {
+      "isValid": true,
+      "totalDistanceKm": 43.5,
+      "totalDurationMinutes": 386,
+      "totalCost": 66.90,
+      "maxWeightOnRoute": 732.900000,
+      "maxVolumeOnRoute": 1.183000,
+      "stops": [
+        {
+          "sequence": 1,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "code": "BOD-0001",
+          "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+          "position": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "plannedArrivalUtc": "2026-10-16T08:00:00Z",
+          "plannedDepartureUtc": "2026-10-16T08:20:00Z",
+          "legDistanceKm": 0,
+          "legDurationMinutes": 0,
+          "accumulatedWeightOnArrival": 711.900000,
+          "accumulatedVolumeOnArrival": 1.148000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": null
+        },
+        {
+          "sequence": 2,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+          "code": "BOD-0003",
+          "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+          "position": {
+            "lat": -0.29173,
+            "lon": -78.47768
+          },
+          "plannedArrivalUtc": "2026-10-16T08:43:07.3199999Z",
+          "plannedDepartureUtc": "2026-10-16T09:03:07.3199999Z",
+          "legDistanceKm": 13.768,
+          "legDurationMinutes": 23.122,
+          "accumulatedWeightOnArrival": 732.900000,
+          "accumulatedVolumeOnArrival": 1.183000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": null
+        },
+        {
+          "sequence": 3,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "locationId": null,
+          "code": "PTO-0006",
+          "name": "Hospital General IESS Quito Sur",
+          "position": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "plannedArrivalUtc": "2026-10-16T11:59:59.9999999Z",
+          "plannedDepartureUtc": "2026-10-16T12:29:59.9999999Z",
+          "legDistanceKm": 16.853,
+          "legDurationMinutes": 20.008,
+          "accumulatedWeightOnArrival": 563.100000,
+          "accumulatedVolumeOnArrival": 0.911000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": null
+        },
+        {
+          "sequence": 4,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "locationId": null,
+          "code": "PTO-0005",
+          "name": "Hospital General Enrique Garc\u00E9s",
+          "position": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "plannedArrivalUtc": "2026-10-16T12:40:35.9999998Z",
+          "plannedDepartureUtc": "2026-10-16T13:10:35.9999998Z",
+          "legDistanceKm": 3.428,
+          "legDurationMinutes": 10.6,
+          "accumulatedWeightOnArrival": 288.300000,
+          "accumulatedVolumeOnArrival": 0.464000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": 0.64
+        },
+        {
+          "sequence": 5,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "locationId": null,
+          "code": "PTO-0004",
+          "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "position": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "plannedArrivalUtc": "2026-10-16T13:30:11.9999998Z",
+          "plannedDepartureUtc": "2026-10-16T14:05:11.9999998Z",
+          "legDistanceKm": 7.620,
+          "legDurationMinutes": 19.6,
+          "accumulatedWeightOnArrival": 21.000000,
+          "accumulatedVolumeOnArrival": 0.035000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": 0.64
+        },
+        {
+          "sequence": 6,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "locationId": null,
+          "code": "PTO-0015",
+          "name": "Restaurante La Mariscal (sint\u00E9tico)",
+          "position": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "plannedArrivalUtc": "2026-10-16T14:11:23.9999998Z",
+          "plannedDepartureUtc": "2026-10-16T14:26:23.9999998Z",
+          "legDistanceKm": 1.787,
+          "legDurationMinutes": 6.2,
+          "accumulatedWeightOnArrival": 0.000000,
+          "accumulatedVolumeOnArrival": 0.000000,
+          "violatesPrecedence": false,
+          "violatesWindow": false,
+          "warningMessage": null,
+          "trafficFactorApplied": 0.64
+        }
+      ],
+      "validationErrors": [],
+      "warnings": [],
+      "coordinates": [
+        [
+          -0.31888,
+          -78.54932
+        ],
+        [
+          -0.29173,
+          -78.47768
+        ],
+        [
+          -0.25731,
+          -78.5255
+        ],
+        [
+          -0.24439,
+          -78.54124
+        ],
+        [
+          -0.20497,
+          -78.50484
+        ],
+        [
+          -0.20335,
+          -78.49307
+        ]
+      ],
+      "coordinatesSource": "approximate",
+      "serviceCostBreakdown": {
+        "fuel": 0,
+        "wear": 0,
+        "driver": 38.64,
+        "helpers": 0,
+        "shrink": 0,
+        "total": 58.20,
+        "loadPct": 0,
+        "helperCount": 0,
+        "fuelPrice": {
+          "value": 3.11,
+          "date": "2026-10-12",
+          "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones.",
+          "perfil no configurado; se conserva la f\u00F3rmula anterior de km y horas."
+        ],
+        "legacyTransport": 19.56,
+        "label": "estimado",
+        "currency": "USD"
+      }
+    },
+    "costBreakdown": {
+      "currency": "USD",
+      "calculatorVersion": "1.0",
+      "kmCost": 0,
+      "hourCost": 0,
+      "fuel": 0,
+      "fuelCost": 0,
+      "wear": 0,
+      "wearCost": 0,
+      "driver": 0,
+      "driverCost": 0,
+      "helpers": 0,
+      "helpersCost": 0,
+      "helpersCount": 0,
+      "shrink": 3.83,
+      "expectedShrinkageCost": 3.83,
+      "carrierTariff": 63.07,
+      "totalCost": 66.90,
+      "fuelPrice": {
+        "value": null,
+        "date": null,
+        "source": null,
+        "unit": "USD/gal"
+      },
+      "notes": [
+        "Tarifa de operador contratado \u0027Operador Log\u00EDstico Contratado (Quito)\u0027 (base USD 25.00 \u002B USD 0.55/km \u002B USD 0.01/kg) \u002B merma esperada."
+      ]
+    },
+    "serviceCostBreakdown": null,
+    "uncertainty": {
+      "status": "uncalibrated",
+      "lowerBound": null,
+      "upperBound": null,
+      "marginOfError": null,
+      "sampleSize": 0,
+      "period": null,
+      "method": "conformal_residuals_quantile",
+      "meanBias": null,
+      "mae": null,
+      "empiricalCoverage": null,
+      "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+    },
+    "costUncertainty": {
+      "status": "uncalibrated",
+      "lowerBound": null,
+      "upperBound": null,
+      "marginOfError": null,
+      "sampleSize": 0,
+      "period": null,
+      "method": "conformal_residuals_quantile",
+      "meanBias": null,
+      "mae": null,
+      "empiricalCoverage": null,
+      "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+    },
+    "stops": [
+      {
+        "sequence": 1,
+        "kind": "Pickup",
+        "servicePointId": null,
+        "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+        "code": "BOD-0001",
+        "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+        "position": {
+          "lat": -0.31888,
+          "lon": -78.54932
+        },
+        "deltaWeight": 711.900000,
+        "deltaVolume": 1.148000,
+        "windowStart": "07:00:00",
+        "windowEnd": "19:00:00",
+        "serviceMinutes": 20,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 119.000,
+            "baseUnit": "GALON"
+          },
+          {
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "quantity": 7.000,
+            "baseUnit": "SACO"
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "kind": "Pickup",
+        "servicePointId": null,
+        "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+        "code": "BOD-0003",
+        "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+        "position": {
+          "lat": -0.29173,
+          "lon": -78.47768
+        },
+        "deltaWeight": 21.000000,
+        "deltaVolume": 0.035000,
+        "windowStart": "07:00:00",
+        "windowEnd": "19:00:00",
+        "serviceMinutes": 20,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 5.000,
+            "baseUnit": "GALON"
+          }
+        ]
+      },
+      {
+        "sequence": 3,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "locationId": null,
+        "code": "PTO-0006",
+        "name": "Hospital General IESS Quito Sur",
+        "position": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "deltaWeight": -169.800000,
+        "deltaVolume": -0.272000,
+        "windowStart": "07:00:00",
+        "windowEnd": "11:00:00",
+        "serviceMinutes": 30,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 26.000,
+            "baseUnit": "GALON"
+          },
+          {
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "quantity": 2.000,
+            "baseUnit": "SACO"
+          }
+        ]
+      },
+      {
+        "sequence": 4,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "locationId": null,
+        "code": "PTO-0005",
+        "name": "Hospital General Enrique Garc\u00E9s",
+        "position": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "deltaWeight": -274.800000,
+        "deltaVolume": -0.447000,
+        "windowStart": "07:00:00",
+        "windowEnd": "11:00:00",
+        "serviceMinutes": 30,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 51.000,
+            "baseUnit": "GALON"
+          },
+          {
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "quantity": 2.000,
+            "baseUnit": "SACO"
+          }
+        ]
+      },
+      {
+        "sequence": 5,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "locationId": null,
+        "code": "PTO-0004",
+        "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "position": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "deltaWeight": -267.300000,
+        "deltaVolume": -0.429000,
+        "windowStart": "06:30:00",
+        "windowEnd": "10:30:00",
+        "serviceMinutes": 35,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 42.000,
+            "baseUnit": "GALON"
+          },
+          {
+            "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+            "sku": "PRD-0003",
+            "quantity": 3.000,
+            "baseUnit": "SACO"
+          }
+        ]
+      },
+      {
+        "sequence": 6,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+        "locationId": null,
+        "code": "PTO-0015",
+        "name": "Restaurante La Mariscal (sint\u00E9tico)",
+        "position": {
+          "lat": -0.20335,
+          "lon": -78.49307
+        },
+        "deltaWeight": -21.000000,
+        "deltaVolume": -0.035000,
+        "windowStart": "06:30:00",
+        "windowEnd": "10:30:00",
+        "serviceMinutes": 15,
+        "loads": [
+          {
+            "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+            "sku": "PRD-0001",
+            "quantity": 5.000,
+            "baseUnit": "GALON"
+          }
+        ]
+      }
+    ],
+    "sourcingLines": [
+      {
+        "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+        "orderNumber": "ORD-20261016-001",
+        "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0004",
+        "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "destinationPosition": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "requestedQuantity": 42.000,
+        "plannedQuantity": 42.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 42.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "quantity": 42.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 42.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+        "orderNumber": "ORD-20261016-001",
+        "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0004",
+        "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "destinationPosition": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "requestedQuantity": 3.000,
+        "plannedQuantity": 3.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 3.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "quantity": 3.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 3.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+        "orderNumber": "ORD-20261016-002",
+        "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0005",
+        "destinationName": "Hospital General Enrique Garc\u00E9s",
+        "destinationPosition": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "requestedQuantity": 51.000,
+        "plannedQuantity": 51.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 51.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "quantity": 51.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 51.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+        "orderNumber": "ORD-20261016-002",
+        "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0005",
+        "destinationName": "Hospital General Enrique Garc\u00E9s",
+        "destinationPosition": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "requestedQuantity": 2.000,
+        "plannedQuantity": 2.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 2.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "quantity": 2.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 2.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+        "orderNumber": "ORD-20261016-003",
+        "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0006",
+        "destinationName": "Hospital General IESS Quito Sur",
+        "destinationPosition": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "requestedQuantity": 26.000,
+        "plannedQuantity": 26.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 26.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "quantity": 26.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 26.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+        "orderNumber": "ORD-20261016-003",
+        "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0006",
+        "destinationName": "Hospital General IESS Quito Sur",
+        "destinationPosition": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+        "sku": "PRD-0003",
+        "productName": "Detergente industrial en polvo (saco 30 kg)",
+        "requestedQuantity": 2.000,
+        "plannedQuantity": 2.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "warehouseCode": "BOD-0001",
+            "warehousePosition": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "quantity": 2.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                "lotCode": "L-0003-2609",
+                "quantity": 2.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 2.000,
+        "fullySourced": true
+      },
+      {
+        "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+        "orderNumber": "ORD-20261016-004",
+        "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+        "isDestinationWarehouse": false,
+        "destinationCode": "PTO-0015",
+        "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+        "destinationPosition": {
+          "lat": -0.20335,
+          "lon": -78.49307
+        },
+        "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+        "sku": "PRD-0001",
+        "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+        "requestedQuantity": 5.000,
+        "plannedQuantity": 5.000,
+        "pendingQuantity": 0,
+        "allocations": [
+          {
+            "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+            "warehouseCode": "BOD-0003",
+            "warehousePosition": {
+              "lat": -0.29173,
+              "lon": -78.47768
+            },
+            "quantity": 5.000,
+            "lots": [
+              {
+                "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                "lotCode": "L-0001-2609",
+                "quantity": 5.000
+              }
+            ]
+          }
+        ],
+        "totalAllocated": 5.000,
+        "fullySourced": true
+      }
+    ],
+    "pendingDemands": [],
+    "vehicleMatches": []
+  },
+  "selectedVehicle": null,
+  "chosenVehicle": null,
+  "evaluation": {
+    "isValid": true,
+    "totalDistanceKm": 43.5,
+    "totalDurationMinutes": 386,
+    "totalCost": 66.90,
+    "maxWeightOnRoute": 732.900000,
+    "maxVolumeOnRoute": 1.183000,
+    "stops": [
+      {
+        "sequence": 1,
+        "kind": "Pickup",
+        "servicePointId": null,
+        "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+        "code": "BOD-0001",
+        "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+        "position": {
+          "lat": -0.31888,
+          "lon": -78.54932
+        },
+        "plannedArrivalUtc": "2026-10-16T08:00:00Z",
+        "plannedDepartureUtc": "2026-10-16T08:20:00Z",
+        "legDistanceKm": 0,
+        "legDurationMinutes": 0,
+        "accumulatedWeightOnArrival": 711.900000,
+        "accumulatedVolumeOnArrival": 1.148000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": null
+      },
+      {
+        "sequence": 2,
+        "kind": "Pickup",
+        "servicePointId": null,
+        "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+        "code": "BOD-0003",
+        "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+        "position": {
+          "lat": -0.29173,
+          "lon": -78.47768
+        },
+        "plannedArrivalUtc": "2026-10-16T08:43:07.3199999Z",
+        "plannedDepartureUtc": "2026-10-16T09:03:07.3199999Z",
+        "legDistanceKm": 13.768,
+        "legDurationMinutes": 23.122,
+        "accumulatedWeightOnArrival": 732.900000,
+        "accumulatedVolumeOnArrival": 1.183000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": null
+      },
+      {
+        "sequence": 3,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+        "locationId": null,
+        "code": "PTO-0006",
+        "name": "Hospital General IESS Quito Sur",
+        "position": {
+          "lat": -0.25731,
+          "lon": -78.5255
+        },
+        "plannedArrivalUtc": "2026-10-16T11:59:59.9999999Z",
+        "plannedDepartureUtc": "2026-10-16T12:29:59.9999999Z",
+        "legDistanceKm": 16.853,
+        "legDurationMinutes": 20.008,
+        "accumulatedWeightOnArrival": 563.100000,
+        "accumulatedVolumeOnArrival": 0.911000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": null
+      },
+      {
+        "sequence": 4,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+        "locationId": null,
+        "code": "PTO-0005",
+        "name": "Hospital General Enrique Garc\u00E9s",
+        "position": {
+          "lat": -0.24439,
+          "lon": -78.54124
+        },
+        "plannedArrivalUtc": "2026-10-16T12:40:35.9999998Z",
+        "plannedDepartureUtc": "2026-10-16T13:10:35.9999998Z",
+        "legDistanceKm": 3.428,
+        "legDurationMinutes": 10.6,
+        "accumulatedWeightOnArrival": 288.300000,
+        "accumulatedVolumeOnArrival": 0.464000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": 0.64
+      },
+      {
+        "sequence": 5,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+        "locationId": null,
+        "code": "PTO-0004",
+        "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+        "position": {
+          "lat": -0.20497,
+          "lon": -78.50484
+        },
+        "plannedArrivalUtc": "2026-10-16T13:30:11.9999998Z",
+        "plannedDepartureUtc": "2026-10-16T14:05:11.9999998Z",
+        "legDistanceKm": 7.620,
+        "legDurationMinutes": 19.6,
+        "accumulatedWeightOnArrival": 21.000000,
+        "accumulatedVolumeOnArrival": 0.035000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": 0.64
+      },
+      {
+        "sequence": 6,
+        "kind": "Delivery",
+        "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+        "locationId": null,
+        "code": "PTO-0015",
+        "name": "Restaurante La Mariscal (sint\u00E9tico)",
+        "position": {
+          "lat": -0.20335,
+          "lon": -78.49307
+        },
+        "plannedArrivalUtc": "2026-10-16T14:11:23.9999998Z",
+        "plannedDepartureUtc": "2026-10-16T14:26:23.9999998Z",
+        "legDistanceKm": 1.787,
+        "legDurationMinutes": 6.2,
+        "accumulatedWeightOnArrival": 0.000000,
+        "accumulatedVolumeOnArrival": 0.000000,
+        "violatesPrecedence": false,
+        "violatesWindow": false,
+        "warningMessage": null,
+        "trafficFactorApplied": 0.64
+      }
+    ],
+    "validationErrors": [],
+    "warnings": [],
+    "coordinates": [
+      [
+        -0.31888,
+        -78.54932
+      ],
+      [
+        -0.29173,
+        -78.47768
+      ],
+      [
+        -0.25731,
+        -78.5255
+      ],
+      [
+        -0.24439,
+        -78.54124
+      ],
+      [
+        -0.20497,
+        -78.50484
+      ],
+      [
+        -0.20335,
+        -78.49307
+      ]
+    ],
+    "coordinatesSource": "approximate",
+    "serviceCostBreakdown": {
+      "fuel": 0,
+      "wear": 0,
+      "driver": 38.64,
+      "helpers": 0,
+      "shrink": 0,
+      "total": 58.20,
+      "loadPct": 0,
+      "helperCount": 0,
+      "fuelPrice": {
+        "value": 3.11,
+        "date": "2026-10-12",
+        "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+        "unit": "USD/gal"
+      },
+      "notes": [
+        "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones.",
+        "perfil no configurado; se conserva la f\u00F3rmula anterior de km y horas."
+      ],
+      "legacyTransport": 19.56,
+      "label": "estimado",
+      "currency": "USD"
+    }
+  },
+  "costBreakdown": {
+    "currency": "USD",
+    "calculatorVersion": "1.0",
+    "kmCost": 0,
+    "hourCost": 0,
+    "fuel": 0,
+    "fuelCost": 0,
+    "wear": 0,
+    "wearCost": 0,
+    "driver": 0,
+    "driverCost": 0,
+    "helpers": 0,
+    "helpersCost": 0,
+    "helpersCount": 0,
+    "shrink": 3.83,
+    "expectedShrinkageCost": 3.83,
+    "carrierTariff": 63.07,
+    "totalCost": 66.90,
+    "fuelPrice": {
+      "value": null,
+      "date": null,
+      "source": null,
+      "unit": "USD/gal"
+    },
+    "notes": [
+      "Tarifa de operador contratado \u0027Operador Log\u00EDstico Contratado (Quito)\u0027 (base USD 25.00 \u002B USD 0.55/km \u002B USD 0.01/kg) \u002B merma esperada."
+    ]
+  },
+  "serviceCostBreakdown": null,
+  "uncertainty": {
+    "status": "uncalibrated",
+    "lowerBound": null,
+    "upperBound": null,
+    "marginOfError": null,
+    "sampleSize": 0,
+    "period": null,
+    "method": "conformal_residuals_quantile",
+    "meanBias": null,
+    "mae": null,
+    "empiricalCoverage": null,
+    "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+  },
+  "costUncertainty": {
+    "status": "uncalibrated",
+    "lowerBound": null,
+    "upperBound": null,
+    "marginOfError": null,
+    "sampleSize": 0,
+    "period": null,
+    "method": "conformal_residuals_quantile",
+    "meanBias": null,
+    "mae": null,
+    "empiricalCoverage": null,
+    "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+  },
+  "stops": [
+    {
+      "sequence": 1,
+      "kind": "Pickup",
+      "servicePointId": null,
+      "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+      "code": "BOD-0001",
+      "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+      "position": {
+        "lat": -0.31888,
+        "lon": -78.54932
+      },
+      "deltaWeight": 711.900000,
+      "deltaVolume": 1.148000,
+      "windowStart": "07:00:00",
+      "windowEnd": "19:00:00",
+      "serviceMinutes": 20,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 119.000,
+          "baseUnit": "GALON"
+        },
+        {
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "quantity": 7.000,
+          "baseUnit": "SACO"
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "kind": "Pickup",
+      "servicePointId": null,
+      "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+      "code": "BOD-0003",
+      "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+      "position": {
+        "lat": -0.29173,
+        "lon": -78.47768
+      },
+      "deltaWeight": 21.000000,
+      "deltaVolume": 0.035000,
+      "windowStart": "07:00:00",
+      "windowEnd": "19:00:00",
+      "serviceMinutes": 20,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 5.000,
+          "baseUnit": "GALON"
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "kind": "Delivery",
+      "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+      "locationId": null,
+      "code": "PTO-0006",
+      "name": "Hospital General IESS Quito Sur",
+      "position": {
+        "lat": -0.25731,
+        "lon": -78.5255
+      },
+      "deltaWeight": -169.800000,
+      "deltaVolume": -0.272000,
+      "windowStart": "07:00:00",
+      "windowEnd": "11:00:00",
+      "serviceMinutes": 30,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 26.000,
+          "baseUnit": "GALON"
+        },
+        {
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "quantity": 2.000,
+          "baseUnit": "SACO"
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "kind": "Delivery",
+      "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+      "locationId": null,
+      "code": "PTO-0005",
+      "name": "Hospital General Enrique Garc\u00E9s",
+      "position": {
+        "lat": -0.24439,
+        "lon": -78.54124
+      },
+      "deltaWeight": -274.800000,
+      "deltaVolume": -0.447000,
+      "windowStart": "07:00:00",
+      "windowEnd": "11:00:00",
+      "serviceMinutes": 30,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 51.000,
+          "baseUnit": "GALON"
+        },
+        {
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "quantity": 2.000,
+          "baseUnit": "SACO"
+        }
+      ]
+    },
+    {
+      "sequence": 5,
+      "kind": "Delivery",
+      "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+      "locationId": null,
+      "code": "PTO-0004",
+      "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+      "position": {
+        "lat": -0.20497,
+        "lon": -78.50484
+      },
+      "deltaWeight": -267.300000,
+      "deltaVolume": -0.429000,
+      "windowStart": "06:30:00",
+      "windowEnd": "10:30:00",
+      "serviceMinutes": 35,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 42.000,
+          "baseUnit": "GALON"
+        },
+        {
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "quantity": 3.000,
+          "baseUnit": "SACO"
+        }
+      ]
+    },
+    {
+      "sequence": 6,
+      "kind": "Delivery",
+      "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+      "locationId": null,
+      "code": "PTO-0015",
+      "name": "Restaurante La Mariscal (sint\u00E9tico)",
+      "position": {
+        "lat": -0.20335,
+        "lon": -78.49307
+      },
+      "deltaWeight": -21.000000,
+      "deltaVolume": -0.035000,
+      "windowStart": "06:30:00",
+      "windowEnd": "10:30:00",
+      "serviceMinutes": 15,
+      "loads": [
+        {
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "quantity": 5.000,
+          "baseUnit": "GALON"
+        }
+      ]
+    }
+  ],
+  "sourcingLines": [
+    {
+      "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+      "orderNumber": "ORD-20261016-001",
+      "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0004",
+      "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+      "destinationPosition": {
+        "lat": -0.20497,
+        "lon": -78.50484
+      },
+      "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+      "sku": "PRD-0001",
+      "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+      "requestedQuantity": 42.000,
+      "plannedQuantity": 42.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 42.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+              "lotCode": "L-0001-2609",
+              "quantity": 42.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 42.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+      "orderNumber": "ORD-20261016-001",
+      "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0004",
+      "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+      "destinationPosition": {
+        "lat": -0.20497,
+        "lon": -78.50484
+      },
+      "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+      "sku": "PRD-0003",
+      "productName": "Detergente industrial en polvo (saco 30 kg)",
+      "requestedQuantity": 3.000,
+      "plannedQuantity": 3.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 3.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+              "lotCode": "L-0003-2609",
+              "quantity": 3.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 3.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+      "orderNumber": "ORD-20261016-002",
+      "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0005",
+      "destinationName": "Hospital General Enrique Garc\u00E9s",
+      "destinationPosition": {
+        "lat": -0.24439,
+        "lon": -78.54124
+      },
+      "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+      "sku": "PRD-0001",
+      "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+      "requestedQuantity": 51.000,
+      "plannedQuantity": 51.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 51.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+              "lotCode": "L-0001-2609",
+              "quantity": 51.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 51.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+      "orderNumber": "ORD-20261016-002",
+      "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0005",
+      "destinationName": "Hospital General Enrique Garc\u00E9s",
+      "destinationPosition": {
+        "lat": -0.24439,
+        "lon": -78.54124
+      },
+      "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+      "sku": "PRD-0003",
+      "productName": "Detergente industrial en polvo (saco 30 kg)",
+      "requestedQuantity": 2.000,
+      "plannedQuantity": 2.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 2.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+              "lotCode": "L-0003-2609",
+              "quantity": 2.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 2.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+      "orderNumber": "ORD-20261016-003",
+      "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0006",
+      "destinationName": "Hospital General IESS Quito Sur",
+      "destinationPosition": {
+        "lat": -0.25731,
+        "lon": -78.5255
+      },
+      "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+      "sku": "PRD-0001",
+      "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+      "requestedQuantity": 26.000,
+      "plannedQuantity": 26.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 26.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+              "lotCode": "L-0001-2609",
+              "quantity": 26.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 26.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+      "orderNumber": "ORD-20261016-003",
+      "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0006",
+      "destinationName": "Hospital General IESS Quito Sur",
+      "destinationPosition": {
+        "lat": -0.25731,
+        "lon": -78.5255
+      },
+      "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+      "sku": "PRD-0003",
+      "productName": "Detergente industrial en polvo (saco 30 kg)",
+      "requestedQuantity": 2.000,
+      "plannedQuantity": 2.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "warehouseCode": "BOD-0001",
+          "warehousePosition": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "quantity": 2.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+              "lotCode": "L-0003-2609",
+              "quantity": 2.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 2.000,
+      "fullySourced": true
+    },
+    {
+      "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+      "orderNumber": "ORD-20261016-004",
+      "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+      "isDestinationWarehouse": false,
+      "destinationCode": "PTO-0015",
+      "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+      "destinationPosition": {
+        "lat": -0.20335,
+        "lon": -78.49307
+      },
+      "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+      "sku": "PRD-0001",
+      "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+      "requestedQuantity": 5.000,
+      "plannedQuantity": 5.000,
+      "pendingQuantity": 0,
+      "allocations": [
+        {
+          "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+          "warehouseCode": "BOD-0003",
+          "warehousePosition": {
+            "lat": -0.29173,
+            "lon": -78.47768
+          },
+          "quantity": 5.000,
+          "lots": [
+            {
+              "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+              "lotCode": "L-0001-2609",
+              "quantity": 5.000
+            }
+          ]
+        }
+      ],
+      "totalAllocated": 5.000,
+      "fullySourced": true
+    }
+  ],
+  "pendingDemands": [],
+  "vehicleMatches": [],
+  "options": [
+    {
+      "optionId": "A",
+      "sourcingOptionId": "A",
+      "proposalId": "5a1fb38a-3218-4fa8-b3db-e46f9446842f",
+      "revision": 1,
+      "status": "Feasible",
+      "requestId": null,
+      "title": "Viaje Multi-Recogida Consolidado",
+      "description": "Recogida directa en la bodega m\u00E1s cercana con stock completo.",
+      "isRecommended": false,
+      "justification": null,
+      "score": 81.7,
+      "carrierType": "Propia",
+      "carrierName": null,
+      "totalCost": 105.20,
+      "estimatedTotalCost": 105.20,
+      "totalDistanceKm": 43.5,
+      "totalDurationMinutes": 386,
+      "selectedVehicle": {
+        "id": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "code": "VEH-0001",
+        "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "vehicleCode": "VEH-0001",
+        "maxWeight": 3500.000,
+        "maxVolume": 14.000,
+        "isMatch": true,
+        "discardReason": null,
+        "warnings": [],
+        "weightUtilizationPct": 20.9,
+        "volumeUtilizationPct": 8.4,
+        "costPerKm": 0.210,
+        "estimatedCost": 68.62,
+        "estimatedTotalCost": 68.62,
+        "distanceToFirstPickupKm": 0.0
+      },
+      "chosenVehicle": {
+        "id": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "code": "VEH-0001",
+        "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "vehicleCode": "VEH-0001",
+        "maxWeight": 3500.000,
+        "maxVolume": 14.000,
+        "isMatch": true,
+        "discardReason": null,
+        "warnings": [],
+        "weightUtilizationPct": 20.9,
+        "volumeUtilizationPct": 8.4,
+        "costPerKm": 0.210,
+        "estimatedCost": 68.62,
+        "estimatedTotalCost": 68.62,
+        "distanceToFirstPickupKm": 0.0
+      },
+      "evaluation": {
+        "isValid": true,
+        "totalDistanceKm": 43.5,
+        "totalDurationMinutes": 386,
+        "totalCost": 105.20,
+        "maxWeightOnRoute": 732.900000,
+        "maxVolumeOnRoute": 1.183000,
+        "stops": [
+          {
+            "sequence": 1,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "code": "BOD-0001",
+            "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "position": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "plannedArrivalUtc": "2026-10-16T08:00:00Z",
+            "plannedDepartureUtc": "2026-10-16T08:20:00Z",
+            "legDistanceKm": 0,
+            "legDurationMinutes": 0,
+            "accumulatedWeightOnArrival": 711.900000,
+            "accumulatedVolumeOnArrival": 1.148000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 2,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+            "code": "BOD-0003",
+            "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+            "position": {
+              "lat": -0.29173,
+              "lon": -78.47768
+            },
+            "plannedArrivalUtc": "2026-10-16T08:43:07.3199999Z",
+            "plannedDepartureUtc": "2026-10-16T09:03:07.3199999Z",
+            "legDistanceKm": 13.768,
+            "legDurationMinutes": 23.122,
+            "accumulatedWeightOnArrival": 732.900000,
+            "accumulatedVolumeOnArrival": 1.183000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 3,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "locationId": null,
+            "code": "PTO-0006",
+            "name": "Hospital General IESS Quito Sur",
+            "position": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "plannedArrivalUtc": "2026-10-16T11:59:59.9999999Z",
+            "plannedDepartureUtc": "2026-10-16T12:29:59.9999999Z",
+            "legDistanceKm": 16.853,
+            "legDurationMinutes": 20.008,
+            "accumulatedWeightOnArrival": 563.100000,
+            "accumulatedVolumeOnArrival": 0.911000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 4,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "locationId": null,
+            "code": "PTO-0005",
+            "name": "Hospital General Enrique Garc\u00E9s",
+            "position": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "plannedArrivalUtc": "2026-10-16T12:40:35.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T13:10:35.9999998Z",
+            "legDistanceKm": 3.428,
+            "legDurationMinutes": 10.6,
+            "accumulatedWeightOnArrival": 288.300000,
+            "accumulatedVolumeOnArrival": 0.464000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 5,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "locationId": null,
+            "code": "PTO-0004",
+            "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "position": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "plannedArrivalUtc": "2026-10-16T13:30:11.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:05:11.9999998Z",
+            "legDistanceKm": 7.620,
+            "legDurationMinutes": 19.6,
+            "accumulatedWeightOnArrival": 21.000000,
+            "accumulatedVolumeOnArrival": 0.035000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 6,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "locationId": null,
+            "code": "PTO-0015",
+            "name": "Restaurante La Mariscal (sint\u00E9tico)",
+            "position": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "plannedArrivalUtc": "2026-10-16T14:11:23.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:26:23.9999998Z",
+            "legDistanceKm": 1.787,
+            "legDurationMinutes": 6.2,
+            "accumulatedWeightOnArrival": 0.000000,
+            "accumulatedVolumeOnArrival": 0.000000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          }
+        ],
+        "validationErrors": [],
+        "warnings": [],
+        "coordinates": [
+          [
+            -0.31888,
+            -78.54932
+          ],
+          [
+            -0.29173,
+            -78.47768
+          ],
+          [
+            -0.25731,
+            -78.5255
+          ],
+          [
+            -0.24439,
+            -78.54124
+          ],
+          [
+            -0.20497,
+            -78.50484
+          ],
+          [
+            -0.20335,
+            -78.49307
+          ]
+        ],
+        "coordinatesSource": "approximate",
+        "serviceCostBreakdown": {
+          "fuel": 5.63,
+          "wear": 3.91,
+          "driver": 38.64,
+          "helpers": 53.19,
+          "shrink": 3.83,
+          "total": 105.20,
+          "loadPct": 20.9400,
+          "helperCount": 2,
+          "fuelPrice": {
+            "value": 3.11,
+            "date": "2026-10-12",
+            "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+            "unit": "USD/gal"
+          },
+          "notes": [
+            "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+          ],
+          "legacyTransport": 0,
+          "label": "estimado",
+          "currency": "USD"
+        }
+      },
+      "costBreakdown": {
+        "currency": "USD",
+        "calculatorVersion": "1.0",
+        "kmCost": 9.1350,
+        "hourCost": 38.600000000000000000000000000,
+        "fuel": 5.63,
+        "fuelCost": 5.63,
+        "wear": 3.91,
+        "wearCost": 3.91,
+        "driver": 38.64,
+        "driverCost": 38.64,
+        "helpers": 53.19,
+        "helpersCost": 53.19,
+        "helpersCount": 2,
+        "shrink": 3.83,
+        "expectedShrinkageCost": 3.83,
+        "carrierTariff": 0,
+        "totalCost": 105.20,
+        "fuelPrice": {
+          "value": 3.11,
+          "date": "2026-10-12",
+          "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+        ]
+      },
+      "serviceCostBreakdown": {
+        "fuel": 5.63,
+        "wear": 3.91,
+        "driver": 38.64,
+        "helpers": 53.19,
+        "shrink": 3.83,
+        "total": 105.20,
+        "loadPct": 20.9400,
+        "helperCount": 2,
+        "fuelPrice": {
+          "value": 3.11,
+          "date": "2026-10-12",
+          "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+        ],
+        "legacyTransport": 0,
+        "label": "estimado",
+        "currency": "USD"
+      },
+      "uncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "costUncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "stops": [
+        {
+          "sequence": 1,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "code": "BOD-0001",
+          "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+          "position": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "deltaWeight": 711.900000,
+          "deltaVolume": 1.148000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 119.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 7.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 2,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+          "code": "BOD-0003",
+          "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+          "position": {
+            "lat": -0.29173,
+            "lon": -78.47768
+          },
+          "deltaWeight": 21.000000,
+          "deltaVolume": 0.035000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        },
+        {
+          "sequence": 3,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "locationId": null,
+          "code": "PTO-0006",
+          "name": "Hospital General IESS Quito Sur",
+          "position": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "deltaWeight": -169.800000,
+          "deltaVolume": -0.272000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 26.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 4,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "locationId": null,
+          "code": "PTO-0005",
+          "name": "Hospital General Enrique Garc\u00E9s",
+          "position": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "deltaWeight": -274.800000,
+          "deltaVolume": -0.447000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 51.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 5,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "locationId": null,
+          "code": "PTO-0004",
+          "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "position": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "deltaWeight": -267.300000,
+          "deltaVolume": -0.429000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 35,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 42.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 3.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 6,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "locationId": null,
+          "code": "PTO-0015",
+          "name": "Restaurante La Mariscal (sint\u00E9tico)",
+          "position": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "deltaWeight": -21.000000,
+          "deltaVolume": -0.035000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 15,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        }
+      ],
+      "sourcingLines": [
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 42.000,
+          "plannedQuantity": 42.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 42.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 42.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 42.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 3.000,
+          "plannedQuantity": 3.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 3.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 3.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 3.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 51.000,
+          "plannedQuantity": 51.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 51.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 51.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 51.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 26.000,
+          "plannedQuantity": 26.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 26.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 26.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 26.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+          "orderNumber": "ORD-20261016-004",
+          "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0015",
+          "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+          "destinationPosition": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 5.000,
+          "plannedQuantity": 5.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+              "warehouseCode": "BOD-0003",
+              "warehousePosition": {
+                "lat": -0.29173,
+                "lon": -78.47768
+              },
+              "quantity": 5.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 5.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 5.000,
+          "fullySourced": true
+        }
+      ],
+      "pendingDemands": [],
+      "vehicleMatches": [
+        {
+          "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+          "vehicleCode": "VEH-0001",
+          "maxWeight": 3500.000,
+          "maxVolume": 14.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 20.9,
+          "volumeUtilizationPct": 8.4,
+          "estimatedCost": 68.62,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c8-7d45-8f6a-a88897dfd283",
+          "vehicleCode": "VEH-0004",
+          "maxWeight": 2700.000,
+          "maxVolume": 12.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 27.1,
+          "volumeUtilizationPct": 9.9,
+          "estimatedCost": 68.74,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-7a09-a923-b24578b984e2",
+          "vehicleCode": "VEH-0009",
+          "maxWeight": 2700.000,
+          "maxVolume": 12.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 27.1,
+          "volumeUtilizationPct": 9.9,
+          "estimatedCost": 71.90,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c9-7efd-a51b-8eecae2b78a6",
+          "vehicleCode": "VEH-0007",
+          "maxWeight": 3500.000,
+          "maxVolume": 14.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 20.9,
+          "volumeUtilizationPct": 8.4,
+          "estimatedCost": 87.02,
+          "distanceToFirstPickupKm": 34.4
+        },
+        {
+          "vehicleId": "01a14816-49c8-7f1b-8aa1-60bddc9d0272",
+          "vehicleCode": "VEH-0002",
+          "maxWeight": 4500.000,
+          "maxVolume": 18.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 16.3,
+          "volumeUtilizationPct": 6.6,
+          "estimatedCost": 70.83,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-7603-a870-a96e8cce87d0",
+          "vehicleCode": "VEH-0010",
+          "maxWeight": 6500.000,
+          "maxVolume": 26.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 11.3,
+          "volumeUtilizationPct": 4.6,
+          "estimatedCost": 74.09,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c8-77f4-81c3-8505dc2bf042",
+          "vehicleCode": "VEH-0003",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 78.90,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-779d-9502-6ae4ba8a59a4",
+          "vehicleCode": "VEH-0008",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 81.92,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c8-764b-a034-efd5bceb9ec9",
+          "vehicleCode": "VEH-0005",
+          "maxWeight": 5500.000,
+          "maxVolume": 22.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 13.3,
+          "volumeUtilizationPct": 5.4,
+          "estimatedCost": 90.50,
+          "distanceToFirstPickupKm": 34.4
+        },
+        {
+          "vehicleId": "01a14816-49c8-7a6a-b63c-cabdc5c3ec78",
+          "vehicleCode": "VEH-0006",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 96.54,
+          "distanceToFirstPickupKm": 34.4
+        }
+      ]
+    },
+    {
+      "optionId": "B",
+      "sourcingOptionId": "B",
+      "proposalId": "9fd1f10b-42ec-495e-928b-576e8b68cbf6",
+      "revision": 1,
+      "status": "Feasible",
+      "requestId": null,
+      "title": "Dos Entregas Escalonadas (Ma\u00F1ana y Tarde)",
+      "description": "Entrega inmediata con priorizaci\u00F3n de puntos cr\u00EDticos en el primer turno y cumplimiento de ventanas hospitalarias.",
+      "isRecommended": false,
+      "justification": null,
+      "score": 89.1,
+      "carrierType": "Propia",
+      "carrierName": null,
+      "totalCost": 105.20,
+      "estimatedTotalCost": 105.20,
+      "totalDistanceKm": 43.5,
+      "totalDurationMinutes": 386,
+      "selectedVehicle": {
+        "id": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "code": "VEH-0001",
+        "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "vehicleCode": "VEH-0001",
+        "maxWeight": 3500.000,
+        "maxVolume": 14.000,
+        "isMatch": true,
+        "discardReason": null,
+        "warnings": [],
+        "weightUtilizationPct": 20.9,
+        "volumeUtilizationPct": 8.4,
+        "costPerKm": 0.210,
+        "estimatedCost": 68.62,
+        "estimatedTotalCost": 68.62,
+        "distanceToFirstPickupKm": 0.0
+      },
+      "chosenVehicle": {
+        "id": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "code": "VEH-0001",
+        "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+        "vehicleCode": "VEH-0001",
+        "maxWeight": 3500.000,
+        "maxVolume": 14.000,
+        "isMatch": true,
+        "discardReason": null,
+        "warnings": [],
+        "weightUtilizationPct": 20.9,
+        "volumeUtilizationPct": 8.4,
+        "costPerKm": 0.210,
+        "estimatedCost": 68.62,
+        "estimatedTotalCost": 68.62,
+        "distanceToFirstPickupKm": 0.0
+      },
+      "evaluation": {
+        "isValid": true,
+        "totalDistanceKm": 43.5,
+        "totalDurationMinutes": 386,
+        "totalCost": 105.20,
+        "maxWeightOnRoute": 732.900000,
+        "maxVolumeOnRoute": 1.183000,
+        "stops": [
+          {
+            "sequence": 1,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "code": "BOD-0001",
+            "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "position": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "plannedArrivalUtc": "2026-10-16T08:00:00Z",
+            "plannedDepartureUtc": "2026-10-16T08:20:00Z",
+            "legDistanceKm": 0,
+            "legDurationMinutes": 0,
+            "accumulatedWeightOnArrival": 711.900000,
+            "accumulatedVolumeOnArrival": 1.148000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 2,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+            "code": "BOD-0003",
+            "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+            "position": {
+              "lat": -0.29173,
+              "lon": -78.47768
+            },
+            "plannedArrivalUtc": "2026-10-16T08:43:07.3199999Z",
+            "plannedDepartureUtc": "2026-10-16T09:03:07.3199999Z",
+            "legDistanceKm": 13.768,
+            "legDurationMinutes": 23.122,
+            "accumulatedWeightOnArrival": 732.900000,
+            "accumulatedVolumeOnArrival": 1.183000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 3,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "locationId": null,
+            "code": "PTO-0006",
+            "name": "Hospital General IESS Quito Sur",
+            "position": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "plannedArrivalUtc": "2026-10-16T11:59:59.9999999Z",
+            "plannedDepartureUtc": "2026-10-16T12:29:59.9999999Z",
+            "legDistanceKm": 16.853,
+            "legDurationMinutes": 20.008,
+            "accumulatedWeightOnArrival": 563.100000,
+            "accumulatedVolumeOnArrival": 0.911000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 4,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "locationId": null,
+            "code": "PTO-0005",
+            "name": "Hospital General Enrique Garc\u00E9s",
+            "position": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "plannedArrivalUtc": "2026-10-16T12:40:35.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T13:10:35.9999998Z",
+            "legDistanceKm": 3.428,
+            "legDurationMinutes": 10.6,
+            "accumulatedWeightOnArrival": 288.300000,
+            "accumulatedVolumeOnArrival": 0.464000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 5,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "locationId": null,
+            "code": "PTO-0004",
+            "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "position": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "plannedArrivalUtc": "2026-10-16T13:30:11.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:05:11.9999998Z",
+            "legDistanceKm": 7.620,
+            "legDurationMinutes": 19.6,
+            "accumulatedWeightOnArrival": 21.000000,
+            "accumulatedVolumeOnArrival": 0.035000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 6,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "locationId": null,
+            "code": "PTO-0015",
+            "name": "Restaurante La Mariscal (sint\u00E9tico)",
+            "position": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "plannedArrivalUtc": "2026-10-16T14:11:23.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:26:23.9999998Z",
+            "legDistanceKm": 1.787,
+            "legDurationMinutes": 6.2,
+            "accumulatedWeightOnArrival": 0.000000,
+            "accumulatedVolumeOnArrival": 0.000000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          }
+        ],
+        "validationErrors": [],
+        "warnings": [],
+        "coordinates": [
+          [
+            -0.31888,
+            -78.54932
+          ],
+          [
+            -0.29173,
+            -78.47768
+          ],
+          [
+            -0.25731,
+            -78.5255
+          ],
+          [
+            -0.24439,
+            -78.54124
+          ],
+          [
+            -0.20497,
+            -78.50484
+          ],
+          [
+            -0.20335,
+            -78.49307
+          ]
+        ],
+        "coordinatesSource": "approximate",
+        "serviceCostBreakdown": {
+          "fuel": 5.63,
+          "wear": 3.91,
+          "driver": 38.64,
+          "helpers": 53.19,
+          "shrink": 3.83,
+          "total": 105.20,
+          "loadPct": 20.9400,
+          "helperCount": 2,
+          "fuelPrice": {
+            "value": 3.11,
+            "date": "2026-10-12",
+            "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+            "unit": "USD/gal"
+          },
+          "notes": [
+            "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+          ],
+          "legacyTransport": 0,
+          "label": "estimado",
+          "currency": "USD"
+        }
+      },
+      "costBreakdown": {
+        "currency": "USD",
+        "calculatorVersion": "1.0",
+        "kmCost": 9.1350,
+        "hourCost": 38.600000000000000000000000000,
+        "fuel": 5.63,
+        "fuelCost": 5.63,
+        "wear": 3.91,
+        "wearCost": 3.91,
+        "driver": 38.64,
+        "driverCost": 38.64,
+        "helpers": 53.19,
+        "helpersCost": 53.19,
+        "helpersCount": 2,
+        "shrink": 3.83,
+        "expectedShrinkageCost": 3.83,
+        "carrierTariff": 0,
+        "totalCost": 105.20,
+        "fuelPrice": {
+          "value": 3.11,
+          "date": "2026-10-12",
+          "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+        ]
+      },
+      "serviceCostBreakdown": {
+        "fuel": 5.63,
+        "wear": 3.91,
+        "driver": 38.64,
+        "helpers": 53.19,
+        "shrink": 3.83,
+        "total": 105.20,
+        "loadPct": 20.9400,
+        "helperCount": 2,
+        "fuelPrice": {
+          "value": 3.11,
+          "date": "2026-10-12",
+          "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones."
+        ],
+        "legacyTransport": 0,
+        "label": "estimado",
+        "currency": "USD"
+      },
+      "uncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "costUncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "stops": [
+        {
+          "sequence": 1,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "code": "BOD-0001",
+          "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+          "position": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "deltaWeight": 711.900000,
+          "deltaVolume": 1.148000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 119.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 7.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 2,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+          "code": "BOD-0003",
+          "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+          "position": {
+            "lat": -0.29173,
+            "lon": -78.47768
+          },
+          "deltaWeight": 21.000000,
+          "deltaVolume": 0.035000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        },
+        {
+          "sequence": 3,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "locationId": null,
+          "code": "PTO-0006",
+          "name": "Hospital General IESS Quito Sur",
+          "position": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "deltaWeight": -169.800000,
+          "deltaVolume": -0.272000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 26.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 4,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "locationId": null,
+          "code": "PTO-0005",
+          "name": "Hospital General Enrique Garc\u00E9s",
+          "position": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "deltaWeight": -274.800000,
+          "deltaVolume": -0.447000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 51.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 5,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "locationId": null,
+          "code": "PTO-0004",
+          "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "position": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "deltaWeight": -267.300000,
+          "deltaVolume": -0.429000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 35,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 42.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 3.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 6,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "locationId": null,
+          "code": "PTO-0015",
+          "name": "Restaurante La Mariscal (sint\u00E9tico)",
+          "position": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "deltaWeight": -21.000000,
+          "deltaVolume": -0.035000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 15,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        }
+      ],
+      "sourcingLines": [
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 42.000,
+          "plannedQuantity": 42.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 42.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 42.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 42.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 3.000,
+          "plannedQuantity": 3.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 3.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 3.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 3.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 51.000,
+          "plannedQuantity": 51.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 51.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 51.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 51.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 26.000,
+          "plannedQuantity": 26.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 26.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 26.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 26.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+          "orderNumber": "ORD-20261016-004",
+          "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0015",
+          "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+          "destinationPosition": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 5.000,
+          "plannedQuantity": 5.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+              "warehouseCode": "BOD-0003",
+              "warehousePosition": {
+                "lat": -0.29173,
+                "lon": -78.47768
+              },
+              "quantity": 5.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 5.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 5.000,
+          "fullySourced": true
+        }
+      ],
+      "pendingDemands": [],
+      "vehicleMatches": [
+        {
+          "vehicleId": "01a14816-49a3-77ee-be5d-75094f978ee0",
+          "vehicleCode": "VEH-0001",
+          "maxWeight": 3500.000,
+          "maxVolume": 14.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 20.9,
+          "volumeUtilizationPct": 8.4,
+          "estimatedCost": 68.62,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c8-7d45-8f6a-a88897dfd283",
+          "vehicleCode": "VEH-0004",
+          "maxWeight": 2700.000,
+          "maxVolume": 12.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 27.1,
+          "volumeUtilizationPct": 9.9,
+          "estimatedCost": 68.74,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-7a09-a923-b24578b984e2",
+          "vehicleCode": "VEH-0009",
+          "maxWeight": 2700.000,
+          "maxVolume": 12.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 27.1,
+          "volumeUtilizationPct": 9.9,
+          "estimatedCost": 71.90,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c9-7efd-a51b-8eecae2b78a6",
+          "vehicleCode": "VEH-0007",
+          "maxWeight": 3500.000,
+          "maxVolume": 14.000,
+          "isMatch": true,
+          "discardReason": null,
+          "warnings": [],
+          "weightUtilizationPct": 20.9,
+          "volumeUtilizationPct": 8.4,
+          "estimatedCost": 87.02,
+          "distanceToFirstPickupKm": 34.4
+        },
+        {
+          "vehicleId": "01a14816-49c8-7f1b-8aa1-60bddc9d0272",
+          "vehicleCode": "VEH-0002",
+          "maxWeight": 4500.000,
+          "maxVolume": 18.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 16.3,
+          "volumeUtilizationPct": 6.6,
+          "estimatedCost": 70.83,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-7603-a870-a96e8cce87d0",
+          "vehicleCode": "VEH-0010",
+          "maxWeight": 6500.000,
+          "maxVolume": 26.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 11.3,
+          "volumeUtilizationPct": 4.6,
+          "estimatedCost": 74.09,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c8-77f4-81c3-8505dc2bf042",
+          "vehicleCode": "VEH-0003",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 78.90,
+          "distanceToFirstPickupKm": 0.0
+        },
+        {
+          "vehicleId": "01a14816-49c9-779d-9502-6ae4ba8a59a4",
+          "vehicleCode": "VEH-0008",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 81.92,
+          "distanceToFirstPickupKm": 11.1
+        },
+        {
+          "vehicleId": "01a14816-49c8-764b-a034-efd5bceb9ec9",
+          "vehicleCode": "VEH-0005",
+          "maxWeight": 5500.000,
+          "maxVolume": 22.000,
+          "isMatch": false,
+          "discardReason": "restriccion_horaria (camion_pesado no circula 06:00\u201310:00; regla sint\u00E9tica)",
+          "warnings": [],
+          "weightUtilizationPct": 13.3,
+          "volumeUtilizationPct": 5.4,
+          "estimatedCost": 90.50,
+          "distanceToFirstPickupKm": 34.4
+        },
+        {
+          "vehicleId": "01a14816-49c8-7a6a-b63c-cabdc5c3ec78",
+          "vehicleCode": "VEH-0006",
+          "maxWeight": 720.000,
+          "maxVolume": 3.100,
+          "isMatch": false,
+          "discardReason": "excede_peso (Requiere 733 kg, capacidad 720 kg)",
+          "warnings": [],
+          "weightUtilizationPct": 101.8,
+          "volumeUtilizationPct": 38.2,
+          "estimatedCost": 96.54,
+          "distanceToFirstPickupKm": 34.4
+        }
+      ]
+    },
+    {
+      "optionId": "C",
+      "sourcingOptionId": "C",
+      "proposalId": "e2799cf3-3ee3-4bbe-849e-4f047b10180c",
+      "revision": 1,
+      "status": "Feasible",
+      "requestId": null,
+      "title": "Operador Contratado (Operador Log\u00EDstico Contratado (Quito))",
+      "description": "Alternativa con transportista externo: capacidad ilimitada, tiempo de respuesta de 4 h y cobertura total de demanda.",
+      "isRecommended": true,
+      "justification": "Se recomienda C: la flota propia deja 0 pedido(s) pendiente(s) (0 kg); el operador contratado cubre el 100% con tiempo de respuesta de 4 h y costo de faltante de USD 0.",
+      "score": 90.8,
+      "carrierType": "Contratada",
+      "carrierName": "Operador Log\u00EDstico Contratado (Quito)",
+      "totalCost": 66.90,
+      "estimatedTotalCost": 66.90,
+      "totalDistanceKm": 43.5,
+      "totalDurationMinutes": 386,
+      "selectedVehicle": null,
+      "chosenVehicle": null,
+      "evaluation": {
+        "isValid": true,
+        "totalDistanceKm": 43.5,
+        "totalDurationMinutes": 386,
+        "totalCost": 66.90,
+        "maxWeightOnRoute": 732.900000,
+        "maxVolumeOnRoute": 1.183000,
+        "stops": [
+          {
+            "sequence": 1,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+            "code": "BOD-0001",
+            "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+            "position": {
+              "lat": -0.31888,
+              "lon": -78.54932
+            },
+            "plannedArrivalUtc": "2026-10-16T08:00:00Z",
+            "plannedDepartureUtc": "2026-10-16T08:20:00Z",
+            "legDistanceKm": 0,
+            "legDurationMinutes": 0,
+            "accumulatedWeightOnArrival": 711.900000,
+            "accumulatedVolumeOnArrival": 1.148000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 2,
+            "kind": "Pickup",
+            "servicePointId": null,
+            "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+            "code": "BOD-0003",
+            "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+            "position": {
+              "lat": -0.29173,
+              "lon": -78.47768
+            },
+            "plannedArrivalUtc": "2026-10-16T08:43:07.3199999Z",
+            "plannedDepartureUtc": "2026-10-16T09:03:07.3199999Z",
+            "legDistanceKm": 13.768,
+            "legDurationMinutes": 23.122,
+            "accumulatedWeightOnArrival": 732.900000,
+            "accumulatedVolumeOnArrival": 1.183000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 3,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+            "locationId": null,
+            "code": "PTO-0006",
+            "name": "Hospital General IESS Quito Sur",
+            "position": {
+              "lat": -0.25731,
+              "lon": -78.5255
+            },
+            "plannedArrivalUtc": "2026-10-16T11:59:59.9999999Z",
+            "plannedDepartureUtc": "2026-10-16T12:29:59.9999999Z",
+            "legDistanceKm": 16.853,
+            "legDurationMinutes": 20.008,
+            "accumulatedWeightOnArrival": 563.100000,
+            "accumulatedVolumeOnArrival": 0.911000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": null
+          },
+          {
+            "sequence": 4,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+            "locationId": null,
+            "code": "PTO-0005",
+            "name": "Hospital General Enrique Garc\u00E9s",
+            "position": {
+              "lat": -0.24439,
+              "lon": -78.54124
+            },
+            "plannedArrivalUtc": "2026-10-16T12:40:35.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T13:10:35.9999998Z",
+            "legDistanceKm": 3.428,
+            "legDurationMinutes": 10.6,
+            "accumulatedWeightOnArrival": 288.300000,
+            "accumulatedVolumeOnArrival": 0.464000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 5,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+            "locationId": null,
+            "code": "PTO-0004",
+            "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+            "position": {
+              "lat": -0.20497,
+              "lon": -78.50484
+            },
+            "plannedArrivalUtc": "2026-10-16T13:30:11.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:05:11.9999998Z",
+            "legDistanceKm": 7.620,
+            "legDurationMinutes": 19.6,
+            "accumulatedWeightOnArrival": 21.000000,
+            "accumulatedVolumeOnArrival": 0.035000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          },
+          {
+            "sequence": 6,
+            "kind": "Delivery",
+            "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+            "locationId": null,
+            "code": "PTO-0015",
+            "name": "Restaurante La Mariscal (sint\u00E9tico)",
+            "position": {
+              "lat": -0.20335,
+              "lon": -78.49307
+            },
+            "plannedArrivalUtc": "2026-10-16T14:11:23.9999998Z",
+            "plannedDepartureUtc": "2026-10-16T14:26:23.9999998Z",
+            "legDistanceKm": 1.787,
+            "legDurationMinutes": 6.2,
+            "accumulatedWeightOnArrival": 0.000000,
+            "accumulatedVolumeOnArrival": 0.000000,
+            "violatesPrecedence": false,
+            "violatesWindow": false,
+            "warningMessage": null,
+            "trafficFactorApplied": 0.64
+          }
+        ],
+        "validationErrors": [],
+        "warnings": [],
+        "coordinates": [
+          [
+            -0.31888,
+            -78.54932
+          ],
+          [
+            -0.29173,
+            -78.47768
+          ],
+          [
+            -0.25731,
+            -78.5255
+          ],
+          [
+            -0.24439,
+            -78.54124
+          ],
+          [
+            -0.20497,
+            -78.50484
+          ],
+          [
+            -0.20335,
+            -78.49307
+          ]
+        ],
+        "coordinatesSource": "approximate",
+        "serviceCostBreakdown": {
+          "fuel": 0,
+          "wear": 0,
+          "driver": 38.64,
+          "helpers": 0,
+          "shrink": 0,
+          "total": 58.20,
+          "loadPct": 0,
+          "helperCount": 0,
+          "fuelPrice": {
+            "value": 3.11,
+            "date": "2026-10-12",
+            "source": "Primicias (12-oct-2026; precio vigente 12-oct a 11-nov-2026)",
+            "unit": "USD/gal"
+          },
+          "notes": [
+            "Costo estimado; par\u00E1metros sint\u00E9ticos, no mediciones.",
+            "perfil no configurado; se conserva la f\u00F3rmula anterior de km y horas."
+          ],
+          "legacyTransport": 19.56,
+          "label": "estimado",
+          "currency": "USD"
+        }
+      },
+      "costBreakdown": {
+        "currency": "USD",
+        "calculatorVersion": "1.0",
+        "kmCost": 0,
+        "hourCost": 0,
+        "fuel": 0,
+        "fuelCost": 0,
+        "wear": 0,
+        "wearCost": 0,
+        "driver": 0,
+        "driverCost": 0,
+        "helpers": 0,
+        "helpersCost": 0,
+        "helpersCount": 0,
+        "shrink": 3.83,
+        "expectedShrinkageCost": 3.83,
+        "carrierTariff": 63.07,
+        "totalCost": 66.90,
+        "fuelPrice": {
+          "value": null,
+          "date": null,
+          "source": null,
+          "unit": "USD/gal"
+        },
+        "notes": [
+          "Tarifa de operador contratado \u0027Operador Log\u00EDstico Contratado (Quito)\u0027 (base USD 25.00 \u002B USD 0.55/km \u002B USD 0.01/kg) \u002B merma esperada."
+        ]
+      },
+      "serviceCostBreakdown": null,
+      "uncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "costUncertainty": {
+        "status": "uncalibrated",
+        "lowerBound": null,
+        "upperBound": null,
+        "marginOfError": null,
+        "sampleSize": 0,
+        "period": null,
+        "method": "conformal_residuals_quantile",
+        "meanBias": null,
+        "mae": null,
+        "empiricalCoverage": null,
+        "message": "Margen de error a\u00FAn no cuantificable con los datos disponibles"
+      },
+      "stops": [
+        {
+          "sequence": 1,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+          "code": "BOD-0001",
+          "name": "Bodega Central Sur - Turubamba (sint\u00E9tica)",
+          "position": {
+            "lat": -0.31888,
+            "lon": -78.54932
+          },
+          "deltaWeight": 711.900000,
+          "deltaVolume": 1.148000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 119.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 7.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 2,
+          "kind": "Pickup",
+          "servicePointId": null,
+          "locationId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+          "code": "BOD-0003",
+          "name": "Bodega Valle - Conocoto (sint\u00E9tica)",
+          "position": {
+            "lat": -0.29173,
+            "lon": -78.47768
+          },
+          "deltaWeight": 21.000000,
+          "deltaVolume": 0.035000,
+          "windowStart": "07:00:00",
+          "windowEnd": "19:00:00",
+          "serviceMinutes": 20,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        },
+        {
+          "sequence": 3,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "locationId": null,
+          "code": "PTO-0006",
+          "name": "Hospital General IESS Quito Sur",
+          "position": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "deltaWeight": -169.800000,
+          "deltaVolume": -0.272000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 26.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 4,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "locationId": null,
+          "code": "PTO-0005",
+          "name": "Hospital General Enrique Garc\u00E9s",
+          "position": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "deltaWeight": -274.800000,
+          "deltaVolume": -0.447000,
+          "windowStart": "07:00:00",
+          "windowEnd": "11:00:00",
+          "serviceMinutes": 30,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 51.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 2.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 5,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "locationId": null,
+          "code": "PTO-0004",
+          "name": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "position": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "deltaWeight": -267.300000,
+          "deltaVolume": -0.429000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 35,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 42.000,
+              "baseUnit": "GALON"
+            },
+            {
+              "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+              "sku": "PRD-0003",
+              "quantity": 3.000,
+              "baseUnit": "SACO"
+            }
+          ]
+        },
+        {
+          "sequence": 6,
+          "kind": "Delivery",
+          "servicePointId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "locationId": null,
+          "code": "PTO-0015",
+          "name": "Restaurante La Mariscal (sint\u00E9tico)",
+          "position": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "deltaWeight": -21.000000,
+          "deltaVolume": -0.035000,
+          "windowStart": "06:30:00",
+          "windowEnd": "10:30:00",
+          "serviceMinutes": 15,
+          "loads": [
+            {
+              "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+              "sku": "PRD-0001",
+              "quantity": 5.000,
+              "baseUnit": "GALON"
+            }
+          ]
+        }
+      ],
+      "sourcingLines": [
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 42.000,
+          "plannedQuantity": 42.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 42.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 42.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 42.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-803c-70aa-9df2-f43a2e704002",
+          "orderNumber": "ORD-20261016-001",
+          "destinationId": "01a14816-496a-7d5a-9ed8-0977e94daaae",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0004",
+          "destinationName": "Hospital Carlos Andrade Mar\u00EDn (IESS)",
+          "destinationPosition": {
+            "lat": -0.20497,
+            "lon": -78.50484
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 3.000,
+          "plannedQuantity": 3.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 3.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 3.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 3.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 51.000,
+          "plannedQuantity": 51.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 51.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 51.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 51.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8139-7ea2-9c4b-ab00c77f1a93",
+          "orderNumber": "ORD-20261016-002",
+          "destinationId": "01a14816-496b-7b11-bbd1-bfeb2112551f",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0005",
+          "destinationName": "Hospital General Enrique Garc\u00E9s",
+          "destinationPosition": {
+            "lat": -0.24439,
+            "lon": -78.54124
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 26.000,
+          "plannedQuantity": 26.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 26.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 26.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 26.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-81d0-7ab4-9fde-783a91885da6",
+          "orderNumber": "ORD-20261016-003",
+          "destinationId": "01a14816-496b-70b2-9464-1deb3c50d896",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0006",
+          "destinationName": "Hospital General IESS Quito Sur",
+          "destinationPosition": {
+            "lat": -0.25731,
+            "lon": -78.5255
+          },
+          "productId": "01a14816-49a0-7f19-9b7f-8e60c26b3ea5",
+          "sku": "PRD-0003",
+          "productName": "Detergente industrial en polvo (saco 30 kg)",
+          "requestedQuantity": 2.000,
+          "plannedQuantity": 2.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-490f-76e6-a518-56ca5a6ed82c",
+              "warehouseCode": "BOD-0001",
+              "warehousePosition": {
+                "lat": -0.31888,
+                "lon": -78.54932
+              },
+              "quantity": 2.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49e8-7c6b-a466-4e7c8e1ed61e",
+                  "lotCode": "L-0003-2609",
+                  "quantity": 2.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 2.000,
+          "fullySourced": true
+        },
+        {
+          "orderId": "01a14816-8257-76a6-b0b4-06180343dd92",
+          "orderNumber": "ORD-20261016-004",
+          "destinationId": "01a14816-496d-7125-abd4-5f588c43c257",
+          "isDestinationWarehouse": false,
+          "destinationCode": "PTO-0015",
+          "destinationName": "Restaurante La Mariscal (sint\u00E9tico)",
+          "destinationPosition": {
+            "lat": -0.20335,
+            "lon": -78.49307
+          },
+          "productId": "01a14816-4975-7409-a7b7-70d931bdc2a8",
+          "sku": "PRD-0001",
+          "productName": "Hipoclorito de sodio 5% (gal\u00F3n 3,785 L)",
+          "requestedQuantity": 5.000,
+          "plannedQuantity": 5.000,
+          "pendingQuantity": 0,
+          "allocations": [
+            {
+              "warehouseId": "01a14816-4936-7112-936f-a3bb9bf95b71",
+              "warehouseCode": "BOD-0003",
+              "warehousePosition": {
+                "lat": -0.29173,
+                "lon": -78.47768
+              },
+              "quantity": 5.000,
+              "lots": [
+                {
+                  "lotId": "01a14816-49cc-7e3e-a80e-2c6d06c9b25d",
+                  "lotCode": "L-0001-2609",
+                  "quantity": 5.000
+                }
+              ]
+            }
+          ],
+          "totalAllocated": 5.000,
+          "fullySourced": true
+        }
+      ],
+      "pendingDemands": [],
+      "vehicleMatches": []
+    }
+  ]
+}
