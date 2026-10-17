@@ -55,7 +55,8 @@ public sealed record HandlingUnitLineDto(
     Guid LotId,
     string Sku,
     decimal Quantity,
-    string Unit);
+    string Unit,
+    string Name = "");
 
 public sealed record HandlingUnitResponse(
     Guid HandlingUnitId,

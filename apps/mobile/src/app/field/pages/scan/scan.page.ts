@@ -538,7 +538,7 @@ export class ScanPage implements OnInit {
       if (isPickup) {
         const huLines = matchedHu?.lines || [];
         const products: ScannedBoxProduct[] = huLines.map((l: any) => ({
-          name: formatProductName(l.productName || l.sku),
+          name: l.name?.trim() ? l.name : formatProductName(l.productName || l.sku),
           quantity: l.quantity,
           unit: l.unit
         }));
@@ -547,7 +547,7 @@ export class ScanPage implements OnInit {
           const allLines = targetDelivery.handlingUnits.flatMap((h: any) => h.lines || []);
           for (const l of allLines) {
             products.push({
-              name: formatProductName(l.productName || l.sku),
+              name: l.name?.trim() ? l.name : formatProductName(l.productName || l.sku),
               quantity: l.quantity,
               unit: l.unit
             });

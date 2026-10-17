@@ -1,5 +1,19 @@
 # 003 — Agente logístico con n8n: tareas
 
+## Novedades de campo — #330 (2026-10-17)
+
+- [x] Código: herramienta explícita y transaccional, muestra sintética derivada de consumo/stock, FEFO y servicios reales de custodia/recepción/reposición, sin reset ni migraciones.
+- [x] Pruebas locales iniciales: tres integraciones PostgreSQL (rollback, conservación e idempotencia, falta de stock) y build de CLI.
+- [x] Inspección de desarrollo configurado y producción; respaldo productivo verificado, sin secretos en Git.
+- [x] Regresión de campo: 98/98 aprobadas; ensayo sobre desarrollo (12 recepciones, rollback) y respaldo local verificado.
+- [x] Datos aplicados en desarrollo: 12 recepciones, 2 rechazos, 2 ajustes y 8 pedidos; repetición sin duplicados, reservas y registros preexistentes conservados.
+- [x] Revalidar regresiones de develop detectadas en CI: revocación de cuentas, simulación, replanificación y pruebas de migraciones (32 casos aprobados entre las repeticiones).
+- [ ] Integración por PR a develop antes de aplicar en producción.
+- [ ] Ejecución real: aplicar en desarrollo/producción y verificar novedades, saldo y repetición sin duplicados.
+- [ ] Registrar resultados finales en `docs/evidence/330-novedades-campo.md`.
+
+Esto prepara datos de demostración; no acredita estadísticas reales ni un despliegue de aplicación.
+
 > Pasos ejecutables de [spec.md](spec.md) y [plan.md](plan.md). Un solo archivo de tareas, según la [plantilla](../_plantilla/task.md). El estado distingue código implementado, pruebas locales y validación real del proveedor; disponer de código no acredita un despliegue ni una corrida E2E. Cada tarea se desarrolla con prueba roja → implementación → prueba verde → commit. Ejecutar comandos desde la raíz del repositorio; no registrar secretos en salidas ni commits.
 
 ## Resumen
