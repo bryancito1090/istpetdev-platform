@@ -40,6 +40,11 @@ internal static class LeanSchema
             e.Property(p => p.Position).HasColumnType(PointType);
             Fk<ServicePoint, Location>(e, p => p.ServingWarehouseLocationId);
         });
+        model.Entity<RoutePlanningDecision>(e =>
+        {
+            e.HasIndex(d => new { d.OrganizationId, d.CreatedByAccountId, d.CreatedAtUtc });
+            Fk<RoutePlanningDecision, Account>(e, d => d.CreatedByAccountId);
+        });
         model.Entity<Location>(e =>
         {
             e.HasIndex(l => new { l.OrganizationId, l.Kind, l.Code }).IsUnique();

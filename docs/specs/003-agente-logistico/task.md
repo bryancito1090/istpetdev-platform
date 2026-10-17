@@ -965,6 +965,70 @@ Estado: código y pruebas locales completados; listo para integración vía Pull
 - Estado: código y pruebas locales completados; Windows/cloud y despliegue no ejecutados.
 - Evidencia: [287-concurrencia](../../evidence/287-concurrencia/README.md).
 
+### Plan visual de rutas y panel del agente — 17-oct-2026
+
+- [x] Analizar landing, rutas, shell, mapa y contratos existentes; preparar el [plan de renovación visual](../002-motor-logistico/plan-renovacion-visual-rutas.md), incluido el panel de `agentRun` y su distinción entre ejecución, LLM, plantilla y fallo.
+- [x] Contrastar con la bóveda: registrar en el estándar visual `05` la evolución solicitada y la diferencia entre el asistente documentado y los cuatro pasos reales del código.
+- Código: sin cambios de aplicación, contratos, workflows ni backend; iconos y renovación visual pendientes de implementar.
+- Pruebas locales: suite web completa, 31 archivos y 173 pruebas aprobadas; auditoría npm superada con 7 avisos cubiertos por excepciones vigentes. Son evidencia del estado anterior al rediseño.
+- Ejecución real local: web y API existentes de este workspace responden; `/health/ready` confirma PostgreSQL disponible y rutas sin token devuelve 401. No se ejecutó una consulta autenticada al agente ni un flujo n8n.
+- Despliegue: no ejecutado. Evidencia y límites del entorno en el [registro de revisión local](../../evidence/renovacion-visual-rutas-2026-10-17.md).
+
+### Ampliación del flujo de selección de rutas — 17-oct-2026
+
+- [x] Preparar el [plan de alternativas excluyentes y varios vehículos](../002-motor-logistico/plan-flujo-seleccion-rutas.md): aceptar una solución completa, descartar solo alternativas del mismo cálculo, tarjetas explicativas y mapa de todos sus vehículos.
+- [x] Identificar brechas reales: confirmación singular, ausencia de elección persistente entre alternativas y necesidad de distinguir vehículos compatibles de vehículos asignados; reutilizar transacciones e idempotencia de #287.
+- [x] Contrastar el cambio de alcance con la bóveda y enlazarlo desde el estándar visual y el plan anterior. Las propuestas del agente deberán usar la misma compuerta de aceptación y preservar lo ya ejecutado.
+- Código y migraciones: pendientes. Pruebas nuevas y ejecución autenticada del flujo: pendientes; no se reutiliza la línea base anterior como validación de este nuevo comportamiento. Despliegue: no ejecutado.
+
+### Implementación del flujo y diseño de rutas — 17-oct-2026
+
+- [x] Código: decisión persistente con snapshot de alternativas, asignación de varias rutas por vehículo y aceptación exclusiva transaccional; reintentos mediante #287 y conflicto ante otra elección o cantidades cambiadas.
+- [x] Código: comparación con mensajes deterministas, vehículos realmente asignados, revisión antes de aceptar, historial de descartadas y recuperación por identificador guardado.
+- [x] Código: mapa con todas las rutas, foco por vehículo, itinerario y encuadre estable ante refrescos; modo claro según la corrección posterior de Bryan, mapa dominante, modal adaptable e iconos Lucide.
+- [x] Código: recorrido progresivo por vehículo desde recogida a cada parada; reproducción, pausa y navegación manual, respetando movimiento reducido y distinguiendo calles de trazado aproximado.
+- [x] Código: publicación transaccional del conjunto con conductor por vehículo; se conserva la publicación individual de rutas independientes.
+- [x] Migración aditiva generada para `RoutePlanningDecision`, grants y limpieza del reset de demo. Aplicada en PostgreSQL local `localhost:15432` / `istpetdev_dev_01`; tabla y registro de migración comprobados por SQL. No aplicada a RDS.
+- [x] Pruebas en el worktree propio: suite .NET completa Integration/Unit/E2E **741/741** con PostgreSQL de Testcontainers; suite web **186/186**, 34 archivos. Compilación de producción web y lint aprobados. Se corrigió un fixture de restauración de stock que dependía del orden de filas; el reintento completo terminó sin fallos.
+- [x] Frontend/backend reiniciados desde el worktree propio: web 4200 responde 200; API live/ready 200 y cálculo sin token 401. Revisión visual con datos sintéticos a 1500 × 1000 y 390 × 844; sin desbordamiento horizontal. Prueba manual con sesión Cognito real pendiente. No hay despliegue externo.
+
+Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` en el worktree propio `/home/bryan/Projects/ISTPETDEV-rutas`, rama `feature/242-rutas-interactivas`. El repositorio de la otra sesión continúa su trabajo en `feature/318-alertas-automaticas-inventario`; los siguientes arranques de 4200/5000 corresponden a este worktree de rutas.
+
+### Ajuste de tarjetas y aprobación — 17-oct-2026
+
+- [x] Plan documentado antes de editar: fila horizontal de rutas registradas, mapa de ancho completo, etiquetas comparativas y aprobación prominente; corregir entrada vacía a «Abrir último cálculo».
+- [x] Código: tarjetas horizontales, mapa de ancho completo, etiquetas multicriterio visibles, aprobación prominente y navegación útil sin cálculo guardado. Selector/conductor encima del mapa, asignación por vehículo, reproducción de todos los tramos y reinicio al volver a seleccionar; vista centrada en las rutas aprobadas solo después del éxito del servidor.
+- [x] Verificación final del ajuste: **199/199 pruebas web**, 34 archivos; compilación de producción y lint aprobados. Navegador sintético: siete tarjetas horizontales, selector/conductor sobre el mapa, recorrido 6/6 con regreso, reinicio al volver a seleccionar y aceptación que deja dos vehículos/rutas y oculta competidoras. La prueba manual con Cognito real sigue pendiente. Backend sin cambios; se reutilizan 741/741 previas. Sin despliegue.
+
+- Ampliación de Bryan durante este ajuste: vehículos/conductor sobre el mapa, recorrido completo automático y ocultación de otras propuestas después de aprobar. Se conserva el descarte transaccional del mismo cálculo y se evita cancelar rutas históricas sin vínculo explícito.
+
+
+### Corrección del descarte persistente — 17-oct-2026
+
+- [x] Código: sustituir el filtro visual y «Ver todas las rutas» por descarte persistido en servidor; excluir `Discarded` del listado normal, conservar historial publicado y todos los vehículos elegidos.
+- [x] Código: identificar lotes nuevos por `proposalBatchId` y lotes anteriores por recibos `CreateRoutePlans`; descartar revisiones competidoras del mismo código canónico dentro de la transacción de aceptación/publicación. Rechazar efectos operativos activos.
+- [x] Pruebas PostgreSQL/API afectadas 12/12; recarga repetida, rechazo de publicar descartada, compatibilidad anterior y rollback. Pruebas web 199/199; build/lint aprobados.
+- [x] Publicador real 3/3 tras ampliar su prueba de éxito. Reparación transaccional real de 8 borradores locales con respaldo; conservadas las dos rutas elegidas y el historial publicado (3 registros visibles, 8 descartados). API reiniciada desde este worktree: live/ready 200; web 200 y ruta sin token 401. Sin migración nueva, reset ni cambios cloud. Cognito manual y despliegue externo pendientes.
+
+
+### Integración solicitada a develop — 17-oct-2026
+
+- [x] Cambios guardados en commit `25aa1b3`; integrado `origin/develop` (`78c87a1`) mediante `cff427a`, sin conflictos textuales. Se conservan alertas automáticas de inventario y documentación del pitch.
+- [x] Suite web posterior a integración **207/207**, 36 archivos; build/lint aprobados. PR [#324](https://github.com/bryancito1090/istpetdev-platform/pull/324) hacia `develop`, milestone del evento y revisor asignado.
+- La primera regresión completa encontró un conflicto en `E2E_04_Revert_and_autonomy_mode_control`: la reversión heredaba el lote original, incluyendo una revisión ya sustituida. Se limita la aceptación/descarte de borradores iniciales mediante `SupersedesRoutePlanId`; replanificar/revertir conserva su propio ciclo operativo y nunca descarta propuestas de incidente. Se amplían las comprobaciones de publicación/reversión y conservación de revisiones operativas.
+- CI y merge del HEAD final en seguimiento en el PR; la suite local anterior se interrumpió para repetir con la corrección. No se hace push directo a ramas permanentes ni se modifica el checkout de la otra sesión.
+
+
+### Ampliación del abastecimiento durante la integración
+
+- [x] Paso 2 simplificado a productos, «Recoger en» y «Entregar en», con encabezado claro, mapa dominante y acción «Comparar y aprobar».
+- [x] Mismo reproductor por paradas desde el abastecimiento: recorrido completo, pausa/reinicio, aproximación explícita y selección inicial de recomendación viable. La elección se conserva al entrar al comparador persistente.
+- [x] Verificación tras los cambios: **209/209 pruebas web**, 36 archivos; build/lint aprobados. Aceptación/replanificación/reversión **28/28** con PostgreSQL, incluida la regresión real del E2E y conservación de borradores operativos. La suite backend completa terminó después con **744/744**; el CI final se sigue en el PR.
+
+- [x] Revisión visual de abastecimiento con componentes reales y datos sintéticos: mapa dominante a 1500 px, recorrido 5/5, móvil de 390 px sin desbordamiento ni superposición, y opción B conservada con dos vehículos al abrir comparador. Ajustada altura móvil tras detectar superposición en la primera captura. Sin ejecución Cognito real ni despliegue.
+
+- [x] Ampliación posterior: bodega de origen, vehículo y conductor en campos separados con iconos Lucide sobre el mapa; selector etiquetado por vehículo y botón «Asignar conductor» de 44 px en escritorio/móvil. Se conservan permisos y confirmación del servidor. Pruebas afectadas **40/40**, 7 archivos; revisión visual a 1500/390 px sin desbordamiento.
+
 ## Issue #317 — endurecimiento de revisión de datasets ante formato .json y errores HTTP 400 — 17-oct-2026
 
 - [x] Endurecimiento en n8n (`Analizar viabilidad` y `Prepare Result` en plantilla y workflow exportado `revision-dataset`):
@@ -982,4 +1046,4 @@ Estado: código y pruebas locales completados; listo para integración vía Pull
   - Cobertura completa: 10/10 pruebas pasando en verde.
 - [ ] PR a develop, validación CI, merge y cierre de #317.
 
-Estado: código y pruebas locales completados; listo para apertura de PR hacia develop.
+Estado: código y pruebas locales completados; listo para integración vía PR a develop.

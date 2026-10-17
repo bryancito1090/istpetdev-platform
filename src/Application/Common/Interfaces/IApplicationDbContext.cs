@@ -20,6 +20,7 @@ public interface IApplicationDbContext
     DbSet<StockBalance> StockBalances { get; }
     DbSet<Consumption> Consumptions { get; }
     DbSet<RoutePlan> RoutePlans { get; }
+    DbSet<RoutePlanningDecision> RoutePlanningDecisions { get; }
     DbSet<RouteStop> RouteStops { get; }
     DbSet<Delivery> Deliveries { get; }
     DbSet<DeliveryLine> DeliveryLines { get; }

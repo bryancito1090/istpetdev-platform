@@ -16,7 +16,7 @@ public class LeanSchemaTests(PostgisContainer postgres) : IClassFixture<PostgisC
         "InventoryMovement", "StockBalance", "Consumption", "RoutePlan", "RouteStop", "Delivery", "DeliveryLine", "Receipt",
         "ReceiptLine", "Evidence", "CustodyEvent", "RiskSnapshot", "Incident", "IdempotencyRecord", "ImportBatch",
         "AgentDecision", "AgentRun", "SimulationRun", "SimulationMetric", "SimulationEvent", "RoadMatrixEdge", "RouteStockReservation", "QrAccessToken",
-        "RouteStopLine", "DeliveryOrder", "DeliveryOrderLine", "WarehouseStockPolicy", "TransferSuggestion",
+        "RouteStopLine", "DeliveryOrder", "DeliveryOrderLine", "WarehouseStockPolicy", "TransferSuggestion", "RoutePlanningDecision",
     ];
 
     [Fact]

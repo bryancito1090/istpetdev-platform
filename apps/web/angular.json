@@ -28,6 +28,11 @@
           },
           "configurations": {
             "production": {
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": { "inline": false }
+              },
               "fileReplacements": [
                 { "replace": "src/shared/config/environment.ts", "with": "src/shared/config/environment.production.ts" }
               ],
