@@ -82,22 +82,22 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E3E8EE] pb-5">
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Novedades de campo</h1>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold text-[#1A2C44] tracking-tight">Novedades de campo</h1>
             @if (!session.canWrite()) {
-              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-[#F8FAFC] text-[#4F5B66] border border-[#E3E8EE]">
                 Solo lectura
               </span>
             }
           </div>
-          <p class="text-sm text-slate-500 mt-1">
+          <p class="text-sm text-[#4F5B66] mt-1">
             Recepciones con rechazos o con diferencias de stock en percha, y pedidos de reposición hechos en el punto de servicio.
           </p>
         </div>
         <button type="button" (click)="loadAll()" [disabled]="receiptsLoading() || ordersLoading()"
-          class="inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+          class="h-9 inline-flex items-center text-xs font-medium px-3.5 rounded-lg border border-[#E3E8EE] bg-white text-[#2D3748] hover:bg-[#F8FAFC] transition-colors shadow-2xs disabled:opacity-50">
           Actualizar
         </button>
       </div>
@@ -106,13 +106,13 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
       <section class="space-y-4" aria-labelledby="titulo-recepciones">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="titulo-recepciones" class="text-lg font-semibold text-slate-900">Recepciones con novedades</h2>
-            <p class="text-xs text-slate-500">Rechazos del receptor y ajustes entre el stock declarado en percha y el saldo del sistema.</p>
+            <h2 id="titulo-recepciones" class="text-base font-bold text-[#1A2C44]">Recepciones con novedades</h2>
+            <p class="text-xs text-[#697386]">Rechazos del receptor y ajustes entre el stock declarado en percha y el saldo del sistema.</p>
           </div>
           @if (pointOptions().length > 0) {
-            <label class="text-xs text-slate-600 flex items-center gap-2">
-              Punto
-              <select class="border border-slate-300 rounded-lg px-2 py-1 text-xs" [ngModel]="pointFilter()" (ngModelChange)="onPointFilter($event)">
+            <label class="text-xs text-[#4F5B66] flex items-center gap-2">
+              <span>Punto</span>
+              <select class="h-9 border border-[#E3E8EE] rounded-lg px-2.5 text-xs text-[#2D3748] bg-white focus:outline-none focus:ring-1 focus:ring-[#00A7C4]" [ngModel]="pointFilter()" (ngModelChange)="onPointFilter($event)">
                 <option value="">Todos</option>
                 @for (p of pointOptions(); track p.id) {
                   <option [value]="p.id">{{ p.code }} — {{ p.name }}</option>
@@ -123,23 +123,27 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
         </div>
 
         @if (receiptsLoading()) {
-          <p class="text-sm text-slate-500">Cargando recepciones…</p>
+          <div class="p-8 text-center text-[#697386] text-sm bg-white border border-[#E3E8EE] rounded-xl shadow-2xs">
+            Cargando recepciones…
+          </div>
         } @else if (receiptsError()) {
-          <div class="p-4 rounded-lg border border-rose-200 bg-rose-50 text-sm text-rose-800 flex items-center justify-between gap-3">
+          <div class="p-4 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-800 flex items-center justify-between gap-3 shadow-2xs">
             <span>{{ receiptsError() }}</span>
-            <button type="button" class="text-xs font-semibold underline" (click)="loadReceipts()">Reintentar</button>
+            <button type="button" class="text-xs font-semibold underline hover:text-rose-900" (click)="loadReceipts()">Reintentar</button>
           </div>
         } @else if (receipts().length === 0) {
-          <p class="text-sm text-slate-500 p-4 rounded-lg border border-dashed border-slate-300">No hay recepciones con rechazos ni ajustes.</p>
+          <div class="p-8 text-center text-sm text-[#697386] rounded-xl border border-dashed border-[#E3E8EE] bg-[#F8FAFC]">
+            No hay recepciones con rechazos ni ajustes.
+          </div>
         } @else {
-          <p class="text-xs text-slate-500">Mostrando {{ receipts().length }} de {{ receiptsTotal() }}.</p>
+          <p class="text-xs text-[#697386]">Mostrando {{ receipts().length }} de {{ receiptsTotal() }}.</p>
           @if (rejectionSummary().length > 0) {
-            <div role="region" class="rounded-xl border border-slate-200 bg-white p-4" aria-labelledby="titulo-resumen-motivos" data-rejection-summary>
-              <h3 id="titulo-resumen-motivos" class="text-sm font-semibold text-slate-900">Líneas rechazadas por motivo</h3>
-              <p class="text-[11px] text-slate-500">Calculado sobre las {{ receipts().length }} recepciones mostradas.</p>
+            <div role="region" class="rounded-xl border border-[#E3E8EE] bg-white p-4 shadow-2xs space-y-2" aria-labelledby="titulo-resumen-motivos" data-rejection-summary>
+              <h3 id="titulo-resumen-motivos" class="text-xs font-bold text-[#1A2C44] uppercase tracking-wide">Líneas rechazadas por motivo</h3>
+              <p class="text-[11px] text-[#697386]">Calculado sobre las {{ receipts().length }} recepciones mostradas.</p>
               <ul class="mt-2 flex flex-wrap gap-2">
                 @for (s of rejectionSummary(); track s.reason) {
-                  <li class="text-xs px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-800" [attr.data-reason]="s.reason">
+                  <li class="text-xs px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 font-medium" [attr.data-reason]="s.reason">
                     <span class="font-semibold">{{ s.label }}</span>:
                     {{ s.lines }} {{ s.lines === 1 ? 'línea' : 'líneas' }} · {{ s.units }} {{ s.units === 1 ? 'unidad' : 'unidades' }}
                   </li>
@@ -148,11 +152,11 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
             </div>
           }
           @for (r of receipts(); track r.receiptId) {
-            <article class="rounded-xl border border-slate-200 bg-white p-4 space-y-3" [attr.data-receipt]="r.receiptId">
-              <div class="flex flex-wrap items-center gap-2 justify-between">
+            <article class="rounded-xl border border-[#E3E8EE] bg-white p-4 shadow-2xs space-y-3" [attr.data-receipt]="r.receiptId">
+              <div class="flex flex-wrap items-center gap-2 justify-between border-b border-[#F1F3F5] pb-3">
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">{{ r.servicePointCode }} — {{ r.servicePointName }}</p>
-                  <p class="text-xs text-slate-500">
+                  <p class="text-sm font-bold text-[#1A2C44]">{{ r.servicePointCode }} — {{ r.servicePointName }}</p>
+                  <p class="text-xs text-[#697386] mt-0.5">
                     Entrega {{ r.deliveryCode }} · registrada por {{ r.actorName || 'cuenta desconocida' }} ·
                     servidor {{ r.receivedAtServer | date: 'dd/MM/yyyy HH:mm' }}
                     @if (r.occurredAtDevice) { · dispositivo {{ r.occurredAtDevice | date: 'dd/MM/yyyy HH:mm' }} }
@@ -160,47 +164,47 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
                 </div>
                 <div class="flex gap-2">
                   @if (r.hasRejections) {
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">Rechazo</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">Rechazo</span>
                   }
                   @if (r.hasAdjustments) {
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">Ajuste de percha</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#B76E00] border border-[#FFE2B5]">Ajuste de percha</span>
                   }
                 </div>
               </div>
 
               @if (r.estimatedBacktrack; as b) {
-                <p class="text-xs text-slate-700" data-backtrack
+                <p class="text-xs text-[#2D3748] font-medium" data-backtrack
                   title="Viaje de ida y vuelta bodega de origen → punto para reponer lo rechazado. No se suma al costo de la ruta original.">
                   {{ backtrackLabel(b) }}
                   @if (b.isApproximate) {
-                    <span class="text-amber-800">(aproximado: distancia en línea recta)</span>
+                    <span class="text-[#B76E00] font-normal">(aproximado: distancia en línea recta)</span>
                   }
                 </p>
               }
 
-              <div class="overflow-x-auto">
+              <div class="overflow-x-auto border border-[#E3E8EE] rounded-lg">
                 <table class="w-full text-xs">
-                  <thead class="text-slate-500 text-left">
+                  <thead class="bg-[#F8FAFC] text-[10px] text-[#697386] uppercase border-b border-[#E3E8EE] font-mono font-semibold text-left">
                     <tr>
-                      <th class="py-1 pr-3">Producto / lote</th>
-                      <th class="py-1 pr-3 text-right">Aceptado</th>
-                      <th class="py-1 pr-3 text-right">Rechazado</th>
-                      <th class="py-1 pr-3">Motivo</th>
-                      <th class="py-1 pr-3 text-right">Percha declarada</th>
-                      <th class="py-1">Ajuste</th>
+                      <th class="py-2 px-3">Producto / lote</th>
+                      <th class="py-2 px-3 text-right">Aceptado</th>
+                      <th class="py-2 px-3 text-right">Rechazado</th>
+                      <th class="py-2 px-3">Motivo</th>
+                      <th class="py-2 px-3 text-right">Percha declarada</th>
+                      <th class="py-2 px-3">Ajuste</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody class="divide-y divide-[#F1F3F5] text-[#2D3748]">
                     @for (l of r.lines; track l.receiptLineId) {
-                      <tr class="border-t border-slate-100">
-                        <td class="py-1 pr-3">{{ l.sku }} {{ l.productName }} <span class="text-slate-400">({{ l.lotCode }})</span></td>
-                        <td class="py-1 pr-3 text-right">{{ l.quantityAccepted }}</td>
-                        <td class="py-1 pr-3 text-right" [class.text-rose-700]="l.quantityRejected > 0">{{ l.quantityRejected }}</td>
-                        <td class="py-1 pr-3">{{ l.quantityRejected > 0 ? reasonLabel(l.rejectionReason) : '—' }}</td>
-                        <td class="py-1 pr-3 text-right">{{ l.remainingDeclared ?? '—' }}</td>
-                        <td class="py-1" [title]="l.adjustmentReason ?? ''">
+                      <tr class="hover:bg-[#F8FAFC]/50">
+                        <td class="py-2 px-3 font-medium text-[#1A2C44]">{{ l.sku }} {{ l.productName }} <span class="text-[#697386] font-mono font-normal">({{ l.lotCode }})</span></td>
+                        <td class="py-2 px-3 text-right font-mono font-semibold text-[#00875A]">{{ l.quantityAccepted }}</td>
+                        <td class="py-2 px-3 text-right font-mono font-bold" [class.text-rose-600]="l.quantityRejected > 0">{{ l.quantityRejected }}</td>
+                        <td class="py-2 px-3">{{ l.quantityRejected > 0 ? reasonLabel(l.rejectionReason) : '—' }}</td>
+                        <td class="py-2 px-3 text-right font-mono">{{ l.remainingDeclared ?? '—' }}</td>
+                        <td class="py-2 px-3" [title]="l.adjustmentReason ?? ''">
                           @if (l.adjustmentQuantity != null) {
-                            <span [class.text-amber-800]="l.adjustmentQuantity < 0" [class.text-sky-800]="l.adjustmentQuantity > 0">
+                            <span [class.text-[#B76E00]]="l.adjustmentQuantity < 0" [class.text-sky-800]="l.adjustmentQuantity > 0" class="font-medium">
                               {{ l.adjustmentQuantity > 0 ? '+' : '' }}{{ l.adjustmentQuantity }}
                               {{ l.adjustmentQuantity < 0 ? '(consumo derivado)' : '(conteo mayor que el saldo)' }}
                             </span>
@@ -212,26 +216,26 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
                 </table>
               </div>
 
-              <div class="text-xs text-slate-600">
-                <p class="font-semibold">Evidencia</p>
+              <div class="text-xs text-[#4F5B66] pt-1">
+                <p class="font-semibold text-[#1A2C44]">Evidencia</p>
                 @if (r.evidence.length === 0) {
-                  <p class="text-slate-500">Sin evidencia registrada.</p>
+                  <p class="text-[#697386]">Sin evidencia registrada.</p>
                 } @else {
-                  <ul class="list-disc pl-5">
+                  <ul class="list-disc pl-5 mt-1 space-y-0.5">
                     @for (e of r.evidence; track e.evidenceId) {
                       <li class="flex items-center gap-1.5 py-0.5">
-                        <span class="font-semibold capitalize">{{ e.kind === 'photo' ? 'Foto' : e.kind === 'signature' ? 'Firma' : e.kind }}:</span>
+                        <span class="font-semibold capitalize text-[#1A2C44]">{{ e.kind === 'photo' ? 'Foto' : e.kind === 'signature' ? 'Firma' : e.kind }}:</span>
                         @if (e.status === 'Confirmed') {
-                          <span class="text-emerald-700 font-bold">✓ Confirmada en almacenamiento S3</span>
+                          <span class="text-[#00875A] font-semibold">✓ Confirmada en almacenamiento S3</span>
                         } @else {
-                          <span class="text-amber-700 font-medium">⏳ Pendiente de subida</span>
+                          <span class="text-[#B76E00] font-medium">⏳ Pendiente de subida</span>
                         }
-                        @if (e.byteSize) { · <span class="text-slate-500">{{ e.byteSize }} bytes</span> }
-                        @if (e.sha256) { · <span class="font-mono text-slate-500" [title]="e.sha256">SHA-256: {{ e.sha256.slice(0, 12) }}…</span> }
+                        @if (e.byteSize) { · <span class="text-[#697386]">{{ e.byteSize }} bytes</span> }
+                        @if (e.sha256) { · <span class="font-mono text-[#697386]" [title]="e.sha256">SHA-256: {{ e.sha256.slice(0, 12) }}…</span> }
                       </li>
                     }
                   </ul>
-                  <p class="text-slate-500 mt-1 text-[11px]">Archivos privados en S3 (cifrados con integridad SHA-256 verificada por el servidor).</p>
+                  <p class="text-[#697386] mt-1 text-[11px]">Archivos privados en S3 (cifrados con integridad SHA-256 verificada por el servidor).</p>
                 }
               </div>
             </article>
@@ -241,66 +245,96 @@ export function formatBacktrack(b: EstimatedBacktrackDto): string {
 
       <!-- Pedidos de reposición en campo -->
       <section class="space-y-4" aria-labelledby="titulo-pedidos">
-        <div>
-          <h2 id="titulo-pedidos" class="text-lg font-semibold text-slate-900">Pedidos de reposición en campo</h2>
-          <p class="text-xs text-slate-500">Lo que el receptor pidió para la próxima visita. Se planifican desde Rutas.</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 id="titulo-pedidos" class="text-base font-semibold text-[#1A2C44]">Pedidos de reposición en campo</h2>
+            <p class="text-xs text-[#697386]">Requerimientos registrados por el receptor para la próxima visita. Se planifican desde Rutas.</p>
+          </div>
         </div>
 
         @if (actionMessage()) {
-          <div class="p-3 rounded-lg border text-sm"
-            [class.border-rose-200]="actionIsError()" [class.bg-rose-50]="actionIsError()" [class.text-rose-800]="actionIsError()"
-            [class.border-emerald-200]="!actionIsError()" [class.bg-emerald-50]="!actionIsError()" [class.text-emerald-800]="!actionIsError()">
+          <div class="p-3.5 rounded-md border text-xs font-medium"
+            [class.border-[#DF1B41]/30]="actionIsError()" [class.bg-[#DF1B41]/10]="actionIsError()" [class.text-[#DF1B41]]="actionIsError()"
+            [class.border-[#00D924]/30]="!actionIsError()" [class.bg-[#00D924]/10]="!actionIsError()" [class.text-[#0E6245]]="!actionIsError()">
             {{ actionMessage() }}
           </div>
         }
 
         @if (ordersLoading()) {
-          <p class="text-sm text-slate-500">Cargando pedidos…</p>
+          <div class="p-8 text-center bg-white rounded-md border border-[#E3E8EE] text-[#697386] text-xs">
+            Cargando pedidos…
+          </div>
         } @else if (ordersError()) {
-          <div class="p-4 rounded-lg border border-rose-200 bg-rose-50 text-sm text-rose-800 flex items-center justify-between gap-3">
+          <div class="p-4 rounded-md border border-[#DF1B41]/30 bg-[#DF1B41]/10 text-xs text-[#DF1B41] flex items-center justify-between gap-3">
             <span>{{ ordersError() }}</span>
-            <button type="button" class="text-xs font-semibold underline" (click)="loadOrders()">Reintentar</button>
+            <button type="button" class="text-xs font-medium underline hover:text-[#DF1B41]/80 transition-colors" (click)="loadOrders()">Reintentar</button>
           </div>
         } @else if (orders().length === 0) {
-          <p class="text-sm text-slate-500 p-4 rounded-lg border border-dashed border-slate-300">No hay pedidos de reposición hechos en campo.</p>
+          <div class="p-8 text-center bg-white rounded-md border border-dashed border-[#E3E8EE] text-xs text-[#697386]">
+            No hay pedidos de reposición hechos en campo.
+          </div>
         } @else {
-          <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table class="w-full text-xs">
-              <thead class="text-slate-500 text-left bg-slate-50">
+          <div class="overflow-x-auto rounded-md border border-[#E3E8EE] bg-white shadow-sm">
+            <table class="w-full text-xs text-left border-collapse">
+              <thead class="text-[11px] font-semibold uppercase tracking-wider text-[#697386] bg-[#F8FAFC] border-b border-[#E3E8EE]">
                 <tr>
-                  <th class="py-2 px-3">Pedido</th>
-                  <th class="py-2 px-3">Destino</th>
-                  <th class="py-2 px-3">Productos</th>
-                  <th class="py-2 px-3">Requerido</th>
-                  <th class="py-2 px-3">Estado</th>
-                  @if (session.canWrite()) { <th class="py-2 px-3">Acción</th> }
+                  <th class="py-2.5 px-3.5">Pedido</th>
+                  <th class="py-2.5 px-3.5">Destino</th>
+                  <th class="py-2.5 px-3.5">Productos</th>
+                  <th class="py-2.5 px-3.5">Requerido</th>
+                  <th class="py-2.5 px-3.5">Estado</th>
+                  @if (session.canWrite()) { <th class="py-2.5 px-3.5 text-right">Acción</th> }
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="divide-y divide-[#E3E8EE]">
                 @for (o of orders(); track o.id) {
-                  <tr class="border-t border-slate-100" [attr.data-order]="o.id">
-                    <td class="py-2 px-3 font-mono">{{ o.orderNumber }}</td>
-                    <td class="py-2 px-3">{{ o.destinationCode }} — {{ o.destinationName }}</td>
-                    <td class="py-2 px-3">
+                  <tr class="hover:bg-[#F8FAFC]/60 transition-colors" [attr.data-order]="o.id">
+                    <td class="py-2.5 px-3.5 font-mono text-[#1A2C44] font-medium">{{ o.orderNumber }}</td>
+                    <td class="py-2.5 px-3.5 text-[#2D3748]">
+                      <span class="font-medium text-[#1A2C44]">{{ o.destinationCode }}</span>
+                      <span class="text-[#697386]"> — {{ o.destinationName }}</span>
+                    </td>
+                    <td class="py-2.5 px-3.5">
                       @for (l of o.lines; track l.id) {
-                        <div>{{ l.sku }} {{ l.productName }}: {{ l.requestedQuantity }}</div>
+                        <div class="text-[#2D3748]">
+                          <span class="font-mono text-[#697386]">{{ l.sku }}</span>
+                          <span class="font-medium text-[#1A2C44]"> {{ l.productName }}</span>: 
+                          <span class="font-mono">{{ l.requestedQuantity }}</span>
+                        </div>
                       }
                     </td>
-                    <td class="py-2 px-3">{{ o.requiredDateUtc | date: 'dd/MM/yyyy' }}</td>
-                    <td class="py-2 px-3">{{ statusLabel(o.status) }}</td>
+                    <td class="py-2.5 px-3.5 font-mono text-[#697386]">{{ o.requiredDateUtc | date: 'dd/MM/yyyy' }}</td>
+                    <td class="py-2.5 px-3.5">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border"
+                        [class.bg-[#F8FAFC]]="o.status === 'Pending'"
+                        [class.text-[#697386]]="o.status === 'Pending'"
+                        [class.border-[#E3E8EE]]="o.status === 'Pending'"
+                        [class.bg-[#00D924]/10]="o.status === 'Delivered' || o.status === 'Planned'"
+                        [class.text-[#0E6245]]="o.status === 'Delivered' || o.status === 'Planned'"
+                        [class.border-[#00D924]/30]="o.status === 'Delivered' || o.status === 'Planned'"
+                        [class.bg-[#DF1B41]/10]="o.status === 'Cancelled'"
+                        [class.text-[#DF1B41]]="o.status === 'Cancelled'"
+                        [class.border-[#DF1B41]/30]="o.status === 'Cancelled'">
+                        {{ statusLabel(o.status) }}
+                      </span>
+                    </td>
                     @if (session.canWrite()) {
-                      <td class="py-2 px-3">
+                      <td class="py-2.5 px-3.5 text-right">
                         @if (o.status === 'Pending') {
                           @if (confirmingId() === o.id) {
-                            <button type="button" class="text-xs font-semibold text-rose-700 mr-2" [disabled]="cancellingId() === o.id"
-                              (click)="cancel(o)">{{ cancellingId() === o.id ? 'Cancelando…' : 'Confirmar cancelación' }}</button>
-                            <button type="button" class="text-xs text-slate-600" [disabled]="cancellingId() === o.id"
-                              (click)="confirmingId.set(null)">No</button>
+                            <div class="inline-flex items-center gap-2 justify-end">
+                              <button type="button" class="text-xs font-medium text-[#DF1B41] hover:underline transition-colors" [disabled]="cancellingId() === o.id"
+                                (click)="cancel(o)">{{ cancellingId() === o.id ? 'Cancelando…' : 'Confirmar cancelación' }}</button>
+                              <button type="button" class="text-xs text-[#697386] hover:text-[#1A2C44] transition-colors" [disabled]="cancellingId() === o.id"
+                                (click)="confirmingId.set(null)">No</button>
+                            </div>
                           } @else {
-                            <button type="button" class="text-xs font-semibold text-slate-700 underline" [disabled]="cancellingId() !== null"
+                            <button type="button" class="text-xs font-medium text-[#697386] hover:text-[#DF1B41] underline transition-colors" [disabled]="cancellingId() !== null"
                               (click)="confirmingId.set(o.id)">Cancelar pedido</button>
                           }
-                        } @else { — }
+                        } @else {
+                          <span class="text-[#697386]">—</span>
+                        }
                       </td>
                     }
                   </tr>
