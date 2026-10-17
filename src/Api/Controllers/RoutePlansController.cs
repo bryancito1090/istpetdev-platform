@@ -1093,6 +1093,7 @@ public sealed class RoutePlansController(
         var singleOption = new
         {
             optionId = "1",
+            sourcingOptionId = opt.OptionId,
             proposalId,
             revision = 1,
             status,
@@ -1129,8 +1130,11 @@ public sealed class RoutePlansController(
             })
         };
 
+        // #276: conservar la propuesta operativa y exponer el contrato comparativo de #241.
+        var comparison = await sourcingService.QueryOrderSourcingAsync(req.OrderIds, ct);
         var responsePayload = new
         {
+            comparison,
             proposalId,
             revision = 1,
             status,

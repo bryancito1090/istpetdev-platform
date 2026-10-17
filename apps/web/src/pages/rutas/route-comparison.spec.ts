@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMPARISON_ROWS,
-  DEMO_QUITO_FUEL_REFERENCE,
-  DEMO_QUITO_PITCH_OPTIONS,
   formatCriticalCell,
   formatDriverCell,
   formatFuelCell,
@@ -75,30 +73,30 @@ describe('Comparación A/B/C en el Asistente de Rutas (#242)', () => {
     risks: null
   };
 
-  describe('Regla: Celdas sin dato muestran «sin dato», NUNCA 0', () => {
-    it('muestra «sin dato» en vez de 0 para km ausente o inválido', () => {
+  describe('Regla: ausencia y cero son distintos', () => {
+    it('distingue ausencia de cero explícito para km ausente o inválido', () => {
       expect(formatKmCell(emptyDataOption)).toBe('sin dato');
-      expect(formatKmCell({ ...emptyDataOption, totalDistanceKm: 0 })).toBe('sin dato');
+      expect(formatKmCell({ ...emptyDataOption, totalDistanceKm: 0 })).toBe('0 km');
       expect(formatKmCell(optPropiaSample)).toBe('48 km');
     });
 
-    it('muestra «sin dato» en vez de 0 para combustible, o «incluido en la tarifa» si es contratada', () => {
+    it('distingue ausencia de cero explícito para combustible, o «incluido en la tarifa» si es contratada', () => {
       expect(formatFuelCell(emptyDataOption)).toBe('sin dato');
-      expect(formatFuelCell({ ...emptyDataOption, fuelCost: 0 })).toBe('sin dato');
+      expect(formatFuelCell({ ...emptyDataOption, fuelCost: 0 })).toBe('$ 0.00');
       expect(formatFuelCell(optPropiaSample)).toBe('$ 14.20');
       expect(formatFuelCell(optContratadaSample)).toBe('incluido en la tarifa');
     });
 
-    it('muestra «sin dato» en vez de 0 para desgaste, o «incluido en la tarifa» si es contratada', () => {
+    it('distingue ausencia de cero explícito para desgaste, o «incluido en la tarifa» si es contratada', () => {
       expect(formatWearCell(emptyDataOption)).toBe('sin dato');
-      expect(formatWearCell({ ...emptyDataOption, wearCost: 0 })).toBe('sin dato');
+      expect(formatWearCell({ ...emptyDataOption, wearCost: 0 })).toBe('$ 0.00');
       expect(formatWearCell(optPropiaSample)).toBe('$ 8.40');
       expect(formatWearCell(optContratadaSample)).toBe('incluido en la tarifa');
     });
 
-    it('muestra «sin dato» en vez de 0 para conductor, o «incluido en la tarifa» si es contratada', () => {
+    it('distingue ausencia de cero explícito para conductor, o «incluido en la tarifa» si es contratada', () => {
       expect(formatDriverCell(emptyDataOption)).toBe('sin dato');
-      expect(formatDriverCell({ ...emptyDataOption, driverCost: 0 })).toBe('sin dato');
+      expect(formatDriverCell({ ...emptyDataOption, driverCost: 0 })).toBe('$ 0.00');
       expect(formatDriverCell(optPropiaSample)).toBe('$ 24.00');
       expect(formatDriverCell(optContratadaSample)).toBe('incluido en la tarifa');
     });
@@ -110,15 +108,15 @@ describe('Comparación A/B/C en el Asistente de Rutas (#242)', () => {
       expect(formatHelpersCell({ ...optPropiaSample, helpersCount: 0, helpersCost: 0 })).toBe('Solo conductor (0 ayud.)');
     });
 
-    it('muestra «sin dato» en vez de 0 para merma esperada', () => {
+    it('distingue ausencia de cero explícito para merma esperada', () => {
       expect(formatShrinkageCell(emptyDataOption)).toBe('sin dato');
-      expect(formatShrinkageCell({ ...emptyDataOption, expectedShrinkageCost: 0 })).toBe('sin dato');
+      expect(formatShrinkageCell({ ...emptyDataOption, expectedShrinkageCost: 0 })).toBe('$ 0.00');
       expect(formatShrinkageCell(optPropiaSample)).toBe('$ 6.50');
     });
 
-    it('muestra «sin dato» en vez de 0 para costo total', () => {
+    it('distingue ausencia de cero explícito para costo total', () => {
       expect(formatTotalCostCell(emptyDataOption)).toBe('sin dato');
-      expect(formatTotalCostCell({ ...emptyDataOption, totalCost: 0 })).toBe('sin dato');
+      expect(formatTotalCostCell({ ...emptyDataOption, totalCost: 0 })).toBe('$ 0.00');
       expect(formatTotalCostCell(optPropiaSample)).toBe('$ 65.10');
     });
 
@@ -143,50 +141,15 @@ describe('Comparación A/B/C en el Asistente de Rutas (#242)', () => {
     });
   });
 
-  describe('Dataset Pitch Demo (PR #239 / #200)', () => {
-    it('incluye 3 opciones (A, B, C) con la opción B recomendada y justificada', () => {
-      expect(DEMO_QUITO_PITCH_OPTIONS.length).toBe(3);
-      const optA = DEMO_QUITO_PITCH_OPTIONS.find(o => o.optionId === 'A')!;
-      const optB = DEMO_QUITO_PITCH_OPTIONS.find(o => o.optionId === 'B')!;
-      const optC = DEMO_QUITO_PITCH_OPTIONS.find(o => o.optionId === 'C')!;
-
-      expect(optA).toBeDefined();
-      expect(optB).toBeDefined();
-      expect(optC).toBeDefined();
-
-      expect(optB.isRecommended).toBe(true);
-      expect(optA.isRecommended).toBe(false);
-      expect(optC.isRecommended).toBe(false);
-      expect(optB.justification).toContain('cumple los 3 hospitales críticos');
-    });
-
-    it('incluye referencia fechada y fuente de combustible', () => {
-      expect(DEMO_QUITO_FUEL_REFERENCE.pricePerGallon).toBeGreaterThan(0);
-      expect(DEMO_QUITO_FUEL_REFERENCE.date).toBe('16-oct-2026');
-      expect(DEMO_QUITO_FUEL_REFERENCE.source).toContain('Petroecuador');
-    });
-
-    it('contiene las 10 filas comparativas obligatorias requeridas por el issue #242', () => {
-      const keys = COMPARISON_ROWS.map(r => r.key);
-      expect(keys).toEqual([
-        'km',
-        'combustible',
-        'desgaste',
-        'conductor',
-        'ayudantes',
-        'merma',
-        'totalCost',
-        'criticos',
-        'pendientes',
-        'riesgos'
-      ]);
-      expect(keys.length).toBe(10);
+  describe('Filas comparativas', () => {
+    it('incluye el desglose de costos, tarifa y métricas de servicio', () => {
+      expect(COMPARISON_ROWS.map(row => row.key)).toEqual(['km', 'combustible', 'desgaste', 'conductor', 'ayudantes', 'merma', 'tarifa', 'totalCost', 'criticos', 'pendientes', 'riesgos']);
     });
   });
 
   describe('Criterio de Aceptación: Si la API no trae opción C, muestra solo A y B sin romperse', () => {
     it('formatea correctamente cuando solo existen opciones A y B', () => {
-      const onlyAB = DEMO_QUITO_PITCH_OPTIONS.slice(0, 2);
+      const onlyAB = [optPropiaSample, { ...optPropiaSample, optionId: 'B' }];
       expect(onlyAB.length).toBe(2);
 
       for (const row of COMPARISON_ROWS) {

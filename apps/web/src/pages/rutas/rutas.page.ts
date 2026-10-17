@@ -12,6 +12,7 @@ import {
   RouteDriverAssignmentDto,
   DeliveryOrderDto,
   RouteSuggestionOptionDto,
+  SourcingComparisonDto,
   RouteCandidateStop,
   ServicePoint,
   AgentRunViewDto,
@@ -20,17 +21,18 @@ import {
   DriverOptionDto,
   WarehouseStockDto,
   PendingLoadLineDto,
+  SavedRouteComparisonRunDto,
   describePendingLines
 } from '@shared/api';
 import { MapViewComponent, MapMarker, MapPolyline } from '@shared/ui';
 import { forkJoin } from 'rxjs';
 import {
   RouteOptionComparisonData,
-  FuelReferencePrice,
+  mapSourcingComparison,
+  mapRouteSuggestion,
   ComparisonRowDefinition,
   COMPARISON_ROWS,
-  DEMO_QUITO_PITCH_OPTIONS,
-  DEMO_QUITO_FUEL_REFERENCE
+  isValidSavedRouteComparisonRun
 } from './route-comparison.model';
 import {
   computeRouteTrackingSummary,
@@ -1825,7 +1827,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         </span>
                       </div>
                       <p class="text-xs text-slate-500 mt-0.5">
-                        Planificación · viernes 17-oct · Bodega Sur · Opciones de flota propia frente a operador contratado
+                        Comparación calculada para los pedidos seleccionados · costos estimados
                       </p>
                     </div>
 
@@ -1840,24 +1842,34 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         <span>{{ isProjectorMode() ? '⛶ Modo Normal' : '⛶ Modo Proyector (3 m)' }}</span>
                       </button>
 
-                      <button
-                        type="button"
-                        (click)="useMockABC.set(!useMockABC())"
-                        class="px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer"
-                        [ngClass]="useMockABC() ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'"
-                        title="Alternar entre datos de demostración para el Pitch (demo-quito-planificacion) y datos en vivo de la API">
-                        {{ useMockABC() ? '⚡ Demo Pitch: ON' : 'API en vivo' }}
-                      </button>
+                      <div class="flex items-center gap-1" aria-label="Origen de la comparación">
+                        <button type="button" (click)="selectLiveComparison()" class="px-2 py-1 text-[11px] font-semibold rounded-lg border" [ngClass]="comparisonMode() === 'live' ? 'bg-primary-100 text-primary-900 border-primary-300' : 'bg-slate-100 text-slate-700 border-slate-200'">En vivo</button>
+                        <button type="button" (click)="loadSavedComparison()" [disabled]="savedLoading()" class="px-2 py-1 text-[11px] font-semibold rounded-lg border" [ngClass]="comparisonMode() === 'saved' ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'">{{ savedLoading() ? 'Cargando corrida…' : 'Corrida guardada' }}</button>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- Línea con el precio del combustible usado: valor, fecha y fuente (#242) -->
+                  @if (comparisonMode() === 'saved' && savedError()) {
+                    <div role="status" class="p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-950">{{ savedError() }}</div>
+                  }
+                  @if (savedLoading()) {
+                    <p role="status" class="p-3 text-sm text-slate-600">Cargando corrida guardada…</p>
+                  }
+                  @if (comparisonMode() === 'live' && comparisonOptions().length === 0) {
+                    <div role="status" class="p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-950">
+                      <p class="font-bold">Sin opciones calculadas para esta selección</p>
+                      <p>{{ routeOptionsMessage() || 'La API no proporcionó un motivo.' }}</p>
+                    </div>
+                  }
+
+                  @if (comparisonOptions().length > 0) {
+                  <!-- Referencia fechada recibida del contrato de abastecimiento. -->
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200/90 text-amber-950 px-3.5 py-2.5 rounded-xl shadow-xs">
                     <div class="flex items-center gap-2 font-medium flex-wrap">
                       <span class="text-base">⛽</span>
                       <span>
                         <strong>Combustible de referencia:</strong>
-                        USD {{ fuelReference().pricePerGallon.toFixed(2) }}/galón
+                        {{ fuelReference().pricePerGallon == null ? 'sin dato' : fuelReference().pricePerGallon?.toFixed(2) + ' ' + fuelReference().unit }}
                         <span class="text-slate-400 mx-1">|</span>
                         <span class="text-amber-800">Vigencia: {{ fuelReference().date }}</span>
                         <span class="text-slate-400 mx-1">|</span>
@@ -1871,9 +1883,14 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     }
                   </div>
 
+                  }
+                  @if (comparisonOptions().length > 0) {
                   <!-- TABLA COMPARATIVA A/B/C (#242) -->
                   <div class="border border-slate-200 rounded-xl overflow-x-auto shadow-xs bg-white">
                     <table class="w-full border-collapse text-left" [ngClass]="isProjectorMode() ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'">
+                      @if (comparisonMode() === 'saved' && savedRun(); as run) {
+                        <caption class="p-3 font-bold bg-amber-100 text-amber-950">Corrida guardada · demo-quito-planificacion · commit {{ run.metadata.commit }} · {{ run.metadata.capturedAtUtc }}</caption>
+                      }
                       <thead class="bg-slate-100 border-b border-slate-200">
                         <tr>
                           <th class="p-3 font-extrabold text-slate-700 uppercase tracking-wider text-[11px] sm:text-xs w-1/4">
@@ -1942,7 +1959,24 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     </table>
                   </div>
 
+                  }
+
                   <!-- TARJETA DE JUSTIFICACIÓN DE LA RECOMENDADA (#242) -->
+                  @if (comparisonMode() === 'live') {
+                    @if (!sourcingComparison()) {
+                      <p role="status">La API no entregó el contrato comparativo de abastecimiento.</p>
+                    } @else if (!comparisonOptions().some(isContractedComparison)) {
+                      <p role="status">Operador contratado: no disponible en esta respuesta. Revisa la configuración y la selección.</p>
+                    }
+                    @for (opt of comparisonOptions(); track opt.optionId) {
+                      @for (note of opt.notes; track $index) {
+                        <p class="text-xs text-slate-600">{{ opt.optionId }} · {{ note }}</p>
+                      }
+                    }
+                    @if (selectedComparisonOption()?.category === 'Contratada') {
+                      <p role="status">La alternativa contratada se muestra para comparación. La confirmación actual requiere un vehículo propio; no se publicará C como ruta propia.</p>
+                    }
+                  }
                   @if (recommendedOption(); as rec) {
                     <div class="p-3.5 sm:p-4 bg-emerald-50/90 border-2 border-emerald-400 rounded-xl space-y-1.5 shadow-xs">
                       <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -1955,17 +1989,19 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                         </span>
                       </div>
                       <p class="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">
-                        «{{ rec.justification || 'Opción con el balance óptimo entre costo operativo y garantía de entrega a tiempo para clientes críticos.' }}»
+                        {{ rec.justification || 'Sin justificación recibida del motor.' }}
                       </p>
                     </div>
                   }
 
                   <!-- BARRA DE ACCIONES: Publicar recomendada, Elegir otra, Ver en mapa (#242) -->
+                  @if (comparisonMode() === 'live') {
                   <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                     <div class="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         (click)="publishRecommended()"
+                        [disabled]="comparisonMode() === 'saved' || !recommendedOption() || actionLoading() || recommendedOption()?.category === 'Contratada'"
                         class="px-4 py-2.5 text-xs sm:text-sm font-black rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
                         <span>★ Publicar {{ recommendedOption()?.optionId ? 'Opción ' + recommendedOption()?.optionId : 'Recomendada' }}</span>
                       </button>
@@ -1980,6 +2016,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       <button
                         type="button"
                         (click)="viewOnMap(selectedOptionId())"
+                        [disabled]="actionLoading() || selectedComparisonOption()?.category === 'Contratada'"
                         class="px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-xl border border-primary-300 bg-primary-50 text-primary-800 hover:bg-primary-100 transition flex items-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4 text-primary-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -2045,6 +2082,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                       }
                     </div>
                   </details>
+                  }
                 </div>
               }
 
@@ -2153,7 +2191,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                   <button
                     type="button"
                     (click)="advanceWizardStep()"
-                    [disabled]="selectedOrderIds().size === 0 || actionLoading()"
+                    [disabled]="selectedOrderIds().size === 0 || actionLoading() || (wizardStep() > 1 && (comparisonMode() === 'saved' || !routeOptions().length || (wizardStep() === 3 && selectedComparisonOption()?.category === 'Contratada')))"
                     class="px-4 py-2 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50">
                     Siguiente →
                   </button>
@@ -2557,55 +2595,40 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly selectedVehicleId = signal<string | null>(null);
 
   // Comparación A/B/C (#242)
-  readonly useMockABC = signal<boolean>(true);
+  readonly comparisonMode = signal<'live' | 'saved'>('live');
+  readonly savedRun = signal<SavedRouteComparisonRunDto | null>(null);
+  readonly savedLoading = signal(false);
+  readonly savedError = signal<string | null>(null);
+  readonly routeOptionsMessage = signal<string | null>(null);
   readonly isProjectorMode = signal<boolean>(false);
-  readonly fuelReference = signal<FuelReferencePrice>(DEMO_QUITO_FUEL_REFERENCE);
+  readonly sourcingComparison = signal<SourcingComparisonDto | null>(null);
+  readonly fuelReference = computed(() => {
+    const price = this.comparisonMode() === 'saved'
+      ? this.savedRun()?.response.comparison?.fuelPrice
+      : this.sourcingComparison()?.fuelPrice;
+    return {
+      pricePerGallon: price?.value,
+      date: price?.date || 'sin dato',
+      source: price?.source || 'sin dato',
+      unit: price?.unit || 'USD/gal'
+    };
+  });
   readonly comparisonRows: ComparisonRowDefinition[] = COMPARISON_ROWS;
+  readonly isContractedComparison = (option: RouteOptionComparisonData) => option.category === 'Contratada';
 
   readonly comparisonOptions = computed<RouteOptionComparisonData[]>(() => {
-    const apiOptions = this.routeOptions();
-    if (this.useMockABC() || apiOptions.length === 0) {
-      return DEMO_QUITO_PITCH_OPTIONS;
+    if (this.comparisonMode() === 'saved') {
+      const comparison = this.savedRun()?.response.comparison;
+      return comparison ? mapSourcingComparison(comparison) : [];
     }
-
-    return apiOptions.map((opt, index) => {
-      const optionLetter = opt.optionId || (index === 0 ? 'A' : index === 1 ? 'B' : 'C');
-      const isC = optionLetter === 'C' || opt.title?.toLowerCase().includes('contratad') || opt.description?.toLowerCase().includes('operador externo');
-      const isB = optionLetter === 'B' || opt.title?.toLowerCase().includes('crítico') || opt.title?.toLowerCase().includes('escalonad');
-      const evalData = opt.evaluation;
-      const bd = (opt as any).costBreakdown;
-
-      return {
-        optionId: optionLetter,
-        title: opt.title || `Opción ${optionLetter}`,
-        category: isC ? 'Contratada' : 'Propia',
-        tagline: isC ? 'operador externo' : (isB ? 'críticos 1ro' : 'más barata'),
-        isRecommended: opt.isRecommended ?? (optionLetter === 'B'),
-        justification: (opt as any).justification || (opt as any).recommendationJustification || (opt.isRecommended ? 'Opción recomendada por optimización de costos y cumplimiento de ventanas horarias.' : undefined),
-        totalDistanceKm: evalData?.totalDistanceKm,
-        fuelCost: isC ? null : (bd?.fuelCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.30 * 100) / 100 : null)),
-        fuelCostIncluded: isC,
-        wearCost: isC ? null : (bd?.wearCost ?? (evalData?.totalDistanceKm ? Math.round(evalData.totalDistanceKm * 0.17 * 100) / 100 : null)),
-        wearCostIncluded: isC,
-        driverCost: isC ? null : (bd?.driverCost ?? (evalData?.totalDurationMinutes ? Math.round((evalData.totalDurationMinutes / 60) * 6 * 100) / 100 : null)),
-        driverCostIncluded: isC,
-        helpersCount: isC ? null : (bd?.helpersCount ?? 1),
-        helpersCost: isC ? null : (bd?.helpersCost ?? 12.0),
-        helpersIncluded: isC,
-        expectedShrinkageCost: bd?.expectedShrinkageCost ?? 3.50,
-        totalCost: evalData?.totalCost ?? bd?.totalCost,
-        criticalTotal: (opt as any).criticalTotal ?? 3,
-        criticalOnTime: (opt as any).criticalOnTime ?? (optionLetter === 'A' ? 2 : 3),
-        pendingOrdersCount: (opt as any).pendingOrdersCount ?? (optionLetter === 'A' ? 1 : 0),
-        risks: (opt as any).risks ?? (isC ? 'respuesta en 4 h' : (optionLetter === 'A' ? 'hora pico' : '—')),
-        operatorResponseTime: isC ? '4 h' : null
-      };
-    });
+    const apiOptions = this.routeOptions();
+    const comparison = this.sourcingComparison();
+    return comparison ? mapSourcingComparison(comparison) : apiOptions.map(mapRouteSuggestion);
   });
 
   readonly recommendedOption = computed<RouteOptionComparisonData | undefined>(() => {
     const list = this.comparisonOptions();
-    return list.find(o => o.isRecommended) || list[0];
+    return list.find(o => o.isRecommended);
   });
 
   readonly selectedComparisonOption = computed<RouteOptionComparisonData | undefined>(() => {
@@ -3034,6 +3057,7 @@ export class RutasPage implements OnInit, OnDestroy {
   // ========================================================
 
   openOrderRoutingModal(): void {
+    this.resetRouteSuggestion();
     this.isWizardOpen.set(true);
     this.wizardStep.set(1);
     this.selectedOrderIds.set(new Set());
@@ -3105,9 +3129,63 @@ export class RutasPage implements OnInit, OnDestroy {
     });
   }
 
+  private resetRouteSuggestion(): void {
+    this.comparisonMode.set('live');
+    this.routeOptions.set([]);
+    this.sourcingComparison.set(null);
+    this.routeOptionsMessage.set(null);
+    this.selectedOptionId.set('');
+    this.editableStops.set([]);
+    this.currentEvaluation.set(null);
+    this.availableVehicleMatches.set([]);
+    this.selectedVehicleId.set(null);
+    this.wizardMarkers.set([]);
+    this.wizardPolylines.set([]);
+  }
+
+  selectLiveComparison(): void {
+    this.comparisonMode.set('live');
+    this.savedRun.set(null);
+    this.savedError.set(null);
+    this.selectedOptionId.set('');
+  }
+
+  loadSavedComparison(): void {
+    this.comparisonMode.set('saved');
+    this.savedRun.set(null);
+    this.savedError.set(null);
+    this.selectedOptionId.set('');
+    this.routeOptions.set([]);
+    this.sourcingComparison.set(null);
+    this.editableStops.set([]);
+    this.currentEvaluation.set(null);
+    this.availableVehicleMatches.set([]);
+    this.selectedVehicleId.set(null);
+    this.wizardMarkers.set([]);
+    this.wizardPolylines.set([]);
+    this.savedLoading.set(true);
+    this.apiService.getSavedRouteComparisonRun().subscribe({
+      next: run => {
+        this.savedLoading.set(false);
+        if (!isValidSavedRouteComparisonRun(run)) {
+          this.savedError.set('La corrida guardada existe, pero sus metadatos o su respuesta no cumplen el formato esperado.');
+          return;
+        }
+        this.savedRun.set(run);
+        this.selectedOptionId.set(run.response.comparison?.recommendedOptionId ?? run.response.comparison?.options[0]?.optionId ?? '');
+      },
+      error: () => {
+        this.savedLoading.set(false);
+        this.savedError.set('No hay una corrida guardada disponible. Genérala con scripts/demo/generar-corrida-abc.mjs y vuelve a intentar.');
+      }
+    });
+  }
+
   advanceWizardStep(): void {
+    if (this.actionLoading()) return;
     const current = this.wizardStep();
     if (current === 1) {
+      this.resetRouteSuggestion();
       this.actionLoading.set(true);
       const orderIds = Array.from(this.selectedOrderIds());
 
@@ -3116,16 +3194,21 @@ export class RutasPage implements OnInit, OnDestroy {
           this.actionLoading.set(false);
           const opts = res?.options || [];
           this.routeOptions.set(opts);
+          this.sourcingComparison.set(opts.length ? res.comparison ?? null : null);
+          this.routeOptionsMessage.set(opts.length ? null : res?.message || 'La API no proporcionó un motivo.');
 
           if (opts.length > 0) {
-            this.selectedOptionId.set(opts[0].optionId);
+            this.selectedOptionId.set(opts[0].sourcingOptionId ?? opts[0].optionId);
             this.onOptionSelected(opts[0]);
+            if (this.selectedComparisonOption()?.category === 'Contratada') this.selectComparisonOption(this.selectedOptionId());
           }
 
-          this.wizardStep.set(2);
+          this.wizardStep.set(opts.length ? 2 : 3);
         },
         error: (err) => {
           this.actionLoading.set(false);
+          this.routeOptionsMessage.set(err?.error?.message || 'No se pudo consultar la API. Revisa la conexión y vuelve a intentar.');
+          this.wizardStep.set(3);
           this.feedbackMessage.set({
             type: 'error',
             text: err?.error?.message || 'Error al calcular opciones de abastecimiento.'
@@ -3133,14 +3216,10 @@ export class RutasPage implements OnInit, OnDestroy {
         }
       });
     } else if (current === 2) {
+      if (this.comparisonMode() === 'saved' || !this.routeOptions().length) return;
       this.wizardStep.set(3);
-      const rec = this.recommendedOption();
-      if (rec) {
-        this.selectedOptionId.set(rec.optionId);
-        const match = this.routeOptions().find(o => o.optionId === rec.optionId);
-        if (match) this.onOptionSelected(match);
-      }
     } else if (current === 3) {
+      if (!this.selectedComparisonOption() || this.selectedComparisonOption()?.category === 'Contratada' || this.comparisonMode() === 'saved' || !this.routeOptions().some(o => (o.sourcingOptionId ?? o.optionId) === this.selectedOptionId())) return;
       this.wizardStep.set(4);
     }
   }
@@ -3151,26 +3230,63 @@ export class RutasPage implements OnInit, OnDestroy {
     this.availableVehicleMatches.set(opt.vehicleMatches || []);
 
     const firstMatch = opt.vehicleMatches?.find(v => v.isMatch);
-    if (firstMatch) {
-      this.selectedVehicleId.set(firstMatch.vehicleId);
-    }
+    this.selectedVehicleId.set(firstMatch?.vehicleId ?? null);
 
     this.updateWizardMap(opt.stops, opt.evaluation.coordinates, opt.evaluation.coordinatesSource);
   }
 
   selectComparisonOption(optionId: string): void {
-    this.selectedOptionId.set(optionId);
-    const match = this.routeOptions().find(o => o.optionId === optionId);
-    if (match) {
-      this.onOptionSelected(match);
+    if (this.comparisonMode() === 'saved') {
+      if (this.comparisonOptions().some(option => option.optionId === optionId)) this.selectedOptionId.set(optionId);
+      return;
     }
+    if (this.actionLoading()) return;
+    this.selectedOptionId.set(optionId);
+    this.feedbackMessage.set(null);
+    const match = this.routeOptions().find(o => (o.sourcingOptionId ?? o.optionId) === optionId);
+    if (match && this.selectedComparisonOption()?.category !== 'Contratada') {
+      this.onOptionSelected(match);
+      return;
+    }
+    this.editableStops.set([]);
+    this.currentEvaluation.set(null);
+    this.selectedVehicleId.set(null);
+    this.availableVehicleMatches.set([]);
+    this.wizardMarkers.set([]);
+    this.wizardPolylines.set([]);
+    if (this.selectedComparisonOption()?.category === 'Contratada') return;
+    if (!this.comparisonOptions().some(o => o.optionId === optionId)) return;
+    this.routeOptions.set([]);
+    this.actionLoading.set(true);
+    this.apiService.suggestRoutes(Array.from(this.selectedOrderIds()), undefined, optionId).subscribe({
+      next: res => {
+        this.actionLoading.set(false);
+        const selected = res.options.find(o => (o.sourcingOptionId ?? o.optionId) === optionId);
+        if (!selected) {
+          this.feedbackMessage.set({ type: 'error', text: 'La API no devolvió la alternativa seleccionada. Vuelve a calcular.' });
+          return;
+        }
+        this.routeOptions.set(res.options);
+        this.sourcingComparison.set(res.comparison ?? null);
+        this.onOptionSelected(selected);
+      },
+      error: () => {
+        this.actionLoading.set(false);
+        this.feedbackMessage.set({ type: 'error', text: 'No se pudo preparar la alternativa seleccionada. Vuelve a intentar.' });
+      }
+    });
   }
 
   publishRecommended(): void {
+    if (this.comparisonMode() === 'saved') return;
     const rec = this.recommendedOption();
-    if (!rec) return;
+    if (!rec || this.actionLoading() || rec.category === 'Contratada') return;
     this.selectedOptionId.set(rec.optionId);
-    const match = this.routeOptions().find(o => o.optionId === rec.optionId);
+    const match = this.routeOptions().find(o => (o.sourcingOptionId ?? o.optionId) === rec.optionId);
+    if (!match) {
+      this.selectComparisonOption(rec.optionId);
+      return;
+    }
     if (match) {
       this.onOptionSelected(match);
     }
@@ -3186,6 +3302,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   selectOtherOption(): void {
+    if (this.comparisonMode() === 'saved') return;
     const opts = this.comparisonOptions();
     if (opts.length <= 1) return;
     const currentId = this.selectedOptionId();
@@ -3195,6 +3312,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   viewOnMap(optionId?: string): void {
+    if (this.comparisonMode() === 'saved') return;
     const id = optionId || this.selectedOptionId();
     this.selectComparisonOption(id);
     if (this.isProjectorMode()) {
@@ -3206,6 +3324,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   moveStop(index: number, direction: -1 | 1): void {
+    if (this.comparisonMode() === 'saved') return;
     const stops = [...this.editableStops()];
     const target = index + direction;
     if (target < 0 || target >= stops.length) return;
@@ -3226,13 +3345,15 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   restoreOptimalOrder(): void {
-    const opt = this.routeOptions().find(o => o.optionId === this.selectedOptionId());
+    if (this.comparisonMode() === 'saved') return;
+    const opt = this.routeOptions().find(o => (o.sourcingOptionId ?? o.optionId) === this.selectedOptionId());
     if (opt) {
       this.onOptionSelected(opt);
     }
   }
 
   confirmAndSavePlan(): void {
+    if (this.comparisonMode() === 'saved' || this.selectedComparisonOption()?.category === 'Contratada') return;
     const lineError = this.lineQuantityError();
     if (lineError) {
       this.feedbackMessage.set({ type: 'error', text: lineError });
