@@ -80,6 +80,10 @@ public sealed class DemoResetService(ApplicationDbContext db, IImportService imp
         // Se conservan SimulationRuns y SimulationMetrics completados para spec 005
         await db.DeliveryOrderLines.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.DeliveryOrders.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        await db.TransferSuggestions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
+        // WarehouseStockPolicies se eliminan porque dependen de Location y Product (que se recrean desde el fixture)
+        // y representan políticas calculadas o rebalanceos dinámicos no canónicos en el fixture.
+        await db.WarehouseStockPolicies.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.IdempotencyRecords.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.StockBalances.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
         await db.Consumptions.Where(x => x.OrganizationId == DemoOrganization.Id).ExecuteDeleteAsync(ct);
