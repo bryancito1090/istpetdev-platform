@@ -12,6 +12,7 @@ public static class LogisticsCostCalculator
 
     /// <summary>
     /// Calcula el costo total de transporte y retorna el valor redondeado a 2 decimales.
+    /// Garantiza paridad exacta con ComputeBreakdown: Total = Peajes + KmCost + HourCost.
     /// </summary>
     public static decimal CalculateCost(
         decimal distanceKm,
@@ -20,12 +21,16 @@ public static class LogisticsCostCalculator
         decimal costPerHour,
         decimal tollsCost = 0m)
     {
-        var kmCost = Math.Max(0m, distanceKm) * Math.Max(0m, costPerKm);
-        var hours = Math.Max(0m, durationMinutes) / 60m;
-        var hourCost = hours * Math.Max(0m, costPerHour);
-        var total = Math.Max(0m, tollsCost) + kmCost + hourCost;
+        var cleanDist = Math.Max(0m, distanceKm);
+        var cleanMin = Math.Max(0m, durationMinutes);
+        var cleanCostKm = Math.Max(0m, costPerKm);
+        var cleanCostH = Math.Max(0m, costPerHour);
+        var cleanTolls = Math.Round(Math.Max(0m, tollsCost), 2, MidpointRounding.AwayFromZero);
 
-        return Math.Round(total, 2, MidpointRounding.AwayFromZero);
+        var kmCost = Math.Round(cleanDist * cleanCostKm, 2, MidpointRounding.AwayFromZero);
+        var hourCost = Math.Round((cleanMin / 60m) * cleanCostH, 2, MidpointRounding.AwayFromZero);
+
+        return cleanTolls + kmCost + hourCost;
     }
 
     /// <summary>
@@ -37,18 +42,23 @@ public static class LogisticsCostCalculator
         decimal costPerKm,
         decimal costPerHour,
         decimal tollsCost = 0m,
-        string currency = DefaultCurrency)
+        string currency = DefaultCurrency,
+        decimal? drivingMinutes = null,
+        decimal? serviceMinutes = null,
+        decimal? waitMinutes = null,
+        string scope = "operational_transport_estimate",
+        string costStatus = "estimated")
     {
         var cleanDist = Math.Max(0m, distanceKm);
         var cleanMin = Math.Max(0m, durationMinutes);
         var cleanCostKm = Math.Max(0m, costPerKm);
         var cleanCostH = Math.Max(0m, costPerHour);
-        var cleanTolls = Math.Max(0m, tollsCost);
+        var cleanTolls = Math.Round(Math.Max(0m, tollsCost), 2, MidpointRounding.AwayFromZero);
 
         var kmCost = Math.Round(cleanDist * cleanCostKm, 2, MidpointRounding.AwayFromZero);
         var hours = Math.Round(cleanMin / 60m, 4);
         var hourCost = Math.Round((cleanMin / 60m) * cleanCostH, 2, MidpointRounding.AwayFromZero);
-        var total = Math.Round(cleanTolls + (cleanDist * cleanCostKm) + ((cleanMin / 60m) * cleanCostH), 2, MidpointRounding.AwayFromZero);
+        var total = cleanTolls + kmCost + hourCost;
 
         return new CostBreakdown(
             DistanceKm: cleanDist,
@@ -61,7 +71,12 @@ public static class LogisticsCostCalculator
             TollsCost: cleanTolls,
             TotalCost: total,
             Currency: currency,
-            CalculatorVersion: Version
+            CalculatorVersion: Version,
+            DrivingMinutes: drivingMinutes,
+            ServiceMinutes: serviceMinutes,
+            WaitMinutes: waitMinutes,
+            Scope: scope,
+            CostStatus: costStatus
         );
     }
 }
@@ -77,5 +92,10 @@ public sealed record CostBreakdown(
     decimal TollsCost,
     decimal TotalCost,
     string Currency,
-    string CalculatorVersion
+    string CalculatorVersion,
+    decimal? DrivingMinutes = null,
+    decimal? ServiceMinutes = null,
+    decimal? WaitMinutes = null,
+    string Scope = "operational_transport_estimate",
+    string CostStatus = "estimated"
 );

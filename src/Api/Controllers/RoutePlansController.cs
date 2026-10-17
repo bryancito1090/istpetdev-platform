@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IstpetDev.Api.Authentication;
 using IstpetDev.Application.Common.Interfaces;
 using IstpetDev.Application.Logistics;
@@ -9,6 +10,7 @@ using IstpetDev.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Api.Controllers;
 
@@ -25,8 +27,9 @@ public sealed class RoutePlansController(
     IVehicleMatcher vehicleMatcher,
     IRouteEvaluator routeEvaluator,
     IEmergencyPlanner emergencyPlanner,
-    Microsoft.Extensions.Options.IOptions<LogisticsOptions>? logisticsOptions = null) : ControllerBase
+    IOptions<LogisticsOptions>? logisticsOptions = null) : ControllerBase
 {
+    private readonly LogisticsOptions opts = logisticsOptions?.Value ?? new LogisticsOptions();
     private static readonly ConcurrentDictionary<string, object> ProposalCache = new();
     // FR-23: Lectura para el panel 005 (no crea propuestas)
     [HttpGet]
@@ -110,6 +113,7 @@ public sealed class RoutePlansController(
         var responseItems = items.Select(p =>
         {
             var planDrivers = driversByPlan.GetValueOrDefault(p.Id, new());
+            ExtractReconciledInfo(p.InputJson, out var recCost, out var recExec, out var recStatus);
             return new
             {
                 routePlanId = p.Id,
@@ -125,10 +129,14 @@ public sealed class RoutePlansController(
                 totalDistanceKm = p.TotalKm ?? 0m,
                 minutes = p.TotalMinutes ?? 0m,
                 totalDurationMinutes = p.TotalMinutes ?? 0m,
-                cost = p.TotalCost ?? 0m,
+                cost = p.TotalCost,
+                totalCost = p.TotalCost,
+                costStatus = recStatus ?? (p.TotalCost.HasValue ? "estimated" : "unknown"),
+                reconciledCost = recCost,
+                reconciledExecution = recExec,
                 plannedStartUtc = p.PlannedStartUtc,
                 stopsCount = stopsCountDict.GetValueOrDefault(p.Id, 0),
-                hasApproximations = false
+                hasApproximations = ExtractHasApproximations(p.InputJson)
             };
         });
 
@@ -198,6 +206,8 @@ public sealed class RoutePlansController(
         string? polyline = null;
         List<double[]>? coordinates = null;
         IReadOnlyList<Guid> orderIds = [];
+        bool hasApproximations = ExtractHasApproximations(plan.InputJson);
+        JsonElement? estimateSnapshot = null;
         try
         {
             if (!string.IsNullOrWhiteSpace(plan.InputJson))
@@ -205,6 +215,10 @@ public sealed class RoutePlansController(
                 using var doc = JsonDocument.Parse(plan.InputJson);
                 var root = doc.RootElement;
                 orderIds = OrderStopLoads.OrderIds(root);
+                if (TryGetPropertyCaseInsensitive(root, "estimateSnapshot", out var snapElem) && snapElem.ValueKind == JsonValueKind.Object)
+                {
+                    estimateSnapshot = snapElem.Clone();
+                }
                 if (root.TryGetProperty("polyline", out var polyElem))
                     polyline = polyElem.GetString();
                 if (root.TryGetProperty("coordinates", out var coordsElem) && coordsElem.ValueKind == JsonValueKind.Array)
@@ -510,6 +524,10 @@ public sealed class RoutePlansController(
             }
         }
 
+        ExtractReconciledInfo(plan.InputJson, out var recCost, out var recExec, out var recStatus);
+        var historicalTrips = await LoadHistoricalReconciledTripsAsync(ct);
+        var uncertainty = CostUncertaintyService.EvaluateTemporalValidation(plan.TotalCost ?? 0m, historicalTrips);
+
         return Ok(new
         {
             routePlanId = plan.Id,
@@ -529,7 +547,14 @@ public sealed class RoutePlansController(
             totalDistanceKm = plan.TotalKm ?? 0m,
             totalMinutes = plan.TotalMinutes,
             totalDurationMinutes = plan.TotalMinutes ?? 0m,
+            cost = plan.TotalCost,
             totalCost = plan.TotalCost,
+            costStatus = recStatus ?? (plan.TotalCost.HasValue ? "estimated" : "unknown"),
+            reconciledCost = recCost,
+            reconciledExecution = recExec,
+            hasApproximations,
+            estimateSnapshot,
+            costUncertainty = uncertainty,
             plannedStartUtc = plan.PlannedStartUtc,
             plannedEndUtc = plan.PlannedEndUtc ?? plan.PlannedStartUtc.AddMinutes((double)(plan.TotalMinutes ?? 0m)),
             polyline = polyline ?? "",
@@ -597,7 +622,10 @@ public sealed class RoutePlansController(
                         loads = s.Loads,
                         trafficFactorApplied = s.TrafficFactorApplied
                     }),
-                    legs = r.Legs
+                    legs = r.Legs,
+                    hasApproximations = r.HasApproximations,
+                    costStatus = "estimated",
+                    calculatorVersion = LogisticsCostCalculator.Version
                 }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
             };
             db.RoutePlans.Add(plan);
@@ -1036,17 +1064,18 @@ public sealed class RoutePlansController(
                     reason = "capacidad_parcial"
                 }).ToList();
 
-            var uncertainty = CostUncertaintyService.GetUncalibratedResult();
+            var historicalTrips = await LoadHistoricalReconciledTripsAsync(ct);
             var proposalId = Guid.NewGuid();
             if (sOpt.CarrierType == "Contratada" || sOpt.OptionId.Equals("C", StringComparison.OrdinalIgnoreCase))
             {
                 var carrier = logisticsOptions?.Value?.ContractedCarrier;
                 var evalContracted = await routeEvaluator.EvaluateSequenceAsync(candidates, null, plannedStartUtc, ct);
                 decimal costC = sOpt.TotalCost > 0m ? sOpt.TotalCost : (evalContracted.TotalCost > 0m ? evalContracted.TotalCost : 35.00m);
+                var carrierUncertainty = CostUncertaintyService.EvaluateTemporalValidation(costC, historicalTrips);
                 var carrierBreakdown = new
                 {
                     currency = "USD",
-                    calculatorVersion = "1.0",
+                    calculatorVersion = LogisticsCostCalculator.Version,
                     kmCost = 0m,
                     hourCost = 0m,
                     fuel = 0m,
@@ -1089,8 +1118,8 @@ public sealed class RoutePlansController(
                     evalContracted with { TotalCost = costC, IsValid = true },
                     carrierBreakdown,
                     null,
-                    uncertainty,
-                    uncertainty,
+                    carrierUncertainty,
+                    carrierUncertainty,
                     candidates,
                     sourcingLinesResult,
                     Array.Empty<object>(),
@@ -1122,27 +1151,35 @@ public sealed class RoutePlansController(
                     status = "Feasible";
                 }
 
-                decimal vehicleCostKm = bestVehicleMatch?.Vehicle.CostPerKm ?? 0.45m;
+                decimal vehicleCostKm = bestVehicleMatch?.Vehicle.CostPerKm ?? opts.DefaultCostPerKm;
                 var scb = eval.ServiceCostBreakdown;
+                var canonicalBreakdown = LogisticsCostCalculator.ComputeBreakdown(
+                    eval.TotalDistanceKm,
+                    eval.TotalDurationMinutes,
+                    vehicleCostKm,
+                    opts.CostPerHour,
+                    tollsCost: 0m
+                );
+                var optionUncertainty = CostUncertaintyService.EvaluateTemporalValidation(bestVehicleMatch?.EstimatedTotalCost ?? canonicalBreakdown.TotalCost, historicalTrips);
                 var costBreakdown = new
                 {
                     currency = "USD",
-                    calculatorVersion = "1.0",
-                    kmCost = eval.TotalDistanceKm * vehicleCostKm,
-                    hourCost = (eval.TotalDurationMinutes / 60m) * 6.0m,
+                    calculatorVersion = LogisticsCostCalculator.Version,
+                    kmCost = canonicalBreakdown.KmCost,
+                    hourCost = canonicalBreakdown.HourCost,
                     fuel = scb?.Fuel ?? 0m,
                     fuelCost = scb?.Fuel ?? 0m,
                     wear = scb?.Wear ?? 0m,
                     wearCost = scb?.Wear ?? 0m,
-                    driver = scb?.Driver ?? Math.Round((eval.TotalDurationMinutes / 60m) * 6.0m, 2),
-                    driverCost = scb?.Driver ?? Math.Round((eval.TotalDurationMinutes / 60m) * 6.0m, 2),
+                    driver = scb?.Driver ?? canonicalBreakdown.HourCost,
+                    driverCost = scb?.Driver ?? canonicalBreakdown.HourCost,
                     helpers = scb?.Helpers ?? 0m,
                     helpersCost = scb?.Helpers ?? 0m,
                     helpersCount = scb?.HelperCount ?? 0,
                     shrink = scb?.Shrink ?? 0m,
                     expectedShrinkageCost = scb?.Shrink ?? 0m,
                     carrierTariff = 0m,
-                    totalCost = eval.TotalCost,
+                    totalCost = eval.TotalCost > 0m ? eval.TotalCost : canonicalBreakdown.TotalCost,
                     fuelPrice = scb?.FuelPrice ?? new ServiceFuelPrice(null, null, null),
                     notes = scb?.Notes ?? (IReadOnlyList<string>)[]
                 };
@@ -1195,8 +1232,8 @@ public sealed class RoutePlansController(
                     sOpt.Score,
                     "Propia",
                     null,
-                    eval.TotalCost,
-                    eval.TotalCost,
+                    eval.TotalCost > 0m ? eval.TotalCost : canonicalBreakdown.TotalCost,
+                    eval.TotalCost > 0m ? eval.TotalCost : canonicalBreakdown.TotalCost,
                     eval.TotalDistanceKm,
                     eval.TotalDurationMinutes,
                     selectedVehicleObj,
@@ -1204,8 +1241,8 @@ public sealed class RoutePlansController(
                     eval,
                     costBreakdown,
                     scb,
-                    uncertainty,
-                    uncertainty,
+                    optionUncertainty,
+                    optionUncertainty,
                     candidates,
                     sourcingLinesResult,
                     pendingDemands,
@@ -1393,6 +1430,7 @@ public sealed class RoutePlansController(
                     status = existingByProposal.Status,
                     vehicleCode = vehicle.Code,
                     proposalId = req.ProposalId.Value,
+                    totalCost = existingByProposal.TotalCost,
                     message = "Propuesta ya confirmada previamente."
                 });
             }
@@ -1590,6 +1628,14 @@ public sealed class RoutePlansController(
 
         var revision = existingMaxRevision + 1;
 
+        var rateKm = vehicle.CostPerKm ?? opts.DefaultCostPerKm;
+        var canonicalBreakdown = LogisticsCostCalculator.ComputeBreakdown(
+            eval.TotalDistanceKm, eval.TotalDurationMinutes, rateKm, opts.CostPerHour);
+        var serverTotalCost = eval.TotalCost > 0m ? eval.TotalCost : canonicalBreakdown.TotalCost;
+
+        var confirmHistoricalTrips = await LoadHistoricalReconciledTripsAsync(ct);
+        var confirmUncertainty = CostUncertaintyService.EvaluateTemporalValidation(serverTotalCost, confirmHistoricalTrips);
+
         var plan = new RoutePlan
         {
             OrganizationId = DemoOrganization.Id,
@@ -1602,7 +1648,7 @@ public sealed class RoutePlansController(
             PlannedEndUtc = startUtc.AddMinutes((double)eval.TotalDurationMinutes),
             TotalKm = eval.TotalDistanceKm,
             TotalMinutes = eval.TotalDurationMinutes,
-            TotalCost = eval.TotalCost > 0 ? eval.TotalCost : req.TotalCost,
+            TotalCost = serverTotalCost,
             AlgorithmVersion = "order-based-routing-1.0",
             InputJson = JsonSerializer.Serialize(new
             {
@@ -1615,6 +1661,25 @@ public sealed class RoutePlansController(
                     .Select(kv => new { deliveryOrderLineId = kv.Key, plannedQuantity = kv.Value.PlannedQuantity }),
                 polyline = req.Polyline,
                 coordinates = eval.Coordinates.Count > 0 ? eval.Coordinates : req.Coordinates,
+                hasApproximations = eval.CoordinatesSource != "osrm",
+                estimateSnapshot = new
+                {
+                    estimateId = Guid.NewGuid(),
+                    frozenAtUtc = now,
+                    scope = "operational_transport_estimate",
+                    costStatus = "estimated",
+                    calculatorVersion = LogisticsCostCalculator.Version,
+                    vehicleId = vehicle.Id,
+                    vehicleCode = vehicle.Code,
+                    costPerKm = rateKm,
+                    costPerHour = opts.CostPerHour,
+                    totalDistanceKm = eval.TotalDistanceKm,
+                    totalDurationMinutes = eval.TotalDurationMinutes,
+                    totalCost = serverTotalCost,
+                    costBreakdown = canonicalBreakdown,
+                    serviceCostBreakdown = eval.ServiceCostBreakdown,
+                    costUncertainty = confirmUncertainty
+                },
                 stops = stopsToEvaluate.Select(s => new
                 {
                     sequence = s.Sequence,
@@ -1714,6 +1779,9 @@ public sealed class RoutePlansController(
             loadVolume = totalRecalculatedDeliveryVolume,
             maxWeight = vehicle.MaxWeight,
             maxVolume = vehicle.MaxVolume,
+            totalCost = plan.TotalCost,
+            costBreakdown = canonicalBreakdown,
+            costUncertainty = confirmUncertainty,
             partial = lines.Any(l => l.PendingQuantity > 0),
             lines = lines.Select(l => new
             {
@@ -1792,6 +1860,12 @@ public sealed class RoutePlansController(
         var revision = existingMaxRevision + 1;
         var now = DateTime.UtcNow;
 
+        var rateKm = vehicle?.CostPerKm ?? opts.DefaultCostPerKm;
+        var manualBreakdown = LogisticsCostCalculator.ComputeBreakdown(
+            req.TotalDistanceKm, req.TotalDurationMinutes, rateKm, opts.CostPerHour);
+        var manualHistoricalTrips = await LoadHistoricalReconciledTripsAsync(ct);
+        var manualUncertainty = CostUncertaintyService.EvaluateTemporalValidation(manualBreakdown.TotalCost, manualHistoricalTrips);
+
         var plan = new RoutePlan
         {
             OrganizationId = DemoOrganization.Id,
@@ -1804,13 +1878,31 @@ public sealed class RoutePlansController(
             PlannedEndUtc = (req.PlannedStartUtc ?? now).AddMinutes((double)req.TotalDurationMinutes),
             TotalKm = req.TotalDistanceKm,
             TotalMinutes = req.TotalDurationMinutes,
-            TotalCost = Math.Round(req.TotalDistanceKm * 0.45m, 2),
+            TotalCost = manualBreakdown.TotalCost,
             AlgorithmVersion = "interactive-osrm-1.0",
             InputJson = JsonSerializer.Serialize(new
             {
                 manual = true,
                 polyline = req.Polyline,
                 coordinates = req.Coordinates,
+                hasApproximations = string.IsNullOrWhiteSpace(req.Polyline),
+                estimateSnapshot = new
+                {
+                    estimateId = Guid.NewGuid(),
+                    frozenAtUtc = now,
+                    scope = "operational_transport_estimate",
+                    costStatus = "estimated",
+                    calculatorVersion = LogisticsCostCalculator.Version,
+                    vehicleId = vehicleId,
+                    vehicleCode = vehicleCode,
+                    costPerKm = rateKm,
+                    costPerHour = opts.CostPerHour,
+                    totalDistanceKm = req.TotalDistanceKm,
+                    totalDurationMinutes = req.TotalDurationMinutes,
+                    totalCost = manualBreakdown.TotalCost,
+                    costBreakdown = manualBreakdown,
+                    costUncertainty = manualUncertainty
+                },
                 stops = req.Stops.Select(s => new
                 {
                     sequence = s.Sequence,
@@ -1870,6 +1962,8 @@ public sealed class RoutePlansController(
             code = plan.Code,
             revision = plan.Revision,
             status = plan.Status,
+            totalCost = plan.TotalCost,
+            costBreakdown = manualBreakdown,
             routes = new[]
             {
                 new
@@ -1878,10 +1972,459 @@ public sealed class RoutePlansController(
                     routePlanId = plan.Id,
                     code = plan.Code,
                     revision = plan.Revision,
-                    status = plan.Status
+                    status = plan.Status,
+                    totalCost = plan.TotalCost,
+                    costBreakdown = manualBreakdown
                 }
             }
         });
+    }
+
+    private static bool ExtractHasApproximations(string? inputJson)
+    {
+        if (string.IsNullOrWhiteSpace(inputJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(inputJson);
+            var root = doc.RootElement;
+
+            if (TryGetPropertyCaseInsensitive(root, "hasApproximations", out var hasApproxProp))
+            {
+                if (hasApproxProp.ValueKind == JsonValueKind.True) return true;
+                if (hasApproxProp.ValueKind == JsonValueKind.String &&
+                    bool.TryParse(hasApproxProp.GetString(), out var b) && b) return true;
+            }
+
+            if (TryGetPropertyCaseInsensitive(root, "coordinatesSource", out var coordSrcProp))
+            {
+                if (coordSrcProp.ValueKind == JsonValueKind.String &&
+                    string.Equals(coordSrcProp.GetString(), "approximate", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            if (TryGetPropertyCaseInsensitive(root, "legs", out var legsProp) && legsProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var legElem in legsProp.EnumerateArray())
+                {
+                    if (TryGetPropertyCaseInsensitive(legElem, "source", out var srcProp))
+                    {
+                        if (srcProp.ValueKind == JsonValueKind.String &&
+                            string.Equals(srcProp.GetString(), "Approximation", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                        if (srcProp.ValueKind == JsonValueKind.Number && srcProp.TryGetInt32(out var srcInt) && srcInt == 1)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetPropertyCaseInsensitive(JsonElement element, string name, out JsonElement property)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            property = default;
+            return false;
+        }
+
+        if (element.TryGetProperty(name, out property))
+        {
+            return true;
+        }
+
+        foreach (var prop in element.EnumerateObject())
+        {
+            if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                property = prop.Value;
+                return true;
+            }
+        }
+
+        property = default;
+        return false;
+    }
+
+    [HttpPost("{id:guid}/reconcile-cost")]
+    [Authorize(Roles = Roles.Planning + "," + Roles.Automatizacion)]
+    public async Task<IActionResult> ReconcileCost(
+        [FromRoute] Guid id,
+        [FromBody] ReconcileRouteCostRequest req,
+        CancellationToken ct = default)
+    {
+        var plan = await db.RoutePlans.FirstOrDefaultAsync(p => p.Id == id && p.OrganizationId == DemoOrganization.Id, ct);
+        if (plan == null) return NotFound();
+
+        var missingComponents = new List<string>(req.MissingComponents ?? Array.Empty<string>());
+        var reconciliationNotes = new List<string>();
+
+        // 1. Combustible consumido: FuelLitersConsumed * FuelPricePerLiter (redondeado a 2 decimales).
+        // Si se envía FuelPurchasedTotalUsd sin FuelLitersConsumed, NO se asume como consumido: añade "fuel_consumed_unmeasured_only_purchase_provided" a missingComponents.
+        decimal? fuelCost = null;
+        if (req.FuelLitersConsumed.HasValue && req.FuelPricePerLiter.HasValue)
+        {
+            fuelCost = Math.Round(req.FuelLitersConsumed.Value * req.FuelPricePerLiter.Value, 2, MidpointRounding.AwayFromZero);
+        }
+        if (req.FuelPurchasedTotalUsd.HasValue && !req.FuelLitersConsumed.HasValue)
+        {
+            missingComponents.Add("fuel_consumed_unmeasured_only_purchase_provided");
+        }
+
+        decimal driverCost = (req.DriverHours.HasValue && req.DriverHourlyCost.HasValue)
+            ? Math.Round(req.DriverHours.Value * req.DriverHourlyCost.Value, 2, MidpointRounding.AwayFromZero)
+            : 0m;
+        decimal helperCost = (req.HelperHours.HasValue && req.HelperHourlyCost.HasValue)
+            ? Math.Round(req.HelperHours.Value * req.HelperHourlyCost.Value, 2, MidpointRounding.AwayFromZero)
+            : 0m;
+        decimal personnelCost = driverCost + helperCost;
+
+        // 2. Conciliación mantenimiento vs. incidente:
+        // si MaintenanceCoversIncidentRepair == true y se envían tanto WearAndMaintenanceCost como IncidentExtraCost,
+        // NO los sumes por duplicado; usa Math.Max(WearAndMaintenanceCost ?? 0m, IncidentExtraCost ?? 0m)
+        // y añade "incident_repair_reconciled_with_maintenance" en reconciliationNotes.
+        decimal wearAndMaintenance;
+        decimal incidentExtraReconciled;
+        if (req.MaintenanceCoversIncidentRepair)
+        {
+            if (req.WearAndMaintenanceCost.HasValue && req.IncidentExtraCost.HasValue)
+            {
+                reconciliationNotes.Add("incident_repair_reconciled_with_maintenance");
+            }
+            wearAndMaintenance = Math.Max(req.WearAndMaintenanceCost ?? 0m, req.IncidentExtraCost ?? 0m);
+            incidentExtraReconciled = 0m;
+        }
+        else
+        {
+            wearAndMaintenance = req.WearAndMaintenanceCost ?? 0m;
+            incidentExtraReconciled = req.IncidentExtraCost ?? 0m;
+        }
+
+        decimal tollsAndDirect = req.TollsAndDirectCost ?? 0m;
+
+        // 4. Sin fuga de información en replanificaciones:
+        // localiza la Revisión 1 del mismo plan.Code (o SupersedesRoutePlanId) para obtener
+        // originalEstimatedCost = rev1.TotalCost ?? plan.TotalCost
+        var rev1 = await db.RoutePlans.AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id && p.Code == plan.Code && p.Revision == 1)
+            .FirstOrDefaultAsync(ct);
+        if (rev1 == null && plan.SupersedesRoutePlanId.HasValue)
+        {
+            rev1 = await db.RoutePlans.AsNoTracking()
+                .Where(p => p.OrganizationId == DemoOrganization.Id && p.Id == plan.SupersedesRoutePlanId.Value)
+                .FirstOrDefaultAsync(ct);
+        }
+        decimal? originalEstimatedCost = rev1?.TotalCost ?? plan.TotalCost;
+
+        // 3. Incidente sin cuantificación:
+        // si !string.IsNullOrWhiteSpace(IncidentKind) con IncidentQuantified == false y IncidentExtraCost == null,
+        // NO inventes recargo ni pongas 0: el costo del incidente es null, añade "unquantified_incident" a missingComponents,
+        // fija costStatus = "incomplete_unknown" y reconciledTotalCost = null.
+        if (!string.IsNullOrWhiteSpace(req.IncidentKind) && !req.IncidentQuantified && !req.IncidentExtraCost.HasValue)
+        {
+            missingComponents.Add("unquantified_incident");
+        }
+
+        decimal knownPartialCost = Math.Round((fuelCost ?? 0m) + personnelCost + wearAndMaintenance + tollsAndDirect + incidentExtraReconciled, 2, MidpointRounding.AwayFromZero);
+
+        string costStatus;
+        decimal? reconciledTotalCost;
+        decimal? residualError;
+
+        if (missingComponents.Count > 0 && !req.ReconciledTotalCostOverride.HasValue)
+        {
+            costStatus = "incomplete_unknown";
+            reconciledTotalCost = null;
+            residualError = null;
+        }
+        else
+        {
+            // 5. Cuando no haya incógnitas bloqueantes, calcula reconciledTotalCost como
+            // ReconciledTotalCostOverride ?? ((fuelCost ?? 0m) + personnelCost + wearAndMaintenance + tollsAndDirect + incidentExtraReconciled)
+            // (redondeado a 2 decimales) y fija costStatus = "reconciled".
+            if (req.ReconciledTotalCostOverride.HasValue)
+            {
+                reconciledTotalCost = Math.Round(req.ReconciledTotalCostOverride.Value, 2, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
+                var rawTotal = (fuelCost ?? 0m) + personnelCost + wearAndMaintenance + tollsAndDirect + incidentExtraReconciled;
+                reconciledTotalCost = Math.Round(rawTotal, 2, MidpointRounding.AwayFromZero);
+            }
+            costStatus = "reconciled";
+            residualError = originalEstimatedCost.HasValue
+                ? Math.Round(reconciledTotalCost.Value - originalEstimatedCost.Value, 2, MidpointRounding.AwayFromZero)
+                : null;
+        }
+
+        // 6. Guarda el nodo reconciledExecution dentro de plan.InputJson conservando todos los campos previos de plan.InputJson.
+        var reconciledExecution = new Dictionary<string, object?>
+        {
+            ["actualDistanceKm"] = req.ActualDistanceKm,
+            ["actualDrivingMinutes"] = req.ActualDrivingMinutes,
+            ["actualServiceMinutes"] = req.ActualServiceMinutes,
+            ["actualWaitMinutes"] = req.ActualWaitMinutes,
+            ["fuelLitersConsumed"] = req.FuelLitersConsumed,
+            ["fuelPricePerLiter"] = req.FuelPricePerLiter,
+            ["fuelPriceSource"] = req.FuelPriceSource,
+            ["fuelPurchasedTotalUsd"] = req.FuelPurchasedTotalUsd,
+            ["fuelCost"] = fuelCost,
+            ["driverHours"] = req.DriverHours,
+            ["driverHourlyCost"] = req.DriverHourlyCost,
+            ["driverCost"] = driverCost,
+            ["helperHours"] = req.HelperHours,
+            ["helperHourlyCost"] = req.HelperHourlyCost,
+            ["helperCost"] = helperCost,
+            ["personnelCost"] = personnelCost,
+            ["wearAndMaintenanceCost"] = wearAndMaintenance,
+            ["tollsAndDirectCost"] = tollsAndDirect,
+            ["incidentExtraCost"] = (req.IncidentQuantified || req.IncidentExtraCost.HasValue) ? incidentExtraReconciled : (decimal?)null,
+            ["incidentKind"] = req.IncidentKind,
+            ["incidentQuantified"] = req.IncidentQuantified,
+            ["maintenanceCoversIncidentRepair"] = req.MaintenanceCoversIncidentRepair,
+            ["originalEstimatedCost"] = originalEstimatedCost,
+            ["knownPartialCost"] = knownPartialCost,
+            ["reconciledTotalCost"] = reconciledTotalCost,
+            ["residualError"] = residualError,
+            ["costStatus"] = costStatus,
+            ["missingComponents"] = missingComponents,
+            ["reconciliationNotes"] = reconciliationNotes,
+            ["reconciledBy"] = req.ReconciledBy,
+            ["reconciledAtUtc"] = DateTime.UtcNow
+        };
+
+        JsonObject rootObj;
+        try
+        {
+            rootObj = JsonNode.Parse(string.IsNullOrWhiteSpace(plan.InputJson) ? "{}" : plan.InputJson)?.AsObject() ?? new JsonObject();
+        }
+        catch
+        {
+            rootObj = new JsonObject();
+        }
+
+        rootObj["reconciledExecution"] = JsonSerializer.SerializeToNode(reconciledExecution, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        plan.InputJson = rootObj.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+        await db.SaveChangesAsync(ct);
+
+        // 7. Retorna 200 OK con routePlanId, code, revision, originalEstimatedCost, knownPartialCost, reconciledTotalCost, residualError, costStatus, missingComponents, reconciliationNotes y reconciledExecution.
+        return Ok(new
+        {
+            routePlanId = plan.Id,
+            code = plan.Code,
+            revision = plan.Revision,
+            originalEstimatedCost,
+            knownPartialCost,
+            reconciledTotalCost,
+            residualError,
+            costStatus,
+            missingComponents,
+            reconciliationNotes,
+            reconciledExecution
+        });
+    }
+
+    [HttpGet("cost-calibration")]
+    [Authorize(Roles = Roles.Any)]
+    public async Task<IActionResult> GetCostCalibration(
+        [FromQuery] decimal estimatedCost = 100m,
+        [FromQuery] decimal targetCoverage = 0.90m,
+        CancellationToken ct = default)
+    {
+        var trips = await LoadHistoricalReconciledTripsAsync(ct);
+        var result = CostUncertaintyService.EvaluateTemporalValidation(estimatedCost, trips, targetCoverage);
+
+        var byVehicle = trips
+            .GroupBy(t => t.VehicleCode ?? "unknown")
+            .ToDictionary(
+                g => g.Key,
+                g => CostUncertaintyService.Evaluate(estimatedCost, g.ToList(), targetCoverage)
+            );
+
+        var byIncidentPresence = trips
+            .GroupBy(t => t.HadIncidents ? "with_incidents" : "without_incidents")
+            .ToDictionary(
+                g => g.Key,
+                g => CostUncertaintyService.Evaluate(estimatedCost, g.ToList(), targetCoverage)
+            );
+
+        var tripsDto = trips.Select(t => new
+        {
+            tripCode = t.TripCode,
+            vehicleCode = t.VehicleCode,
+            tripDate = t.TripDate,
+            estimatedCost = t.EstimatedCost,
+            actualReconciledCost = t.ActualReconciledCost,
+            residualError = Math.Round(t.ActualReconciledCost - t.EstimatedCost, 2, MidpointRounding.AwayFromZero),
+            hadIncidents = t.HadIncidents
+        }).ToList();
+
+        return Ok(new
+        {
+            status = result.Status,
+            lowerBound = result.LowerBound,
+            upperBound = result.UpperBound,
+            marginOfError = result.MarginOfError,
+            sampleSize = result.SampleSize,
+            period = result.Period,
+            method = result.Method,
+            meanBias = result.MeanBias,
+            mae = result.Mae,
+            empiricalCoverage = result.EmpiricalCoverage,
+            message = result.Message,
+            wape = result.Wape,
+            quantileLowerOffset = result.QuantileLowerOffset,
+            quantileUpperOffset = result.QuantileUpperOffset,
+            intervalWidth = result.IntervalWidth,
+            holdoutSampleSize = result.HoldoutSampleSize,
+            holdoutEmpiricalCoverage = result.HoldoutEmpiricalCoverage,
+            result,
+            byVehicle,
+            byIncidentPresence,
+            trips = tripsDto
+        });
+    }
+
+    private async Task<List<HistoricalTripCost>> LoadHistoricalReconciledTripsAsync(CancellationToken ct)
+    {
+        var allPlans = await db.RoutePlans.AsNoTracking()
+            .Where(p => p.OrganizationId == DemoOrganization.Id)
+            .ToListAsync(ct);
+
+        var plans = allPlans
+            .Where(p => !string.IsNullOrWhiteSpace(p.InputJson) && p.InputJson.Contains("\"reconciledExecution\""))
+            .ToList();
+
+        if (plans.Count == 0) return new List<HistoricalTripCost>();
+
+        var vehicles = await db.Vehicles.AsNoTracking()
+            .Where(v => v.OrganizationId == DemoOrganization.Id)
+            .ToDictionaryAsync(v => v.Id, v => v.Code, ct);
+
+        // Agrupa por Code para deduplicar revisiones
+        var byCode = plans.GroupBy(p => p.Code).ToList();
+        var result = new List<HistoricalTripCost>();
+
+        foreach (var group in byCode)
+        {
+            var sorted = group.OrderByDescending(p => p.Revision).ToList();
+            RoutePlan? reconciledPlan = null;
+            JsonElement reconciledExecElement = default;
+            decimal? reconciledTotal = null;
+
+            foreach (var p in sorted)
+            {
+                if (string.IsNullOrWhiteSpace(p.InputJson)) continue;
+                try
+                {
+                    using var doc = JsonDocument.Parse(p.InputJson);
+                    if (TryGetPropertyCaseInsensitive(doc.RootElement, "reconciledExecution", out var execEl) &&
+                        TryGetPropertyCaseInsensitive(execEl, "costStatus", out var statusEl) &&
+                        string.Equals(statusEl.GetString(), "reconciled", StringComparison.OrdinalIgnoreCase) &&
+                        TryGetPropertyCaseInsensitive(execEl, "reconciledTotalCost", out var totalEl) &&
+                        totalEl.ValueKind == JsonValueKind.Number)
+                    {
+                        reconciledPlan = p;
+                        reconciledExecElement = execEl.Clone();
+                        reconciledTotal = totalEl.GetDecimal();
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Ignore JSON parse errors
+                }
+            }
+
+            if (reconciledPlan == null || reconciledTotal == null) continue;
+
+            decimal? originalEstimatedCost = null;
+            if (TryGetPropertyCaseInsensitive(reconciledExecElement, "originalEstimatedCost", out var origEl) && origEl.ValueKind == JsonValueKind.Number)
+            {
+                originalEstimatedCost = origEl.GetDecimal();
+            }
+
+            if (!originalEstimatedCost.HasValue)
+            {
+                var rev1 = await db.RoutePlans.AsNoTracking()
+                    .Where(p => p.OrganizationId == DemoOrganization.Id && p.Code == reconciledPlan.Code && p.Revision == 1)
+                    .Select(p => p.TotalCost)
+                    .FirstOrDefaultAsync(ct);
+                originalEstimatedCost = rev1 ?? reconciledPlan.TotalCost;
+            }
+
+            decimal estCost = originalEstimatedCost ?? reconciledPlan.TotalCost ?? 0m;
+            DateOnly tripDate = DateOnly.FromDateTime(reconciledPlan.PlannedStartUtc);
+            string? vehicleCode = vehicles.GetValueOrDefault(reconciledPlan.VehicleId);
+            bool hadIncidents = false;
+            if (TryGetPropertyCaseInsensitive(reconciledExecElement, "incidentKind", out var ikEl) &&
+                ikEl.ValueKind == JsonValueKind.String &&
+                !string.IsNullOrWhiteSpace(ikEl.GetString()))
+            {
+                hadIncidents = true;
+            }
+            else if (TryGetPropertyCaseInsensitive(reconciledExecElement, "incidentExtraCost", out var iecEl) &&
+                     iecEl.ValueKind == JsonValueKind.Number &&
+                     iecEl.GetDecimal() > 0m)
+            {
+                hadIncidents = true;
+            }
+
+            result.Add(new HistoricalTripCost(
+                EstimatedCost: estCost,
+                ActualReconciledCost: reconciledTotal.Value,
+                TripDate: tripDate,
+                TripCode: reconciledPlan.Code,
+                VehicleCode: vehicleCode,
+                HadIncidents: hadIncidents
+            ));
+        }
+
+        return result.OrderBy(t => t.TripDate).ToList();
+    }
+
+    private static void ExtractReconciledInfo(string? inputJson, out decimal? reconciledCost, out object? reconciledExecution, out string? reconciledCostStatus)
+    {
+        reconciledCost = null;
+        reconciledExecution = null;
+        reconciledCostStatus = null;
+        if (string.IsNullOrWhiteSpace(inputJson)) return;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(inputJson);
+            if (TryGetPropertyCaseInsensitive(doc.RootElement, "reconciledExecution", out var execEl) && execEl.ValueKind == JsonValueKind.Object)
+            {
+                reconciledExecution = JsonSerializer.Deserialize<object>(execEl.GetRawText());
+                if (TryGetPropertyCaseInsensitive(execEl, "reconciledTotalCost", out var costEl) && costEl.ValueKind == JsonValueKind.Number)
+                {
+                    reconciledCost = costEl.GetDecimal();
+                }
+                if (TryGetPropertyCaseInsensitive(execEl, "costStatus", out var statusEl) && statusEl.ValueKind == JsonValueKind.String)
+                {
+                    reconciledCostStatus = statusEl.GetString();
+                }
+            }
+        }
+        catch
+        {
+            // Ignore JSON parse errors
+        }
     }
 }
 
@@ -1957,3 +2500,26 @@ public sealed record ManualStopDto(
     DateTime? PlannedArrivalUtc
 );
 
+public sealed record ReconcileRouteCostRequest(
+    decimal? ActualDistanceKm = null,
+    decimal? ActualDrivingMinutes = null,
+    decimal? ActualServiceMinutes = null,
+    decimal? ActualWaitMinutes = null,
+    decimal? FuelLitersConsumed = null,
+    decimal? FuelPricePerLiter = null,
+    string? FuelPriceSource = null,
+    decimal? FuelPurchasedTotalUsd = null,
+    decimal? DriverHours = null,
+    decimal? DriverHourlyCost = null,
+    decimal? HelperHours = null,
+    decimal? HelperHourlyCost = null,
+    decimal? WearAndMaintenanceCost = null,
+    decimal? TollsAndDirectCost = null,
+    decimal? IncidentExtraCost = null,
+    string? IncidentKind = null,
+    bool IncidentQuantified = true,
+    bool MaintenanceCoversIncidentRepair = false,
+    decimal? ReconciledTotalCostOverride = null,
+    string? ReconciledBy = null,
+    IReadOnlyList<string>? MissingComponents = null
+);

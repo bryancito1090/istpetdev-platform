@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using IstpetDev.Application.Common.Interfaces;
+using IstpetDev.Application.Logistics;
 using IstpetDev.Application.Simulation;
 using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
@@ -7,11 +8,42 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace IstpetDev.Infrastructure.Simulation;
 
 public sealed class SimulationWorker : BackgroundService, ISimulationWorker
 {
+    private static readonly GeoPoint DefaultDepotPos = new(-0.1800m, -78.4800m);
+
+    private static readonly Dictionary<string, GeoPoint> DefaultPointCoordinates = new()
+    {
+        ["P01"] = new(-0.148m, -78.459m),
+        ["P02"] = new(-0.124m, -78.492m),
+        ["P03"] = new(-0.164m, -78.491m),
+        ["P04"] = new(-0.108m, -78.438m),
+        ["P05"] = new(-0.278m, -78.519m),
+        ["P06"] = new(-0.254m, -78.552m),
+        ["P07"] = new(-0.294m, -78.551m),
+        ["P08"] = new(-0.238m, -78.498m),
+        ["P09"] = new(-2.188m, -79.879m),
+        ["P10"] = new(-2.164m, -79.912m),
+        ["P11"] = new(-2.204m, -79.911m),
+        ["P12"] = new(-2.148m, -79.858m),
+        ["P13"] = new(-2.908m, -78.999m),
+        ["P14"] = new(-2.884m, -79.032m),
+        ["P15"] = new(-2.924m, -79.031m),
+        ["P16"] = new(-2.868m, -78.978m),
+        ["P17"] = new(-0.968m, -80.699m),
+        ["P18"] = new(-0.944m, -80.732m),
+        ["P19"] = new(-0.984m, -80.731m),
+        ["P20"] = new(-0.928m, -80.678m),
+        ["P21"] = new(-1.258m, -78.619m),
+        ["P22"] = new(-1.234m, -78.652m),
+        ["P23"] = new(-1.274m, -78.651m),
+        ["P24"] = new(-1.218m, -78.598m)
+    };
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SimulationWorker> _logger;
     private readonly Channel<(Guid ComparisonId, SimulationComparisonRequest Request)> _channel;
@@ -100,6 +132,33 @@ public sealed class SimulationWorker : BackgroundService, ISimulationWorker
                 return;
             }
 
+            var logisticsOptions = scope.ServiceProvider.GetService<IOptions<LogisticsOptions>>()?.Value ?? new LogisticsOptions();
+
+            var vehicles = await db.Vehicles
+                .Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive)
+                .ToListAsync(ct);
+
+            decimal effectiveCostPerKm = logisticsOptions.DefaultCostPerKm;
+            var vehiclesWithCost = vehicles.Where(v => v.CostPerKm.HasValue && v.CostPerKm.Value > 0).ToList();
+            if (vehiclesWithCost.Count > 0)
+            {
+                effectiveCostPerKm = vehiclesWithCost.Average(v => v.CostPerKm!.Value);
+            }
+
+            var servicePointsInDb = await db.ServicePoints
+                .Where(sp => sp.OrganizationId == DemoOrganization.Id && sp.IsActive && sp.Position != null)
+                .ToListAsync(ct);
+
+            var servicePointCoords = servicePointsInDb.ToDictionary(
+                sp => sp.Code,
+                sp => new GeoPoint((decimal)sp.Position!.Y, (decimal)sp.Position.X));
+
+            var depotLocation = await db.Locations
+                .FirstOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id && l.Kind == "Warehouse" && l.Position != null, ct);
+            var depotPos = depotLocation?.Position != null
+                ? new GeoPoint((decimal)depotLocation.Position.Y, (decimal)depotLocation.Position.X)
+                : DefaultDepotPos;
+
             var basePoints = new List<(string Region, string Code)>
             {
                 ("REG-01", "P01"), ("REG-01", "P02"), ("REG-01", "P03"), ("REG-01", "P04"),
@@ -131,13 +190,32 @@ public sealed class SimulationWorker : BackgroundService, ISimulationWorker
 
                 try
                 {
+                    var disruptionsToPass = request.CustomDisruptions;
+                    if (run.ScenarioCode == "adverse" && (disruptionsToPass == null || disruptionsToPass.Count == 0))
+                    {
+                        var adverseDisruptions = new List<DisruptionEvent>();
+                        for (int day = 0; day < horizonDays; day += 7)
+                        {
+                            var adverseDate = startDate.AddDays(day);
+                            adverseDisruptions.Add(new DisruptionEvent(
+                                OccurredAtUtc: adverseDate.ToDateTime(new TimeOnly(6, 0), DateTimeKind.Utc),
+                                KnownAtUtc: adverseDate.ToDateTime(new TimeOnly(6, 0), DateTimeKind.Utc),
+                                RegionCode: "REG-ALL",
+                                Kind: "road_delay",
+                                SubjectCode: "ALL",
+                                Factor: 1.5m));
+                        }
+                        disruptionsToPass = adverseDisruptions;
+                    }
+
                     var scenarioKey = new ScenarioKey(run.DatasetVersion, run.Seed, run.ScenarioCode);
                     var calendar = ExogenousCalendar.Build(
                         scenarioKey,
                         basePoints,
                         products,
                         startDate,
-                        horizonDays);
+                        horizonDays,
+                        disruptionsToPass);
 
                     run.CalendarHash = calendar.Sha256;
 
@@ -235,7 +313,11 @@ public sealed class SimulationWorker : BackgroundService, ISimulationWorker
                             engine.SetInitialPointStock(kvp.Key.PointCode, kvp.Key.Sku, kvp.Value);
                         }
 
-                        var daySimResult = engine.ExecuteDay(currentDate, dayDemands, dayDeliveries, []);
+                        var dayDisruptions = calendar.Disruptions
+                            .Where(d => DateOnly.FromDateTime(d.OccurredAtUtc) == currentDate)
+                            .ToList();
+
+                        var daySimResult = engine.ExecuteDay(currentDate, dayDemands, dayDeliveries, dayDisruptions);
 
                         // Actualizar saldos finales del día
                         foreach (var p in basePoints)
@@ -252,8 +334,56 @@ public sealed class SimulationWorker : BackgroundService, ISimulationWorker
                         }
 
                         int completedDeliveries = dayDeliveries.Count;
-                        decimal km = completedDeliveries > 0 ? (completedDeliveries * 12.5m) : 0m;
-                        decimal cost = km * 1.75m;
+                        decimal km = 0m;
+                        decimal cost = 0m;
+
+                        if (completedDeliveries > 0)
+                        {
+                            var visitedPoints = dayDeliveries.Select(d => d.PointCode).Distinct().OrderBy(p => p).ToList();
+
+                            var detourFactor = dayDisruptions
+                                .Where(d => (d.Kind is "road_closure" or "detour") && d.Factor > 1.0m)
+                                .Select(d => d.Factor)
+                                .DefaultIfEmpty(1.0m)
+                                .Max();
+
+                            var routePoints = new List<GeoPoint> { depotPos };
+                            foreach (var pt in visitedPoints)
+                            {
+                                var ptCoord = servicePointCoords.TryGetValue(pt, out var spCoord)
+                                    ? spCoord
+                                    : (DefaultPointCoordinates.TryGetValue(pt, out var defCoord) ? defCoord : depotPos);
+                                routePoints.Add(ptCoord);
+                            }
+                            routePoints.Add(depotPos);
+
+                            for (int i = 0; i < routePoints.Count - 1; i++)
+                            {
+                                var from = routePoints[i];
+                                var to = routePoints[i + 1];
+                                var legKm = DistanceProvider.HaversineDistanceKm(from, to) * logisticsOptions.ApproxDetourFactor * detourFactor;
+                                km += legKm;
+                            }
+
+                            km = Math.Round(km, 3, MidpointRounding.AwayFromZero);
+
+                            var activeDelayFactor = dayDisruptions
+                                .Where(d => d.Factor > 1.0m)
+                                .Select(d => d.Factor)
+                                .DefaultIfEmpty(1.0m)
+                                .Max();
+
+                            var speedKmh = logisticsOptions.ApproxSpeedKmh > 0 ? logisticsOptions.ApproxSpeedKmh : 40m;
+                            var drivingMinutes = (km / speedKmh) * 60m * activeDelayFactor;
+                            var serviceMinutes = (decimal)visitedPoints.Count * logisticsOptions.DefaultServiceMinutes;
+                            var totalDurationMinutes = drivingMinutes + serviceMinutes;
+
+                            cost = LogisticsCostCalculator.CalculateCost(
+                                km,
+                                totalDurationMinutes,
+                                effectiveCostPerKm,
+                                logisticsOptions.CostPerHour);
+                        }
 
                         dailyResults.Add(new SimulationDayResult(
                             Date: currentDate,
@@ -320,7 +450,12 @@ public sealed class SimulationWorker : BackgroundService, ISimulationWorker
                     }
 
                     // Guardar eventos
-                    foreach (var ev in simulationEvents.Take(500))
+                    var eventsToSave = simulationEvents
+                        .Where(e => e.Kind == "disruption_applied")
+                        .Concat(simulationEvents.Where(e => e.Kind != "disruption_applied"))
+                        .Take(500);
+
+                    foreach (var ev in eventsToSave)
                     {
                         db.SimulationEvents.Add(new SimulationEvent
                         {

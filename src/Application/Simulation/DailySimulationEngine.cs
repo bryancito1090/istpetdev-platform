@@ -58,11 +58,59 @@ public sealed class DailySimulationEngine
         var stockouts = new List<StockoutRecord>();
         var events = new List<SimulationEventDto>();
 
+        var workdayStart = Clock.WorkdayStartUtc(date);
+        var workdayEnd = Clock.WorkdayEndUtc(date);
+
+        // Filtra los incidentes activos/conocidos en el día (disruptions cuya fecha coincida con date o estén activos antes del cierre de jornada)
+        var dayDisruptions = disruptions
+            .Where(d => DateOnly.FromDateTime(d.OccurredAtUtc) == date || d.KnownAtUtc <= workdayEnd)
+            .ToList();
+
+        var adjustedDeliveries = new List<SimulatedDelivery>();
+        foreach (var del in deliveries)
+        {
+            var matching = dayDisruptions
+                .Where(d => d.KnownAtUtc <= del.EtaUtc &&
+                            (d.SubjectCode == del.PointCode ||
+                             d.SubjectCode == "ALL" ||
+                             d.RegionCode == RegionCode ||
+                             d.RegionCode == "REG-ALL" ||
+                             d.RegionCode == "ALL"))
+                .ToList();
+
+            var delayDisruptions = matching.Where(d => d.Factor > 1.0m).ToList();
+            if (delayDisruptions.Count > 0)
+            {
+                var maxFactor = delayDisruptions.Max(d => d.Factor);
+                var originalTravelMinutes = Math.Max(0, (del.EtaUtc - workdayStart).TotalMinutes);
+                var adjustedEtaUtc = workdayStart.AddMinutes(originalTravelMinutes * (double)maxFactor);
+                adjustedDeliveries.Add(del with { EtaUtc = adjustedEtaUtc });
+
+                foreach (var d in delayDisruptions)
+                {
+                    events.Add(new SimulationEventDto(
+                        Sequence: ++_eventSequence,
+                        OccurredAtUtc: d.OccurredAtUtc,
+                        Kind: "disruption_applied",
+                        RegionCode: RegionCode,
+                        PointCode: d.SubjectCode,
+                        Sku: del.Sku,
+                        Requested: d.Factor,
+                        Satisfied: null,
+                        Reason: d.Kind));
+                }
+            }
+            else
+            {
+                adjustedDeliveries.Add(del);
+            }
+        }
+
         // Crear una lista cronológica unificada de eventos que ocurren en el día
         // Cada evento tiene un tiempo UTC y un tipo (Delivery o Demand)
         var timeline = new List<(DateTime TimeUtc, string Type, object Payload)>();
 
-        foreach (var del in deliveries)
+        foreach (var del in adjustedDeliveries)
         {
             timeline.Add((del.EtaUtc, "Delivery", del));
         }
