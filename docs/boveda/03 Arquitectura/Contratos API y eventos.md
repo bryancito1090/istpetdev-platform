@@ -488,7 +488,7 @@ Cada elemento de `GET /api/v1/receipts/exceptions` agrega `estimatedBacktrack`
 |---|---|
 | `km` | Km de ida y vuelta bodega de origen (`Delivery.OriginLocationId`) → punto → bodega; 2 decimales |
 | `costUsd` | USD estimados con `ServiceCostCalculator` de #240, sin paradas (sin ayudantes ni merma); sin perfil de costo, su respaldo `LogisticsCostCalculator` con `CostPerKm` del vehículo de la ruta o `DefaultCostPerKm` y `CostPerHour` |
-| `hours` | Horas de viaje de ida y vuelta (sin tiempo de descarga); 2 decimales |
+| `hours` | Horas de viaje de ida y vuelta según la matriz (sin tiempo de descarga ni factor de hora pico de #245); 2 decimales |
 | `isApproximate` | `true` si algún tramo salió de la aproximación en línea recta (Haversine × factor de desvío) y no de un tramo guardado u OSRM |
 
 - Solo se calcula si alguna línea tiene rechazo `Faltante`, `Daño` o

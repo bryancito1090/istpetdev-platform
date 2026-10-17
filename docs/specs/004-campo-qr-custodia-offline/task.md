@@ -684,7 +684,7 @@ Fuente: charla de logística integral del 16-oct (#234): «si yo cubro un retroc
 
 **Decisiones:**
 - No se suma a `RoutePlan.TotalCost` ni a ningún costo de la ruta original (evita el doble conteo de la nota de hallazgos); el endpoint es de solo lectura y no escribe el valor.
-- El tiempo es solo de viaje (ida y vuelta); no incluye descarga ni espera, y el costo no incluye ayudantes ni merma.
+- El tiempo es solo de viaje (ida y vuelta) según la matriz; no incluye descarga, espera ni el factor de hora pico de #245 (la reentrega no tiene hora de salida conocida), y el costo no incluye ayudantes ni merma.
 - Una reentrega por recepción aunque haya varias líneas rechazadas; varias recepciones del mismo punto no se consolidan en un viaje.
 - Sin coordenadas de la bodega o del punto, `estimatedBacktrack` es `null` y la tarjeta no muestra la línea.
 - Si OSRM está configurado y faltan tramos, la consulta puede tardar hasta su timeout (3 s por bloque) y guarda los tramos obtenidos, igual que el resto del motor.
