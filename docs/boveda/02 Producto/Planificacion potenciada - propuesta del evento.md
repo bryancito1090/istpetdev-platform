@@ -118,7 +118,7 @@ Las franjas, restricciones y precios de este fixture **no son normativa vigente 
 
 ## Indicadores en lenguaje de toda la empresa
 
-Complementa #235 (los seis indicadores de la charla). Cada indicador responde una pregunta que cualquier persona de la empresa entiende.
+Complementa #235 (los seis indicadores de la charla) y se documenta en detalle en [[Indicadores de operacion en lenguaje sencillo]]. Cada indicador responde una pregunta que cualquier persona de la empresa entiende.
 
 | Indicador | Pregunta sencilla | Quién la usa | Cómo se calcula |
 |---|---|---|---|
@@ -134,16 +134,16 @@ Complementa #235 (los seis indicadores de la charla). Cada indicador responde un
 
 ## Protocolos de capacitación por rol
 
-Para el pitch: la herramienta no basta si la operación no la adopta. La charla nombra la resistencia al cambio como riesgo; la respuesta es capacitar por rol, en poco tiempo y con práctica.
+Para el pitch: la herramienta no basta si la operación no la adopta. La charla nombra la resistencia al cambio como riesgo; la respuesta es capacitar por rol, en poco tiempo y con práctica. El detalle completo y las hojas de una página por rol se desarrollan en [[Protocolos de capacitacion por rol]]:
 
-| Rol | Qué aprende | Formato propuesto | Cómo se comprueba |
-|---|---|---|---|
-| Planificador | Leer el riesgo, comparar opciones A/B/C y publicar o elegir otra | 2 h con el dataset de práctica | Planifica un día del dataset y justifica la opción elegida |
-| Bodega | Preparar bultos, sellar, registrar conteos y diferencias | 1 h en la bodega | Prepara una ruta sin errores de rótulo |
-| Conductor | Escanear QR, registrar entrega o no entrega y trabajar sin conexión | 30 min con el celular | Completa una ruta de prueba en modo avión |
-| Receptor | Recibir, rechazar con motivo y firmar | 20 min | Registra una recepción con un rechazo |
-| Gerencia | Leer los indicadores y la comparación propia frente a contratada | 30 min | Explica el indicador de la semana con sus palabras |
-| Auditor | Seguir la trazabilidad de un bulto de punta a punta | 30 min | Reconstruye la historia de un bulto |
+| Rol | Qué aprende | Formato propuesto | Cómo se comprueba | Hoja de rol |
+|---|---|---|---|---|
+| Planificador | Leer el riesgo, comparar opciones A/B/C y publicar o elegir otra | 2 h con el dataset de práctica | Planifica un día del dataset y justifica la opción elegida | [[Capacitacion - Planificador]] |
+| Bodega | Preparar bultos, sellar, registrar conteos y diferencias | 1 h en la bodega | Prepara una ruta sin errores de rótulo | [[Capacitacion - Bodega]] |
+| Conductor | Escanear QR, registrar entrega o no entrega y trabajar sin conexión | 30 min con el celular | Completa una ruta de prueba en modo avión | [[Capacitacion - Conductor]] |
+| Receptor | Recibir, rechazar con motivo y firmar | 20 min | Registra una recepción con un rechazo | [[Capacitacion - Receptor]] |
+| Gerencia | Leer los indicadores y la comparación propia frente a contratada | 30 min | Explica el indicador de la semana con sus palabras | [[Capacitacion - Gerencia]] |
+| Auditor | Seguir la trazabilidad de un bulto de punta a punta | 30 min | Reconstruye la historia de un bulto | [[Capacitacion - Auditor]] |
 
 Cada protocolo incluye una hoja de una página por rol y un responsable de dudas («referente») en cada turno.
 
