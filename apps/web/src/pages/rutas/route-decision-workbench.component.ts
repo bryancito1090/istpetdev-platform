@@ -87,6 +87,7 @@ import { alternativeLabels, assignedVehicleCount, FLEET_COLORS, planningDecision
 })
 export class RouteDecisionWorkbench implements OnInit, AfterViewInit, OnDestroy {
   readonly orderIds = input<string[]>([]);
+  readonly planRemainingOnly = input(false);
   readonly decisionId = input<string | null>(null);
   readonly initialOptionId = input('');
   readonly initialAssignments = input<Record<string, string>>({});
@@ -167,7 +168,7 @@ export class RouteDecisionWorkbench implements OnInit, AfterViewInit, OnDestroy 
     const ids = this.orderIds().length ? this.orderIds() : this.decision()?.orderIds || [];
     if (!ids.length) return;
     this.busy.set(true); this.error.set(''); this.message.set('');
-    this.api.preparePlanningDecision(ids, this.pendingPrepareId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.preparePlanningDecision(ids, this.pendingPrepareId, this.planRemainingOnly()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: value => { this.apply(value); this.pendingPrepareId = crypto.randomUUID(); this.reviewing.set(false); this.published.set(false); },
       error: err => { this.busy.set(false); this.error.set(err?.error?.detail || err?.error?.message || 'No se pudo preparar la propuesta. Reintenta con los mismos pedidos.'); }
     });

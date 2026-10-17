@@ -548,10 +548,19 @@ public sealed class LogisticsQueriesTests(PostgisContainer postgres) : IClassFix
         Assert.Equal(20m, remainingDemand.GetProperty("requestedQuantity").GetDecimal());
         Assert.Equal(20m, remainingDemand.GetProperty("allocatedQuantity").GetDecimal());
 
-        var remainingSuggestResp = await planner.PostAsJsonAsync("/api/v1/route-plans/suggest", new
+        // #345: consultar stock sigue siendo lectura; generar otra propuesta exige revisar asignaciones.
+        var automaticSuggest = await planner.PostAsJsonAsync("/api/v1/route-plans/suggest", new
         {
             orderIds = new[] { order1Id, order2Id },
             plannedDate = "2026-10-12"
+        });
+        Assert.Equal(HttpStatusCode.Conflict, automaticSuggest.StatusCode);
+        // El usuario retira el pedido cubierto y elige expresamente los remanentes del otro.
+        var remainingSuggestResp = await planner.PostAsJsonAsync("/api/v1/route-plans/suggest", new
+        {
+            orderIds = new[] { order1Id },
+            plannedDate = "2026-10-12",
+            planRemainingOnly = true
         });
         remainingSuggestResp.EnsureSuccessStatusCode();
         var remainingSuggest = await remainingSuggestResp.Content.ReadFromJsonAsync<JsonElement>();
