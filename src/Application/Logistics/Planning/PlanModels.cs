@@ -55,6 +55,24 @@ public sealed record VehicleRoute(
     bool HasApproximations,
     IReadOnlyList<Leg> Legs);
 
+public sealed record FeasibilityCheck(
+    bool IsFeasible,
+    string? FailureReason, // "capacity", "time_window", "workday", "unreachable", "blocked_leg"
+    DateTime ArrivalUtc,
+    DateTime DepartureUtc,
+    TimeSpan WaitTime,
+    int? LateMinutes,
+    decimal CumulativeKm,
+    decimal CumulativeMinutes,
+    decimal CumulativeCost,
+    decimal TotalWeight,
+    decimal TotalVolume,
+    IReadOnlyList<Leg> Legs,
+    bool HasApproximations,
+    decimal WaitMinutes = 0m,
+    decimal DrivingMinutes = 0m,
+    decimal ServiceMinutes = 0m);
+
 public sealed record Unserved(
     string PointCode,
     string Reason,

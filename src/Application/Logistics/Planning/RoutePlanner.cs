@@ -391,10 +391,12 @@ public sealed class RoutePlanner(
             var completedKm = completedLegs.Sum(l => l.Km);
             var completedMinutes = completedLegs.Sum(l => l.Minutes) + prefix.CompletedPointCodes
                 .Sum(code => points[code].ServiceMinutes ?? _options.DefaultServiceMinutes);
-            var completedCost = prefix.CompletedPointCodes.Count == 0 ? 0m : Math.Round(
-                completedKm * (vehicle.CostPerKm ?? _options.DefaultCostPerKm) +
-                Math.Max(0m, (decimal)(prefix.ReadyAtUtc - workdayStart).TotalHours) * _options.CostPerHour,
-                3, MidpointRounding.AwayFromZero);
+            var completedCost = prefix.CompletedPointCodes.Count == 0 ? 0m :
+                LogisticsCostCalculator.CalculateCost(
+                    completedKm,
+                    Math.Max(0m, (decimal)(prefix.ReadyAtUtc - workdayStart).TotalMinutes),
+                    vehicle.CostPerKm ?? _options.DefaultCostPerKm,
+                    _options.CostPerHour);
             var candidates = new List<StopCandidate>();
             foreach (var code in prefix.PendingPointCodes.Except(prefix.CompletedPointCodes).Distinct())
             {

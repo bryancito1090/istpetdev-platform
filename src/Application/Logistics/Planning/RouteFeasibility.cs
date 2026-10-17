@@ -20,21 +20,6 @@ public sealed record StopCandidate(
     decimal CoverageDays,
     decimal LeadTimeDays);
 
-public sealed record FeasibilityCheck(
-    bool IsFeasible,
-    string? FailureReason, // "capacity", "time_window", "workday", "unreachable", "blocked_leg"
-    DateTime ArrivalUtc,
-    DateTime DepartureUtc,
-    TimeSpan WaitTime,
-    int? LateMinutes,
-    decimal CumulativeKm,
-    decimal CumulativeMinutes,
-    decimal CumulativeCost,
-    decimal TotalWeight,
-    decimal TotalVolume,
-    IReadOnlyList<Leg> Legs,
-    bool HasApproximations);
-
 public static class RouteFeasibility
 {
     public static FeasibilityCheck EvaluateRoute(
@@ -78,7 +63,9 @@ public static class RouteFeasibility
         var legs = new List<Leg>();
         bool hasApproximations = false;
         decimal totalKm = 0m;
-        decimal totalMinutes = 0m;
+        decimal drivingMinutes = 0m;
+        decimal serviceMinutes = 0m;
+        decimal waitMinutes = 0m;
 
         DateTime currentTimeUtc = workdayStartUtc;
         GeoPoint currentPos = depotPos;
@@ -111,7 +98,7 @@ public static class RouteFeasibility
             legs.Add(leg with { Minutes = legMinutes });
 
             totalKm += leg.Km;
-            totalMinutes += legMinutes;
+            drivingMinutes += legMinutes;
 
             currentTimeUtc = currentTimeUtc.AddMinutes((double)legMinutes);
             var arrivalUtc = currentTimeUtc;
@@ -125,6 +112,7 @@ public static class RouteFeasibility
             if (localArrival < stop.WindowStartLocal)
             {
                 wait = stop.WindowStartLocal.ToTimeSpan() - localArrival.ToTimeSpan();
+                waitMinutes += (decimal)wait.TotalMinutes;
                 currentTimeUtc = currentTimeUtc.Add(wait);
             }
             else if (localArrival > stop.WindowEndLocal)
@@ -142,7 +130,7 @@ public static class RouteFeasibility
 
             // Tiempo de servicio en la parada
             currentTimeUtc = currentTimeUtc.AddMinutes(stop.ServiceMinutes);
-            totalMinutes += stop.ServiceMinutes;
+            serviceMinutes += stop.ServiceMinutes;
 
             currentPos = nextPos;
         }
@@ -170,7 +158,7 @@ public static class RouteFeasibility
         legs.Add(returnLeg with { Minutes = returnMinutes });
 
         totalKm += returnLeg.Km;
-        totalMinutes += returnMinutes;
+        drivingMinutes += returnMinutes;
         currentTimeUtc = currentTimeUtc.AddMinutes((double)returnMinutes);
 
         // 3. Jornada laboral máxima
@@ -180,14 +168,15 @@ public static class RouteFeasibility
             return Infeasible("workday");
         }
 
-        // Costo = km * CostPerKm + horas * CostPerHour
+        var totalElapsedMinutes = drivingMinutes + serviceMinutes + waitMinutes;
         var costPerKm = vehicle.CostPerKm ?? defaultCostPerKm;
-        var totalHours = (decimal)(currentTimeUtc - workdayStartUtc).TotalHours;
-        var totalCost = Math.Round(totalKm * costPerKm + totalHours * costPerHour, 3, MidpointRounding.AwayFromZero);
+        var totalCost = LogisticsCostCalculator.CalculateCost(totalKm, totalElapsedMinutes, costPerKm, costPerHour);
+        var totalMinutes = drivingMinutes + serviceMinutes;
 
         return new FeasibilityCheck(
-            true, null, workdayStartUtc, currentTimeUtc, TimeSpan.Zero, null,
-            totalKm, totalMinutes, totalCost, totalWeight, totalVolume, legs, hasApproximations);
+            true, null, workdayStartUtc, currentTimeUtc, TimeSpan.FromMinutes((double)waitMinutes), null,
+            totalKm, totalMinutes, totalCost, totalWeight, totalVolume, legs, hasApproximations,
+            waitMinutes, drivingMinutes, serviceMinutes);
     }
 
     private static FeasibilityCheck Infeasible(string reason) =>
