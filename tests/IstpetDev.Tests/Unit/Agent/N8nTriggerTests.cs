@@ -268,16 +268,35 @@ public sealed class N8nTriggerTests
     }
 
     [Fact]
-    public async Task Timeout_longer_than_2s_returns_Error_outcome()
+    public async Task Timeout_longer_than_webhook_timeout_returns_Error_outcome()
     {
-        // Delay of 3 seconds exceeds the 2s internal timeout
-        var handler = new DelayedMockHttpHandler(TimeSpan.FromSeconds(3));
+        // Delay of 2 seconds exceeds explicit 1s webhook timeout
+        var handler = new DelayedMockHttpHandler(TimeSpan.FromSeconds(2));
+        var client = new HttpClient(handler);
+        var options = Options.Create(new N8nOptions
+        {
+            WebhookSecret = Secret,
+            WebhookTimeoutSeconds = 1
+        });
+
+        var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
+        var result = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
+
+        Assert.Equal(TriggerOutcome.Error, result.Outcome);
+    }
+
+    [Fact]
+    public async Task Cold_start_response_under_default_webhook_timeout_returns_Success_outcome()
+    {
+        // Delay of 2500ms previously failed under the 2s hardcoded limit,
+        // but now succeeds under default 4s WebhookTimeoutSeconds (Issue #292)
+        var handler = new DelayedMockHttpHandler(TimeSpan.FromMilliseconds(2500));
         var client = new HttpClient(handler);
         var options = Options.Create(new N8nOptions { WebhookSecret = Secret });
 
         var trigger = new N8nTrigger(client, options, NullLogger<N8nTrigger>.Instance);
         var result = await trigger.TriggerAsync(Guid.NewGuid(), AgentRunKind.Watch, null, CancellationToken.None);
 
-        Assert.Equal(TriggerOutcome.Error, result.Outcome);
+        Assert.Equal(TriggerOutcome.Success, result.Outcome);
     }
 }

@@ -17,6 +17,7 @@ public sealed class N8nOptions
     public string IncidentWebhookPath { get; set; } = "/webhook/agent-incident";
     public string ApiBaseUrl { get; set; } = "http://localhost:5000";
     public int TimeoutSeconds { get; set; } = 10;
+    public int WebhookTimeoutSeconds { get; set; } = 4;
 }
 
 public sealed class N8nTrigger(
@@ -93,7 +94,8 @@ public sealed class N8nTrigger(
         request.Headers.Add(SignatureHeader, signature);
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var requestTimeout = remaining < TimeSpan.FromSeconds(2) ? remaining : TimeSpan.FromSeconds(2);
+        var webhookTimeout = TimeSpan.FromSeconds(opts.WebhookTimeoutSeconds > 0 ? opts.WebhookTimeoutSeconds : 4);
+        var requestTimeout = remaining < webhookTimeout ? remaining : webhookTimeout;
         timeoutCts.CancelAfter(requestTimeout);
 
         try

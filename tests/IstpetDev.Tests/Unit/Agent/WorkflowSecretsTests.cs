@@ -47,8 +47,9 @@ public sealed class WorkflowSecretsTests
                 Assert.Contains("$execution.id", ack.GetProperty("parameters").GetProperty("responseBody").GetString());
                 var register = workflow.GetProperty("nodes").EnumerateArray().Single(node => node.GetProperty("name").GetString() == "Register Execution");
                 Assert.Contains("/execution", register.GetProperty("parameters").GetProperty("url").GetString());
-                Assert.Equal("Register Execution", workflow.GetProperty("connections").GetProperty("Valid Signature?").GetProperty("main")[0][0].GetProperty("node").GetString());
-                Assert.Equal("Respond Accepted", workflow.GetProperty("connections").GetProperty("Register Execution").GetProperty("main")[0][0].GetProperty("node").GetString());
+                Assert.Equal("Respond Accepted", workflow.GetProperty("connections").GetProperty("Valid Signature?").GetProperty("main")[0][0].GetProperty("node").GetString());
+                Assert.Equal("Register Execution", workflow.GetProperty("connections").GetProperty("Respond Accepted").GetProperty("main")[0][0].GetProperty("node").GetString());
+                Assert.Equal("Initial Context Allowed?", workflow.GetProperty("connections").GetProperty("Register Execution").GetProperty("main")[0][0].GetProperty("node").GetString());
                 Assert.Empty(workflow.GetProperty("pinData").EnumerateObject());
 
                 var tools = workflow.GetProperty("nodes").EnumerateArray()
