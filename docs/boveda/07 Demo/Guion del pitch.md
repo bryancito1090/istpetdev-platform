@@ -11,7 +11,7 @@ tags: [demo, validacion, istpetdev, planificacion]
 
 Por solicitud de Bryan, la v8 conserva las nueve láminas de la v7 y añade una última con un QR grande a `https://istpetdev.doicela.dev/`, una cuenta dedicada al jurado con rol Auditor y una explicación de seguridad en diez líneas. El [guion v8](../../specs/006-validacion-pitch-entrega/guion-pitch-v8.md) es la fuente de esta versión; incluye tiempos propuestos y las instrucciones para regenerar el editable y el PDF. El inicio de sesión real y los permisos se registran en la [evidencia de acceso](../../specs/006-validacion-pitch-entrega/evidencia/pitch-v8-acceso-jurado.md).
 
-La copia de revisión `pitch-v8-revision.*` omite la contraseña y puede versionarse. La copia local `pitch-v8.*`, destinada al jurado, la muestra en la última lámina y queda fuera de Git. `Entregable/` conserva la v7 sin credenciales. La meta de 4:50 aún requiere ensayo cronometrado; no equivale a congelamiento ni entrega oficial.
+La copia de revisión `pitch-v8-revision.*` omite la contraseña y puede versionarse. La copia local `pitch-v8.*`, destinada al jurado, la muestra en la última lámina y queda fuera de Git. Desde el 17-oct, por decisión del equipo, `Entregable/7-Pitch.*` es la v8 **con** la clave del jurado (cuenta Auditor de solo lectura, desactivable); la copia de revisión no la lleva. La meta de 4:50 aún requiere ensayo cronometrado; no equivale a congelamiento ni entrega oficial.
 
 ## Propuesta v7 (17-oct): un solo caso, de la alerta a la decisión — 9 láminas, 4:35
 

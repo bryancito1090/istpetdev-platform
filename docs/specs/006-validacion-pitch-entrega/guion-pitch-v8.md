@@ -42,6 +42,6 @@ Fuente para Cognito: [documentación oficial de AWS](https://docs.aws.amazon.com
 - Guion: este Markdown, `materiales/guion-pitch-v8.docx` y `materiales/guion-pitch-v8.pdf`; los tres omiten la contraseña.
 - QR: `https://istpetdev.doicela.dev/`. Solo contiene el dominio, sin contraseña, token ni acceso automático.
 - Usuario: `jurado@expo.ec`, nombre «Jurado Expo Clean 2026», rol `Auditor`.
-- La contraseña está en la última diapositiva y en `~/.config/istpetdev/private/jurado-pitch-v8.json` (0600). Los archivos que la contienen se excluyen localmente de Git. No se sustituye la v7 versionada en `docs/boveda/Entregable/` por una copia con credenciales.
+- La contraseña está en la última diapositiva y en `~/.config/istpetdev/private/jurado-pitch-v8.json` (0600). Los archivos que la contienen se excluyen localmente de Git. Por decisión del equipo el 17-oct, `docs/boveda/Entregable/7-Pitch.*` sí lleva la v8 con la clave del jurado (cuenta Auditor de solo lectura); la copia de revisión `pitch-v8-revision.*` sigue sin ella. Al terminar la evaluación hay que desactivar la cuenta.
 - Revocación: al terminar la evaluación, Gerencia puede desactivar la cuenta desde Usuarios. La cuenta no caduca automáticamente; queda pendiente que el responsable la desactive tras el evento.
 - Registro del acceso productivo y sus límites: `evidencia/pitch-v8-acceso-jurado.md`. Issue #371.
