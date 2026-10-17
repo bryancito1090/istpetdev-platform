@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AccountProvisioning>();
         services.AddScoped<AccountAdministration>();
+        services.AddScoped<IstpetDev.Application.Field.FieldActivitySeed>();
 
         return services;
     }

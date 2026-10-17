@@ -206,6 +206,16 @@ if (resetAt >= 0)
     return;
 }
 
+var seedFieldAt = Array.IndexOf(args, "--seed-field-activity");
+if (seedFieldAt >= 0)
+{
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<IstpetDev.Application.Field.FieldActivitySeed>();
+    var fieldReport = await seeder.RunAsync(true);
+    Console.WriteLine($"Field activity seed: Routes={fieldReport.Routes}, Receipts={fieldReport.Receipts}, Rejections={fieldReport.ReceiptsWithRejections}, Adjustments={fieldReport.ReceiptsWithAdjustments}, Orders={fieldReport.FieldRequests}");
+    return;
+}
+
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableSwagger", false))
 {
     app.UseSwagger();
