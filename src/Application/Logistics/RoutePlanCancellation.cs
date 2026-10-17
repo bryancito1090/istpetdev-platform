@@ -50,7 +50,7 @@ public static class RoutePlanCancellation
 
         var deliveries = await db.Deliveries
             .Where(d => d.OrganizationId == DemoOrganization.Id &&
-                        db.RouteStops.Any(s => s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
+                        db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id && s.Id == d.RouteStopId))
             .ToListAsync(ct);
         if (deliveries.Any(d => d.Status is not (DeliveryStates.Draft or DeliveryStates.Cancelled)))
             throw new InvalidOperationException("No se puede cancelar: la ruta tiene entregas despachadas, entregadas o recibidas.");
@@ -60,7 +60,7 @@ public static class RoutePlanCancellation
             .Where(r => r.OrganizationId == DemoOrganization.Id && r.RoutePlanId == plan.Id && r.Status == RouteStockReservationStatus.Active)
             .ToListAsync(ct);
         var balanceIds = reservations.Select(r => r.StockBalanceId).Distinct().ToList();
-        var balances = await db.StockBalances.Where(b => balanceIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, ct);
+        var balances = await db.StockBalances.Where(b => b.OrganizationId == DemoOrganization.Id && balanceIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, ct);
         foreach (var reservation in reservations)
         {
             if (balances.TryGetValue(reservation.StockBalanceId, out var balance))
@@ -87,7 +87,7 @@ public static class RoutePlanCancellation
             .Where(l => l.OrganizationId == DemoOrganization.Id && orderIds.Contains(l.DeliveryOrderId))
             .ToListAsync(ct);
         var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
-        var skus = await db.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Sku, ct);
+        var skus = await db.Products.Where(p => p.OrganizationId == DemoOrganization.Id && productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Sku, ct);
 
         var released = new List<(DeliveryOrderLine Line, decimal Quantity)>();
         foreach (var line in lines)

@@ -74,7 +74,7 @@ public sealed class RiskCalculator(
         var lotIds = balances.Select(b => b.LotId).Distinct().ToList();
         var lots = await db.Lots
             .AsNoTracking()
-            .Where(l => lotIds.Contains(l.Id))
+            .Where(l => l.OrganizationId == DemoOrganization.Id && lotIds.Contains(l.Id))
             .ToDictionaryAsync(l => l.Id, ct);
 
         // 2. Consumos en la ventana de demanda
@@ -102,14 +102,14 @@ public sealed class RiskCalculator(
 
         var pendingLines = await db.DeliveryLines
             .AsNoTracking()
-            .Where(dl => pendingDeliveryIds.Contains(dl.DeliveryId))
+            .Where(dl => dl.OrganizationId == DemoOrganization.Id && pendingDeliveryIds.Contains(dl.DeliveryId))
             .ToListAsync(ct);
 
         // Los lotes en camino salen de bodega: pueden no tener saldo todavía en el punto.
         var pendingLotIds = pendingLines.Select(l => l.LotId).Distinct().ToList();
         var pendingLotProduct = await db.Lots
             .AsNoTracking()
-            .Where(l => pendingLotIds.Contains(l.Id))
+            .Where(l => l.OrganizationId == DemoOrganization.Id && pendingLotIds.Contains(l.Id))
             .ToDictionaryAsync(l => l.Id, l => l.ProductId, ct);
 
         var results = new List<RiskItem>();

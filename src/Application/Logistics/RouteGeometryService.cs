@@ -90,7 +90,7 @@ public sealed class RouteGeometryService(
         var key = $"{plan.Id}:{plan.Version}";
         if (cache.TryGet(key, out var cached)) return cached;
 
-        var vehicle = await db.Vehicles.AsNoTracking().FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
+        var vehicle = await db.Vehicles.AsNoTracking().FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == plan.VehicleId, ct);
         var warehouses = await db.Locations.AsNoTracking()
             .Where(l => l.OrganizationId == DemoOrganization.Id && l.Kind == LocationKinds.Warehouse && l.Position != null)
             .ToListAsync(ct);
@@ -99,11 +99,11 @@ public sealed class RouteGeometryService(
             : new RouteGeometryWaypoint(depotLocation.Code, depotLocation.Name, depotLocation.Position!.Y, depotLocation.Position.X);
 
         var stops = await db.RouteStops.AsNoTracking()
-            .Where(s => s.RoutePlanId == plan.Id).OrderBy(s => s.SequenceNumber).ToListAsync(ct);
+            .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id).OrderBy(s => s.SequenceNumber).ToListAsync(ct);
         var pointIds = stops.Select(s => s.ServicePointId).Distinct().ToList();
-        var points = await db.ServicePoints.AsNoTracking().Where(p => pointIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+        var points = await db.ServicePoints.AsNoTracking().Where(p => p.OrganizationId == DemoOrganization.Id && pointIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
         var stopLocationIds = stops.Where(s => s.LocationId.HasValue).Select(s => s.LocationId!.Value).Distinct().ToList();
-        var stopLocations = await db.Locations.AsNoTracking().Where(l => stopLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
+        var stopLocations = await db.Locations.AsNoTracking().Where(l => l.OrganizationId == DemoOrganization.Id && stopLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
 
         var waypoints = new List<double[]>();
         var stopWaypoints = new List<RouteGeometryWaypoint>();

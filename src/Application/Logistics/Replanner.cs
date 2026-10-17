@@ -87,7 +87,7 @@ public sealed class Replanner(
             .Where(s => s.OrganizationId == DemoOrganization.Id)
             .ToDictionaryAsync(s => s.Id, s => s, ct);
 
-        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct)
+        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == plan.VehicleId, ct)
             ?? throw new InvalidOperationException($"Vehículo {plan.VehicleId} no encontrado.");
 
         var completedStops = stops.Where(s => s.Status == "Completed").ToList();
@@ -391,7 +391,7 @@ public sealed class Replanner(
         if (decision.Status == "Approved")
         {
             // Idempotencia: ya aprobada, devolver el plan asociado
-            var existingPlan = await db.RoutePlans.FirstAsync(p => p.Id == proposedRoutePlanId, ct);
+            var existingPlan = await db.RoutePlans.FirstAsync(p => p.OrganizationId == DemoOrganization.Id && p.Id == proposedRoutePlanId, ct);
             return existingPlan;
         }
 
@@ -399,7 +399,7 @@ public sealed class Replanner(
         decision.DecidedByAccountId = request.DecidedByAccountId;
         decision.DecidedAtUtc = DateTime.UtcNow;
 
-        var plan = await db.RoutePlans.FirstAsync(p => p.Id == proposedRoutePlanId, ct);
+        var plan = await db.RoutePlans.FirstAsync(p => p.OrganizationId == DemoOrganization.Id && p.Id == proposedRoutePlanId, ct);
         await routePublisher.PublishAsync(new PublishRequest(plan.Id, null, request.DecidedByAccountId), ct);
 
         await db.SaveChangesAsync(ct);
@@ -437,12 +437,12 @@ public sealed class Replanner(
         }
 
         var previousPlan = await db.RoutePlans
-            .FirstOrDefaultAsync(p => p.Id == currentPlan.SupersedesRoutePlanId.Value, ct)
+            .FirstOrDefaultAsync(p => p.OrganizationId == DemoOrganization.Id && p.Id == currentPlan.SupersedesRoutePlanId.Value, ct)
             ?? throw new InvalidOperationException("Revisión previa a restaurar no encontrada.");
 
         // Idempotencia: Verificar si ya existe una revisión restaurada que apunte a este plan
         var existingRestored = await db.RoutePlans
-            .FirstOrDefaultAsync(p => p.SupersedesRoutePlanId == currentPlan.Id && p.Code == currentPlan.Code && p.Status == "Published", ct);
+            .FirstOrDefaultAsync(p => p.OrganizationId == DemoOrganization.Id && p.SupersedesRoutePlanId == currentPlan.Id && p.Code == currentPlan.Code && p.Status == "Published", ct);
         if (existingRestored != null)
         {
             return existingRestored;
@@ -450,7 +450,7 @@ public sealed class Replanner(
 
         // 1. Validar que ninguna entrega pendiente esté despachada (incluye la entregada sin recibir)
         var currentDeliveries = await db.Deliveries
-            .Where(d => db.RouteStops.Any(s => s.RoutePlanId == currentPlan.Id && s.Id == d.RouteStopId))
+            .Where(d => d.OrganizationId == DemoOrganization.Id && db.RouteStops.Any(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == currentPlan.Id && s.Id == d.RouteStopId))
             .ToListAsync(ct);
 
         if (currentDeliveries.Any(d => d.Status is DeliveryStates.Dispatched or DeliveryStates.InTransit or DeliveryStates.Delivered))
@@ -460,11 +460,11 @@ public sealed class Replanner(
 
         // 2. Liberar reservas Active no despachadas de la revisión actual
         var activeReservations = await db.RouteStockReservations
-            .Where(r => r.RoutePlanId == currentPlan.Id && r.Status == RouteStockReservationStatus.Active)
+            .Where(r => r.OrganizationId == DemoOrganization.Id && r.RoutePlanId == currentPlan.Id && r.Status == RouteStockReservationStatus.Active)
             .ToListAsync(ct);
 
         var balanceIds = activeReservations.Select(r => r.StockBalanceId).Distinct().ToList();
-        var balances = await db.StockBalances.Where(b => balanceIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, b => b, ct);
+        var balances = await db.StockBalances.Where(b => b.OrganizationId == DemoOrganization.Id && balanceIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, b => b, ct);
 
         foreach (var res in activeReservations)
         {
@@ -504,7 +504,7 @@ public sealed class Replanner(
         db.RoutePlans.Add(restoredPlan);
 
         var prevStops = await db.RouteStops
-            .Where(s => s.RoutePlanId == previousPlan.Id)
+            .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == previousPlan.Id)
             .OrderBy(s => s.SequenceNumber)
             .ToListAsync(ct);
 

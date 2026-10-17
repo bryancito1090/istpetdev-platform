@@ -65,13 +65,13 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
 
                 var affectedPlan = publishedPlans.First(p => p.VehicleId == breakdownVehicle.Id);
                 var pendingStops = await db.RouteStops
-                    .Where(s => s.RoutePlanId == affectedPlan.Id && s.Status != "Completed")
+                    .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == affectedPlan.Id && s.Status != "Completed")
                     .OrderBy(s => s.SequenceNumber)
                     .ToListAsync(ct);
 
                 var spIds = pendingStops.Select(s => s.ServicePointId).ToHashSet();
                 var spMap = await db.ServicePoints
-                    .Where(s => spIds.Contains(s.Id))
+                    .Where(s => s.OrganizationId == DemoOrganization.Id && spIds.Contains(s.Id))
                     .ToDictionaryAsync(s => s.Id, s => s.Code, ct);
 
                 affectedRoutes.Add(new AffectedRoute(
@@ -131,7 +131,7 @@ public sealed class IncidentEvaluator(IApplicationDbContext db) : IIncidentEvalu
             var routeAffectedStops = new List<AffectedStop>();
 
             var stops = await db.RouteStops
-                .Where(s => s.RoutePlanId == plan.Id)
+                .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id)
                 .OrderBy(s => s.SequenceNumber)
                 .ToListAsync(ct);
 

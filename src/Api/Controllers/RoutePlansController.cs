@@ -38,6 +38,9 @@ public sealed class RoutePlansController(
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
     {
+        if (limit is < 1 or > 100)
+            return BadRequest(new { message = "El límite debe estar entre 1 y 100." });
+
         var query = db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id);
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -69,14 +72,14 @@ public sealed class RoutePlansController(
 
         var planIds = items.Select(p => p.Id).ToList();
         var stopsCountDict = await db.RouteStops
-            .Where(s => planIds.Contains(s.RoutePlanId))
+            .Where(s => s.OrganizationId == DemoOrganization.Id && planIds.Contains(s.RoutePlanId))
             .GroupBy(s => s.RoutePlanId)
             .Select(g => new { RoutePlanId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.RoutePlanId, g => g.Count, ct);
 
         // Drivers asignados por ruta (#164)
         var planStopIds = await db.RouteStops.AsNoTracking()
-            .Where(s => planIds.Contains(s.RoutePlanId))
+            .Where(s => s.OrganizationId == DemoOrganization.Id && planIds.Contains(s.RoutePlanId))
             .Select(s => new { s.Id, s.RoutePlanId })
             .ToListAsync(ct);
         var stopToPlan = planStopIds.ToDictionary(s => s.Id, s => s.RoutePlanId);
@@ -152,11 +155,11 @@ public sealed class RoutePlansController(
         if (plan == null) return NotFound();
 
         var stops = await db.RouteStops
-            .Where(s => s.RoutePlanId == plan.Id)
+            .Where(s => s.OrganizationId == DemoOrganization.Id && s.RoutePlanId == plan.Id)
             .OrderBy(s => s.SequenceNumber)
             .ToListAsync(ct);
 
-        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == plan.VehicleId, ct);
+        var vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == plan.VehicleId, ct);
 
         // #160 & #164: bodega, vehículo, conductor y entregas asociadas a la ruta.
         var stopIdsOfPlan = stops.Select(s => s.Id).ToList();
@@ -164,7 +167,7 @@ public sealed class RoutePlansController(
             .Where(d => d.RouteStopId.HasValue && stopIdsOfPlan.Contains(d.RouteStopId.Value) && d.OrganizationId == DemoOrganization.Id)
             .ToListAsync(ct);
         var originId = planDeliveries.Select(d => (Guid?)d.OriginLocationId).FirstOrDefault() ?? vehicle?.DepotLocationId;
-        var origin = originId is { } oid ? await db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.Id == oid, ct) : null;
+        var origin = originId is { } oid ? await db.Locations.AsNoTracking().FirstOrDefaultAsync(l => l.OrganizationId == DemoOrganization.Id && l.Id == oid, ct) : null;
         var driverIds = planDeliveries.Where(d => d.AssignedAccountId.HasValue).Select(d => d.AssignedAccountId!.Value).Distinct().ToList();
         var drivers = await db.Accounts.AsNoTracking().Where(a => driverIds.Contains(a.Id) && a.OrganizationId == DemoOrganization.Id).Select(a => new { a.Id, a.DisplayName }).ToListAsync(ct);
 
@@ -258,7 +261,7 @@ public sealed class RoutePlansController(
         }
 
         var pickupLocationIds = stops.Where(s => s.Kind == RouteStopKind.Pickup && s.LocationId.HasValue).Select(s => s.LocationId!.Value).ToList();
-        var pickupLocations = await db.Locations.AsNoTracking().Where(l => pickupLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
+        var pickupLocations = await db.Locations.AsNoTracking().Where(l => l.OrganizationId == DemoOrganization.Id && pickupLocationIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id, ct);
 
         var products = await db.Products.AsNoTracking()
             .Where(p => allProductIds.Contains(p.Id) && p.OrganizationId == DemoOrganization.Id)
@@ -669,7 +672,7 @@ public sealed class RoutePlansController(
 
         // #199: carga usada frente a capacidad y cantidades por línea (requerida, planificada, pendiente) para panel y n8n.
         var routeVehicleIds = result.Routes.Select(r => r.VehicleId).ToList();
-        var capacities = await db.Vehicles.Where(v => routeVehicleIds.Contains(v.Id))
+        var capacities = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id && routeVehicleIds.Contains(v.Id))
             .ToDictionaryAsync(v => v.Id, v => new { v.MaxWeight, v.MaxVolume }, ct);
 
         return StatusCode(StatusCodes.Status201Created, new
@@ -779,7 +782,7 @@ public sealed class RoutePlansController(
         var agentRunId = await GetAgentRunIdAsync("Incident", ct);
         if (agentRunId.HasValue && res.AgentDecisionId.HasValue)
         {
-            var decision = await db.AgentDecisions.FirstOrDefaultAsync(d => d.Id == res.AgentDecisionId.Value, ct);
+            var decision = await db.AgentDecisions.FirstOrDefaultAsync(d => d.OrganizationId == DemoOrganization.Id && d.Id == res.AgentDecisionId.Value, ct);
             if (decision is not null)
             {
                 decision.CorrelationId = agentRunId.Value;
@@ -1170,10 +1173,13 @@ public sealed class RoutePlansController(
             return BadRequest(new { message = "La secuencia no contiene paradas." });
         }
 
+        if (req.Stops.Any(s => s.ServiceMinutes < 0 || s.Loads?.Any(l => l.Quantity < 0) == true))
+            return BadRequest(new { message = "Los tiempos de servicio y las cantidades no pueden ser negativos." });
+
         Vehicle? vehicle = null;
         if (req.VehicleId.HasValue)
         {
-            vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.Id == req.VehicleId.Value, ct);
+            vehicle = await db.Vehicles.FirstOrDefaultAsync(v => v.OrganizationId == DemoOrganization.Id && v.Id == req.VehicleId.Value, ct);
         }
 
         var startUtc = req.PlannedStartUtc ?? DateTime.UtcNow;
@@ -1190,6 +1196,11 @@ public sealed class RoutePlansController(
         {
             return BadRequest(new { message = "La ruta debe contener al menos una parada." });
         }
+
+        if (req.TotalDistanceKm < 0 || req.TotalDurationMinutes < 0 || req.TotalCost < 0 ||
+            req.Lines?.Any(l => l.PlannedQuantity < 0) == true ||
+            req.Stops.Any(s => s.ServiceMinutes < 0 || s.Loads?.Any(l => l.Quantity < 0) == true))
+            return BadRequest(new { message = "Las distancias, tiempos, costos y cantidades no pueden ser negativos." });
 
         if (!req.VehicleId.HasValue || req.VehicleId.Value == Guid.Empty)
         {
@@ -1602,6 +1613,9 @@ public sealed class RoutePlansController(
         {
             return BadRequest(new { message = "La ruta debe contener al menos una parada." });
         }
+
+        if (req.TotalDistanceKm < 0 || req.TotalDurationMinutes < 0)
+            return BadRequest(new { message = "La distancia y duración no pueden ser negativas." });
 
         var today = await clock.TodayAsync(ct);
         var vehicles = await db.Vehicles.Where(v => v.OrganizationId == DemoOrganization.Id && v.IsActive).ToListAsync(ct);
