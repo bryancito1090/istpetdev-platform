@@ -111,6 +111,11 @@ identificó la conexión como `IstpetDevFieldSeed330`, con tiempo de comando de 
 y timeout de transacción inactiva de 120s; revirtió antes de la aplicación final.
 No se terminaron conexiones de otros trabajos.
 
+Cierre operativo: cero transacciones activas de `IstpetDevFieldSeed330` después
+de aplicar y repetir la carga; se terminó únicamente la sesión SSM propia del
+puerto 15433. Frontend/backend de desarrollo permanecen activos. El esquema
+productivo quedó intacto; la migración local posterior se documenta en #345.
+
 No se ha desplegado una aplicación ni aplicado la migración de metadatos de
 catálogo mediante esta tarea. La comprobación HTTP autenticada productiva sigue
 pendiente de una sesión de usuario vigente; los recuentos SQL efectivos no se

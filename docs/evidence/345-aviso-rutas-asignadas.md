@@ -62,7 +62,14 @@ migraciones. Respaldo actualizado previo: 424.185 bytes, 40 tablas, catálogo
 `pg_restore --list` correcto, SHA256
 `b3d85683849e6b5c13df4f2c79224704366e5857249108be719bbecebb07b6da`.
 No se cambió el esquema ni se desplegó la aplicación en producción.
-Pendientes CI e integración a develop.
+CI final sobre `665f8236842bee3f05c6bb6f75a140551580ff49`, run `39055486451`:
+377 integraciones + 361 unitarias + 25 E2E de backend (763); 24 shared-core,
+227 web y 147 PWA (398 frontend). Todos los checks SUCCESS, incluido ensayo de
+respaldo/restauración y política de ramas; MERGEABLE antes de integrar.
+PR #349 integrado a develop el 2026-10-17 17:56:42 UTC, merge
+`8b9b1effa672ae95ba5d205d2c60a8b1de5dd404`. Issue #345 CLOSED después del merge,
+sin comentarios adicionales. La documentación final no modifica el software
+verificado en esa revisión.
 
 Validación visual adicional con Chromium, componente real y ApiService sintético
 en una vista aislada sin sesión real: escritorio 1440×1000 y móvil 390×844,
