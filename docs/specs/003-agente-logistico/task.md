@@ -6,7 +6,7 @@
 - [x] Contrato: `planRemainingOnly=false` por defecto; 409 `orders_already_assigned` con pedidos afectados. Validación existente de cantidades/versiones al aceptar conservada.
 - [x] Pruebas locales: 7/7 API + una regresión adicional de abastecimiento mixto y 89/89 de Rutas, incluidas asignación total/parcial, datos obsoletos y reposición nueva en el mismo destino.
 - [x] Build web y lint; bóveda sin errores (cuatro avisos preexistentes).
-- [ ] CI y merge a develop.
+- [x] CI final sobre `665f823`: 763 backend y 398 frontend aprobadas, más respaldo/restauración y política de ramas. PR #349 integrado a develop (`8b9b1ef`); issue #345 cerrado después del merge.
 - [x] Reiniciar frontend/backend propios: frontend 200, readiness 200 y rutas sin sesión 401. Migración de metadatos ya publicada aplicada solo en desarrollo con respaldo; sin despliegue ni migración de producción.
 
 Plan y prelaunch: `docs/evidence/345-aviso-rutas-asignadas.md`.
