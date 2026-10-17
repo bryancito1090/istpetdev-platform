@@ -842,19 +842,16 @@ despliegue. La revisión en seco conserva la regla de oro de ADR-22: la API
 calcula los hechos y decide; n8n y el LLM solo explican y nunca completan
 coordenadas, cantidades ni códigos.
 
-## Issue #240 — costo total estimado de servir — 16-oct-2026
+## Actualización productiva de workflows — 16-oct-2026
 
-- [x] Revisar issue, coordinación #253 y propuesta #239; #230 cerrado.
-- [x] [Plan de implementación](plan-240-costo-servicio.md), rama propia desde develop.
-- [x] Migración aditiva e importador compatible.
-- [x] Cálculo y desglose en evaluación/selección; sin editar RoutePlansController.
-- [x] 40/40 pruebas dirigidas finales; historial desde cero, fixture demo y copia real de base local (37 tablas/387 filas) sin pérdida.
-- [x] [Evidencia, prelaunch local y captura](evidencia/2026-10-16-240-costo-servicio.md): API real/PostGIS, readiness 200 y Receptor 403.
-- Revisión técnica local completada; 559/559 en la suite completa y 40/40
-  dirigidas tras los últimos ajustes. CI del HEAD final, aprobación permitida,
-  merge a develop y cierre se acreditan en el PR vinculado a
-  [#240](https://github.com/bryancito1090/istpetdev-platform/issues/240).
-
-Estado del código, pruebas locales y ensayo API: completos; no desplegado. La integración de /confirm es
-responsabilidad de Anthony y la pantalla de #242. Los estados de código, prueba,
-ejecución real y despliegue se registrarán por separado.
+Release #251 (`develop → main`, merge `438c2d6`) con CD de producción en verde
+y sincronización de la instancia n8n de Bryan: `vigia` e `incidente` con 8
+herramientas y prompt v2, `revision-dataset` creado y publicado, `error-agente`
+sin cambios y Schedule apagado. Verificación: webhooks rechazan firmas/tokens
+inválidos (401) y Watch real `Completed` con `promptVersion v2`, traza con
+`/logistics/stock`, `/logistics/sourcing` y `/logistics/vehicles/available`, y
+6/6 decisiones explicadas por LLM (run `01a146dc-7748-7ecf-b5fb-890740270c7f`,
+ejecución n8n `297`). El primer Watch (ejecución `292`) cayó en `agent_error`
+por credenciales locales dentro de los sub-workflows embebidos; se corrigió el
+remapeo y se reaplicó antes de acreditar. Evidencia:
+[2026-10-16-sincronizacion-productiva](evidencia/2026-10-16-sincronizacion-productiva.md).
