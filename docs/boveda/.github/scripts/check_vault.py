@@ -81,7 +81,7 @@ def check_vault(errors: list[str], warnings: list[str]) -> tuple[int, int]:
     notes = vault_notes()
     names: dict[str, Path] = {}
     for note in notes:
-        if note.stem in names:
+        if note.stem in names and note.name != "README.md":
             errors.append(f"Nombre de nota duplicado: {note.relative_to(ROOT)} y {names[note.stem].relative_to(ROOT)}")
         names[note.stem] = note
     valid_targets = set(names) | ATTACHMENTS

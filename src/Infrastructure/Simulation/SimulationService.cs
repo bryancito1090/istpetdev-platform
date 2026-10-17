@@ -38,10 +38,22 @@ public sealed class SimulationService : ISimulationService
         // Validar aislamiento de bases de datos
         SimulationDatabase.ValidateIsolation(operationalConn, simulationConn);
 
-        var datasetVersion = request.DatasetVersion ?? "national-v1";
-        if (string.IsNullOrWhiteSpace(datasetVersion))
+        var batch = await SimulationDatasetReader.LatestAppliedBatchAsync(_db, ct);
+        if (batch is null)
         {
-            throw new ArgumentException("DatasetVersion is required");
+            throw new ArgumentException(
+                "No hay un dataset importado y aplicado. Cargue el dataset en /datos antes de lanzar la simulación.");
+        }
+
+        var datasetVersion = batch.ProfileName;
+        var datasetHash = batch.InputHash;
+        try
+        {
+            await SimulationDatasetReader.LoadAsync(_db, datasetVersion, datasetHash, ct);
+        }
+        catch (Exception ex) when (ex is SimulationDatasetException or SimulationDatasetChangedException)
+        {
+            throw new ArgumentException(ex.Message);
         }
 
         var baseSeeds = request.Seeds is { Length: > 0 } ? request.Seeds : [42, 101, 2024];
@@ -87,6 +99,8 @@ public sealed class SimulationService : ISimulationService
                     PolicyCode = policy,
                     PolicyVersion = policy,
                     DatasetVersion = datasetVersion,
+                    DatasetHash = datasetHash,
+                    ManifestHash = batch.ProfileHash,
                     Status = "Queued",
                     ProgressPercentage = 0,
                     Origin = "computed",
@@ -136,7 +150,8 @@ public sealed class SimulationService : ISimulationService
                     CreatedAtUtc: runsList.Min(r => r.StartedAtUtc),
                     CompletedAtUtc: runsList.Max(r => r.CompletedAtUtc),
                     ProgressPercentage: progress,
-                    Origin: first.Origin ?? "computed");
+                    Origin: first.Origin ?? "computed",
+                    DatasetHash: first.DatasetHash);
             })
             .ToList();
 
@@ -173,41 +188,76 @@ public sealed class SimulationService : ISimulationService
             ProgressPercentage: r.ProgressPercentage,
             FailureReason: r.FailureReason)).ToList();
 
-        var metricDtos = metrics.Select(m => new SimulationMetricDto(
-            Code: m.Code,
-            PolicyCode: m.PolicyCode,
-            Sku: null,
-            Numerator: m.Numerator,
-            Denominator: m.Denominator,
-            Value: m.Value,
-            Unit: m.Unit,
-            NotApplicableReason: m.NotApplicableReason)).ToList();
+        var productIds = metrics
+            .Where(m => m.ProductId.HasValue)
+            .Select(m => m.ProductId!.Value)
+            .Distinct()
+            .ToList();
+        var productSkus = productIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.Products
+                .AsNoTracking()
+                .Where(p => p.OrganizationId == DemoOrganization.Id && productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.Sku, ct);
+        var runById = runs.ToDictionary(r => r.Id, r => r);
 
-        // Agregación de métricas
+        var metricDtos = metrics.Select(m =>
+        {
+            var sku = m.ProductId is Guid productId && productSkus.TryGetValue(productId, out var code)
+                ? code
+                : null;
+            var run = runById[m.SimulationRunId];
+            return new SimulationMetricDto(
+                Code: m.Code,
+                PolicyCode: m.PolicyCode,
+                Sku: sku,
+                Numerator: m.Numerator,
+                Denominator: m.Denominator,
+                Value: m.Value,
+                Unit: m.Unit,
+                NotApplicableReason: m.NotApplicableReason,
+                Seed: run.Seed,
+                ScenarioCode: run.ScenarioCode);
+        }).ToList();
+
+        // Agregación de métricas por política, código y SKU; el adverso no entra en el rango.
         var seedPolicyMetrics = new List<SeedPolicyMetric>();
         foreach (var run in runs)
         {
             var rMetrics = metrics.Where(m => m.SimulationRunId == run.Id);
             foreach (var rm in rMetrics)
             {
+                var sku = rm.ProductId is Guid productId && productSkus.TryGetValue(productId, out var code)
+                    ? code
+                    : null;
                 seedPolicyMetrics.Add(new SeedPolicyMetric(
                     Seed: run.Seed,
                     Scenario: run.ScenarioCode,
                     Policy: run.PolicyCode,
                     MetricCode: rm.Code,
-                    Value: rm.Value));
+                    Value: rm.Value,
+                    Sku: sku));
             }
         }
 
         var aggregated = new List<AggregatedMetricSummary>();
         var distinctPolicies = runs.Select(r => r.PolicyCode).Distinct();
-        var distinctMetricCodes = metrics.Select(m => m.Code).Distinct();
+        var distinctKeys = metrics
+            .Select(m => new
+            {
+                m.Code,
+                Sku = m.ProductId is Guid productId && productSkus.TryGetValue(productId, out var code)
+                    ? code
+                    : null
+            })
+            .Distinct()
+            .ToList();
 
         foreach (var p in distinctPolicies)
         {
-            foreach (var mc in distinctMetricCodes)
+            foreach (var key in distinctKeys)
             {
-                aggregated.Add(ComparisonAggregator.AggregateMetric(seedPolicyMetrics, p, mc));
+                aggregated.Add(ComparisonAggregator.AggregateMetric(seedPolicyMetrics, p, key.Code, key.Sku));
             }
         }
 
@@ -220,15 +270,6 @@ public sealed class SimulationService : ISimulationService
         var progress = (int)runs.Average(r => r.ProgressPercentage);
         var first = runs.First();
 
-        var assumptions = new List<string>
-        {
-            "Matriz vial precargada / aproximación euclidiana etiquetada",
-            "Lead time nacional: 2 días laborables",
-            "Meta de cobertura: 14 días de consumo promedio",
-            "Calendario exógeno común e inmutable por seed",
-            "Demanda insatisfecha agrupada por SKU y unidad base"
-        };
-
         return new SimulationComparisonDetail(
             ComparisonId: comparisonId,
             Status: status,
@@ -240,10 +281,11 @@ public sealed class SimulationService : ISimulationService
             HostName: first.HostName,
             CommitHash: first.CommitHash,
             FailureReason: runs.FirstOrDefault(r => r.FailureReason != null)?.FailureReason,
-            Assumptions: assumptions,
+            Assumptions: BuildAssumptions(first),
             Runs: runDtos,
             Aggregated: aggregated,
-            Metrics: metricDtos);
+            Metrics: metricDtos,
+            DatasetHash: first.DatasetHash);
     }
 
     public async Task<ExportPackage?> ExportComparisonAsync(
@@ -276,15 +318,27 @@ public sealed class SimulationService : ISimulationService
             .OrderBy(e => e.Sequence)
             .ToListAsync(ct);
 
+        var exportProductIds = metrics
+            .Where(m => m.ProductId.HasValue)
+            .Select(m => m.ProductId!.Value)
+            .Distinct()
+            .ToList();
+        var exportProductSkus = exportProductIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.Products
+                .AsNoTracking()
+                .Where(p => p.OrganizationId == DemoOrganization.Id && exportProductIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.Sku, ct);
         var metricValues = metrics.Select(m => new MetricValue(
             Code: m.Code,
             DefinitionVersion: "v1",
-            Sku: null,
+            Sku: m.ProductId is Guid productId && exportProductSkus.TryGetValue(productId, out var code) ? code : null,
             Numerator: m.Numerator,
             Denominator: m.Denominator,
             Value: m.Value,
             Unit: m.Unit,
-            NotApplicableReason: m.NotApplicableReason)).ToList();
+            NotApplicableReason: m.NotApplicableReason,
+            ProductId: m.ProductId)).ToList();
 
         var eventDtos = events.Select(e => new SimulationEventDto(
             Sequence: e.Sequence,
@@ -298,8 +352,20 @@ public sealed class SimulationService : ISimulationService
             Reason: e.Reason)).ToList();
 
         var first = runs.First();
-        var key = new ScenarioKey(first.DatasetVersion, first.Seed, first.ScenarioCode);
-        var calendar = ExogenousCalendar.Build(key, [("REG-01", "P01")], [("SKU-01", 10m, "L")], new DateOnly(2026, 10, 12), 90);
+        SimulationDataset dataset;
+        try
+        {
+            dataset = await SimulationDatasetReader.LoadAsync(_db, first.DatasetVersion, first.DatasetHash, ct);
+        }
+        catch (Exception ex) when (ex is SimulationDatasetException or SimulationDatasetChangedException)
+        {
+            return null;
+        }
+
+        var firstBase = runs.FirstOrDefault(r => r.ScenarioCode == "base") ?? first;
+        var key = new ScenarioKey(dataset.Version, firstBase.Seed, "base");
+        var calendar = ExogenousCalendar.Build(
+            key, dataset.DemandProfiles, dataset.StartDate, dataset.HorizonDays);
 
         return await ExportBuilder.CreateZipPackageAsync(
             comparisonId,
@@ -309,6 +375,7 @@ public sealed class SimulationService : ISimulationService
             first.DatasetVersion,
             commitHash: first.CommitHash ?? "develop-head",
             hostName: first.HostName ?? Environment.MachineName,
+            datasetHash: dataset.Hash,
             cancellationToken: ct);
     }
 
@@ -342,6 +409,7 @@ public sealed class SimulationService : ISimulationService
 
         var manifestEntry = archive.GetEntry("manifest.json");
         string datasetVersion = "national-v1";
+        string? datasetHash = null;
         int seed = 42;
         string scenarioCode = "base";
 
@@ -351,6 +419,7 @@ public sealed class SimulationService : ISimulationService
             var mJson = await r.ReadToEndAsync(ct);
             using var doc = JsonDocument.Parse(mJson);
             if (doc.RootElement.TryGetProperty("datasetVersion", out var dProp)) datasetVersion = dProp.GetString() ?? datasetVersion;
+            if (doc.RootElement.TryGetProperty("datasetHash", out var hProp)) datasetHash = hProp.GetString();
             if (doc.RootElement.TryGetProperty("seed", out var sProp)) seed = sProp.GetInt32();
             if (doc.RootElement.TryGetProperty("scenarioCode", out var scProp)) scenarioCode = scProp.GetString() ?? scenarioCode;
         }
@@ -365,6 +434,7 @@ public sealed class SimulationService : ISimulationService
             PolicyCode = "imported-policy",
             PolicyVersion = "imported-v1",
             DatasetVersion = datasetVersion,
+            DatasetHash = datasetHash ?? "",
             Status = "Completed",
             ProgressPercentage = 100,
             Origin = "imported",
@@ -385,6 +455,17 @@ public sealed class SimulationService : ISimulationService
             var metricValues = JsonSerializer.Deserialize<List<MetricValue>>(mJson);
             if (metricValues != null)
             {
+                var skus = metricValues
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Sku))
+                    .Select(m => m.Sku!)
+                    .Distinct()
+                    .ToList();
+                var productIds = skus.Count == 0
+                    ? new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
+                    : await _db.Products
+                        .AsNoTracking()
+                        .Where(p => p.OrganizationId == DemoOrganization.Id && skus.Contains(p.Sku))
+                        .ToDictionaryAsync(p => p.Sku, p => p.Id, ct);
                 foreach (var mv in metricValues)
                 {
                     _db.SimulationMetrics.Add(new SimulationMetric
@@ -393,6 +474,9 @@ public sealed class SimulationService : ISimulationService
                         SimulationRunId = importedRun.Id,
                         Code = mv.Code,
                         PolicyCode = "imported-policy",
+                        ProductId = mv.Sku is { Length: > 0 } sku && productIds.TryGetValue(sku, out var productId)
+                            ? productId
+                            : null,
                         Numerator = mv.Numerator,
                         Denominator = mv.Denominator,
                         Value = mv.Value,
@@ -406,5 +490,40 @@ public sealed class SimulationService : ISimulationService
         await _db.SaveChangesAsync(ct);
 
         return new SimulationImportResult(true, comparisonId, 1, null);
+    }
+
+    private static IReadOnlyList<string> BuildAssumptions(SimulationRun first)
+    {
+        var assumptions = new List<string>
+        {
+            $"Dataset importado: {first.DatasetVersion}" +
+            (string.IsNullOrWhiteSpace(first.DatasetHash) ? "" : $" (hash {first.DatasetHash[..Math.Min(8, first.DatasetHash.Length)]})"),
+            "Origen: datos cargados en la base; no se leen archivos ni se depende de Demo:Enabled.",
+            "Demanda diaria derivada de Consumptions por punto, SKU y día de la semana; ruido determinista por semilla.",
+            "Tiempo de reposición por punto; el escenario adverso suma un día.",
+            "Quiebres por clave punto–SKU–día; demanda no atendida por SKU y unidad base.",
+            "Puntualidad por líneas de demanda atendidas; no suma unidades incompatibles.",
+            "Trazabilidad operativa no simulada; proviene de la operación física de 004."
+        };
+
+        try
+        {
+            using var doc = JsonDocument.Parse(first.ParametersJson);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("distanceMode", out var mode) && mode.GetString() is { Length: > 0 } distance)
+                assumptions.Add(distance == "Road"
+                    ? "Matriz vial importada; si falta un tramo la corrida falla."
+                    : "Aproximación declarada para todos los tramos.");
+            if (root.TryGetProperty("retiredVehicle", out var retired) && retired.GetString() is { Length: > 0 } vehicle)
+                assumptions.Add($"Escenario adverso: vehículo retirado {vehicle} y demanda ×1,20.");
+            if (root.TryGetProperty("startDate", out var start) && root.TryGetProperty("horizonDays", out var horizon))
+                assumptions.Add($"Horizonte: {horizon.GetInt32()} días desde {start.GetString()}.");
+        }
+        catch (JsonException)
+        {
+            // Un run antiguo puede no tener ParametersJson; se conservan los supuestos base.
+        }
+
+        return assumptions;
     }
 }

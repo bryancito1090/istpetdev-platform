@@ -1,0 +1,5 @@
+sku,lot_code,expires_on,origin,product_name,base_unit
+INT-HACK-01,LOT-ECUA,2026-10-31,Barrio La Ecuatoriana (Quito Sur),Integrantes del Equipo,persona
+INT-HACK-01,LOT-VILL,2026-10-31,La Villaflora - El Recreo (Quito Sur),Integrantes del Equipo,persona
+INT-HACK-01,LOT-GUAM,2026-10-31,Guamani Quito Sur,Integrantes del Equipo,persona
+INT-HACK-01,LOT-CHIM,2026-10-31,Chimbacalle Quito Centro-Sur,Integrantes del Equipo,persona

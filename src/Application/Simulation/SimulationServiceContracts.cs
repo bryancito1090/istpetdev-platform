@@ -19,7 +19,8 @@ public sealed record SimulationComparisonSummary(
     DateTime CreatedAtUtc,
     DateTime? CompletedAtUtc,
     int ProgressPercentage,
-    string Origin);
+    string Origin,
+    string DatasetHash = "");
 
 public sealed record SimulationRunSummaryDto(
     Guid Id,
@@ -38,7 +39,9 @@ public sealed record SimulationMetricDto(
     decimal? Denominator,
     decimal? Value,
     string Unit,
-    string? NotApplicableReason);
+    string? NotApplicableReason,
+    int Seed = 0,
+    string ScenarioCode = "");
 
 public sealed record SimulationComparisonDetail(
     Guid ComparisonId,
@@ -54,7 +57,8 @@ public sealed record SimulationComparisonDetail(
     IReadOnlyList<string> Assumptions,
     IReadOnlyList<SimulationRunSummaryDto> Runs,
     IReadOnlyList<AggregatedMetricSummary> Aggregated,
-    IReadOnlyList<SimulationMetricDto> Metrics);
+    IReadOnlyList<SimulationMetricDto> Metrics,
+    string DatasetHash = "");
 
 public sealed record SimulationImportResult(
     bool Success,

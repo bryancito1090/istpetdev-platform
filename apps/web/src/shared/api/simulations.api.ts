@@ -24,6 +24,7 @@ export interface SimulationComparisonSummary {
   completedAtUtc?: string;
   progressPercentage: number;
   origin: string;
+  datasetHash?: string;
 }
 
 export interface SimulationRunSummaryDto {
@@ -43,6 +44,7 @@ export interface AggregatedMetricSummary {
   median?: number;
   max?: number;
   adverseValue?: number;
+  sku?: string;
 }
 
 export interface SimulationMetricDto {
@@ -54,6 +56,8 @@ export interface SimulationMetricDto {
   value?: number;
   unit: string;
   notApplicableReason?: string;
+  seed?: number;
+  scenarioCode?: string;
 }
 
 export interface SimulationComparisonDetail {
@@ -71,6 +75,7 @@ export interface SimulationComparisonDetail {
   runs: SimulationRunSummaryDto[];
   aggregated: AggregatedMetricSummary[];
   metrics: SimulationMetricDto[];
+  datasetHash?: string;
 }
 
 @Injectable({

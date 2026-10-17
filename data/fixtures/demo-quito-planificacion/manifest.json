@@ -15,6 +15,37 @@
   "roadSegments": 1806,
   "incidents": 6,
   "roadSource": "OSRM público (router.project-osrm.org), red vial OpenStreetMap",
+  "adverseRetiredVehicle": "VEH-0001",
+  "enrichmentVersion": 2,
+  "historyRules": {
+    "weeklySeasonality": "WEEKEND por categoría; sin cambios",
+    "endOfMonth": {
+      "days": "28-31",
+      "factor": 1.18,
+      "note": "supuesto sintético; no aplica a los pares protegidos del pitch"
+    },
+    "campaign": {
+      "start": "2026-09-14",
+      "end": "2026-09-18",
+      "factor": 1.8,
+      "label": "campaña sanitaria sintética de septiembre"
+    },
+    "trends": {
+      "PTO-0020": 0.3,
+      "PTO-0030": 0.25,
+      "PTO-0036": 0.3
+    },
+    "protectedPitchPairs": [
+      "PTO-0004/PRD-0001",
+      "PTO-0004/PRD-0003",
+      "PTO-0005/PRD-0001",
+      "PTO-0005/PRD-0003",
+      "PTO-0006/PRD-0001",
+      "PTO-0006/PRD-0003",
+      "PTO-0015/PRD-0001"
+    ],
+    "existingDesignedStock": "los cinco quiebres deliberados del fixture se conservan"
+  },
   "snapToRoad": {
     "BOD-0001": {
       "distanceM": 0.2,
@@ -195,10 +226,10 @@
     "productos.csv": "110f7a6a8993b46526e2cf4293eb1b0dc9fe01cef99a9e50c3140fceba3738e6",
     "lotes.csv": "bc18a5f320e7f98778140424266eb15cad18d9980cd6cb55a34488cc23fc5484",
     "vehiculos.csv": "f56918cd13f04bc76ce5c5fc11ffc5eb57a446f5e664674840ab18b09e127cdb",
-    "consumos.csv": "89ebebf22ec703391666651ca90967f565c770ded12bf76f14f94d137b32a1ce",
+    "consumos.csv": "6f0b2c978e23b774c4a15ee5afbbb27f7f11d95c074806bcca5f02b15cf14738",
     "inventario.csv": "76f8f827b9ee178759abd84abad014f9901a9be26ebc6ea7a7a17dc83c76c98d",
     "tramos.csv": "006e688449e38e3457bb0efea830b267a92851aabecd2e86037711ceb8c4e777",
-    "incidentes.json": "f1e55c426bf7b700c7c4ad4ba595f80d958f605a6c26e502aca61f8b56aa2b0b",
-    "mapping.json": "3f8fba950b5cf529c8b71a5948e55d0530683ecedd80c9c616356595111d21a2"
+    "incidentes.json": "fe6deabec55eda09714e982ff357c1361f4fb60dd5a118076a0d0f0db69f86a9",
+    "mapping.json": "cbd20f51daf9d70132d82e72e61a2504152478a34331fbfbbcc972af1d9d0e31"
   }
 }

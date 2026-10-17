@@ -25,44 +25,72 @@ public static class ExogenousCalendar
         int days,
         IReadOnlyList<DisruptionEvent>? customDisruptions = null)
     {
+        var profiles = new List<DemandProfile>();
+        foreach (var (regionCode, pointCode) in points.OrderBy(p => p.RegionCode).ThenBy(p => p.PointCode))
+        {
+            foreach (var (sku, baseDaily, unit) in products.OrderBy(pr => pr.Sku))
+            {
+                profiles.Add(new DemandProfile(
+                    pointCode, regionCode, Guid.Empty, sku, unit,
+                    new Dictionary<DayOfWeek, decimal>
+                    {
+                        [DayOfWeek.Monday] = baseDaily,
+                        [DayOfWeek.Tuesday] = baseDaily,
+                        [DayOfWeek.Wednesday] = baseDaily,
+                        [DayOfWeek.Thursday] = baseDaily,
+                        [DayOfWeek.Friday] = baseDaily,
+                        [DayOfWeek.Saturday] = baseDaily * 0.8m,
+                        [DayOfWeek.Sunday] = baseDaily * 0.8m
+                    },
+                    0.15m));
+            }
+        }
+        return Build(key, profiles, startDate, days, customDisruptions);
+    }
+
+    public static ScenarioCalendar Build(
+        ScenarioKey key,
+        IReadOnlyList<DemandProfile> profiles,
+        DateOnly startDate,
+        int days,
+        IReadOnlyList<DisruptionEvent>? customDisruptions = null)
+    {
         var demandList = new List<DemandEvent>();
 
-        // PRNG determinista por clave de escenario y punto/sku/fecha
-        // Garantiza que la misma (datasetVersion, seed) genere exactamente los mismos eventos
+        // PRNG determinista por clave de escenario y punto/sku/fecha.
+        // La media por día de la semana y la volatilidad provienen del histórico importado.
         for (int dayOffset = 0; dayOffset < days; dayOffset++)
         {
             var date = startDate.AddDays(dayOffset);
             var occurredUtc = date.ToDateTime(new TimeOnly(6, 0), DateTimeKind.Utc);
             var dueUtc = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc);
 
-            foreach (var (regionCode, pointCode) in points.OrderBy(p => p.RegionCode).ThenBy(p => p.PointCode))
+            foreach (var profile in profiles.OrderBy(p => p.PointCode).ThenBy(p => p.Sku))
             {
-                foreach (var (sku, baseDaily, unit) in products.OrderBy(pr => pr.Sku))
-                {
-                    // Obtener hash pseudoaleatorio estable
-                    var keyString = $"{key.DatasetVersion}:{key.Seed}:{pointCode}:{sku}:{date:yyyy-MM-dd}";
-                    var hash = SHA256.HashData(Encoding.UTF8.GetBytes(keyString));
-                    var u1 = BitConverter.ToUInt32(hash, 0);
-                    var u2 = BitConverter.ToUInt32(hash, 4);
+                var meanDaily = profile.MeanFor(date.DayOfWeek);
+                if (meanDaily <= 0m) continue;
 
-                    // Ruido determinista en [-0.15, +0.15]
-                    var noise = ((u1 % 3001) / 10000m) - 0.15m; // paso de 0.0001, rango -0.15 a +0.15
+                var keyString = $"{key.DatasetVersion}:{key.Seed}:{profile.PointCode}:{profile.Sku}:{date:yyyy-MM-dd}";
+                var hash = SHA256.HashData(Encoding.UTF8.GetBytes(keyString));
+                var u1 = BitConverter.ToUInt32(hash, 0);
+                var u2 = BitConverter.ToUInt32(hash, 4);
 
-                    // Spike en 5% de las claves (u2 % 100 < 5)
-                    var isSpike = (u2 % 100) < 5;
+                var noiseRange = Math.Clamp(profile.Volatility, 0.05m, 0.15m);
+                var noise = (((u1 % 3001) / 10000m) - 0.15m) * (noiseRange / 0.15m);
+                var isSpike = (u2 % 100) < 5;
+                var requested = meanDaily * (1m + noise) * (isSpike ? 2.5m : 1m);
+                requested = Math.Round(requested, 3, MidpointRounding.AwayFromZero);
+                if (requested <= 0m) continue;
 
-                    var requested = CalculateExpectedDemand(baseDaily, date, noise, isSpike);
-
-                    demandList.Add(new DemandEvent(
-                        OccurredAtUtc: occurredUtc,
-                        RegionCode: regionCode,
-                        PointCode: pointCode,
-                        Sku: sku,
-                        Requested: requested,
-                        Unit: unit,
-                        DueAtUtc: dueUtc,
-                        IsSpike: isSpike));
-                }
+                demandList.Add(new DemandEvent(
+                    OccurredAtUtc: occurredUtc,
+                    RegionCode: profile.Region,
+                    PointCode: profile.PointCode,
+                    Sku: profile.Sku,
+                    Requested: requested,
+                    Unit: profile.Unit,
+                    DueAtUtc: dueUtc,
+                    IsSpike: isSpike));
             }
         }
 
