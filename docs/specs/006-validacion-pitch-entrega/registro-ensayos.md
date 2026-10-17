@@ -158,9 +158,9 @@ Guía para quien presenta con `materiales/pitch-v3.pptx`. Todas las láminas ent
 
 **Total: 13 clics de animación + 9 avances de lámina.**
 
-### Frases de Chillo (pendientes de aprobación de Joseph)
+### Frases de Chillo (aprobadas por Joseph, 16-oct)
 
-No agregan hechos ni cifras: solo reformulan lo que ya dice cada lámina.
+Solo visuales: nadie las lee ni las dice en el pitch. No agregan hechos ni cifras: solo reformulan lo que ya dice cada lámina.
 
 | Lámina | Frase |
 |---|---|
