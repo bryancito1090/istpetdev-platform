@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "localHour": 10,
+  "plannedStartUtc": "2026-10-16T15:00:00Z",
+  "vehicleMatches": [
+    {
+      "vehicleId": "01a147c7-520a-7d4b-bd34-81609d7fd441",
+      "vehicleCode": "URB-244",
+      "isMatch": true,
+      "discardReason": null,
+      "warnings": [
+        "uso_extraurbano (Veh\u00EDculo urbano visita Valle sint\u00E9tico fuera del \u00E1rea urbana configurada; aviso, no descarte)"
+      ],
+      "maxWeight": 1000.000,
+      "maxVolume": 20.000,
+      "weightUtilizationPct": 1.0,
+      "estimatedCost": 15.37,
+      "distanceToFirstPickupKm": 0.0
+    },
+    {
+      "vehicleId": "01a147c7-51ba-7cea-9eb6-5558b5781225",
+      "vehicleCode": "VEH-01",
+      "isMatch": true,
+      "discardReason": null,
+      "warnings": [],
+      "maxWeight": 1200.000,
+      "maxVolume": 8.000,
+      "weightUtilizationPct": 0.8,
+      "estimatedCost": 15.37,
+      "distanceToFirstPickupKm": 0.0
+    }
+  ]
+}

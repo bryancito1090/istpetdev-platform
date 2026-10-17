@@ -34,6 +34,9 @@ public sealed class LogisticsOptions
     public List<TrafficBandOptions> TrafficBands { get; set; } = [];
     public ContractedCarrierOptions? ContractedCarrier { get; set; }
     public RecommendationOptions? Recommendation { get; set; }
+    public List<VehicleRestrictionOptions> VehicleRestrictions { get; set; } = [];
+    // Lista explícita de ServicePoint.Region urbanos; vacía = no inferir el ámbito.
+    public List<string> UrbanRegions { get; set; } = [];
 }
 
 public sealed class RebalancingOptions

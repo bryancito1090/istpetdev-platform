@@ -1081,6 +1081,7 @@ public sealed class RoutePlansController(
             maxVolume = bestVehicleMatch.Vehicle.MaxVolume,
             isMatch = bestVehicleMatch.IsMatch,
             discardReason = bestVehicleMatch.DiscardReason,
+            warnings = bestVehicleMatch.Warnings,
             weightUtilizationPct = bestVehicleMatch.WeightUtilizationPct,
             volumeUtilizationPct = bestVehicleMatch.VolumeUtilizationPct,
             costPerKm = vehicleCostKm,
@@ -1120,6 +1121,7 @@ public sealed class RoutePlansController(
                 maxVolume = m.Vehicle.MaxVolume,
                 isMatch = m.IsMatch,
                 discardReason = m.DiscardReason,
+                warnings = m.Warnings,
                 weightUtilizationPct = m.WeightUtilizationPct,
                 volumeUtilizationPct = m.VolumeUtilizationPct,
                 estimatedCost = m.EstimatedTotalCost,
@@ -1400,7 +1402,8 @@ public sealed class RoutePlansController(
         {
             return Conflict(new
             {
-                message = "La ruta no cabe en el vehículo o excede la jornada permitida.",
+                message = eval.ValidationErrors.FirstOrDefault(e => e.StartsWith("restriccion_horaria", StringComparison.Ordinal))
+                    ?? "La ruta no cabe en el vehículo o excede la jornada permitida.",
                 errors = eval.ValidationErrors
             });
         }

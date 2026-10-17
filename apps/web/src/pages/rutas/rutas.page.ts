@@ -2087,6 +2087,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                             Motivo descarte: {{ vm.discardReason }}
                           </p>
                         }
+                        @for (warning of vm.warnings || []; track warning) {
+                          <p class="text-xs text-charcoal-700 mt-2" role="status">Aviso: {{ warning }}</p>
+                        }
                       </div>
                     }
                   </div>

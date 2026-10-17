@@ -380,6 +380,7 @@ export interface RouteSuggestionOptionDto {
     maxVolume?: number;
     isMatch: boolean;
     discardReason?: string;
+    warnings?: string[];
     weightUtilizationPct: number;
     volumeUtilizationPct: number;
     estimatedCost: number;
