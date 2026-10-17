@@ -30,12 +30,14 @@ public sealed class RouteProposalAcceptanceTests(PostgisContainer postgres) : IC
         if (!legacyReceipt) foreach (var plan in chosen) plan.InputJson = JsonSerializer.Serialize(new { proposalBatchId = batch });
         var others = new[] { Plan("PLAN-ONE", vehicle.Id, 1), Plan("PLAN-TWO", second.Id, 1),
             Plan("PLAN-ONE", vehicle.Id, 0, "Published"), Plan("UNRELATED", vehicle.Id, 1) };
-        db.RoutePlans.AddRange(chosen.Concat(others));
+        var operationalRevision = Plan("PLAN-ONE", vehicle.Id, 3);
+        operationalRevision.SupersedesRoutePlanId = others[2].Id;
+        db.RoutePlans.AddRange(chosen.Concat(others).Append(operationalRevision));
         if (legacyReceipt) db.IdempotencyRecords.Add(new IdempotencyRecord { AccountId = await db.Accounts.Select(a => a.Id).FirstAsync(),
             OperationId = batch, ActionCode = "CreateRoutePlans", RequestHash = "fixture", ResponseStatus = 201,
             ResponseJson = JsonSerializer.Serialize(new { routes = chosen.Select(p => new { id = p.Id }) }) });
         await db.SaveChangesAsync();
-        return chosen.Concat(others).Select(p => p.Id).ToArray();
+        return chosen.Concat(others).Append(operationalRevision).Select(p => p.Id).ToArray();
     }
 
     [Theory]
@@ -61,6 +63,7 @@ public sealed class RouteProposalAcceptanceTests(PostgisContainer postgres) : IC
             Assert.Equal("Proposed", (await db.RoutePlans.FindAsync(ids[1]))!.Status);
             Assert.Equal("Published", (await db.RoutePlans.FindAsync(ids[4]))!.Status);
             Assert.Equal("Proposed", (await db.RoutePlans.FindAsync(ids[5]))!.Status);
+            Assert.Equal("Proposed", (await db.RoutePlans.FindAsync(ids[6]))!.Status);
         }
         var client = api.ClientFor(TestTokens.Planner);
         for (var reload = 0; reload < 2; reload++)

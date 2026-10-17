@@ -185,3 +185,8 @@ Ampliación durante la implementación: selector de vehículos encima del mapa, 
 
 
 Corrección posterior solicitada: retirar «Ver todas las rutas» y la persistencia local del filtro de aprobación. El descarte debe persistirse en servidor y excluirse del listado normal incluso tras recargar. Para los cálculos anteriores se recupera la pertenencia al lote desde `CreateRoutePlans`; los borradores de la misma familia de revisiones son competidores. Mantener todos los vehículos elegidos y el historial publicado, con rollback ante fallo y protección frente a efectos operativos. Esta regla reemplaza la ocultación visual de la ampliación anterior.
+
+
+## Ampliación del paso 2 de abastecimiento — 17-oct-2026
+
+Plan autorizado durante la integración: simplificar el resumen a productos, recogida y destino de la propuesta activa; elegir inicialmente una recomendación viable del servidor, sin denominarla óptimo global. Mostrar el mismo reproductor de recorrido por paradas desde este paso, con geometría real o aproximación explícita, pausa y reinicio. Dar más espacio al mapa, encabezado claro y una acción «Comparar y aprobar». Permitir cambiar de propuesta y conservar esa elección al entrar al comparador persistente. Reutilizar componentes/contratos existentes, sin dependencias nuevas ni sustituir la asignación real de varios vehículos del comparador por los vehículos meramente compatibles del paso de abastecimiento.

@@ -48,7 +48,8 @@ public sealed class RoutePublisher(
         await using var transaction = await OrganizationTransaction.BeginAsync(db, ct);
         var result = await PublishAsyncCore(request, ct);
         var published = await db.RoutePlans.SingleAsync(p => p.Id == result.RoutePlanId && p.OrganizationId == DemoOrganization.Id, ct);
-        if (published.AlgorithmVersion == "2.0-deterministic")
+        // Replanificar o revertir una operación no vuelve a elegir su propuesta original.
+        if (published.AlgorithmVersion == "2.0-deterministic" && published.SupersedesRoutePlanId is null)
             await RouteProposalAcceptance.AcceptAsync(db, await RouteProposalAcceptance.ResolveBatchAsync(db, published, ct), ct);
         if (transaction is not null) await transaction.CommitAsync(ct);
         return result;

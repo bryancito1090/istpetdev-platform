@@ -1598,20 +1598,20 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
     <!-- ======================================================== -->
     @if (isWizardOpen()) {
       <div [class.invisible]="isDecisionWorkbenchOpen()" class="rutas-dialog fixed inset-0 z-50 bg-[#1A2C44]/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white w-full max-w-7xl h-[94vh] rounded-lg shadow-xl flex flex-col overflow-hidden border border-[#E3E8EE]">
+        <div class="bg-white w-full max-w-[1600px] h-[94vh] rounded-2xl shadow-xl flex flex-col overflow-hidden border border-[#E3E8EE]">
           
           <!-- Header Asistente -->
-          <div class="px-6 py-4 bg-[#1A2C44] text-white flex items-center justify-between border-b border-[#2D3E53]">
+          <div class="px-4 sm:px-6 py-4 bg-white text-[#1A2C44] flex items-center justify-between gap-3 border-b border-[#E3E8EE]">
             <div>
               <div class="flex items-center gap-2.5">
-                <h2 class="text-base font-semibold text-white tracking-tight">Planificador de Rutas por Pedidos y Abastecimiento</h2>
-                <span class="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
+                <h2 class="text-base font-semibold tracking-tight">Planifica tus entregas</h2>
+                <span class="text-[11px] font-medium whitespace-nowrap px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                   Paso {{ wizardStep() }} de 4
                 </span>
               </div>
-              <p class="text-xs text-[#A0AEC0] mt-0.5">
+              <p class="text-xs text-[#53647b] mt-1">
                 @if (wizardStep() === 1) { Selecciona los pedidos de entrega a incluir o crea un nuevo pedido con sus productos. }
-                @if (wizardStep() === 2) { Revisa el abastecimiento automático: origen de bodegas más cercanas y distribución de stock. }
+                @if (wizardStep() === 2) { Revisa las recogidas y entregas en el mapa. Después podrás comparar y aprobar tu propuesta. }
                 @if (wizardStep() === 3) { Compara opciones A/B/C (propia vs contratada), desglose de costos, riesgos y justificación. }
                 @if (wizardStep() === 4) { Asigna el vehículo idóneo según capacidad de peso, volumen y depósito base. }
               </p>
@@ -1620,17 +1620,17 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             <button
               type="button"
               (click)="closeWizard()"
-              class="h-8 px-3 rounded-md bg-[#2D3E53] hover:bg-[#3B4E66] text-white text-xs font-medium border border-[#3B4E66] transition-colors">
+              class="h-10 px-3 rounded-lg bg-white hover:bg-slate-50 text-[#53647b] text-xs font-medium border border-[#E3E8EE] transition-colors">
               Cerrar
             </button>
           </div>
 
           <!-- Cuerpo Asistente -->
-          <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          <div class="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
 
             <!-- Columna Izquierda: Formulario y Pasos -->
-            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col gap-3.5 bg-[#F8FAFC] overflow-y-auto transition-colors"
-              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
+            <div class="p-4 sm:p-5 border-r border-[#E3E8EE] flex flex-col gap-3.5 bg-[#F8FAFC] lg:overflow-y-auto min-w-0"
+              [ngClass]="wizardStep() === 2 ? 'order-2 lg:order-1 lg:col-span-4' : wizardStep() === 3 && isProjectorMode() ? 'lg:col-span-12' : (wizardStep() === 3 ? 'lg:col-span-7' : 'lg:col-span-5')">
 
               <!-- PASO 1: SELECCIONAR O CREAR PEDIDOS -->
               @if (wizardStep() === 1) {
@@ -1822,32 +1822,39 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
               <!-- PASO 2: REVISIÓN DE ABASTECIMIENTO -->
               @if (wizardStep() === 2) {
                 <div class="space-y-3.5">
-                  <div>
-                    <span class="text-xs font-semibold text-[#1A2C44] uppercase tracking-wider">Asignación de Bodegas por Cercanía</span>
-                    <p class="text-xs text-[#697386] mt-0.5">
-                      El sistema verificó el stock FEFO disponible y asignó automáticamente la bodega más próxima:
-                    </p>
+                  <div class="flex items-center gap-3">
+                    <svg lucideWarehouse [size]="24" class="text-sky-700 shrink-0"></svg>
+                    <div><h3 class="text-base font-semibold text-[#1A2C44]">Recogidas y entregas</h3><p class="text-xs text-[#53647b] mt-1">Stock disponible, priorizando los lotes que vencen antes.</p></div>
                   </div>
-
-                  @for (opt of routeOptions(); track opt.optionId) {
-                    <div class="p-3.5 rounded-md border border-[#E3E8EE] bg-white space-y-2.5 text-xs shadow-xs">
-                      <span class="font-semibold text-[#1A2C44] block text-xs">{{ opt.title }}</span>
-                      <p class="text-[11px] text-[#697386]">{{ opt.description }}</p>
-
-                      <div class="border border-[#E3E8EE] rounded-md p-2.5 bg-[#F8FAFC] space-y-1.5">
-                        @for (l of opt.sourcingLines; track l.orderId) {
-                          <div class="border-b border-[#E3E8EE] pb-1.5 last:border-0 last:pb-0">
-                            <div class="font-medium text-[#1A2C44]">{{ l.productName }} ({{ l.requestedQuantity }} u)</div>
-                            <div class="text-[10px] text-[#697386]">Para: {{ l.destinationName }}</div>
-                            <div class="mt-1 text-[10px] text-[#0E6245] font-mono">
-                              @for (a of l.allocations; track a.warehouseId) {
-                                <div>Origen {{ a.warehouseCode }}: {{ a.quantity }} u</div>
-                              }
-                            </div>
-                          </div>
-                        }
-                      </div>
+                  @if (routeOptions().length > 1) {
+                    <label class="block text-xs font-medium text-[#53647b]">Propuesta a visualizar
+                      <select class="mt-2 w-full min-h-11 rounded-lg border border-[#dce4ed] bg-white px-3 text-[#152a42]" [ngModel]="selectedOptionId()" (ngModelChange)="selectComparisonOption($event)" [disabled]="actionLoading()">
+                        @for (opt of routeOptions(); track opt.optionId) { <option [value]="opt.sourcingOptionId ?? opt.optionId">{{ opt.isRecommended ? 'Recomendada · ' : '' }}{{ opt.title }}</option> }
+                      </select>
+                    </label>
+                  }
+                  @if (wizardSelectedOption(); as opt) {
+                    <div class="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 space-y-2">
+                      <div class="flex flex-wrap gap-2">@if (opt.isRecommended) { <strong>Recomendada por el planificador</strong> } @for (label of wizardOptionLabels(opt); track label) { <span>{{ label }}</span> }</div>
+                      <p>{{ opt.description }}</p>
+                      <div class="flex flex-wrap gap-4 font-semibold"><span>{{ opt.evaluation.totalDistanceKm | number:'1.0-1' }} km</span><span>{{ opt.evaluation.totalDurationMinutes | number:'1.0-0' }} min</span><span>$ {{ opt.evaluation.totalCost | number:'1.2-2' }}</span></div>
                     </div>
+                    <div class="space-y-3" aria-label="Productos, orígenes y destinos">
+                      @for (line of opt.sourcingLines; track $index) {
+                        <article class="rounded-xl border border-[#dce4ed] bg-white p-4 text-xs space-y-3">
+                          <div class="flex items-center gap-2"><svg lucidePackage [size]="17" class="text-sky-700 shrink-0"></svg><h4 class="font-semibold text-[#152a42]">{{ line.productName }} <span class="font-normal text-[#53647b]">· {{ line.requestedQuantity }} u</span></h4></div>
+                          <div class="border-l-2 border-sky-200 ml-2 pl-4 space-y-3">
+                            <div><p class="text-[10px] uppercase tracking-wide text-[#53647b] mb-1">Recoger en</p>@for (allocation of line.allocations; track allocation.warehouseId) { <p class="font-medium text-[#152a42]">{{ allocation.warehouseCode }} <span class="text-[#53647b]">· {{ allocation.quantity }} u</span></p> }</div>
+                            <div><p class="text-[10px] uppercase tracking-wide text-[#53647b] mb-1">Entregar en</p><p class="font-medium text-[#152a42]">{{ line.destinationName }}</p></div>
+                          </div>
+                        </article>
+                      }
+                      @if (!opt.sourcingLines.length) { <p class="text-xs text-[#53647b]">Consulta las recogidas y entregas de esta propuesta en el mapa.</p> }
+                    </div>
+                    <div class="flex items-start gap-2 text-xs text-[#53647b]"><svg lucideRoute [size]="16" class="shrink-0"></svg><p>La ruta es una vista previa. En el siguiente paso eliges la propuesta y revisas los vehículos antes de aprobar.</p></div>
+                    @if (!opt.evaluation.isValid) {
+                      <div role="alert" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Esta secuencia tiene restricciones. Revisa las alternativas antes de aprobar.</div>
+                    }
                   }
                 </div>
               }
@@ -2225,7 +2232,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="stepBack()"
                     class="h-9 px-4 text-xs font-medium rounded-md bg-white border border-[#E3E8EE] text-[#2D3748] hover:bg-[#F8FAFC] transition-colors">
-                    ← Anterior
+                    <svg lucideArrowLeft [size]="15" class="inline mr-1"></svg> Anterior
                   </button>
                 } @else {
                   <div></div>
@@ -2236,8 +2243,8 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                     type="button"
                     (click)="advanceWizardFlow()"
                     [disabled]="selectedOrderIds().size === 0 || actionLoading() || (wizardStep() > 1 && (comparisonMode() === 'saved' || !routeOptions().length || (wizardStep() === 3 && selectedComparisonOption()?.category === 'Contratada')))"
-                    class="h-9 px-4 text-xs font-medium rounded-md bg-[#635BFF] text-white hover:bg-[#5249E0] transition-colors disabled:opacity-50 shadow-xs">
-                    Siguiente →
+                    class="min-h-12 px-4 text-xs font-semibold rounded-xl bg-[#0066ff] text-white hover:bg-[#0052d9] transition-colors disabled:opacity-50 shadow-xs">
+                    {{ wizardStep() === 1 ? (actionLoading() ? 'Calculando recorridos…' : 'Calcular recorridos') : wizardStep() === 2 ? 'Comparar y aprobar' : 'Siguiente' }} <svg lucideArrowRight [size]="16" class="inline ml-2"></svg>
                   </button>
                 } @else {
                   <button
@@ -2252,8 +2259,13 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
             </div>
 
             <!-- Columna Derecha: Mapa -->
-            <div class="relative h-full min-h-[450px] transition-colors bg-[#F8FAFC]"
-              [ngClass]="wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
+            <div class="relative min-w-0 min-h-[450px] lg:h-full bg-[#F8FAFC]"
+              [ngClass]="wizardStep() === 2 ? 'order-1 lg:order-2 lg:col-span-8 p-3 sm:p-5' : wizardStep() === 3 && isProjectorMode() ? 'hidden' : (wizardStep() === 3 ? 'lg:col-span-5' : 'lg:col-span-7')">
+              @if (wizardStep() === 2) {
+                @if (wizardJourney(); as route) {
+                  <route-journey-player [routes]="[route]" [focusedRouteId]="route.id" [replayKey]="wizardReplayKey()"></route-journey-player>
+                } @else { <div class="p-8 text-sm text-[#53647b]">No hay un recorrido disponible para esta propuesta. Compara las alternativas para revisar su viabilidad.</div> }
+              } @else {
               <ui-map-view
                 #wizardMapView
                 [markers]="wizardMarkers()"
@@ -2261,8 +2273,9 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
                 animatedPolylineId="wizard-road-route"
                 [zoom]="8">
               </ui-map-view>
+              }
             </div>
-            @if (wizardApproximate()) {
+            @if (wizardApproximate() && wizardStep() !== 2) {
               <p class="text-[11px] text-[#B7791F] mt-1 px-3 py-1 bg-[#F5A623]/10 border-t border-[#F5A623]/30">
                 Trazado aproximado (rectas entre paradas): el servicio de rutas por calles no respondió o no está configurado.
               </p>
@@ -2272,7 +2285,7 @@ export function currentPlans(plans: RoutePlanSummaryDto[], limit = 20): RoutePla
       </div>
     }
     @if (isDecisionWorkbenchOpen()) {
-      <route-decision-workbench [orderIds]="decisionOrderIds()" [decisionId]="activeDecisionId()" [initialAssignments]="vehicleDriverAssignments()" (assignmentsChanged)="onVehicleAssignmentsChanged($event)" (closed)="closeDecisionWorkbench()" (requestOrders)="startNewDecision()" (saved)="onDecisionSaved($event)"></route-decision-workbench>
+      <route-decision-workbench [orderIds]="decisionOrderIds()" [decisionId]="activeDecisionId()" [initialOptionId]="isWizardOpen() ? selectedOptionId() : ''" [initialAssignments]="vehicleDriverAssignments()" (assignmentsChanged)="onVehicleAssignmentsChanged($event)" (closed)="closeDecisionWorkbench()" (requestOrders)="startNewDecision()" (saved)="onDecisionSaved($event)"></route-decision-workbench>
     }
   `
 })
@@ -2766,6 +2779,25 @@ export class RutasPage implements OnInit, OnDestroy {
   readonly wizardMarkers = signal<MapMarker[]>([]);
   readonly wizardPolylines = signal<MapPolyline[]>([]);
   readonly wizardApproximate = signal(false);
+  readonly wizardReplayKey = signal(0);
+  readonly wizardSelectedOption = computed(() => this.routeOptions().find(option =>
+    (option.sourcingOptionId ?? option.optionId) === this.selectedOptionId()));
+  readonly wizardJourney = computed<JourneyRoute | null>(() => {
+    const option = this.wizardSelectedOption(), stops = this.editableStops();
+    if (!option || stops.length < 2 || this.comparisonMode() === 'saved') return null;
+    const evaluation = this.currentEvaluation();
+    const coordinates = this.wizardPolylines()[0]?.coordinates || stops.map(stop => [stop.position.lat, stop.position.lon] as [number, number]);
+    const vehicle = this.availableVehicleMatches().find(v => v.vehicleId === this.selectedVehicleId());
+    return { id: `sourcing-${option.sourcingOptionId ?? option.optionId}`, vehicleCode: vehicle ? `Vista previa · ${vehicle.vehicleCode}` : 'Vista previa',
+      color: ROUTE_COLORS[0], approximate: !this.wizardPolylines().length || this.wizardApproximate(), coordinates,
+      stops: stops.map((stop, index) => ({ ...stop,
+        legDistanceKm: evaluation?.stops?.[index]?.legDistanceKm,
+        legDurationMinutes: evaluation?.stops?.[index]?.legDurationMinutes })) };
+  });
+  wizardOptionLabels(option: RouteSuggestionOptionDto): string[] {
+    const viable = this.routeOptions().filter(o => o.evaluation.isValid);
+    return option.evaluation.isValid ? routeComparisonLabels(option.evaluation, viable.map(o => o.evaluation)) : ['Revisar restricciones'];
+  }
 
   // Pestaña Activa: Rutas o Bandeja de Rechazos
   readonly activeTab = signal<'rutas' | 'rechazos'>('rutas');
@@ -3383,8 +3415,10 @@ export class RutasPage implements OnInit, OnDestroy {
           this.routeOptionsMessage.set(opts.length ? null : res?.message || 'La API no proporcionó un motivo.');
 
           if (opts.length > 0) {
-            this.selectedOptionId.set(opts[0].sourcingOptionId ?? opts[0].optionId);
-            this.onOptionSelected(opts[0]);
+            const preferred = opts.find(option => option.isRecommended && option.evaluation.isValid)
+              || opts.find(option => option.evaluation.isValid) || opts[0];
+            this.selectedOptionId.set(preferred.sourcingOptionId ?? preferred.optionId);
+            this.onOptionSelected(preferred);
             if (this.selectedComparisonOption()?.category === 'Contratada') this.selectComparisonOption(this.selectedOptionId());
           }
 
@@ -3667,6 +3701,7 @@ export class RutasPage implements OnInit, OnDestroy {
   }
 
   private updateWizardMap(stops: RouteCandidateStop[], coordinates?: [number, number][], source?: string): void {
+    this.wizardReplayKey.update(key => key + 1);
     const markers: MapMarker[] = stops.map(s => ({
       id: s.servicePointId || s.locationId || s.code,
       latitude: s.position.lat,

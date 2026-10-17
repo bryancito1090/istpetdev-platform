@@ -88,6 +88,7 @@ import { alternativeLabels, assignedVehicleCount, FLEET_COLORS, planningDecision
 export class RouteDecisionWorkbench implements OnInit, AfterViewInit, OnDestroy {
   readonly orderIds = input<string[]>([]);
   readonly decisionId = input<string | null>(null);
+  readonly initialOptionId = input('');
   readonly initialAssignments = input<Record<string, string>>({});
   readonly closed = output<void>();
   readonly requestOrders = output<void>();
@@ -139,6 +140,7 @@ export class RouteDecisionWorkbench implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnInit(): void {
+    this.selectedOptionId.set(this.initialOptionId());
     this.assignments.set({ ...this.initialAssignments() });
     this.api.getDrivers().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(list => this.drivers.set(list));
     let previous: string | null = null;

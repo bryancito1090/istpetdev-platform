@@ -184,7 +184,8 @@ public sealed class LogisticsJourneyTests(PostgisContainer postgres) : IClassFix
         var rev2Id = replanDoc.GetProperty("proposedRoutePlanId").GetGuid();
 
         // 4. Publicar la revisión 2
-        await planner.PostAsJsonAsync($"/api/v1/route-plans/{rev2Id}/publish", new { });
+        var publishRevision = await planner.PostAsJsonAsync($"/api/v1/route-plans/{rev2Id}/publish", new { });
+        Assert.Equal(HttpStatusCode.OK, publishRevision.StatusCode);
 
         // 5. Revertir la revisión 2 genera una tercera revisión que restaura la revisión 1
         var revertResp = await planner.PostAsJsonAsync($"/api/v1/route-plans/{rev2Id}/revert", new { });

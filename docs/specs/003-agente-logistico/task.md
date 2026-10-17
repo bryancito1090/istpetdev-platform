@@ -1014,4 +1014,13 @@ Aislamiento de sesiones: los cambios recuperados se integraron sobre `8ca4e8b` e
 ### Integración solicitada a develop — 17-oct-2026
 
 - [x] Cambios guardados en commit `25aa1b3`; integrado `origin/develop` (`78c87a1`) mediante `cff427a`, sin conflictos textuales. Se conservan alertas automáticas de inventario y documentación del pitch.
-- [ ] Suites completas posteriores a la integración, CI del HEAD final y merge mediante PR a `develop`. Se reutiliza la evidencia previa donde no cambió el código; no se hace push directo a ramas permanentes ni se modifica el checkout de la otra sesión.
+- [x] Suite web posterior a integración **207/207**, 36 archivos; build/lint aprobados. PR [#324](https://github.com/bryancito1090/istpetdev-platform/pull/324) hacia `develop`, milestone del evento y revisor asignado.
+- La primera regresión completa encontró un conflicto en `E2E_04_Revert_and_autonomy_mode_control`: la reversión heredaba el lote original, incluyendo una revisión ya sustituida. Se limita la aceptación/descarte de borradores iniciales mediante `SupersedesRoutePlanId`; replanificar/revertir conserva su propio ciclo operativo y nunca descarta propuestas de incidente. Se amplían las comprobaciones de publicación/reversión y conservación de revisiones operativas.
+- CI y merge del HEAD final en seguimiento en el PR; la suite local anterior se interrumpió para repetir con la corrección. No se hace push directo a ramas permanentes ni se modifica el checkout de la otra sesión.
+
+
+### Ampliación del abastecimiento durante la integración
+
+- [x] Paso 2 simplificado a productos, «Recoger en» y «Entregar en», con encabezado claro, mapa dominante y acción «Comparar y aprobar».
+- [x] Mismo reproductor por paradas desde el abastecimiento: recorrido completo, pausa/reinicio, aproximación explícita y selección inicial de recomendación viable. La elección se conserva al entrar al comparador persistente.
+- [x] Verificación tras los cambios: **209/209 pruebas web**, 36 archivos; build/lint aprobados. Aceptación/replanificación/reversión **28/28** con PostgreSQL, incluida la regresión real del E2E y conservación de borradores operativos. La suite backend completa y CI final siguen en ejecución.

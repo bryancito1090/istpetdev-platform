@@ -15,12 +15,14 @@ public static class RouteProposalAcceptance
 
     public static async Task<IReadOnlyList<Guid>> ResolveBatchAsync(IApplicationDbContext db, RoutePlan plan, CancellationToken ct)
     {
+        if (plan.SupersedesRoutePlanId.HasValue) return [plan.Id];
         var input = JsonNode.Parse(plan.InputJson)?.AsObject();
         if (Guid.TryParse(input?[BatchField]?.ToString(), out var batchId))
         {
             var text = batchId.ToString();
-            // InputJson es jsonb: filtrar el lote tras materializar evita aplicar LIKE a jsonb.
-            var candidates = await db.RoutePlans.AsNoTracking().Where(p => p.OrganizationId == plan.OrganizationId)
+            // ponytail: volumen DemoCore; mover el lote a columna indexada si crece el historial.
+            // InputJson es jsonb: filtrar tras materializar evita aplicar LIKE a jsonb.
+            var candidates = await db.RoutePlans.AsNoTracking().Where(p => p.OrganizationId == plan.OrganizationId && p.SupersedesRoutePlanId == null)
                 .Select(p => new { p.Id, p.InputJson }).ToListAsync(ct);
             return candidates.Where(p => JsonNode.Parse(p.InputJson)?[BatchField]?.ToString() == text).Select(p => p.Id).ToList();
         }
@@ -46,12 +48,13 @@ public static class RouteProposalAcceptance
             throw new InvalidOperationException("La propuesta ya no está disponible para aprobación.");
         var codes = chosen.Select(p => p.Code).ToList();
         var candidates = await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id && p.Status == "Proposed"
-            && p.AlgorithmVersion == "2.0-deterministic" && codes.Contains(p.Code) && !chosenIds.Contains(p.Id)).ToListAsync(ct);
+            && p.AlgorithmVersion == "2.0-deterministic" && p.SupersedesRoutePlanId == null
+            && codes.Contains(p.Code) && !chosenIds.Contains(p.Id)).ToListAsync(ct);
         var competingIds = new HashSet<Guid>();
         foreach (var candidate in candidates)
             foreach (var id in await ResolveBatchAsync(db, candidate, ct)) competingIds.Add(id);
         var competitors = await db.RoutePlans.Where(p => p.OrganizationId == DemoOrganization.Id && competingIds.Contains(p.Id)
-            && p.Status == "Proposed" && p.AlgorithmVersion == "2.0-deterministic" && !chosenIds.Contains(p.Id)).ToListAsync(ct);
+            && p.Status == "Proposed" && p.AlgorithmVersion == "2.0-deterministic" && p.SupersedesRoutePlanId == null && !chosenIds.Contains(p.Id)).ToListAsync(ct);
         if (competitors.Any(p => JsonNode.Parse(p.InputJson)?["proposalAccepted"]?.GetValue<bool>() == true))
             throw new InvalidOperationException("Ya se aprobó otra propuesta de esta familia de rutas. Genera un cálculo nuevo antes de continuar.");
         var competitorIds = competitors.Select(p => p.Id).ToList();
