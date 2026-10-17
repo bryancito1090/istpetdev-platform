@@ -37,6 +37,22 @@ public sealed class DemoController(
         return report.Applied ? Ok(report) : UnprocessableEntity(report);
     }
 
+    [HttpPost("seed-field-activity")]
+    [Authorize(Roles = Roles.Planning)]
+    public async Task<IActionResult> SeedFieldActivity([FromServices] FieldActivitySeed seeder, CancellationToken ct = default)
+    {
+        if (!options.Value.Enabled) return NotFound();
+        try
+        {
+            var report = await seeder.RunAsync(true, ct);
+            return Ok(report);
+        }
+        catch (Exception ex)
+        {
+            return Problem(detail: ex.Message, statusCode: 500, title: "SeedFailed");
+        }
+    }
+
     [HttpPost("incidents")]
     [Authorize(Roles = Roles.Planning)]
     public async Task<IActionResult> TriggerPresetIncident([FromBody] PresetIncidentRequest request, CancellationToken ct = default)

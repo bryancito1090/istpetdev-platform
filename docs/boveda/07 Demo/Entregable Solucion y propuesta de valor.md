@@ -44,6 +44,14 @@ flowchart LR
   I[Incidente vial] -.-> E
 ```
 
+### Evidencia de funcionamiento móvil de campo (3 roles concurrentes)
+
+Demostración del recorrido completo de custodia y operación de campo entre los tres roles:
+
+![Flujo móvil concurrente de campo en 3 roles](../Entregable/04-flujo-concurrente-campo-3-roles.gif)
+
+*Flujo animado del prototipo móvil PWA: despacho con escaneo de QR en bodega, navegación y entrega por el conductor, y recepción con firma táctil en pantalla sin conexión a internet.*
+
 ## ¿Qué la hace diferente?
 
 1. **Cadena completa en una sola operación:** riesgo → bodega → vehículo → ruta → custodia → recepción. No es solo un ruteador ni solo un inventario.

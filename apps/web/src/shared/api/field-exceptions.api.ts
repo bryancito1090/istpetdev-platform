@@ -110,4 +110,8 @@ export class FieldExceptionsApiService {
     if (servicePointId) params = params.set('servicePointId', servicePointId);
     return this.http.get<ReceiptExceptionsResponse>(`${this.baseUrl}/receipts/exceptions`, { params });
   }
+
+  seedFieldActivity(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/demo/seed-field-activity`, {});
+  }
 }
