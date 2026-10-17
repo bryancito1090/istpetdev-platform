@@ -46,6 +46,7 @@ Los enlaces internos de las notas están preparados para Obsidian. El manual ofi
 | Runbook de despliegue y base de datos (13–15 oct) | [Runbook de DevOps y base de datos](03%20Arquitectura/Runbook%20de%20DevOps%20y%20base%20de%20datos%20para%20la%20demo.md) |
 | Hardening Host | [Seguridad de servidores](03%20Arquitectura/Hardening%20y%20seguridad%20de%20servidores.md) |
 | Frontend FSD | [Feature-Sliced Design](03%20Arquitectura/Frontend%20con%20Feature-Sliced%20Design.md) |
+| Diseño y UI-UX | [Área de diseño y experiencia](10%20Diseno%20y%20UI-UX/00%20Indice%20y%20principios%20de%20diseno.md) |
 | Trabajo pendiente | [Backlog](06%20Equipo/Backlog.md) |
 | Diferenciación | [Plus para ganar](07%20Demo/Plus%20para%20ganar.md) |
 | Skills del equipo | [Catálogo](08%20Skills/Catalogo%20y%20plan%20de%20skills.md) |

@@ -1,0 +1,41 @@
+[
+  {
+    "created_at": "2026-10-17T04:17:21.912712Z",
+    "display_name": "MiniMax H3",
+    "id": "3490bbf4-7183-4c5f-8729-cf8e663943fb",
+    "job_type": "minimax_h3",
+    "min_result_url": null,
+    "params": {
+      "aigc_watermark": false,
+      "aspect_ratio": "16:9",
+      "batch_size": 1,
+      "duration": 5,
+      "height": 1440,
+      "medias": [
+        {
+          "data": {
+            "id": "78eb5ba9-58a0-4049-a6cf-163d30f5eecf",
+            "type": "media_input",
+            "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3KnBKTeLEsFZ7LzQ7hFDQxgXhCA/78eb5ba9-58a0-4049-a6cf-163d30f5eecf.jpg"
+          },
+          "role": "start_image"
+        },
+        {
+          "data": {
+            "id": "c519df64-4582-4629-9a3e-318cb07a40e7",
+            "type": "media_input",
+            "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3KnBKTeLEsFZ7LzQ7hFDQxgXhCA/c519df64-4582-4629-9a3e-318cb07a40e7.jpg"
+          },
+          "role": "end_image"
+        }
+      ],
+      "prompt": "Steady gimbal cinematic first-person forward walkthrough shot, moving smoothly from the high-tech warehouse aisle into the illuminated satellite telemetry control center. Smooth continuous forward motion, steady camera, realistic lighting, pristine logistics environment. No people, no sudden cuts, no shaking, no text, no captions, no morphing.",
+      "reference_elements": [],
+      "resolution": "2K",
+      "width": 2560
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3KnBKTeLEsFZ7LzQ7hFDQxgXhCA/hf_20261017_041721_3490bbf4-7183-4c5f-8729-cf8e663943fb.mp4",
+    "status": "completed",
+    "thumbnail_url": "https://cdn.higgsfield.ai/user_3KnBKTeLEsFZ7LzQ7hFDQxgXhCA/hf_20261017_041721_3490bbf4-7183-4c5f-8729-cf8e663943fb_thumbnail.webp"
+  }
+]

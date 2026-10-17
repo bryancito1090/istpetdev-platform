@@ -1,18 +1,19 @@
 ---
-tipo: arquitectura
+tipo: diseno
 estado: vigente
-actualizado: 2026-10-11
-tags: [arquitectura, frontend, ui-ux, design-tokens, tailwind, branding]
+actualizado: 2026-10-16
+tags: [diseno, ui-ux, design-tokens, tailwind, branding, expoclean, wcag]
+aliases: [Sistema de diseno y colores, Sistema de diseño y colores]
 ---
 
-# Sistema de diseño y colores
+# Sistema de diseño, colores y tokens
 
-Fuente canónica de identidad visual, paleta cromática y tokens semánticos de la plataforma IstpetDev para la aplicación web administrativa (`apps/web`) y la aplicación móvil de campo (`apps/mobile`).
+Fuente canónica de identidad visual, paleta cromática y tokens semánticos de la plataforma IstpetDev para la aplicación web administrativa (`apps/web`) y la aplicación móvil de campo (`apps/mobile`). Parte integral de [[00 Indice y principios de diseno]].
 
 > [!NOTE] Fuente oficial de marca y estándares ejecutivos
 > Esta normativa cromática se extrae directamente de la identidad gráfica oficial del evento **Feria Internacional de Limpieza e Higiene Profesional — Expo Clean Ecuador 2026** (Centro de Exposiciones Quito), armonizada con el **Arquetipo B (Técnico/Minimalista)** ratificado en [[Decisiones de arquitectura|ADR-04]] y los requisitos de accesibilidad [[Requisitos y aceptacion|RNF-09]] (WCAG 2.2 AA).
 >
-> Para la especificación técnica de maquetación, geometría de tarjetas (8px), tipografía sans nativa y componentes ejecutivos alineados a Stripe Dashboard, consultar la [[Guia de maquetacion y diseno UI-UX]].
+> Para la especificación técnica de maquetación, geometría de tarjetas (8px), tipografía sans nativa y componentes ejecutivos alineados a Stripe Dashboard, consultar la [[01 Guia de maquetacion y arquetipos UI-UX]].
 
 ---
 
