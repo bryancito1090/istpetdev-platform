@@ -28,6 +28,13 @@ function setup(acceptResponse = new Subject<PlanningDecision>(), initialize = tr
 afterEach(() => { TestBed.resetTestingModule(); localStorage.removeItem('istpet.route-decision.test-decision'); });
 
 describe('Confirmación de alternativas', () => {
+  it('conserva la elección explícita de planificar remanentes al preparar el comparador', () => {
+    const { fixture, api } = setup(new Subject<PlanningDecision>(), false);
+    fixture.componentRef.setInput('planRemainingOnly', true);
+    fixture.detectChanges();
+    expect(api.preparePlanningDecision).toHaveBeenCalledWith(['order'], expect.any(String), true);
+    fixture.destroy();
+  });
   it('conserva la propuesta elegida en el paso de abastecimiento al abrir el comparador', () => {
     const { fixture, component } = setup(new Subject<PlanningDecision>(), false);
     fixture.componentRef.setInput('initialOptionId', 'B');

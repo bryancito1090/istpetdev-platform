@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace IstpetDev.Application.Field.Dtos;
 
@@ -264,8 +268,35 @@ public sealed record DeliveryDetailResponse(
 // FR-16: Demo Advance
 // ==========================================
 
+public sealed class FlexibleGuidConverter : JsonConverter<Guid>
+{
+    public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var str = reader.GetString();
+            if (string.IsNullOrWhiteSpace(str))
+            {
+                return Guid.Empty;
+            }
+            if (Guid.TryParse(str, out var guid))
+            {
+                return guid;
+            }
+            var hash = MD5.HashData(Encoding.UTF8.GetBytes(str));
+            return new Guid(hash);
+        }
+        return Guid.Empty;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
+    }
+}
+
 public sealed record DemoAdvanceRequest(
-    Guid OperationId,
+    [property: JsonConverter(typeof(FlexibleGuidConverter))] Guid OperationId,
     int Stops = 0,
     string? Mode = null,
     bool WithIncidents = false,

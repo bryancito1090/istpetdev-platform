@@ -179,3 +179,15 @@ Para tareas .NET: prueba roja con `dotnet test tests/IstpetDev.Tests --filter "F
 - [x] Repetir la misma seed/versión y comparar eventos/métricas; otra seed debe cambiar el calendario. Verificar hashes de ZIP y que reset/`advance` no cambian el ledger de simulación. Registrar cifras solo como **simuladas y medidas en esa corrida**, no como beneficio empresarial observado.
 - [x] Ejecutar `dotnet test tests/IstpetDev.Tests`, `npm run check` y `python docs/boveda/.github/scripts/check_vault.py`; anotar salida completa. Revisar `rg -n '418 km|24\.8%|defaultPoints|deliveryStops|Alóag Cerrada' apps/web/src` y explicar cualquier coincidencia que no sea fixture/prueba.
 - [x] Completar los doce runs y benchmark antes de H4; si algo falla, priorizar simulador sobre pulido del agente. Solo después de evidencia y aprobación de Deciders cambiar estado del spec a `cerrado`. Commit `test(e2e): registrar recorrido y métricas del simulador` con trailer.
+
+## Issue #319 — simulador conectado al dataset importado y métricas reales — 17-oct-2026
+
+- [x] Backend: el worker deja de usar 24 puntos/2 SKU hardcodeados y lee puntos, productos, vehículos, stock, consumos y matriz vial desde la base; no depende de `Demo:Enabled`.
+- [x] Backend: demanda derivada de `Consumptions` por punto, SKU y día de la semana; lead time por punto; el adverso aplica demanda ×1,20, un vehículo menos y +1 día.
+- [x] Métricas: quiebres por `punto|SKU|día`, evitados/nuevos/netos por baseline (incluido adverso), demanda no atendida por SKU/unidad y puntualidad por líneas de demanda; sin migración.
+- [x] Contratos: `Sku` en agregados, `Seed`/`ScenarioCode` en métricas y `DatasetHash` en detalle; exportación reconstruida con el dataset real.
+- [x] Web: se retiran `Spec 005`, `CE-05`, `G3`, `G4` y `not_simulated`; el selector de baseline y las tarjetas usan métricas reales; si falta un dato se muestra «Sin dato».
+- [x] Fixture: historia sintética enriquecida (cierre de mes, campaña, tendencias) con la ventana de decisión de 14 días y los pares del pitch protegidos; manifiesto actualizado.
+- [x] Verificación A/B/C: A 57,89 · B 69,89 · C 66,90 (recomendada), sin cambios.
+- [x] Evidencia: `docs/evidence/simulation-quito/` y `docs/boveda/07 Demo/Cifras del simulador 90 dias.md` actualizados con la corrida de 12 runs.
+- [ ] PR a `develop`, CI del HEAD final, resolución de conflictos, merge y cierre de #319.

@@ -347,6 +347,12 @@ export interface DeliveryOrderDto {
   }>;
 }
 
+export interface AssignedOrderWarning {
+  orderId: string;
+  orderNumber: string;
+  hasPendingQuantity: boolean;
+}
+
 export interface WarehouseAnalysisDto {
   locationId: string;
   locationCode: string;
@@ -763,8 +769,8 @@ export class ApiService {
   }
 
   // --- MÉTODOS DE RUTAS POR PEDIDOS & VEHÍCULOS ---
-  preparePlanningDecision(orderIds: string[], operationId: string): Observable<PlanningDecision> {
-    return this.http.post<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions`, { orderIds, operationId });
+  preparePlanningDecision(orderIds: string[], operationId: string, planRemainingOnly = false): Observable<PlanningDecision> {
+    return this.http.post<PlanningDecision>(`${this.baseUrl}/api/v1/route-plans/decisions`, { orderIds, operationId, planRemainingOnly });
   }
 
   getPlanningDecision(id: string): Observable<PlanningDecision> {
@@ -781,11 +787,12 @@ export class ApiService {
       { driverAssignments, operationId });
   }
 
-  suggestRoutes(orderIds: string[], plannedDate?: string, optionId?: string): Observable<RouteSuggestionResponseDto> {
+  suggestRoutes(orderIds: string[], plannedDate?: string, optionId?: string, planRemainingOnly = false): Observable<RouteSuggestionResponseDto> {
     return this.http.post<RouteSuggestionResponseDto>(`${this.baseUrl}/api/v1/route-plans/suggest`, {
       orderIds,
       plannedDate,
-      optionId
+      optionId,
+      planRemainingOnly
     });
   }
 

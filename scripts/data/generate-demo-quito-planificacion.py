@@ -201,6 +201,30 @@ INCIDENTS = {
 PICO_Y_PLACA = {1: "lunes", 2: "lunes", 3: "martes", 4: "martes", 5: "miércoles", 6: "miércoles",
                 7: "jueves", 8: "jueves", 9: "viernes", 0: "viernes"}
 
+# ---------------------------------------------------------------------------
+# Historia sintética enriquecida (issue #319). Las reglas se fijan antes de
+# correr la comparación y se documentan en el README. La ventana y los pares
+# punto/SKU usados por la corrida A/B/C del pitch quedan protegidos para no
+# alterar sus cifras ya validadas.
+ENRICHMENT_VERSION = 2
+END_OF_MONTH_FACTOR = 1.18
+CAMPAIGN = {
+    "start": date(2026, 9, 14),
+    "end": date(2026, 9, 18),
+    "points": {"PTO-0001", "PTO-0020", "PTO-0030"},
+    "skus": {"PRD-0002", "PRD-0006", "PRD-0009"},
+    "factor": 1.8,
+    "label": "campaña sanitaria sintética de septiembre",
+}
+TRENDS = {"PTO-0020": 0.30, "PTO-0030": 0.25, "PTO-0036": 0.30}
+PROTECTED_ABC_PAIRS = {
+    ("PTO-0004", "PRD-0001"), ("PTO-0004", "PRD-0003"),
+    ("PTO-0005", "PRD-0001"), ("PTO-0005", "PRD-0003"),
+    ("PTO-0006", "PRD-0001"), ("PTO-0006", "PRD-0003"),
+    ("PTO-0015", "PRD-0001"),
+}
+ADVERSE_RETIRED_VEHICLE = "VEH-0001"
+
 
 def http_json(url, timeout=60):
     req = urllib.request.Request(url, headers=UA)
@@ -239,34 +263,51 @@ def sha256(path):
     return h.hexdigest()
 
 
+def read_csv(name):
+    path = os.path.join(OUT, name)
+    with open(path, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 def main():
-    use_osrm = "--sin-osrm" not in sys.argv
+    only_history = "--solo-historia" in sys.argv
+    use_osrm = "--sin-osrm" not in sys.argv and not only_history
     rnd = random.Random(SEED)
     os.makedirs(OUT, exist_ok=True)
 
     nodes = [("warehouse", w[0], w[2], w[3]) for w in WAREHOUSES] + [("service_point", p[0], p[2], p[3]) for p in POINTS]
     snapped, snap_info = {}, {}
-    for kind, code, lat, lon in nodes:
-        if use_osrm:
-            try:
-                slat, slon, dist, street = snap(lat, lon)
-                snapped[code] = (slat, slon)
-                snap_info[code] = {"distanceM": dist, "street": street}
-                time.sleep(0.3)
-                continue
-            except Exception as ex:  # noqa: BLE001 - se registra y se usa la coordenada original
-                print(f"aviso: nearest falló para {code}: {ex}", file=sys.stderr)
-        snapped[code] = (lat, lon)
+    existing_manifest = {}
+    if only_history:
+        for name in ("bodegas.csv", "puntos.csv"):
+            for row in read_csv(name):
+                snapped[row["code"]] = (float(row["lat"]), float(row["lon"]))
+        with open(os.path.join(OUT, "manifest.json"), encoding="utf-8") as f:
+            existing_manifest = json.load(f)
+        snap_info = existing_manifest.get("snapToRoad", {})
+    else:
+        for kind, code, lat, lon in nodes:
+            if use_osrm:
+                try:
+                    slat, slon, dist, street = snap(lat, lon)
+                    snapped[code] = (slat, slon)
+                    snap_info[code] = {"distanceM": dist, "street": street}
+                    time.sleep(0.3)
+                    continue
+                except Exception as ex:  # noqa: BLE001 - se registra y se usa la coordenada original
+                    print(f"aviso: nearest falló para {code}: {ex}", file=sys.stderr)
+            snapped[code] = (lat, lon)
 
     # --- bodegas y puntos ---
-    write_csv("bodegas.csv", ["code", "name", "lat", "lon"],
-              [(w[0], w[1], *snapped[w[0]]) for w in WAREHOUSES])
-    write_csv("puntos.csv",
-              ["code", "name", "lat", "lon", "region", "category", "criticality", "window_start", "window_end",
-               "service_minutes", "lead_time_days", "fuente_ubicacion", "referencia_osm_o_barrio"],
-              [(p[0], p[1], *snapped[p[0]], p[9], p[4], p[5], p[6][0], p[6][1], p[7], p[8],
-                "OpenStreetMap (ODbL); relación comercial ficticia" if p[10] == "osm" else "sintética", p[11])
-               for p in POINTS])
+    if not only_history:
+        write_csv("bodegas.csv", ["code", "name", "lat", "lon"],
+                  [(w[0], w[1], *snapped[w[0]]) for w in WAREHOUSES])
+        write_csv("puntos.csv",
+                  ["code", "name", "lat", "lon", "region", "category", "criticality", "window_start", "window_end",
+                   "service_minutes", "lead_time_days", "fuente_ubicacion", "referencia_osm_o_barrio"],
+                  [(p[0], p[1], *snapped[p[0]], p[9], p[4], p[5], p[6][0], p[6][1], p[7], p[8],
+                    "OpenStreetMap (ODbL); relación comercial ficticia" if p[10] == "osm" else "sintética", p[11])
+                   for p in POINTS])
 
     # --- productos y lotes ---
     write_csv("productos.csv",
@@ -307,6 +348,18 @@ def main():
                     continue
                 if code == "PTO-0005" and i >= HISTORY_DAYS - 5 and sku in ("PRD-0001", "PRD-0008", "PRD-0010"):
                     factor *= 2.4  # brote: sube el consumo de desinfección los últimos 5 días
+                protected = (code, sku) in PROTECTED_ABC_PAIRS
+                # La ventana de decisión (últimos 14 días) se conserva para no alterar
+                # el riesgo ni la planificación ya validada. El enriquecimiento vive
+                # en la historia anterior.
+                enrichment_window = i < HISTORY_DAYS - 14
+                if not protected and enrichment_window and d.day >= 28:
+                    factor *= END_OF_MONTH_FACTOR  # cierre de mes sintético
+                if (not protected and enrichment_window and CAMPAIGN["start"] <= d <= CAMPAIGN["end"]
+                        and code in CAMPAIGN["points"] and sku in CAMPAIGN["skus"]):
+                    factor *= CAMPAIGN["factor"]
+                if not protected and enrichment_window and code in TRENDS:
+                    factor *= 1.0 + TRENDS[code] * (i / max(1, HISTORY_DAYS - 15))
                 q = base * scale * factor * rnd.uniform(0.8, 1.2)
                 q = round(q, 2) if q < 5 else round(q)
                 if q <= 0:
@@ -318,47 +371,58 @@ def main():
     write_csv("consumos.csv", ["point_code", "sku", "date", "quantity", "period_days"], consumos)
 
     # --- inventario ---
-    stock = []
-    for w in WAREHOUSES:
-        for p in PRODUCTS:
-            big = 1.0 if w[0] == "BOD-0001" else 0.5
-            stock.append(("warehouse", w[0], p[0], f"L-{p[0][4:]}-2609", round(400 * big)))
-            stock.append(("warehouse", w[0], p[0], f"L-{p[0][4:]}-2610", round(900 * big)))
-    # Quiebre deliberado: la Bodega Valle no tiene guantes (obliga a traer de otra bodega).
-    stock = [s for s in stock if not (s[1] == "BOD-0003" and s[2] == "PRD-0010")]
-    critical = {("PTO-0005", "PRD-0001"): 0.8, ("PTO-0007", "PRD-0010"): 0.5, ("PTO-0011", "PRD-0008"): 1.0,
-                ("PTO-0002", "PRD-0005"): 1.5, ("PTO-0013", "PRD-0006"): 1.0}
-    for p in POINTS:
-        for sku in PROFILE[p[4]]:
-            daily = max(avg.get((p[0], sku), 0), 0.01)
-            cover = critical.get((p[0], sku), rnd.uniform(3, 12))
-            stock.append(("service_point", p[0], sku, f"L-{sku[4:]}-2609", round(daily * cover, 2)))
+    if only_history:
+        # Se conserva el inventario validado del fixture. Los quiebres diseñados
+        # existentes ya representan el stock inicial desigual.
+        stock = [
+            (row["location_kind"], row["location_code"], row["sku"], row["lot_code"], row["quantity"])
+            for row in read_csv("inventario.csv")
+        ]
+    else:
+        stock = []
+        for w in WAREHOUSES:
+            for p in PRODUCTS:
+                big = 1.0 if w[0] == "BOD-0001" else 0.5
+                stock.append(("warehouse", w[0], p[0], f"L-{p[0][4:]}-2609", round(400 * big)))
+                stock.append(("warehouse", w[0], p[0], f"L-{p[0][4:]}-2610", round(900 * big)))
+        # Quiebre deliberado: la Bodega Valle no tiene guantes (obliga a traer de otra bodega).
+        stock = [s for s in stock if not (s[1] == "BOD-0003" and s[2] == "PRD-0010")]
+        critical = {("PTO-0005", "PRD-0001"): 0.8, ("PTO-0007", "PRD-0010"): 0.5, ("PTO-0011", "PRD-0008"): 1.0,
+                    ("PTO-0002", "PRD-0005"): 1.5, ("PTO-0013", "PRD-0006"): 1.0}
+        for p in POINTS:
+            for sku in PROFILE[p[4]]:
+                daily = max(avg.get((p[0], sku), 0), 0.01)
+                cover = critical.get((p[0], sku), rnd.uniform(3, 12))
+                stock.append(("service_point", p[0], sku, f"L-{sku[4:]}-2609", round(daily * cover, 2)))
     write_csv("inventario.csv", ["location_kind", "location_code", "sku", "lot_code", "quantity"], stock)
 
     # --- tramos (matriz dirigida completa) ---
-    coords = [snapped[n[1]] for n in nodes]
-    source = "haversine x1.35, 25 km/h"
-    dist = dur = None
-    if use_osrm:
-        try:
-            q = ";".join(f"{c[1]},{c[0]}" for c in coords)
-            data = http_json(f"{OSRM}/table/v1/driving/{q}?annotations=distance,duration", timeout=120)
-            if data.get("code") == "Ok":
-                dist, dur, source = data["distances"], data["durations"], "OSRM público (router.project-osrm.org), red vial OpenStreetMap"
-        except Exception as ex:  # noqa: BLE001
-            print(f"aviso: OSRM table falló, se usa haversine: {ex}", file=sys.stderr)
-    tramos = []
-    for i, a in enumerate(nodes):
-        for j, b in enumerate(nodes):
-            if i == j:
-                continue
-            if dist is not None and dist[i][j] is not None:
-                km, mins = dist[i][j] / 1000, dur[i][j] / 60
-            else:
-                km = haversine(coords[i], coords[j]) * 1.35
-                mins = km / 25 * 60
-            tramos.append((a[1], b[1], round(km, 3), round(mins, 3), "", a[0], b[0]))
-    write_csv("tramos.csv", ["from_code", "to_code", "distance_km", "duration_min", "geometry", "from_kind", "to_kind"], tramos)
+    if only_history:
+        source = existing_manifest.get("roadSource", "matriz existente")
+    else:
+        coords = [snapped[n[1]] for n in nodes]
+        source = "haversine x1.35, 25 km/h"
+        dist = dur = None
+        if use_osrm:
+            try:
+                q = ";".join(f"{c[1]},{c[0]}" for c in coords)
+                data = http_json(f"{OSRM}/table/v1/driving/{q}?annotations=distance,duration", timeout=120)
+                if data.get("code") == "Ok":
+                    dist, dur, source = data["distances"], data["durations"], "OSRM público (router.project-osrm.org), red vial OpenStreetMap"
+            except Exception as ex:  # noqa: BLE001
+                print(f"aviso: OSRM table falló, se usa haversine: {ex}", file=sys.stderr)
+        tramos = []
+        for i, a in enumerate(nodes):
+            for j, b in enumerate(nodes):
+                if i == j:
+                    continue
+                if dist is not None and dist[i][j] is not None:
+                    km, mins = dist[i][j] / 1000, dur[i][j] / 60
+                else:
+                    km = haversine(coords[i], coords[j]) * 1.35
+                    mins = km / 25 * 60
+                tramos.append((a[1], b[1], round(km, 3), round(mins, 3), "", a[0], b[0]))
+        write_csv("tramos.csv", ["from_code", "to_code", "distance_km", "duration_min", "geometry", "from_kind", "to_kind"], tramos)
 
     with open(os.path.join(OUT, "incidentes.json"), "w", encoding="utf-8") as f:
         json.dump(INCIDENTS, f, ensure_ascii=False, indent=2)
@@ -442,7 +506,20 @@ def main():
         "historyDays": HISTORY_DAYS, "warehouses": len(WAREHOUSES), "servicePoints": len(POINTS),
         "realPublicLocations": sum(1 for p in POINTS if p[10] == "osm"), "products": len(PRODUCTS),
         "vehicles": len(VEHICLES), "lots": len(lots), "stockRows": len(stock), "consumptionRows": len(consumos),
-        "roadSegments": len(tramos), "incidents": len(INCIDENTS), "roadSource": source,
+        "roadSegments": existing_manifest.get("roadSegments", 1806) if only_history else len(tramos),
+        "incidents": len(INCIDENTS), "roadSource": source,
+        "adverseRetiredVehicle": ADVERSE_RETIRED_VEHICLE,
+        "enrichmentVersion": ENRICHMENT_VERSION,
+        "historyRules": {
+            "weeklySeasonality": "WEEKEND por categoría; sin cambios",
+            "endOfMonth": {"days": "28-31", "factor": END_OF_MONTH_FACTOR,
+                            "note": "supuesto sintético; no aplica a los pares protegidos del pitch"},
+            "campaign": {"start": CAMPAIGN["start"].isoformat(), "end": CAMPAIGN["end"].isoformat(),
+                          "factor": CAMPAIGN["factor"], "label": CAMPAIGN["label"]},
+            "trends": TRENDS,
+            "protectedPitchPairs": sorted([f"{p}/{s}" for p, s in PROTECTED_ABC_PAIRS]),
+            "existingDesignedStock": "los cinco quiebres deliberados del fixture se conservan",
+        },
         "snapToRoad": snap_info, "sha256": {f: sha256(os.path.join(OUT, f)) for f in files},
     }
     with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:

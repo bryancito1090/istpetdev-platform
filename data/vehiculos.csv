@@ -1,0 +1,6 @@
+code,depot_code,max_weight,max_volume,vehicle_type,usage_scope,cost_per_km
+VEH-ECUA,BOD-ECUA,800,5,Furgón Urbano Ligero,Urbano Quito Sur,0.22
+VEH-VILL,BOD-VILL,800,5,Furgón Urbano Ligero,Urbano Quito Sur-Centro,0.22
+VEH-GUAM,BOD-GUAM,800,5,Furgón Urbano Ligero,Urbano Quito Sur,0.22
+VEH-CHIM,BOD-CHIM,800,5,Furgón Urbano Rápido,Urbano Prioritario,0.2
+VEH-CEQ,BOD-CEQ,2000,12,Vehículo Logístico Sede,Consolidación Matriz,0.25

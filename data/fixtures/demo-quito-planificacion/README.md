@@ -25,6 +25,40 @@ Escenario de Quito para probar el módulo de planificación, desde un día norma
 
 **Códigos legibles y únicos:** `BOD-0001`, `PTO-0001`, `PRD-0001` y `VEH-0001`. El prefijo dice qué es cada cosa en cualquier tabla, y los cuatro dígitos permiten hasta 9999 elementos. La matrícula va aparte, en `matricula`, porque es lo que el conductor y el taller reconocen.
 
+## Reglas de la historia sintética enriquecida (issue #319)
+
+Estas reglas se fijaron **antes** de ejecutar la comparación de 90 días y no se ajustan por resultado.
+El manifiesto las registra en `historyRules`, junto con la versión de enriquecimiento `2` y el
+vehículo retirado en el escenario adverso (`VEH-0001`).
+
+- **Estacionalidad semanal:** se conserva el factor por categoría de `WEEKEND` (por ejemplo, hospitales
+  0,85; oficinas y colegios 0; comida y comercio por encima de 1). Es un supuesto de escenario.
+- **Cierre de mes:** los días 28–31 multiplican el consumo por `1,18`. Es un supuesto sintético.
+- **Campaña sanitaria:** del 14 al 18 de septiembre de 2026, los puntos `PTO-0001`, `PTO-0020` y
+  `PTO-0030` multiplican por `1,8` los SKU `PRD-0002`, `PRD-0006` y `PRD-0009`. Fecha y factor son
+  supuestos del equipo; no provienen de una campaña real.
+- **Tendencias:** `PTO-0020`, `PTO-0030` y `PTO-0036` crecen de forma lineal hasta +30 %, +25 % y +30 %
+  a lo largo de los 60 días.
+- **Stock inicial desigual:** se conservan los cinco quiebres deliberados del fixture
+  (`PTO-0005/PRD-0001`, `PTO-0007/PRD-0010`, `PTO-0011/PRD-0008`, `PTO-0002/PRD-0005` y
+  `PTO-0013/PRD-0006`), que dejan puntos con 0,5–1,5 días de cobertura.
+- **Ventana de decisión:** el enriquecimiento se aplica solo a la historia anterior a los últimos
+  14 días. La ventana que usa el cálculo de riesgo y la planificación se conserva para no alterar
+  decisiones ya validadas.
+- **Ventana protegida del pitch:** los pares `PTO-0004`, `PTO-0005`, `PTO-0006` y `PTO-0015` con
+  `PRD-0001`/`PRD-0003` conservan exactamente la historia y el inventario usados para validar las
+  cifras A/B/C (57,89 / 69,89 / 66,90). El brote existente de `PTO-0005` se mantiene. Cualquier
+  cambio futuro en esa ventana exige repetir el ensayo A/B/C y avisar a Joseph antes de fusionar.
+
+Para regenerar solo la historia y el inventario sin volver a consultar OSRM ni cambiar la matriz:
+
+```bash
+python scripts/data/generate-demo-quito-planificacion.py --solo-historia
+```
+
+`--solo-historia` reutiliza `puntos.csv`, `bodegas.csv` y `tramos.csv`, y recalcula los SHA-256 del
+manifiesto. La regeneración completa con OSRM sigue disponible sin ese argumento.
+
 ## Qué decisión muestra cada dato (criterios del #243)
 
 | Dato | Decisión que hace visible | Issue |

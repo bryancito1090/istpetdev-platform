@@ -54,6 +54,68 @@ public sealed class RoutePlanningDecisionTests(PostgisContainer postgres) : ICla
     }
 
     [Fact]
+    public async Task Assigned_orders_are_reported_before_suggesting_or_creating_another_decision()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var client = api.ClientFor(TestTokens.Planner);
+        var ids = await SeedAsync(api, client);
+        var run = await PrepareAsync(client, ids);
+        var option = run.GetProperty("options").EnumerateArray().First(o => o.GetProperty("blockedReason").ValueKind == JsonValueKind.Null);
+        (await client.PostAsJsonAsync($"/api/v1/route-plans/decisions/{run.GetProperty("id").GetGuid()}/accept",
+            new { optionId = option.GetProperty("optionId").GetString(), expectedVersion = 1, operationId = Guid.NewGuid() })).EnsureSuccessStatusCode();
+        foreach (var endpoint in new[] { "suggest", "decisions" })
+        foreach (var planRemainingOnly in new[] { false, true })
+        {
+            var response = await client.PostAsJsonAsync($"/api/v1/route-plans/{endpoint}", new { orderIds = ids, planRemainingOnly, operationId = Guid.NewGuid() });
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            var warning = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal("orders_already_assigned", warning.GetProperty("code").GetString());
+            Assert.Equal(2, warning.GetProperty("assignedOrders").GetArrayLength());
+            Assert.All(warning.GetProperty("assignedOrders").EnumerateArray(), o => Assert.False(o.GetProperty("hasPendingQuantity").GetBoolean()));
+        }
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(1, await db.RoutePlanningDecisions.CountAsync());
+        Assert.Equal(2, await db.RoutePlans.CountAsync());
+
+        // Una reposición nueva en el mismo destino es otro pedido, no la entrega ya asignada.
+        var prior = await db.DeliveryOrders.FirstAsync(o => o.Id == ids[0]);
+        var productId = await db.DeliveryOrderLines.Where(l => l.DeliveryOrderId == prior.Id).Select(l => l.ProductId).SingleAsync();
+        var fresh = new DeliveryOrder { OrderNumber = "FIELD-NEXT-VISIT", SourceType = "FieldRequest", DestinationServicePointId = prior.DestinationServicePointId };
+        db.DeliveryOrders.Add(fresh);
+        db.DeliveryOrderLines.Add(new DeliveryOrderLine { DeliveryOrderId = fresh.Id, ProductId = productId, RequestedQuantity = 2m });
+        await db.SaveChangesAsync();
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/route-plans/suggest", new { orderIds = new[] { fresh.Id } })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Partial_assignment_requires_explicit_choice_and_calculates_only_the_remainder()
+    {
+        await using var api = new ApiFactory(postgres.NewDatabase());
+        var client = api.ClientFor(TestTokens.Planner);
+        var ids = await SeedAsync(api, client);
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            foreach (var line in await db.DeliveryOrderLines.ToListAsync()) line.PlannedQuantity = 2m;
+            await db.SaveChangesAsync();
+        }
+        foreach (var endpoint in new[] { "suggest", "decisions" })
+        {
+            var blocked = await client.PostAsJsonAsync($"/api/v1/route-plans/{endpoint}", new { orderIds = ids, operationId = Guid.NewGuid() });
+            Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
+            var allowed = await client.PostAsJsonAsync($"/api/v1/route-plans/{endpoint}", new { orderIds = ids, planRemainingOnly = true, operationId = Guid.NewGuid() });
+            Assert.True(allowed.IsSuccessStatusCode, await allowed.Content.ReadAsStringAsync());
+            var doc = await allowed.Content.ReadFromJsonAsync<JsonElement>();
+            if (endpoint == "suggest")
+                Assert.All(doc.GetProperty("options").EnumerateArray().SelectMany(o => o.GetProperty("sourcingLines").EnumerateArray()),
+                    line => Assert.InRange(line.GetProperty("plannedQuantity").GetDecimal(), 0m, 4m));
+        }
+        using var final = api.Services.CreateScope();
+        Assert.All(await final.ServiceProvider.GetRequiredService<ApplicationDbContext>().DeliveryOrderLines.ToListAsync(), l => Assert.Equal(2m, l.PlannedQuantity));
+    }
+
+    [Fact]
     public async Task Acceptance_keeps_every_vehicle_discards_siblings_and_survives_replay_and_reload()
     {
         await using var api = new ApiFactory(postgres.NewDatabase(), overrides: new Dictionary<string, string?> { ["Logistics:Osrm:BaseUrl"] = "", ["Logistics:Osrm:RouteGeometryUrl"] = "" });

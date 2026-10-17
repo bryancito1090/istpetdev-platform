@@ -5,6 +5,7 @@ using IstpetDev.Domain.Common;
 using IstpetDev.Domain.Entities;
 using IstpetDev.Infrastructure.Persistence;
 using IstpetDev.Infrastructure.Simulation;
+using IstpetDev.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,6 +37,7 @@ public sealed class SimulationWorkerTests
     public async Task Worker_Executes_Runs_And_Sets_Completed_With_Metrics()
     {
         var (provider, db) = CreateTestServices();
+        await SimulationSeed.SeedAsync(db);
         var worker = new SimulationWorker(provider, NullLogger<SimulationWorker>.Instance);
 
         var comparisonId = Guid.NewGuid();
@@ -119,6 +121,7 @@ public sealed class SimulationWorkerTests
     {
         // 1. Corrida con opciones por defecto (DefaultCostPerKm = 0.45, CostPerHour = 6.00)
         var (providerDef, dbDef) = CreateTestServices();
+        await SimulationSeed.SeedAsync(dbDef);
         var workerDef = new SimulationWorker(providerDef, NullLogger<SimulationWorker>.Instance);
 
         var comparisonIdDef = Guid.NewGuid();
@@ -153,6 +156,7 @@ public sealed class SimulationWorkerTests
             opt.DefaultCostPerKm = 1.50m;
             opt.CostPerHour = 20.00m;
         });
+        await SimulationSeed.SeedAsync(dbHigh);
         var workerHigh = new SimulationWorker(providerHigh, NullLogger<SimulationWorker>.Instance);
 
         var comparisonIdHigh = Guid.NewGuid();
@@ -187,16 +191,9 @@ public sealed class SimulationWorkerTests
 
         // 3. Corrida con tarifa de vehículo activo en db.Vehicles que reemplaza DefaultCostPerKm
         var (providerVeh, dbVeh) = CreateTestServices();
-        dbVeh.Vehicles.Add(new Vehicle
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = DemoOrganization.Id,
-            Code = "VEH-EXPENSIVE",
-            DepotLocationId = Guid.NewGuid(),
-            MaxWeight = 1000m,
-            CostPerKm = 5.00m,
-            IsActive = true
-        });
+        await SimulationSeed.SeedAsync(dbVeh);
+        var seededVehicle = await dbVeh.Vehicles.SingleAsync(v => v.Code == "VEH-01");
+        seededVehicle.CostPerKm = 5.00m;
         await dbVeh.SaveChangesAsync();
 
         var workerVeh = new SimulationWorker(providerVeh, NullLogger<SimulationWorker>.Instance);
@@ -245,6 +242,7 @@ public sealed class SimulationWorkerTests
 
         // 1. Corrida base sin disrupciones
         var (providerBase, dbBase) = CreateTestServices();
+        await SimulationSeed.SeedAsync(dbBase);
         var workerBase = new SimulationWorker(providerBase, NullLogger<SimulationWorker>.Instance);
         var compIdBase = Guid.NewGuid();
         var runBase = new SimulationRun
@@ -270,6 +268,7 @@ public sealed class SimulationWorkerTests
 
         // 2. Corrida con incidente de demora Factor = 2.0m
         var (providerDisr, dbDisr) = CreateTestServices();
+        await SimulationSeed.SeedAsync(dbDisr);
         var workerDisr = new SimulationWorker(providerDisr, NullLogger<SimulationWorker>.Instance);
         var compIdDisr = Guid.NewGuid();
         var runDisr = new SimulationRun
@@ -310,6 +309,7 @@ public sealed class SimulationWorkerTests
     public async Task Worker_Eliminates_Synthetic_Constants_And_All_Three_Policies_Share_Cost_Calculator()
     {
         var (provider, db) = CreateTestServices();
+        await SimulationSeed.SeedAsync(db);
         var worker = new SimulationWorker(provider, NullLogger<SimulationWorker>.Instance);
 
         var comparisonId = Guid.NewGuid();

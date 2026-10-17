@@ -1,4 +1,4 @@
-"""Genera pitch-v5.pptx (con GIF animado) y pitch-v5-estatico.pdf (con imágenes fijas).
+"""Genera pitch-v5.pptx (con GIF animado) y pitch-v5.pdf (con imágenes fijas).
 
 Reutiliza el diseño de generar_v3.py y las láminas 1–4 y 8–12 de generar_v4.py. Las láminas
 5 (monitoreo de cobertura), 6 (rutas) y 7 (novedades de campo) usan capturas reales de
@@ -158,6 +158,7 @@ def build(animated: bool, pptx: Path, export: bool):
 if __name__ == "__main__":
     build(False, HERE / "pitch-v5-estatico.pptx", export=True)
     (HERE / "pitch-v5-estatico.pptx").unlink()
+    (HERE / "pitch-v5-estatico.pdf").replace(HERE / "pitch-v5.pdf")
     deck = build(True, HERE / "pitch-v5.pptx", export=False)
     for note in deck.notes:
         print(f"{note['n']:>2}. {note['title']}: {note['clicks']} clic(s)")

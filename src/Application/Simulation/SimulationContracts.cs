@@ -59,7 +59,8 @@ public sealed record MetricValue(
     decimal? Denominator,
     decimal? Value,
     string Unit,
-    string? NotApplicableReason);
+    string? NotApplicableReason,
+    Guid? ProductId = null);
 
 public interface IScenarioImporter
 {
