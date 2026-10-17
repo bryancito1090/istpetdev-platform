@@ -1,5 +1,7 @@
 # Manifiesto del paquete de entrega — v3 (v2 como respaldo)
 
+**Acceso directo al pitch v5:** [PowerPoint](materiales/pitch-v5.pptx) · [PDF](materiales/pitch-v5.pdf). 12 diapositivas; duración objetivo de 4:40.
+
 **Estado:** paquete en preparación. Ningún archivo está congelado ni consta como entregado. La lista oficial contiene siete entregables; los nombres y formatos finales dependen de la respuesta completa a O-06. El canal comunicado es la carpeta de Drive del capitán, pero faltan URL y formatos confirmados.
 
 Los archivos existentes son propuestas editables/exportadas, no validación de que cada entregable oficial esté completo. “Listo” significa archivo provisional disponible y revisable; no significa congelado ni recibido. Las propuestas de responsable deben confirmarse por el equipo. Los SHA-256 se recalculan en cada modificación y al congelar.
