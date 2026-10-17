@@ -1,0 +1,6 @@
+code,name,lat,lon,region,category,criticality,window_start,window_end,service_minutes,lead_time_days
+PTO-ECUA,Barrio La Ecuatoriana (Quito Sur),-0.3079,-78.5682,Pichincha,recoleccion_integrantes,normal,07:00,18:00,15,1
+PTO-VILL,La Villaflora - El Recreo (Quito Sur),-0.252,-78.518,Pichincha,recoleccion_integrantes,normal,07:00,18:00,15,1
+PTO-GUAM,Feria de Autos Guamaní (Quito Sur),-0.3556,-78.5444,Pichincha,recoleccion_integrantes,media,07:00,18:00,15,1
+PTO-CHIM,Av. Napo - Chimbacalle (Quito),-0.2333,-78.5083,Pichincha,recoleccion_integrantes,alta,06:30,10:00,15,1
+PTO-CEQ,Centro de Exposiciones Quito (Sede Hackathon),-0.1925,-78.4839,Pichincha,entrega_final,alta,08:00,20:00,15,1

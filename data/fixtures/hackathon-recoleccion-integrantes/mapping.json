@@ -1,0 +1,26 @@
+{
+  "name": "dataset-hackathon-quito",
+  "files": {
+    "warehouses": {
+      "file": "bodegas.csv"
+    },
+    "service_points": {
+      "file": "puntos.csv"
+    },
+    "vehicles": {
+      "file": "vehiculos.csv"
+    },
+    "products": {
+      "file": "productos.csv"
+    },
+    "stock": {
+      "file": "inventario.csv"
+    },
+    "lots": {
+      "file": "lotes.csv"
+    },
+    "road_segments": {
+      "file": "tramos.csv"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+stop_code,stop_name,canton_province,latitude,longitude,stop_type,packages_pickup,packages_dropoff,net_package_change,priority_level,is_highest_priority,time_window_start,time_window_end,service_minutes,final_destination_code
+BOD-ECUA,Barrio La Ecuatoriana,Quito (Pichincha),-0.3079,-78.5682,pickup,1,0,+1,normal,false,07:00,18:00,15,DEST-CEQ
+BOD-VILL,La Villaflora - El Recreo,Quito (Pichincha),-0.2520,-78.5180,pickup,1,0,+1,normal,false,07:00,18:00,15,DEST-CEQ
+BOD-GUAM,Feria de Autos Guamani,Quito (Pichincha),-0.3556,-78.5444,pickup,1,0,+1,media,false,07:00,18:00,15,DEST-CEQ
+BOD-CHIM,Av. Napo - Chimbacalle,Quito (Pichincha),-0.2333,-78.5083,pickup,1,0,+1,alta,true,06:30,10:00,15,DEST-CEQ
+DEST-CEQ,Centro de Exposiciones Quito,Quito (Pichincha),-0.1925,-78.4839,delivery,0,4,-4,final,false,08:00,19:00,30,DEST-CEQ

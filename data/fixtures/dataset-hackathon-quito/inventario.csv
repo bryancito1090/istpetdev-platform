@@ -1,0 +1,6 @@
+location_kind,location_code,sku,lot_code,quantity
+warehouse,BOD-ECUA,INT-HACK-01,LOT-ECUA,1
+warehouse,BOD-VILL,INT-HACK-01,LOT-VILL,1
+warehouse,BOD-GUAM,INT-HACK-01,LOT-GUAM,1
+warehouse,BOD-CHIM,INT-HACK-01,LOT-CHIM,1
+warehouse,BOD-CEQ,INT-HACK-01,LOT-DEST,0
